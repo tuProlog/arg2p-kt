@@ -2,8 +2,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:solve-classic:0.11.1")
-                implementation("it.unibo.tuprolog:parser-theory:0.11.1")
+                implementation("it.unibo.tuprolog:solve-classic:0.11.5-dev10+28f0f968")
+                implementation("it.unibo.tuprolog:parser-theory:0.11.5-dev10+28f0f968")
             }
         }
     }

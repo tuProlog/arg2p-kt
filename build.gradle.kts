@@ -1,10 +1,13 @@
 plugins {
-    kotlin("multiplatform") version "1.3.72"
+    kotlin("multiplatform") version "1.4.10"
 }
 
 repositories {
     mavenCentral()
     jcenter()
+    maven {
+        url = uri("https://dl.bintray.com/pika-lab/tuprolog/")
+    }
 }
 
 val javaVersion: String by project
@@ -13,7 +16,7 @@ val ktFreeCompilerArgsJvm: String by project
 group = "it.unibo.tuprolog.argumentation"
 version = "0.1.0"
 
-subprojects {
+allprojects {
 
     group = rootProject.group
     version = rootProject.version
@@ -24,6 +27,7 @@ subprojects {
     apply(plugin = "maven-publish")
 
     kotlin {
+
         sourceSets {
             val commonMain by getting {
                 dependencies {
