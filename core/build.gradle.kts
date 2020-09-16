@@ -10,7 +10,7 @@ kotlin {
                 implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
                 implementation(npm("@tuprolog/parser-utils", "0.2.2"))
-                implementation(npm("antlr", "4.8.0"))
+                implementation(npm("antlr4", "4.8.0"))
             }
         }
     }
