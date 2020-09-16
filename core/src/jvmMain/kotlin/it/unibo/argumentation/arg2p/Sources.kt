@@ -6,7 +6,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 actual object Sources {
 
     private fun loadTheoryFromPrologFile(fileName: String): Theory {
-        return Sources::class.java.classLoader.getResource("$fileName.pl").let {
+        return Sources::class.java.getResource("$fileName.pl").let {
             Theory.parse(it!!.readText())
         }
     }
