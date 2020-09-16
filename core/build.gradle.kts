@@ -9,6 +9,12 @@ kotlin {
             dependencies {
                 implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                implementation("it.unibo.tuprolog:parser-js:$tuPrologVersion")
                 implementation(npm("@tuprolog/parser-utils", "0.2.2"))
                 implementation(npm("antlr4", "4.8.0"))
             }
