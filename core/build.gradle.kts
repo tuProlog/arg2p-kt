@@ -1,9 +1,11 @@
+val tuPrologVersion: String by project
+
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:solve-classic:0.11.5-dev10+28f0f968")
-                implementation("it.unibo.tuprolog:parser-theory:0.11.5-dev10+28f0f968")
+                implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
             }
         }
     }
@@ -17,3 +19,5 @@ tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile> {
         }
     }
 }
+
+fun File

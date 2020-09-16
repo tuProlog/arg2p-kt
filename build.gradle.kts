@@ -5,9 +5,6 @@ plugins {
 repositories {
     mavenCentral()
     jcenter()
-    maven {
-        url = uri("https://dl.bintray.com/pika-lab/tuprolog/")
-    }
 }
 
 val javaVersion: String by project
@@ -101,11 +98,11 @@ allprojects {
             }
         }
 
-        doLast {
-            copy {
-                from ("build/processedResources/jvm/main")
-                into ("build/classes/kotlin/jvm/main")
-            }
-        }
+//        doLast {
+//            copy {
+//                from ("build/processedResources/jvm/main")
+//                into ("build/classes/kotlin/jvm/main")
+//            }
+//        }
     }
 }
