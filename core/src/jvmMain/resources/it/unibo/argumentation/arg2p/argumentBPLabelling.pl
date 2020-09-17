@@ -4,11 +4,11 @@
 % Year: 2019
 % ---------------------------------------------------------------
 
-enablePartialHBP :-
-    asserta(partialHBP).
+disableBPCompletion :-
+    asserta(disableBPcompletion).
 
-disablePartialHBP :-
-    retractall(partialHBP).
+enableBPCompletion :-
+    retractall(disableBPcompletion).
 
 writeDemonstration([]) :-
     demonstration,
@@ -22,7 +22,7 @@ writeDemonstration(_).
 argumentBPLabelling([IN, OUT, UND], [BPIN, BPOUT, BPUND]) :-
     reifyBurdenOfProofs(IN, OUT, UND),
     writeDemonstration(['=========================================>DEMONSTRATION']),
-    ((partialHBP, partialHBPLabelling(UND, IN, OUT, [], BPIN, BPOUT, BPUND));
+    ((disableBPcompletion, partialHBPLabelling(UND, IN, OUT, [], BPIN, BPOUT, BPUND));
     hbpComplete(go, IN, OUT, UND, BPIN, BPOUT, BPUND)),
     writeDemonstration(['=====================================>END DEMONSTRATION']).
 
@@ -38,130 +38,259 @@ hbpComplete(_, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
     stopCondition(FLAG, IN, CompleteIN, OUT, CompleteOUT, UND, CompleteUND),
     hbpComplete(FLAG, CompleteIN, CompleteOUT, CompleteUND, BPIN, BPOUT, BPUND).
 
-stopCondition(stop, IN, IN, OUT, OUT, UND, UND).
-stopCondition(go, _, _, _, _, _, _).
+stopCondition(X, IN, CIN, OUT, COUT, UND, CUND) :-
+    sort(IN, SIN),
+    sort(CIN, SCIN),
+    sort(OUT, SOUT),
+    sort(COUT, SCOUT),
+    sort(UND, SUND),
+    sort(CUND, SCUND),
+    stopCondition_sorted(X, SIN, SCIN, SOUT, SCOUT, SUND, SCUND).
+stopCondition_sorted(stop, IN, IN, OUT, OUT, UND, UND).
+stopCondition_sorted(go, _, _, _, _, _, _).
 
 %==============================================================================
 % PARTIAL HBP LABELLING
 %==============================================================================
 
-%(a) A is labelled IN iff conc(A) = compl p
-%   i) and BP(p) and no subargument A1 that belongs to DirectSub(A) is labelled OUT
-%      or
-%   ii) every UND-labelled argument B such that conc(B) = p is OUT, and
-%       every subargument A1 that belongs to DirectSub(A) is labelled IN;
-%(b) A is labelled OUT iff an attacker of A is IN;
-%(c) A is labelled UND otherwise.
-
 partialHBPLabelling([], IN_STAR, OUT_STAR, UND_STAR, IN_STAR, OUT_STAR, UND_STAR).
 partialHBPLabelling(UND, IN_STAR, OUT_STAR, UND_STAR, ResultIN, ResultOUT, ResultUND) :-
-    member(A, UND),
+    more_grounded_argument(UND, A),
     writeDemonstration(['Evaluating ', A]),
-    evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, [], NewUnd, TempIN, TempOUT, TempUND),
+    demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, [A], NewUnd, TempIN, TempOUT, TempUND),
     partialHBPLabelling(NewUnd, TempIN, TempOUT, TempUND, ResultIN, ResultOUT, ResultUND).
 
-evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
-    findonesubarg(UND, A, Sub),
-    writeDemonstration(['Sub -> ', Sub, ' of ', A]),
-    \+ member(Sub, RESOLVING),
-    append(RESOLVING, [Sub], NR),
-    evaluateHbpArgument(Sub, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
-evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, _, NewUnd, TempIN, TempOUT, TempUND) :-
-    applyHbpRulesOne(A, UND, IN_STAR, OUT_STAR, UND_STAR, NewUnd, TempIN, TempOUT, TempUND).
+/*
+    (a.i) BP(neg(φ)), and no argument B for neg(φ) such that A < B is IN*, and no A1,...An is OUT*
+*/
 
-evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
-    findonecompl(UND, A, Compl),
-    writeDemonstration(['Compl -> ', Compl, ' of ', A]),
-    \+ member(Compl, RESOLVING),
-    append(RESOLVING, [Compl], NR),
-    evaluateHbpArgument(Compl, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
-evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, _, NewUnd, TempIN, TempOUT, TempUND) :-
-    applyHbpRulesTwo(A, UND, IN_STAR, OUT_STAR, UND_STAR, NewUnd, TempIN, TempOUT, TempUND).
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, OUT_STAR, UND_STAR) :-
+	isComplementInBurdenOfProof(A),
+	\+ findSupUndComplargument(A, UND, RESOLVING, _, _),
+	noSuperiorComplementInSet(A, IN_STAR),
+	\+ findUndSubargument(A, UND, RESOLVING, _, _),
+	noSubArgumentInSet(A, OUT_STAR),
+	writeDemonstration(['Adding argument: ', A, ' to IN* (2.a.i)']),
+    append(IN_STAR, [A], TempIN),
+    subtract(UND, [A], NewUnd).
 
-%evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
-%    findoneattack(UND, A, Att),
-%    \+ member(Att, RESOLVING),
-%    append(RESOLVING, [Att], NR),
-%    evaluateHbpArgument(Att, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
-%evaluateHbpArgument(A, UND, IN_STAR, OUT_STAR, UND_STAR, _, NewUnd, TempIN, TempOUT, TempUND) :-
-%    applyHbpRulesThree(A, UND, IN_STAR, OUT_STAR, UND_STAR, NewUnd, TempIN, TempOUT, TempUND).
+/*
+    (a.ii) not BP(neg(φ)) and every argument B for neg(φ) such that B(not <)A is OUT*, and every A1,...An is IN*
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, OUT_STAR, UND_STAR) :-
+	\+ isComplementInBurdenOfProof(A),
+	\+ findSupOrEqualUndComplargument(A, UND, RESOLVING, _, _),
+	allComplementInSet(A, OUT_STAR),
+	\+ findUndSubargument(A, UND, RESOLVING, _, _),
+	allSubArgumentInSet(A, IN_STAR),
+	writeDemonstration(['Adding argument: ', A, ' to IN* (2.a.ii)']),
+    append(IN_STAR, [A], TempIN),
+    subtract(UND, [A], NewUnd).
 
-findonesubarg(UND, A, Sub) :-
+/*
+    (b.i.1) BP(φ) and exists an argument B for neg(φ) such that B(not <)A is not OUT*
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, IN_STAR, TempOUT, UND_STAR) :-
+	isArgumentInBurdenOfProof(A),
+	\+ findSupOrEqualUndComplargument(A, UND, RESOLVING, _, _),
+	oneOutSuperiorOrEqualComplementFromSet(A, UND, OUT_STAR),
+    writeDemonstration(['Adding argument: ', A, ' to OUT* (2.b.i.1)']),
+    append(OUT_STAR, [A], TempOUT),
+    subtract(UND, [A], NewUnd).
+
+/*
+    (b.i.2) BP(φ) and exist one of A1,...An is not IN*
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, IN_STAR, TempOUT, UND_STAR) :-
+	isArgumentInBurdenOfProof(A),
+	\+ findUndSubargument(A, UND, RESOLVING, _, _),
+	oneOutSubArgumentFromSet(A, UND, IN_STAR),
+    writeDemonstration(['Adding argument: ', A, ' to OUT* (2.b.i.2)']),
+    append(OUT_STAR, [A], TempOUT),
+    subtract(UND, [A], NewUnd).
+
+/*
+    (b.ii.1) not BP(φ) and an argument B for neg(φ) such A < B is IN*
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, IN_STAR, TempOUT, UND_STAR) :-
+	\+ isArgumentInBurdenOfProof(A),
+	\+ findSupUndComplargument(A, UND, RESOLVING, _, _),
+	oneInSuperiorOrEqualComplementFromSet(A, IN_STAR),
+    writeDemonstration(['Adding argument: ', A, ' to OUT* (2.b.ii.1)']),
+    append(OUT_STAR, [A], TempOUT),
+    subtract(UND, [A], NewUnd).
+
+/*
+    (b.ii.2) not BP(φ) and one of A1,...An is OUT*
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, IN_STAR, TempOUT, UND_STAR) :-
+	\+ isArgumentInBurdenOfProof(A),
+	\+ findUndSubargument(A, UND, RESOLVING, _, _),
+	oneInSubArgumentFromSet(A, OUT_STAR),
+    writeDemonstration(['Adding argument: ', A, ' to OUT* (2.b.ii.2)']),
+    append(OUT_STAR, [A], TempOUT),
+    subtract(UND, [A], NewUnd).
+
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+    isComplementInBurdenOfProof(A),
+	findSupUndComplargument(A, UND, RESOLVING, NR, Compl),
+    demonstration(Compl, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	isComplementInBurdenOfProof(A),
+	\+ findSupUndComplargument(A, UND, RESOLVING, _, _),
+	noSuperiorComplementInSet(A, IN_STAR),
+    findUndSubargument(A, UND, RESOLVING, NR, Sub),
+    demonstration(Sub, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+    \+ isComplementInBurdenOfProof(A),
+	findAllUndComplargument(A, UND, RESOLVING, NR, Compl),
+    demonstration(Compl, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	\+ isComplementInBurdenOfProof(A),
+	\+ findAllUndComplargument(A, UND, RESOLVING, _, _),
+	allComplementInSet(A, OUT_STAR),
+    findUndSubargument(A, UND, RESOLVING, NR, Sub),
+    demonstration(Sub, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	isArgumentInBurdenOfProof(A),
+	findSupOrEqualUndComplargument(A, UND, RESOLVING, NR, Compl),
+    demonstration(Compl, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	isArgumentInBurdenOfProof(A),
+	findUndSubargument(A, UND, RESOLVING, NR, Sub),
+    demonstration(Sub, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	\+ isArgumentInBurdenOfProof(A),
+	findSupOrEqualUndComplargument(A, UND, RESOLVING, NR, Compl),
+    demonstration(Compl, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, TempOUT, TempUND) :-
+	\+ isArgumentInBurdenOfProof(A),
+	findUndSubargument(A, UND, RESOLVING, NR, Sub),
+    demonstration(Sub, UND, IN_STAR, OUT_STAR, UND_STAR, NR, NewUnd, TempIN, TempOUT, TempUND).
+
+/*
+    (c) A is labelled UND* otherwise.
+*/
+demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, _, NewUnd, IN_STAR, OUT_STAR, TempUND) :-
+	writeDemonstration(['Adding argument: ', A, ' to UND* (2.c)']),
+    append(UND_STAR, [A], TempUND),
+    subtract(UND, [A], NewUnd).
+
+/*
+    Load dependencies
+*/
+findUndSubargument(A, UND, RESOLVING, NEW_RESOLVING, Sub) :-
     support(Sub, A),
-    member(Sub, UND).
+    member(Sub, UND),
+    \+ member(Sub, RESOLVING),
+    % writeDemonstration(['Sub -> ', Sub, ' of ', A]),
+    append(RESOLVING, [Sub], NEW_RESOLVING).
 
-%findoneattack(UND, A, Att) :-
-%    attack(Att, A),
-%    member(Att, UND).
+findAllUndComplargument(A, UND, RESOLVING, NEW_RESOLVING, Compl) :-
+    allComplArguments(A, List),
+    findAcceptable(A, List, UND, RESOLVING, NEW_RESOLVING, Compl).
 
-findonecompl(UND, A, [X, Y, CA]) :-
-    complement(A, CA),
-    argument([X, Y, CA]),
-    member([X, Y, CA], UND).
+findSupUndComplargument(A, UND, RESOLVING, NEW_RESOLVING, Compl) :-
+    superiorComplArguments(A, List),
+    findAcceptable(A, List, UND, RESOLVING, NEW_RESOLVING, Compl).
 
-/*
-    A is labelled IN iff conc(A) = (compl p) and BP(p) and no subargument A1 that belongs
-    to DirectSub(A) is labelled OUT
+findSupOrEqualUndComplargument(A, UND, RESOLVING, NEW_RESOLVING, Compl) :-
+    superiorOrEqualComplArguments(A, List),
+    findAcceptable(A, List, UND, RESOLVING, NEW_RESOLVING, Compl).
 
-    If my supporting arguments are undecided or true,
-    and my argument goes against that in BP,
-    then my argument is true.
-*/
-applyHbpRulesOne(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, Res_INS, OUT_STAR, UND_STAR) :-
-    complement(A, CA),
-    isInBurdenOfProof(CA),
-    \+ ( support(_, A), checkSubArguments(A, OUT_STAR) ),
-    writeDemonstration(['Adding argument: ', A, ' to IN* (2.a.i)']),
-    append(IN_STAR, [A], Res_INS),
-    subtract(UND, [A], Res_UND).
-applyHbpRulesOne(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR) :-
-    outRule(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR).
-/*
-    A is labelled IN iff conc(A) = compl p, every UND-labelled argument B such that conc(B) = p is OUT, and
-    every subargument A1 that belongs to DirectSub(A) is labelled IN
-
-    If all the arguments in favor of my complement are false,
-    and all my direct sub-arguments are true,
-    then my argument is true
-*/
-applyHbpRulesTwo(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, Res_INS, OUT_STAR, UND_STAR) :-
-    complement(A, CA),
-    checkComplementArguments(CA, OUT_STAR),
-    checkSubArguments(A, IN_STAR),
-    writeDemonstration(['Adding argument: ', A, ' to IN* (2.a.ii)']),
-    append(IN_STAR, [A], Res_INS),
-    subtract(UND, [A], Res_UND).
-applyHbpRulesTwo(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR) :-
-    outRule(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR).
-
-
-%applyHbpRulesThree(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, Res_INS, OUT_STAR, UND_STAR) :-
-%    checkAttackArguments(A, IN_STAR),
-%    checkSubArguments(A, IN_STAR),
-%    complement(A, CA),
-%    checkComplementArgumentsBp(CA),
-%    writeDemonstration(['Adding argument: ', A, ' to IN* (2.a.iii)']),
-%    append(IN_STAR, [A], Res_INS),
-%    subtract(UND, [A], Res_UND).
-%applyHbpRulesThree(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR) :-
-%    outRule(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR).
-/*
-    A is labelled UND iff no other choices are possible
-*/
-applyHbpRulesTwo(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, OUT_STAR, Res_UNDS) :-
-    writeDemonstration(['Adding argument: ', A, ' to UND* (2.c)']),
-    append(UND_STAR, [A], Res_UNDS),
-    subtract(UND, [A], Res_UND).
+findAcceptable(A, List, UND, RESOLVING, NEW_RESOLVING, Compl) :-
+    member(Compl, List),
+    member(Compl, UND),
+    \+ member(Compl, RESOLVING),
+    % writeDemonstration(['Compl -> ', Compl, ' of ', A]),
+    append(RESOLVING, [Compl], NEW_RESOLVING).
 
 /*
-    A is labelled OUT iff an attacker of A is IN
+    Conditions
 */
-outRule(A, UND, IN_STAR, OUT_STAR, UND_STAR, Res_UND, IN_STAR, Res_OUTS, UND_STAR) :-
-    attack(B, A),
-    member(B, IN_STAR), !,
-    writeDemonstration(['Adding argument: ', A, ' to OUT* (2.b)']),
-    append(OUT_STAR, [A], Res_OUTS),
-    subtract(UND, [A], Res_UND).
+
+noSuperiorComplementInSet(Argument, Set) :-
+    superiorComplArguments(Argument, LIST),
+    noInWithEmptyCheck(LIST, Set).
+
+noSubArgumentInSet(Argument, Set) :-
+    allDirectsSubArguments(Argument, LIST),
+    noInWithEmptyCheck(LIST, Set).
+
+allComplementInSet(Argument, Set) :-
+    allComplArguments(Argument, LIST),
+    allInWithEmptyCheck(LIST, Set).
+
+allSubArgumentInSet(Argument, Set) :-
+    allDirectsSubArguments(Argument, LIST),
+    allInWithEmptyCheck(LIST, Set).
+
+oneOutSuperiorOrEqualComplementFromSet(Argument, UND, Set) :-
+    superiorOrEqualComplArguments(Argument, LIST),
+    oneOut(LIST, UND, Set).
+
+oneOutSubArgumentFromSet(Argument, UND, Set) :-
+    allDirectsSubArguments(Argument, LIST),
+    oneOut(LIST, UND, Set).
+
+oneInSuperiorOrEqualComplementFromSet(Argument, Set) :-
+    superiorOrEqualComplArguments(Argument, LIST),
+    oneIn(LIST, Set).
+
+oneInSubArgumentFromSet(Argument, Set) :-
+    allDirectsSubArguments(Argument, LIST),
+    oneIn(LIST, Set).
+
+/*
+    Support
+*/
+
+allDirectsSubArguments(Argument, LIST) :-
+    findall(Sub, support(Sub, Argument), LIST).
+
+allComplArguments(Argument, LIST) :-
+    complement(Argument, CA),
+    findall([A, B, CA], argument([A, B, CA]), LIST).
+
+superiorComplArguments(Argument, LIST) :-
+    complement(Argument, CA),
+    findall([A, B, CA], (argument([A, B, CA]), superiorArgument([A, B, CA], Argument)), LIST).
+
+superiorOrEqualComplArguments(Argument, LIST) :-
+    complement(Argument, CA),
+    findall([A, B, CA], (argument([A, B, CA]), \+ superiorArgument(Argument, [A, B, CA])), LIST).
+
+
+noInWithEmptyCheck([], _).
+noInWithEmptyCheck(List, Target) :- noIn(List, Target).
+noIn(List, Target) :-
+    member(X, List),
+    \+ member(X, Target).
+
+allInWithEmptyCheck([], _).
+allInWithEmptyCheck(List, Target) :- allIn(List, Target).
+allIn(List, Target) :-
+    member(X, List),
+    \+ (member(X, List), \+ member(X, Target)).
+
+oneInWithEmptyCheck([], _).
+oneInWithEmptyCheck(List, Target) :- oneIn(List, Target).
+oneIn(List, Target) :-
+    member(X, List),
+    member(X, Target).
+
+oneOutWithEmptyCheck([], _, _).
+oneOutWithEmptyCheck(List, UND, Target) :- oneOut(List, UND, Target).
+oneOut(List, UND, Target) :-
+    member(X, List),
+    \+ member(X, UND),
+    \+ member(X, Target).
 
 %==============================================================================
 % COMPLETE LABELLING
@@ -218,28 +347,33 @@ checkInAttecked(A, IN) :-
 %==============================================================================
 
 /*
-    Get a conclusion complement ([P] -> [neg, P])
-*/
-complement([_, _, [neg|A]], A).
-complement([_, _, [A]], ['neg',A]).
-
-/*
     Checks Burden of proof membership
 */
 isInBurdenOfProof(Concl) :-
     reifiedBp(Literals),
     member(Concl, Literals), !.
 
-% All the arguments with this conclusion are in the Set (If no arguments returns true)
-checkComplementArguments(Conclusion, Set) :-
-    \+ (argument([A, B, Conclusion]), \+ member([A, B, Conclusion], Set)).
-% All the attackers are not in the Set (If no arguments returns true)
-checkAttackArguments(A, IN_STAR) :-
-    \+ (attack(B, A), member(B, IN_STAR)).
-% All the sub-arguments are in the Set (If no sub-arguments returns true)
-checkSubArguments(Argument, Set) :-
-    \+ (support(Subargument, Argument), \+ member(Subargument, Set)).
+isComplementInBurdenOfProof(A) :-
+    complement(A, Compl),
+    isInBurdenOfProof(Compl).
 
+isArgumentInBurdenOfProof([_, _, Concl]) :-
+    isInBurdenOfProof(Concl).
+
+more_grounded_argument([], []).
+more_grounded_argument([X], X).
+more_grounded_argument([[L,_,_]|T], [L2,Q2,W2]) :-
+    more_grounded_argument(T, [L2,Q2,W2]),
+    length(L, LN1),
+    length(L2, LN2),
+    LN1 > LN2.
+more_grounded_argument([[L,Q,W]|_], [L,Q,W]).
+
+/*
+    Get a conclusion complement ([P] -> [neg, P])
+*/
+complement([_, _, [neg|A]], A).
+complement([_, _, [A]], ['neg',A]).
 
 %==============================================================================
 % BURDEN OF PROOF REIFICATION
@@ -271,61 +405,3 @@ computeBp(_).
 */
 fillTemplate([], _, []).
 fillTemplate([H|T], C, [H|R]) :- member(H, C), fillTemplate(T, C, R).
-
-%==============================================================================
-% BASE HBP LABELLING
-%==============================================================================
-
-%hbpBase(IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
-%    findall(A, ( member(A, UND), outCondition(A, OUT) ), NewListOUT),
-%    append(OUT, NewListOUT, NewOUT),
-%    write('\nNEW OUT\n'),
-%    writeList(NewListOUT),
-%    findall(A, ( member(A, UND), inCondition(A, NewOUT, IN) ), NewListIN),
-%    append(IN, NewListIN, NewIN),
-%    write('\nNEW IN\n'),
-%    writeList(NewListIN),
-%    append(NewListIN, NewListOUT, NewLabelledArguments),
-%    \+ isEmptyList(NewLabelledArguments),
-%    subtract(UND, NewLabelledArguments, NewUnd),
-%    hbpBase(NewIN, NewOUT, NewUnd, ResultIN, ResultOUT, ResultUND).
-%
-%hbpBase(IN, OUT, UND, IN, OUT, UND).
-%
-%/*
-%    A conclusion is in burdenOfProof(Concs) and some A's attackers are not labelled OUT
-%*/
-%outCondition(A, OUT) :-
-%    isInBurdenOfProof(A),
-%    attack(B, A),
-%    \+ member(B, OUT), !.
-%
-%/*
-%    The conclusionion's complement is in burdenOfProof(Concs) and there are no IN arguments that BP-attack argument A
-%    OR
-%    The conclusionion is in burdenOfProof(Concs) and all A's attackers are labelled OUT
-%*/
-%inCondition(A, OUT, IN) :-
-%    complement(A, CA),
-%    isInBurdenOfProof(CA),
-%    \+ ( bpAttack(B, A), write('Bp-attack: '), write(B), write(' -> '), write(A), member(B, IN) ),
-%    write(' OK ').
-%inCondition(A, OUT, _) :-
-%    isInBurdenOfProofArgument(A),
-%    \+ ( attack(B, A), \+ (member(B, OUT) )).
-%
-%/*
-%    Find a  bp attacker, if it exists
-%    An argument A for f BP-attacks argument B iff A attacks B and -f in BP.
-%*/
-%bpAttack(A, B) :-
-%    attack(A, B),
-%    complement(A, CA),
-%    isInBurdenOfProof(CA).
-%
-%/*
-%    Checks Burden of proof membership
-%*/
-%isInBurdenOfProofArgument([_, _, Concl]) :-
-%    bp(Literals),
-%    member(Concl, Literals), !.
