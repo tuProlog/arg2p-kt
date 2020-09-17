@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import kotlin.streams.asSequence
+import java.io.File
 
 val tuPrologVersion: String by project
 
@@ -22,21 +23,37 @@ kotlin {
     }
 }
 
+private val PL_COMMENT_REGEX = """^\s*%.*""".toRegex()
+
+val String.isSkipable: Boolean get() {
+    return isBlank() || PL_COMMENT_REGEX.matches(this)
+}
+
+fun File.resolveDest(destinationFolder: File): File =
+    destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
+
 fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
     this.bufferedReader().use { r ->
         val lines = r.lines().asSequence()
-        val dest = destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
+        val dest = resolveDest(destinationFolder)
         dest.bufferedWriter().use { w ->
             w.write("package $`package`")
             w.newLine()
             w.newLine()
-            w.write("internal val $nameWithoutExtension: String = \"\"\"")
+            w.write("object ${nameWithoutExtension.capitalize()} {")
+            w.newLine()
+            w.write("    val theoryCode: String = \"\"\"")
             w.newLine()
             for (line in lines) {
-                w.write(line)
-                w.newLine()
+                if (!line.isSkipable) {
+                    w.write("    ")
+                    w.write(line)
+                    w.newLine()
+                }
             }
-            w.write("\"\"\"")
+            w.write("    \"\"\".trimIndent()")
+            w.newLine()
+            w.write("}")
             w.newLine()
         }
     }
@@ -48,16 +65,18 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
         it.include("**/*.pl")
     }.files
     val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
-    println(jsMainDir)
     val pckg = "it.unibo.argumentation.arg2p"
     val destDir = jsMainDir.resolve(pckg.replace('.', '/'))
+    for (file in plFiles) {
+        inputs.file(file)
+        outputs.file(file.resolveDest(destDir))
+    }
+    tasks.withType<KotlinJsCompile>().forEach {
+        it.dependsOn(this)
+    }
     doLast {
         for (file in plFiles) {
             file.convertIntoKotlinSource(destDir, pckg)
         }
-    }
-    // TODO set outputs for this task
-    tasks.withType<KotlinJsCompile>().forEach {
-        it.dependsOn(this)
     }
 }

@@ -5,35 +5,26 @@ import it.unibo.tuprolog.theory.parsing.parse
 
 actual object Sources {
     actual val argumentationEngineInterface: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.argumentationEngineInterface
-        )
+        get() = Theory.parse(ArgumentationEngineInterface.theoryCode)
+
     actual val argumentationGraph: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.argumentationGraph
-        )
+        get() = Theory.parse(ArgumentationGraph.theoryCode)
+
     actual val argumentBPLabelling: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.argumentBPLabelling
-        )
+        get() = Theory.parse(ArgumentBPLabelling.theoryCode)
+
     actual val argumentLabelling: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.argumentLabelling
-        )
+        get() = Theory.parse(ArgumentLabelling.theoryCode)
+
     actual val debug: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.debug
-        )
+        get() = Theory.parse(Debug.theoryCode)
+
     actual val ruleTranslator: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.ruleTranslator
-        )
+        get() = Theory.parse(RuleTranslator.theoryCode)
+
     actual val statementLabelling: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.statementLabelling
-        )
+        get() = Theory.parse(StatementLabelling.theoryCode)
+
     actual val utils: Theory
-        get() = Theory.parse(
-            it.unibo.argumentation.arg2p.utils
-        )
+        get() = Theory.parse(Utils.theoryCode)
 }
