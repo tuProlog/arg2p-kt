@@ -19,5 +19,5 @@ private val theories = sequenceOf(
 object Arg2p : AliasedLibrary by Library.aliased(
     operatorSet = OperatorSet.DEFAULT,
     theory = theories.reduce(Theory::plus),
-    alias = "prologx.argumentation"
+    alias = "prolog.argumentation"
 )
