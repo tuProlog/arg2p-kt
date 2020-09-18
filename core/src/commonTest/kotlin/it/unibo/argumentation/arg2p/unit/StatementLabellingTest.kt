@@ -1,4 +1,4 @@
-package unit
+package it.unibo.argumentation.arg2p.unit
 
 import it.unibo.argumentation.arg2p.Arg2p
 import it.unibo.tuprolog.core.Struct

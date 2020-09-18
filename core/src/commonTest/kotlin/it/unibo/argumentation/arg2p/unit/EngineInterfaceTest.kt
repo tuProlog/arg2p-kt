@@ -1,4 +1,4 @@
-package unit
+package it.unibo.argumentation.arg2p.unit
 
 import it.unibo.argumentation.arg2p.Arg2p
 import it.unibo.tuprolog.core.Struct
@@ -9,11 +9,11 @@ import it.unibo.tuprolog.solve.library.Libraries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class RuleTranslationTest {
+class EngineInterfaceTest {
 
     //TODO
     @Test
-    fun convertRule() {
+    fun buildLabelSets() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries(Arg2p)
@@ -28,7 +28,7 @@ class RuleTranslationTest {
 
     //TODO
     @Test
-    fun convertAllRules() {
+    fun answerQuery() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries(Arg2p)

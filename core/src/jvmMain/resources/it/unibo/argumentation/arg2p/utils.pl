@@ -26,9 +26,9 @@ q_sort([H|T],Acc,Sorted):-
 	q_sort(L1,Acc,Sorted1),q_sort(L2,[H|Sorted1],Sorted).
 
 pivoting(H,[],[],[]).
-pivoting(H,[X|T],[X|L],G):- term_greater_than(H,X),pivoting(H,T,L,G).
+pivoting(H,[X|T],[X|L],G):- H @>= X, pivoting(H,T,L,G).
 %X=<H,pivoting(H,T,L,G).
-pivoting(H,[X|T],L,[X|G]):-term_greater_than(X,H),pivoting(H,T,L,G).
+pivoting(H,[X|T],L,[X|G]):- X @> H, pivoting(H,T,L,G).
 %X>H,pivoting(H,T,L,G).
 
 %-----------------------------------------------------------------

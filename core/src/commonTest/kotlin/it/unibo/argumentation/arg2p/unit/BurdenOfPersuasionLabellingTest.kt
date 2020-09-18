@@ -1,4 +1,4 @@
-package unit
+package it.unibo.argumentation.arg2p.unit
 
 import it.unibo.argumentation.arg2p.Arg2p
 import it.unibo.tuprolog.core.Struct
@@ -9,11 +9,11 @@ import it.unibo.tuprolog.solve.library.Libraries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ArgumentationGraphTest {
+class BurdenOfPersuasionLabellingTest {
 
     //TODO
     @Test
-    fun buildArguments() {
+    fun burdenOfProofReification() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries(Arg2p)
@@ -28,7 +28,7 @@ class ArgumentationGraphTest {
 
     //TODO
     @Test
-    fun buildAttacks() {
+    fun partialLabelling() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries(Arg2p)
@@ -43,7 +43,7 @@ class ArgumentationGraphTest {
 
     //TODO
     @Test
-    fun buildArgumentationGraph() {
+    fun completeLabelling() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries(Arg2p)
