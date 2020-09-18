@@ -13,6 +13,12 @@ kotlin {
             }
         }
 
+        val commonTest by getting {
+            dependencies {
+                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
+            }
+        }
+
         val jsMain by getting {
             dependencies {
                 implementation("it.unibo.tuprolog:parser-js:$tuPrologVersion")

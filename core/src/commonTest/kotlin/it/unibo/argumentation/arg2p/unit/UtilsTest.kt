@@ -1,11 +1,9 @@
 package it.unibo.argumentation.arg2p.unit
 
 import it.unibo.argumentation.arg2p.Arg2p
-import it.unibo.argumentation.arg2p.assertSolutionEquals
-import it.unibo.argumentation.arg2p.no
-import it.unibo.argumentation.arg2p.yes
+import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.dsl.prolog
-import it.unibo.tuprolog.solve.ClassicSolverFactory
+import it.unibo.tuprolog.solve.*
 import it.unibo.tuprolog.solve.library.Libraries
 import kotlin.test.Test
 import it.unibo.tuprolog.theory.Theory
@@ -20,6 +18,14 @@ class UtilsTest {
             staticKb = theory
         )
 
+    private fun testGoal(goal: Struct, solver : Solver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
+        val solutions = solver.solve(goal).toList()
+        assertSolutionEquals(
+            expectedSolutions(goal),
+            solutions
+        )
+    }
+
     @Test
     fun assertaList() {
         prolog {
@@ -33,82 +39,53 @@ class UtilsTest {
     @Test
     fun sort() {
         prolog {
-            val solver = solver()
-            val query = "sort"(listOf("b", "a", "c", "d"), "X")
-            val solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("sort"(listOf("b", "a", "c", "d"), "X")) {
                 ktListOf(
-                    query.yes("X" to listOf("d", "c", "b", "a")),
-                    query.no()
-                ),
-                solutions
-            )
+                    it.yes("X" to listOf("d", "c", "b", "a")),
+                    it.no()
+                )
+            }
         }
     }
 
     @Test
     fun subtractList() {
         prolog {
-            val solver = solver()
-            val query = "subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")
-            val solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")) {
                 ktListOf(
-                    query.yes("X" to listOf("c", "d"))
-                ),
-                solutions
-            )
+                    it.yes("X" to listOf("c", "d"))
+                )
+            }
         }
     }
 
     @Test
     fun isEmptyList() {
         prolog {
-            val solver = solver()
-            var query = "isEmptyList"(emptyList)
-            var solutions = solver.solve(query).toList()
-            assertSolutionEquals(
-                ktListOf(query.yes()),
-                solutions
-            )
+            testGoal("isEmptyList"(emptyList)) {
+                ktListOf(it.yes())
+            }
 
-            query = "isEmptyList"(listOf("a"))
-            solutions = solver.solve(query).toList()
-            assertSolutionEquals(
-                ktListOf(query.no()),
-                solutions
-            )
+            testGoal("isEmptyList"(listOf("a"))) {
+                ktListOf(it.no())
+            }
         }
     }
 
     @Test
     fun appendaList() {
         prolog {
-            val solver = solver()
-
-            var query = "appendLists"(listOf(
-                listOf("a", "b"),
-                listOf("c", "d"),
-                listOf("e", "f")
-            ), "X")
-            var solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
                 ktListOf(
-                    query.yes("X" to listOf("a", "b", "c", "d", "e", "f"))
-                ),
-                solutions
-            )
+                    it.yes("X" to listOf("a", "b", "c", "d", "e", "f"))
+                )
+            }
 
-            query = "appendLists"(listOf(
-                listOf("a", "b")
-            ), "X")
-            solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("appendLists"(listOf(listOf("a", "b")), "X")) {
                 ktListOf(
-                    query.yes("X" to listOf("a", "b"))
-                ),
-                solutions
-            )
+                    it.yes("X" to listOf("a", "b"))
+                )
+            }
         }
     }
 
@@ -117,39 +94,30 @@ class UtilsTest {
         prolog {
 
             val solver = solver(Theory.Companion.of(ktListOf(
-                    fact { "a"(1) },
-                    fact { "a"(1, 2) },
-                    fact { "a"(1, 2, 3) },
-                    fact { "a"(1, 2, 3, 4) })))
+                fact { "a"(1) },
+                fact { "a"(1, 2) },
+                fact { "a"(1, 2, 3) },
+                fact { "a"(1, 2, 3, 4) })))
 
-            var query = "search"("a", 4,"X")
-            var solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("search"("a", 4, "X"), solver) {
                 ktListOf(
-                    query.yes("X" to "a"(1)),
-                    query.yes("X" to "a"(1, 2)),
-                    query.yes("X" to "a"(1, 2, 3)),
-                    query.yes("X" to "a"(1, 2, 3, 4))
-                ),
-                solutions
-            )
+                    it.yes("X" to "a"(1)),
+                    it.yes("X" to "a"(1, 2)),
+                    it.yes("X" to "a"(1, 2, 3)),
+                    it.yes("X" to "a"(1, 2, 3, 4))
+                )
+            }
 
-            query = "search"("a", 2,"X")
-            solutions = solver.solve(query).toList()
-            assertSolutionEquals(
+            testGoal("search"("a", 2, "X"), solver) {
                 ktListOf(
-                    query.yes("X" to "a"(1)),
-                    query.yes("X" to "a"(1, 2))
-                ),
-                solutions
-            )
+                    it.yes("X" to "a"(1)),
+                    it.yes("X" to "a"(1, 2))
+                )
+            }
 
-            query = "search"("b", 2,"X")
-            solutions = solver.solve(query).toList()
-            assertSolutionEquals(
-                ktListOf(query.no()),
-                solutions
-            )
+            testGoal("search"("b", 2, "X"), solver) {
+                ktListOf(it.no())
+            }
         }
     }
 }
