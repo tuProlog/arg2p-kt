@@ -1,30 +1,15 @@
 package it.unibo.argumentation.arg2p.unit
 
-import it.unibo.argumentation.arg2p.Arg2p
-import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.*
-import it.unibo.tuprolog.solve.library.Libraries
 import kotlin.test.Test
 import it.unibo.tuprolog.theory.Theory
 import kotlin.test.assertEquals
 import kotlin.collections.listOf as ktListOf
+import it.unibo.argumentation.arg2p.TestingUtils.solver
+import it.unibo.argumentation.arg2p.TestingUtils.testGoal
 
 class UtilsTest {
-
-    private fun solver(theory : Theory = Theory.empty()) =
-        ClassicSolverFactory.solverWithDefaultBuiltins(
-            otherLibraries = Libraries(Arg2p),
-            staticKb = theory
-        )
-
-    private fun testGoal(goal: Struct, solver : Solver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
-        val solutions = solver.solve(goal).toList()
-        assertSolutionEquals(
-            expectedSolutions(goal),
-            solutions
-        )
-    }
 
     @Test
     fun assertaList() {
