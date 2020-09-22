@@ -10,7 +10,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 object TestingUtils {
 
     private val duration: TimeDuration
-        get() = 5000L
+        get() = 30000L
 
     fun withArgOperators(theory: String) =
         Theory.parse(("""
