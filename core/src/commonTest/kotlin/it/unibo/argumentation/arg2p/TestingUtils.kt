@@ -9,6 +9,9 @@ import it.unibo.tuprolog.theory.parsing.parse
 
 object TestingUtils {
 
+    private val duration: TimeDuration
+        get() = 5000L
+
     fun withArgOperators(theory: String) =
         Theory.parse(("""
                     :- op(1199, xfx, '=>').
@@ -23,7 +26,7 @@ object TestingUtils {
         )
 
     fun testGoal(goal: Struct, solver : Solver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
-        val solutions = solver.solve(goal).toList()
+        val solutions = solver.solve(goal, duration).toList()
         assertSolutionEquals(
             expectedSolutions(goal),
             solutions
@@ -31,7 +34,7 @@ object TestingUtils {
     }
 
     fun testGoalNoBacktracking(goal: Struct, solver : Solver = solver(), expectedSolutions: (Struct) -> Solution) {
-        val solution = solver.solve(goal).first()
+        val solution = solver.solve(goal, duration).first()
         assertSolutionEquals(
             listOf(expectedSolutions(goal)),
             listOf(solution)
