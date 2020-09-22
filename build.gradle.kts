@@ -10,6 +10,8 @@ repositories {
 val javaVersion: String by project
 val ktFreeCompilerArgsJvm: String by project
 
+val mochaTimeout: String by project
+
 group = "it.unibo.tuprolog.argumentation"
 version = "0.1.0"
 
@@ -59,7 +61,13 @@ allprojects {
             }
 
             js {
-                nodejs()
+                nodejs {
+                    testTask {
+                        useMocha {
+                            timeout = mochaTimeout
+                        }
+                    }
+                }
 
                 compilations["main"].defaultSourceSet {
                     dependencies {
@@ -83,7 +91,6 @@ allprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile> {
         kotlinOptions {
             moduleKind = "umd"
-            //noStdlib = true
             metaInfo = true
             sourceMap = true
             sourceMapEmbedSources = "always"
