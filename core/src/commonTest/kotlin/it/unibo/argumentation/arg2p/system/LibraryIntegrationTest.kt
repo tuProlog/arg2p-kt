@@ -15,7 +15,7 @@ class LibraryIntegrationTest {
     fun libraryLoading() {
 
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
-            otherLibraries = Libraries(Arg2p)
+            otherLibraries = Libraries.of(Arg2p)
         )
         val query = Struct.parse("argTuProlog")
         val solutions = solver.solve(query)

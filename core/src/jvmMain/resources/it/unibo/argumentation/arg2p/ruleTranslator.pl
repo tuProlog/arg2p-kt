@@ -82,7 +82,7 @@ check_modifiers_in_list(MODE, [], []).
 check_modifiers_in_list(MODE, [H|T], L) :- H == [], L = [].
 check_modifiers_in_list(MODE, [H|T], L) :- H \== [],
                             check_modifiers(H, LH),
-                            check_admissibility(MODE, H, LH),
+                            % check_admissibility(MODE, H, LH),
                             check_modifiers_in_list(MODE, T, LT),
                             append([LH], LT, L).
 

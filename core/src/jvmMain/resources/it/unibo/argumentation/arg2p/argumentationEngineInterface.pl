@@ -45,7 +45,7 @@ answerQuery(Goal, YesResult, NoResult, UndResult) :-
     findall(Goal, answerSingleQuery(Goal, Und), UndResult).
 
 answerSingleQuery(Goal, Set) :-
-    check_modifiers_in_list([Goal], [X]),
+    check_modifiers_in_list(effects, [Goal], [X]),
     member(X, Set).
 
 %go([In, No, Und]) :-
