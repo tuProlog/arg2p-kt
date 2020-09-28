@@ -3,6 +3,7 @@ image: pikalab/ci:ubuntu-jdk14-git-gradle-graphviz
 stages:
   - build
   - test
+  - deploy
 
 before_script:
   - chmod +x gradlew
@@ -18,11 +19,36 @@ cache:
 variables:
   GOPTS: "--no-daemon --console=plain"
   GCMD: gradle
+  BEFORE_TASK: ""
+  AFTER_TASK: ""
+  JS_COMPILE_TASK: "clean jsMain"
+  NPM_PUBLISH_TASK: "npmPublish"
+  BUILD_TASK: "clean assemble"
+  TEST_JVM_TASK: "jvmTest"
+  TEST_JS_TASK: "clean jsTest"
 
 build:
   stage: build
-  script: $GCMD clean assemble $GOPTS
+  script: $GCMD $BEFORE_TASK $BUILD_TASK $AFTER_TASK $GOPTS
 
-test:
+Test JVM:
   stage: test
-  script: $GCMD check $GOPTS
+  script: $GCMD $BEFORE_TASK $TEST_JVM_TASK $AFTER_TASK $GOPTS
+  artifacts:
+    reports:
+      junit: "**/build/test-results/jvmTest/*.xml"
+
+Test JS:
+  stage: test
+  script: $GCMD $BEFORE_TASK $TEST_JS_TASK $AFTER_TASK $GOPTS
+
+Deploy to NPM:
+  stage: deploy
+  script:
+    - $GCMD $BEFORE_TASK $JS_COMPILE_TASK $AFTER_TASK $GOPTS
+    - $GCMD $BEFORE_TASK $NPM_PUBLISH_TASK $AFTER_TASK $GOPTS
+  environment:
+    name: NPM
+    url: "https://www.npmjs.com/org/tuprolog"
+  only:
+    - /^(master)|(release)|(develop)$/
