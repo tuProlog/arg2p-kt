@@ -21,7 +21,7 @@ object TestingUtils {
 
     fun solver(theory : Theory = Theory.empty()) =
         ClassicSolverFactory.solverWithDefaultBuiltins(
-            otherLibraries = Libraries(Arg2p),
+            otherLibraries = Libraries.of(Arg2p),
             staticKb = theory
         )
 
