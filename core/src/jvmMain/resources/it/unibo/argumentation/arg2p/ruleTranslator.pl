@@ -52,8 +52,8 @@ convertAllRules([[H,E]|T]) :- convertRule(H, E), convertAllRules(T).
 convertRule(RuleName, Preconditions, Effects) :-
                             tuple_to_list(Preconditions, Lprecond),
                             tuple_to_list(Effects, Leffects),
-                            check_modifiers_in_list(Lprecond, LprecondChecked),
-                            check_modifiers_in_list(Leffects, LeffectsChecked),
+                            check_modifiers_in_list(preconditions, Lprecond, LprecondChecked),
+                            check_modifiers_in_list(effects, Leffects, LeffectsChecked),
                             flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened),
                             List = [RuleName, LprecondChecked, LeffectsCheckedFlattened],
                             assert(rule(List)).
@@ -68,7 +68,7 @@ convertRule(_, Effects) :-
             functor(Effects, 'bp', _) ->
                 Effects =.. L,
                 removehead(L, LC),
-                check_modifiers_in_list(LC, Checked),
+                check_modifiers_in_list(effects, LC, Checked),
                 assert(abstractBp(Checked));
             true.
 
@@ -78,18 +78,42 @@ convertRule(_, Effects) :-
  *   Find negations(-), obligations(o), permissions(p) on a list of preconditions/effects and
  *   raplace them with the assigned literal (neg, obl, perm)
  */
-check_modifiers_in_list([], []).
-check_modifiers_in_list([H|T], L) :- H == [], L = [].
-check_modifiers_in_list([H|T], L) :- H \== [],
+check_modifiers_in_list(MODE, [], []).
+check_modifiers_in_list(MODE, [H|T], L) :- H == [], L = [].
+check_modifiers_in_list(MODE, [H|T], L) :- H \== [],
                             check_modifiers(H, LH),
-                            check_modifiers_in_list(T, LT),
+                            check_admissibility(MODE, H, LH),
+                            check_modifiers_in_list(MODE, T, LT),
                             append([LH], LT, L).
 
+check_admissibility(preconditions, H, LH) :-
+    \+ defeasible_admissible(LH),
+    throw(['Premise  ', H, '  is not a well formed member of the argumentation language.']).
+check_admissibility(effects, H, LH) :-
+    \+ admissible(LH),
+    throw(['Conclusion  ', H, '  is not a well formed member of the argumentation language.']).
+check_admissibility(_, _, _).
+
 check_modifiers([], []).
-check_modifiers(H, List) :-	functor(H, '-', _) -> H =.. L, replace('-', 'neg', L, Lf), List = Lf;
-                            functor(H, 'o', _) -> (arg(1, H, Arg), check_modifiers(Arg, Lobl), List = ['obl'|[Lobl]]);
-                            functor(H, 'p', _) -> (arg(1, H, Arg), check_modifiers(Arg, Lper), List = ['perm'|[Lper]]);
-                            List = [H].
+check_modifiers(H, List) :-
+    functor(H, '-', _) -> (
+        arg(1, H, Arg),
+        check_modifiers(Arg, Lobl),
+        append([neg], Lobl, Lf),
+        List = Lf);
+    functor(H, 'o', _) -> (
+        arg(1, H, Arg),
+        check_modifiers(Arg, Lobl),
+        List = [obl|[Lobl]]);
+    functor(H, 'p', _) -> (
+        arg(1, H, Arg),
+        check_modifiers(Arg, Lper),
+        List = [perm|[Lper]]);
+    functor(H, '~', _) -> (
+        arg(1, H, Arg),
+        check_modifiers(Arg, Lper),
+        List = [unless|[Lper]]);
+    List = [H].
 
 /*
  *   Convert the given tuple to list
@@ -108,3 +132,39 @@ flatten_first_level([X], X).
 flatten_first_level.
 
 removehead([_|Tail], Tail).
+
+
+defeasible_admissible([unless, Term]) :- admissible(Term).
+defeasible_admissible(Term) :- admissible(Term).
+
+admissible([neg, Term]) :- admissible_term(Term).
+admissible([obl, [Term]]) :- admissible_term(Term).
+admissible([obl, [neg, Term]]) :- admissible_term(Term).
+admissible([neg, obl, [Term]]) :- admissible_term(Term).
+admissible([neg, obl, [neg, Term]]) :- admissible_term(Term).
+admissible([perm, [Term]]) :- admissible_term(Term).
+admissible([perm, [neg, Term]]) :- admissible_term(Term).
+admissible([Term]) :- admissible_term(Term).
+
+admissible_term(Term) :-
+    atomic(Term),
+    Term \== neg,
+    Term \== obl,
+    Term \== perm,
+    Term \== unless.
+admissible_term(Term) :- var(Term).
+admissible_term(Term) :-
+    compound(Term),
+    \+ functor(Term, 'o', _),
+    \+ functor(Term, 'p', _),
+    \+ functor(Term, '-', _),
+    \+ functor(Term, '~', _),
+    Term =.. [_|Args],
+    admissible_terms(Args).
+
+admissible_terms([]).
+admissible_terms([H|T]) :-
+    admissible_term(H),
+    admissible_terms(T).
+
+

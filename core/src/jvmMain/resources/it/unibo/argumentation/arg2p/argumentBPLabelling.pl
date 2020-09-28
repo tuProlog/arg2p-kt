@@ -255,17 +255,25 @@ allDirectsSubArguments(Argument, LIST) :-
     findall(Sub, support(Sub, Argument), LIST).
 
 allComplArguments(Argument, LIST) :-
-    complement(Argument, CA),
-    findall([A, B, CA], argument([A, B, CA]), LIST).
+    findall(X, (
+        complement(Argument, CA),
+        findall([A, B, CA], argument([A, B, CA]), X)
+    ), Y),
+    appendLists(Y, LIST).
 
 superiorComplArguments(Argument, LIST) :-
-    complement(Argument, CA),
-    findall([A, B, CA], (argument([A, B, CA]), superiorArgument([A, B, CA], Argument)), LIST).
+    findall(X, (
+        complement(Argument, CA),
+        findall([A, B, CA], (argument([A, B, CA]), superiorArgument([A, B, CA], Argument)), X)
+    ), Y),
+    appendLists(Y, LIST).
 
 superiorOrEqualComplArguments(Argument, LIST) :-
-    complement(Argument, CA),
-    findall([A, B, CA], (argument([A, B, CA]), \+ superiorArgument(Argument, [A, B, CA])), LIST).
-
+    findall(X, (
+        complement(Argument, CA),
+        findall([A, B, CA], (argument([A, B, CA]), \+ superiorArgument(Argument, [A, B, CA])), X)
+    ), Y),
+    appendLists(Y, LIST).
 
 noInWithEmptyCheck([], _).
 noInWithEmptyCheck(List, Target) :- noIn(List, Target).
@@ -276,8 +284,8 @@ noIn(List, Target) :-
 allInWithEmptyCheck([], _).
 allInWithEmptyCheck(List, Target) :- allIn(List, Target).
 allIn(List, Target) :-
-    member(X, List),
-    \+ (member(X, List), \+ member(X, Target)).
+    member(_, List),
+    \+ (member(Y, List), \+ member(Y, Target)).
 
 oneInWithEmptyCheck([], _).
 oneInWithEmptyCheck(List, Target) :- oneIn(List, Target).
@@ -355,7 +363,7 @@ isInBurdenOfProof(Concl) :-
 
 isComplementInBurdenOfProof(A) :-
     complement(A, Compl),
-    isInBurdenOfProof(Compl).
+    isInBurdenOfProof(Compl), !.
 
 isArgumentInBurdenOfProof([_, _, Concl]) :-
     isInBurdenOfProof(Concl).
@@ -370,10 +378,9 @@ more_grounded_argument([[L,_,_]|T], [L2,Q2,W2]) :-
 more_grounded_argument([[L,Q,W]|_], [L,Q,W]).
 
 /*
-    Get a conclusion complement ([P] -> [neg, P])
+    Get a conclusion complement
 */
-complement([_, _, [neg|A]], A).
-complement([_, _, [A]], ['neg',A]).
+complement([_, _, Conc], A) :- conflict(Conc, A).
 
 %==============================================================================
 % BURDEN OF PROOF REIFICATION

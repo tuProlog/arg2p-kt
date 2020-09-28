@@ -31,7 +31,7 @@ buildLabelSets :-
 
 buildLabelSets([In, No, Und], [BPIN, BPOUT, BPUND]) :-
     convertAllRules,
-    buildArgumentationGraph([Arguments, Attacks, Supports] ),
+    buildArgumentationGraph([Arguments, Attacks, Supports]),
     argumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling([IN, OUT, UND], [BPIN, BPOUT, BPUND]),
     statementLabelling([BPIN, BPOUT, BPUND], [In, No, Und]), !,
@@ -45,7 +45,8 @@ answerQuery(Goal, YesResult, NoResult, UndResult) :-
     findall(Goal, answerSingleQuery(Goal, Und), UndResult).
 
 answerSingleQuery(Goal, Set) :-
-    member([Goal], Set).
+    check_modifiers_in_list([Goal], [X]),
+    member(X, Set).
 
 %go([In, No, Und]) :-
 %    time(buildArgumentationGraph([Arguments, Attacks, Supports] )), %Execute Goal just like call/1 and print time used

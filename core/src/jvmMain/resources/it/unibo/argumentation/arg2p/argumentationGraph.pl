@@ -67,7 +67,7 @@ buildArguments :-
 	ruleBodyIsSupported(RuleBody, [], [], PremisesOfSupportingArguments, Supports),
 	append([RuleID], PremisesOfSupportingArguments, IDPremises),
 	sort(IDPremises, SortedPremises), % Also remove duplicates
-        NewArgument = [SortedPremises, RuleID, RuleHead],
+    NewArgument = [SortedPremises, RuleID, RuleHead],
 	\+ argument(NewArgument),
 	assertSupports(Supports, NewArgument),
 	asserta(argument(NewArgument)),
@@ -120,11 +120,11 @@ assertSupports([Support | OtherSupports], Argument) :-
 buildAttacks :-
 	argument([IDPremisesA, RuleA, RuleHeadA]),
 	argument([IDPremisesB, RuleB, RuleHeadB]),
-        sub([IDPremisesB, RuleB, RuleHeadB], Subs),
-        member([IDPremisesSubB, RuleSubB, RuleHeadSubB], Subs),
+    sub([IDPremisesB, RuleB, RuleHeadB], Subs),
+    member([IDPremisesSubB, RuleSubB, RuleHeadSubB], Subs),
 
-        conflict(RuleHeadA, RuleHeadSubB),
-        rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesSubB, RuleSubB, RuleHeadSubB]),
+    conflict(RuleHeadA, RuleHeadSubB),
+    rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesSubB, RuleSubB, RuleHeadSubB]),
 
 	\+( attack([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) ),
 	asserta( attack([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) ),
@@ -133,7 +133,7 @@ buildAttacks :-
 buildAttacks :-
 	argument([IDPremisesA, RuleA, RuleHeadA]),
 	argument([IDPremisesB, RuleB, RuleHeadB]),
-        undercuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]),
+    undercuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]),
 	\+( attack([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) ),
 	asserta( attack([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) ),
 	fail.
