@@ -2,6 +2,7 @@ package it.unibo.argumentation.arg2p
 
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.*
+import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
