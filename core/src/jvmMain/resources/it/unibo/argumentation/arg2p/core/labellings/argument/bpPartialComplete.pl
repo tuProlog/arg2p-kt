@@ -4,12 +4,6 @@
 % Year: 2019
 % ---------------------------------------------------------------
 
-disableBPCompletion :-
-    asserta(disableBPcompletion).
-
-enableBPCompletion :-
-    retractall(disableBPcompletion).
-
 writeDemonstration([]) :-
     demonstration,
     write('\n').
@@ -19,12 +13,17 @@ writeDemonstration([X|T]) :-
     writeDemonstration(T).
 writeDemonstration(_).
 
-argumentBPLabelling([IN, OUT, UND], [BPIN, BPOUT, BPUND]) :-
+argumentBPLabelling(COMPLETION ,[IN, OUT, UND], [BPIN, BPOUT, BPUND]) :-
     reifyBurdenOfProofs(IN, OUT, UND),
     writeDemonstration(['=========================================>DEMONSTRATION']),
-    ((disableBPcompletion, partialHBPLabelling(UND, IN, OUT, [], BPIN, BPOUT, BPUND));
-    hbpComplete(go, IN, OUT, UND, BPIN, BPOUT, BPUND)),
-    writeDemonstration(['=====================================>END DEMONSTRATION']).
+    argumentBPLabelling(COMPLETION, IN, OUT, UND, BPIN, BPOUT, BPUND),
+    writeDemonstration(['=====================================>END DEMONSTRATION']), !.
+
+argumentBPLabelling(partial, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
+    partialHBPLabelling(UND, IN, OUT, [], BPIN, BPOUT, BPUND).
+
+argumentBPLabelling(complete, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
+    hbpComplete(go, IN, OUT, UND, BPIN, BPOUT, BPUND).
 
 %==============================================================================
 % COMPLETE HBP LABELLING
@@ -331,7 +330,7 @@ completeIn(A, _, OUT) :- checkOutAttackers(A, OUT).
     If an attack exists, it should come from an OUT argument
 */
 checkOutAttackers(A, OUT) :-
-    \+ ( attack(B, A), \+ ( member(B, OUT)) ).
+    \+ ( attack(_, B, A), \+ ( member(B, OUT)) ).
 
 
 completeOut(A, IN, _) :- checkInAttacker(A, IN).
@@ -340,14 +339,14 @@ completeOut(A, IN, _) :- checkInAttecked(A, IN).
     Find an attack, if exists, from an IN argument, then ends
 */
 checkInAttacker(A, IN) :-
-    attack(B, A),
+    attack(_, B, A),
     member(B, IN), !.
 
 /*
     If A attacks an IN argument, then A is OUT
 */
 checkInAttecked(A, IN) :-
-    attack(A, B),
+    attack(_, A, B),
     member(B, IN), !.
 
 %==============================================================================

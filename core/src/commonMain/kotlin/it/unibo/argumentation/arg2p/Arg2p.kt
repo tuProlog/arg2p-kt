@@ -10,9 +10,13 @@ private val theories = sequenceOf(
     Sources.debug,
     Sources.ruleTranslator,
     Sources.argumentationGraph,
-    Sources.argumentLabelling,
-    Sources.argumentBPLabelling,
+    Sources.prefArgumentationGraph,
+    Sources.groundedLabelling,
+    Sources.completeLabelling,
+    Sources.bpLabelling,
     Sources.statementLabelling,
+    Sources.abstractMode,
+    Sources.queryMode,
     Sources.argumentationEngineInterface
 )
 

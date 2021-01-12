@@ -7,48 +7,31 @@
 argTuProlog.
 
 buildLabelSets :-
-    buildLabelSets([In, Out, Und], [IN, OUT, UND]),
+    buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]),
     write('\n=================================================>'),nl,
     write('\nSTATEMENT LABELLING  ============================>'),nl,
     write('\n=================================================>'),nl,
     write('IN ==============================================>'),nl,
-    writeList(In),
+    writeList(STATIN),
     write('OUT =============================================>'),nl,
-    writeList(Out),
+    writeList(STATOUT),
     write('UND =============================================>'),nl,
-    writeList(Und),
+    writeList(STATUND),
     write('\n=================================================>'),nl,
     write('\nARGUMENT LABELLING ==============================>'),nl,
     write('\n=================================================>'),nl,
     write('IN ==============================================>'),nl,
-    writeList(IN),
+    writeList(ARGSIN),
     write('OUT =============================================>'),nl,
-    writeList(OUT),
+    writeList(ARGSOUT),
     write('UND =============================================>'),nl,
-    writeList(UND),
+    writeList(ARGSUND),
     write('=================================================>'),nl.
 
-
-buildLabelSets([In, No, Und], [BPIN, BPOUT, BPUND]) :-
+buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
     convertAllRules,
-    buildArgumentationGraph([Arguments, Attacks, Supports]),
-    argumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
-    argumentBPLabelling([IN, OUT, UND], [BPIN, BPOUT, BPUND]),
-    statementLabelling([BPIN, BPOUT, BPUND], [In, No, Und]), !,
-    retractall(argsLabelling(_, _, _)),
-    asserta(argsLabelling(BPIN, BPOUT, BPUND)).
+    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
-answerQuery(Goal, YesResult, NoResult, UndResult) :-
-    buildLabelSets([In, Out, Und], [_, _, _]),
-    findall(Goal, answerSingleQuery(Goal, In), YesResult),
-    findall(Goal, answerSingleQuery(Goal, Out), NoResult),
-    findall(Goal, answerSingleQuery(Goal, Und), UndResult).
-
-answerSingleQuery(Goal, Set) :-
-    check_modifiers_in_list(effects, [Goal], [X]),
-    member(X, Set).
-
-%go([In, No, Und]) :-
-%    time(buildArgumentationGraph([Arguments, Attacks, Supports] )), %Execute Goal just like call/1 and print time used
-%    time(argumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND])),
-%    time(statementLabelling([IN, OUT, UND], [In, No, Und])), !.
+answerQuery(GOAL, YES, NO, UND) :-
+    convertAllRules,
+    computeStatementAcceptance(GOAL, YES, NO, UND).

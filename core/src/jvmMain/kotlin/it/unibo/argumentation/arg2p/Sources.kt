@@ -14,24 +14,36 @@ actual object Sources {
     actual val argumentationEngineInterface: Theory
         get() = loadTheoryFromPrologFile("argumentationEngineInterface")
 
+    actual val abstractMode: Theory
+        get() = loadTheoryFromPrologFile("core/abstractMode")
+
+    actual val queryMode: Theory
+        get() = loadTheoryFromPrologFile("core/queryMode")
+
     actual val argumentationGraph: Theory
-        get() = loadTheoryFromPrologFile("argumentationGraph")
+        get() = loadTheoryFromPrologFile("core/graph/argumentationGraph")
 
-    actual val argumentBPLabelling: Theory
-        get() = loadTheoryFromPrologFile("argumentBPLabelling")
+    actual val prefArgumentationGraph: Theory
+        get() = loadTheoryFromPrologFile("core/graph/prefArgumentationGraph")
 
-    actual val argumentLabelling: Theory
-        get() = loadTheoryFromPrologFile("argumentLabelling")
+    actual val bpLabelling: Theory
+        get() = loadTheoryFromPrologFile("core/labellings/argument/bpPartialComplete")
 
-    actual val debug: Theory
-        get() = loadTheoryFromPrologFile("debug")
+    actual val groundedLabelling: Theory
+        get() = loadTheoryFromPrologFile("core/labellings/argument/grounded")
 
-    actual val ruleTranslator: Theory
-        get() = loadTheoryFromPrologFile("ruleTranslator")
+    actual val completeLabelling: Theory
+        get() = loadTheoryFromPrologFile("core/labellings/argument/complete")
 
     actual val statementLabelling: Theory
-        get() = loadTheoryFromPrologFile("statementLabelling")
+        get() = loadTheoryFromPrologFile("core/labellings/statement/statementLabelling")
+
+    actual val ruleTranslator: Theory
+        get() = loadTheoryFromPrologFile("core/translation/ruleTranslator")
+
+    actual val debug: Theory
+        get() = loadTheoryFromPrologFile("utils/debug")
 
     actual val utils: Theory
-        get() = loadTheoryFromPrologFile("utils")
+        get() = loadTheoryFromPrologFile("utils/utils")
 }
