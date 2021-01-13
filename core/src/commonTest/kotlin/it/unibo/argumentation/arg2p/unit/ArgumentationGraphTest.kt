@@ -9,6 +9,8 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
@@ -64,25 +66,26 @@ class ArgumentationGraphTest {
         }
     }
 
-//    @Test
-//    fun buildAttacks() {
-//        prolog {
-//            val solver = solverWithTheory()
-//            solver.solve(Struct.parse("buildArguments")).toList()
-//            solver.solve(Struct.parse("buildAttacks")).toList()
-//            assertEquals(13, solver.dynamicKb.size)
-//
-//            testYesGoal(ktListOf(
-//                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]])"),
-//                Struct.parse("attack(rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]])"),
-//                Struct.parse("attack(rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]])"),
-//                Struct.parse("attack(rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]])"),
-//                Struct.parse("attack(rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]])"),
-//                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]])"),
-//                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]])")
-//            ), solver)
-//        }
-//    }
+    @Test
+    fun buildAttacks() {
+        prolog {
+            val solver = solverWithTheory()
+            solver.setFlag(Unknown.name, Unknown.FAIL)
+            solver.solve(Struct.parse("buildArguments")).toList()
+            solver.solve(Struct.parse("buildAttacks")).toList()
+            assertEquals(13, solver.dynamicKb.size)
+
+            testYesGoal(ktListOf(
+                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]])"),
+                Struct.parse("attack(rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]])"),
+                Struct.parse("attack(rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]])"),
+                Struct.parse("attack(rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]])"),
+                Struct.parse("attack(rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]])"),
+                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]])"),
+                Struct.parse("attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]])")
+            ), solver)
+        }
+    }
 
 //    @Test
 //    fun test() {

@@ -3,6 +3,7 @@ package it.unibo.argumentation.arg2p
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.*
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
+import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -20,10 +21,11 @@ object TestingUtils {
                 """ + theory).trimIndent())
 
 
-    fun solver(theory : Theory = Theory.empty()) =
-        ClassicSolverFactory.solverWithDefaultBuiltins(
+    fun solver(theory : Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
+        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = Libraries.of(Arg2p),
-            staticKb = theory
+            staticKb = theory,
+            flags = flags
         )
 
     fun testGoal(goal: Struct, solver : Solver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
