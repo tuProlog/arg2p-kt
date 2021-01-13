@@ -3,10 +3,11 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 
 plugins {
-    kotlin("multiplatform") version "1.4.21" apply true
+    kotlin("multiplatform") version "1.4.20" apply true
 }
 
 repositories {
+    maven("https://dl.bintray.com/pika-lab/tuprolog/")
     mavenCentral()
     jcenter()
 }

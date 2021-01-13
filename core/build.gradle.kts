@@ -8,22 +8,42 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:solve-classic-metadata:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:parser-theory-metadata:$tuPrologVersion")
             }
         }
 
         val commonTest by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:test-solve-metadata:$tuPrologVersion")
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation("it.unibo.tuprolog:solve-classic-jvm:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:parser-theory-jvm:$tuPrologVersion")
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation("it.unibo.tuprolog:test-solve-jvm:$tuPrologVersion")
             }
         }
 
         val jsMain by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:parser-js:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:solve-classic-js:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:parser-theory-js:$tuPrologVersion")
 //                implementation(npm("@tuprolog/parser-utils", "0.2.3"))
 //                implementation(npm("antlr4", "4.9.1"))
+            }
+        }
+
+        val jsTest by getting {
+            dependencies {
+                implementation("it.unibo.tuprolog:test-solve-js:$tuPrologVersion")
             }
         }
     }
