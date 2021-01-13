@@ -10,6 +10,9 @@ repositories {
     maven("https://dl.bintray.com/pika-lab/tuprolog/")
     mavenCentral()
     jcenter()
+    maven {
+        url = uri("https://dl.bintray.com/pika-lab/tuprolog/")
+    }
 }
 
 val javaVersion: String by project

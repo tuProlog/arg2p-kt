@@ -22,12 +22,12 @@ buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
     argumentLabellingMode(bp_grounded_partial_strict_preferences),
-    argumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
+    argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling(partial, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
     argumentLabellingMode(bp_grounded_complete_strict_preferences),
-    argumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
+    argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling(complete, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
 
 buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]) :-
