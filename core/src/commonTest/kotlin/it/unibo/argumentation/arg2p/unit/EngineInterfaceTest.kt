@@ -19,13 +19,18 @@ class EngineInterfaceTest {
                 r3 : [] => -c.
                 
                 bp(-a).
+                
+                graphBuildMode(base).
+                statementLabellingMode(base).
+                argumentLabellingMode(bp_grounded_partial_strict_preferences).
+                orderingPrinciple(last).
+                orderingComparator(democrat).
             """))
 
     @Test
     fun buildLabelSets() {
         prolog {
             val solver = solverWithTheory()
-            solver.solve(Struct.parse("disableBPCompletion")).toList()
             testGoalNoBacktracking("buildLabelSets"(
                 listOf("StatIn", "StatOut", "StatUnd"), listOf("ArgIn", "ArgOut", "ArgUnd")), solver) {
                     it.yes(
@@ -74,8 +79,8 @@ class EngineInterfaceTest {
             testGoalNoBacktracking("answerQuery"("c", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
                     "Y" to emptyList,
-                    "O" to listOf("c"),
-                    "U" to emptyList
+                    "O" to emptyList,
+                    "U" to listOf("c")
                 )
             }
         }

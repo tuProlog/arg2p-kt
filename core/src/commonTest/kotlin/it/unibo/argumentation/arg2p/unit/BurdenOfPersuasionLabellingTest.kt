@@ -18,13 +18,13 @@ class BurdenOfPersuasionLabellingTest {
                 argument([[r2],r2,[neg,a]]).
                 support([[r3,r0],r0,[a]],[[r3,r1,r0],r1,[c]]).
                 support([[r3],r3,[neg,c]],[[r3,r0],r0,[a]]).
-                attack([[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]]).
-                attack([[r2],r2,[neg,a]],[[r3,r0],r0,[a]]).
-                attack([[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]).
-                attack([[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]).
-                attack([[r3,r0],r0,[a]],[[r2],r2,[neg,a]]).
-                attack([[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]]).
-                attack([[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]).
+                attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]]).
+                attack(rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]]).
+                attack(rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]).
+                attack(rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]).
+                attack(rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]]).
+                attack(rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]]).
+                attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]).
                 
                 abstractBp([[neg, a]]).
             """))
@@ -47,8 +47,7 @@ class BurdenOfPersuasionLabellingTest {
     fun partialLabelling() {
         prolog {
             val solver = solverWithTheory()
-            solver.solve(Struct.parse("disableBPCompletion")).toList()
-            testGoalNoBacktracking("argumentBPLabelling"(groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")), solver) {
+            testGoalNoBacktracking("argumentBPLabelling"("partial", groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")), solver) {
                 it.yes(
                     "BPIN" to Struct.parse("""
                             [
@@ -71,7 +70,7 @@ class BurdenOfPersuasionLabellingTest {
     @Test
     fun completeLabelling() {
         prolog {
-            testGoalNoBacktracking("argumentBPLabelling"(groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")),
+            testGoalNoBacktracking("argumentBPLabelling"("complete", groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")),
                 solverWithTheory()) {
                     it.yes(
                         "BPIN" to Struct.parse("""

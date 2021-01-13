@@ -9,6 +9,9 @@ plugins {
 repositories {
     mavenCentral()
     jcenter()
+    maven {
+        url = uri("https://dl.bintray.com/pika-lab/tuprolog/")
+    }
 }
 
 val javaVersion: String by project
