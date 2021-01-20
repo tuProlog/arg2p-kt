@@ -1,8 +1,11 @@
-image: pikalab/ci:ubuntu-jdk14-git-gradle-graphviz
+image: pikalab/ci:ubuntu-jdk11-git-gradle-graphviz
 
 stages:
+  - check
   - build
   - test
+  #  - doc
+  #  - sign
   - deploy
 
 before_script:
@@ -12,24 +15,36 @@ before_script:
 cache:
   paths:
     - $HOME/.gradle/
+    - $HOME/.m2/
     - gradle/
     - .gradle/
     - build/
+    - '**/build/'
 
 variables:
   GOPTS: "--no-daemon --console=plain"
   GCMD: gradle
   BEFORE_TASK: ""
   AFTER_TASK: ""
+  CHECK_CODE_TASK: "ktlintCheck --parallel"
   JS_COMPILE_TASK: "clean jsMain"
   NPM_PUBLISH_TASK: "npmPublish"
   BUILD_TASK: "clean assemble"
   TEST_JVM_TASK: "jvmTest"
   TEST_JS_TASK: "clean jsTest"
 
-build:
+Check Code Style:
+  stage: check
+  script:
+    - $GCMD $BEFORE_TASK $CHECK_CODE_TASK $AFTER_TASK $GOPTS
+  artifacts:
+    paths:
+      - "**/build/reports/ktlint/"
+
+Compile:
   stage: build
-  script: $GCMD $BEFORE_TASK $BUILD_TASK $AFTER_TASK $GOPTS
+  script:
+    - $GCMD $BEFORE_TASK $BUILD_TASK $AFTER_TASK $GOPTS
 
 Test JVM:
   stage: test
