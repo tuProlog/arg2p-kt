@@ -5,8 +5,8 @@ plugins {
 }
 
 repositories {
-    maven("https://dl.bintray.com/pika-lab/tuprolog/")
     mavenCentral()
+    maven("https://dl.bintray.com/pika-lab/tuprolog/")
     jcenter()
 }
 
@@ -27,18 +27,3 @@ kotlinMultiplatform {
     ktProjects(allOtherSubprojects)
 }
 
-//ktProjects.forEach {
-//    kotlin {
-//        sourceSets {
-//            js {
-//                nodejs {
-//                    testTask {
-//                        useMocha {
-//                            timeout = mochaTimeout
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}

@@ -1,52 +1,62 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
+import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
+import org.jetbrains.kotlin.gradle.targets.js.testing.mocha.KotlinMocha
 import java.io.File
 import kotlin.streams.asSequence
 
 val tuPrologVersion: String by project
 
-
 kotlin {
+
     sourceSets {
+
         val commonMain by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:solve-classic-metadata:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:parser-theory-metadata:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
             }
         }
 
         val commonTest by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:test-solve-metadata:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
             }
         }
 
-        val jvmMain by getting {
-            dependencies {
-                implementation("it.unibo.tuprolog:solve-classic-jvm:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:parser-theory-jvm:$tuPrologVersion")
-            }
-        }
-
-        val jvmTest by getting {
-            dependencies {
-                implementation("it.unibo.tuprolog:test-solve-jvm:$tuPrologVersion")
-            }
-        }
-
-        val jsMain by getting {
-            dependencies {
-                implementation("it.unibo.tuprolog:solve-classic-js:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:parser-theory-js:$tuPrologVersion")
-            }
-        }
-
-        val jsTest by getting {
-            dependencies {
-                implementation("it.unibo.tuprolog:test-solve-js:$tuPrologVersion")
-            }
-        }
+//        val jvmMain by getting {
+//            dependencies {
+//                implementation("it.unibo.tuprolog:solve-classic-jvm:$tuPrologVersion")
+//                implementation("it.unibo.tuprolog:parser-theory-jvm:$tuPrologVersion")
+//            }
+//        }
+//
+//        val jvmTest by getting {
+//            dependencies {
+//                implementation("it.unibo.tuprolog:test-solve-jvm:$tuPrologVersion")
+//            }
+//        }
+//
+//        val jsMain by getting {
+//            dependencies {
+//                implementation("it.unibo.tuprolog:solve-classic-js:$tuPrologVersion")
+//                implementation("it.unibo.tuprolog:parser-theory-js:$tuPrologVersion")
+//            }
+//        }
+//
+//        val jsTest by getting {
+//            dependencies {
+//                implementation("it.unibo.tuprolog:test-solve-js:$tuPrologVersion")
+//            }
+//        }
     }
 }
+
+tasks.withType<KotlinJsTest>().forEach {
+    (it.testFramework as KotlinMocha).let { mocha ->
+        println(mocha.timeout)
+    }
+}
+
 
 private val PL_COMMENT_REGEX =
     """^\s*%.*""".toRegex()
