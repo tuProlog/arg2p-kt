@@ -11,7 +11,8 @@ import kotlin.test.Test
 class BurdenOfPersuasionLabellingTest {
 
     private fun solverWithTheory() = TestingUtils.solver(
-        TestingUtils.withArgOperators("""
+        TestingUtils.withArgOperators(
+            """
                 argument([[r3,r1,r0],r1,[c]]).
                 argument([[r3,r0],r0,[a]]).
                 argument([[r3],r3,[neg,c]]).
@@ -27,10 +28,13 @@ class BurdenOfPersuasionLabellingTest {
                 attack(rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]).
                 
                 abstractBp([[neg, a]]).
-            """))
+            """
+        )
+    )
 
     private fun groundedLabelling() =
-        Struct.parse("""
+        Struct.parse(
+            """
             [
                 [],
                 [],
@@ -41,7 +45,8 @@ class BurdenOfPersuasionLabellingTest {
                     [[r3],r3,[neg,c]]
                 ]
             ]
-        """)
+        """
+        )
 
     @Test
     fun partialLabelling() {
@@ -49,19 +54,25 @@ class BurdenOfPersuasionLabellingTest {
             val solver = solverWithTheory()
             testGoalNoBacktracking("argumentBPLabelling"("partial", groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")), solver) {
                 it.yes(
-                    "BPIN" to Struct.parse("""
+                    "BPIN" to Struct.parse(
+                        """
                             [
                                 [[r3,r0],r0,[a]]
-                            ]"""),
-                    "BPOUT" to Struct.parse("""
+                            ]"""
+                    ),
+                    "BPOUT" to Struct.parse(
+                        """
                             [
                                 [[r2],r2,[neg,a]]
-                            ]"""),
-                    "BPUND" to Struct.parse("""
+                            ]"""
+                    ),
+                    "BPUND" to Struct.parse(
+                        """
                             [
                                 [[r3,r1,r0],r1,[c]],
                                 [[r3],r3,[neg,c]]
-                            ]""")
+                            ]"""
+                    )
                 )
             }
         }
@@ -70,21 +81,27 @@ class BurdenOfPersuasionLabellingTest {
     @Test
     fun completeLabelling() {
         prolog {
-            testGoalNoBacktracking("argumentBPLabelling"("complete", groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")),
-                solverWithTheory()) {
-                    it.yes(
-                        "BPIN" to Struct.parse("""
+            testGoalNoBacktracking(
+                "argumentBPLabelling"("complete", groundedLabelling(), listOf("BPIN", "BPOUT", "BPUND")),
+                solverWithTheory()
+            ) {
+                it.yes(
+                    "BPIN" to Struct.parse(
+                        """
                                 [
                                     [[r3,r0],r0,[a]],
                                     [[r3],r3,[neg,c]]
-                                ]"""),
-                        "BPOUT" to Struct.parse("""
+                                ]"""
+                    ),
+                    "BPOUT" to Struct.parse(
+                        """
                                 [
                                     [[r2],r2,[neg,a]],
                                     [[r3,r1,r0],r1,[c]]
-                                ]"""),
-                        "BPUND" to emptyList
-                    )
+                                ]"""
+                    ),
+                    "BPUND" to emptyList
+                )
             }
         }
     }

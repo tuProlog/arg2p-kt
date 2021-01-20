@@ -25,41 +25,60 @@ class EngineInterfaceTest {
                 argumentLabellingMode(bp_grounded_partial_strict_preferences).
                 orderingPrinciple(last).
                 orderingComparator(democrat).
-            """))
+            """
+        )
+    )
 
     @Test
     fun buildLabelSets() {
         prolog {
             val solver = solverWithTheory()
-            testGoalNoBacktracking("buildLabelSets"(
-                listOf("StatIn", "StatOut", "StatUnd"), listOf("ArgIn", "ArgOut", "ArgUnd")), solver) {
-                    it.yes(
-                        "StatIn" to Struct.parse("""
+            testGoalNoBacktracking(
+                "buildLabelSets"(
+                    listOf("StatIn", "StatOut", "StatUnd"),
+                    listOf("ArgIn", "ArgOut", "ArgUnd")
+                ),
+                solver
+            ) {
+                it.yes(
+                    "StatIn" to Struct.parse(
+                        """
                                 [
                                     [a]
-                                ]"""),
-                        "StatOut" to Struct.parse("""
+                                ]"""
+                    ),
+                    "StatOut" to Struct.parse(
+                        """
                                 [
                                     [neg,a]
-                                ]"""),
-                        "StatUnd" to Struct.parse("""
+                                ]"""
+                    ),
+                    "StatUnd" to Struct.parse(
+                        """
                                 [
                                     [neg, c],
                                     [c]
-                                ]"""),
-                        "ArgIn" to Struct.parse("""
+                                ]"""
+                    ),
+                    "ArgIn" to Struct.parse(
+                        """
                                 [
                                     [[r3,r0],r0,[a]]
-                                ]"""),
-                        "ArgOut" to Struct.parse("""
+                                ]"""
+                    ),
+                    "ArgOut" to Struct.parse(
+                        """
                                 [
                                     [[r2],r2,[neg,a]]
-                                ]"""),
-                        "ArgUnd" to Struct.parse("""
+                                ]"""
+                    ),
+                    "ArgUnd" to Struct.parse(
+                        """
                                 [
                                     [[r3],r3,[neg,c]],
                                     [[r3,r1,r0],r1,[c]]
-                                ]""")
+                                ]"""
+                    )
                 )
             }
         }

@@ -1,6 +1,7 @@
 package it.unibo.argumentation.arg2p
 
-internal val argumentBPLabelling: String = """
+internal val argumentBPLabelling: String =
+    """
 % ----------------------------------------------------------------
 % argumentLabelling.pl
 % PIKA-lab

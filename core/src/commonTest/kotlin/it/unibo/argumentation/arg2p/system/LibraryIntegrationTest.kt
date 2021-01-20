@@ -13,7 +13,6 @@ class LibraryIntegrationTest {
 
     @Test
     fun libraryLoading() {
-
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
             otherLibraries = Libraries.of(Arg2p)
         )

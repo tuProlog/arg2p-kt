@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
-import kotlin.streams.asSequence
 import java.io.File
+import kotlin.streams.asSequence
 
 val tuPrologVersion: String by project
+
 
 kotlin {
     sourceSets {
@@ -36,8 +37,6 @@ kotlin {
             dependencies {
                 implementation("it.unibo.tuprolog:solve-classic-js:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:parser-theory-js:$tuPrologVersion")
-//                implementation(npm("@tuprolog/parser-utils", "0.2.3"))
-//                implementation(npm("antlr4", "4.9.1"))
             }
         }
 
@@ -49,7 +48,8 @@ kotlin {
     }
 }
 
-private val PL_COMMENT_REGEX = """^\s*%.*""".toRegex()
+private val PL_COMMENT_REGEX =
+    """^\s*%.*""".toRegex()
 
 val String.isSkipable: Boolean get() {
     return isBlank() || PL_COMMENT_REGEX.matches(this)
@@ -87,7 +87,7 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
 
 tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     val jvmResourcesDir = kotlin.jvm().compilations["main"].kotlinSourceSets.single().resources.sourceDirectories.single()
-    val plFiles = fileTree(jvmResourcesDir).also{
+    val plFiles = fileTree(jvmResourcesDir).also {
         it.include("**/*.pl")
     }.files
     val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()

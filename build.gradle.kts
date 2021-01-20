@@ -1,3 +1,5 @@
+import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
+
 plugins {
     id("io.github.gciatto.kt-mpp-pp") version "0.3.0"
 }
@@ -9,6 +11,8 @@ repositories {
 }
 
 group = "it.unibo.tuprolog.argumentation"
+
+val mochaTimeout: String by project
 
 subprojects {
     group = rootProject.group
@@ -23,3 +27,18 @@ kotlinMultiplatform {
     ktProjects(allOtherSubprojects)
 }
 
+//ktProjects.forEach {
+//    kotlin {
+//        sourceSets {
+//            js {
+//                nodejs {
+//                    testTask {
+//                        useMocha {
+//                            timeout = mochaTimeout
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}

@@ -1,13 +1,13 @@
 package it.unibo.argumentation.arg2p.unit
 
-import it.unibo.tuprolog.dsl.prolog
-import it.unibo.tuprolog.solve.*
-import kotlin.test.Test
-import it.unibo.tuprolog.theory.Theory
-import kotlin.test.assertEquals
-import kotlin.collections.listOf as ktListOf
 import it.unibo.argumentation.arg2p.TestingUtils.solver
 import it.unibo.argumentation.arg2p.TestingUtils.testGoal
+import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.solve.*
+import it.unibo.tuprolog.theory.Theory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.collections.listOf as ktListOf
 
 class UtilsTest {
 
@@ -77,12 +77,16 @@ class UtilsTest {
     @Test
     fun search() {
         prolog {
-
-            val solver = solver(Theory.Companion.of(ktListOf(
-                fact { "a"(1) },
-                fact { "a"(1, 2) },
-                fact { "a"(1, 2, 3) },
-                fact { "a"(1, 2, 3, 4) })))
+            val solver = solver(
+                Theory.Companion.of(
+                    ktListOf(
+                        fact { "a"(1) },
+                        fact { "a"(1, 2) },
+                        fact { "a"(1, 2, 3) },
+                        fact { "a"(1, 2, 3, 4) }
+                    )
+                )
+            )
 
             testGoal("search"("a", 4, "X"), solver) {
                 ktListOf(

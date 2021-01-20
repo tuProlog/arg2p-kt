@@ -10,7 +10,8 @@ import kotlin.test.Test
 class StatementLabellingTest {
 
     private fun argumentLabelling() =
-        Struct.parse("""
+        Struct.parse(
+            """
             [
                 [
                     [[r3,r0],r0,[a]],
@@ -22,23 +23,28 @@ class StatementLabellingTest {
                 ],
                 []
             ]
-        """)
+        """
+        )
 
     @Test
     fun labelStatements() {
         prolog {
             testGoalNoBacktracking("statementLabelling"(argumentLabelling(), listOf("In", "Out", "Und"))) {
                 it.yes(
-                    "In" to Struct.parse("""
+                    "In" to Struct.parse(
+                        """
                             [
                                 [a],
                                 [neg,c]
-                            ]"""),
-                    "Out" to Struct.parse("""
+                            ]"""
+                    ),
+                    "Out" to Struct.parse(
+                        """
                             [
                                 [neg,a],
                                 [c]
-                            ]"""),
+                            ]"""
+                    ),
                     "Und" to emptyList
                 )
             }

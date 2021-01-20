@@ -1,13 +1,12 @@
 package it.unibo.argumentation.arg2p.unit
 
+import it.unibo.argumentation.arg2p.TestingUtils.solver
+import it.unibo.argumentation.arg2p.TestingUtils.testYesGoal
+import it.unibo.argumentation.arg2p.TestingUtils.withArgOperators
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import kotlin.test.Test
-import it.unibo.argumentation.arg2p.TestingUtils.solver
-import it.unibo.argumentation.arg2p.TestingUtils.testYesGoal
-import it.unibo.argumentation.arg2p.TestingUtils.withArgOperators
-
 
 class RuleTranslationTest {
 
@@ -15,9 +14,11 @@ class RuleTranslationTest {
     fun baseFact() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : [] => a.
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -29,9 +30,11 @@ class RuleTranslationTest {
     fun factWithNegation() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : [] => -a.
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -43,9 +46,11 @@ class RuleTranslationTest {
     fun factWithObligation() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : [] => o(-a).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -57,9 +62,11 @@ class RuleTranslationTest {
     fun factWithPermission() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : [] => p(-a).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -71,9 +78,11 @@ class RuleTranslationTest {
     fun baseRule() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : a => o(-b).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -85,9 +94,11 @@ class RuleTranslationTest {
     fun ruleWithVar() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     r0 : a(X), o(b(X)) => -c(X).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -99,9 +110,11 @@ class RuleTranslationTest {
     fun baseBp() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     bp(a).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -113,9 +126,11 @@ class RuleTranslationTest {
     fun bpWithVar() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     bp(-a(X)).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
@@ -127,9 +142,11 @@ class RuleTranslationTest {
     fun multivaluedBp() {
         prolog {
             val solver = solver(
-                withArgOperators("""
+                withArgOperators(
+                    """
                     bp(-a(X), o(b(X)), p(c)).
-                """)
+                """
+                )
             )
 
             solver.solve(Struct.parse("convertAllRules")).toList()
