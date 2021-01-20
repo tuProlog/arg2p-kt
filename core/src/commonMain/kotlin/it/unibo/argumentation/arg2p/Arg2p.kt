@@ -20,7 +20,8 @@ private val theories = sequenceOf(
     Sources.argumentationEngineInterface
 )
 
-object Arg2p : AliasedLibrary by Library.aliased(
+object Arg2p : AliasedLibrary by
+    Library.aliased(
         operatorSet = OperatorSet.DEFAULT,
         theory = theories.reduce(Theory::plus),
         alias = "prolog.argumentation"

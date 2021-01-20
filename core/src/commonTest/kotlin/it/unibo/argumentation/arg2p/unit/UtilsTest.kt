@@ -3,7 +3,8 @@ package it.unibo.argumentation.arg2p.unit
 import it.unibo.argumentation.arg2p.TestingUtils.solver
 import it.unibo.argumentation.arg2p.TestingUtils.testGoal
 import it.unibo.tuprolog.dsl.prolog
-import it.unibo.tuprolog.solve.*
+import it.unibo.tuprolog.solve.no
+import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
 import kotlin.test.Test
 import kotlin.test.assertEquals

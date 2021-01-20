@@ -1,10 +1,14 @@
 package it.unibo.argumentation.arg2p
 
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.solve.*
+import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.TimeDuration
+import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.library.Libraries
+import it.unibo.tuprolog.solve.no
+import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.solve.Solver as BaseSolver
