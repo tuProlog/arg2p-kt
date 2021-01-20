@@ -1,6 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
-import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
-import org.jetbrains.kotlin.gradle.targets.js.testing.mocha.KotlinMocha
 import java.io.File
 import kotlin.streams.asSequence
 
@@ -50,13 +48,6 @@ kotlin {
 //        }
     }
 }
-
-tasks.withType<KotlinJsTest>().forEach {
-    (it.testFramework as KotlinMocha).let { mocha ->
-        println(mocha.timeout)
-    }
-}
-
 
 private val PL_COMMENT_REGEX =
     """^\s*%.*""".toRegex()
