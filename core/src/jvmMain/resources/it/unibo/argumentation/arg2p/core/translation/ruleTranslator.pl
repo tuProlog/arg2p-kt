@@ -9,8 +9,8 @@
 % rule([v, [ [obl, [neg, enter]], [enter] ], [violation] ]).
 % rule([rPerm, [ [emer] ], [perm, [enter]] ]).
 
-:- op(1199, xfx, '-->').
-:- op(1199, xfx, '~~>').
+:- op(1199, xfx, '--->').
+:- op(1199, xfx, '~~~>').
 
 :- op(1199, xfx, ':>').
 :- op(1199, xfx, '=>').
@@ -50,10 +50,10 @@ strictRules(CtrRules) :-
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
 ordinaryPremises(Premises) :-
-    findall([RuleName, Effect], (RuleName ~~> Effect), Premises).
+    findall([RuleName, Effect], (RuleName ~~~> Effect), Premises).
 
 axiomPremises(Axioms) :-
-    findall([RuleName, Effect], (RuleName --> Effect), Axioms),
+    findall([RuleName, Effect], (RuleName ---> Effect), Axioms),
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-

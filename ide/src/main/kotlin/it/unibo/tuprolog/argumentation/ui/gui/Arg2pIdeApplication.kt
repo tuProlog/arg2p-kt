@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.argumentation.arg2p.Arg2p
+import it.unibo.tuprolog.argumentation.ui.gui.graph.ArgumentationGraphFrame
 import it.unibo.tuprolog.ui.gui.PrologIdeBuilder
 import javafx.application.Application
 import javafx.stage.Stage
@@ -13,6 +14,7 @@ class Arg2pIdeApplication : Application() {
             PrologIdeBuilder(stage)
                 .title("Arg-tuProlog IDE")
                 .customLibraries(listOf(Arg2p))
+                .customTabs(listOf(ArgumentationGraphFrame.customTab()))
                 .show()
         } catch (e: Throwable) {
             e.printStackTrace()

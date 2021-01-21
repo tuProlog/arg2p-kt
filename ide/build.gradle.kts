@@ -14,6 +14,15 @@ dependencies {
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:linux")
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:mac")
 
+    /* JUNG DEPENDENCIES */
+    api("ch.qos.logback", "logback-classic", "1.2.3")
+    api("ch.qos.logback", "logback-core", "1.2.3")
+    api("net.sf.jung", "jung-api", "2.1.1")
+    api("net.sf.jung", "jung-visualization", "2.1.1")
+    api("net.sf.jung", "jung-graph-impl", "2.1.1")
+    api("net.sf.jung", "jung-algorithms", "2.1.1")
+    api("net.sf.jung", "jung-io", "2.1.1")
+
     implementation("it.unibo.tuprolog:ide:$tuPrologVersion")
     api(project(":core"))
     testImplementation(kotlin("test-junit"))
@@ -21,7 +30,7 @@ dependencies {
 
 javafx {
     version = javaFxVersion
-    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics")
+    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics", "javafx.swing")
 }
 
 val entryPoint = "it.unibo.tuprolog.argumentation.ui.gui.Main"
