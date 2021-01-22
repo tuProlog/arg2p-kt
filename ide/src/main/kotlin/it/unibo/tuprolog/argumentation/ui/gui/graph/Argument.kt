@@ -2,20 +2,21 @@ package it.unibo.tuprolog.argumentation.ui.gui.graph
 
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
 
-class Argument(val label: String, val topRule: String, val rules: List<String>) {
+class Argument(val label: String, val topRule: String, val rules: List<String>, val conclusion: String) {
 
     private var subargs: List<String> = emptyList()
-    private var conclusion = ""
     var identifier = ""
 
     val descriptor: String
-        get() = "$identifier : " +
-            subargs.plus(topRule)
-                .reduce { a: String, b: String -> "$a,$b" } + " : " + conclusion
+        get() = "$identifier : " + (
+            if (topRule == "none") rules.firstOrNull() ?: "" else {
+                subargs.plus(topRule)
+                    .reduce { a: String, b: String -> "$a,$b" }
+            }
+            ) + " : " + conclusion
 
     private fun addSubarg(subarg: String) {
         this.subargs = this.subargs.plus(subarg)
@@ -27,7 +28,7 @@ class Argument(val label: String, val topRule: String, val rules: List<String>) 
             if (arguments?.isEmptyList == true) return emptySequence()
             return (arguments as Cons).toSequence().map {
                 (it as Cons).toList().let { arg ->
-                    Argument(label, arg[1].toString(), (arg[0] as Cons).toList().map { x -> x.toString() })
+                    Argument(label, arg[1].toString(), (arg[0] as Cons).toList().map { x -> x.toString() }, arg[2].toString())
                 }
             }
         }
@@ -55,17 +56,23 @@ class Argument(val label: String, val topRule: String, val rules: List<String>) 
                 .forEach { arg ->
                     arguments
                         .filter { a -> a.identifier != arg.identifier }
-                        .reduce { a: Argument, b: Argument ->
+                        .takeIf { it.isNotEmpty() }
+                        ?.reduce { a: Argument, b: Argument ->
                             if (arg.rules.containsAll(b.rules) && b.rules.size >= a.rules.size) b else a
-                        }.let { sub ->
+                        }?.let { sub ->
                             if (arg.rules.size > 1) arg.addSubarg(sub.identifier)
                         }
-                    arg.conclusion = prolog {
-                        engine.solve("rule"(listOf(arg.topRule, Var.ANONYMOUS_VAR_NAME, X)))
-                            .filter { it.isYes }
-                            .map { it.substitution[X].toString() }
-                            .firstOrNull()
-                    } ?: ""
+                    // arg.conclusion = prolog {
+                    //     engine.solve("rule"(listOf(arg.topRule, Var.ANONYMOUS_VAR_NAME, X)))
+                    //         .filter { it.isYes }
+                    //         .map { it.substitution[X].toString() }
+                    //         .firstOrNull()
+                    // } ?: {
+                    //     engine.solve("rule"(listOf(arg.topRule, Var.ANONYMOUS_VAR_NAME, X)))
+                    //         .filter { it.isYes }
+                    //         .map { it.substitution[X].toString() }
+                    //         .firstOrNull()
+                    // }
                 }
 
             return arguments.asSequence()

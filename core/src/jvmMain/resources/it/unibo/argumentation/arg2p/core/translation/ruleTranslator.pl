@@ -9,11 +9,8 @@
 % rule([v, [ [obl, [neg, enter]], [enter] ], [violation] ]).
 % rule([rPerm, [ [emer] ], [perm, [enter]] ]).
 
-:- op(1199, xfx, '--->').
-:- op(1199, xfx, '~~~>').
-
-:- op(1199, xfx, ':>').
 :- op(1199, xfx, '=>').
+:- op(1199, xfx, '~>').
 :- op(1001, xfx, ':').
 
 in(A, A) :- nonvar(A), A \= (_ , _).
@@ -42,18 +39,20 @@ convertAllRules :-
     convertAllRules(L), !.
 
 defeasibleRules(DefeasibleRules) :-
-    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRules).
+    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions ~> Effect), DefeasibleRules).
 
 strictRules(CtrRules) :-
-    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions :> Effect), StrictRules),
+    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), StrictRules),
     transpose(StrictRules, StrictRules, CtrRules),
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
 ordinaryPremises(Premises) :-
-    findall([RuleName, Effect], (RuleName ~~~> Effect), Premises).
+    findall([RuleName, Effect], ((RuleName ~> Effect), atom(RuleName)), Premises),
+    write(Premises),nl.
 
 axiomPremises(Axioms) :-
-    findall([RuleName, Effect], (RuleName ---> Effect), Axioms),
+    findall([RuleName, Effect], ((RuleName => Effect), atom(RuleName)), Axioms),
+    write(Axioms),nl,
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-
@@ -63,6 +62,7 @@ specialRules(SpecialRules) :-
 % TRANSPOSITION
 %=======================================================================================================================
 
+transpose(_, CtrRules, CtrRules) :- \+ autoTransposition. 
 transpose([], CtrRules, CtrRules).
 transpose([H|T], TempCtrRules, CtrRules) :-
     transpose(T, TempCtrRules, CR),
