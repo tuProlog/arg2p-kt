@@ -13,10 +13,10 @@ class EngineInterfaceTest {
     private fun solverWithTheory() = TestingUtils.solver(
         TestingUtils.withArgOperators(
             """
-                r0 : -c => a.
-                r1 : a => c.
-                r2 : [] => -a.
-                r3 : [] => -c.
+                r0 : -c ~> a.
+                r1 : a ~> c.
+                r2 : [] ~> -a.
+                r3 : [] ~> -c.
                 
                 bp(-a).
                 
