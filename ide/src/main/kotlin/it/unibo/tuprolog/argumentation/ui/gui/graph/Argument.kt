@@ -62,17 +62,6 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
                         }?.let { sub ->
                             if (arg.rules.size > 1) arg.addSubarg(sub.identifier)
                         }
-                    // arg.conclusion = prolog {
-                    //     engine.solve("rule"(listOf(arg.topRule, Var.ANONYMOUS_VAR_NAME, X)))
-                    //         .filter { it.isYes }
-                    //         .map { it.substitution[X].toString() }
-                    //         .firstOrNull()
-                    // } ?: {
-                    //     engine.solve("rule"(listOf(arg.topRule, Var.ANONYMOUS_VAR_NAME, X)))
-                    //         .filter { it.isYes }
-                    //         .map { it.substitution[X].toString() }
-                    //         .firstOrNull()
-                    // }
                 }
 
             return arguments.asSequence()
