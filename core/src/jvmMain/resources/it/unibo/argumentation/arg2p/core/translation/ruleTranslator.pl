@@ -47,12 +47,10 @@ strictRules(CtrRules) :-
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
 ordinaryPremises(Premises) :-
-    findall([RuleName, Effect], ((RuleName ~> Effect), atom(RuleName)), Premises),
-    write(Premises),nl.
+    findall([RuleName, Effect], ((RuleName ~> Effect), atom(RuleName)), Premises).
 
 axiomPremises(Axioms) :-
     findall([RuleName, Effect], ((RuleName => Effect), atom(RuleName)), Axioms),
-    write(Axioms),nl,
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-

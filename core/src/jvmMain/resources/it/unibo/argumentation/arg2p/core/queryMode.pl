@@ -1,11 +1,14 @@
-% computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
-%     computeGlobalAcceptance([STATIN, STATOUT, STATUND], [_, _, _]),
-%     findall(Goal, answerSingleQuery(Goal, STATIN), YesResult),
-%     findall(Goal, answerSingleQuery(Goal, STATOUT), NoResult),
-%     findall(Goal, answerSingleQuery(Goal, STATUND), UndResult).
+computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+    experimentalQueryMode,
+    check_modifiers_in_list(effects, [Goal], [X]),
+    query(X, Res),
+    populateResultSets(X, Res, YesResult, NoResult, UndResult), !.
 
-computeStatementAcceptance(Goal, [Goal], [], []) :- query(Goal).
-computeStatementAcceptance(Goal, [], [Goal], []) :- \+ query(Goal).
+computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [_, _, _]),
+    findall(Goal, answerSingleQuery(Goal, STATIN), YesResult),
+    findall(Goal, answerSingleQuery(Goal, STATOUT), NoResult),
+    findall(Goal, answerSingleQuery(Goal, STATUND), UndResult).
 
 answerSingleQuery(Goal, Set) :-
     check_modifiers_in_list(effects, [Goal], [X]),
@@ -25,46 +28,57 @@ isCredulouslyAcceptable(Goal) :-
     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
     answerSingleQuery(Goal, STATIN), !.
 
-% Vanno propagati gli argomenti già usati per detectare i cicli
-% Se non si puo costruire un argomento si deve avere UND
+populateResultSets(Query, yes, [Query], [], []).
+populateResultSets(Query, no, [], [Query], []).
+populateResultSets(Query, und, [], [], [Query]).
 
-% OK - Posso costruire un argomento con tale claim e difenderlo
-query(Query) :-
-    check_modifiers_in_list(effects, [Query], [X]),
-    buildArgument(X, Argument),
-    defend(Argument, []).
+query(Query, Res) :-
+    write(Query),nl,
+    buildArgument(Query, Argument),
+    write(Argument),nl,
+    defend(Argument, [], Res).
+query(_, und).
 
-% OK - Se non esiste on attaccante o l'attaccante è out
-% NOT OK - Se non rispetta le condizioni sopra
-% UND - Se c'è un ciclo
-defend(Argument, QueryChain, und) :- detectCycle(Argument, QueryChain).
-defend(Argument, QueryChain, Res) :-
-    \+ detectCycle(Argument, QueryChain),
+% Caso 3 - Un attaccante è difendibile
+defend(Argument, QueryChain, no) :-
+    findAttacker(Argument, QueryChain, Attacker, yes),
+    once(defend(Attacker, [Argument|QueryChain], X)),
+    X == yes.
+% Caso 1 - Ciclo fra gli attaccanti -> UND
+defend(Argument, QueryChain, und) :- 
+    findAttacker(Argument, QueryChain, Attacker, no).
+% Caso 4 - La valutazione di uno degli attaccanti fin'ora validi darà corso ad un ciclo
+defend(Argument, QueryChain, und) :-
+    findAttacker(Argument, QueryChain, Attacker, yes),
+    isOut(Attacker, [Argument|QueryChain], und).
+% Caso 2 - Tutti gli attaccanti, se esistenti, sono OUT -> IN
+defend(Argument, QueryChain, yes) :-
     \+ (
-        findAttacker(Argument, Attacker),
-        \+ isOut(Attacker, [Argument|QueryChain])
+        findAttacker(Argument, QueryChain, Attacker, yes),
+        \+ isOut(Attacker, [Argument|QueryChain], yes)
     ).
-defend(Argument, QueryChain, no).
 
 % OK - Se esiste un attaccante difendibile
-isOut(Argument, QueryChain, und) :- detectCycle(Argument, QueryChain).
-isOut(Argument, QueryChain, yes) :-
-    \+ detectCycle(Argument, QueryChain),
-    findAttacker(Argument, Attacker),
-    defend(Attacker, [Argument|QueryChain], yes).
-isOut(Argument, QueryChain, no) :- 
-    \+ detectCycle(Argument, QueryChain).
+isOut(Argument, QueryChain, Res) :-
+    findAttacker(Argument, QueryChain, Attacker, yes),
+    defend(Attacker, [Argument|QueryChain], Res),
+    (Res == yes; Res == und).
+isOut(Argument, QueryChain, und) :- 
+    \+ findAttacker(Argument, QueryChain, _, yes),
+    findAttacker(Argument, QueryChain, Attacker, no).
 
 % Considero le mie parti attaccabili
 %  - Rules per undercut e rebut
 %  - Premises per undercut e undermine
 %  - Attenzione al corpo delle regole, per contrary-undercut e contrary-undermine
-findAttacker([Rules, _, _], Attacker) :-
+findAttacker([Rules, _, _], QueryChain, Attacker, IsValid) :-
     member(X, Rules),
     \+ strict(X),
-    attacker(X, Attacker).
+    attacker(X, Attacker),
+    findAttackerCicle(Attacker, QueryChain, IsValid).
 
-detectCycle(Attacker, Chain) :- member(Attacker, Chain).
+findAttackerCicle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
+findAttackerCicle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
 
 % undercut
 attacker(Rule, Argument) :-
@@ -76,7 +90,7 @@ attacker(Rule, Argument) :-
     conflict(Conclusion, X),
     buildArgument(X, Argument).
 
-% contrary-rebut e contrary-undermine
+% contrary-rebut and contrary-undermine
 attacker(Rule, Argument) :-
     rule([Rule, Premises, _]),
     member([unless, X], Premises),
