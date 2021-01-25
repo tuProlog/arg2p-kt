@@ -1,9 +1,9 @@
 % Vanno propagati gli argomenti già usati per detectare i cicli in teoria
 
 % OK - Posso costruire un argomento con tale claim e difenderlo
-query(claim, Query) :-
-    % translate query
-    buildArgument(Query, Argument),
+query(Query) :-
+    check_modifiers_in_list(effects, [Query], [X])
+    buildArgument(X, Argument),
     defend(Argument).
 
 % OK - Se non esiste on attaccante o l'attaccante è out
@@ -34,7 +34,7 @@ attacker(Rule, Argument) :-
 % rebut e undermine
 attacker(Rule, Argument) :-
     (rule([Rule, _, Conclusion]); premise([Rule, Conclusion])),
-    negation(Conclusion, X),
+    conflict(Conclusion, X),
     buildArgument(X, Argument).
 
 % contrary-rebut e contrary-undermine
@@ -58,6 +58,3 @@ build(Conclusion, [Id|Rules]) :-
     findall(X, (member(P, Premises), build(P, X)), Rules).
 build([prolog(_)], []).
 build([unless, _], []).
-
-% dovrebbe essere già implementato
-negation(Conclusion, Negation).
