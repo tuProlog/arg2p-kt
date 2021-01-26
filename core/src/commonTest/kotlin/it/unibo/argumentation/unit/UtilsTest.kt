@@ -1,4 +1,4 @@
-package it.unibo.argumentation.arg2p.unit
+package it.unibo.argumentation.unit
 
 import it.unibo.argumentation.arg2p.TestingUtils.solver
 import it.unibo.argumentation.arg2p.TestingUtils.testGoal

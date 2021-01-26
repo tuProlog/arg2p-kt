@@ -1,4 +1,4 @@
-package it.unibo.argumentation.arg2p
+package it.unibo.argumentation
 
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet

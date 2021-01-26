@@ -1,4 +1,4 @@
-package it.unibo.argumentation.arg2p
+package it.unibo.argumentation
 
 internal val argumentLabelling: String =
     """

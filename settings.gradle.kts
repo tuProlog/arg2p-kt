@@ -1,4 +1,4 @@
-rootProject.name = "arg2p-kt"
+rootProject.name = "arg2p"
 
 enableFeaturePreview("GRADLE_METADATA")
 include("core")

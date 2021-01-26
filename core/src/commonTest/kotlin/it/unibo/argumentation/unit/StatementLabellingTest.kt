@@ -1,4 +1,4 @@
-package it.unibo.argumentation.arg2p.unit
+package it.unibo.argumentation.unit
 
 import it.unibo.argumentation.arg2p.TestingUtils.testGoalNoBacktracking
 import it.unibo.tuprolog.core.Struct
