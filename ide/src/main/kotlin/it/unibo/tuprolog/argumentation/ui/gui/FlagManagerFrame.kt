@@ -5,11 +5,14 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.core.parsing.toClause
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
-
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
-import javafx.scene.control.*
+import javafx.scene.control.CheckBox
+import javafx.scene.control.ChoiceBox
+import javafx.scene.control.Label
+import javafx.scene.control.ListView
+import javafx.scene.control.Tab
 import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame {
@@ -29,17 +32,28 @@ internal class FlagManagerFrame {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
                 setupChoiceBox("Graph Build Mode", listOf("base", "pgraph")) {
-                    flagManager.graphBuildMode = it },
-                setupChoiceBox("Argument Labelling Mode",
-                    listOf("grounded", "complete", "bp_grounded_partial_strict_preferences",
-                        "bp_grounded_complete_strict_preferences")) {
-                    flagManager.argumentLabellingMode = it },
+                    flagManager.graphBuildMode = it
+                },
+                setupChoiceBox(
+                    "Argument Labelling Mode",
+                    listOf(
+                        "grounded",
+                        "complete",
+                        "bp_grounded_partial_strict_preferences",
+                        "bp_grounded_complete_strict_preferences"
+                    )
+                ) {
+                    flagManager.argumentLabellingMode = it
+                },
                 setupChoiceBox("Statement Labelling Mode", listOf("base")) {
-                    flagManager.statementLabellingMode = it },
+                    flagManager.statementLabellingMode = it
+                },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
-                    flagManager.orderingPrinciple = it },
+                    flagManager.orderingPrinciple = it
+                },
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
-                    flagManager.orderingComparator = it },
+                    flagManager.orderingComparator = it
+                },
                 setupCheckBox("Experimental Query Mode") { flagManager.experimentalQueryMode = it },
                 setupCheckBox("Auto Transposition") { flagManager.autoTransposition = it },
                 setupCheckBox("Unrestricted Rebut") { flagManager.unrestrictedRebut = it }
@@ -54,16 +68,18 @@ internal class FlagManagerFrame {
 
         @JvmStatic
         fun cleanSolver(kb: Theory) {
-            kb.retract(listOf(
-                Struct.parse("experimentalQueryMode").toClause(),
-                Struct.parse("autoTransposition").toClause(),
-                Struct.parse("unrestrictedRebut").toClause(),
-                Struct.parse("graphBuildMode(_)").toClause(),
-                Struct.parse("argumentLabellingMode(_)").toClause(),
-                Struct.parse("statementLabellingMode(_)").toClause(),
-                Struct.parse("orderingPrinciple(_)").toClause(),
-                Struct.parse("orderingComparator(_)").toClause()
-            ))
+            kb.retract(
+                listOf(
+                    Struct.parse("experimentalQueryMode").toClause(),
+                    Struct.parse("autoTransposition").toClause(),
+                    Struct.parse("unrestrictedRebut").toClause(),
+                    Struct.parse("graphBuildMode(_)").toClause(),
+                    Struct.parse("argumentLabellingMode(_)").toClause(),
+                    Struct.parse("statementLabellingMode(_)").toClause(),
+                    Struct.parse("orderingPrinciple(_)").toClause(),
+                    Struct.parse("orderingComparator(_)").toClause()
+                )
+            )
         }
 
         @JvmStatic
@@ -80,12 +96,15 @@ internal class FlagManagerFrame {
 
         @JvmStatic
         fun setupChoiceBox(label: String, values: Iterable<String>, onChange: (String) -> Unit): HBox {
-            return HBox(Label(label).also { it.prefWidth = 400.0 }, ChoiceBox<String>().also {
-                it.prefWidth = 400.0
-                it.value = values.first()
-                it.items.addAll(values)
-                it.setOnAction { _ -> onChange(it.value) }
-            }).also {
+            return HBox(
+                Label(label).also { it.prefWidth = 400.0 },
+                ChoiceBox<String>().also {
+                    it.prefWidth = 400.0
+                    it.value = values.first()
+                    it.items.addAll(values)
+                    it.setOnAction { _ -> onChange(it.value) }
+                }
+            ).also {
                 it.prefHeight = 20.0
                 it.alignment = Pos.CENTER_LEFT
             }
@@ -93,9 +112,12 @@ internal class FlagManagerFrame {
 
         @JvmStatic
         fun setupCheckBox(label: String, onChange: (Boolean) -> Unit): HBox {
-            return HBox(Label(label).also { it.prefWidth = 400.0 }, CheckBox().also {
-                it.setOnAction { _ -> onChange(it.isSelected) }
-            })
+            return HBox(
+                Label(label).also { it.prefWidth = 400.0 },
+                CheckBox().also {
+                    it.setOnAction { _ -> onChange(it.isSelected) }
+                }
+            )
         }
     }
 }
