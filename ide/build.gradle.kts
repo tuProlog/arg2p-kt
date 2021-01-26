@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import io.github.gciatto.kt.mpp.ProjectConfiguration.configureUploadToGithub
 
 val tuPrologVersion: String by project
 val javaFxVersion: String by project
@@ -53,3 +54,5 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     }
     dependsOn("classes")
 }
+
+configureUploadToGithub(shadowJar)

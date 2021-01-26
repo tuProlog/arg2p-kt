@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.argumentation.arg2p.Arg2p
+import it.unibo.argumentation.Arg2p
 import it.unibo.tuprolog.argumentation.ui.gui.graph.ArgumentationGraphFrame
 import it.unibo.tuprolog.ui.gui.PrologIdeBuilder
 import javafx.application.Application

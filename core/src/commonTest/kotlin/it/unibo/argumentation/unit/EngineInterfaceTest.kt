@@ -1,7 +1,7 @@
 package it.unibo.argumentation.unit
 
-import it.unibo.argumentation.arg2p.TestingUtils
-import it.unibo.argumentation.arg2p.TestingUtils.testGoalNoBacktracking
+import it.unibo.argumentation.TestingUtils
+import it.unibo.argumentation.TestingUtils.testGoalNoBacktracking
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog

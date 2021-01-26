@@ -1,6 +1,6 @@
 package it.unibo.argumentation.system
 
-import it.unibo.argumentation.arg2p.Arg2p
+import it.unibo.argumentation.Arg2p
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
