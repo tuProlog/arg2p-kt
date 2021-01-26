@@ -69,7 +69,9 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
             w.newLine()
             w.write("object ${nameWithoutExtension.capitalize()} {")
             w.newLine()
-            w.write("    val theoryCode: String = \"\"\"")
+            w.write("    val theoryCode: String =")
+            w.newLine()
+            w.write("        \"\"\"")
             w.newLine()
             for (line in lines) {
                 if (!line.isSkipable) {
@@ -78,7 +80,7 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
                     w.newLine()
                 }
             }
-            w.write("    \"\"\".trimIndent()")
+            w.write("        \"\"\".trimIndent()")
             w.newLine()
             w.write("}")
             w.newLine()
