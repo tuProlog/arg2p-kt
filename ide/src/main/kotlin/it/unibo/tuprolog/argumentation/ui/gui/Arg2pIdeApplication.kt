@@ -14,7 +14,9 @@ class Arg2pIdeApplication : Application() {
             PrologIdeBuilder(stage)
                 .title("Arg-tuProlog IDE")
                 .customLibraries(listOf(Arg2p))
-                .customTabs(listOf(ArgumentationGraphFrame.customTab()))
+                .customTabs(listOf(
+                    ArgumentationGraphFrame.customTab(),
+                    FlagManagerFrame.customTab()))
                 .show()
         } catch (e: Throwable) {
             e.printStackTrace()
