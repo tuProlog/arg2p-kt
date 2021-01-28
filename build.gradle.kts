@@ -1,6 +1,10 @@
+import io.github.gciatto.kt.mpp.ProjectExtensions.jsProjects
+import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
+import io.github.gciatto.kt.node.NpmPublishExtension
+
 plugins {
     id("org.danilopianini.git-sensitive-semantic-versioning") version "0.2.3"
-    id("io.github.gciatto.kt-mpp-pp") version "0.3.0"
+    id("io.github.gciatto.kt-mpp-pp") version "0.3.1"
 }
 
 repositories {
@@ -27,7 +31,7 @@ subprojects {
 
 kotlinMultiplatform {
     preventPublishingOfRootProject.set(true)
-    developer("Giuseppe Pisano", "g.pisano@unibo.it", "")
+    developer("Giuseppe Pisano", "g.pisano@unibo.it", "https://www.unibo.it/sitoweb/g.pisano/en")
     jvmOnlyProjects("ide")
     otherProjects("doc")
     ktProjects(allOtherSubprojects)
@@ -39,6 +43,16 @@ kotlin {
             dependencies {
                 api(project(":core"))
             }
+        }
+    }
+}
+
+(ktProjects + jsProjects).forEach { project ->
+    project.configure<NpmPublishExtension> {
+        liftPackageJson {
+            dependencies = dependencies?.mapKeys { (key, _) ->
+                key.takeIf { it.startsWith("2p-") }?.let { "@tuprolog/$it" } ?: key
+            }?.toMutableMap()
         }
     }
 }
