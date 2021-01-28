@@ -54,5 +54,10 @@ kotlin {
                 key.takeIf { it.startsWith("2p-") }?.let { "@tuprolog/$it" } ?: key
             }?.toMutableMap()
         }
+
+        liftJsSources { _, _, line ->
+            line.replace("'2p", "'@tuprolog/2p")
+                .replace("\"2p", "\"@tuprolog/2p")
+        }
     }
 }
