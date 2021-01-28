@@ -1,4 +1,4 @@
-package it.unibo.argumentation
+package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Solution

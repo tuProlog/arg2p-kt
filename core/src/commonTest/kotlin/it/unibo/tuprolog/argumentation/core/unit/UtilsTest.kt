@@ -1,7 +1,7 @@
-package it.unibo.argumentation.unit
+package it.unibo.tuprolog.argumentation.core.unit
 
-import it.unibo.argumentation.TestingUtils.solver
-import it.unibo.argumentation.TestingUtils.testGoal
+import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
+import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoal
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes

@@ -1,9 +1,10 @@
-package it.unibo.tuprolog.argumentation.ui.gui.graph
+package it.unibo.tuprolog.argumentation.core.mining
 
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
+import kotlin.js.JsName
 
 class Argument(val label: String, val topRule: String, val rules: List<String>, val conclusion: String) {
 
@@ -33,6 +34,7 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
             }
         }
 
+        @JsName("mineArguments")
         fun mineArguments(engine: Solver): Sequence<Argument> {
             val arguments = prolog {
                 engine.solve("argsLabelling"(X, Y, Z))

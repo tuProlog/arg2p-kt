@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.ui.gui.graph
+package it.unibo.tuprolog.argumentation.ui.gui
 
 import edu.uci.ics.jung.algorithms.layout.KKLayout
 import edu.uci.ics.jung.algorithms.layout.Layout
@@ -10,6 +10,8 @@ import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller
 import edu.uci.ics.jung.visualization.renderers.Renderer
+import it.unibo.tuprolog.argumentation.core.mining.Argument
+import it.unibo.tuprolog.argumentation.core.mining.Attack
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.ui.gui.CustomTab
@@ -22,7 +24,7 @@ import javax.swing.JSplitPane
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
 
-internal class ArgumentationGraphFrame(val argumentationGraphPane: JSplitPane) {
+internal class ArgumentationGraphFrame private constructor(val argumentationGraphPane: JSplitPane) {
 
     private val graphPane: JScrollPane = JScrollPane()
     private val theoryPane: JScrollPane = JScrollPane()

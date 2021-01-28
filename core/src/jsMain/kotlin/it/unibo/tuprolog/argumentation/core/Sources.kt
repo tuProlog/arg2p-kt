@@ -1,4 +1,4 @@
-package it.unibo.argumentation
+package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse

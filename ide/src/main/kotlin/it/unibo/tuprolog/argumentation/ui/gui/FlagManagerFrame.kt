@@ -15,7 +15,7 @@ import javafx.scene.control.ListView
 import javafx.scene.control.Tab
 import javafx.scene.layout.HBox
 
-internal class FlagManagerFrame {
+internal class FlagManagerFrame private constructor() {
 
     private var experimentalQueryMode: Boolean = false
     private var autoTransposition: Boolean = false

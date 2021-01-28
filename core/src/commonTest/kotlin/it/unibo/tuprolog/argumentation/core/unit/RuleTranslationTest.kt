@@ -1,8 +1,8 @@
-package it.unibo.argumentation.unit
+package it.unibo.tuprolog.argumentation.core.unit
 
-import it.unibo.argumentation.TestingUtils.solver
-import it.unibo.argumentation.TestingUtils.testYesGoal
-import it.unibo.argumentation.TestingUtils.withArgOperators
+import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
+import it.unibo.tuprolog.argumentation.core.TestingUtils.testYesGoal
+import it.unibo.tuprolog.argumentation.core.TestingUtils.withArgOperators
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
