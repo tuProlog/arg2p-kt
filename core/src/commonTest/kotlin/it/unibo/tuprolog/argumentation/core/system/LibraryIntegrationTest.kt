@@ -23,4 +23,12 @@ class LibraryIntegrationTest {
             solutions.toList()
         )
     }
+
+    @Test
+    fun library() {
+        val libraries = Libraries.of(Arg2p)
+        val theory = Arg2p.theory
+        val libTheory = libraries.theory
+        assertEquals(libTheory, theory)
+    }
 }
