@@ -39,8 +39,8 @@ internal class FlagManagerFrame private constructor() {
                     listOf(
                         "grounded",
                         "complete",
-                        "bp_grounded_partial_strict_preferences",
-                        "bp_grounded_complete_strict_preferences"
+                        "bp_grounded_partial",
+                        "bp_grounded_complete"
                     )
                 ) {
                     flagManager.argumentLabellingMode = it
@@ -54,7 +54,7 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
                 },
-                setupCheckBox("Experimental Query Mode") { flagManager.experimentalQueryMode = it },
+                setupCheckBox("Query Mode") { flagManager.experimentalQueryMode = it },
                 setupCheckBox("Auto Transposition") { flagManager.autoTransposition = it },
                 setupCheckBox("Unrestricted Rebut") { flagManager.unrestrictedRebut = it }
             )

@@ -1,5 +1,5 @@
 computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    buildGraph([Arguments, Attacks, Supports]),
+    buildGraph([Arguments, Attacks, Supports]),!,
     buildArgumentLabelling([Arguments, Attacks, Supports], [ARGSIN, ARGSOUT, ARGSUND]),
     buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
     storeResults(ARGSIN, ARGSOUT, ARGSUND).
@@ -21,12 +21,12 @@ buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
     argumentCompleteLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
-    argumentLabellingMode(bp_grounded_partial_strict_preferences),
+    argumentLabellingMode(bp_grounded_partial),
     argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling(partial, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
-    argumentLabellingMode(bp_grounded_complete_strict_preferences),
+    argumentLabellingMode(bp_grounded_complete),
     argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling(complete, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
 

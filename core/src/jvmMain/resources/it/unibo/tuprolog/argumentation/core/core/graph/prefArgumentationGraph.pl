@@ -22,13 +22,24 @@ convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]) :-
 simpleConversion([], [], [], []).
 simpleConversion([(T, A, B)|Tail], [RArgument|TmpArgs], [RAttack|TmpAtts], [RSupport|TmpSupps]) :-
     simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
-    RArgument = [[], attack, attack(T, A, B)],
+    generateId(A, B, Id),
+    RArgument = [[Id], attack, attack(T, A, B)],
     RSupport = (A, RArgument),
     RAttack = (T, RArgument, B),
     asserta(argument(RArgument)),
     asserta(support(A, RArgument)),
     asserta(attack(T, RArgument, B)),
     retractall(attack(T, A, B)).
+
+generateId([IdA, _, _], [IdB, _, _], Res) :-
+    concate(IdA, A),
+    concate(IdB, B),
+    concate([A, B], Res).
+
+concate([],'').
+concate([X|Tail], Res):-
+	concate(Tail, IntermediateRes),
+   	atom_concat(X, IntermediateRes, Res).
 
 transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks).
     member((T, A, B), Attacks),
