@@ -13,16 +13,16 @@ class EngineInterfaceTest {
     private fun solverWithTheory() = TestingUtils.solver(
         TestingUtils.withArgOperators(
             """
-                r0 : -c ~> a.
-                r1 : a ~> c.
-                r2 : [] ~> -a.
-                r3 : [] ~> -c.
+                r0 : -c => a.
+                r1 : a => c.
+                r2 : [] => -a.
+                r3 : [] => -c.
                 
                 bp(-a).
                 
                 graphBuildMode(base).
                 statementLabellingMode(base).
-                argumentLabellingMode(bp_grounded_partial_strict_preferences).
+                argumentLabellingMode(bp_grounded_partial).
                 orderingPrinciple(last).
                 orderingComparator(democrat).
             """

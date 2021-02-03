@@ -16,7 +16,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : [] ~> a.
+                    r0 : [] => a.
                 """
                 )
             )
@@ -32,7 +32,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : [] ~> -a.
+                    r0 : [] => -a.
                 """
                 )
             )
@@ -48,7 +48,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : [] ~> o(-a).
+                    r0 : [] => o(-a).
                 """
                 )
             )
@@ -64,7 +64,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : [] ~> p(-a).
+                    r0 : [] => p(-a).
                 """
                 )
             )
@@ -80,7 +80,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : a ~> o(-b).
+                    r0 : a => o(-b).
                 """
                 )
             )
@@ -96,7 +96,7 @@ class RuleTranslationTest {
             val solver = solver(
                 withArgOperators(
                     """
-                    r0 : a(X), o(b(X)) ~> -c(X).
+                    r0 : a(X), o(b(X)) => -c(X).
                 """
                 )
             )
