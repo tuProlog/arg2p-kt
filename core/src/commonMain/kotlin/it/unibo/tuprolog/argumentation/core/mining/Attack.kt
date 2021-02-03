@@ -11,7 +11,7 @@ class Attack(val attacker: String, val attacked: String) {
     companion object {
         private fun identifier(argument: Term?, arguments: List<Argument>): String {
             val rules = ((argument as Cons).head as Cons).toList().map { x -> x.toString() }
-            return arguments.first { x -> rules.all { r -> x.rules.contains(r) } }.identifier
+            return arguments.first { x -> x.rules.containsAll(rules) && rules.containsAll(x.rules) }.identifier
         }
 
         @JsName("mineAttacks")
