@@ -223,7 +223,7 @@ contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHead
 %------------------------------------------------------------------------
 % Undercutting definition: attacks on defeasible inference rule
 %------------------------------------------------------------------------
-undercuts([_, _, [challenge(RuleB)]], [_, RuleB, _]) :-
+undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
 	\+ strict(RuleB).
 
 %------------------------------------------------------------------------

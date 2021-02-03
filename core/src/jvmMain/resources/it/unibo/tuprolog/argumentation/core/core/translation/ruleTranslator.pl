@@ -10,7 +10,8 @@
 % rule([rPerm, [ [emer] ], [perm, [enter]] ]).
 
 :- op(1199, xfx, '=>').
-:- op(1199, xfx, '~>').
+:- op(1199, xfx, ':=>').
+:- op(1199, xfx, ':->').
 :- op(1001, xfx, ':').
 
 in(A, A) :- nonvar(A), A \= (_ , _).
@@ -42,15 +43,15 @@ defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRules).
 
 strictRules(CtrRules) :-
-    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions ~> Effect), StrictRules),
+    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRules),
     transpose(StrictRules, StrictRules, CtrRules),
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
 ordinaryPremises(Premises) :-
-    findall([RuleName, Effect], ((RuleName => Effect), atom(RuleName)), Premises).
+    findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), Premises).
 
 axiomPremises(Axioms) :-
-    findall([RuleName, Effect], ((RuleName ~> Effect), atom(RuleName)), Axioms),
+    findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), Axioms),
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-
