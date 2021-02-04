@@ -16,7 +16,6 @@ jobs:
       ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
       ORG_GRADLE_PROJECT_bintrayUser: ${{ secrets.BINTRAY_USER }}
       ORG_GRADLE_PROJECT_bintrayKey: ${{ secrets.BINTRAY_KEY }}
-      ORG_GRADLE_PROJECT_mavenRepo: ${{ secrets.MAVEN_REPO }}
       ORG_GRADLE_PROJECT_mavenUsername: ${{ secrets.OSSRH_USERNAME }}
       ORG_GRADLE_PROJECT_mavenPassword: ${{ secrets.OSSRH_PASSWORD }}
       ORG_GRADLE_PROJECT_npmToken: ${{ secrets.NPM_TOKEN }}

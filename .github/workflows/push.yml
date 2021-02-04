@@ -7,7 +7,7 @@ env:
   gradle-options: "--no-daemon --console=plain --stacktrace"
 
 jobs:
-  publish:
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

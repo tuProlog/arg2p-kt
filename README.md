@@ -2,9 +2,12 @@
 
 Quick links:
 
-- [GitLab Repository](https://gitlab.com/pika-lab/argumentation/arg2p-kt) (the one used by developers)
-- GitHub Repository _(cooming soon)_
-- Maven Repository _(cooming soon)_
+- [GitLab Repository](https://gitlab.com/pika-lab/argumentation/arg2p-kt)
+- [GitHub Repository](https://github.com/tuProlog/arg2p-kt)
+- [Maven Repository](https://search.maven.org/search?q=g:it.unibo.tuprolog.argumentation)
+- [Bintray Repository](https://bintray.com/pika-lab/argumentation)
+- [NPM Package](https://www.npmjs.com/package/@tuprolog/arg2p-core)
+- Documentation _(coming soon)_
 
 
 Arg2Prolog is an argumentation framework built on the top of [tuProlog (2P) engine](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/).
