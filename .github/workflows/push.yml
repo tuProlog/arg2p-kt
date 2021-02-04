@@ -1,0 +1,30 @@
+name: on-push
+on: [push]
+
+env:
+  project-name: arg2p-kt
+  workflow: push
+  gradle-options: "--no-daemon --console=plain --stacktrace"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 14
+      - name: Setup Gradle
+        run: ./gradlew ${{ env.gradle-options }}
+      - name: Check Code Style
+        run: ./gradlew ${{ env.gradle-options }} ktlintCheck --parallel
+      - name: Clean
+        run: ./gradlew ${{ env.gradle-options }} clean
+      - name: Compile
+        run: ./gradlew ${{ env.gradle-options }} assemble --parallel
+      - name: Test JVM
+        run: ./gradlew ${{ env.gradle-options }} jvmTest
+      - name: Test JS
+        run: ./gradlew ${{ env.gradle-options }} jsTest || ./gradlew ${{ env.gradle-options }} clean jsTest

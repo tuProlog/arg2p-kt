@@ -83,17 +83,17 @@ Test JS:
 #  needs:
 #    - job: Compile
 
-#Generate Doc:
-#  #  stage: doc
-#  stage: deploy
-#  script:
-#    - $GCMD $BEFORE_TASK $DOC_TASK $AFTER_TASK $GOPTS
-#  only:
-#    - /^(master)|(release)|(develop)$/
-#  when: manual
-##  needs:
-##    - job: Test JVM
-##    - job: Test JS
+Generate Doc:
+  #  stage: doc
+  stage: deploy
+  script:
+    - $GCMD $BEFORE_TASK $DOC_TASK $AFTER_TASK $GOPTS
+  only:
+    - /^(master)|(release)|(develop)$/
+  when: manual
+#  needs:
+#    - job: Test JVM
+#    - job: Test JS
 
 Sign Artefacts:
   #  stage: doc
