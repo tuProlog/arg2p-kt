@@ -10,6 +10,7 @@ env:
 
 jobs:
   publish:
+    environment: release_env
     runs-on: ubuntu-latest
     env:
       ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
