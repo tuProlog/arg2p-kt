@@ -1,8 +1,8 @@
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     experimentalQueryMode,
     check_modifiers_in_list(effects, [Goal], [X]),
-    query(X, Res),
-    populateResultSets(X, Res, YesResult, NoResult, UndResult), !.
+    findall([X, Res], query(X, Res), Result),
+    populateResultSets(Result, YesResult, NoResult, UndResult), !.
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     computeGlobalAcceptance([STATIN, STATOUT, STATUND], [_, _, _]),
@@ -28,9 +28,9 @@ isCredulouslyAcceptable(Goal) :-
     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
     answerSingleQuery(Goal, STATIN), !.
 
-populateResultSets(Query, yes, [Query], [], []).
-populateResultSets(Query, no, [], [Query], []).
-populateResultSets(Query, und, [], [], [Query]).
+populateResultSets([[Query,yes]|T], [Query|Yes], No, Und) :- populateResultSets(T, Yes, No, Und).
+populateResultSets([[Query,no]|T], Yes, [Query|No], Und) :- populateResultSets(T, Yes, No, Und).
+populateResultSets([[Query,und]|T], Yes, No, [Query|Und]) :- populateResultSets(T, Yes, No, Und).
 
 query(Query, Res) :-
     write(Query),nl,
@@ -106,8 +106,14 @@ buildArgument(Query, Argument) :-
     
 build(Conclusion, [Id]) :-
     premise([Id, Conclusion]).
-build(Conclusion, [Id|Rules]) :-
+build(Conclusion, [Id|Res]) :-
     rule([Id, Premises, Conclusion]),
-    findall(X, (member(P, Premises), build(P, X)), Rules).
+    buildPremises(Premises, Res).
 build([prolog(_)], []).
 build([unless, _], []).
+
+buildPremises([], []).
+buildPremises([X|T], RR) :-
+    build(X, Rules),
+    buildPremises(T, Res),
+    appendLists([Rules, Res], RR).
