@@ -201,6 +201,7 @@ contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB])
 	RuleB \== none,
 	\+ strict(RuleB),
 	rule([RuleB, Body, _]),
+	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
 	member([unless, RuleHeadA], Body).
 
 %------------------------------------------------------------------------
@@ -218,6 +219,7 @@ contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHead
 	RuleB \== none,
 	\+ strict(RuleB),
 	rule([RuleB, Body, _]),
+	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
 	member([unless, RuleHeadA], Body).
 
 %------------------------------------------------------------------------
@@ -234,6 +236,17 @@ restrict(_, _) :- unrestrictedRebut.
 restrict([_, TopRuleA, _], [_, TopRuleB, _ ]) :-
 	\+ unrestrictedRebut,
 	\+ (strict(TopRuleB), \+ strict(TopRuleA)).
+
+%------------------------------------------------------------------------
+% Given a not instantiated rule and an argument, grounds the rule body using the argument support
+%------------------------------------------------------------------------
+recoverUnifiers(Body, Argument) :-
+	findall(X, support([_, _, X], Argument), Supports),
+	unifySupports(Body, Supports).
+
+unifySupports(Body, []).
+unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
+
 
 %------------------------------------------------------------------------
 % Superiority definition
