@@ -73,12 +73,17 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
                             dynamicKb = event.dynamicKb,
                             staticKb = event.staticKb,
                         )
+                        try {
+                            val arguments = Argument.mineArguments(solver).toList()
+                            val attacks = Attack.mineAttacks(solver, arguments).toList()
 
-                        val arguments = Argument.mineArguments(solver).toList()
-                        val attacks = Attack.mineAttacks(solver, arguments).toList()
-
-                        SwingUtilities.invokeLater {
-                            frame?.printArgumentationInfo(arguments, attacks)
+                            SwingUtilities.invokeLater {
+                                frame?.printArgumentationInfo(arguments, attacks)
+                            }
+                        } catch (e: Exception) {
+                            SwingUtilities.invokeLater {
+                                frame?.clear()
+                            }
                         }
                     }
                     SwingUtilities.invokeLater {

@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core
 
+import it.unibo.tuprolog.argumentation.core.modularity.ModuleCall
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
@@ -31,5 +32,6 @@ object Arg2p : AliasedLibrary by
             Operator(":", Specifier.XFX, 1001)
         ),
         theory = theories.reduce(Theory::plus),
+        primitives = mapOf(ModuleCall.signature to ModuleCall),
         alias = "prolog.argumentation"
     )
