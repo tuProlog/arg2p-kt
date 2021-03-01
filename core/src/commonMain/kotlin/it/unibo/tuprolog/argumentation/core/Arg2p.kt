@@ -32,6 +32,6 @@ object Arg2p : AliasedLibrary by
             Operator(":", Specifier.XFX, 1001)
         ),
         theory = theories.reduce(Theory::plus),
-        primitives = mapOf(ModuleCall.signature to ModuleCall),
+        primitives = mapOf(ModuleCall.signature to ModuleCall::invoke),
         alias = "prolog.argumentation"
     )

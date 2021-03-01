@@ -12,14 +12,13 @@ import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object ModuleCall : Primitive {
+object ModuleCall {
 
     val signature = Signature("call_module", 2)
 
-    override fun invoke(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+    fun invoke(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val modules: Term = request.arguments[0]
         val goal: Term = request.arguments[1]
 
