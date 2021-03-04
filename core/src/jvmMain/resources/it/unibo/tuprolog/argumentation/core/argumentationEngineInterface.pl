@@ -32,6 +32,10 @@ buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
     convertAllRules,
     computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
+buildLabelSets(STATIN, STATOUT, STATUND) :-
+    convertAllRules,
+    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
+
 answerQuery(GOAL, YES, NO, UND) :-
     convertAllRules,
     computeStatementAcceptance(GOAL, YES, NO, UND).
