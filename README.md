@@ -53,7 +53,7 @@ To perform a novel query, the user may either:
 For a deeper introduction on the Arg2p IDE you can refer to the original [2P-Kt](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin) page.
 The Arg2p version of the IDE introduces two additional tabs:
 - the _Graph_ tab, containing the graphical representation of the abstract argumentation graph (available only if leveraging the abstract query mode -- `buildLabelSet` predicate);
-- the _Arg Flag_ tab, allowing the user to see/modify the values of the Arg2p flags. A comprehensive description of these values can be found on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
+- the _Arg Flag_ tab, allowing the user to see/modify the values of the Arg2p flags. A comprehensive description of these values can be found on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/wiki/flags).
 
 #### Gradle users
 

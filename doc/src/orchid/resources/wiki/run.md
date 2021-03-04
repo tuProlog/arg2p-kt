@@ -1,61 +1,92 @@
 ---
 ---
 
-### Download
-Download the test relase from [GitLab Repository](https://gitlab.com/pika-lab/argumentation/arg2p/-/releases), in particular:
-- arg2p-v.0.3.1.jar (main application)
-- example-theory.pl (example theory)
-
-
 ### Run
 
-- Double click the executable (JAR File)
-- The Arg2P IDE should appear, as depicted below:
+#### Standalone Application
 
-<!--- ![Arg2P IDE][run1] --->
-
-<!--- [run1]: {{ 'assets/media/run1.png'|asset|scale(0.65)  }} --->
+- Follow the __[Get Started]({{ site.baseUrl }})__ instructions to install and run the Arg2p Java IDE.
+- The Arg2P IDE should appear as depicted below:
 
 <p align="center">
   <img width="460" src={{ 'assets/media/run1.png'|asset|scale(0.65)  }}>
 </p>
 
+- Copy the following example theory in the IDE editor (or create your own following the [base instructions]({{ site.baseUrl }}/wiki/syntax)):
 
-- Write a defeasible theory following the [basic syntax]({{ site.baseUrl }}/wiki/syntax) page or load the provided example
-- Click the "Set Theory" button:
-<!--- ![Arg2P IDE Set Theory][run2] --->
+```prolog
+d1 : bird(X) => flies(X).
+d2 : penguin(X) => bird(X).
+s1 : penguin(X) -> -flies(X).
+a1 :-> penguin(tweety).
+```
 
-<!--- [run2]: {{ 'assets/media/run2.png'|asset|scale(0.65)  }} --->
-
-<p align="center">
-  <img width="460" src={{ 'assets/media/run2.png'|asset|scale(0.65)  }}>
-</p>
-
-- Run the goal:
-<!--- ![Arg2P IDE Solve][run3] --->
-
-<!--- [run3]: {{ 'assets/media/run3.png'|asset|scale(0.65)  }} --->
+- Run the goal `buildLabelSets` to build and evaluate the entire framework:
 
 <p align="center">
   <img width="460" src={{ 'assets/media/run3.png'|asset|scale(0.65)  }}>
 </p>
 
-
-- Labellings are printed in the output tab (buildLabelSets goal):
-<!--- ![Arg2P IDE Labelling][run4] --->
-
-<!--- [run4]: {{ 'assets/media/run4.png'|asset|scale(0.65)  }} --->
+- Labellings are printed textually in the _Output_ tab and graphically in the _Graph_ tab:
 
 <p align="center">
   <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.65)  }}>
 </p>
 
-
-- Solutions will be printed in the Solution tab (answerQuery goal):
-<!--- ![Arg2P IDE query][run5] --->
-
-<!--- [run5]: {{ 'assets/media/run5.png'|asset|scale(0.65)  }} --->
+- Alternatively you can require the evaluation of a single statement with the `answerQuery/4` predicate. For example, run the goal
+`answerQuery(flies(tweety), In, Out, Und)` to check the admissibility of the `flies(tweety)` statement. The result is printed in the _Solution_ tab:
 
 <p align="center">
   <img width="460" src={{ 'assets/media/run5.png'|asset|scale(0.65)  }}>
 </p>
+
+More information on the Arg2p usage can be found on the [API & Flags page]({{ site.baseUrl }}/wiki/flags).
+
+#### Kotlin library
+
+- Follow the __[Get Started]({{ site.baseUrl }})__ instructions to add the Arg2p dependency to your Kotlin project.
+
+- First include the library with:
+  
+```kotlin
+import it.unibo.tuprolog.argumentation.core.Arg2p
+```
+
+- You can create a new Prolog solver including the Arg2p library with the following notation (for more info on 2P-Kt refer to the [official page](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin)):
+
+```kotlin
+val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+    otherLibraries = Libraries.of(Arg2p)
+)
+```
+
+- Set the solver theory:
+
+```kotlin
+solver.loadStaticKb(Theory.parse("""
+            d1 : bird(X) => flies(X).
+            d2 : penguin(X) => bird(X).
+            s1 : penguin(X) -> -flies(X).
+            a1 :-> penguin(tweety).
+        """.trimIndent()))
+```
+
+- Require the evaluation of a goal. For example:
+
+```kotlin
+prolog {
+    solver.solve("buildLabelSets"(In, Out, Und))
+        .map { 
+            when(it) {
+                Solution.Yes -> "In statements: ${it.substitution[In].toString()}"
+                Solution.No -> "No available solution"
+                Solution.Halt -> "Error in resolution process"
+            } 
+        }
+}
+```
+
+
+
+
+
