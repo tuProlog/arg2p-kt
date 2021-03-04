@@ -1,5 +1,5 @@
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
-    experimentalQueryMode,
+    queryMode,
     check_modifiers_in_list(effects, [Goal], [X]),
     findall([X, Res], query(X, Res), Result),
     populateResultSets(Result, YesResult, NoResult, UndResult), !.

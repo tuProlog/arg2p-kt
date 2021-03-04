@@ -17,7 +17,7 @@ import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame private constructor() {
 
-    private var experimentalQueryMode: Boolean = false
+    private var queryMode: Boolean = false
     private var autoTransposition: Boolean = false
     private var unrestrictedRebut: Boolean = false
     private var graphBuildMode: String = "base"
@@ -54,7 +54,7 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
                 },
-                setupCheckBox("Query Mode") { flagManager.experimentalQueryMode = it },
+                setupCheckBox("Query Mode") { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition") { flagManager.autoTransposition = it },
                 setupCheckBox("Unrestricted Rebut") { flagManager.unrestrictedRebut = it }
             )
@@ -84,7 +84,7 @@ internal class FlagManagerFrame private constructor() {
 
         @JvmStatic
         fun setupSolver(kb: Theory, target: FlagManagerFrame) {
-            if (target.experimentalQueryMode) kb.assertA(Struct.parse("experimentalQueryMode"))
+            if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
             if (target.unrestrictedRebut) kb.assertA(Struct.parse("unrestrictedRebut"))
             kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
