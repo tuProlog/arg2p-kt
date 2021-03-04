@@ -17,7 +17,7 @@ More information about the project can be found on the [official wiki](https://p
 
 ### Get Started
 
-The Arg2p library is available under different forms.
+The Arg2p library is available in two different forms: as a standalone application (Arg2p Java IDE), and as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/) library.
 
 #### Graphical User Interface
 
