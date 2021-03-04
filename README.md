@@ -36,8 +36,7 @@ After you download the `arg2p-ide-VERSION-redist.jar`, you can simply launch it 
 ```bash
 java -jar arg2p-ide-VERSION-redist.jar
 ```
-However, if you have properly configured the JVM on your system, it may be sufficient to just double-click on the
-aforementioned JAR to start the IDE.
+However, if you have properly configured the JVM on your system, it may be sufficient to just double-click on the JAR to start the IDE.
 
 There, one may query the Arg2p Prolog interpreter against the currently opened theory file, which can of course be
 loaded from the user's file system by pressing <kbd>File</kbd> and then <kbd>Open...</kbd>.
@@ -61,15 +60,13 @@ The Arg2p version of the IDE introduces two additional tabs:
 To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based project leveraging on Gradle,
 you simply need to declare the corresponding dependency in your `build.gradle(.kts)` file:
  ```kotlin
-// assumes Gradle's Kotlin DSL
 dependencies {
     implementation("it.unibo.tuprolog.argumentation", "core", "ARG2P_VERSION")
 }
  ``` 
 
-The step above, requires you to tell Gradle to either use Maven Central as a source for dependency lookup. You can do it as follows:
+Don't forget to tell Gradle to use Maven Central as a source for dependency lookup. You can do it as follows:
 ```kotlin
-// assumes Gradle's Kotlin DSL
 repositories {
     mavenCentral()
 }
@@ -77,9 +74,8 @@ repositories {
 
 ##### JVM-only projects with Gradle
 
-Remember to add the `-jvm` suffix to `core` in case your project only targets the JVM platform:
+In the case your project only targets the JVM platform, remember to add the `-jvm` suffix to the module name:
  ```kotlin
-// assumes Gradle's Kotlin DSL
 dependencies {
     implementation("it.unibo.tuprolog.argumentation", "core-jvm", "ARG2P_VERSION")
 }
@@ -99,10 +95,10 @@ you simply need to declare the corresponding dependency in your `pom.xml` file:
 
 ##### JVM-only projects with Maven
 
-Remember to add the `-jvm` suffix to `core` in case your project only targets the JVM platform:
+In the case your project only targets the JVM platform, remember to add the `-jvm` suffix to the module name:
  ```xml
 <dependency>
-    <groupId>it.unibo.tuprolog</groupId>
+    <groupId>it.unibo.tuprolog.argumentation</groupId>
     <artifactId>core-jvm</artifactId>
     <version>ARG2P_VERSION</version>
 </dependency>
@@ -110,7 +106,7 @@ Remember to add the `-jvm` suffix to `core` in case your project only targets th
 
 #### NPM users
 
-The Arg2P software is available as a JavaScript library as well, on NPM, under the  [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
+The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
 To import the Arg2p library into your `package.json`, it is sufficient to declare your dependency as follows:
 ```json
 {
