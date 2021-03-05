@@ -181,5 +181,5 @@ pages:
     paths:
       - public
   #  allow_failure: true
-  only:
-    - /^(master)|(release)|(documentation)$/
+#  only:
+#    - /^(master)|(release)|(documentation)$/
