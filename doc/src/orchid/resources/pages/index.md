@@ -50,12 +50,12 @@ One may also compute all the unexplored solutions at once by clicking on the <kb
 
 To perform a novel query, the user may either:
 - write the new query in the query text field, and then press <kbd>Enter</kbd>, or
-- click on the <kbd>R</kbd> (Reset) button, write the new query in the query text field, and then press <kbd>&gt;</kbd>.
+- click on the <kbd>X</kbd> (Stop) button, write the new query in the query text field, and then press <kbd>&gt;</kbd>.
 
 For a deeper introduction on the Arg2p IDE you can refer to the original [2P-Kt](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin) page.
 The Arg2p version of the IDE introduces two additional tabs:
 - the _Graph_ tab, containing the graphical representation of the abstract argumentation graph (available only if leveraging the abstract query mode -- `buildLabelSet` predicate);
-- the _Arg Flag_ tab, allowing the user to see/modify the values of the Arg2p flags. A comprehensive description of these values can be found on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
+- the _Arg Flag_ tab, allowing the user to see/modify the values of the Arg2p flags. A comprehensive description of these values can be found on the [API & Flags page](https://pika-lab.gitlab.io/argumentation/arg2p-kt/wiki/predicate).
 
 ### Gradle users
 

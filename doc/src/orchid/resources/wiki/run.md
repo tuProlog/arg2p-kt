@@ -30,7 +30,7 @@ a1 :-> penguin(tweety).
 - Labellings are printed textually in the _Output_ tab and graphically in the _Graph_ tab:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.55)  }}>
+  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.70)  }}>
 </p>
 
 - Alternatively you can require the evaluation of a single statement with the `answerQuery/4` predicate. For example, run the goal
@@ -40,7 +40,7 @@ a1 :-> penguin(tweety).
   <img width="460" src={{ 'assets/media/run5.png'|asset|scale(0.85)  }}>
 </p>
 
-More information on the Arg2p usage can be found on the [API & Flags page]({{ site.baseUrl }}/wiki/flags).
+More information on the Arg2p usage can be found on the [API & Flags page]({{ site.baseUrl }}/wiki/predicate).
 
 #### Kotlin library
 

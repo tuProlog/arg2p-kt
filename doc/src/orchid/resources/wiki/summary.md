@@ -1,5 +1,5 @@
-- [Links](./link.md)
+- [Run Instructions](./run.md)
 - [Basic Syntax](./syntax.md)
 - [API & Flags](./predicate.md)
-- [Run Instructions](./run.md)
+- [Links](./link.md)
 - [Contribution](./contribution.md)
