@@ -1,27 +1,53 @@
 ---
 ---
 
-## Defeasible Rules
+## Rules
+
+The Arg2p framework allows the encoding of both strict and defeasible rules:
+
+### Defeasible Rules
+
 All statements are expressed in this form:
 
     RuleName: Premise1, ..., PremiseN => Conclusion.
 
+The absence of premises can be expressed with the notation:
 
-The absence of premises, necessary for facts codification, can be expressed with the notation:
+    RuleName: [] => Conclusion.
 
-    FactName: [] => Conclusion.
+It is also possible to encode defeasible/ordinary premises with the notation:
 
+    FactName :=> Conclusion.
 
 As for the form that premises and conclusions can take, all the properties of prolog terms (atoms, variables, lists, compound terms) are allowed.
 
+### Strict Rules
 
-## Strong negation
+All statements are expressed in this form:
+
+    RuleName: Premise1, ..., PremiseN -> Conclusion.
+
+The absence of premises can be expressed with the notation:
+
+    RuleName: [] -> Conclusion.
+
+It is also possible to encode axioms premises with the notation:
+
+    FactName :-> Conclusion.
+
+As for the form that premises and conclusions can take, all the properties of prolog terms (atoms, variables, lists, compound terms) are allowed.
+
+## Conflicts
+
+The contrast between terms, at the base of rebuts and undermine attacks, can be reached through negation.
+
+### Strong negation
 
     -Term
 
 indicates a strong negation, as opposed to the negation as failure implemented within the tuProlog engine. Strong negation cannot be nested.
 
-## Weak negation
+### Weak negation
 
     ~(Term)
 
@@ -32,6 +58,17 @@ Weak negations are admitted only inside the body of the rule (premises). Accordi
 
 should be read as _unless Term1, if Term2 then Conclusions_.
 
+### Undercut
+
+Undercut attacks can be expressed through the notation:
+
+    undercut(label)
+
+where `label` is the identifier of a defeasible rule in the theory.
+For example, we could write:
+    
+    r0 : something => conclusion.
+    r1 : some_other_thing => undercut(r0).
 
 ## Permission and obligation
 
@@ -42,7 +79,7 @@ to indicate permission and obligation respectively. These concepts, belonging to
 
     v_rule: o(-enter), enter => violation.
 
-Currently admitted forms for permission and obligation:
+Currently, admitted forms for permission and obligation are:
 
     o(Term)     obligation
     o(-Term)    prohibition
@@ -65,7 +102,6 @@ This proposition symbolises the greater reliability of the rule with identifier 
 
 ## Burden of proof
 
-The indication of burden of persuasion can be expressed as:
+The burden of persuasion indication can be expressed as:
 
     bp(Term1,…, TermN).
-

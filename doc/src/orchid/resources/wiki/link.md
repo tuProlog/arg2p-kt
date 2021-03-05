@@ -1,4 +1,4 @@
-## Quick link
+## Quick links
 - [GitLab Repository](https://gitlab.com/pika-lab/argumentation/arg2p-kt)
 - [GitHub Repository](https://github.com/tuProlog/arg2p-kt)
 - [Maven Repository](https://search.maven.org/search?q=g:it.unibo.tuprolog.argumentation)

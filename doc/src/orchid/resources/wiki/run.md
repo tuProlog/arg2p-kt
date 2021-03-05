@@ -9,7 +9,7 @@
 - The Arg2P IDE should appear as depicted below:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run1.png'|asset|scale(0.65)  }}>
+  <img width="460" src={{ 'assets/media/run1.png'|asset|scale(0.85)  }}>
 </p>
 
 - Copy the following example theory in the IDE editor (or create your own following the [base instructions]({{ site.baseUrl }}/wiki/syntax)):
@@ -24,20 +24,20 @@ a1 :-> penguin(tweety).
 - Run the goal `buildLabelSets` to build and evaluate the entire framework:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run3.png'|asset|scale(0.65)  }}>
+  <img width="460" src={{ 'assets/media/run3.png'|asset|scale(0.85)  }}>
 </p>
 
 - Labellings are printed textually in the _Output_ tab and graphically in the _Graph_ tab:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.65)  }}>
+  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.55)  }}>
 </p>
 
 - Alternatively you can require the evaluation of a single statement with the `answerQuery/4` predicate. For example, run the goal
 `answerQuery(flies(tweety), In, Out, Und)` to check the admissibility of the `flies(tweety)` statement. The result is printed in the _Solution_ tab:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run5.png'|asset|scale(0.65)  }}>
+  <img width="460" src={{ 'assets/media/run5.png'|asset|scale(0.85)  }}>
 </p>
 
 More information on the Arg2p usage can be found on the [API & Flags page]({{ site.baseUrl }}/wiki/flags).
@@ -64,6 +64,11 @@ val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
 
 ```kotlin
 solver.loadStaticKb(Theory.parse("""
+            graphBuildMode(base).
+            argumentLabellingMode(grounded).
+            statementLabellingMode(base).
+            orderingPrinciple(last).
+            orderingComparator(elitist).
             d1 : bird(X) => flies(X).
             d2 : penguin(X) => bird(X).
             s1 : penguin(X) -> -flies(X).
