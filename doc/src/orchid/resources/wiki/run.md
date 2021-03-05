@@ -30,7 +30,7 @@ a1 :-> penguin(tweety).
 - Labellings are printed textually in the _Output_ tab and graphically in the _Graph_ tab:
 
 <p align="center">
-  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.70)  }}>
+  <img width="460" src={{ 'assets/media/run4.png'|asset|scale(0.85)  }}>
 </p>
 
 - Alternatively you can require the evaluation of a single statement with the `answerQuery/4` predicate. For example, run the goal
@@ -49,14 +49,14 @@ More information on the Arg2p usage can be found on the [API & Flags page]({{ si
 - First include the library with:
   
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2p
+import it.unibo.tuprolog.argumentation.Arg2pLibrary
 ```
 
 - You can create a new Prolog solver including the Arg2p library with the following notation (for more info on 2P-Kt refer to the [official page](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin)):
 
 ```kotlin
 val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Libraries.of(Arg2p)
+    otherLibraries = Libraries.of(Arg2pLibrary.get())
 )
 ```
 

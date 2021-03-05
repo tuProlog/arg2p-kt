@@ -63,7 +63,7 @@ To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based proj
 you simply need to declare the corresponding dependency in your `build.gradle(.kts)` file:
  ```kotlin
 dependencies {
-    implementation("it.unibo.tuprolog.argumentation", "core", "ARG2P_VERSION")
+    implementation("it.unibo.tuprolog.argumentation", "arg2p", "ARG2P_VERSION")
 }
  ``` 
 
@@ -79,7 +79,7 @@ repositories {
 In the case your project only targets the JVM platform, remember to add the `-jvm` suffix to the module name:
  ```kotlin
 dependencies {
-    implementation("it.unibo.tuprolog.argumentation", "core-jvm", "ARG2P_VERSION")
+    implementation("it.unibo.tuprolog.argumentation", "arg2p-jvm", "ARG2P_VERSION")
 }
  ``` 
 
@@ -90,7 +90,7 @@ you simply need to declare the corresponding dependency in your `pom.xml` file:
  ```xml
 <dependency>
     <groupId>it.unibo.tuprolog.argumentation</groupId>
-    <artifactId>core</artifactId>
+    <artifactId>arg2p</artifactId>
     <version>ARG2P_VERSION</version>
 </dependency>
  ``` 
@@ -101,7 +101,7 @@ In the case your project only targets the JVM platform, remember to add the `-jv
  ```xml
 <dependency>
     <groupId>it.unibo.tuprolog.argumentation</groupId>
-    <artifactId>core-jvm</artifactId>
+    <artifactId>arg2p-jvm</artifactId>
     <version>ARG2P_VERSION</version>
 </dependency>
  ``` 
