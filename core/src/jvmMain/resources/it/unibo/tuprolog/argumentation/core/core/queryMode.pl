@@ -5,6 +5,7 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     populateResultSets(Result, YesResult, NoResult, UndResult), !.
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+    \+ queryMode,
     computeGlobalAcceptance([STATIN, STATOUT, STATUND], [_, _, _]),
     findall(Goal, answerSingleQuery(Goal, STATIN), YesResult),
     findall(Goal, answerSingleQuery(Goal, STATOUT), NoResult),
@@ -28,92 +29,89 @@ isCredulouslyAcceptable(Goal) :-
     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
     answerSingleQuery(Goal, STATIN), !.
 
+populateResultSets([], [], [], []).
 populateResultSets([[Query,yes]|T], [Query|Yes], No, Und) :- populateResultSets(T, Yes, No, Und).
 populateResultSets([[Query,no]|T], Yes, [Query|No], Und) :- populateResultSets(T, Yes, No, Und).
 populateResultSets([[Query,und]|T], Yes, No, [Query|Und]) :- populateResultSets(T, Yes, No, Und).
 
 query(Query, Res) :-
-    write(Query),nl,
     buildArgument(Query, Argument),
     write(Argument),nl,
-    defend(Argument, [], Res).
-query(_, und).
+    once(defend(Argument, [], Res)).
+query(Query, und) :- \+ buildArgument(Query, _).
 
-% Caso 3 - Un attaccante è difendibile
+% Poco ottimizzato: mentre cerco un In potrei già trovare un Und (va bufferizzato)
+% Caso base: esiste fra i miei attaccanti un verificato -> io sono out
 defend(Argument, QueryChain, no) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
     once(defend(Attacker, [Argument|QueryChain], X)),
-    X == yes.
-% Caso 1 - Ciclo fra gli attaccanti -> UND
-defend(Argument, QueryChain, und) :- 
-    findAttacker(Argument, QueryChain, Attacker, no).
-% Caso 4 - La valutazione di uno degli attaccanti fin'ora validi darà corso ad un ciclo
+    X == yes, !.
+% Caso ciclo: esiste fra i miei attaccanti un argomento già incontrato (ciclo) sono Und
+defend(Argument, QueryChain, und) :-
+    findAttacker(Argument, QueryChain, Attacker, no), !.
+% Caso indeterminatezza: con solo un attaccante Und sono Und
 defend(Argument, QueryChain, und) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
-    isOut(Attacker, [Argument|QueryChain], und).
-% Caso 2 - Tutti gli attaccanti, se esistenti, sono OUT -> IN
-defend(Argument, QueryChain, yes) :-
-    \+ (
-        findAttacker(Argument, QueryChain, Attacker, yes),
-        \+ isOut(Attacker, [Argument|QueryChain], yes)
-    ).
-
-% OK - Se esiste un attaccante difendibile
-isOut(Argument, QueryChain, Res) :-
-    findAttacker(Argument, QueryChain, Attacker, yes),
-    defend(Attacker, [Argument|QueryChain], Res),
-    (Res == yes; Res == und).
-isOut(Argument, QueryChain, und) :- 
-    \+ findAttacker(Argument, QueryChain, _, yes),
-    findAttacker(Argument, QueryChain, Attacker, no).
+    once(defend(Attacker, [Argument|QueryChain], X)),
+    X == und, !.
+% Negli altri casi sono In
+defend(Argument, QueryChain, yes).
 
 % Considero le mie parti attaccabili
 %  - Rules per undercut e rebut
 %  - Premises per undercut e undermine
 %  - Attenzione al corpo delle regole, per contrary-undercut e contrary-undermine
-findAttacker([Rules, _, _], QueryChain, Attacker, IsValid) :-
-    member(X, Rules),
-    \+ strict(X),
-    attacker(X, Attacker),
+findAttacker(Target, QueryChain, Attacker, IsValid) :-
+    attacker(Target, Attacker),
     findAttackerCicle(Attacker, QueryChain, IsValid).
 
 findAttackerCicle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
 findAttackerCicle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
 
+attacker([Rules, TopRule, Conclusion, Groundings], Argument) :-
+    member(X, Rules),
+    \+ strict(X),
+    attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings], Argument).
+
+attacker([Rules, TopRule, Conclusion, Groundings], Argument) :-
+    member(X, Groundings),
+    attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings], Argument).
+
 % undercut
-attacker(Rule, Argument) :-
-    buildArgument([challenge(Rule)], Argument).
+attackerOnRule(Rule, _, Argument) :-
+    buildArgument([undercut(Rule)], Argument).
 
 % rebut e undermine
-attacker(Rule, Argument) :-
-    (rule([Rule, _, Conclusion]); premise([Rule, Conclusion])),
-    conflict(Conclusion, X),
-    buildArgument(X, Argument).
+attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _], [Rules, TopRule, Conc, Grondings]) :-
+    Term \== [unless, _],
+    conflict(Term, X),
+    buildArgument(X, [Rules, TopRule, Conc, Grondings]),
+    \+ superiorArgument([TargetRules, TargetTopRule, TargetConc], [Rules, TopRule, Conc]).
 
 % contrary-rebut and contrary-undermine
-attacker(Rule, Argument) :-
-    rule([Rule, Premises, _]),
-    member([unless, X], Premises),
+attackerOnTerm([unless, X], _, Argument) :-
     buildArgument(X, Argument).
 
 % Ricorsione sul corpo di 
 %   - rule([id, [premises], conclusion])
 %   - premise([id, conclusion])
-% fino ad arrivare a una regola senza premesse o ad una premessa 
+% fino ad arrivare a una regola senza premesse o ad una premessa
+% Mi porto dietro il grounding dei termini per poter derivare gli attacchi
 buildArgument(Query, Argument) :-
-    build(Query, [TopRule|Rules]),
-    Argument = [[TopRule|Rules], TopRule, Query].
-    
-build(Conclusion, [Id]) :-
-    premise([Id, Conclusion]).
-build(Conclusion, [Id|Res]) :-
-    rule([Id, Premises, Conclusion]),
-    buildPremises(Premises, Res).
-build([prolog(_)], []).
-build([unless, _], []).
+    build(Query, [TopRule|Rules], Groundings),
+    Argument = [[TopRule|Rules], TopRule, Query, Groundings].
 
-buildPremises([], []).
-buildPremises([X|T], RR) :-
-    build(X, Rules),
-    buildPremises(T, Res),
-    appendLists([Rules, Res], RR).
+build(Conclusion, [Id], [Conclusion]) :-
+    premise([Id, Conclusion]).
+build(Conclusion, [Id|Res], [Conclusion|Concls]) :-
+    rule([Id, Premises, Conclusion]),
+    buildPremises(Premises, Res, Concls).
+build([prolog(_)], [], []).
+build([unless, Atom], [], [[unless, Atom]]).
+
+buildPremises([], [], []).
+buildPremises([X|T], RR, CC) :-
+    build(X, Rules, Concls),
+    buildPremises(T, Res, Concls2),
+    appendLists([Rules, Res], RR),
+    appendLists([Concls, Concls2], CC).
