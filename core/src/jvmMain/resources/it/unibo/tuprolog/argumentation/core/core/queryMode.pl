@@ -1,33 +1,35 @@
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
+    argumentLabellingMode(grounded),
     check_modifiers_in_list(effects, [Goal], [X]),
     findall([X, Res], query(X, Res), Result),
     populateResultSets(Result, YesResult, NoResult, UndResult), !.
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     \+ queryMode,
-    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [_, _, _]),
-    findall(Goal, answerSingleQuery(Goal, STATIN), YesResult),
-    findall(Goal, answerSingleQuery(Goal, STATOUT), NoResult),
-    findall(Goal, answerSingleQuery(Goal, STATUND), UndResult).
+    computeGlobalAcceptance([_, _, _], [ARGIN, ARGOUT, ARGUND]),
+    findall(Goal, answerSingleQuery(Goal, ARGIN), YesResult),
+    findall(Goal, answerSingleQuery(Goal, ARGOUT), NoResult),
+    findall(Goal, answerSingleQuery(Goal, ARGUND), UndResult).
 
-answerSingleQuery(Goal, Set) :-
+answerSingleQuery(Goal, Args) :-
     check_modifiers_in_list(effects, [Goal], [X]),
+    findall(Y, member([_ ,_, Y], Args), Set),
     member(X, Set).
 
-isSkepticallyAcceptable(Goal) :-
-    convertAllRules,
-    findall(STATIN, computeGlobalAcceptance([STATIN, _, _], [_, _, _]), SOLUTIONS),
-    check_modifiers_in_list(effects, [Goal], [X]),
-    all(X, SOLUTIONS), !.
+% isSkepticallyAcceptable(Goal) :-
+%     convertAllRules,
+%     findall(STATIN, computeGlobalAcceptance([STATIN, _, _], [_, _, _]), SOLUTIONS),
+%     check_modifiers_in_list(effects, [Goal], [X]),
+%     all(X, SOLUTIONS), !.
 
-all(_, []).
-all(Goal, [H|T]) :- member(Goal, H), all(Goal, T).
+% all(_, []).
+% all(Goal, [H|T]) :- member(Goal, H), all(Goal, T).
 
-isCredulouslyAcceptable(Goal) :-
-    convertAllRules,
-    computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
-    answerSingleQuery(Goal, STATIN), !.
+% isCredulouslyAcceptable(Goal) :-
+%     convertAllRules,
+%     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
+%     answerSingleQuery(Goal, STATIN), !.
 
 populateResultSets([], [], [], []).
 populateResultSets([[Query,yes]|T], [Query|Yes], No, Und) :- populateResultSets(T, Yes, No, Und).
