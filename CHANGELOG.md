@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2]
+### Fixed
+- theory visualisation on Java IDE
+- preferences handling in structured answerQuery/3
+- buildArgumentationGraph performances
+
 ## [0.2.1]
 ### Fixed
 - experimentalQueryMode -> queryMode 

@@ -30,8 +30,8 @@ buildArgumentationGraph([Arguments, Attacks, Supports]) :-
                    ground(argument([IDPremises, TopRule, RuleHead])) ),
                  Arguments),
         findall( (A1, A2), support(A1, A2), Supports),
-	    findall( (T, A1, A2), attack(T, A1, A2),  Attacks),
-        printArgumentationGraph, !.
+	    findall( (T, A1, A2), attack(T, A1, A2),  Attacks), 
+		printArgumentationGraph, !.
 
 %========================================================================
 % ARGUMENT DEFINITION
@@ -57,19 +57,21 @@ buildArgumentationGraph([Arguments, Attacks, Supports]) :-
 %     TopRule(A) = Conc(A1 ), . . . Conc(An ) ⇒ ψ .
 %========================================================================
 
-% Per ogni regola, vedo le premesse, controllo che ci siano degli argomenti
-% a favore degli statements contenuti nel corpo della regola,
-% se si gli aggiungo al supporto dell'argomento.
-% Se l'argomento è nuovo lo aggiungo alla teoria
-
 buildArguments :-
+	buildArgumentsFromPremises,
+	buildArgumentsFromRules,
+	buildArgumentsInfo.
+
+buildArgumentsFromPremises :-
 	premise([PremiseID, Premise]),
 	NewArgument = [[PremiseID], none, Premise],
 	\+ argument(NewArgument),
 	asserta(argument(NewArgument)),
 	asserta(prem([PremiseID, Premise], NewArgument)),
     fail.
-buildArguments :-
+buildArgumentsFromPremises.
+
+buildArgumentsFromRules :-
 	rule([RuleID, RuleBody, RuleHead]),
 	ruleBodyIsSupported(RuleBody, [], [], PremisesOfSupportingArguments, Supports),
 	\+ member(RuleID, PremisesOfSupportingArguments),
@@ -80,9 +82,47 @@ buildArguments :-
 	assertSupports(Supports, NewArgument),
 	liftPremises(Supports, NewArgument),
 	asserta(argument(NewArgument)),
-    buildArguments.
+    buildArgumentsFromRules.
+buildArgumentsFromRules.
 
-buildArguments.
+buildArgumentsInfo :-
+	argument(Argument),
+	defeasibleRules(Argument, Rules),
+	ordinaryPremises(Argument, Prem),
+	lastDefeasibleRules(Argument, LastRules),
+	\+ argumentInfo(Argument, [LastRules, Rules, Prem]),
+	asserta(argumentInfo(Argument, [LastRules, Rules, Prem])),
+	fail.
+buildArgumentsInfo.
+
+assertSupports([], _).
+assertSupports([Support | OtherSupports], Argument) :-
+	asserta(support(Support, Argument)),
+	assertSupports(OtherSupports, Argument).
+
+liftPremises(Supports, Argument) :-
+	findall(_, (member(S, Supports), prem(Prem, S), asserta(prem(Prem, Argument))), _).
+
+% Sub-arguments
+sub(A, [A|Subs]) :- findall(Sub, support(Sub, A), Subs).
+
+% Defeasible Premises
+ordinaryPremises(A, Prem) :- findall(R,  (prem([R, _], A), \+ strict(R)), Prem).
+
+% Defeasible rules
+defeasibleRules([Rules, _, _], DefRules) :- 
+	findall(X, (member(X, Rules), \+ strict(X), \+ premise([X, _])), UnsortedRules),
+	sort(UnsortedRules, DefRules).
+
+% Last Defeasible Rules
+lastDefeasibleRules(A, Rules) :- lastRule(A, Rules).
+	
+lastRule([Rules, none, Conc], []).
+lastRule([Rules, TopRule, Conc], [TopRule]) :- TopRule \== none, \+ strict(TopRule).
+lastRule([Rules, TopRule, Conc], Influent) :- 
+	strict(TopRule),
+	findall(X, (support([R, TR, C], [Rules, TopRule, Conc]), lastRule([R, TR, C], X)), Res),
+	flatten(Res, Influent).
 
 %========================================================================
 % SUPPORT DEFINITION
@@ -96,42 +136,38 @@ ruleBodyIsSupported([ [unless, _] | Others], Premises, Supports, ResultPremises,
 ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	(callable(Check) -> call(Check); Check),
 	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([ Statement | Others], Premises, Supports, ResultPremises, ResultSupports) :-
+ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
     argument([ArgumentID, RuleID, Statement]),
 	append(ArgumentID, Premises, NewPremises),
 	append([[ArgumentID, RuleID, Statement]], Supports, NewSupports),
 	ruleBodyIsSupported(Others, NewPremises, NewSupports, ResultPremises, ResultSupports).
-
-assertSupports([], _).
-assertSupports([Support | OtherSupports], Argument) :-
-	asserta(support(Support, Argument)),
-	assertSupports(OtherSupports, Argument).
-
-liftPremises(Supports, Argument) :-
-	findall(_, (member(S, Supports), prem(Prem, S), asserta(prem(Prem, Argument))), _).
 
 %========================================================================
 % ATTACK DEFINITION
 %========================================================================
 
 buildAttacks :-
+	buildDirectAttacks,
+	buildTransitiveAttacks.
+
+buildDirectAttacks :-
 	argument(A),
 	argument(B),
 	A \== B,
-    attacks(T, A, B),
-	\+(attack(T, A, B)),
+    once(attacks(T, A, B)),
+	\+ attack(T, A, B),
 	asserta(attack(T, A, B)),
 	fail.
+buildDirectAttacks.
 
-buildAttacks :-
+buildTransitiveAttacks :-
 	attack(T, A, B),
 	support(B, C),
 	acceptableTransitivity(T, A, C),
 	\+ attack(T, A, C),
 	asserta(attack(T, A, C)),
-    buildAttacks.
-
-buildAttacks.
+    buildTransitiveAttacks.
+buildTransitiveAttacks.
 
 attacks(rebut, A, B) :- rebuts(A, B).
 attacks(contrary_rebut, A, B) :- contraryRebuts(A, B).
@@ -166,20 +202,6 @@ conflict( [obl, [neg, Atom]],  [perm, [Atom]]).
 
 conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
 conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
-
-%------------------------------------------------------------------------
-% Sub argument definition: structures that support intermediate conclusions
-% (plus the argument itself and its premises as limiting cases)
-% Given an argument A : A1...An; j1; the set of its subarguments
-% Sub(A), the set of its direct subarguments DirectSub(A),are defined as follows:
-% • Sub(A) = Sub(A1) U ... U Sub(An) U {A},
-% • DirectSub(A) = {A1,...An}
-%------------------------------------------------------------------------
-sub(B, [B |Subs]) :-
-	findall(Sub,  support(Sub, B), Subs ).
-
-ordinaryPremises(B, Prem) :-
-	findall(R,  (prem([R, _], B), \+ strict(R)), Prem).
 
 %------------------------------------------------------------------------
 % Rebutting definition: clash of incompatible conclusions
@@ -232,6 +254,7 @@ undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
 % Rebut restriction. If the attacked argument has a strict rule as 
 % the TopRule also the attacker must
 %------------------------------------------------------------------------
+
 restrict(_, _) :- unrestrictedRebut.
 restrict([_, TopRuleA, _], [_, TopRuleB, _ ]) :-
 	\+ unrestrictedRebut,
@@ -247,12 +270,16 @@ recoverUnifiers(Body, Argument) :-
 unifySupports(Body, []).
 unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 
-
 %------------------------------------------------------------------------
 % Superiority definition
 % A superiority relation over a set of rules Rules is an antireflexive and
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
+
+superiorArgument(A, B) :-
+	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),
+	argumentInfo(B, [LastDefRulesB, DefRulesB, DefPremisesB]),
+	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB).
 
 superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB) :-
     orderingPrinciple(last),
@@ -261,13 +288,6 @@ superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB)
 superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB) :-
     orderingPrinciple(weakest),
 	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB).
-
-superiorArgument([RulesA, TopRuleA, ConcA], [RulesB, TopRuleB, ConcB]) :-
-	influentRules(RulesA, TopRuleA, ConcA, InfluentA),
-	influentRules(RulesB, TopRuleB, ConcB, InfluentB), !,
-	ordinaryPremises([RulesA, TopRuleA, ConcA], PremisesA),
-	ordinaryPremises([RulesB, TopRuleB, ConcB], PremisesB),
-	superior(InfluentA, PremisesA, InfluentB, PremisesB).
 
 superior([], PremisesA, [], PremisesB) :-
 	weaker(PremisesB, PremisesA).
@@ -285,24 +305,6 @@ superior(DefRulesA, PremisesA, DefRulesB, PremisesB) :-
 	weaker(DefRulesB, DefRulesA),
 	weaker(PremisesB, PremisesA).
 
-influentRules(Rules, _, _, InfluentRules) :-
-	orderingPrinciple(weakest),
-	weakestRule(Rules, InfluentRules).
-
-influentRules(Rules, TopRule, Conc, InfluentRules) :-
-	orderingPrinciple(last),
-	lastRule(Rules, TopRule, Conc, InfluentRules).
-
-weakestRule(Rules, Influent) :-
-	findall(X, (member(X, Rules), \+ strict(X), \+ premise([X, _])), Influent).
-
-lastRule(Rules, none, Conc, []).
-lastRule(Rules, TopRule, Conc, [TopRule]) :- TopRule \== none, \+ strict(TopRule).
-lastRule(Rules, TopRule, Conc, Influent) :- 
-	strict(TopRule),
-	findall(X, (support([R, TR, C], [Rules, TopRule, Conc]), lastRule(R, TR, C, X)), Res),
-	flatten(Res, Influent).
-
 weaker(RulesA, []) :-
 	RulesA \== [].
 
@@ -318,7 +320,6 @@ weaker(RulesA, RulesB) :-
 	RulesB \== [],
 	orderingComparator(democrat),
 	weakerDemo(RulesA, RulesB).
-
 
 %(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′) 
 % and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).

@@ -76,7 +76,7 @@ class ArgumentationGraphTest {
             solver.setFlag(Unknown.name, Unknown.FAIL)
             solver.solve(Struct.parse("buildArguments")).toList()
             solver.solve(Struct.parse("buildAttacks")).toList()
-            assertEquals(13, solver.dynamicKb.size)
+            assertEquals(17, solver.dynamicKb.size)
 
             testYesGoal(
                 ktListOf(
@@ -125,7 +125,7 @@ class ArgumentationGraphTest {
         prolog {
             val solver = solverWithTheory()
             solver.solve(Struct.parse("buildArguments")).toList()
-            assertEquals(6, solver.dynamicKb.size)
+            assertEquals(10, solver.dynamicKb.size)
 
             testYesGoal(
                 ktListOf(
