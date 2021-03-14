@@ -141,8 +141,8 @@ attacks(undercut, A, B) :- undercuts(A, B).
 
 acceptableTransitivity(rebut, A, B) :- restrict(A, B), \+ superiorArgument(B, A).
 acceptableTransitivity(contrary_rebut, A, B) :- restrict(A, B).
-acceptableTransitivity(undermine, A, B) :- \+ superiorArgument(B, A).
-acceptableTransitivity(contrary_undermine, _, _).
+acceptableTransitivity(undermine, A, B) :- restrict(A, B), \+ superiorArgument(B, A).
+acceptableTransitivity(contrary_undermine, A, B) :- restrict(A, B).
 acceptableTransitivity(undercut, _, _).
 
 %========================================================================
@@ -254,6 +254,14 @@ unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
 
+superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB) :-
+    orderingPrinciple(last),
+	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB).
+
+superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB) :-
+    orderingPrinciple(weakest),
+	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB).
+
 superiorArgument([RulesA, TopRuleA, ConcA], [RulesB, TopRuleB, ConcB]) :-
 	influentRules(RulesA, TopRuleA, ConcA, InfluentA),
 	influentRules(RulesB, TopRuleB, ConcB, InfluentB), !,
@@ -276,7 +284,6 @@ superior(DefRulesA, PremisesA, DefRulesB, PremisesB) :-
 	(PremisesA \== []; PremisesB \== []),
 	weaker(DefRulesB, DefRulesA),
 	weaker(PremisesB, PremisesA).
-
 
 influentRules(Rules, _, _, InfluentRules) :-
 	orderingPrinciple(weakest),

@@ -70,50 +70,79 @@ findAttacker(Target, QueryChain, Attacker, IsValid) :-
 findAttackerCicle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
 findAttackerCicle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
 
-attacker([Rules, TopRule, Conclusion, Groundings], Argument) :-
+attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
     member(X, Rules),
     \+ strict(X),
-    attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings], Argument).
+    attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
 
-attacker([Rules, TopRule, Conclusion, Groundings], Argument) :-
+attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
     member(X, Groundings),
-    attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings], Argument).
+    attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
 
 % undercut
 attackerOnRule(Rule, _, Argument) :-
     buildArgument([undercut(Rule)], Argument).
 
 % rebut e undermine
-attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _], [Rules, TopRule, Conc, Grondings]) :-
+attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _, [LDRA, DRA, DPA]], [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]) :-
     Term \== [unless, _],
     conflict(Term, X),
-    buildArgument(X, [Rules, TopRule, Conc, Grondings]),
-    \+ superiorArgument([TargetRules, TargetTopRule, TargetConc], [Rules, TopRule, Conc]).
+    buildArgument(X, [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]),
+    restrict([Rules, TopRule, Conc], [TargetRules, TargetTopRule, TargetConc]),
+    \+ superiorArgument(LDRA, DRA, DPA, LDRB, DRB, DPB).
 
 % contrary-rebut and contrary-undermine
-attackerOnTerm([unless, X], _, Argument) :-
-    buildArgument(X, Argument).
+attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG, XI]) :-
+    buildArgument(X, [XR, XTR, XC, XG, XI]),
+    restrict([XR, XTR, XC], [Rules, TopRule, Conclusion]).
 
 % Ricorsione sul corpo di 
 %   - rule([id, [premises], conclusion])
 %   - premise([id, conclusion])
 % fino ad arrivare a una regola senza premesse o ad una premessa
-% Mi porto dietro il grounding dei termini per poter derivare gli attacchi
+% Mi porto dietro il grounding dei termini per poter derivare gli attacchi e le info sulla derivazione dell'argomento (defRules, lastDefRules, defPremises)
 buildArgument(Query, Argument) :-
-    build(Query, [TopRule|Rules], Groundings),
-    Argument = [[TopRule|Rules], TopRule, Query, Groundings].
+    build(Query, Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
+    once(deduplicate(DefRules, CDefRules)),
+    once(deduplicate(DefPremises, CDefPremises)),
+    once(deduplicate(Groundings, CGroundings)),
+    Argument = [AllRules, TopRule, Query, CGroundings, [LastDefRules, CDefRules, CDefPremises]].
 
-build(Conclusion, [Id], [Conclusion]) :-
-    premise([Id, Conclusion]).
-build(Conclusion, [Id|Res], [Conclusion|Concls]) :-
+premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ strict(Id).
+premiseRules(Id, [[Id], none, [], [], []]) :- strict(Id).
+
+ruleRules(Id, [AllRules, _, DefRules, DefPremises], 
+    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ strict(Id).
+ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises], 
+    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- strict(Id).
+
+% Da qui posso prendere la top Rule e le def premises
+build(Conclusion, [Conclusion], Rules) :-
+    premise([Id, Conclusion]),
+    premiseRules(Id, Rules).
+
+% Da qui posso prendere la top rule, le DefRules e le LastDefRules 
+build(Conclusion, [Conclusion|Concls], Rules) :-
     rule([Id, Premises, Conclusion]),
-    buildPremises(Premises, Res, Concls).
-build([prolog(_)], [], []).
-build([unless, Atom], [], [[unless, Atom]]).
+    buildPremises(Premises, Concls, ResRules),
+    ruleRules(Id, ResRules, Rules).
 
-buildPremises([], [], []).
-buildPremises([X|T], RR, CC) :-
-    build(X, Rules, Concls),
-    buildPremises(T, Res, Concls2),
-    appendLists([Rules, Res], RR),
-    appendLists([Concls, Concls2], CC).
+build([prolog(Check)], [], []) :- (callable(Check) -> call(Check); Check).
+build([unless, Atom], [[unless, Atom]], []).
+
+mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]).
+mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
+   appendLists([HAR, TAR], AR),
+   appendLists([HLDR, TLDR], LDR),
+   appendLists([HDR, TDR], DR),
+   appendLists([HDP, TDP], DP).
+
+buildPremises([], [], [[], [], [], []]).
+buildPremises([H|T], Concls, Rules) :-
+    build(H, HConcls, HRules),
+    buildPremises(T, TConcls, TRules),
+    appendLists([HConcls, TConcls], Concls),
+    mergeRules(HRules, TRules, Rules).
+
+deduplicate([], []).
+deduplicate(List, Output) :- List \== [], setof(X, member(X, List), Output).
