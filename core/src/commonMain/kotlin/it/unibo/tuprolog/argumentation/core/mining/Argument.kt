@@ -6,7 +6,7 @@ import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsName
 
-class Argument(val label: String, val topRule: String, val rules: List<String>, val conclusion: String) {
+class Argument(val label: String, val topRule: String, val rules: List<String>, val conclusion: String, private val supports: List<List<String>>) {
 
     private var subargs: List<String> = emptyList()
     var identifier = ""
@@ -25,17 +25,33 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
 
     companion object {
 
-        private fun arguments(label: String, arguments: Term?): Sequence<Argument> {
+        private fun argTopRule(argument: List<Term>): String = argument[1].toString()
+
+        private fun argConclusion(argument: List<Term>): String = argument[2].toString()
+
+        private fun argRules(argument: List<Term>): List<String> {
+            return (
+                if (argument[0].isEmptyList) emptyList()
+                else (argument[0] as Cons).toList()
+                ).map { x -> x.toString() }
+        }
+
+        private fun argSupports(engine: Solver, argument: Term): List<List<String>> {
+            return prolog {
+                engine.solve("support"(Y, argument))
+                    .filter { r -> r.isYes }
+                    .map { solution ->
+                        (solution.substitution[Y] as Cons)
+                            .toList().let { arg -> argRules(arg) }
+                    }.toList()
+            }
+        }
+
+        private fun arguments(engine: Solver, label: String, arguments: Term?): Sequence<Argument> {
             if (arguments?.isEmptyList == true) return emptySequence()
             return (arguments as Cons).toSequence().map {
                 (it as Cons).toList().let { arg ->
-                    Argument(
-                        label,
-                        arg[1].toString(),
-                        (if (arg[0].isEmptyList) emptyList() else (arg[0] as Cons).toList())
-                            .map { x -> x.toString() },
-                        arg[2].toString()
-                    )
+                    Argument(label, argTopRule(arg), argRules(arg), argConclusion(arg), argSupports(engine, it))
                 }
             }
         }
@@ -47,29 +63,24 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
                     .filter { it.isYes }
                     .map { solution ->
                         sequenceOf(
-                            arguments("in", solution.substitution[X]),
-                            arguments("out", solution.substitution[Y]),
-                            arguments("und", solution.substitution[Z])
+                            arguments(engine, "in", solution.substitution[X]),
+                            arguments(engine, "out", solution.substitution[Y]),
+                            arguments(engine, "und", solution.substitution[Z])
                         ).flatten()
                     }
                     .firstOrNull()?.toList()
             } ?: emptyList()
 
             arguments
-                .sortedBy { it.rules.size }
+                .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
                 .mapIndexed { index, arg ->
                     arg.identifier = "A$index"
                     arg
                 }
                 .forEach { arg ->
-                    arguments
-                        .filter { a -> a.identifier != arg.identifier && a.rules.isNotEmpty() }
-                        .takeIf { it.isNotEmpty() }
-                        ?.reduce { a: Argument, b: Argument ->
-                            if (arg.rules.containsAll(b.rules) && b.rules.size >= a.rules.size) b else a
-                        }?.let { sub ->
-                            if (arg.rules.size > 1) arg.addSubarg(sub.identifier)
-                        }
+                    arg.supports
+                        .map { support -> arguments.firstOrNull { it.rules == support }!!.identifier }
+                        .forEach { arg.addSubarg(it) }
                 }
 
             return arguments.asSequence()

@@ -134,7 +134,8 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
         private fun printTheory(theoryPane: JScrollPane, arguments: List<Argument>) {
             val textArea = JTextArea()
             textArea.isEditable = false
-            arguments.forEach { x -> textArea.append(x.descriptor + "\n") }
+            arguments.sortedBy { it.identifier.drop(1).toInt() }
+                .forEach { x -> textArea.append(x.descriptor + "\n") }
             theoryPane.viewport.view = textArea
         }
     }
