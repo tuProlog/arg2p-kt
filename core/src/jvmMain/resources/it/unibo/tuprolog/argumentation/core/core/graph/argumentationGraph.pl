@@ -148,38 +148,112 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 
 buildAttacks :-
 	buildDirectAttacks,
-	buildTransitiveAttacks.
+	buildTransitiveAttacks,
+	pruneAttacks.
 
 buildDirectAttacks :-
 	argument(A),
 	argument(B),
 	A \== B,
     once(attacks(T, A, B)),
-	\+ attack(T, A, B),
-	asserta(attack(T, A, B)),
+	\+ attack(T, A, B, B),
+	asserta(attack(T, A, B, B)),
 	fail.
 buildDirectAttacks.
 
 buildTransitiveAttacks :-
-	attack(T, A, B),
+	attack(T, A, B, D),
 	support(B, C),
-	acceptableTransitivity(T, A, C),
-	\+ attack(T, A, C),
-	asserta(attack(T, A, C)),
+	\+ attack(T, A, C, D),
+	asserta(attack(T, A, C, D)),
     buildTransitiveAttacks.
 buildTransitiveAttacks.
 
+pruneAttacks :-
+	attack(T, A, B, C),
+	once(defeat(T, A, B, C)),
+	asserta(attack(T, A, B)),
+	fail.
+pruneAttacks :- retractall(attack(_, _, _, _)).
+
+% That A defeats B could then be defined as A attacks B and A ≺ B.
+defeat(rebut, A, B, C) :- restrict(A, B), \+ superiorArgument(B, A, C).
+defeat(contrary_rebut, A, B, _) :- restrict(A, B).
+defeat(undermine, A, B, C) :- restrict(A, B), \+ superiorArgument(B, A, C).
+defeat(contrary_undermine, A, B, _) :- restrict(A, B).
+defeat(undercut, _, _, _).
+
+% Attack definition
 attacks(rebut, A, B) :- rebuts(A, B).
 attacks(contrary_rebut, A, B) :- contraryRebuts(A, B).
 attacks(undermine, A, B) :- undermines(A, B).
 attacks(contrary_undermine, A, B) :- contraryUndermines(A, B).
 attacks(undercut, A, B) :- undercuts(A, B).
 
-acceptableTransitivity(rebut, A, B) :- restrict(A, B), \+ superiorArgument(B, A).
-acceptableTransitivity(contrary_rebut, A, B) :- restrict(A, B).
-acceptableTransitivity(undermine, A, B) :- restrict(A, B), \+ superiorArgument(B, A).
-acceptableTransitivity(contrary_undermine, A, B) :- restrict(A, B).
-acceptableTransitivity(undercut, _, _).
+%------------------------------------------------------------------------
+% Rebutting definition: clash of incompatible conclusions
+% we assume a preference relation over arguments determining whether two
+% rebutting arguments mutually attack each other or only one of them
+% (being preferred) attacks the other
+%------------------------------------------------------------------------
+rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+	RuleB \== none,
+	\+ strict(RuleB),
+	conflict(RuleHeadA, RuleHeadB).
+
+%------------------------------------------------------------------------
+% Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
+%------------------------------------------------------------------------
+contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+	RuleA \== none,
+	RuleB \== none,
+	\+ strict(RuleB),
+	rule([RuleB, Body, _]),
+	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
+	member([unless, RuleHeadA], Body).
+
+%------------------------------------------------------------------------
+% Undermining definition: clash of incompatible premises
+%------------------------------------------------------------------------
+undermines([IDPremisesA, RuleA, RuleHeadA], [[IDPremiseB], none, RuleHeadB]) :-
+	\+ strict(IDPremiseB),
+	conflict(RuleHeadA, RuleHeadB).
+
+%------------------------------------------------------------------------
+% Contrary Undermining definition
+%------------------------------------------------------------------------
+contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+	RuleB \== none,
+	\+ strict(RuleB),
+	rule([RuleB, Body, _]),
+	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
+	member([unless, RuleHeadA], Body).
+
+%------------------------------------------------------------------------
+% Undercutting definition: attacks on defeasible inference rule
+%------------------------------------------------------------------------
+undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
+	\+ strict(RuleB).
+
+%------------------------------------------------------------------------
+% Rebut restriction. If the attacked argument has a strict rule as 
+% the TopRule also the attacker must
+%------------------------------------------------------------------------
+
+restrict(_, _) :- unrestrictedRebut, !.
+restrict([_, TopRuleA, _], [_, TopRuleB, _ ]) :-
+	\+ unrestrictedRebut,
+	\+ (strict(TopRuleB), \+ strict(TopRuleA)).
+
+%------------------------------------------------------------------------
+% Given a not instantiated rule and an argument, grounds the rule body using the argument support
+%------------------------------------------------------------------------
+recoverUnifiers(Body, Argument) :-
+	findall(X, support([_, _, X], Argument), Supports),
+	unifySupports(Body, Supports).
+
+unifySupports(Body, []).
+unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 
 %========================================================================
 % CONFLICT DEFINITION
@@ -204,77 +278,13 @@ conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
 conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
 
 %------------------------------------------------------------------------
-% Rebutting definition: clash of incompatible conclusions
-% we assume a preference relation over arguments determining whether two
-% rebutting arguments mutually attack each other or only one of them
-% (being preferred) attacks the other
-%------------------------------------------------------------------------
-rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
-	RuleB \== none,
-	\+ strict(RuleB),
-	conflict(RuleHeadA, RuleHeadB),
-	\+ superiorArgument([IDPremisesB, RuleB, RuleHeadB], [IDPremisesA, RuleA, RuleHeadA]).
-
-%------------------------------------------------------------------------
-% Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
-%------------------------------------------------------------------------
-contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
-	RuleA \== none,
-	RuleB \== none,
-	\+ strict(RuleB),
-	rule([RuleB, Body, _]),
-	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
-	member([unless, RuleHeadA], Body).
-
-%------------------------------------------------------------------------
-% Undermining definition: clash of incompatible premises
-%------------------------------------------------------------------------
-undermines([IDPremisesA, RuleA, RuleHeadA], [[IDPremiseB], none, RuleHeadB]) :-
-	\+ strict(IDPremiseB),
-	conflict(RuleHeadA, RuleHeadB),
-	\+ superiorArgument([[IDPremiseB], none, RuleHeadB], [IDPremisesA, RuleA, RuleHeadA]).
-
-%------------------------------------------------------------------------
-% Contrary Undermining definition
-%------------------------------------------------------------------------
-contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
-	RuleB \== none,
-	\+ strict(RuleB),
-	rule([RuleB, Body, _]),
-	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
-	member([unless, RuleHeadA], Body).
-
-%------------------------------------------------------------------------
-% Undercutting definition: attacks on defeasible inference rule
-%------------------------------------------------------------------------
-undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
-	\+ strict(RuleB).
-
-%------------------------------------------------------------------------
-% Rebut restriction. If the attacked argument has a strict rule as 
-% the TopRule also the attacker must
-%------------------------------------------------------------------------
-
-restrict(_, _) :- unrestrictedRebut.
-restrict([_, TopRuleA, _], [_, TopRuleB, _ ]) :-
-	\+ unrestrictedRebut,
-	\+ (strict(TopRuleB), \+ strict(TopRuleA)).
-
-%------------------------------------------------------------------------
-% Given a not instantiated rule and an argument, grounds the rule body using the argument support
-%------------------------------------------------------------------------
-recoverUnifiers(Body, Argument) :-
-	findall(X, support([_, _, X], Argument), Supports),
-	unifySupports(Body, Supports).
-
-unifySupports(Body, []).
-unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
-
-%------------------------------------------------------------------------
 % Superiority definition
 % A superiority relation over a set of rules Rules is an antireflexive and
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
+
+superiorArgument(_, B, C) :- orderingComparator(normal), superiorArgument(C, B).
+superiorArgument(A, B, _) :- \+ orderingComparator(normal), superiorArgument(A, B).
 
 superiorArgument(A, B) :-
 	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),

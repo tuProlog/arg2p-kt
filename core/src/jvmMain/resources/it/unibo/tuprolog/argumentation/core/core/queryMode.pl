@@ -89,7 +89,19 @@ attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _, [LDRA, DRA, DPA
     conflict(Term, X),
     buildArgument(X, [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]),
     restrict([Rules, TopRule, Conc], [TargetRules, TargetTopRule, TargetConc]),
-    \+ superiorArgument(LDRA, DRA, DPA, LDRB, DRB, DPB).
+    \+ superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, Term, TargetRules).
+
+superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
+    orderingComparator(normal),
+    buildArgument(TargetTerm, [Rules, _, _, _, [LDRC, DRC, DPC]]),
+    contained(Rules, TargetRules),
+    superiorArgument(LDRC, DRC, DPC, LDRB, DRB, DPB).
+superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, _, _) :-
+    \+ orderingComparator(normal),
+    superiorArgument(LDRA, DRA, DPA, LDRB, DRB, DPB).
+
+contained([], _).
+contained([H|T], Target) :- member(H, Target), contained(T, Target).
 
 % contrary-rebut and contrary-undermine
 attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG, XI]) :-
