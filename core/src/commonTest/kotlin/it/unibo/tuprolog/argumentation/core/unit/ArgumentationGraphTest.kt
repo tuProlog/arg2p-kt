@@ -48,13 +48,13 @@ class ArgumentationGraphTest {
                     "Attacks" to Struct.parse(
                         """
                         [
-                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]]),
-                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]),
-                            (rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]),
-                            (rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]]),
-                            (rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]),
+                            (rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]]),
                             (rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]]),
-                            (rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]])
+                            (rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]),
+                            (rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]]),
+                            (rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]),
+                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]),
+                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]])
                         ]"""
                     ),
                     "Supports" to Struct.parse(
@@ -92,33 +92,6 @@ class ArgumentationGraphTest {
             )
         }
     }
-
-//    @Test
-//    fun test() {
-//        prolog {
-//            val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
-//                otherLibraries = Libraries.of(Arg2p),
-//                dynamicKb = Theory.parse("""
-//                    argument([[r3,r1,r0],r1,[c]]).
-//                    argument([[r3,r0],r0,[a]]).
-//                    argument([[r3],r3,[neg,c]]).
-//                    argument([[r2],r2,[neg,a]]).
-//                    support([[r3,r0],r0,[a]],[[r3,r1,r0],r1,[c]]).
-//                    support([[r3],r3,[neg,c]],[[r3,r0],r0,[a]]).
-//                """.trimIndent()),
-// //                staticKb = Theory.parse("""
-// //                    prova :- asserta(a), prova2, fail.
-// //                    prova :- asserta(c).
-// //                    prova2 :- asserta(b), fail.
-// //                    prova2.
-// //                """.trimIndent())
-//            )
-//
-//            solver.solve(Struct.parse("buildAttacks")).toList()
-// //            solver.solve(Struct.parse("prova")).toList()
-//            assertEquals(2, solver.dynamicKb.size)
-//        }
-//    }
 
     @Test
     fun buildArguments() {

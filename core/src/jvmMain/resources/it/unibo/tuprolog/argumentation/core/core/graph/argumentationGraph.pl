@@ -172,6 +172,7 @@ buildTransitiveAttacks.
 pruneAttacks :-
 	attack(T, A, B, C),
 	once(defeat(T, A, B, C)),
+	\+ attack(T, A, B),
 	asserta(attack(T, A, B)),
 	fail.
 pruneAttacks :- retractall(attack(_, _, _, _)).
