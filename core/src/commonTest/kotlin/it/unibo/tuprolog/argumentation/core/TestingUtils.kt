@@ -22,7 +22,8 @@ object TestingUtils {
         Theory.parse(
             (
                 """
-                    :- op(1199, xfx, '~>').
+                    :- op(1199, xfx, ':=>').
+                    :- op(1199, xfx, ':->').
                     :- op(1199, xfx, '=>').
                     :- op(1001, xfx, ':').
                 """ + theory

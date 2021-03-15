@@ -10,147 +10,171 @@ import kotlin.test.Test
 
 class RuleTranslationTest {
 
-    @Test
-    fun baseFact() {
+    private fun testTranslation(theory: String, vararg expected: String) {
         prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : [] => a.
-                """
-                )
-            )
-
+            val solver = solver(withArgOperators(theory))
             solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal("rule"(listOf("r0", emptyList, listOf("a"))), solver)
+            expected.forEach { testYesGoal(Struct.parse(it), solver) }
         }
     }
 
     @Test
-    fun factWithNegation() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : [] => -a.
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal("rule"(listOf("r0", emptyList, listOf("neg", "a"))), solver)
-        }
-    }
+    fun defeasibleRuleWithEmptyPremises() =
+        testTranslation("r0 : [] => a.", "rule([r0, [], [a]])")
 
     @Test
-    fun factWithObligation() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : [] => o(-a).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal("rule"(listOf("r0", emptyList, listOf("obl", listOf("neg", "a")))), solver)
-        }
-    }
+    fun defeasibleRuleWithEmptyPremisesAndNegation() =
+        testTranslation("r0 : [] => -a.", "rule([r0, [], [neg, a]])")
 
     @Test
-    fun factWithPermission() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : [] => p(-a).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal("rule"(listOf("r0", emptyList, listOf("perm", listOf("neg", "a")))), solver)
-        }
-    }
+    fun defeasibleRuleWithEmptyPremisesAndObligation() =
+        testTranslation("r0 : [] => o(-a).", "rule([r0, [], [obl, [neg, a]]])")
 
     @Test
-    fun baseRule() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : a => o(-b).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal("rule"(listOf("r0", listOf(listOf("a")), listOf("obl", listOf("neg", "b")))), solver)
-        }
-    }
+    fun defeasibleRuleWithEmptyPremisesAndPermission() =
+        testTranslation("r0 : [] => p(-a).", "rule([r0, [], [perm, [neg, a]]])")
 
     @Test
-    fun ruleWithVar() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    r0 : a(X), o(b(X)) => -c(X).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal(Struct.parse("rule([r0, [[a(_)],[obl,[b(_)]]], [neg,c(_)]])"), solver)
-        }
-    }
+    fun defeasibleRule() =
+        testTranslation("r0 : a => o(-b).", "rule([r0, [[a]], [obl, [neg, b]]])")
 
     @Test
-    fun baseBp() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    bp(a).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal(Struct.parse("abstractBp([[a]])"), solver)
-        }
-    }
+    fun defeasibleRuleWithVar() =
+        testTranslation(
+            "r0 : a(X), o(b(X)) => -c(X).",
+            "rule([r0, [[a(_)],[obl,[b(_)]]], [neg,c(_)]])"
+        )
 
     @Test
-    fun bpWithVar() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    bp(-a(X)).
-                """
-                )
-            )
-
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal(Struct.parse("abstractBp([[neg, a(_)]])"), solver)
-        }
-    }
+    fun strictRuleWithEmptyPremises() =
+        testTranslation("r0 : [] -> a.", "rule([r0, [], [a]])", "strict(r0)")
 
     @Test
-    fun multivaluedBp() {
-        prolog {
-            val solver = solver(
-                withArgOperators(
-                    """
-                    bp(-a(X), o(b(X)), p(c)).
-                """
-                )
-            )
+    fun strictRuleWithEmptyPremisesAndNegation() =
+        testTranslation("r0 : [] -> -a.", "rule([r0, [], [neg, a]])", "strict(r0)")
 
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            testYesGoal(Struct.parse("abstractBp([[neg, a(_)], [obl, [b(_)]], [perm, [c]]])"), solver)
-        }
-    }
+    @Test
+    fun strictRuleWithEmptyPremisesAndObligation() =
+        testTranslation("r0 : [] -> o(-a).", "rule([r0, [], [obl, [neg, a]]])", "strict(r0)")
+
+    @Test
+    fun strictRuleWithEmptyPremisesAndPermission() =
+        testTranslation("r0 : [] -> p(-a).", "rule([r0, [], [perm, [neg, a]]])", "strict(r0)")
+
+    @Test
+    fun strictRule() =
+        testTranslation("r0 : a -> o(-b).", "rule([r0, [[a]], [obl, [neg, b]]])", "strict(r0)")
+
+    @Test
+    fun strictRuleWithVar() =
+        testTranslation(
+            "r0 : a(X), o(b(X)) -> -c(X).",
+            "rule([r0, [[a(_)],[obl,[b(_)]]], [neg,c(_)]])",
+            "strict(r0)"
+        )
+
+    @Test
+    fun ordinaryPremise() =
+        testTranslation("r0 :=> a.", "premise([r0, [a]])")
+
+    @Test
+    fun ordinaryPremiseAndNegation() =
+        testTranslation("r0 :=> -a.", "premise([r0, [neg, a]])")
+
+    @Test
+    fun ordinaryPremiseAndObligation() =
+        testTranslation("r0 :=> o(-a).", "premise([r0, [obl, [neg, a]]])")
+
+    @Test
+    fun ordinaryPremiseAndPermission() =
+        testTranslation("r0 :=> p(-a).", "premise([r0, [perm, [neg, a]]])")
+
+    @Test
+    fun ordinaryPremiseWithVar() =
+        testTranslation("r0 :=> -c(X).", "premise([r0, [neg,c(_)]])")
+
+    @Test
+    fun axiomPremise() =
+        testTranslation("r0 :-> a.", "premise([r0, [a]])", "strict(r0)")
+
+    @Test
+    fun axiomPremiseAndNegation() =
+        testTranslation("r0 :-> -a.", "premise([r0, [neg, a]])", "strict(r0)")
+
+    @Test
+    fun axiomPremiseAndObligation() =
+        testTranslation("r0 :-> o(-a).", "premise([r0, [obl, [neg, a]]])", "strict(r0)")
+
+    @Test
+    fun axiomPremiseAndPermission() =
+        testTranslation("r0 :-> p(-a).", "premise([r0, [perm, [neg, a]]])", "strict(r0)")
+
+    @Test
+    fun axiomPremiseWithVar() =
+        testTranslation("r0 :-> -c(X).", "premise([r0, [neg,c(_)]])", "strict(r0)")
+
+    @Test
+    fun baseBp() =
+        testTranslation("bp(a).", "abstractBp([[a]])")
+
+    @Test
+    fun bpWithVar() =
+        testTranslation("bp(-a(X)).", "abstractBp([[neg, a(_)]])")
+
+    @Test
+    fun multivaluedBp() =
+        testTranslation(
+            "bp(-a(X), o(b(X)), p(c)).",
+            "abstractBp([[neg, a(_)], [obl, [b(_)]], [perm, [c]]])"
+        )
+
+    @Test
+    fun undercutOnPremise() =
+        testTranslation("r0 :=> undercut(rule).", "premise([r0, [undercut(rule)]])")
+
+    @Test
+    fun undercutOnRule() =
+        testTranslation("r0 : a => undercut(rule).", "rule([r0, [[a]], [undercut(rule)]])")
+
+    @Test
+    fun weakNegation() =
+        testTranslation(
+            "r0 : a, ~(b) => undercut(rule).",
+            "rule([r0, [[a], [unless, [b]]], [undercut(rule)]])"
+        )
+
+    @Test
+    fun prologAntecedent() =
+        testTranslation(
+            "r0 : a, ~(b), prolog(a == a) => undercut(rule).",
+            "rule([r0, [[a], [unless, [b]], [prolog(a == a)]], [undercut(rule)]])"
+        )
+
+    @Test
+    fun autoTransposition() =
+        testTranslation(
+            """
+            r0 : a -> b.
+            autoTransposition.
+            """.trimIndent(),
+            "rule([r0, [[a]], [b]])",
+            "strict(r0)",
+            "rule([r0_i, [[neg, b]], [neg, a]])",
+            "strict(r0_i)"
+        )
+
+    @Test
+    fun autoTranspositionMulti() =
+        testTranslation(
+            """
+            r0 : a, b -> c.
+            autoTransposition.
+            """.trimIndent(),
+            "rule([r0, [[a], [b]], [c]])",
+            "strict(r0)",
+            "rule([r0_i, [[neg, c], [b]], [neg, a]])",
+            "strict(r0_i)",
+            "rule([r0_ii, [[neg, c], [a]], [neg, b]])",
+            "strict(r0_ii)"
+        )
 }
