@@ -1,7 +1,10 @@
-computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
+computeGlobalAcceptance([SORTEDSTATIN, SORTEDSTATOUT, SORTEDSTATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
     buildGraph([Arguments, Attacks, Supports]),!,
     buildArgumentLabelling([Arguments, Attacks, Supports], [ARGSIN, ARGSOUT, ARGSUND]),
     buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
+    sort(STATIN, SORTEDSTATIN),
+    sort(STATOUT, SORTEDSTATOUT),
+    sort(STATUND, SORTEDSTATUND),
     storeResults(ARGSIN, ARGSOUT, ARGSUND).
 
 buildGraph([Arguments, Attacks, Supports]) :-

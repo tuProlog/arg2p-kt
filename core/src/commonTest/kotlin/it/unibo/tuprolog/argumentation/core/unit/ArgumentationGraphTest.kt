@@ -9,7 +9,6 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.yes
-import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.collections.listOf as ktListOf
