@@ -1,17 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
+import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PreferencesTest {
-
-    private fun solverWithTheory(theory: String) = TestingUtils.solver(TestingUtils.withArgOperators(theory))
 
     private val baseTheory: String = """
             r0 : [] => c.
@@ -39,23 +35,6 @@ class PreferencesTest {
         "und" to "[]"
     )
 
-    private fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String) : MutableSolver {
-        return prolog {
-            solverWithTheory(theory).also { solver ->
-                TestingUtils.testGoalNoBacktracking(
-                    "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
-                    solver
-                ) {
-                    it.yes(
-                        "StatIn" to Struct.parse(argsIn),
-                        "StatOut" to Struct.parse(argsOut),
-                        "StatUnd" to Struct.parse(argsUnd)
-                    )
-                }
-            }
-        }
-    }
-
     private fun attacksSize(solver: MutableSolver) : Int = prolog {
             solver.solve("attack"("X", "Y", "Z"))
                 .filter { it.isYes }.count() }
@@ -63,23 +42,6 @@ class PreferencesTest {
     private fun check(theory: String, results: Map<String, String>, attacksNumber: Int) =
         buildLabelSets(theory, results["in"]!!, results["out"]!!, results["und"]!!).let {
             assertEquals(attacksNumber, attacksSize(it)) }
-
-    private fun answerQuery(theory: String, query: String, argsIn: String, argsOut: String, argsUnd: String) {
-        prolog {
-            solverWithTheory(theory).also { solver ->
-                TestingUtils.testGoalNoBacktracking(
-                    "answerQuery"(query,"StatIn", "StatOut", "StatUnd"),
-                    solver
-                ) {
-                    it.yes(
-                        "StatIn" to Struct.parse(argsIn),
-                        "StatOut" to Struct.parse(argsOut),
-                        "StatUnd" to Struct.parse(argsUnd)
-                    )
-                }
-            }
-        }
-    }
 
     @Test
     fun noPreferences() = check(baseTheory + """

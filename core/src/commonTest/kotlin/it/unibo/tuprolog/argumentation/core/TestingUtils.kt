@@ -1,14 +1,12 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.solve.Solution
-import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.assertSolutionEquals
+import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.solve.*
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.library.Libraries
-import it.unibo.tuprolog.solve.no
-import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.solve.Solver as BaseSolver
@@ -70,4 +68,40 @@ object TestingUtils {
 
     fun testNoGoal(goals: Iterable<Struct>, solver: BaseSolver = solver()) =
         goals.forEach { testNoGoal(it, solver) }
+
+    fun solverWithTheory(theory: String) = TestingUtils.solver(TestingUtils.withArgOperators(theory))
+
+    fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String): MutableSolver {
+        return prolog {
+            solverWithTheory(theory).also { solver ->
+                testGoalNoBacktracking(
+                    "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
+                    solver
+                ) {
+                    it.yes(
+                        "StatIn" to Struct.parse(argsIn),
+                        "StatOut" to Struct.parse(argsOut),
+                        "StatUnd" to Struct.parse(argsUnd)
+                    )
+                }
+            }
+        }
+    }
+
+    fun answerQuery(theory: String, query: String, argsIn: String, argsOut: String, argsUnd: String) {
+        prolog {
+            solverWithTheory(theory).also { solver ->
+                TestingUtils.testGoalNoBacktracking(
+                    "answerQuery"(Struct.parse(query), "StatIn", "StatOut", "StatUnd"),
+                    solver
+                ) {
+                    it.yes(
+                        "StatIn" to Struct.parse(argsIn),
+                        "StatOut" to Struct.parse(argsOut),
+                        "StatUnd" to Struct.parse(argsUnd)
+                    )
+                }
+            }
+        }
+    }
 }
