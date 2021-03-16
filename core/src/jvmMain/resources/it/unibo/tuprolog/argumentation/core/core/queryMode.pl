@@ -3,33 +3,26 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     argumentLabellingMode(grounded),
     check_modifiers_in_list(effects, [Goal], [X]),
     findall([X, Res], query(X, Res), Result),
-    populateResultSets(Result, YesResult, NoResult, UndResult), !.
+    populateResultSets(Result, ArgsIn, ArgsOut, ArgsUnd),
+    beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     \+ queryMode,
-    computeGlobalAcceptance([_, _, _], [ARGIN, ARGOUT, ARGUND]),
-    findall(Goal, answerSingleQuery(Goal, ARGIN), YesResult),
-    findall(Goal, answerSingleQuery(Goal, ARGOUT), NoResult),
-    findall(Goal, answerSingleQuery(Goal, ARGUND), UndResult).
+    computeGlobalAcceptance([_, _, _], [In, Out, Und]),
+    findall(X, member([_, _, X], In), ArgsIn),
+    findall(X, member([_, _, X], Out), ArgsOut),
+    findall(X, member([_, _, X], Und), ArgsUnd),
+    beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
+
+beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, In, Out, Und) :-
+    findall(Goal, answerSingleQuery(Goal, ArgsIn), In),
+    findall(Goal, answerSingleQuery(Goal, ArgsOut), Out),
+    findall(Goal, answerSingleQuery(Goal, ArgsUnd), Und).
 
 answerSingleQuery(Goal, Args) :-
     check_modifiers_in_list(effects, [Goal], [X]),
-    findall(Y, member([_ ,_, Y], Args), Set),
+    findall(Y, member(Y, Args), Set),
     member(X, Set).
-
-% isSkepticallyAcceptable(Goal) :-
-%     convertAllRules,
-%     findall(STATIN, computeGlobalAcceptance([STATIN, _, _], [_, _, _]), SOLUTIONS),
-%     check_modifiers_in_list(effects, [Goal], [X]),
-%     all(X, SOLUTIONS), !.
-
-% all(_, []).
-% all(Goal, [H|T]) :- member(Goal, H), all(Goal, T).
-
-% isCredulouslyAcceptable(Goal) :-
-%     convertAllRules,
-%     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
-%     answerSingleQuery(Goal, STATIN), !.
 
 populateResultSets([], [], [], []).
 populateResultSets([[Query,yes]|T], [Query|Yes], No, Und) :- populateResultSets(T, Yes, No, Und).
@@ -158,3 +151,17 @@ buildPremises([H|T], Concls, Rules) :-
 
 deduplicate([], []).
 deduplicate(List, Output) :- List \== [], setof(X, member(X, List), Output).
+
+% isSkepticallyAcceptable(Goal) :-
+%     convertAllRules,
+%     findall(STATIN, computeGlobalAcceptance([STATIN, _, _], [_, _, _]), SOLUTIONS),
+%     check_modifiers_in_list(effects, [Goal], [X]),
+%     all(X, SOLUTIONS), !.
+
+% all(_, []).
+% all(Goal, [H|T]) :- member(Goal, H), all(Goal, T).
+
+% isCredulouslyAcceptable(Goal) :-
+%     convertAllRules,
+%     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
+%     answerSingleQuery(Goal, STATIN), !.
