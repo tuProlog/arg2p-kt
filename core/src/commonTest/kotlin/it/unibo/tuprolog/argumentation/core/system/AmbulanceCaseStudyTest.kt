@@ -1,12 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@Ignore
+// @Ignore
 class AmbulanceCaseStudyTest {
 
     private val baseTheory: String =
@@ -105,6 +104,7 @@ class AmbulanceCaseStudyTest {
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
+        unrestrictedRebut.
         
         """.trimIndent()
 

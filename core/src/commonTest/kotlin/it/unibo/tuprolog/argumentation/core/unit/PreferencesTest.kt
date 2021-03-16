@@ -180,7 +180,7 @@ class PreferencesTest {
         "e",
         "[]",
         "[]",
-        "[[e]]"
+        "[e]"
     )
 
     @Test
@@ -192,7 +192,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )
@@ -206,7 +206,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )
@@ -220,7 +220,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )
@@ -236,7 +236,7 @@ class PreferencesTest {
         "e",
         "[]",
         "[]",
-        "[[e]]"
+        "[e]"
     )
 
     @Test
@@ -250,7 +250,7 @@ class PreferencesTest {
         "e",
         "[]",
         "[]",
-        "[[e]]"
+        "[e]"
     )
 
     @Test
@@ -262,7 +262,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )
@@ -277,7 +277,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )
@@ -294,7 +294,7 @@ class PreferencesTest {
         "e",
         "[]",
         "[]",
-        "[[e]]"
+        "[e]"
     )
 
     @Test
@@ -309,7 +309,7 @@ class PreferencesTest {
         "e",
         "[]",
         "[]",
-        "[[e]]"
+        "[e]"
     )
 
     @Test
@@ -322,7 +322,7 @@ class PreferencesTest {
             queryMode.
         """.trimIndent(),
         "e",
-        "[[e]]",
+        "[e]",
         "[]",
         "[]"
     )

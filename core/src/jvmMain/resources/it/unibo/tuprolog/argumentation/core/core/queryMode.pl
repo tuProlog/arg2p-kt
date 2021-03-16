@@ -76,18 +76,31 @@ attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
 attackerOnRule(Rule, _, Argument) :-
     buildArgument([undercut(Rule)], Argument).
 
-% rebut e undermine
+% rebut / undermine
+
 attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _, [LDRA, DRA, DPA]], [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]) :-
     Term \== [unless, _],
+    \+ strictArgumentStructured(DRA, DPA),
     conflict(Term, X),
+    restrictStructured(Term, TargetRules),
     buildArgument(X, [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]),
-    restrict([Rules, TopRule, Conc], [TargetRules, TargetTopRule, TargetConc]),
     \+ superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, Term, TargetRules).
+
+buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, SubGrounds, [LDRC, DRC, DPC]]) :-
+    buildArgument(Term, [SubRules, SubTopRule, SubConcl, SubGrounds, [LDRC, DRC, DPC]]),
+    contained(SubRules, Rules).
+
+strictArgumentStructured([], []).
+
+restrictStructured(Term, Rules) :-
+    \+ unrestrictedRebut,
+    buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, _, _]),
+    restrict([SubRules, SubTopRule, SubConcl]).
+restrictStructured(_, _) :- unrestrictedRebut.
 
 superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
     orderingComparator(normal),
-    buildArgument(TargetTerm, [Rules, _, _, _, [LDRC, DRC, DPC]]),
-    contained(Rules, TargetRules),
+    buildSubArgument(TargetTerm, TargetRules, [_, _, _, _, [LDRC, DRC, DPC]]),
     superiorArgument(LDRC, DRC, DPC, LDRB, DRB, DPB).
 superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, _, _) :-
     \+ orderingComparator(normal),
@@ -96,10 +109,9 @@ superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, _, _) :-
 contained([], _).
 contained([H|T], Target) :- member(H, Target), contained(T, Target).
 
-% contrary-rebut and contrary-undermine
+% contrary-rebut / contrary-undermine
 attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG, XI]) :-
-    buildArgument(X, [XR, XTR, XC, XG, XI]),
-    restrict([XR, XTR, XC], [Rules, TopRule, Conclusion]).
+    buildArgument(X, [XR, XTR, XC, XG, XI]).
 
 % Ricorsione sul corpo di 
 %   - rule([id, [premises], conclusion])
