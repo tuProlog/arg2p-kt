@@ -133,7 +133,7 @@ class AttacksTest {
                 r2 : a -> b.
                 r3 : [] -> c.
             """.trimIndent(),
-            mapOf("contrary_rebut" to 0)
+            mapOf("contrary_rebut" to 2)
         )
     }
 
@@ -152,9 +152,9 @@ class AttacksTest {
             baseConfig + """
                 r1 : ~(c) -> a.
                 r2 : a -> b.
-                r3 :-> c.
+                r3 :=> c.
             """.trimIndent(),
-            mapOf("contrary_undermine" to 0)
+            mapOf("contrary_undermine" to 2)
         )
     }
 }
