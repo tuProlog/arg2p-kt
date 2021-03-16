@@ -6,7 +6,8 @@ import kotlin.test.Test
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-class PerformanceTest {
+@Ignore
+class AmbulanceCaseStudyTest {
 
     private val baseTheory: String =
         """
@@ -98,26 +99,32 @@ class PerformanceTest {
         f23 :-> new(ambulance).
         f24 :-> production_manager(mike).
         f25 :=> claim(mike, test_ok(ambulance)).
-                   
+        
+        graphBuildMode(base).
+        statementLabellingMode(base).
+        argumentLabellingMode(grounded).
+        orderingPrinciple(last).
+        orderingComparator(elitist).
+        
         """.trimIndent()
 
+    private val structuredTheory = baseTheory + "queryMode."
+
+    private fun evaluateBoth(query: String, argsIn: String, argsOut: String, argsUnd: String) {
+        TestingUtils.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
+        TestingUtils.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
+    }
+
     @Test
-    @Ignore
     @ExperimentalTime
-    fun resolutionSpeedTest() {
+    fun abstractResolutionSpeedTest() {
         val time = measureTime {
             TestingUtils.answerQuery(
-                baseTheory + """
-                graphBuildMode(base).
-                statementLabellingMode(base).
-                argumentLabellingMode(grounded).
-                orderingPrinciple(last).
-                orderingComparator(elitist).
-                """.trimIndent(),
-                "responsible(lisa)",
-                "[]",
+                baseTheory,
+                "responsible(X)",
+                "[responsible(pino)]",
                 "[responsible(lisa), responsible(lisa)]",
-                "[]"
+                "[responsible(demers)]"
             )
         }
 
@@ -125,27 +132,58 @@ class PerformanceTest {
     }
 
     @Test
-    @Ignore
     @ExperimentalTime
     fun structuredResolutionSpeedTest() {
         val time = measureTime {
             TestingUtils.answerQuery(
-                baseTheory + """
-                graphBuildMode(base).
-                statementLabellingMode(base).
-                argumentLabellingMode(grounded).
-                orderingPrinciple(last).
-                orderingComparator(elitist).
-
-                queryMode.
-                """.trimIndent(),
-                "high_speed(X)",
-                "[]",
-                "[]",
-                "[[high_speed(ambulance)]]"
+                structuredTheory,
+                "responsible(X)",
+                "[responsible(pino)]",
+                "[responsible(lisa), responsible(lisa)]",
+                "[responsible(demers)]"
             )
         }
 
         println(time.inSeconds)
     }
+
+    @Test
+    fun responsible() = evaluateBoth(
+        "responsible(X)",
+        "[responsible(pino)]",
+        "[responsible(lisa), responsible(lisa)]",
+        "[responsible(demers)]"
+    )
+
+    @Test
+    fun obligationToStop() = evaluateBoth(
+        "o(stop(X))",
+        "[o(stop(car)), o(stop(pedestrian))]",
+        "[o(stop(ambulance))]",
+        "[]"
+    )
+
+    @Test
+    fun permissionToProceed() = evaluateBoth(
+        "p(-stop(X))",
+        "[p(-stop(ambulance))]",
+        "[p(-stop(pedestrian))]",
+        "[]"
+    )
+
+    @Test
+    fun highSpeed() = evaluateBoth(
+        "high_speed(X)",
+        "[]",
+        "[]",
+        "[high_speed(ambulance)]"
+    )
+
+    @Test
+    fun notHighSpeed() = evaluateBoth(
+        "-high_speed(X)",
+        "[]",
+        "[]",
+        "[-high_speed(ambulance)]"
+    )
 }
