@@ -3,10 +3,15 @@ package it.unibo.tuprolog.argumentation.core
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
-import it.unibo.tuprolog.solve.*
+import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.Solver
+import it.unibo.tuprolog.solve.TimeDuration
+import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.library.Libraries
+import it.unibo.tuprolog.solve.no
+import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.solve.Solver as BaseSolver
@@ -71,7 +76,7 @@ object TestingUtils {
 
     fun solverWithTheory(theory: String) = TestingUtils.solver(TestingUtils.withArgOperators(theory))
 
-    fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String): MutableSolver {
+    fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String): Solver {
         return prolog {
             solverWithTheory(theory).also { solver ->
                 testGoalNoBacktracking(

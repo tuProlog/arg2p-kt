@@ -136,7 +136,7 @@ class PerformanceTest {
                 argumentLabellingMode(grounded).
                 orderingPrinciple(last).
                 orderingComparator(elitist).
-                
+
                 queryMode.
                 """.trimIndent(),
                 "high_speed(X)",
