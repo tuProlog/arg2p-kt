@@ -122,7 +122,7 @@ lastRule([Rules, TopRule, Conc], [TopRule]) :- TopRule \== none, \+ strict(TopRu
 lastRule([Rules, TopRule, Conc], Influent) :- 
 	strict(TopRule),
 	findall(X, (support([R, TR, C], [Rules, TopRule, Conc]), lastRule([R, TR, C], X)), Res),
-	flatten(Res, Influent).
+	appendLists(Res, Influent).
 
 %========================================================================
 % SUPPORT DEFINITION
@@ -178,10 +178,10 @@ pruneAttacks :-
 pruneAttacks :- retractall(attack(_, _, _, _)).
 
 % That A defeats B could then be defined as A attacks B and A ≺ B.
-defeat(rebut, A, B, C) :- restrict(A, B), \+ superiorArgument(B, A, C).
-defeat(contrary_rebut, A, B, _) :- restrict(A, B).
-defeat(undermine, A, B, C) :- restrict(A, B), \+ superiorArgument(B, A, C).
-defeat(contrary_undermine, A, B, _) :- restrict(A, B).
+defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
+defeat(contrary_rebut, A, B, _).
+defeat(undermine, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
+defeat(contrary_undermine, A, B, _).
 defeat(undercut, _, _, _).
 
 % Attack definition
@@ -191,6 +191,16 @@ attacks(undermine, A, B) :- undermines(A, B).
 attacks(contrary_undermine, A, B) :- contraryUndermines(A, B).
 attacks(undercut, A, B) :- undercuts(A, B).
 
+strictArgument(Argument) :- argumentInfo(Argument, [_, [], []]).
+
+%------------------------------------------------------------------------
+% Rebut/Undermine restriction.
+%------------------------------------------------------------------------
+
+restrict(_) :- unrestrictedRebut, !.
+restrict([_, TopRule, _ ]) :- TopRule \== none, \+ strict(TopRule).
+restrict([[Premise], none, _ ]) :- \+ strict(Premise).
+
 %------------------------------------------------------------------------
 % Rebutting definition: clash of incompatible conclusions
 % we assume a preference relation over arguments determining whether two
@@ -199,7 +209,7 @@ attacks(undercut, A, B) :- undercuts(A, B).
 %------------------------------------------------------------------------
 rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
 	RuleB \== none,
-	\+ strict(RuleB),
+    \+ strictArgument([IDPremisesB, RuleB, RuleHeadB]),
 	conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
@@ -208,7 +218,6 @@ rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
 contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
 	RuleA \== none,
 	RuleB \== none,
-	\+ strict(RuleB),
 	rule([RuleB, Body, _]),
 	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
 	member([unless, RuleHeadA], Body).
@@ -217,7 +226,7 @@ contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB])
 % Undermining definition: clash of incompatible premises
 %------------------------------------------------------------------------
 undermines([IDPremisesA, RuleA, RuleHeadA], [[IDPremiseB], none, RuleHeadB]) :-
-	\+ strict(IDPremiseB),
+	\+ strictArgument([IDPremisesB, RuleB, RuleHeadB]),
 	conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
@@ -225,7 +234,6 @@ undermines([IDPremisesA, RuleA, RuleHeadA], [[IDPremiseB], none, RuleHeadB]) :-
 %------------------------------------------------------------------------
 contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
 	RuleB \== none,
-	\+ strict(RuleB),
 	rule([RuleB, Body, _]),
 	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
 	member([unless, RuleHeadA], Body).
@@ -235,16 +243,6 @@ contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHead
 %------------------------------------------------------------------------
 undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
 	\+ strict(RuleB).
-
-%------------------------------------------------------------------------
-% Rebut restriction. If the attacked argument has a strict rule as 
-% the TopRule also the attacker must
-%------------------------------------------------------------------------
-
-restrict(_, _) :- unrestrictedRebut, !.
-restrict([_, TopRuleA, _], [_, TopRuleB, _ ]) :-
-	\+ unrestrictedRebut,
-	\+ (strict(TopRuleB), \+ strict(TopRuleA)).
 
 %------------------------------------------------------------------------
 % Given a not instantiated rule and an argument, grounds the rule body using the argument support
