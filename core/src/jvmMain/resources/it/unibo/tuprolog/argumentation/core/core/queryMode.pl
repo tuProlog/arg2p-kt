@@ -2,7 +2,9 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
     argumentLabellingMode(grounded),
     check_modifiers_in_list(effects, [Goal], [X]),
+    retractall(result(_, _)),
     findall([X, Res], query(X, Res), Result),
+    retractall(result(_, _)),
     populateResultSets(Result, ArgsIn, ArgsOut, ArgsUnd),
     beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
 
@@ -35,22 +37,32 @@ query(Query, Res) :-
     once(defend(Argument, [], Res)).
 query(Query, und) :- \+ buildArgument(Query, _).
 
-% Poco ottimizzato: mentre cerco un In potrei già trovare un Und (va bufferizzato)
+% Buffering of the already examinated arguments
+defend(Argument, _, no) :- result(Argument, no).
+defend(Argument, _, und) :- result(Argument, und).
+defend(Argument, _, yes) :- result(Argument, yes).
+
 % Caso base: esiste fra i miei attaccanti un verificato -> io sono out
 defend(Argument, QueryChain, no) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
     once(defend(Attacker, [Argument|QueryChain], X)),
-    X == yes, !.
+    X == yes,
+    bufferResult(Argument, no), !.
 % Caso ciclo: esiste fra i miei attaccanti un argomento già incontrato (ciclo) sono Und
 defend(Argument, QueryChain, und) :-
-    findAttacker(Argument, QueryChain, Attacker, no), !.
+    findAttacker(Argument, QueryChain, Attacker, no),
+    bufferResult(Argument, und), !.
 % Caso indeterminatezza: con solo un attaccante Und sono Und
 defend(Argument, QueryChain, und) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
     once(defend(Attacker, [Argument|QueryChain], X)),
-    X == und, !.
+    X == und,
+    bufferResult(Argument, und), !.
 % Negli altri casi sono In
-defend(Argument, QueryChain, yes).
+defend(Argument, QueryChain, yes) :- bufferResult(Argument, yes).
+
+bufferResult(Argument, Result) :- \+ result(Argument, Result), asserta(result(Argument, Result)), !.
+bufferResult(Argument, Result) :- result(Argument, Result).
 
 % Considero le mie parti attaccabili
 %  - Rules per undercut e rebut
