@@ -17,9 +17,9 @@ import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame private constructor() {
 
-    private var queryMode: Boolean = false
+    private var queryMode: Boolean = true
     private var autoTransposition: Boolean = false
-    private var unrestrictedRebut: Boolean = false
+    private var unrestrictedRebut: Boolean = true
     private var graphBuildMode: String = "base"
     private var argumentLabellingMode: String = "grounded"
     private var statementLabellingMode: String = "base"
@@ -31,7 +31,7 @@ internal class FlagManagerFrame private constructor() {
         fun customTab(): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
-                setupChoiceBox("Graph Build Mode", listOf("base", "pgraph")) {
+                setupChoiceBox("Graph Build Mode", listOf("base")) {
                     flagManager.graphBuildMode = it
                 },
                 setupChoiceBox(
