@@ -54,9 +54,9 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
                 },
-                setupCheckBox("Query Mode") { flagManager.queryMode = it },
-                setupCheckBox("Auto Transposition") { flagManager.autoTransposition = it },
-                setupCheckBox("Unrestricted Rebut") { flagManager.unrestrictedRebut = it }
+                setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
+                setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
+                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 model.onNewQuery.subscribe {
@@ -111,10 +111,11 @@ internal class FlagManagerFrame private constructor() {
         }
 
         @JvmStatic
-        fun setupCheckBox(label: String, onChange: (Boolean) -> Unit): HBox {
+        fun setupCheckBox(label: String, isSelected: Boolean, onChange: (Boolean) -> Unit): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 CheckBox().also {
+                    it.isSelected = isSelected
                     it.setOnAction { _ -> onChange(it.isSelected) }
                 }
             )
