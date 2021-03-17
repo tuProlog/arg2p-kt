@@ -4,7 +4,7 @@ import io.github.gciatto.kt.node.NpmPublishExtension
 
 plugins {
     id("org.danilopianini.git-sensitive-semantic-versioning") version "0.2.3"
-    id("io.github.gciatto.kt-mpp-pp") version "0.3.1"
+    id("io.github.gciatto.kt-mpp-pp") version "0.3.4"
 }
 
 repositories {

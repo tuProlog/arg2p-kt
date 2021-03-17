@@ -20,32 +20,6 @@ kotlin {
                 implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
             }
         }
-
-//        val jvmMain by getting {
-//            dependencies {
-//                implementation("it.unibo.tuprolog:solve-classic-jvm:$tuPrologVersion")
-//                implementation("it.unibo.tuprolog:parser-theory-jvm:$tuPrologVersion")
-//            }
-//        }
-//
-//        val jvmTest by getting {
-//            dependencies {
-//                implementation("it.unibo.tuprolog:test-solve-jvm:$tuPrologVersion")
-//            }
-//        }
-//
-//        val jsMain by getting {
-//            dependencies {
-//                implementation("it.unibo.tuprolog:solve-classic-js:$tuPrologVersion")
-//                implementation("it.unibo.tuprolog:parser-theory-js:$tuPrologVersion")
-//            }
-//        }
-//
-//        val jsTest by getting {
-//            dependencies {
-//                implementation("it.unibo.tuprolog:test-solve-js:$tuPrologVersion")
-//            }
-//        }
     }
 }
 
