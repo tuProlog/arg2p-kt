@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
+import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
 import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -76,98 +77,109 @@ class RationalityTest {
         
         """.trimIndent()
 
+    private fun protoTest(theory: String, argsIn: Iterable<String>, argsOut: Iterable<String>, argsUnd: Iterable<String>) {
+        val prepare = { term: String -> if (term.startsWith("-")) "[neg,${term.removePrefix("-")}]" else "[$term]" }
+        val parse = { args: Iterable<String> -> args.map { prepare(it) }.joinToString(",", "[", "]") }
+
+        argsIn.forEach { answerQuery("$theory\nqueryMode.", it, "[$it]", "[]", "[]") }
+        argsOut.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[$it]", "[]") }
+        argsUnd.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[]", "[$it]") }
+
+        buildLabelSets(theory, parse(argsIn), parse(argsOut), parse(argsUnd))
+    }
+
     @Test
-    fun caminadaExample4() = buildLabelSets(
+    fun caminadaExample4() = protoTest(
         example4theory + "unrestrictedRebut.",
-        "[[wr],[m],[go],[b]]",
-        "[]",
-        "[[neg, hw],[hw]]"
-    ).let { }
+        listOf("wr", "m", "go", "b"),
+        listOf(),
+        listOf("-hw", "hw")
+    )
 
     @Test
-    fun caminadaExample4restricted() = buildLabelSets(
+    fun caminadaExample4restricted() = protoTest(
         example4theory,
-        "[[wr],[neg, hw],[m],[hw],[go],[b]]",
-        "[]",
-        "[]"
-    ).let { }
+        listOf("wr", "-hw", "m", "hw", "go", "b"),
+        listOf(),
+        listOf(),
+    )
 
     @Test
-    fun caminadaExample4transposed() = buildLabelSets(
+    fun caminadaExample4transposed() = protoTest(
         example4theory + """
             autoTransposition.
             unrestrictedRebut.
         """.trimIndent(),
-        "[[wr],[go]]",
-        "[]",
-        "[[neg, m],[neg, hw],[neg, b],[m],[hw],[b]]"
-    ).let { }
+        listOf("wr", "go"),
+        listOf(),
+        listOf("-m", "-hw", "-b", "m", "hw", "b")
+    )
 
     @Test
-    fun caminadaExample5() = buildLabelSets(
+    fun caminadaExample5() = protoTest(
         example5theory + "unrestrictedRebut.",
-        "[[e],[d],[c],[b],[a]]",
-        "[[neg,c]]",
-        "[]"
-    ).let { }
+        listOf("e", "d", "c", "b", "a"),
+        listOf("-c"),
+        listOf()
+    )
 
     @Test
-    fun caminadaExample5restricted() = buildLabelSets(
+    fun caminadaExample5restricted() = protoTest(
         example5theory,
-        "[[neg,c],[e],[d],[c],[b],[a]]",
-        "[]",
-        "[]"
-    ).let { }
+        listOf("-c", "e", "d", "c", "b", "a"),
+        listOf(),
+        listOf()
+    )
 
     @Test
-    fun caminadaExample5transposed() = buildLabelSets(
+    fun caminadaExample5transposed() = protoTest(
         example5theory + """
             autoTransposition.
             unrestrictedRebut.
         """.trimIndent(),
-        "[[d],[c],[a]]",
-        "[[neg,c]]",
-        "[[neg,e],[neg,b],[e],[b]]"
-    ).let { }
+        listOf("d", "c", "a"),
+        listOf("-c"),
+        listOf("-e", "-b", "e", "b")
+    )
 
     @Test
-    fun caminadaExample6() = buildLabelSets(
+    fun caminadaExample6() = protoTest(
         example6theory + "unrestrictedRebut.",
-        "[[g],[f],[e],[d],[c],[b],[a]]",
-        "[[neg,g]]",
-        "[]"
-    ).let { }
+        listOf("g", "f", "e", "d", "c", "b", "a"),
+        listOf("-g"),
+        listOf()
+    )
 
     @Test
-    fun caminadaExample6restricted() = buildLabelSets(
+    fun caminadaExample6restricted() = protoTest(
         example6theory,
-        "[[neg,g],[g],[f],[e],[d],[c],[b],[a]]",
-        "[]",
-        "[]"
-    ).let { }
+        listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
+        listOf(),
+        listOf()
+    )
 
     @Test
-    fun caminadaExample6transposed() = buildLabelSets(
+    fun caminadaExample6transposed() = protoTest(
         example6theory + """
             autoTransposition.
             unrestrictedRebut.
         """.trimIndent(),
-        "[[g],[d],[a]]",
-        "[[neg,g]]",
-        "[[neg,f],[neg,e],[neg,c],[neg,b],[f],[e],[c],[b]]"
-    ).let { }
+        listOf("g", "d", "a"),
+        listOf("-g"),
+        listOf("-f", "-e", "-c", "-b", "f", "e", "c", "b")
+    )
 
     @Test
-    fun caminadaExample7transposed() = buildLabelSets(
+    fun caminadaExample7transposed() = protoTest(
         example7theory + """
             argumentLabellingMode(grounded).
             autoTransposition.
             unrestrictedRebut.
         """.trimIndent(),
-        "[[g],[c],[b],[a]]",
-        "[[neg,g]]",
-        "[[neg,f],[neg,e],[neg,d],[f],[e],[d]]"
-    ).let { }
+        listOf("g", "c", "b", "a"),
+        listOf("-g"),
+        listOf("-f", "-e", "-d", "f", "e", "d")
+    )
 
     @Test
     fun caminadaExample7completeSemantic() {
