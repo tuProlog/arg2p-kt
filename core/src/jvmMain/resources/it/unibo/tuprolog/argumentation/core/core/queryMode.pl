@@ -141,9 +141,6 @@ attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG
 buildArgument(Query, Argument) :-
     \+ explored(Query),
     findall(_, (buildSingleArgument(Query, Argument), asserta(bufferedArgument(Query, Argument))), _),
-    fail.
-buildArgument(Query, _) :-
-    \+ explored(Query),
     asserta(explored(Query)),
     fail.
 buildArgument(Query, Argument) :-
