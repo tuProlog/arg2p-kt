@@ -70,7 +70,7 @@ internal class FlagManagerFrame private constructor() {
         fun cleanSolver(kb: Theory) {
             kb.retract(
                 listOf(
-                    Struct.parse("experimentalQueryMode").toClause(),
+                    Struct.parse("queryMode").toClause(),
                     Struct.parse("autoTransposition").toClause(),
                     Struct.parse("unrestrictedRebut").toClause(),
                     Struct.parse("graphBuildMode(_)").toClause(),
