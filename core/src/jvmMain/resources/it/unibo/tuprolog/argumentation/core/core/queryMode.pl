@@ -3,8 +3,12 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     argumentLabellingMode(grounded),
     check_modifiers_in_list(effects, [Goal], [X]),
     retractall(result(_, _)),
+    retractall(explored(_)),
+    retractall(bufferedArgument(_, _)),
     findall([X, Res], query(X, Res), Result),
     retractall(result(_, _)),
+    retractall(explored(_)),
+    retractall(bufferedArgument(_, _)),
     populateResultSets(Result, ArgsIn, ArgsOut, ArgsUnd),
     beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
 
@@ -16,10 +20,13 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     findall(X, member([_, _, X], Und), ArgsUnd),
     beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
 
-beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, In, Out, Und) :-
+beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, SIn, SOut, SUnd) :-
     findall(Goal, answerSingleQuery(Goal, ArgsIn), In),
     findall(Goal, answerSingleQuery(Goal, ArgsOut), Out),
-    findall(Goal, answerSingleQuery(Goal, ArgsUnd), Und).
+    findall(Goal, answerSingleQuery(Goal, ArgsUnd), Und),
+    sort(In, SIn),
+    sort(Out, SOut),
+    sort(Und, SUnd).
 
 answerSingleQuery(Goal, Args) :-
     check_modifiers_in_list(effects, [Goal], [X]),
@@ -107,7 +114,7 @@ strictArgumentStructured([], []).
 restrictStructured(Term, Rules) :-
     \+ unrestrictedRebut,
     buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, _, _]),
-    restrict([SubRules, SubTopRule, SubConcl]).
+    once(restrict([SubRules, SubTopRule, SubConcl])).
 restrictStructured(_, _) :- unrestrictedRebut.
 
 superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
@@ -130,7 +137,19 @@ attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG
 %   - premise([id, conclusion])
 % fino ad arrivare a una regola senza premesse o ad una premessa
 % Mi porto dietro il grounding dei termini per poter derivare gli attacchi e le info sulla derivazione dell'argomento (defRules, lastDefRules, defPremises)
+
 buildArgument(Query, Argument) :-
+    \+ explored(Query),
+    findall(_, (buildSingleArgument(Query, Argument), asserta(bufferedArgument(Query, Argument))), _),
+    fail.
+buildArgument(Query, _) :-
+    \+ explored(Query),
+    asserta(explored(Query)),
+    fail.
+buildArgument(Query, Argument) :-
+    bufferedArgument(Query, Argument).
+
+buildSingleArgument(Query, Argument) :-
     build(Query, Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
     once(deduplicate(DefRules, CDefRules)),
     once(deduplicate(DefPremises, CDefPremises)),
