@@ -21,6 +21,7 @@
 %========================================================================
 buildArgumentationGraph([Arguments, Attacks, Supports]) :-
         retractall(argument(_)),
+        retractall(argumentInfo(_, _)),
         retractall(attack(_, _, _)),
 	    retractall(support(_, _)),
 	    buildArguments,
