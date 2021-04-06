@@ -24,7 +24,9 @@ buildArgumentationGraph([Arguments, Attacks, Supports]) :-
         retractall(argumentInfo(_, _)),
         retractall(attack(_, _, _)),
 	    retractall(support(_, _)),
+	    retractall(reifiedBp(_)),
 	    buildArguments,
+%	    reifyBurdenOfProofsTest,
         buildAttacks,
         findall( [IDPremises,  TopRule,  RuleHead],
                  ( argument([IDPremises, TopRule, RuleHead]),
@@ -150,6 +152,7 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 buildAttacks :-
 	buildDirectAttacks,
 	buildTransitiveAttacks,
+%	bpTransform,
 	pruneAttacks.
 
 buildDirectAttacks :-
@@ -179,9 +182,79 @@ pruneAttacks :-
 pruneAttacks :- retractall(attack(_, _, _, _)).
 
 % That A defeats B could then be defined as A attacks B and A ≺ B.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Bp aware defeat definition (only rebut and undermine should be affected) :
+% A is superior to B and there is a bp constraint on A's conclusion
+% B is not superior to A and there is not a bp constraint on A's conclusion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+isArgumentInBurdenOfProofTest([_, _, Concl]) :-
+    isInBurdenOfProofTest(Concl).
+
+isArgumentComplementInBurdenOfProofTest(A) :-
+    complement(A, Compl),
+    isInBurdenOfProofTest(Compl), !.
+
+isInBurdenOfProofTest(Concl) :-
+    reifiedBp(Literals),
+    member(Concl, Literals), !.
+
+complementTest([_, _, Conc], A) :- conflict(Conc, A).
+
+%==============================================================================
+% BURDEN OF PROOF REIFICATION
+%==============================================================================
+
+reifyBurdenOfProofsTest :-
+    findall(Conc, argument([_, _, Conc]), Conclusions),
+    computeBpTest(Conclusions).
+
+computeBpTest(Conclusions) :-
+    abstractBp(AbstractBp),
+    fillTemplateTest(AbstractBp, Conclusions, R),
+    \+ reifiedBp(R),
+    asserta(reifiedBp(R)),
+    computeBpTest(Conclusions).
+computeBpTest(_).
+
+fillTemplateTest([], _, []).
+fillTemplateTest([H|T], C, [H|R]) :- member(H, C), fillTemplateTest(T, C, R).
+
+%==============================================================================
+% DEFEAT
+%==============================================================================
+
+bpTransform :-
+    partialBp,
+    findall(B, (attack(rebut, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResRebut),
+    findall(_, (member(Ar, ResRebut), retractall(attack(_, _, Ar, _))), _),
+    findall(B, (attack(undermine, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResUndermine),
+    findall(_, (member(Ar, ResUndermine), retractall(attack(_, _, Ar, _))), _).
+
+bpTransform :-
+    completeBp,
+    findall(B, (attack(rebut, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResRebut),
+    findall(B, (attack(undermine, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResUndermine),
+    appendLists([ResRebut, ResUndermine], Res),
+    revertAttacks(Res).
+
+revertAttacks(Args) :-
+    findall([T, B, A, C], (member(A, Args), attack(T, B, A, C)), LL),
+    member([T, B, A, C], LL),
+    retractall(attack(T, B, A, C)),
+    \+ attack(T, A, B, C),
+    asserta(attack(T, A, B, C)),
+    fail.
+revertAttacks(_).
+
 defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
+% defeat(rebut, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
+% defeat(rebut, A, B, C) :- isArgumentInBurdenOfProofTest(A), restrict(C), superiorArgument(A, B, C).
 defeat(contrary_rebut, A, B, _).
 defeat(undermine, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
+% defeat(undermine, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
+% defeat(undermine, A, B, C) :- isArgumentInBurdenOfProofTest(A), restrict(C), superiorArgument(A, B, C).
 defeat(contrary_undermine, A, B, _).
 defeat(undercut, _, _, _).
 
