@@ -221,32 +221,54 @@ computeBpTest(_).
 fillTemplateTest([], _, []).
 fillTemplateTest([H|T], C, [H|R]) :- member(H, C), fillTemplateTest(T, C, R).
 
+complements([_, _, ConcA], [_, _, ConcB]) :- conflict(ConcA, ConcB).
+
 %==============================================================================
 % DEFEAT
 %==============================================================================
 
-bpTransform :-
-    partialBp,
-    findall(B, (attack(rebut, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResRebut),
-    findall(_, (member(Ar, ResRebut), retractall(attack(_, _, Ar, _))), _),
-    findall(B, (attack(undermine, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResUndermine),
-    findall(_, (member(Ar, ResUndermine), retractall(attack(_, _, Ar, _))), _).
+prefOkTest(A, B) :- complements(A, B).
+prefOkTest([_, _, ConclA], [Rules, _, ConclB]) :-
+    \+ conflict(ConclA, ConclB),
+    \+ (
+        member(X, Rules),
+        (sup(X, _); sup(_, X))
+    ).
 
-bpTransform :-
-    completeBp,
-    findall(B, (attack(rebut, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResRebut),
-    findall(B, (attack(undermine, A, B, C), isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(A, B, C)), ResUndermine),
-    appendLists([ResRebut, ResUndermine], Res),
-    revertAttacks(Res).
+bpAttacksTest(Attacks) :-
+    findall(B, (
+            attack(T, A, B, C),
+            (T == rebut; T == undermine),
+            isArgumentInBurdenOfProofTest(A),
+            complements(A, B),
+            restrict(C),
+            \+ superiorArgument(A, B, C)),
+        Res),
+        findall(attack(T, Att, Ar, C), (
+            member(Ar, Res),
+            attack(T, Att, Ar, C),
+            (T == rebut; T == undermine),
+            prefOkTest(Ar, Att),
+            \+ superiorArgument(Att, Ar, C)),
+        Attacks).
 
-revertAttacks(Args) :-
-    findall([T, B, A, C], (member(A, Args), attack(T, B, A, C)), LL),
-    member([T, B, A, C], LL),
+revertAttacks(Attacks) :-
+    member(attack(T, B, A, C), Attacks),
     retractall(attack(T, B, A, C)),
-    \+ attack(T, A, B, C),
+    \+ attack(_, A, B, _),
     asserta(attack(T, A, B, C)),
     fail.
 revertAttacks(_).
+
+bpTransform :-
+    partialBp,
+    bpAttacksTest(Attacks),
+    findall(_, (member(A, Attacks), retractall(A)), _).
+
+bpTransform :-
+    completeBp,
+    bpAttacksTest(Attacks),
+    revertAttacks(Attacks).
 
 defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
 % defeat(rebut, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
