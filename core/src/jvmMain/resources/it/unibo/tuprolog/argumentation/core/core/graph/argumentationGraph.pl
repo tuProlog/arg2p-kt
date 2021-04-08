@@ -152,8 +152,9 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 buildAttacks :-
 	buildDirectAttacks,
 	buildTransitiveAttacks,
+	pruneAttacks,
 %	bpTransform,
-	pruneAttacks.
+	retractall(attack(_, _, _, _)).
 
 buildDirectAttacks :-
 	argument(A),
@@ -179,7 +180,9 @@ pruneAttacks :-
 	\+ attack(T, A, B),
 	asserta(attack(T, A, B)),
 	fail.
-pruneAttacks :- retractall(attack(_, _, _, _)).
+pruneAttacks.
+
+% pruneAttacks :- retractall(attack(_, _, _, _)).
 
 % That A defeats B could then be defined as A attacks B and A ≺ B.
 
@@ -227,46 +230,55 @@ complements([_, _, ConcA], [_, _, ConcB]) :- conflict(ConcA, ConcB).
 % DEFEAT
 %==============================================================================
 
-prefOkTest(A, B) :- complements(A, B).
-prefOkTest([_, _, ConclA], [Rules, _, ConclB]) :-
-    \+ conflict(ConclA, ConclB),
-    \+ (
-        member(X, Rules),
-        (sup(X, _); sup(_, X))
-    ).
-
 preferred(A, B) :-
     attack(_, A, B, C),
     superiorArgument(A, B, C), !.
 
+connected(Target, Target, _, _) :- write('found'), nl.
+connected(A, Target, Path, Origin) :-
+    attack(_, A, B),
+    B \= Origin,
+    \+ member(B, Path),
+    connected(B, Target, [B|Path], Origin).
+
+cycle(Origin, Target) :-
+    write('Cycle target:     '), write(Target),nl,
+    attack(_, A, B),
+    attack(_, B, A),
+    A \= Origin,
+    B \= Origin,
+    write('Start:     '), write(A),nl,
+    connected(A, Target, [A], Origin).
+
 bpAttacksTest(Attacks) :-
-    findall(A, (
+    findall((A, B), (
         attack(T, A, B, C),
         (T == rebut; T == undermine),
         isArgumentInBurdenOfProofTest(B),
         restrict(C),
-        \+ preferred(B, A, C)),
+        \+ preferred(B, A)),
     Res),
+    write(Res),nl,
     findall(attack(T, Att, Ar, C), (
-        member(Ar, Res),
+        member((Ar, Burdened), Res),
         attack(T, Att, Ar, C),
-        (T == rebut; T == undermine),
-        prefOkTest(Ar, Att),
-        \+ superiorArgument(Att, Ar, C)),
-    Attacks).
+        (Att = Burdened; once(cycle(Ar, Att)))),
+    Attacks),
+    write(Attacks), nl.
 
 revertAttacks(Attacks) :-
     member(attack(T, B, A, C), Attacks),
-    retractall(attack(T, B, A, C)),
-    \+ attack(_, A, B, _),
-    asserta(attack(T, A, B, C)),
+    attack(T, B, A),
+    retractall(attack(T, B, A)),
+    \+ attack(_, A, B),
+    asserta(attack(T, A, B)),
     fail.
 revertAttacks(_).
 
 bpTransform :-
     partialBp,
     bpAttacksTest(Attacks),
-    findall(_, (member(A, Attacks), retractall(A)), _).
+    findall(_, (member(attack(T, A, B, C), Attacks), retractall(attack(T, A, B))), _).
 
 bpTransform :-
     completeBp,
