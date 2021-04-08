@@ -235,22 +235,25 @@ prefOkTest([_, _, ConclA], [Rules, _, ConclB]) :-
         (sup(X, _); sup(_, X))
     ).
 
+preferred(A, B) :-
+    attack(_, A, B, C),
+    superiorArgument(A, B, C), !.
+
 bpAttacksTest(Attacks) :-
-    findall(B, (
-            attack(T, A, B, C),
-            (T == rebut; T == undermine),
-            isArgumentInBurdenOfProofTest(A),
-            complements(A, B),
-            restrict(C),
-            \+ superiorArgument(A, B, C)),
-        Res),
-        findall(attack(T, Att, Ar, C), (
-            member(Ar, Res),
-            attack(T, Att, Ar, C),
-            (T == rebut; T == undermine),
-            prefOkTest(Ar, Att),
-            \+ superiorArgument(Att, Ar, C)),
-        Attacks).
+    findall(A, (
+        attack(T, A, B, C),
+        (T == rebut; T == undermine),
+        isArgumentInBurdenOfProofTest(B),
+        restrict(C),
+        \+ preferred(B, A, C)),
+    Res),
+    findall(attack(T, Att, Ar, C), (
+        member(Ar, Res),
+        attack(T, Att, Ar, C),
+        (T == rebut; T == undermine),
+        prefOkTest(Ar, Att),
+        \+ superiorArgument(Att, Ar, C)),
+    Attacks).
 
 revertAttacks(Attacks) :-
     member(attack(T, B, A, C), Attacks),
