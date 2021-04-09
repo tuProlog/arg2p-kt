@@ -230,11 +230,7 @@ complements([_, _, ConcA], [_, _, ConcB]) :- conflict(ConcA, ConcB).
 % DEFEAT
 %==============================================================================
 
-preferred(A, B) :-
-    attack(_, A, B, C),
-    superiorArgument(A, B, C), !.
-
-connected(Target, Target, _, _) :- write('found'), nl.
+connected(Target, Target, _, _).
 connected(A, Target, Path, Origin) :-
     attack(_, A, B),
     B \= Origin,
@@ -242,21 +238,17 @@ connected(A, Target, Path, Origin) :-
     connected(B, Target, [B|Path], Origin).
 
 cycle(Origin, Target) :-
-    write('Cycle target:     '), write(Target),nl,
     attack(_, A, B),
     attack(_, B, A),
     A \= Origin,
     B \= Origin,
-    write('Start:     '), write(A),nl,
     connected(A, Target, [A], Origin).
 
 bpAttacksTest(Attacks) :-
     findall((A, B), (
-        attack(T, A, B, C),
-        (T == rebut; T == undermine),
+        attack(T, A, B),
         isArgumentInBurdenOfProofTest(B),
-        restrict(C),
-        \+ preferred(B, A)),
+        \+ isArgumentInBurdenOfProofTest(A)),
     Res),
     write(Res),nl,
     findall(attack(T, Att, Ar, C), (
