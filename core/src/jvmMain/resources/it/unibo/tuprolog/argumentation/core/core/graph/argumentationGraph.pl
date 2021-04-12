@@ -285,7 +285,7 @@ addAttacksSup(yes, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
 addAttacksSup(no, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
 
 addAttacks(Original, BpArg) :-
-    argumentState(Argument, Res),
+    argumentState(Original, Res),
     addAttacksSup(Res, Original, BpArg).
 
 bpArtificialConflict :-
@@ -293,11 +293,26 @@ bpArtificialConflict :-
     isArgumentInBurdenOfProofTest([Rules, Top, Conc]),
     Conflict = [[artificial|Rules], artificial, [bp(Conc)]],
     asserta(argument(Conflict)),
-    addAttacks([Rules, Top, Conc], Conflict).
+    addAttacks([Rules, Top, Conc], Conflict),
+    fail.
+bpArtificialConflict.
+
+bpArgumentationConflict :-
+    argument([Rules, Top, [X]]),
+    functor(X, 'bp', _),
+    X =.. L,
+    removehead(L, LC),
+    check_modifiers_in_list(effects, LC, Checked),
+    member(Y, Checked),
+    argument([Z, P, Y]),
+    addAttacks([Z, P, Y], [Rules, Top, [X]]),
+    fail.
+bpArgumentationConflict.
 
 bpTransform :-
     bpArgument,
-    bpArtificialConflict.
+    bpArtificialConflict,
+    bpArgumentationConflict.
 
 bpTransform :-
     partialBp,
