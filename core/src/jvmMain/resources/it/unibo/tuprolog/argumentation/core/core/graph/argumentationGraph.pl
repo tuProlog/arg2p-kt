@@ -153,7 +153,13 @@ buildAttacks :-
 	buildDirectAttacks,
 	buildTransitiveAttacks,
 	pruneAttacks,
+	retractall(result(_, _)),
+    retractall(explored(_)),
+    retractall(bufferedArgument(_, _)),
 %	bpTransform,
+	retractall(result(_, _)),
+    retractall(explored(_)),
+    retractall(bufferedArgument(_, _)),
 	retractall(attack(_, _, _, _)).
 
 buildDirectAttacks :-
@@ -230,19 +236,28 @@ complements([_, _, ConcA], [_, _, ConcB]) :- conflict(ConcA, ConcB).
 % DEFEAT
 %==============================================================================
 
-connected(Target, Target, _, _).
-connected(A, Target, Path, Origin) :-
-    attack(_, A, B),
-    B \= Origin,
-    \+ member(B, Path),
-    connected(B, Target, [B|Path], Origin).
+convertArgument([Rules, TopRule, Conc], [Rules2, TopRule2, Conc2, G, Sup]) :-
+    buildArgument(Conc, [Rules2, TopRule2, Conc2, G, Sup]),
+    TopRule = TopRule2,
+    equalsLists(Rules2, Rules), !.
 
-cycle(Origin, Target) :-
-    attack(_, A, B),
-    attack(_, B, A),
-    A \= Origin,
-    B \= Origin,
-    connected(A, Target, [A], Origin).
+equalsLists(L1, L2) :-
+    sort(L1, SL1),
+    sort(L2, SL2),
+    same(SL1, SL2).
+
+same([], []).
+same([H1|R1], [H2|R2]) :-
+    H1 = H2,
+    same(R1, R2).
+
+argumentState(Argument, Res) :-
+    convertArgument(Argument, Converted),
+    once(defend(Converted, [], Res)), !.
+
+evaluateUnd(Argument) :-
+    argumentState(Argument, Res),
+    Res = und, !.
 
 bpAttacksTest(Attacks) :-
     findall((A, B), (
@@ -250,13 +265,11 @@ bpAttacksTest(Attacks) :-
         isArgumentInBurdenOfProofTest(B),
         \+ isArgumentInBurdenOfProofTest(A)),
     Res),
-    write(Res),nl,
     findall(attack(T, Att, Ar, C), (
         member((Ar, Burdened), Res),
         attack(T, Att, Ar, C),
-        (Att = Burdened; once(cycle(Ar, Att)))),
-    Attacks),
-    write(Attacks), nl.
+        (Att = Burdened; once(evaluateUnd(Att)))),
+    Attacks).
 
 revertAttacks(Attacks) :-
     member(attack(T, B, A, C), Attacks),
@@ -266,6 +279,25 @@ revertAttacks(Attacks) :-
     asserta(attack(T, A, B)),
     fail.
 revertAttacks(_).
+
+addAttacksSup(und, Original, BpArg) :- asserta(attack(rebut, BpArg, Original)).
+addAttacksSup(yes, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
+addAttacksSup(no, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
+
+addAttacks(Original, BpArg) :-
+    argumentState(Argument, Res),
+    addAttacksSup(Res, Original, BpArg).
+
+bpArtificialConflict :-
+    argument([Rules, Top, Conc]),
+    isArgumentInBurdenOfProofTest([Rules, Top, Conc]),
+    Conflict = [[artificial|Rules], artificial, [bp(Conc)]],
+    asserta(argument(Conflict)),
+    addAttacks([Rules, Top, Conc], Conflict).
+
+bpTransform :-
+    bpArgument,
+    bpArtificialConflict.
 
 bpTransform :-
     partialBp,
