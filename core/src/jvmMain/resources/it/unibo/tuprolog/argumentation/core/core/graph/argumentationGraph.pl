@@ -280,9 +280,9 @@ revertAttacks(Attacks) :-
     fail.
 revertAttacks(_).
 
-addAttacksSup(und, Original, BpArg) :- asserta(attack(rebut, BpArg, Original)).
-addAttacksSup(yes, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
-addAttacksSup(no, Original, BpArg) :- asserta(attack(rebut, Original, BpArg)).
+addAttacksSup(und, Original, BpArg) :- asserta(attack(bp-rebut, BpArg, Original)).
+addAttacksSup(yes, Original, BpArg) :- asserta(attack(bp-rebut, Original, BpArg)).
+addAttacksSup(no, Original, BpArg) :- asserta(attack(bp-rebut, Original, BpArg)).
 
 addAttacks(Original, BpArg) :-
     argumentState(Original, Res),
@@ -309,10 +309,22 @@ bpArgumentationConflict :-
     fail.
 bpArgumentationConflict.
 
+inversion :-
+    argument([Rules, Top, [X]]),
+    functor(X, 'bp', _),
+    attack(bp-rebut, [Rules, Top, [X]], Target),
+    attack(_, Target, Attacked),
+    (attack(bp-rebut, Attacked, Y); attack(bp-rebut, Y, Attacked)),
+    \+ attack(bp-rebut, [Rules, Top, [X]], Y),
+    asserta(attack(bp-rebut, [Rules, Top, [X]], Y)),
+    fail.
+inversion.
+
 bpTransform :-
     bpArgument,
     bpArtificialConflict,
-    bpArgumentationConflict.
+    bpArgumentationConflict,
+    inversion.
 
 bpTransform :-
     partialBp,
