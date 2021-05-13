@@ -4,6 +4,48 @@
 % Year: 2019
 % ---------------------------------------------------------------
 
+%==============================================================================
+% BP LABELLING [ICAIL]
+%==============================================================================
+
+argumentBPLabelling([Arguments, Attacks, _], [BPIN, BPOUT, BPUND]) :-
+    reifyBurdenOfProofs(Arguments, [], []),
+    once(filterBpDefeat(Attacks, FilteredAttacks)),
+    write(FilteredAttacks),nl,
+    smartBpLabelling(Arguments, FilteredAttacks, [], [], [], BPIN, BPOUT, BPUND).
+
+filterBpDefeat([], []).
+filterBpDefeat([(T, B, A)|Attacks], FilteredAttacks) :-
+    (T = rebut; T = undermine),
+    isArgumentInBurdenOfProof(B),
+    attack(T, B, A, C),
+    \+ superiorArgument(B, A, C),
+    filterBpDefeat(Attacks, FilteredAttacks).
+filterBpDefeat([A|Attacks], [A|FilteredAttacks]) :-
+    filterBpDefeat(Attacks, FilteredAttacks).
+
+smartBpLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+    member(A, Arguments),
+    allAttacksOUT(Attacks, A, OUT),
+    subtract(Arguments, [A], NewArguments),
+    smartBpLabelling(NewArguments, Attacks, [A|IN], OUT, UND, ResultIN, ResultOUT, ResultUND).
+smartBpLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+    member(A, Arguments),
+    \+ isArgumentInBurdenOfProof(A),
+    oneAttackIN(Attacks, A, IN),
+    subtract(Arguments, [A], NewArguments),
+    smartBpLabelling(NewArguments, Attacks, IN, [A|OUT], UND, ResultIN, ResultOUT, ResultUND).
+smartBpLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+    member(A, Arguments),
+    isArgumentInBurdenOfProof(A),
+    subtract(Arguments, [A], NewArguments),
+    smartBpLabelling(NewArguments, Attacks, IN, [A|OUT], UND, ResultIN, ResultOUT, ResultUND).
+smartBpLabelling(Arguments, _, IN, OUT, _, IN, OUT, Arguments).
+
+%==============================================================================
+% BP LABELLING [ICLP]
+%==============================================================================
+
 writeDemonstration([]) :-
     demonstration,
     write('\n').
@@ -25,10 +67,6 @@ argumentBPLabelling(partial, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
 argumentBPLabelling(complete, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
     hbpComplete(go, IN, OUT, UND, BPIN, BPOUT, BPUND).
 
-%==============================================================================
-% COMPLETE HBP LABELLING
-%==============================================================================
-
 hbpComplete(stop, IN, OUT, UND, IN, OUT, UND).
 hbpComplete(_, IN, OUT, UND, BPIN, BPOUT, BPUND) :-
     writeDemonstration(['======================================================>']),
@@ -48,9 +86,6 @@ stopCondition(X, IN, CIN, OUT, COUT, UND, CUND) :-
 stopCondition_sorted(stop, IN, IN, OUT, OUT, UND, UND).
 stopCondition_sorted(go, _, _, _, _, _, _).
 
-%==============================================================================
-% PARTIAL HBP LABELLING
-%==============================================================================
 
 partialHBPLabelling([], IN_STAR, OUT_STAR, UND_STAR, IN_STAR, OUT_STAR, UND_STAR).
 partialHBPLabelling(UND, IN_STAR, OUT_STAR, UND_STAR, ResultIN, ResultOUT, ResultUND) :-
@@ -59,10 +94,12 @@ partialHBPLabelling(UND, IN_STAR, OUT_STAR, UND_STAR, ResultIN, ResultOUT, Resul
     demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, [A], NewUnd, TempIN, TempOUT, TempUND),
     partialHBPLabelling(NewUnd, TempIN, TempOUT, TempUND, ResultIN, ResultOUT, ResultUND).
 
+%==============================================================================
+% PARTIAL HBP LABELLING
+%==============================================================================
 /*
     (a.i) BP(neg(φ)), and no argument B for neg(φ) such that A < B is IN*, and no A1,...An is OUT*
 */
-
 demonstration(A, UND, IN_STAR, OUT_STAR, UND_STAR, RESOLVING, NewUnd, TempIN, OUT_STAR, UND_STAR) :-
 	isComplementInBurdenOfProof(A),
 	\+ findSupUndComplargument(A, UND, RESOLVING, _, _),
@@ -350,7 +387,7 @@ checkInAttecked(A, IN) :-
     member(B, IN), !.
 
 %==============================================================================
-% HBP LABELLING UTILITIES
+% BP LABELLING UTILITIES
 %==============================================================================
 
 /*

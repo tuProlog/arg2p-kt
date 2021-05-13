@@ -24,6 +24,10 @@ buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
     argumentCompleteLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
+    argumentLabellingMode(bp_grounded),
+    argumentBPLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]).
+
+buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
     argumentLabellingMode(bp_grounded_partial),
     argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
     argumentBPLabelling(partial, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).

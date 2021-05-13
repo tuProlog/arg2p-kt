@@ -39,6 +39,7 @@ internal class FlagManagerFrame private constructor() {
                     listOf(
                         "grounded",
                         "complete",
+                        "bp_grounded",
                         "bp_grounded_partial",
                         "bp_grounded_complete"
                     )
