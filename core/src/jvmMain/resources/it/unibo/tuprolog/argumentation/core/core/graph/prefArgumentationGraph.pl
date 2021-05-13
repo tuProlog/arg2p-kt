@@ -1,9 +1,9 @@
 buildPrefArgumentationGraph([UnionArguments, UnionAttacks, UnionSupports]) :-
     buildArgumentationGraph([Arguments, Attacks, Supports]),
     convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]),
-    buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
+%    buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
     appendLists([Arguments, NewArguments], UnionArguments),
-    appendLists([NewAttacks, PrefAttacks], UnionAttacks),
+    appendLists([NewAttacks, []], UnionAttacks),
     appendLists([Supports, NewSupports], UnionSupports), !.
 
 /*
@@ -37,11 +37,11 @@ generateId([IdA, _, _], [IdB, _, _], Res) :-
     concate([A, B], Res).
 
 concate([],'').
-concate([X|Tail], Res):-
+concate([X|Tail], Res) :-
 	concate(Tail, IntermediateRes),
    	atom_concat(X, IntermediateRes, Res).
 
-transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks).
+transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks) :-
     member((T, A, B), Attacks),
     member((B, C), Supports),
     ResAttack = (T, A, C),

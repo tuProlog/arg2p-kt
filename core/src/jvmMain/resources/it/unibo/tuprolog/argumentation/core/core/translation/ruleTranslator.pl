@@ -209,6 +209,10 @@ check_modifiers(H, List) :-
         arg(1, H, Arg),
         check_modifiers(Arg, Lper),
         List = [unless|[Lper]]);
+    functor(H, 'bp', _) -> (
+        H =.. [_|Arg],
+        check_modifiers_in_list(effects, Arg, Lper),
+        List = [bp|[Lper]]);
     List = [H].
 
 /*
@@ -236,6 +240,7 @@ removehead([_|Tail], Tail).
 defeasible_admissible([unless, Term]) :- admissible(Term).
 defeasible_admissible(Term) :- admissible(Term).
 
+admissible([bp, Term]) :- admissible_terms_complete(Term).
 admissible([neg, Term]) :- admissible_term(Term).
 admissible([obl, [Term]]) :- admissible_term(Term).
 admissible([obl, [neg, Term]]) :- admissible_term(Term).
@@ -250,7 +255,8 @@ admissible_term(Term) :-
     Term \== neg,
     Term \== obl,
     Term \== perm,
-    Term \== unless.
+    Term \== unless,
+    Term \== bp.
 admissible_term(Term) :- var(Term).
 admissible_term(Term) :-
     compound(Term),
@@ -258,6 +264,7 @@ admissible_term(Term) :-
     \+ functor(Term, 'p', _),
     \+ functor(Term, '-', _),
     \+ functor(Term, '~', _),
+    \+ functor(Term, 'bp', _),
     Term =.. [_|Args],
     admissible_terms(Args).
 
@@ -266,4 +273,7 @@ admissible_terms([H|T]) :-
     admissible_term(H),
     admissible_terms(T).
 
-
+admissible_terms_complete([]).
+admissible_terms_complete([H|T]) :-
+    admissible(H),
+    admissible_terms_complete(T).

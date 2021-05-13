@@ -22,11 +22,10 @@
 buildArgumentationGraph([Arguments, Attacks, Supports]) :-
         retractall(argument(_)),
         retractall(argumentInfo(_, _)),
+		retractall(attack(_, _, _, _)),
         retractall(attack(_, _, _)),
 	    retractall(support(_, _)),
-	    retractall(reifiedBp(_)),
 	    buildArguments,
-%	    reifyBurdenOfProofsTest,
         buildAttacks,
         findall( [IDPremises,  TopRule,  RuleHead],
                  ( argument([IDPremises, TopRule, RuleHead]),
@@ -153,14 +152,16 @@ buildAttacks :-
 	buildDirectAttacks,
 	buildTransitiveAttacks,
 	pruneAttacks,
+	bpArgument,
 	retractall(result(_, _)),
     retractall(explored(_)),
     retractall(bufferedArgument(_, _)),
-%	bpTransform,
+	bpTransform,
 	retractall(result(_, _)),
     retractall(explored(_)),
     retractall(bufferedArgument(_, _)),
-	retractall(attack(_, _, _, _)).
+    fail.
+buildAttacks. %:- retractall(attack(_, _, _, _)).
 
 buildDirectAttacks :-
 	argument(A),
@@ -280,9 +281,9 @@ revertAttacks(Attacks) :-
     fail.
 revertAttacks(_).
 
-addAttacksSup(und, Original, BpArg) :- asserta(attack(bp-rebut, BpArg, Original)).
-addAttacksSup(yes, Original, BpArg) :- asserta(attack(bp-rebut, Original, BpArg)).
-addAttacksSup(no, Original, BpArg) :- asserta(attack(bp-rebut, Original, BpArg)).
+addAttacksSup(und, Original, BpArg) :- asserta(attack(bprebut, BpArg, Original)).
+addAttacksSup(yes, Original, BpArg) :- asserta(attack(bprebut, Original, BpArg)).
+addAttacksSup(no, Original, BpArg) :- asserta(attack(bprebut, Original, BpArg)).
 
 addAttacks(Original, BpArg) :-
     argumentState(Original, Res),
@@ -298,43 +299,44 @@ bpArtificialConflict :-
 bpArtificialConflict.
 
 bpArgumentationConflict :-
-    argument([Rules, Top, [X]]),
-    functor(X, 'bp', _),
-    X =.. L,
-    removehead(L, LC),
-    check_modifiers_in_list(effects, LC, Checked),
+    argument([Rules, Top, [bp, Checked]]),
+%    functor(X, 'bp', _),
+%    X =.. L,
+%    removehead(L, LC),
+%    check_modifiers_in_list(effects, LC, Checked),
     member(Y, Checked),
     argument([Z, P, Y]),
-    addAttacks([Z, P, Y], [Rules, Top, [X]]),
+    addAttacks([Z, P, Y], [Rules, Top, [bp, Checked]]),
     fail.
 bpArgumentationConflict.
 
+% Da riscrivere, devo eliminare attacchi
 inversion :-
     argument([Rules, Top, [X]]),
     functor(X, 'bp', _),
-    attack(bp-rebut, [Rules, Top, [X]], Target),
+    attack(bprebut, [Rules, Top, [X]], Target),
     attack(_, Target, Attacked),
-    (attack(bp-rebut, Attacked, Y); attack(bp-rebut, Y, Attacked)),
-    \+ attack(bp-rebut, [Rules, Top, [X]], Y),
-    asserta(attack(bp-rebut, [Rules, Top, [X]], Y)),
+    (attack(bprebut, Attacked, Y); attack(bp-rebut, Y, Attacked)),
+    \+ attack(bprebut, [Rules, Top, [X]], Y),
+    asserta(attack(bprebut, [Rules, Top, [X]], Y)),
     fail.
 inversion.
 
 bpTransform :-
     bpArgument,
-    bpArtificialConflict,
+%    bpArtificialConflict,
     bpArgumentationConflict,
     inversion.
 
-bpTransform :-
-    partialBp,
-    bpAttacksTest(Attacks),
-    findall(_, (member(attack(T, A, B, C), Attacks), retractall(attack(T, A, B))), _).
+%bpTransform :-
+%    partialBp,
+%    bpAttacksTest(Attacks),
+%    findall(_, (member(attack(T, A, B, C), Attacks), retractall(attack(T, A, B))), _).
 
-bpTransform :-
-    completeBp,
-    bpAttacksTest(Attacks),
-    revertAttacks(Attacks).
+%bpTransform :-
+%    completeBp,
+%    bpAttacksTest(Attacks),
+%    revertAttacks(Attacks).
 
 defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
 % defeat(rebut, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
