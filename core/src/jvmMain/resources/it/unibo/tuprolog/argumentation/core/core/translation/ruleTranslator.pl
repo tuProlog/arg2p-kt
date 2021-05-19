@@ -55,7 +55,7 @@ axiomPremises(Axioms) :-
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-
-    findall([_, X], search('bp', 10, X), SpecialRules).
+    findall([bps, X], search('bp', 10, X), SpecialRules).
 
 %=======================================================================================================================
 % TRANSPOSITION
@@ -154,7 +154,7 @@ convertRule(RuleName, Preconditions, Effects) :-
  *   bp(-liable(X)).
  *   abastractBp([[neg, liable(X_e4149)]]).
  */
-convertRule(_, Effects) :-
+convertRule(bps, Effects) :-
     functor(Effects, 'bp', _),
     Effects =.. L,
     removehead(L, LC),
@@ -162,7 +162,6 @@ convertRule(_, Effects) :-
     assert(abstractBp(Checked)).
 
 convertRule(Name, Effects) :-
-    \+ functor(Effects, 'bp', _),
     tuple_to_list(Effects, Leffects),
     check_modifiers_in_list(effects, Leffects, LeffectsChecked),
     flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened),
@@ -240,6 +239,7 @@ removehead([_|Tail], Tail).
 defeasible_admissible([unless, Term]) :- admissible(Term).
 defeasible_admissible(Term) :- admissible(Term).
 
+admissible([neg, bp, Term]) :- admissible_terms_complete(Term).
 admissible([bp, Term]) :- admissible_terms_complete(Term).
 admissible([neg, Term]) :- admissible_term(Term).
 admissible([obl, [Term]]) :- admissible_term(Term).

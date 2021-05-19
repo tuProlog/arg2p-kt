@@ -63,3 +63,6 @@ insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(Bp, Burdened)|
 insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
     argumentChain(BurdenedL, Burdened, Attacks),
     insertBpArg((Bp, Burdened), Attacks, Others, Return).
+
+conflict([bp, Atom], [neg, bp, Atom]).
+conflict([neg, bp, Atom], [bp, Atom]).
