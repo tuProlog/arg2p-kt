@@ -9,7 +9,7 @@ plugins {
 
 repositories {
     mavenCentral()
-    maven("https://dl.bintray.com/pika-lab/tuprolog/")
+//    maven("https://dl.bintray.com/pika-lab/tuprolog/")
     jcenter()
 }
 

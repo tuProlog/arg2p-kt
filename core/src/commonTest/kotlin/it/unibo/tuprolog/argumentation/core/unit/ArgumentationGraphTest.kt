@@ -75,7 +75,7 @@ class ArgumentationGraphTest {
             solver.setFlag(Unknown.name, Unknown.FAIL)
             solver.solve(Struct.parse("buildArguments")).toList()
             solver.solve(Struct.parse("buildAttacks")).toList()
-            assertEquals(17, solver.dynamicKb.size)
+            assertEquals(24, solver.dynamicKb.size)
 
             testYesGoal(
                 ktListOf(

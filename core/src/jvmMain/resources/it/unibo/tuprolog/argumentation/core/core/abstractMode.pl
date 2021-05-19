@@ -1,6 +1,7 @@
 computeGlobalAcceptance([SORTEDSTATIN, SORTEDSTATOUT, SORTEDSTATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
     buildGraph([Arguments, Attacks, Supports]),!,
-    buildArgumentLabelling([Arguments, Attacks, Supports], [ARGSIN, ARGSOUT, ARGSUND]),
+    modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
+    buildArgumentLabelling([NewArguments, NewAttacks, NewSupports], [ARGSIN, ARGSOUT, ARGSUND]),
     buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
     sort(STATIN, SORTEDSTATIN),
     sort(STATOUT, SORTEDSTATOUT),
@@ -11,9 +12,14 @@ buildGraph([Arguments, Attacks, Supports]) :-
     graphBuildMode(base),
     buildArgumentationGraph([Arguments, Attacks, Supports]).
 
-buildGraph([Arguments, Attacks, Supports]) :-
-    graphBuildMode(pgraph),
-    buildPrefArgumentationGraph([Arguments, Attacks, Supports]).
+modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+    findall(X, graphExtension(X), Ext),
+    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
+
+modifyGraph([], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
+modifyGraph([X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
+    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
+    modifyArgumentationGraph(X, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
     argumentLabellingMode(grounded),

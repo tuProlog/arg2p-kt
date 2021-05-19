@@ -17,7 +17,10 @@ actual object Sources {
         get() = Theory.parse(ArgumentationGraph.theoryCode)
 
     actual val prefArgumentationGraph: Theory
-        get() = Theory.parse(PrefArgumentationGraph.theoryCode)
+        get() = Theory.parse(Preferences.theoryCode)
+
+    actual val bpArgumentationGraph: Theory
+        get() = Theory.parse(Bp.theoryCode)
 
     actual val bpLabelling: Theory
         get() = Theory.parse(BpPartialComplete.theoryCode)

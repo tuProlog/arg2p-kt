@@ -14,6 +14,7 @@ private val theories = sequenceOf(
     Sources.ruleTranslator,
     Sources.argumentationGraph,
     Sources.prefArgumentationGraph,
+    Sources.bpArgumentationGraph,
     Sources.groundedLabelling,
     Sources.completeLabelling,
     Sources.bpLabelling,

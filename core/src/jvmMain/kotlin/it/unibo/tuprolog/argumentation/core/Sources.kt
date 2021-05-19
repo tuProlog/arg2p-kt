@@ -24,7 +24,10 @@ actual object Sources {
         get() = loadTheoryFromPrologFile("core/graph/argumentationGraph")
 
     actual val prefArgumentationGraph: Theory
-        get() = loadTheoryFromPrologFile("core/graph/prefArgumentationGraph")
+        get() = loadTheoryFromPrologFile("core/graph/extensions/preferences")
+
+    actual val bpArgumentationGraph: Theory
+        get() = loadTheoryFromPrologFile("core/graph/extensions/bp")
 
     actual val bpLabelling: Theory
         get() = loadTheoryFromPrologFile("core/labellings/argument/bpPartialComplete")

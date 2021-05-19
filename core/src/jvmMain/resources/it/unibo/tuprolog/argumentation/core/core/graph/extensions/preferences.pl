@@ -1,5 +1,4 @@
-buildPrefArgumentationGraph([UnionArguments, UnionAttacks, UnionSupports]) :-
-    buildArgumentationGraph([Arguments, Attacks, Supports]),
+modifyArgumentationGraph(preference, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
     convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]),
 %    buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
     appendLists([Arguments, NewArguments], UnionArguments),

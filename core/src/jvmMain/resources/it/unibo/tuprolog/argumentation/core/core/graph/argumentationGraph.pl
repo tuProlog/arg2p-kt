@@ -32,8 +32,7 @@ buildArgumentationGraph([Arguments, Attacks, Supports]) :-
                    ground(argument([IDPremises, TopRule, RuleHead])) ),
                  Arguments),
         findall( (A1, A2), support(A1, A2), Supports),
-	    findall( (T, A1, A2), attack(T, A1, A2),  Attacks), 
-		printArgumentationGraph, !.
+	    findall( (T, A1, A2), attack(T, A1, A2),  Attacks), !.
 
 %========================================================================
 % ARGUMENT DEFINITION
@@ -151,17 +150,7 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 buildAttacks :-
 	buildDirectAttacks,
 	buildTransitiveAttacks,
-	pruneAttacks,
-	bpArgument,
-	retractall(result(_, _)),
-    retractall(explored(_)),
-    retractall(bufferedArgument(_, _)),
-	bpTransform,
-	retractall(result(_, _)),
-    retractall(explored(_)),
-    retractall(bufferedArgument(_, _)),
-    fail.
-buildAttacks. %:- retractall(attack(_, _, _, _)).
+	pruneAttacks.
 
 buildDirectAttacks :-
 	argument(A),
@@ -189,162 +178,10 @@ pruneAttacks :-
 	fail.
 pruneAttacks.
 
-% pruneAttacks :- retractall(attack(_, _, _, _)).
-
 % That A defeats B could then be defined as A attacks B and A ≺ B.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Bp aware defeat definition (only rebut and undermine should be affected) :
-% A is superior to B and there is a bp constraint on A's conclusion
-% B is not superior to A and there is not a bp constraint on A's conclusion
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-isArgumentInBurdenOfProofTest([_, _, Concl]) :-
-    isInBurdenOfProofTest(Concl).
-
-isArgumentComplementInBurdenOfProofTest(A) :-
-    complement(A, Compl),
-    isInBurdenOfProofTest(Compl), !.
-
-isInBurdenOfProofTest(Concl) :-
-    reifiedBp(Literals),
-    member(Concl, Literals), !.
-
-complementTest([_, _, Conc], A) :- conflict(Conc, A).
-
-%==============================================================================
-% BURDEN OF PROOF REIFICATION
-%==============================================================================
-
-reifyBurdenOfProofsTest :-
-    findall(Conc, argument([_, _, Conc]), Conclusions),
-    computeBpTest(Conclusions).
-
-computeBpTest(Conclusions) :-
-    abstractBp(AbstractBp),
-    fillTemplateTest(AbstractBp, Conclusions, R),
-    \+ reifiedBp(R),
-    asserta(reifiedBp(R)),
-    computeBpTest(Conclusions).
-computeBpTest(_).
-
-fillTemplateTest([], _, []).
-fillTemplateTest([H|T], C, [H|R]) :- member(H, C), fillTemplateTest(T, C, R).
-
-complements([_, _, ConcA], [_, _, ConcB]) :- conflict(ConcA, ConcB).
-
-%==============================================================================
-% DEFEAT
-%==============================================================================
-
-convertArgument([Rules, TopRule, Conc], [Rules2, TopRule2, Conc2, G, Sup]) :-
-    buildArgument(Conc, [Rules2, TopRule2, Conc2, G, Sup]),
-    TopRule = TopRule2,
-    equalsLists(Rules2, Rules), !.
-
-equalsLists(L1, L2) :-
-    sort(L1, SL1),
-    sort(L2, SL2),
-    same(SL1, SL2).
-
-same([], []).
-same([H1|R1], [H2|R2]) :-
-    H1 = H2,
-    same(R1, R2).
-
-argumentState(Argument, Res) :-
-    convertArgument(Argument, Converted),
-    once(defend(Converted, [], Res)), !.
-
-evaluateUnd(Argument) :-
-    argumentState(Argument, Res),
-    Res = und, !.
-
-bpAttacksTest(Attacks) :-
-    findall((A, B), (
-        attack(T, A, B),
-        isArgumentInBurdenOfProofTest(B),
-        \+ isArgumentInBurdenOfProofTest(A)),
-    Res),
-    findall(attack(T, Att, Ar, C), (
-        member((Ar, Burdened), Res),
-        attack(T, Att, Ar, C),
-        (Att = Burdened; once(evaluateUnd(Att)))),
-    Attacks).
-
-revertAttacks(Attacks) :-
-    member(attack(T, B, A, C), Attacks),
-    attack(T, B, A),
-    retractall(attack(T, B, A)),
-    \+ attack(_, A, B),
-    asserta(attack(T, A, B)),
-    fail.
-revertAttacks(_).
-
-addAttacksSup(und, Original, BpArg) :- asserta(attack(bprebut, BpArg, Original)).
-addAttacksSup(yes, Original, BpArg) :- asserta(attack(bprebut, Original, BpArg)).
-addAttacksSup(no, Original, BpArg) :- asserta(attack(bprebut, Original, BpArg)).
-
-addAttacks(Original, BpArg) :-
-    argumentState(Original, Res),
-    addAttacksSup(Res, Original, BpArg).
-
-bpArtificialConflict :-
-    argument([Rules, Top, Conc]),
-    isArgumentInBurdenOfProofTest([Rules, Top, Conc]),
-    Conflict = [[artificial|Rules], artificial, [bp(Conc)]],
-    asserta(argument(Conflict)),
-    addAttacks([Rules, Top, Conc], Conflict),
-    fail.
-bpArtificialConflict.
-
-bpArgumentationConflict :-
-    argument([Rules, Top, [bp, Checked]]),
-%    functor(X, 'bp', _),
-%    X =.. L,
-%    removehead(L, LC),
-%    check_modifiers_in_list(effects, LC, Checked),
-    member(Y, Checked),
-    argument([Z, P, Y]),
-    addAttacks([Z, P, Y], [Rules, Top, [bp, Checked]]),
-    fail.
-bpArgumentationConflict.
-
-% Da riscrivere, devo eliminare attacchi
-inversion :-
-    argument([Rules, Top, [X]]),
-    functor(X, 'bp', _),
-    attack(bprebut, [Rules, Top, [X]], Target),
-    attack(_, Target, Attacked),
-    (attack(bprebut, Attacked, Y); attack(bp-rebut, Y, Attacked)),
-    \+ attack(bprebut, [Rules, Top, [X]], Y),
-    asserta(attack(bprebut, [Rules, Top, [X]], Y)),
-    fail.
-inversion.
-
-bpTransform :-
-    bpArgument,
-%    bpArtificialConflict,
-    bpArgumentationConflict,
-    inversion.
-
-%bpTransform :-
-%    partialBp,
-%    bpAttacksTest(Attacks),
-%    findall(_, (member(attack(T, A, B, C), Attacks), retractall(attack(T, A, B))), _).
-
-%bpTransform :-
-%    completeBp,
-%    bpAttacksTest(Attacks),
-%    revertAttacks(Attacks).
-
 defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
-% defeat(rebut, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
-% defeat(rebut, A, B, C) :- isArgumentInBurdenOfProofTest(A), restrict(C), superiorArgument(A, B, C).
 defeat(contrary_rebut, A, B, _).
 defeat(undermine, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
-% defeat(undermine, A, B, C) :- \+ isArgumentInBurdenOfProofTest(A), restrict(C), \+ superiorArgument(B, A, C).
-% defeat(undermine, A, B, C) :- isArgumentInBurdenOfProofTest(A), restrict(C), superiorArgument(A, B, C).
 defeat(contrary_undermine, A, B, _).
 defeat(undercut, _, _, _).
 

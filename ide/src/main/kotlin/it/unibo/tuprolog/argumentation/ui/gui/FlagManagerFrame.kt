@@ -20,6 +20,8 @@ internal class FlagManagerFrame private constructor() {
     private var queryMode: Boolean = true
     private var autoTransposition: Boolean = false
     private var unrestrictedRebut: Boolean = true
+    private var bpGraph: Boolean = false
+    private var preferenceGraph: Boolean = false
     private var graphBuildMode: String = "base"
     private var argumentLabellingMode: String = "grounded"
     private var statementLabellingMode: String = "base"
@@ -57,7 +59,9 @@ internal class FlagManagerFrame private constructor() {
                 },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
+                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
+                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
+//                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 model.onNewQuery.subscribe {
@@ -78,7 +82,8 @@ internal class FlagManagerFrame private constructor() {
                     Struct.parse("argumentLabellingMode(_)").toClause(),
                     Struct.parse("statementLabellingMode(_)").toClause(),
                     Struct.parse("orderingPrinciple(_)").toClause(),
-                    Struct.parse("orderingComparator(_)").toClause()
+                    Struct.parse("orderingComparator(_)").toClause(),
+                    Struct.parse("graphExtension(_)").toClause()
                 )
             )
         }
@@ -88,6 +93,8 @@ internal class FlagManagerFrame private constructor() {
             if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
             if (target.unrestrictedRebut) kb.assertA(Struct.parse("unrestrictedRebut"))
+            if (target.bpGraph) kb.assertA(Struct.parse("graphExtension(bp)"))
+            if (target.preferenceGraph) kb.assertA(Struct.parse("graphExtension(preference)"))
             kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
             kb.assertA(Struct.parse("argumentLabellingMode(${target.argumentLabellingMode})"))
             kb.assertA(Struct.parse("statementLabellingMode(${target.statementLabellingMode})"))
