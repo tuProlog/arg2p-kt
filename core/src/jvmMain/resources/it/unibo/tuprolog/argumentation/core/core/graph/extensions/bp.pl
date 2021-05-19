@@ -7,7 +7,6 @@ generateBp([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupport
         member(Y, Checked),
         member([Z, P, Y], Arguments)
     ), Res),
-    write(Res),nl,
     once(checkBpArguments(Res, Arguments, Attacks, Supports, NewArguments, NewAttacks, NewSupports)).
 
 checkBpArguments([], Arguments, Attacks, Supports, Arguments, Attacks, Supports).
@@ -59,14 +58,8 @@ generateBpsEvaluationChain([Arg|Others], Attacks, OrderedBpArguments) :-
     insertBpArg(Arg, Attacks, Old, OrderedBpArguments).
 
 insertBpArg(Arg, Attacks, [], [Arg]).
-insertBpArg((Bp, Burdended), Attacks, [(BpL, BurdendedL)|Others], [(BpL, BurdendedL)|[(BpL, BurdendedL)|Others]]) :-
-    \+ argumentChain(BurdendedL, Burdened, Attacks).
-insertBpArg((Bp, Burdended), Attacks, [(BpL, BurdendedL)|Others], [(BpL, BurdendedL)|Return]) :-
-    argumentChain(BurdendedL, Burdened, Attacks),
-    insertBpArg((Bp, Burdended), Attacks, Others, Return).
-
-argumentChain(A, A, _) :- !.
-argumentChain(A, B, Attacks) :-
-    A \== B,
-    member((_, A, C), Attacks),
-    argumentChain(C, B, Chain).
+insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]) :-
+    \+ argumentChain(BurdenedL, Burdened, Attacks).
+insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
+    argumentChain(BurdenedL, Burdened, Attacks),
+    insertBpArg((Bp, Burdened), Attacks, Others, Return).

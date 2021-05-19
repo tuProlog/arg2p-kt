@@ -11,8 +11,7 @@
 argumentBPLabelling([Arguments, Attacks, _], [BPIN, BPOUT, BPUND]) :-
     reifyBurdenOfProofs(Arguments, [], []),
     once(filterBpDefeat(Attacks, FilteredAttacks)),
-    write(FilteredAttacks),nl,
-    smartBpLabelling(Arguments, FilteredAttacks, [], [], [], BPIN, BPOUT, BPUND).
+    smartBpLabelling(Arguments, FilteredAttacks, [], [], [], BPIN, BPOUT, BPUND), !.
 
 filterBpDefeat([], []).
 filterBpDefeat([(T, B, A)|Attacks], FilteredAttacks) :-
@@ -36,11 +35,18 @@ smartBpLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUN
     subtract(Arguments, [A], NewArguments),
     smartBpLabelling(NewArguments, Attacks, IN, [A|OUT], UND, ResultIN, ResultOUT, ResultUND).
 smartBpLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
-    member(A, Arguments),
-    isArgumentInBurdenOfProof(A),
+    mostGroundedBpUnd(Arguments, Attacks, A),
     subtract(Arguments, [A], NewArguments),
     smartBpLabelling(NewArguments, Attacks, IN, [A|OUT], UND, ResultIN, ResultOUT, ResultUND).
 smartBpLabelling(Arguments, _, IN, OUT, _, IN, OUT, Arguments).
+
+mostGroundedBpUnd(Arguments, Attacks, Arg) :-
+    member(Arg, Arguments),
+    isArgumentInBurdenOfProof(Arg),
+    \+ (
+        (member(A, Arguments), Arg \= A, isArgumentInBurdenOfProof(A)),
+        argumentChain(A, Arg, Attacks)
+    ).
 
 %==============================================================================
 % BP LABELLING [ICLP]
