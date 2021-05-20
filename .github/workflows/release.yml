@@ -50,8 +50,8 @@ jobs:
         run: ./gradlew ${{ env.gradle-options }} dokkaHtmlMultiModule --parallel
       - name: Sign Archives
         run: ./gradlew ${{ env.gradle-options }} signAllPublications --parallel
-      - name: Publish on Bintray Maven Repo
-        run: ./gradlew ${{ env.gradle-options }} publishAllToBintray --parallel
+#      - name: Publish on Bintray Maven Repo
+#        run: ./gradlew ${{ env.gradle-options }} publishAllToBintray --parallel
       - name: Publish on Maven Central Repo
         run: ./gradlew ${{ env.gradle-options }} publishAllPublicationsToMavenRepository
       - name: Publish on NPM

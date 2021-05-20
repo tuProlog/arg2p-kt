@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.0]
+### Added
+- meta-bp evaluation
+
 ## [0.2.5]
 ### Added
 - arguments caching in structured mode

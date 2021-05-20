@@ -106,16 +106,16 @@ Sign Artefacts:
 #  needs:
 #    - job: Generate Doc
 
-Deploy to Bintray:
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $BINTRAY_TASK $AFTER_TASK $GOPTS
-  environment:
-    name: Bintray
-    url: "https://bintray.com/pika-lab/argumentation"
-  only:
-    - /^(master)|(release)|(develop)$/
-  when: manual
+#Deploy to Bintray:
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $BINTRAY_TASK $AFTER_TASK $GOPTS
+#  environment:
+#    name: Bintray
+#    url: "https://bintray.com/pika-lab/argumentation"
+#  only:
+#    - /^(master)|(release)|(develop)$/
+#  when: manual
 #  needs:
 #    - job: Sign Artefacts
 
