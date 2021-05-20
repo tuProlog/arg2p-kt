@@ -33,7 +33,8 @@ Note that, in the standalone version of the library, there is no need to put the
 - `statementLabellingMode(MODE)` [__REQUIRED__] to select the preferred way to execute the statement labelling. `MODE` can only assume the value `base`.
 - `argumentLabellingMode(MODE)` [__REQUIRED__] to select the preferred way to execute the argument labelling. `MODE` can assume the values:
   - `grounded` to use the Dung's grounded semantic; 
-  - `complete` to use the Dung's complete semantic; 
+  - `complete` to use the Dung's complete semantic;
+  - `bp_grounded` to use the bp grounded semantic (Calegari and Sartor);
   - `bp_grounded_partial` to use the bp partial semantic (Calegari and Sartor); 
   - `bp_grounded_complete` to use the bp complete semantic (Calegari and Sartor);
 - `orderingPrinciple(MODE)` [__REQUIRED__] to select the preferred way to choose the relevant parts of an argument in order to compare them. `MODE` can assume the values `last` and `weakest`.
@@ -41,3 +42,4 @@ Note that, in the standalone version of the library, there is no need to put the
 - `queryMode` to enable the structured evaluation in the `answerQuery/4` predicate. It works only for `grounded` semantic;
 - `autoTransposition` to enable the automatic closure under transposition of the target theory;
 - `unrestrictedRebut` to disable the _rebut restriction_ constraint (enabled by default).
+- `graphExtension(bp)` to enable the meta evaluation for burden of persuasion. If enabled the _bp_ preferences must be included directly inside rules (for example `r : [] => bp(something).` or `r : [] => -bp(something).`). It can be used with any semantic. In the IDE the flag is called _Meta Bp_.
