@@ -19,7 +19,7 @@ class LibraryIntegrationTest {
         val query = Struct.parse("argTuProlog")
         val solutions = solver.solve(query)
         assertEquals(
-            listOf(Solution.Yes(query)),
+            listOf(Solution.yes(query)),
             solutions.toList()
         )
     }
