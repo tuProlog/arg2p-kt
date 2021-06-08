@@ -14,12 +14,12 @@ buildGraph([Arguments, Attacks, Supports]) :-
 
 modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
     findall(X, graphExtension(X), Ext),
-    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
+    modifyGraph(Ext, Attacks, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
 
-modifyGraph([], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
-modifyGraph([X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    modifyArgumentationGraph(X, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
+modifyGraph([], _, [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
+modifyGraph([X|Ext], Attacks, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
+    modifyGraph(Ext, Attacks, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
+    modifyArgumentationGraph(X, Attacks, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
     argumentLabellingMode(grounded),

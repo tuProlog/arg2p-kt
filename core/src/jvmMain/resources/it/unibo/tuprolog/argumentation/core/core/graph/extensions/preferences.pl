@@ -1,85 +1,98 @@
-modifyArgumentationGraph(preference, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]),
-%    buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
-    appendLists([Arguments, NewArguments], UnionArguments),
-    appendLists([NewAttacks, []], UnionAttacks),
-    appendLists([Supports, NewSupports], UnionSupports), !.
+modifyArgumentationGraph(preferences, Originals, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+    checkPreferences(Originals, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]), !.
 
-/*
-*   Translates the attack relations identified during the building phase.
-*   Attack from A to B -> Argument [[], attack, Attack]
-*                         support(A, Argument)
-*                         attack(Argument, B)
-*   If an Argument A built in this way attacks the argument B, and this one also attacks a third argument C 
-*   through the argument B1 we have to consider an attack from A to B1 (transitive attack)
-*/
-convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]) :-
-    simpleConversion(Attacks, NewArguments, TempAttacks, NewSupports),
-    transitiveConversion(TempAttacks, NewSupports, [], TransAttacks), !,
-    appendLists([TempAttacks, TransAttacks], NewAttacks).
+checkPreferences([], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
+checkPreferences([A|Attacks], [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+    checkPreferences(Attacks, [Arguments, Attacks, Supports], [TempArguments, TempAttacks, TempSupports]),
+    checkPreference(A, [TempArguments, TempAttacks, TempSupports], [NewArguments, NewAttacks, NewSupports]).
 
-simpleConversion([], [], [], []).
-simpleConversion([(T, A, B)|Tail], [RArgument|TmpArgs], [RAttack|TmpAtts], [RSupport|TmpSupps]) :-
-    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
-    generateId(A, B, Id),
-    RArgument = [[Id], attack, attack(T, A, B)],
-    RSupport = (A, RArgument),
-    RAttack = (T, RArgument, B),
-    asserta(argument(RArgument)),
-    asserta(support(A, RArgument)),
-    asserta(attack(T, RArgument, B)),
-    retractall(attack(T, A, B)).
+checkPreference(A, [Arguments, Attacks, Supports], [[Conflict|NewArguments], [(prefrebut, Conflict, [Id, TopRule, Conc])|NewAttacks], NewSupports]) :-
+    notDefeat(A),
+    convertAttack(A, [Arguments, Attacks, Supports], [Id, TopRule, Conc], [NewArguments, NewAttacks, NewSupports]),
+    Conflict = [[artPref|Id], artPref, [neg, defeat(A)]],
+    asserta(argument(Conflict)),
+    asserta(attack(prefrebut, Conflict, [Id, TopRule, Conc])),
+    asserta(attack(prefrebut, Conflict, [Id, TopRule, Conc], [Id, TopRule, Conc])).
+checkPreference(A, [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]) :-
+    \+ notDefeat(A).
 
-generateId([IdA, _, _], [IdB, _, _], Res) :-
-    concate(IdA, A),
-    concate(IdB, B),
-    concate([A, B], Res).
+notDefeat((rebut, A, B, C)) :- superiorArgument(B, A, C).
+notDefeat((undermine, A, B, C)) :- superiorArgument(B, A, C).
 
-concate([],'').
-concate([X|Tail], Res) :-
-	concate(Tail, IntermediateRes),
-   	atom_concat(X, IntermediateRes, Res).
+%------------------------------------------------------------------------
+% Superiority definition
+% A superiority relation over a set of rules Rules is an antireflexive and
+% antisymmetric binary relation over Rules
+%------------------------------------------------------------------------
 
-transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks) :-
-    member((T, A, B), Attacks),
-    member((B, C), Supports),
-    ResAttack = (T, A, C),
-    \+ member(ResAttack, TempAttacks),
-    asserta(attack(T, A, C)),
-    transitiveConversion(Attacks, Supports, [ResAttack|TempAttacks], ResAttacks).
+superiorArgument(_, B, C) :- orderingComparator(normal), superiorArgument(C, B).
+superiorArgument(A, B, _) :- \+ orderingComparator(normal), superiorArgument(A, B).
 
-transitiveConversion(_, _, TempAttacks, TempAttacks).
+superiorArgument(A, B) :-
+	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),
+	argumentInfo(B, [LastDefRulesB, DefRulesB, DefPremisesB]),
+	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB).
 
-/*
-*   Computes the pref attack. If an Argument A has a conclusion in the form sup(a, b), we verify if 
-*   the attacks involving arguments built on the rules a or b are compatible with this preference.
-*   If there are some contradictions we add an attack from the argument A towards the incompatible attack
-*/
-buildPrefAttacks(Arguments, AttackArguments, PrefAttacks) :-
-    findPrefAttack(Arguments, AttackArguments, [], PrefAttacks), !.
+superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB) :-
+    orderingPrinciple(last),
+	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB).
 
-findPrefAttack(Arguments, AttackArguments, TempAttacks, ResAttacks) :-
-    member([IdA, TRA, [sup(RuleOne, RuleTwo)]], Arguments),
-    member([[], attack, attack(T, A, B)], AttackArguments),
-    eligible(RuleOne, RuleTwo, A, B),
-    asserta(sup(RuleOne, RuleTwo)),
-    invalid(T, A, B),
-    retractall(sup(RuleOne, RuleTwo)),
-    Attack = (pref, [IdA, TRA, [sup(RuleOne, RuleTwo)]], [[], attack, attack(T, A, B)]),
-    \+ member(Attack, TempAttacks),
-    asserta(attack(pref, [IdA, TRA, [sup(RuleOne, RuleTwo)]], [[], attack, attack(T, A, B)])),
-    findPrefAttack(Arguments, AttackArguments, [Attack|TempAttacks], ResAttacks).
+superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB) :-
+    orderingPrinciple(weakest),
+	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB).
 
-findPrefAttack(_, _, TempAttacks, TempAttacks).
+superior([], PremisesA, [], PremisesB) :-
+	weaker(PremisesB, PremisesA).
+superior(DefRulesA, _, DefRulesB, _) :-
+	orderingPrinciple(last),
+	(DefRulesA \== []; DefRulesB \== []),
+	weaker(DefRulesB, DefRulesA).
+superior(DefRulesA, [], DefRulesB, []) :-
+	orderingPrinciple(weakest),
+	weaker(DefRulesB, DefRulesA).
+superior(DefRulesA, PremisesA, DefRulesB, PremisesB) :-
+	orderingPrinciple(weakest),
+	(DefRulesA \== []; DefRulesB \== []),
+	(PremisesA \== []; PremisesB \== []),
+	weaker(DefRulesB, DefRulesA),
+	weaker(PremisesB, PremisesA).
 
-eligible(RuleOne, RuleTwo, [R1, _, _], [R2, _, _]) :- 
-    \+ sup(RuleOne, RuleOne),
-    (member(RuleOne, R1);member(RuleTwo, R1);member(RuleOne, R2);member(RuleTwo, R2)), !.
+weaker(RulesA, []) :-
+	RulesA \== [].
 
-invalid(rebut, A, B) :- superiorArgument(B, A), !.
-invalid(undermine, A, B) :- superiorArgument(B, A), !.
+weaker(RulesA, RulesB) :-
+	RulesA \== [],
+	RulesB \== [],
+	orderingComparator(elitist),
+	member(Rule, RulesA),
+	allStronger(Rule, RulesB), !.
 
-/*
-*   Specification of a new constraint in the contrary function
-*/
-conflict([sup(X, Y)],  [sup(Y, X)]).
+weaker(RulesA, RulesB) :-
+	RulesA \== [],
+	RulesB \== [],
+	orderingComparator(democrat),
+	weakerDemo(RulesA, RulesB).
+
+%(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′)
+% and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).
+weaker(RulesA, RulesB) :-
+	RulesA \== [],
+	RulesB \== [],
+	orderingComparator(normal),
+	member(W, RulesA),
+	member(X, RulesB),
+	sup(X, W), !.
+
+weakerDemo([], _).
+weakerDemo([H|T], Rules) :-
+	singleStronger(H, Rules),
+	weakerDemo(T, Rules).
+
+allStronger(_, []).
+allStronger(Target, [Rule|Rules]) :-
+	sup(Rule, Target),
+	allStronger(Target, Rules).
+
+singleStronger(Target, Rules) :-
+	member(Rule, Rules),
+	sup(Rule, Target), !.

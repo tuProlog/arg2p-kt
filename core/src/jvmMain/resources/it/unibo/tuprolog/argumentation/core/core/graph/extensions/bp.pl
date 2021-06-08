@@ -1,4 +1,4 @@
-modifyArgumentationGraph(bp, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+modifyArgumentationGraph(bp, _, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
     generateBp([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
 
 generateBp([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-

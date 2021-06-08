@@ -1,24 +1,7 @@
-% ----------------------------------------------------------------------
-% argumentationGraph.pl
-%
-% PIKA-LAB
-% Year: 2019
-% ----------------------------------------------------------------------
-
 %========================================================================
 % ARGUMENTATION GRAPH
 %========================================================================
-% The argumentation graph consists of a finite set A called arguments and
-% two binary relations on A called attack and support respectively.
-% The argumentation graph is build based on the following definition:
-% - ARGUMENT
-% - ATTACK and CONFLICT
-% - SUPPORT
-% answering the following questions
-% - how can arguments be built, i.e. how can claims be supported with grounds,
-% - and how can arguments be attacked
-%========================================================================
-%========================================================================
+
 buildArgumentationGraph([Arguments, Attacks, Supports]) :-
         retractall(argument(_)),
         retractall(argumentInfo(_, _)),
@@ -36,26 +19,6 @@ buildArgumentationGraph([Arguments, Attacks, Supports]) :-
 
 %========================================================================
 % ARGUMENT DEFINITION
-%========================================================================
-% Arguments can be constructed step-by-step by chaining inference rules into trees.
-% Arguments thus contain subarguments, which are the structures that support
-% intermediate conclusions (plus the argument itself and its premises as limiting cases).
-% Arguments are then defined as a chain applications of the inference rules into inference trees,
-% starting with elements from the knowledge base K. In what follows, for a given argument,
-% the function Prem returns all the formulas of K (called premises) used to build the argument,
-% Conc returns its conclusion, Sub returns all its sub-arguments,
-% DefRules returns all the defeasible rules of the argument and TopRule returns the last inference
-% rule used in the argument.
-% An argument A on the basis of an argumentation theory with a knowledge base K
-% and an argumentation system (L, R, n) is
-% (1) φ if φ ∈ K with: Prem(A) = {φ},Conc(A) = φ,Sub(A) = {φ},DefRules(A) = ∅,TopRule(A) = undefined.
-% (2) A1,...An ⇒ ψ if A1,...,An are arguments such that there exists a defeasible rule Conc(A1), . . . ,Conc(An) ⇒ ψ in Rd.
-%     Prem(A) = Prem(A1 ) ∪ . . . ∪ Prem(An ),
-%     Conc(A) = ψ,
-%     Sub(A) = Sub(A1) ∪ . . . ∪ Sub(An) ∪ {A},
-%     DefRules(A) = DefRules(A1 ) ∪ . . . ∪ DefRules(An ) ∪ {Conc(A1 ), . . .
-%     Conc(An) ⇒ ψ},
-%     TopRule(A) = Conc(A1 ), . . . Conc(An ) ⇒ ψ .
 %========================================================================
 
 buildArguments :-
@@ -128,9 +91,7 @@ lastRule([Rules, TopRule, Conc], Influent) :-
 %========================================================================
 % SUPPORT DEFINITION
 %========================================================================
-% means that argument a supports argument b if the acceptance of a implies the acceptance of b
-% support are inferences from grounds to claims
-%========================================================================
+
 ruleBodyIsSupported([], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
 ruleBodyIsSupported([ [unless, _] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
@@ -149,8 +110,7 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 
 buildAttacks :-
 	buildDirectAttacks,
-	buildTransitiveAttacks,
-	pruneAttacks.
+	buildTransitiveAttacks.
 
 buildDirectAttacks :-
 	argument(A),
@@ -158,6 +118,7 @@ buildDirectAttacks :-
 	A \== B,
     once(attacks(T, A, B)),
 	\+ attack(T, A, B, B),
+	asserta(attack(T, A, B)),
 	asserta(attack(T, A, B, B)),
 	fail.
 buildDirectAttacks.
@@ -166,24 +127,10 @@ buildTransitiveAttacks :-
 	attack(T, A, B, D),
 	support(B, C),
 	\+ attack(T, A, C, D),
+	asserta(attack(T, A, C)),
 	asserta(attack(T, A, C, D)),
     buildTransitiveAttacks.
 buildTransitiveAttacks.
-
-pruneAttacks :-
-	attack(T, A, B, C),
-	once(defeat(T, A, B, C)),
-	\+ attack(T, A, B),
-	asserta(attack(T, A, B)),
-	fail.
-pruneAttacks.
-
-% That A defeats B could then be defined as A attacks B and A ≺ B.
-defeat(rebut, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
-defeat(contrary_rebut, A, B, _).
-defeat(undermine, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
-defeat(contrary_undermine, A, B, _).
-defeat(undercut, _, _, _).
 
 % Attack definition
 attacks(rebut, A, B) :- rebuts(A, B).
@@ -191,16 +138,6 @@ attacks(contrary_rebut, A, B) :- contraryRebuts(A, B).
 attacks(undermine, A, B) :- undermines(A, B).
 attacks(contrary_undermine, A, B) :- contraryUndermines(A, B).
 attacks(undercut, A, B) :- undercuts(A, B).
-
-strictArgument(Argument) :- argumentInfo(Argument, [_, [], []]).
-
-%------------------------------------------------------------------------
-% Rebut/Undermine restriction.
-%------------------------------------------------------------------------
-
-restrict(_) :- unrestrictedRebut, !.
-restrict([_, TopRule, _ ]) :- TopRule \== none, \+ strict(TopRule).
-restrict([[Premise], none, _ ]) :- \+ strict(Premise).
 
 %------------------------------------------------------------------------
 % Rebutting definition: clash of incompatible conclusions
@@ -255,6 +192,11 @@ recoverUnifiers(Body, Argument) :-
 unifySupports(Body, []).
 unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 
+%------------------------------------------------------------------------
+% Check if the given argument is strict
+%------------------------------------------------------------------------
+strictArgument(Argument) :- argumentInfo(Argument, [_, [], []]).
+
 %========================================================================
 % CONFLICT DEFINITION
 %========================================================================
@@ -276,81 +218,3 @@ conflict( [obl, [neg, Atom]],  [perm, [Atom]]).
 
 conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
 conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
-
-%------------------------------------------------------------------------
-% Superiority definition
-% A superiority relation over a set of rules Rules is an antireflexive and
-% antisymmetric binary relation over Rules
-%------------------------------------------------------------------------
-
-superiorArgument(_, B, C) :- orderingComparator(normal), superiorArgument(C, B).
-superiorArgument(A, B, _) :- \+ orderingComparator(normal), superiorArgument(A, B).
-
-superiorArgument(A, B) :-
-	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),
-	argumentInfo(B, [LastDefRulesB, DefRulesB, DefPremisesB]),
-	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB).
-
-superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB) :-
-    orderingPrinciple(last),
-	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB).
-
-superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB) :-
-    orderingPrinciple(weakest),
-	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB).
-
-superior([], PremisesA, [], PremisesB) :-
-	weaker(PremisesB, PremisesA).
-superior(DefRulesA, _, DefRulesB, _) :-
-	orderingPrinciple(last),
-	(DefRulesA \== []; DefRulesB \== []),
-	weaker(DefRulesB, DefRulesA).
-superior(DefRulesA, [], DefRulesB, []) :-
-	orderingPrinciple(weakest),
-	weaker(DefRulesB, DefRulesA).
-superior(DefRulesA, PremisesA, DefRulesB, PremisesB) :-
-	orderingPrinciple(weakest),
-	(DefRulesA \== []; DefRulesB \== []),
-	(PremisesA \== []; PremisesB \== []),
-	weaker(DefRulesB, DefRulesA),
-	weaker(PremisesB, PremisesA).
-
-weaker(RulesA, []) :-
-	RulesA \== [].
-
-weaker(RulesA, RulesB) :-
-	RulesA \== [],
-	RulesB \== [],
-	orderingComparator(elitist),
-	member(Rule, RulesA),
-	allStronger(Rule, RulesB), !.
-
-weaker(RulesA, RulesB) :-
-	RulesA \== [],
-	RulesB \== [],
-	orderingComparator(democrat),
-	weakerDemo(RulesA, RulesB).
-
-%(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′) 
-% and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).
-weaker(RulesA, RulesB) :-
-	RulesA \== [],
-	RulesB \== [],
-	orderingComparator(normal),
-	member(W, RulesA),
-	member(X, RulesB),
-	sup(X, W), !.
-
-weakerDemo([], _).
-weakerDemo([H|T], Rules) :-
-	singleStronger(H, Rules),
-	weakerDemo(T, Rules).
-
-allStronger(_, []).
-allStronger(Target, [Rule|Rules]) :-
-	sup(Rule, Target),
-	allStronger(Target, Rules).
-
-singleStronger(Target, Rules) :-
-	member(Rule, Rules),
-	sup(Rule, Target), !.

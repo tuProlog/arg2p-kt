@@ -66,3 +66,59 @@ argumentChain(A, B, Attacks) :-
     A \== B,
     member((_, A, C), Attacks),
     argumentChain(C, B, Attacks).
+
+
+%------------------------------------------------------------------
+
+/*
+*   Translates the attack relations identified during the building phase.
+*   Attack from A to B -> Argument [[], attack, Attack]
+*                         support(A, Argument)
+*                         attack(Argument, B)
+*   If an Argument A built in this way attacks the argument B, and this one also attacks a third argument C
+*   through the argument B1 we have to consider an attack from A to B1 (transitive attack)
+*/
+convertAttack((T, A, B, C), [Arguments, Attacks, Supports], [[Id], attack, [attack(T, A, B)]], [Arguments, Attacks, Supports]) :-
+    converted(T, A, B, C),
+    argument([[Id], attack, [attack(T, A, B)]]).
+
+convertAttack((T, A, B, C), [Arguments, Attacks, Supports], RArgument, [[RArgument|Arguments], ResAttacks, [(A, RArgument)|Supports]]) :-
+    \+ converted(T, A, B, C),
+    generateId(A, B, Id),
+    RArgument = [[Id], attack, [attack(T, A, B)]],
+    asserta(argument(RArgument)),
+    asserta(support(A, RArgument)),
+    asserta(attack(T, RArgument, B)),
+    asserta(attack(T, RArgument, B, C)),
+    retractall(attack(T, A, B)),
+    retractall(attack(T, A, B, C)),
+    transitiveConversion([(T, RArgument, B)|Attacks], [(A, RArgument)|Supports], ResAttacks),
+    asserta(converted(T, A, B, C)), !.
+
+transitiveConversion(Attacks, Supports, ResAttacks) :-
+    transitiveConversionAttack(Attacks, Supports, (T, A, C, D)),
+    asserta(attack(T, A, C)),
+    asserta(attack(T, A, C, D)),
+    transitiveConversion([(T, A, C)|Attacks], Supports, ResAttacks).
+transitiveConversion(Attacks, _, Attacks).
+
+transitiveConversionAttack(Attacks, Supports, (T, A, C, D)) :-
+    member((T, A, B), Attacks),
+    member((B, C), Supports),
+    attackArgument(A),
+    attackArgument(C),
+    \+ attack(T, A, C),
+    attack(T, A, B, D).
+
+attackArgument([_, attack, _]).
+
+generateId([IdA, _, _], [IdB, _, _], Res) :-
+    concate(IdA, A),
+    concate(IdB, B),
+    concate([A, B], Res).
+
+concate([],'').
+concate([X|Tail], Res) :-
+	concate(Tail, IntermediateRes),
+   	atom_concat(X, IntermediateRes, Res).
+
