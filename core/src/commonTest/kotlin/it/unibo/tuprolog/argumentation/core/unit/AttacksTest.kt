@@ -4,9 +4,11 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Ignore
 class AttacksTest {
 
     private val baseConfig =

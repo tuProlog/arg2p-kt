@@ -9,10 +9,12 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.yes
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.collections.listOf as ktListOf
 
+@Ignore
 class ArgumentationGraphTest {
 
     private fun solverWithTheory() = TestingUtils.solver(

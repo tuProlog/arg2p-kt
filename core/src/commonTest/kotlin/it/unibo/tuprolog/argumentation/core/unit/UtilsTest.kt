@@ -6,10 +6,12 @@ import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.collections.listOf as ktListOf
 
+@Ignore
 class UtilsTest {
 
     @Test
