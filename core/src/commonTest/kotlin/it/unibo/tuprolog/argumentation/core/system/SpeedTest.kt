@@ -119,12 +119,11 @@ class SpeedTest {
     @ExperimentalTime
     fun structuredResolutionSpeedTestNoLastCall() {
         val time = measureTime {
-
             prolog {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
                     val query = set_prolog_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
-                            current_prolog_flag(LastCallOptimization.name, V)
+                        current_prolog_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
                         ktListOf(query.yes(V to LastCallOptimization.OFF)),
@@ -152,7 +151,6 @@ class SpeedTest {
     @ExperimentalTime
     fun structuredResolutionSpeedLastCall() {
         val time = measureTime {
-
             prolog {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
