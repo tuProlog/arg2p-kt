@@ -64,7 +64,7 @@ class PreferencesTest {
             orderingComparator(elitist).
         """.trimIndent(),
         definedResults,
-        3
+        2
     )
 
     @Test
@@ -75,7 +75,7 @@ class PreferencesTest {
             orderingComparator(democrat).
         """.trimIndent(),
         definedResults,
-        3
+        2
     )
 
     @Test
@@ -131,7 +131,7 @@ class PreferencesTest {
             orderingComparator(elitist).
         """.trimIndent(),
         definedResults,
-        3
+        2
     )
 
     @Test

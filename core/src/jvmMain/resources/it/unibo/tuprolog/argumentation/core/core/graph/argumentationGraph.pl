@@ -283,8 +283,9 @@ conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
 
-superiorArgument(_, B, C) :- orderingComparator(normal), superiorArgument(C, B).
-superiorArgument(A, B, _) :- \+ orderingComparator(normal), superiorArgument(A, B).
+%superiorArgument(_, B, C) :- orderingComparator(normal), superiorArgument(C, B).
+%superiorArgument(A, B, _) :- \+ orderingComparator(normal), superiorArgument(A, B).
+superiorArgument(_, B, C) :- superiorArgument(C, B).
 
 superiorArgument(A, B) :-
 	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),

@@ -62,7 +62,7 @@ class AttacksTest {
                 r2 : a => b.
                 r3 : [] => -a.
             """.trimIndent(),
-            mapOf("undermine" to 1, "rebut" to 1)
+            mapOf("undermine" to 0, "rebut" to 1)
         )
 
         checkAttacks(
