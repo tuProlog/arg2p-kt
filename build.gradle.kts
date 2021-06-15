@@ -8,8 +8,8 @@ plugins {
 }
 
 repositories {
+    maven("https://maven.pkg.github.com/tuProlog/2p-kt")
     mavenCentral()
-//    maven("https://dl.bintray.com/pika-lab/tuprolog/")
     jcenter()
 }
 
