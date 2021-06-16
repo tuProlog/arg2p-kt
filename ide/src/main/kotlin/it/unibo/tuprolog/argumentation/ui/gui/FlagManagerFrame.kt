@@ -51,7 +51,7 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Statement Labelling Mode", listOf("base")) {
                     flagManager.statementLabellingMode = it
                 },
-                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible")) {
+                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll")) {
                     flagManager.preferences = it
                 },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {

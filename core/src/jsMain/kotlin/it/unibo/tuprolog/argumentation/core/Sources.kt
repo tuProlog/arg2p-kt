@@ -22,6 +22,9 @@ actual object Sources {
     actual val defPreferences: Theory
         get() = Theory.parse(DefPreferences.theoryCode)
 
+    actual val genericDefPreferences: Theory
+        get() = Theory.parse(GenericDefPreferences.theoryCode)
+
     actual val attackRestriction: Theory
         get() = Theory.parse(AttackRestriction.theoryCode)
 

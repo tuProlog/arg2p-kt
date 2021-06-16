@@ -9,6 +9,7 @@ expect object Sources {
     val argumentationGraph: Theory
     val preferences: Theory
     val defPreferences: Theory
+    val genericDefPreferences: Theory
     val attackRestriction: Theory
     val bpArgumentationGraph: Theory
     val bpLabelling: Theory

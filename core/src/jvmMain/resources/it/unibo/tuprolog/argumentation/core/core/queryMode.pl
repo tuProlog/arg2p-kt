@@ -120,7 +120,7 @@ restrictStructured(_, _) :- unrestrictedRebut.
 superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
 %    orderingComparator(normal),
     buildSubArgument(TargetTerm, TargetRules, [_, _, _, _, [LDRC, DRC, DPC]]),
-    superiorArgument(LDRC, DRC, DPC, LDRB, DRB, DPB).
+    superiorArgument(LDRC, DRC, DPC, LDRB, DRB, DPB, _).
 %superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, _, _) :-
 %    \+ orderingComparator(normal),
 %    superiorArgument(LDRA, DRA, DPA, LDRB, DRB, DPB).

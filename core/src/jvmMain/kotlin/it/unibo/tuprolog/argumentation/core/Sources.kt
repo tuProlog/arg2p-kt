@@ -29,6 +29,9 @@ actual object Sources {
     actual val defPreferences: Theory
         get() = loadTheoryFromPrologFile("core/graph/extensions/defPreferences")
 
+    actual val genericDefPreferences: Theory
+        get() = loadTheoryFromPrologFile("core/graph/extensions/genericDefPreferences")
+
     actual val attackRestriction: Theory
         get() = loadTheoryFromPrologFile("core/graph/extensions/attackRestriction")
 

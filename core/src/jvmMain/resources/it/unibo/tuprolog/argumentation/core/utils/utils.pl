@@ -76,56 +76,58 @@ argumentChain(A, B, Attacks) :-
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
 
-superiorArgument(_, B, C) :- superiorArgument(C, B).
+superiorArgument(_, B, C) :- superiorArgumentSupport(C, B, _).
+superiorArgument(_, B, C, SupSet) :- superiorArgumentSupport(C, B, SupSet).
 
-superiorArgument(A, B) :-
+superiorArgumentSupport(A, B, SupSet) :-
 	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),
 	argumentInfo(B, [LastDefRulesB, DefRulesB, DefPremisesB]),
-	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB).
+	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
 
-superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB) :-
+superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-
     orderingPrinciple(last),
-	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB).
+	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB, SupSet).
 
-superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB) :-
+superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB, SupSet) :-
     orderingPrinciple(weakest),
-	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB).
+	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB, SupSet).
 
-superior([], PremisesA, [], PremisesB) :-
-	weaker(PremisesB, PremisesA).
-superior(DefRulesA, _, DefRulesB, _) :-
+superior([], PremisesA, [], PremisesB, SupSet) :-
+	weaker(PremisesB, PremisesA, SupSet).
+superior(DefRulesA, _, DefRulesB, _, SupSet) :-
 	orderingPrinciple(last),
 	(DefRulesA \== []; DefRulesB \== []),
-	weaker(DefRulesB, DefRulesA).
-superior(DefRulesA, [], DefRulesB, []) :-
+	weaker(DefRulesB, DefRulesA, SupSet).
+superior(DefRulesA, [], DefRulesB, [], SupSet) :-
 	orderingPrinciple(weakest),
-	weaker(DefRulesB, DefRulesA).
-superior(DefRulesA, PremisesA, DefRulesB, PremisesB) :-
+	weaker(DefRulesB, DefRulesA, SupSet).
+superior(DefRulesA, PremisesA, DefRulesB, PremisesB, SupSet) :-
 	orderingPrinciple(weakest),
 	(DefRulesA \== []; DefRulesB \== []),
 	(PremisesA \== []; PremisesB \== []),
-	weaker(DefRulesB, DefRulesA),
-	weaker(PremisesB, PremisesA).
+	weaker(DefRulesB, DefRulesA, SupSetA),
+	weaker(PremisesB, PremisesA, SupSetB),
+	appendLists([SupSetA, SupSetB], SupSet).
 
-weaker(RulesA, []) :-
+weaker(RulesA, [], []) :-
 	RulesA \== [].
 
-weaker(RulesA, RulesB) :-
+weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(elitist),
 	member(Rule, RulesA),
-	allStronger(Rule, RulesB), !.
+	allStronger(Rule, RulesB, SupSet), !.
 
-weaker(RulesA, RulesB) :-
+weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(democrat),
-	weakerDemo(RulesA, RulesB).
+	weakerDemo(RulesA, RulesB, SupSet).
 
 %(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′)
 % and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).
-weaker(RulesA, RulesB) :-
+weaker(RulesA, RulesB, [sup(X, W)]) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(normal),
@@ -133,16 +135,16 @@ weaker(RulesA, RulesB) :-
 	member(X, RulesB),
 	sup(X, W), !.
 
-weakerDemo([], _).
-weakerDemo([H|T], Rules) :-
-	singleStronger(H, Rules),
-	weakerDemo(T, Rules).
+weakerDemo([], _, []).
+weakerDemo([H|T], Rules, [Sup|SupSet]) :-
+	singleStronger(H, Rules, Sup),
+	weakerDemo(T, Rules, SupSet).
 
-allStronger(_, []).
-allStronger(Target, [Rule|Rules]) :-
-	sup(Rule, Target),
-	allStronger(Target, Rules).
-
-singleStronger(Target, Rules) :-
+singleStronger(Target, Rules, sup(Rule, Target)) :-
 	member(Rule, Rules),
 	sup(Rule, Target), !.
+
+allStronger(_, [], []).
+allStronger(Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
+	sup(Rule, Target),
+	allStronger(Target, Rules, SupSet).

@@ -15,6 +15,7 @@ private val theories = sequenceOf(
     Sources.argumentationGraph,
     Sources.preferences,
     Sources.defPreferences,
+    Sources.genericDefPreferences,
     Sources.attackRestriction,
     Sources.bpArgumentationGraph,
     Sources.groundedLabelling,
