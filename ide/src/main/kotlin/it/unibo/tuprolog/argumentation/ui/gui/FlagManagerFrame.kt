@@ -21,12 +21,12 @@ internal class FlagManagerFrame private constructor() {
     private var autoTransposition: Boolean = false
     private var unrestrictedRebut: Boolean = true
     private var bpGraph: Boolean = false
-    private var preferenceGraph: Boolean = false
     private var graphBuildMode: String = "base"
     private var argumentLabellingMode: String = "grounded"
     private var statementLabellingMode: String = "base"
     private var orderingPrinciple: String = "last"
     private var orderingComparator: String = "elitist"
+    private var preferences: String = "standard"
 
     companion object {
         @JvmStatic
@@ -51,6 +51,9 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Statement Labelling Mode", listOf("base")) {
                     flagManager.statementLabellingMode = it
                 },
+                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible")) {
+                    flagManager.preferences = it
+                },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
                     flagManager.orderingPrinciple = it
                 },
@@ -60,8 +63,7 @@ internal class FlagManagerFrame private constructor() {
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
-                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
-//                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
+                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it }
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 model.onNewQuery.subscribe {
@@ -77,7 +79,7 @@ internal class FlagManagerFrame private constructor() {
                 listOf(
                     Struct.parse("queryMode").toClause(),
                     Struct.parse("autoTransposition").toClause(),
-                    Struct.parse("unrestrictedRebut").toClause(),
+//                    Struct.parse("unrestrictedRebut").toClause(),
                     Struct.parse("graphBuildMode(_)").toClause(),
                     Struct.parse("argumentLabellingMode(_)").toClause(),
                     Struct.parse("statementLabellingMode(_)").toClause(),
@@ -92,9 +94,9 @@ internal class FlagManagerFrame private constructor() {
         fun setupSolver(kb: Theory, target: FlagManagerFrame) {
             if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
-            if (target.unrestrictedRebut) kb.assertA(Struct.parse("unrestrictedRebut"))
+            if (!target.unrestrictedRebut) kb.assertA(Struct.parse("graphExtension(rebutRestriction)"))
+            if (target.preferences != "none") kb.assertA(Struct.parse("graphExtension(${target.preferences}Pref)"))
             if (target.bpGraph) kb.assertA(Struct.parse("graphExtension(bp)"))
-            if (target.preferenceGraph) kb.assertA(Struct.parse("graphExtension(preference)"))
             kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
             kb.assertA(Struct.parse("argumentLabellingMode(${target.argumentLabellingMode})"))
             kb.assertA(Struct.parse("statementLabellingMode(${target.statementLabellingMode})"))

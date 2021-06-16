@@ -23,8 +23,14 @@ actual object Sources {
     actual val argumentationGraph: Theory
         get() = loadTheoryFromPrologFile("core/graph/argumentationGraph")
 
-    actual val prefArgumentationGraph: Theory
+    actual val preferences: Theory
         get() = loadTheoryFromPrologFile("core/graph/extensions/preferences")
+
+    actual val defPreferences: Theory
+        get() = loadTheoryFromPrologFile("core/graph/extensions/defPreferences")
+
+    actual val attackRestriction: Theory
+        get() = loadTheoryFromPrologFile("core/graph/extensions/attackRestriction")
 
     actual val bpArgumentationGraph: Theory
         get() = loadTheoryFromPrologFile("core/graph/extensions/bp")

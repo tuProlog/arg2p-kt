@@ -7,7 +7,9 @@ expect object Sources {
     val abstractMode: Theory
     val queryMode: Theory
     val argumentationGraph: Theory
-    val prefArgumentationGraph: Theory
+    val preferences: Theory
+    val defPreferences: Theory
+    val attackRestriction: Theory
     val bpArgumentationGraph: Theory
     val bpLabelling: Theory
     val completeLabelling: Theory

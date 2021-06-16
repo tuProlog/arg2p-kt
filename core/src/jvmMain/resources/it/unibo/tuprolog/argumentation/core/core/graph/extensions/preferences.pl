@@ -1,4 +1,4 @@
-modifyArgumentationGraph(preference, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
+modifyArgumentationGraph(standardPref, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
     checkStandardPreferences(Attacks, NewAttacks), !.
 
 checkStandardPreferences([], []).

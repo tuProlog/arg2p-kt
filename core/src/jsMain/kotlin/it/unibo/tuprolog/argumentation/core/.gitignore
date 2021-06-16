@@ -7,6 +7,8 @@ Complete.kt
 Grounded.kt
 ModuleCall.kt
 Preferences.kt
+DefPreferences.kt
+AttackRestriction.kt
 Bp.kt
 QueryMode.kt
 RuleTranslator.kt
