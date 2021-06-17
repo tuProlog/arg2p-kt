@@ -23,6 +23,8 @@ class ArgumentationGraphTest {
                     rule([r2,[],[neg,a]]).
                     rule([r3,[],[neg,c]]).
                     
+                    graphExtension(rebutRestriction).
+                    graphExtension(standardPref).
                     orderingPrinciple(last).
                     orderingComparator(democrat).
                 """
@@ -47,13 +49,14 @@ class ArgumentationGraphTest {
                     "Attacks" to Struct.parse(
                         """
                         [
-                            (rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]]),
-                            (rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]]),
-                            (rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]),
-                            (rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]]),
-                            (rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]),
+                            
+                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]]),
                             (rebut,[[r3,r1,r0],r1,[c]],[[r3,r0],r0,[a]]),
-                            (rebut,[[r3,r1,r0],r1,[c]],[[r3,r1,r0],r1,[c]])
+                            (rebut,[[r2],r2,[neg,a]],[[r3,r1,r0],r1,[c]]),
+                            (rebut,[[r2],r2,[neg,a]],[[r3,r0],r0,[a]]),
+                            (rebut,[[r3],r3,[neg,c]],[[r3,r1,r0],r1,[c]]),
+                            (rebut,[[r3,r0],r0,[a]],[[r2],r2,[neg,a]]),
+                            (rebut,[[r3,r1,r0],r1,[c]],[[r3],r3,[neg,c]])
                         ]"""
                     ),
                     "Supports" to Struct.parse(

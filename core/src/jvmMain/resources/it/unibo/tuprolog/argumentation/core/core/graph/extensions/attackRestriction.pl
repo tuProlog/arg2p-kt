@@ -1,5 +1,5 @@
 modifyArgumentationGraph(rebutRestriction, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
-    checkRebutRestriction(Attacks, NewAttacks), !.
+    checkRebutRestrictions(Attacks, NewAttacks), !.
 
 checkRebutRestrictions([], []).
 checkRebutRestrictions([Attack|Attacks], NewAttacks) :-
@@ -18,6 +18,9 @@ checkRebutRestriction((T, A, B),[]) :-
 
 rebutRestriction(rebut, _, _, C) :- restrict(C).
 rebutRestriction(undermine, _, _, C) :- restrict(C).
+rebutRestriction(contrary_rebut, _, _, _).
+rebutRestriction(contrary_undermine, _, _, _).
+rebutRestriction(undercut, _, _, _).
 
 %------------------------------------------------------------------------
 % Rebut/Undermine restriction.

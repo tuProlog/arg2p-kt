@@ -112,10 +112,10 @@ buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, SubGrounds, [LDRC
 strictArgumentStructured([], []).
 
 restrictStructured(Term, Rules) :-
-    \+ unrestrictedRebut,
+    graphExtension(rebutRestriction),
     buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, _, _]),
     once(restrict([SubRules, SubTopRule, SubConcl])).
-restrictStructured(_, _) :- unrestrictedRebut.
+restrictStructured(_, _) :- \+ graphExtension(rebutRestriction).
 
 superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
 %    orderingComparator(normal),

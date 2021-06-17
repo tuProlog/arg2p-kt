@@ -14,6 +14,8 @@ class AttacksTest {
         graphBuildMode(base).
         statementLabellingMode(base).
         argumentLabellingMode(grounded).
+        graphExtension(rebutRestriction).
+        graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist).
         

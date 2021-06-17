@@ -104,6 +104,7 @@ class AmbulanceCaseStudyTest {
         orderingPrinciple(last).
         orderingComparator(elitist).
         unrestrictedRebut.
+        graphExtension(standardPref).
         
         """.trimIndent()
 

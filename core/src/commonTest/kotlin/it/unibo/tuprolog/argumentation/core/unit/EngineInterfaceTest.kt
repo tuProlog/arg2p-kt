@@ -23,6 +23,8 @@ class EngineInterfaceTest {
                 graphBuildMode(base).
                 statementLabellingMode(base).
                 argumentLabellingMode(bp_grounded_partial).
+                graphExtension(rebutRestriction).
+                graphExtension(standardPref).
                 orderingPrinciple(last).
                 orderingComparator(democrat).
             """

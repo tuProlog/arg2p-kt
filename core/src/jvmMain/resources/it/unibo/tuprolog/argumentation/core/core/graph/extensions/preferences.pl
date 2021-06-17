@@ -17,4 +17,7 @@ checkStandardPreference((T, A, B),[]) :-
     retractall(attack(T, A, B)).
 
 standardPreferences(rebut, A, B, C) :- \+ superiorArgument(B, A, C).
-standardPreferences(undermine, A, B, C) :- restrict(C), \+ superiorArgument(B, A, C).
+standardPreferences(undermine, A, B, C) :- \+ superiorArgument(B, A, C).
+standardPreferences(contrary_rebut, _, _, _).
+standardPreferences(contrary_undermine, _, _, _).
+standardPreferences(undercut, _, _, _).

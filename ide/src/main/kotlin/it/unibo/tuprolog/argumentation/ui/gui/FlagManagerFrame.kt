@@ -75,19 +75,16 @@ internal class FlagManagerFrame private constructor() {
 
         @JvmStatic
         fun cleanSolver(kb: Theory) {
-            kb.retract(
-                listOf(
-                    Struct.parse("queryMode").toClause(),
-                    Struct.parse("autoTransposition").toClause(),
-//                    Struct.parse("unrestrictedRebut").toClause(),
-                    Struct.parse("graphBuildMode(_)").toClause(),
-                    Struct.parse("argumentLabellingMode(_)").toClause(),
-                    Struct.parse("statementLabellingMode(_)").toClause(),
-                    Struct.parse("orderingPrinciple(_)").toClause(),
-                    Struct.parse("orderingComparator(_)").toClause(),
-                    Struct.parse("graphExtension(_)").toClause()
-                )
-            )
+            listOf(
+                Struct.parse("queryMode").toClause(),
+                Struct.parse("autoTransposition").toClause(),
+                Struct.parse("graphBuildMode(_)").toClause(),
+                Struct.parse("argumentLabellingMode(_)").toClause(),
+                Struct.parse("statementLabellingMode(_)").toClause(),
+                Struct.parse("orderingPrinciple(_)").toClause(),
+                Struct.parse("orderingComparator(_)").toClause(),
+                Struct.parse("graphExtension(_)").toClause()
+            ).forEach { kb.retractAll(it) }
         }
 
         @JvmStatic

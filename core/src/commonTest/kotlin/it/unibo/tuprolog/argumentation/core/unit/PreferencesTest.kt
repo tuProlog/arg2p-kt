@@ -21,6 +21,8 @@ class PreferencesTest {
             graphBuildMode(base).
             statementLabellingMode(base).
             argumentLabellingMode(grounded).
+            graphExtension(rebutRestriction).
+            graphExtension(standardPref).
             
         """.trimIndent()
 

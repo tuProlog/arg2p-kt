@@ -21,6 +21,7 @@ class RationalityTest {
         graphBuildMode(base).
         statementLabellingMode(base).
         argumentLabellingMode(grounded).
+        graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist).
         
@@ -37,6 +38,7 @@ class RationalityTest {
         graphBuildMode(base).
         statementLabellingMode(base).
         argumentLabellingMode(grounded).
+        graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist).
         
@@ -55,6 +57,7 @@ class RationalityTest {
         graphBuildMode(base).
         statementLabellingMode(base).
         argumentLabellingMode(grounded).
+        graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist).
         
@@ -72,6 +75,7 @@ class RationalityTest {
         d3 : c => f.
         graphBuildMode(base).
         statementLabellingMode(base).
+        graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist). 
         
@@ -90,7 +94,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample4() = protoTest(
-        example4theory + "unrestrictedRebut.",
+        example4theory,
         listOf("wr", "m", "go", "b"),
         listOf(),
         listOf("-hw", "hw")
@@ -98,7 +102,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample4restricted() = protoTest(
-        example4theory,
+        example4theory + "graphExtension(rebutRestriction).",
         listOf("wr", "-hw", "m", "hw", "go", "b"),
         listOf(),
         listOf(),
@@ -108,7 +112,6 @@ class RationalityTest {
     fun caminadaExample4transposed() = protoTest(
         example4theory + """
             autoTransposition.
-            unrestrictedRebut.
         """.trimIndent(),
         listOf("wr", "go"),
         listOf(),
@@ -117,7 +120,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample5() = protoTest(
-        example5theory + "unrestrictedRebut.",
+        example5theory,
         listOf("e", "d", "c", "b", "a"),
         listOf("-c"),
         listOf()
@@ -125,7 +128,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample5restricted() = protoTest(
-        example5theory,
+        example5theory + "graphExtension(rebutRestriction).",
         listOf("-c", "e", "d", "c", "b", "a"),
         listOf(),
         listOf()
@@ -135,7 +138,6 @@ class RationalityTest {
     fun caminadaExample5transposed() = protoTest(
         example5theory + """
             autoTransposition.
-            unrestrictedRebut.
         """.trimIndent(),
         listOf("d", "c", "a"),
         listOf("-c"),
@@ -144,7 +146,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample6() = protoTest(
-        example6theory + "unrestrictedRebut.",
+        example6theory,
         listOf("g", "f", "e", "d", "c", "b", "a"),
         listOf("-g"),
         listOf()
@@ -152,7 +154,7 @@ class RationalityTest {
 
     @Test
     fun caminadaExample6restricted() = protoTest(
-        example6theory,
+        example6theory + "graphExtension(rebutRestriction).",
         listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
         listOf(),
         listOf()
@@ -162,7 +164,6 @@ class RationalityTest {
     fun caminadaExample6transposed() = protoTest(
         example6theory + """
             autoTransposition.
-            unrestrictedRebut.
         """.trimIndent(),
         listOf("g", "d", "a"),
         listOf("-g"),
@@ -174,7 +175,6 @@ class RationalityTest {
         example7theory + """
             argumentLabellingMode(grounded).
             autoTransposition.
-            unrestrictedRebut.
         """.trimIndent(),
         listOf("g", "c", "b", "a"),
         listOf("-g"),
@@ -189,7 +189,6 @@ class RationalityTest {
                 example7theory + """
                 argumentLabellingMode(complete).
                 autoTransposition.
-                unrestrictedRebut.
                 """.trimIndent()
             ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count()
         )
@@ -200,6 +199,7 @@ class RationalityTest {
                 example7theory + """
                 argumentLabellingMode(complete).
                 autoTransposition.
+                graphExtension(rebutRestriction).
                 """.trimIndent()
             ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count()
         )
