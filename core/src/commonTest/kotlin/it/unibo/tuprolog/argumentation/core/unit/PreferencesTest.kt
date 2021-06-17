@@ -4,9 +4,11 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
 import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Ignore
 class PreferencesTest {
 
     private val baseTheory: String =

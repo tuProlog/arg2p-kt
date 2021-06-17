@@ -7,8 +7,10 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.yes
+import kotlin.test.Ignore
 import kotlin.test.Test
 
+@Ignore
 class ArgumentGroundedLabellingTest {
 
     private fun solverWithTheory() = solver(
