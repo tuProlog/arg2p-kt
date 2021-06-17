@@ -25,14 +25,14 @@ private val theories = sequenceOf(
 )
 
 object Arg2p : AliasedLibrary by
-    Library.aliased(
-        operatorSet = OperatorSet(
-            Operator("=>", Specifier.XFX, 1199),
-            Operator(":=>", Specifier.XFX, 1199),
-            Operator(":->", Specifier.XFX, 1199),
-            Operator(":", Specifier.XFX, 1001)
-        ),
-        theory = theories.reduce(Theory::plus),
-        primitives = mapOf(ModuleCall.signature to ModuleCall::invoke),
-        alias = "prolog.argumentation"
-    )
+Library.aliased(
+    operatorSet = OperatorSet(
+        Operator("=>", Specifier.XFX, 1199),
+        Operator(":=>", Specifier.XFX, 1199),
+        Operator(":->", Specifier.XFX, 1199),
+        Operator(":", Specifier.XFX, 1001)
+    ),
+    theory = theories.reduce(Theory::plus),
+    primitives = mapOf(ModuleCall.signature to ModuleCall::invoke),
+    alias = "prolog.argumentation"
+)

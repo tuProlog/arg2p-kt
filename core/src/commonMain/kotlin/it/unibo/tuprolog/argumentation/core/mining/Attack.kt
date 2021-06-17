@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.core.mining
 
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsName

@@ -8,6 +8,7 @@ import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
+import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -144,7 +145,7 @@ class SpeedTest {
             }
         }
 
-        println(time.inSeconds)
+        println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test
@@ -175,6 +176,6 @@ class SpeedTest {
             }
         }
 
-        println(time.inSeconds)
+        println(time.toDouble(DurationUnit.SECONDS))
     }
 }
