@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import kotlin.test.Test
+import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -127,7 +128,7 @@ class AmbulanceCaseStudyTest {
             )
         }
 
-        println(time.inSeconds)
+        println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test
@@ -143,7 +144,7 @@ class AmbulanceCaseStudyTest {
             )
         }
 
-        println(time.inSeconds)
+        println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test

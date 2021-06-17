@@ -17,7 +17,7 @@ class Attack(val attacker: String, val attacked: String) {
         @JsName("mineAttacks")
         fun mineAttacks(engine: Solver, arguments: List<Argument>): Sequence<Attack> {
             return prolog {
-                engine.solve("attack"(Var.ANONYMOUS_VAR_NAME, X, Y))
+                engine.solve("attack"(`_`, X, Y))
                     .filter { it.isYes }
                     .map { solution ->
                         Attack(
