@@ -65,7 +65,7 @@ internal class FlagManagerFrame private constructor() {
                 },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
                     flagManager.orderingPrinciple = it
-                }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*>  },
+                }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
                     if (it == "normal") flagManager.prefPrinciple?.value = "last"
@@ -113,7 +113,7 @@ internal class FlagManagerFrame private constructor() {
         }
 
         @JvmStatic
-        fun setupChoiceBox(label: String, values: Iterable<String>, default : String = values.first(), onChange: (String) -> Unit): HBox {
+        fun setupChoiceBox(label: String, values: Iterable<String>, default: String = values.first(), onChange: (String) -> Unit): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 ChoiceBox<String>().also {
