@@ -5,10 +5,12 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     retractall(result(_, _)),
     retractall(explored(_)),
     retractall(bufferedArgument(_, _)),
+    retractPreferenceCache,
     findall([X, Res], query(X, Res), Result),
     retractall(result(_, _)),
     retractall(explored(_)),
     retractall(bufferedArgument(_, _)),
+    retractPreferenceCache,
     populateResultSets(Result, ArgsIn, ArgsOut, ArgsUnd),
     beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
 

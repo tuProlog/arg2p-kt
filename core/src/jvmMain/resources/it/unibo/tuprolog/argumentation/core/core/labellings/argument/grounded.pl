@@ -7,7 +7,6 @@ groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultAttacks, ResultIN, Res
     member(A, UND), 
     allAttacksOUT(Attacks, A, OUT),
     subtract(UND, [A], NewUND),
-    % expandPreferenceSet(A, Arguments, Attacks, NewAttacks),
     groundedLabelling(Arguments, Attacks, [A|IN], OUT, NewUND, ResultAttacks, ResultIN, ResultOUT, ResultUND).
 groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultAttacks, ResultIN, ResultOUT, ResultUND) :-
     member(A, UND), 

@@ -76,8 +76,25 @@ argumentChain(A, B, Attacks) :-
 % antisymmetric binary relation over Rules
 %------------------------------------------------------------------------
 
-superiorArgument(_, B, C) :- superiorArgumentSupport(C, B, _).
-superiorArgument(_, B, C, SupSet) :- superiorArgumentSupport(C, B, SupSet).
+retractPreferenceCache :-
+    retractall(superiorCache(_, _, _, _)).
+
+superiorArgument(_, B, C) :- once(superiorArgumentSupportBuffered(C, B, _)).
+superiorArgument(_, B, C, SupSet) :- once(superiorArgumentSupportBuffered(C, B, SupSet)).
+
+superiorArgumentSupportBuffered(A, B, SupSet) :-
+    superiorCache(A, B, SupSet, true).
+superiorArgumentSupportBuffered(A, B, SupSet) :-
+    superiorCache(A, B, SupSet, false),
+    fail.
+superiorArgumentSupportBuffered(A, B, SupSet) :-
+    \+ superiorCache(A, B, SupSet, _),
+    superiorArgumentSupport(A, B, SupSet),
+    asserta(superiorCache(A, B, SupSet, true)).
+superiorArgumentSupportBuffered(A, B, SupSet) :-
+    \+ superiorCache(A, B, SupSet, _),
+    asserta(superiorCache(A, B, SupSet, false)),
+    fail.
 
 superiorArgumentSupport(A, B, SupSet) :-
 	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),

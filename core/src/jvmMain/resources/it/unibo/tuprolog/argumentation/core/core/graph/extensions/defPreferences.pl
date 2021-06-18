@@ -1,10 +1,34 @@
 modifyArgumentationGraph(defeasiblePref, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
     retractall(sup(_,_)),
-    convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]),
+    retractPreferenceCache,
+    assertAllSup(Arguments),
+    once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
+    convertAttacks(InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
     buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
+    retractall(sup(_,_)),
+    retractPreferenceCache,
     appendLists([Arguments, NewArguments], UnionArguments),
-    appendLists([NewAttacks, PrefAttacks], UnionAttacks),
+    appendLists([ValidAttacks, NewAttacks, PrefAttacks], UnionAttacks),
     appendLists([Supports, NewSupports], UnionSupports), !.
+
+assertAllSup(Arguments) :-
+    findall(_,
+        (
+            member([_, _, [sup(RuleOne, RuleTwo)]], Arguments),
+            \+ sup(RuleOne, RuleTwo),
+            asserta(sup(RuleOne, RuleTwo))
+        ),
+    _).
+
+filterSupRelatedAttacks([], [], []).
+filterSupRelatedAttacks([(T, A, B)|Attacks], Valid, [(T, A, B)|Invalid]) :-
+    attack(T, A, B, C),
+    invalid(T, A, B, C, _),
+    filterSupRelatedAttacks(Attacks, Valid, Invalid).
+filterSupRelatedAttacks([(T, A, B)|Attacks], [(T, A, B)|Valid], Invalid) :-
+    attack(T, A, B, C),
+    \+ invalid(T, A, B, C, _),
+    filterSupRelatedAttacks(Attacks, Valid, Invalid).
 
 /*
 *   Translates the attack relations identified during the building phase.
@@ -48,7 +72,7 @@ transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks) :-
     member((T, A, B), Attacks),
     member((B, C), Supports),
     ResAttack = (T, A, C),
-    \+ member(ResAttack, TempAttacks),
+    \+ attack(T, A, C, D),
     attack(T, A, B, D),
     asserta(attack(T, A, C)),
     asserta(attack(T, A, C, D)),
@@ -65,27 +89,22 @@ buildPrefAttacks(Arguments, AttackArguments, PrefAttacks) :-
     findPrefAttack(Arguments, AttackArguments, [], PrefAttacks), !.
 
 findPrefAttack(Arguments, AttackArguments, TempAttacks, ResAttacks) :-
-    member([IdA, TRA, [sup(RuleOne, RuleTwo)]], Arguments),
     member([IdB, attack, attack(T, A, B, C)], AttackArguments),
-    eligible(RuleOne, RuleTwo, A, C),
-    asserta(sup(RuleOne, RuleTwo)),
-    invalid(T, A, B, C),
-    retractall(sup(RuleOne, RuleTwo)),
-    Attack = (pref, [IdA, TRA, [sup(RuleOne, RuleTwo)]], [IdB, attack, attack(T, A, B, C)]),
+    invalid(T, A, B, C, SupSet),
+    member(X, SupSet),
+    member([IdA, TRA, [X]], Arguments),
+    Attack = (pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)]),
     \+ member(Attack, TempAttacks),
-    asserta(attack(pref, [IdA, TRA, [sup(RuleOne, RuleTwo)]], [IdB, attack, attack(T, A, B)])),
-    asserta(attack(pref, [IdA, TRA, [sup(RuleOne, RuleTwo)]], [IdB, attack, attack(T, A, B, C)], [IdB, attack, attack(T, A, B, C)])),
+    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B)])),
+    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)], [IdB, attack, attack(T, A, B, C)])),
     findPrefAttack(Arguments, AttackArguments, [Attack|TempAttacks], ResAttacks).
 
 findPrefAttack(_, _, TempAttacks, TempAttacks).
-
-eligible(RuleOne, RuleTwo, [R1, _, _], [R2, _, _]) :-
-    (member(RuleOne, R1);member(RuleTwo, R1);member(RuleOne, R2);member(RuleTwo, R2)), !.
-
-invalid(rebut, A, B, C) :- superiorArgument(B, A, C), !.
-invalid(undermine, A, B, C) :- superiorArgument(B, A, C), !.
 
 /*
 *   Specification of a new constraint in the contrary function
 */
 conflict([sup(X, Y)],  [sup(Y, X)]).
+
+invalid(rebut, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.
+invalid(undermine, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.

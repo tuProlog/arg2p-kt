@@ -1,16 +1,20 @@
 modifyArgumentationGraph(defeasibleAllPref, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
     retractall(sup(_,_)),
-    convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]), !,
+    retractPreferenceCache,
+    assertAllSup(Arguments),
+    once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
+    convertAttacks(InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
     appendLists([Arguments, NewArguments], Args),
-    buildPrefAttacks(Args, NewAttacks, ResArguments, ResAttacks, ResSupports), !,
+    appendLists([ValidAttacks, NewAttacks], Atts),
+    buildPrefAttacks(Args, Atts, ResArguments, ResAttacks, ResSupports), !,
+    retractall(sup(_,_)),
+    retractPreferenceCache,
     appendLists([Args, ResArguments], UnionArguments),
-    appendLists([NewAttacks, ResAttacks], UnionAttacks),
+    appendLists([Atts, ResAttacks], UnionAttacks),
     appendLists([Supports, NewSupports, ResSupports], UnionSupports), !.
 
 buildPrefAttacks(Arguments, Attacks, ResArguments, ResAttacks, ResSupports) :-
-    findall(_, (member([_, _, [sup(RuleOne, RuleTwo)]], Arguments), asserta(sup(RuleOne, RuleTwo))), _),
-    findPrefAttack(Arguments, Attacks, [], [], [], ResArguments, ResAttacks, ResSupports), !,
-    retractall(sup(_, _)).
+    findPrefAttack(Arguments, Attacks, [], [], [], ResArguments, ResAttacks, ResSupports), !.
 
 findPrefAttack(Arguments, Attacks, TempArguments, TempAttacks, TempSupports, ResArguments, ResAttacks, ResSupports) :-
     member([IdB, attack, attack(T, A, B, C)], Arguments),
@@ -63,6 +67,3 @@ liftAttacks(Arg, IntArguments, Attacks, Atts) :-
         ),
         Atts
     ).
-
-invalid(rebut, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.
-invalid(undermine, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.

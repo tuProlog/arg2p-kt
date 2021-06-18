@@ -26,7 +26,10 @@ internal class FlagManagerFrame private constructor() {
     private var statementLabellingMode: String = "base"
     private var orderingPrinciple: String = "last"
     private var orderingComparator: String = "elitist"
-    private var preferences: String = "standard"
+    private var preferences: String = "none"
+
+    private var prefPrinciple: ChoiceBox<*>? = null
+    private var prefComparator: ChoiceBox<*>? = null
 
     companion object {
         @JvmStatic
@@ -51,15 +54,23 @@ internal class FlagManagerFrame private constructor() {
                 setupChoiceBox("Statement Labelling Mode", listOf("base")) {
                     flagManager.statementLabellingMode = it
                 },
-                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll")) {
+                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll"), "standard") {
                     flagManager.preferences = it
+                    if (it == "defeasible") {
+                        flagManager.prefPrinciple?.value = "last"
+                        flagManager.prefComparator?.value = "normal"
+                    }
+                    flagManager.prefPrinciple?.isDisable = it == "defeasible" || it == "none"
+                    flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
                 },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
                     flagManager.orderingPrinciple = it
-                },
+                }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*>  },
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
-                },
+                    if (it == "normal") flagManager.prefPrinciple?.value = "last"
+                    flagManager.prefPrinciple?.isDisable = it == "normal"
+                }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
@@ -102,12 +113,12 @@ internal class FlagManagerFrame private constructor() {
         }
 
         @JvmStatic
-        fun setupChoiceBox(label: String, values: Iterable<String>, onChange: (String) -> Unit): HBox {
+        fun setupChoiceBox(label: String, values: Iterable<String>, default : String = values.first(), onChange: (String) -> Unit): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 ChoiceBox<String>().also {
                     it.prefWidth = 400.0
-                    it.value = values.first()
+                    it.value = default
                     it.items.addAll(values)
                     it.setOnAction { _ -> onChange(it.value) }
                 }

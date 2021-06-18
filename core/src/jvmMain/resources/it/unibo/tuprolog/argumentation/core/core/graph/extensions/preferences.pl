@@ -1,18 +1,19 @@
 modifyArgumentationGraph(standardPref, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
-    checkStandardPreferences(Attacks, NewAttacks), !.
+    retractPreferenceCache,
+    checkStandardPreferences(Attacks, NewAttacks),
+    retractPreferenceCache, !.
 
 checkStandardPreferences([], []).
 checkStandardPreferences([Attack|Attacks], NewAttacks) :-
     checkStandardPreferences(Attacks, TempAttacks),
-	checkStandardPreference(Attack, R),
+	once(checkStandardPreference(Attack, R)),
 	appendLists([R, TempAttacks], NewAttacks).
 
-checkStandardPreference((T, A, B),[(T, A, B)]) :-
+checkStandardPreference((T, A, B), [(T, A, B)]) :-
     attack(T, A, B, C),
     standardPreferences(T, A, B, C), !.
-checkStandardPreference((T, A, B),[]) :-
+checkStandardPreference((T, A, B), []) :-
     attack(T, A, B, C),
-    \+ standardPreferences(T, A, B, C),
     retractall(attack(T, A, B, C)),
     retractall(attack(T, A, B)).
 
