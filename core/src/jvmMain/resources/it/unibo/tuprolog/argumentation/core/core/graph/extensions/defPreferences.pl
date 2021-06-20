@@ -43,20 +43,38 @@ convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]) :-
     transitiveConversion(TempAttacks, NewSupports, [], TransAttacks), !,
     appendLists([TempAttacks, TransAttacks], NewAttacks).
 
-simpleConversion([], [], [], []).
-simpleConversion([(T, A, B)|Tail], [RArgument|TmpArgs], [RAttack|TmpAtts], [RSupport|TmpSupps]) :-
-    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
-    generateId(A, B, Id),
+simpleConversion([], [], [], []) :- !.
+simpleConversion(List, TmpArgs, [RAttack|TmpAtts], TmpSupps) :-
+    member((T, A, B), List),
     attack(T, A, B, C),
-    RArgument = [[Id], attack, attack(T, A, B, C)],
-    RSupport = (A, RArgument),
-    RAttack = (T, RArgument, B),
+    C \= B, !,
+    subtract(List, [(T, A, B)], Tail),
+    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
+    generateTransRebArg((T, A, B, C), RAttack).
+simpleConversion(List, [RArgument|TmpArgs], [RAttack|TmpAtts], [RSupport|TmpSupps]) :-
+    member((T, A, B), List),
+    attack(T, A, B, B), !,
+    subtract(List, [(T, A, B)], Tail),
+    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
+    generateDirectRebArg((T, A, B), RArgument, RSupport, RAttack).
+
+generateTransRebArg((T, A, B, C), (T, [[Id], attack, attack(T, A, C, C)], B)) :-
+    argument([[Id], attack, attack(T, A, C, C)]),
+    asserta(attack(T, [[Id], attack, attack(T, A, C, C)], B)),
+    asserta(attack(T, [[Id], attack, attack(T, A, C, C)], B, C)),
+    retractall(attack(T, A, B)),
+    retractall(attack(T, A, B, C)).
+
+generateDirectRebArg((T, A, B), RArgument, (A, RArgument), (T, RArgument, B)) :-
+    generateId(A, B, Id),
+    RArgument = [[Id], attack, attack(T, A, B, B)],
+    \+ argument(RArgument),
     asserta(argument(RArgument)),
     asserta(support(A, RArgument)),
     asserta(attack(T, RArgument, B)),
-    asserta(attack(T, RArgument, B, C)),
+    asserta(attack(T, RArgument, B, B)),
     retractall(attack(T, A, B)),
-    retractall(attack(T, A, B, C)).
+    retractall(attack(T, A, B, B)).
 
 generateId([IdA, _, _], [IdB, _, _], Res) :-
     concate(IdA, A),
