@@ -7,7 +7,6 @@ import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@Ignore
 class AmbulanceCaseStudyTest {
 
     private val baseTheory: String =

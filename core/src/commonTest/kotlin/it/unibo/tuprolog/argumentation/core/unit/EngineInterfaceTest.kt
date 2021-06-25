@@ -9,7 +9,6 @@ import it.unibo.tuprolog.solve.yes
 import kotlin.test.Ignore
 import kotlin.test.Test
 
-@Ignore
 class EngineInterfaceTest {
 
     private fun solverWithTheory() = TestingUtils.solver(

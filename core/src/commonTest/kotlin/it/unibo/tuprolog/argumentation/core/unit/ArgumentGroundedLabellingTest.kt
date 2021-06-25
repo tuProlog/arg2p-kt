@@ -10,7 +10,6 @@ import it.unibo.tuprolog.solve.yes
 import kotlin.test.Ignore
 import kotlin.test.Test
 
-@Ignore
 class ArgumentGroundedLabellingTest {
 
     private fun solverWithTheory() = solver(

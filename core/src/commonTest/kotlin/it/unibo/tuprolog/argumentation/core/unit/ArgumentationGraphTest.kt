@@ -14,7 +14,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.collections.listOf as ktListOf
 
-@Ignore
 class ArgumentationGraphTest {
 
     private fun solverWithTheory() = TestingUtils.solver(

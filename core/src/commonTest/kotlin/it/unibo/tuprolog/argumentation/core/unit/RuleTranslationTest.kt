@@ -9,7 +9,6 @@ import it.unibo.tuprolog.dsl.prolog
 import kotlin.test.Ignore
 import kotlin.test.Test
 
-@Ignore
 class RuleTranslationTest {
 
     private fun testTranslation(theory: String, vararg expected: String) {
