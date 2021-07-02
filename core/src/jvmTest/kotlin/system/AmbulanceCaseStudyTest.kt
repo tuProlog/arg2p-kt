@@ -1,13 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@Ignore
 class AmbulanceCaseStudyTest {
 
     private val baseTheory: String =
