@@ -16,7 +16,7 @@ class Arg2pIdeApplication : Application() {
                 .customTabs(
                     listOf(
                         ArgumentationGraphFrame.customTab(),
-                        FlagManagerFrame.customTab()
+                        FlagManagerFrame.customTab(listOf(Arg2p))
                     )
                 )
                 .show()

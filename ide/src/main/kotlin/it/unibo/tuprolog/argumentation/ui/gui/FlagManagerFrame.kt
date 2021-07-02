@@ -2,7 +2,9 @@ package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.core.parsing.toClause
+import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.collections.FXCollections
@@ -30,7 +32,7 @@ internal class FlagManagerFrame private constructor() {
 
     companion object {
         @JvmStatic
-        fun customTab(): CustomTab {
+        fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
                 setupChoiceBox("Graph Build Mode", listOf("base")) {
@@ -64,28 +66,20 @@ internal class FlagManagerFrame private constructor() {
 //                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
-                model.onNewQuery.subscribe {
-                    cleanSolver(it.dynamicKb)
-                    setupSolver(it.dynamicKb, flagManager)
+                model.onNewQuery.subscribe { _ ->
+                    MutableTheory.empty().let { theory ->
+                        setupSolver(theory, flagManager)
+                        Library.aliased(
+                            theory = theory,
+                            alias = "prolog.argumentation.flags"
+                        )
+                    }.also {
+                        model.customizeSolver { solver ->
+                            (customLibraries + it).forEach { solver.loadLibrary(it) }
+                        }
+                    }
                 }
             }
-        }
-
-        @JvmStatic
-        fun cleanSolver(kb: Theory) {
-            kb.retract(
-                listOf(
-                    Struct.parse("queryMode").toClause(),
-                    Struct.parse("autoTransposition").toClause(),
-                    Struct.parse("unrestrictedRebut").toClause(),
-                    Struct.parse("graphBuildMode(_)").toClause(),
-                    Struct.parse("argumentLabellingMode(_)").toClause(),
-                    Struct.parse("statementLabellingMode(_)").toClause(),
-                    Struct.parse("orderingPrinciple(_)").toClause(),
-                    Struct.parse("orderingComparator(_)").toClause(),
-                    Struct.parse("graphExtension(_)").toClause()
-                )
-            )
         }
 
         @JvmStatic
