@@ -8,7 +8,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 @Ignore
-class AmbulanceCaseStudyTest {
+class ProtoAmbulanceCaseStudyTest {
 
     private val baseTheory: String =
         """
