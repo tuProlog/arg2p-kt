@@ -22,16 +22,21 @@ import java.awt.Color
 import java.awt.Dimension
 import javax.swing.JScrollPane
 import javax.swing.JSplitPane
+import javax.swing.JTabbedPane
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
 
 internal class ArgumentationGraphFrame private constructor(val argumentationGraphPane: JSplitPane) {
 
     private val graphPane: JScrollPane = JScrollPane()
-    private val theoryPane: JScrollPane = JScrollPane()
+    private val classicTheoryPane: JScrollPane = JScrollPane()
+    private val treeTheoryPane: JScrollPane = JScrollPane()
 
     init {
-        argumentationGraphPane.add(theoryPane)
+        val tabbedPane = JTabbedPane()
+        tabbedPane.addTab("Classic", classicTheoryPane)
+        tabbedPane.addTab("Tree", treeTheoryPane)
+        argumentationGraphPane.add(tabbedPane)
         argumentationGraphPane.add(graphPane)
         argumentationGraphPane.isOneTouchExpandable = true
         argumentationGraphPane.dividerLocation = 150
@@ -39,16 +44,19 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
 
     fun printArgumentationInfo(arguments: List<Argument>, attacks: List<Attack>) {
         printGraph(this.graphPane, arguments, attacks)
-        printTheory(this.theoryPane, arguments)
+        printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
         graphPane.revalidate()
-        theoryPane.revalidate()
+        classicTheoryPane.revalidate()
+        treeTheoryPane.revalidate()
     }
 
     fun clear() {
         this.graphPane.viewport.removeAll()
-        this.theoryPane.viewport.removeAll()
+        this.classicTheoryPane.viewport.removeAll()
+        this.treeTheoryPane.viewport.removeAll()
         this.graphPane.revalidate()
-        this.theoryPane.revalidate()
+        classicTheoryPane.revalidate()
+        treeTheoryPane.revalidate()
     }
 
     companion object {
@@ -131,12 +139,34 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
         }
 
         @JvmStatic
-        private fun printTheory(theoryPane: JScrollPane, arguments: List<Argument>) {
+        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<Argument>) {
             val textArea = JTextArea()
             textArea.isEditable = false
             arguments.sortedBy { it.identifier.drop(1).toInt() }
                 .forEach { x -> textArea.append(x.descriptor + "\n") }
-            theoryPane.viewport.view = textArea
+            classicTheoryPane.viewport.view = textArea
+
+            val textAreaTree = JTextArea()
+            textAreaTree.isEditable = false
+            textAreaTree.append(formatResolutionTree(arguments))
+            treeTheoryPane.viewport.view = textAreaTree
+        }
+
+        @JvmStatic
+        private fun formatResolutionTree(arguments: List<Argument>): String {
+            fun tree(arg: Argument, depth: Int, arguments: List<Argument>): String =
+                "${"   ".repeat(depth)}${arg.descriptor} [${arg.label.uppercase()}]\n" +
+                    arg.supports.joinToString(separator = "") { sub ->
+                        tree(
+                            arguments.first { it.identifier == sub.identifier },
+                            depth + 1,
+                            arguments
+                        )
+                    }
+
+            return arguments
+                .sortedBy { it.identifier.drop(1).toInt() }
+                .joinToString(separator = "") { tree(it, 0, arguments) }
         }
     }
 }

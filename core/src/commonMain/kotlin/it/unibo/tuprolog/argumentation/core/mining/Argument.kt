@@ -6,22 +6,24 @@ import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsName
 
-class Argument(val label: String, val topRule: String, val rules: List<String>, val conclusion: String, private val supports: List<List<String>>) {
+data class Support(val rules: List<String>, val conclusion: String, var identifier: String = "")
 
-    private var subargs: List<String> = emptyList()
-    var identifier = ""
+class Argument(
+    val label: String,
+    val topRule: String,
+    val rules: List<String>,
+    val conclusion: String,
+    val supports: List<Support>,
+    var identifier: String = ""
+) {
 
     val descriptor: String
         get() = "$identifier : " + (
             if (topRule == "none") rules.firstOrNull() ?: "" else {
-                subargs.plus(topRule)
+                supports.map { it.identifier }.plus(topRule)
                     .reduce { a: String, b: String -> "$a,$b" }
             }
             ) + " : " + conclusion
-
-    private fun addSubarg(subarg: String) {
-        this.subargs = this.subargs.plus(subarg)
-    }
 
     companion object {
 
@@ -36,13 +38,13 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
                 ).map { x -> x.toString() }
         }
 
-        private fun argSupports(engine: Solver, argument: Term): List<List<String>> {
+        private fun argSupports(engine: Solver, argument: Term): List<Support> {
             return prolog {
                 engine.solve("support"(Y, argument))
                     .filter { r -> r.isYes }
                     .map { solution ->
                         (solution.substitution[Y] as Cons)
-                            .toList().let { arg -> argRules(arg) }
+                            .toList().let { arg -> Support(argRules(arg), argConclusion(arg)) }
                     }.toList()
             }
         }
@@ -79,8 +81,12 @@ class Argument(val label: String, val topRule: String, val rules: List<String>, 
                 }
                 .forEach { arg ->
                     arg.supports
-                        .map { support -> arguments.firstOrNull { it.rules == support }!!.identifier }
-                        .forEach { arg.addSubarg(it) }
+                        .forEach { support ->
+                            support.identifier = arguments.firstOrNull {
+                                it.rules == support.rules &&
+                                    it.conclusion == support.conclusion
+                            }!!.identifier
+                        }
                 }
 
             return arguments.asSequence()
