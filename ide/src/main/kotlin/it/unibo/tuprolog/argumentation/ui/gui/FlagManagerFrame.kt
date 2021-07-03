@@ -7,6 +7,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
+import it.unibo.tuprolog.ui.gui.PrologIDEModel
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
@@ -31,6 +32,9 @@ internal class FlagManagerFrame private constructor() {
     private var orderingComparator: String = "elitist"
 
     companion object {
+
+        private var ideModel: PrologIDEModel? = null
+
         @JvmStatic
         fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
             val flagManager = FlagManagerFrame()
@@ -66,7 +70,8 @@ internal class FlagManagerFrame private constructor() {
 //                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
-                model.onNewQuery.subscribe { _ ->
+                ideModel = model
+                model.onReset.subscribe {
                     MutableTheory.empty().let { theory ->
                         setupSolver(theory, flagManager)
                         Library.aliased(
@@ -79,6 +84,7 @@ internal class FlagManagerFrame private constructor() {
                         }
                     }
                 }
+                model.reset()
             }
         }
 
@@ -104,7 +110,10 @@ internal class FlagManagerFrame private constructor() {
                     it.prefWidth = 400.0
                     it.value = values.first()
                     it.items.addAll(values)
-                    it.setOnAction { _ -> onChange(it.value) }
+                    it.setOnAction { _ ->
+                        onChange(it.value)
+                        ideModel?.reset()
+                    }
                 }
             ).also {
                 it.prefHeight = 20.0
@@ -118,7 +127,10 @@ internal class FlagManagerFrame private constructor() {
                 Label(label).also { it.prefWidth = 400.0 },
                 CheckBox().also {
                     it.isSelected = isSelected
-                    it.setOnAction { _ -> onChange(it.isSelected) }
+                    it.setOnAction { _ ->
+                        onChange(it.isSelected)
+                        ideModel?.reset()
+                    }
                 }
             )
         }
