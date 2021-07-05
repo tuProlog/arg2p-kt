@@ -66,7 +66,7 @@ internal class FlagManagerFrame private constructor() {
                 },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-                setupCheckBox("Prolog rules compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
+                setupCheckBox("Prolog Rules Compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
                 setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
 //                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
