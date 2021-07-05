@@ -22,6 +22,7 @@ internal class FlagManagerFrame private constructor() {
 
     private var queryMode: Boolean = true
     private var autoTransposition: Boolean = false
+    private var prologStrictCompatibility: Boolean = false
     private var unrestrictedRebut: Boolean = true
     private var bpGraph: Boolean = false
     private var preferenceGraph: Boolean = false
@@ -65,6 +66,7 @@ internal class FlagManagerFrame private constructor() {
                 },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
+                setupCheckBox("Prolog rules compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
                 setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
 //                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
@@ -92,6 +94,7 @@ internal class FlagManagerFrame private constructor() {
         fun setupSolver(kb: Theory, target: FlagManagerFrame) {
             if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
+            if (target.prologStrictCompatibility) kb.assertA(Struct.parse("prologStrictCompatibility"))
             if (target.unrestrictedRebut) kb.assertA(Struct.parse("unrestrictedRebut"))
             if (target.bpGraph) kb.assertA(Struct.parse("graphExtension(bp)"))
             if (target.preferenceGraph) kb.assertA(Struct.parse("graphExtension(preference)"))

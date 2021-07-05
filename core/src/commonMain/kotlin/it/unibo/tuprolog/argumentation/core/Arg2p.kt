@@ -1,6 +1,9 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.modularity.ModuleCall
+import it.unibo.tuprolog.argumentation.core.primitives.Axioms1
+import it.unibo.tuprolog.argumentation.core.primitives.Bps1
+import it.unibo.tuprolog.argumentation.core.primitives.StrictRules1
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
@@ -33,6 +36,11 @@ Library.aliased(
         Operator(":", Specifier.XFX, 1001)
     ),
     theory = theories.reduce(Theory::plus),
-    primitives = mapOf(ModuleCall.signature to ModuleCall::invoke),
+    primitives = mapOf(
+        ModuleCall.signature to ModuleCall::invoke,
+        StrictRules1::descriptionPair.get(),
+        Axioms1::descriptionPair.get(),
+        Bps1::descriptionPair.get()
+    ),
     alias = "prolog.argumentation"
 )

@@ -43,7 +43,9 @@ defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRules).
 
 strictRules(CtrRules) :-
-    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRules),
+    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
+    prologStrictRules(StrictRulesNew),
+    append(StrictRulesOld, StrictRulesNew, StrictRules),
     transpose(StrictRules, StrictRules, CtrRules),
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
@@ -51,11 +53,14 @@ ordinaryPremises(Premises) :-
     findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), Premises).
 
 axiomPremises(Axioms) :-
-    findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), Axioms),
+    findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
+    prologAxioms(AxiomsNew),
+    append(AxiomsOld, AxiomsNew, Axioms),
     findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
 
 specialRules(SpecialRules) :-
-    findall([bps, X], search('bp', 10, X), SpecialRules).
+    bpsNew(SpecialRules).
+%    findall([bps, X], search('bp', 10, X), SpecialRules).
 
 %=======================================================================================================================
 % TRANSPOSITION
@@ -92,6 +97,7 @@ transposition_sequential(LPrec, [H|T], Effect, Id, Skipped, NewPrec, XNegated, N
     transposition_sequential(LPrec, T, Effect, Id, [H|Skipped], NewPrec, XNegated, NewId).
 transposition_sequential(LPrec, [X|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
     prologEscape(X),
+    write(X), nl,
     append(Skipped, T, CleanedPrec),
     negate(X, XNegated),
     negate(Effect, EffectNegated),
@@ -119,8 +125,7 @@ negate(X, Arg) :-
         Arg = o(-(PX))));
     Arg = -(X).
 
-
-prologEscape(X) :- \+ functor(X, 'prolog', _).
+prologEscape(X) :- \+ functor(X, 'prolog', _), \+ functor(X, '~', _).
 
 %=======================================================================================================================
 
