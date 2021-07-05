@@ -24,6 +24,7 @@ import javax.swing.JScrollPane
 import javax.swing.JSplitPane
 import javax.swing.JTabbedPane
 import javax.swing.JTextArea
+import javax.swing.JTextPane
 import javax.swing.SwingUtilities
 
 internal class ArgumentationGraphFrame private constructor(val argumentationGraphPane: JSplitPane) {
@@ -146,27 +147,27 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
                 .forEach { x -> textArea.append(x.descriptor + "\n") }
             classicTheoryPane.viewport.view = textArea
 
-            val textAreaTree = JTextArea()
+            val textAreaTree = JTextPane()
             textAreaTree.isEditable = false
-            textAreaTree.append(formatResolutionTree(arguments))
+            textAreaTree.contentType = "text/html"
+            textAreaTree.text = formatResolutionTree(arguments)
             treeTheoryPane.viewport.view = textAreaTree
         }
 
         @JvmStatic
         private fun formatResolutionTree(arguments: List<Argument>): String {
-            fun tree(arg: Argument, depth: Int, arguments: List<Argument>): String =
-                "${"   ".repeat(depth)}${arg.descriptor} [${arg.label.uppercase()}]\n" +
+            fun tree(arg: Argument, arguments: List<Argument>): String =
+                "<li>${arg.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
                     arg.supports.joinToString(separator = "") { sub ->
                         tree(
                             arguments.first { it.identifier == sub.identifier },
-                            depth + 1,
                             arguments
                         )
-                    }
+                    }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
 
-            return arguments
+            return "<html><ul>" + arguments
                 .sortedBy { it.identifier.drop(1).toInt() }
-                .joinToString(separator = "") { tree(it, 0, arguments) }
+                .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
         }
     }
 }
