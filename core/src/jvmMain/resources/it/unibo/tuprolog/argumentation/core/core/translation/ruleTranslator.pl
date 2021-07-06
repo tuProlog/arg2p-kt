@@ -40,7 +40,9 @@ convertAllRules :-
     convertAllRules(L), !.
 
 defeasibleRules(DefeasibleRules) :-
-    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRules).
+    findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
+    prologDefeasibleRules(DefeasibleRulesNew),
+    append(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
 
 strictRules(CtrRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
@@ -50,7 +52,9 @@ strictRules(CtrRules) :-
     findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
 
 ordinaryPremises(Premises) :-
-    findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), Premises).
+    findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
+    prologPremises(PremisesNew),
+    append(PremisesOld, PremisesNew, Premises).
 
 axiomPremises(Axioms) :-
     findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
