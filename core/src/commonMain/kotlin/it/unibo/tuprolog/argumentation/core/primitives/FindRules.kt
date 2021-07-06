@@ -28,6 +28,7 @@ object ConversionUtils {
     fun commonMap(
         context: Solve.Request<ExecutionContext>,
         first: Term,
+        force: Boolean = false,
         mapper: (Iterable<Clause>, PrologScopeWithTheories) -> Term
     ): Sequence<Substitution> {
         context.ensuringArgumentIsVariable(0)
@@ -35,7 +36,7 @@ object ConversionUtils {
             sequenceOf(
                 Substitution.of(
                     first.castToVar(),
-                    if (context.solve(Struct.parse("prologStrictCompatibility")).first().isYes) {
+                    if (force || context.solve(Struct.parse("prologStrictCompatibility")).first().isYes) {
                         mapper(context.context.staticKb.clauses, this)
                     } else {
                         emptyList
@@ -124,7 +125,7 @@ object DefeasibleRules1 : UnaryPredicate.WithoutSideEffects<ExecutionContext>("p
 
 object Bps1 : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
-        ConversionUtils.commonMap(this, first) { clauses, prologScope ->
+        ConversionUtils.commonMap(this, first, true) { clauses, prologScope ->
             clauses
                 .filter { it.isFact && it.head?.functor == "bp" }
                 .map {
