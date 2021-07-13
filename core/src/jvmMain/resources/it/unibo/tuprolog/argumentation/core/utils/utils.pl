@@ -150,7 +150,7 @@ weaker(RulesA, RulesB, [sup(X, W)]) :-
 	orderingComparator(normal),
 	member(W, RulesA),
 	member(X, RulesB),
-	sup(X, W), !.
+	superiority(X, W), !.
 
 weakerDemo([], _, []).
 weakerDemo([H|T], Rules, [Sup|SupSet]) :-
@@ -159,9 +159,9 @@ weakerDemo([H|T], Rules, [Sup|SupSet]) :-
 
 singleStronger(Target, Rules, sup(Rule, Target)) :-
 	member(Rule, Rules),
-	sup(Rule, Target), !.
+	superiority(Rule, Target), !.
 
 allStronger(_, [], []).
 allStronger(Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
-	sup(Rule, Target),
+	superiority(Rule, Target),
 	allStronger(Target, Rules, SupSet).

@@ -30,10 +30,11 @@ internal class FlagManagerFrame private constructor() {
     private var statementLabellingMode: String = "base"
     private var orderingPrinciple: String = "last"
     private var orderingComparator: String = "elitist"
-    private var preferences: String = "none"
+    private var preferences: String = "standard"
 
     private var prefPrinciple: ChoiceBox<*>? = null
     private var prefComparator: ChoiceBox<*>? = null
+    private var restrictedRebut: CheckBox? = null
 
     companion object {
 
@@ -66,22 +67,24 @@ internal class FlagManagerFrame private constructor() {
                     if (it == "defeasible") {
                         flagManager.prefPrinciple?.value = "last"
                         flagManager.prefComparator?.value = "normal"
+                        flagManager.restrictedRebut?.isSelected = false
                     }
                     flagManager.prefPrinciple?.isDisable = it == "defeasible" || it == "none"
                     flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
+                    flagManager.restrictedRebut?.isDisable = it == "defeasible"
                 },
                 setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
                     flagManager.orderingPrinciple = it
                 }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
-                },
+                }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
                 setupCheckBox("Prolog Rules Compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
-                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
-                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
-//                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
+                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
+                    .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
+                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it }
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 ideModel = model

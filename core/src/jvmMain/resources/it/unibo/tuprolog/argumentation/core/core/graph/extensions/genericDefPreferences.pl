@@ -1,5 +1,4 @@
 modifyArgumentationGraph(defeasibleAllPref, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    retractall(sup(_,_)),
     retractPreferenceCache,
     assertAllSup(Arguments),
     once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
@@ -7,7 +6,6 @@ modifyArgumentationGraph(defeasibleAllPref, [Arguments, Attacks, Supports], [Uni
     appendLists([Arguments, NewArguments], Args),
     appendLists([ValidAttacks, NewAttacks], Atts),
     buildPrefAttacks(Args, Atts, ResArguments, ResAttacks, ResSupports), !,
-    retractall(sup(_,_)),
     retractPreferenceCache,
     appendLists([Args, ResArguments], UnionArguments),
     appendLists([Atts, ResAttacks], UnionAttacks),
@@ -22,7 +20,7 @@ findPrefAttack(Arguments, Attacks, TempArguments, TempAttacks, TempSupports, Res
     recoverSuperiorityArgument(SupSet, Arguments, Attacks, Arg, Supps, Atts),
     Attack = (pref, Arg, [IdB, attack, attack(T, A, B, C)]),
     \+ member(Attack, TempAttacks),
-    asserta(attack(pref, Arg, [IdB, attack, attack(T, A, B)])),
+    asserta(attack(pref, Arg, [IdB, attack, attack(T, A, B, C)])),
     asserta(attack(pref, Arg, [IdB, attack, attack(T, A, B, C)], [IdB, attack, attack(T, A, B, C)])),
     appendLists([Supps, TempSupports], NewSupports),
     appendLists([Atts, TempAttacks], NewAttacks),

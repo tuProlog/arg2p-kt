@@ -1,22 +1,21 @@
 modifyArgumentationGraph(defeasiblePref, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    retractall(sup(_,_)),
     retractPreferenceCache,
     assertAllSup(Arguments),
     once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
     convertAttacks(InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
     buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
-    retractall(sup(_,_)),
     retractPreferenceCache,
     appendLists([Arguments, NewArguments], UnionArguments),
     appendLists([ValidAttacks, NewAttacks, PrefAttacks], UnionAttacks),
     appendLists([Supports, NewSupports], UnionSupports), !.
 
 assertAllSup(Arguments) :-
+    retractall(superiority(_, _)),
     findall(_,
         (
             member([_, _, [sup(RuleOne, RuleTwo)]], Arguments),
-            \+ sup(RuleOne, RuleTwo),
-            asserta(sup(RuleOne, RuleTwo))
+            \+ superiority(RuleOne, RuleTwo),
+            asserta(superiority(RuleOne, RuleTwo))
         ),
     _).
 
@@ -113,7 +112,7 @@ findPrefAttack(Arguments, AttackArguments, TempAttacks, ResAttacks) :-
     member([IdA, TRA, [X]], Arguments),
     Attack = (pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)]),
     \+ member(Attack, TempAttacks),
-    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B)])),
+    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)])),
     asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)], [IdB, attack, attack(T, A, B, C)])),
     findPrefAttack(Arguments, AttackArguments, [Attack|TempAttacks], ResAttacks).
 
