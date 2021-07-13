@@ -26,5 +26,5 @@ jobs:
         run: ./gradlew ${{ env.gradle-options }} assemble --parallel
       - name: Test JVM
         run: ./gradlew ${{ env.gradle-options }} jvmTest
-#      - name: Test JS
-#        run: ./gradlew ${{ env.gradle-options }} jsTest || ./gradlew ${{ env.gradle-options }} clean jsTest
+      - name: Test JS
+        run: ./gradlew ${{ env.gradle-options }} jsTest || ./gradlew ${{ env.gradle-options }} clean jsTest

@@ -1,11 +1,18 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.solve.assertSolutionEquals
+import it.unibo.tuprolog.solve.flags.LastCallOptimization
+import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
+import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-class AmbulanceCaseStudyTest {
+class SpeedTest {
 
     private val baseTheory: String =
         """
@@ -104,86 +111,71 @@ class AmbulanceCaseStudyTest {
         orderingPrinciple(last).
         orderingComparator(elitist).
         unrestrictedRebut.
-        graphExtension(standardPref).
         
         """.trimIndent()
 
     private val structuredTheory = baseTheory + "queryMode."
 
-    private fun evaluateBoth(query: String, argsIn: String, argsOut: String, argsUnd: String) {
-        TestingUtils.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
-        TestingUtils.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
+    @Test
+    @ExperimentalTime
+    fun structuredResolutionSpeedTestNoLastCall() {
+        val time = measureTime {
+            prolog {
+                TestingUtils.solverWithTheory(structuredTheory).also { solver ->
+
+                    val query = set_prolog_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
+                        current_prolog_flag(LastCallOptimization.name, V)
+
+                    assertSolutionEquals(
+                        ktListOf(query.yes(V to LastCallOptimization.OFF)),
+                        solver.solve(query).toList()
+                    )
+
+                    TestingUtils.testGoalNoBacktracking(
+                        "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                        solver
+                    ) {
+                        it.yes(
+                            "StatIn" to Struct.parse("[responsible(pino)]"),
+                            "StatOut" to Struct.parse("[responsible(lisa), responsible(lisa)]"),
+                            "StatUnd" to Struct.parse("[responsible(demers)]")
+                        )
+                    }
+                }
+            }
+        }
+
+        println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test
     @ExperimentalTime
-    fun abstractResolutionSpeedTest() {
+    fun structuredResolutionSpeedLastCall() {
         val time = measureTime {
-            TestingUtils.answerQuery(
-                baseTheory,
-                "responsible(X)",
-                "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
-                "[responsible(demers)]"
-            )
+            prolog {
+                TestingUtils.solverWithTheory(structuredTheory).also { solver ->
+
+                    val query = current_prolog_flag(LastCallOptimization.name, V)
+
+                    assertSolutionEquals(
+                        ktListOf(query.yes(V to LastCallOptimization.ON)),
+                        solver.solve(query).toList()
+                    )
+
+                    TestingUtils.testGoalNoBacktracking(
+                        "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                        solver
+                    ) {
+                        it.yes(
+                            "StatIn" to Struct.parse("[responsible(pino)]"),
+                            "StatOut" to Struct.parse("[responsible(lisa), responsible(lisa)]"),
+                            "StatUnd" to Struct.parse("[responsible(demers)]")
+                        )
+                    }
+                }
+            }
         }
 
-        println(time.inSeconds)
+        println(time.toDouble(DurationUnit.SECONDS))
     }
-
-    @Test
-    @ExperimentalTime
-    fun structuredResolutionSpeedTest() {
-        val time = measureTime {
-            TestingUtils.answerQuery(
-                structuredTheory,
-                "responsible(X)",
-                "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
-                "[responsible(demers)]"
-            )
-        }
-
-        println(time.inSeconds)
-    }
-
-    @Test
-    fun responsible() = evaluateBoth(
-        "responsible(X)",
-        "[responsible(pino)]",
-        "[responsible(lisa), responsible(lisa)]",
-        "[responsible(demers)]"
-    )
-
-    @Test
-    fun obligationToStop() = evaluateBoth(
-        "o(stop(X))",
-        "[o(stop(pedestrian)), o(stop(car))]",
-        "[o(stop(ambulance))]",
-        "[]"
-    )
-
-    @Test
-    fun permissionToProceed() = evaluateBoth(
-        "p(-stop(X))",
-        "[p(-stop(ambulance))]",
-        "[p(-stop(pedestrian))]",
-        "[]"
-    )
-
-    @Test
-    fun highSpeed() = evaluateBoth(
-        "high_speed(X)",
-        "[]",
-        "[]",
-        "[high_speed(ambulance)]"
-    )
-
-    @Test
-    fun notHighSpeed() = evaluateBoth(
-        "-high_speed(X)",
-        "[]",
-        "[]",
-        "[-high_speed(ambulance)]"
-    )
 }

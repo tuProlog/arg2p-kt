@@ -1,6 +1,11 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.modularity.ModuleCall
+import it.unibo.tuprolog.argumentation.core.primitives.Axioms1
+import it.unibo.tuprolog.argumentation.core.primitives.Bps1
+import it.unibo.tuprolog.argumentation.core.primitives.DefeasibleRules1
+import it.unibo.tuprolog.argumentation.core.primitives.Premises1
+import it.unibo.tuprolog.argumentation.core.primitives.StrictRules1
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
@@ -28,14 +33,22 @@ private val theories = sequenceOf(
 )
 
 object Arg2p : AliasedLibrary by
-    Library.aliased(
-        operatorSet = OperatorSet(
-            Operator("=>", Specifier.XFX, 1199),
-            Operator(":=>", Specifier.XFX, 1199),
-            Operator(":->", Specifier.XFX, 1199),
-            Operator(":", Specifier.XFX, 1001)
-        ),
-        theory = theories.reduce(Theory::plus),
-        primitives = mapOf(ModuleCall.signature to ModuleCall::invoke),
-        alias = "prolog.argumentation"
-    )
+Library.aliased(
+    operatorSet = OperatorSet(
+        Operator("=>", Specifier.XFX, 1199),
+        Operator(":=>", Specifier.XFX, 1199),
+        Operator(":->", Specifier.XFX, 1199),
+        Operator(":", Specifier.XFX, 1001),
+        Operator(":=", Specifier.XFX, 1199)
+    ),
+    theory = theories.reduce(Theory::plus),
+    primitives = mapOf(
+        ModuleCall.signature to ModuleCall::invoke,
+        StrictRules1::descriptionPair.get(),
+        Axioms1::descriptionPair.get(),
+        Bps1::descriptionPair.get(),
+        Premises1::descriptionPair.get(),
+        DefeasibleRules1::descriptionPair.get()
+    ),
+    alias = "prolog.argumentation"
+)

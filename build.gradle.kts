@@ -3,14 +3,15 @@ import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
 import io.github.gciatto.kt.node.NpmPublishExtension
 
 plugins {
+    kotlin("multiplatform") version "1.5.10"
     id("org.danilopianini.git-sensitive-semantic-versioning") version "0.2.3"
-    id("io.github.gciatto.kt-mpp-pp") version "0.3.4"
+    id("io.github.gciatto.kt-mpp-pp") version "0.3.5"
 }
 
 repositories {
     mavenCentral()
 //    maven("https://dl.bintray.com/pika-lab/tuprolog/")
-    jcenter()
+//    jcenter()
 }
 
 gitSemVer {

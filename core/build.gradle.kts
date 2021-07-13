@@ -1,3 +1,4 @@
+import org.gradle.api.file.DuplicatesStrategy.WARN
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import java.io.File
 import kotlin.streams.asSequence
@@ -82,4 +83,8 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
             file.convertIntoKotlinSource(destDir, pckg)
         }
     }
+}
+
+tasks.getByName<Copy>("jvmProcessResources") {
+    duplicatesStrategy = WARN
 }

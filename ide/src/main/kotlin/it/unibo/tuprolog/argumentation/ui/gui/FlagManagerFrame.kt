@@ -2,9 +2,12 @@ package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.core.parsing.toClause
+import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
+import it.unibo.tuprolog.ui.gui.PrologIDEModel
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
@@ -19,6 +22,7 @@ internal class FlagManagerFrame private constructor() {
 
     private var queryMode: Boolean = true
     private var autoTransposition: Boolean = false
+    private var prologStrictCompatibility: Boolean = false
     private var unrestrictedRebut: Boolean = true
     private var bpGraph: Boolean = false
     private var graphBuildMode: String = "base"
@@ -32,8 +36,11 @@ internal class FlagManagerFrame private constructor() {
     private var prefComparator: ChoiceBox<*>? = null
 
     companion object {
+
+        private var ideModel: PrologIDEModel? = null
+
         @JvmStatic
-        fun customTab(): CustomTab {
+        fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
                 setupChoiceBox("Graph Build Mode", listOf("base")) {
@@ -68,34 +75,31 @@ internal class FlagManagerFrame private constructor() {
                 }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
                 setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
                     flagManager.orderingComparator = it
-                    if (it == "normal") flagManager.prefPrinciple?.value = "last"
-                    flagManager.prefPrinciple?.isDisable = it == "normal"
-                }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
+                },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                 setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
+                setupCheckBox("Prolog Rules Compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it },
-                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it }
+                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
+//                setupCheckBox("Def. Preferences", flagManager.preferenceGraph) { flagManager.preferenceGraph = it },
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
-                model.onNewQuery.subscribe {
-                    cleanSolver(it.dynamicKb)
-                    setupSolver(it.dynamicKb, flagManager)
+                ideModel = model
+                model.onReset.subscribe {
+                    MutableTheory.empty().let { theory ->
+                        setupSolver(theory, flagManager)
+                        Library.aliased(
+                            theory = theory,
+                            alias = "prolog.argumentation.flags"
+                        )
+                    }.also {
+                        model.customizeSolver { solver ->
+                            (customLibraries + it).forEach { solver.loadLibrary(it) }
+                        }
+                    }
                 }
+                model.reset()
             }
-        }
-
-        @JvmStatic
-        fun cleanSolver(kb: Theory) {
-            listOf(
-                Struct.parse("queryMode").toClause(),
-                Struct.parse("autoTransposition").toClause(),
-                Struct.parse("graphBuildMode(_)").toClause(),
-                Struct.parse("argumentLabellingMode(_)").toClause(),
-                Struct.parse("statementLabellingMode(_)").toClause(),
-                Struct.parse("orderingPrinciple(_)").toClause(),
-                Struct.parse("orderingComparator(_)").toClause(),
-                Struct.parse("graphExtension(_)").toClause()
-            ).forEach { kb.retractAll(it) }
         }
 
         @JvmStatic
@@ -104,6 +108,7 @@ internal class FlagManagerFrame private constructor() {
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
             if (!target.unrestrictedRebut) kb.assertA(Struct.parse("graphExtension(rebutRestriction)"))
             if (target.preferences != "none") kb.assertA(Struct.parse("graphExtension(${target.preferences}Pref)"))
+            if (target.prologStrictCompatibility) kb.assertA(Struct.parse("prologStrictCompatibility"))
             if (target.bpGraph) kb.assertA(Struct.parse("graphExtension(bp)"))
             kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
             kb.assertA(Struct.parse("argumentLabellingMode(${target.argumentLabellingMode})"))
@@ -120,7 +125,10 @@ internal class FlagManagerFrame private constructor() {
                     it.prefWidth = 400.0
                     it.value = default
                     it.items.addAll(values)
-                    it.setOnAction { _ -> onChange(it.value) }
+                    it.setOnAction { _ ->
+                        onChange(it.value)
+                        ideModel?.reset()
+                    }
                 }
             ).also {
                 it.prefHeight = 20.0
@@ -134,7 +142,10 @@ internal class FlagManagerFrame private constructor() {
                 Label(label).also { it.prefWidth = 400.0 },
                 CheckBox().also {
                     it.isSelected = isSelected
-                    it.setOnAction { _ -> onChange(it.isSelected) }
+                    it.setOnAction { _ ->
+                        onChange(it.isSelected)
+                        ideModel?.reset()
+                    }
                 }
             )
         }
