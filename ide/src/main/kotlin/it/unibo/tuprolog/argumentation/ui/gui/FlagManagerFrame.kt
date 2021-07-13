@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
@@ -98,6 +99,7 @@ internal class FlagManagerFrame private constructor() {
                     }.also {
                         model.customizeSolver { solver ->
                             (customLibraries + it).forEach { solver.loadLibrary(it) }
+                            solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
                     }
                 }

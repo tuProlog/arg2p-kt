@@ -37,7 +37,7 @@ javafx {
 val entryPoint = "it.unibo.tuprolog.argumentation.ui.gui.Main"
 
 application {
-    mainClassName = entryPoint
+    mainClass.set(entryPoint)
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {

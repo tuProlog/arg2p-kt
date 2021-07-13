@@ -20,6 +20,8 @@ import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
 import java.awt.Color
 import java.awt.Dimension
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import javax.swing.JScrollPane
 import javax.swing.JSplitPane
 import javax.swing.JTabbedPane
@@ -27,56 +29,62 @@ import javax.swing.JTextArea
 import javax.swing.JTextPane
 import javax.swing.SwingUtilities
 
-internal class ArgumentationGraphFrame private constructor(val argumentationGraphPane: JSplitPane) {
+internal class ArgumentationGraphFrame {
 
     private val graphPane: JScrollPane = JScrollPane()
     private val classicTheoryPane: JScrollPane = JScrollPane()
     private val treeTheoryPane: JScrollPane = JScrollPane()
+    val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
     init {
         val tabbedPane = JTabbedPane()
         tabbedPane.addTab("Classic", classicTheoryPane)
         tabbedPane.addTab("Tree", treeTheoryPane)
-        argumentationGraphPane.add(tabbedPane)
-        argumentationGraphPane.add(graphPane)
-        argumentationGraphPane.isOneTouchExpandable = true
-        argumentationGraphPane.dividerLocation = 150
+        splitPane.add(tabbedPane)
+        splitPane.add(graphPane)
+        splitPane.isOneTouchExpandable = true
+        splitPane.dividerLocation = 150
     }
 
     fun printArgumentationInfo(arguments: List<Argument>, attacks: List<Attack>) {
-        printGraph(this.graphPane, arguments, attacks)
-        printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
-        graphPane.revalidate()
-        classicTheoryPane.revalidate()
-        treeTheoryPane.revalidate()
+        SwingUtilities.invokeLater {
+            printGraph(this.graphPane, arguments, attacks)
+            printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
+        }
+        revalidate()
     }
 
     fun clear() {
-        this.graphPane.viewport.removeAll()
-        this.classicTheoryPane.viewport.removeAll()
-        this.treeTheoryPane.viewport.removeAll()
-        this.graphPane.revalidate()
-        classicTheoryPane.revalidate()
-        treeTheoryPane.revalidate()
+        SwingUtilities.invokeLater {
+            this.graphPane.viewport.removeAll()
+            this.classicTheoryPane.viewport.removeAll()
+            this.treeTheoryPane.viewport.removeAll()
+        }
+        revalidate()
     }
 
+    fun revalidate() {
+        SwingUtilities.invokeLater {
+            this.splitPane.repaint()
+        }
+    }
     companion object {
         @JvmStatic
         fun customTab(): CustomTab {
+            val frame = ArgumentationGraphFrame()
             val swingNode = SwingNode()
-            var frame: ArgumentationGraphFrame? = null
-            SwingUtilities.invokeLater {
-                val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
-                swingNode.content = splitPane
-                frame = ArgumentationGraphFrame(splitPane)
-            }
+            frame.splitPane.addComponentListener(object : ComponentAdapter() {
+                override fun componentResized(e: ComponentEvent) {
+                    frame.revalidate()
+                }
+            })
+            swingNode.content = frame.splitPane
+            frame.clear()
             return CustomTab(Tab("Graph", swingNode)) { model ->
                 model.timeout = TimeDuration.MAX_VALUE
                 model.onNewSolution.subscribe { event ->
                     if (!event.event.query.toString().startsWith("buildLabelSets")) {
-                        SwingUtilities.invokeLater {
-                            frame?.clear()
-                        }
+                        frame.clear()
                     } else {
                         val solver = MutableSolver.classicWithDefaultBuiltins(
                             dynamicKb = event.dynamicKb,
@@ -85,18 +93,10 @@ internal class ArgumentationGraphFrame private constructor(val argumentationGrap
                         try {
                             val arguments = Argument.mineArguments(solver).toList()
                             val attacks = Attack.mineAttacks(solver, arguments).toList()
-
-                            SwingUtilities.invokeLater {
-                                frame?.printArgumentationInfo(arguments, attacks)
-                            }
+                            frame.printArgumentationInfo(arguments, attacks)
                         } catch (e: Exception) {
-                            SwingUtilities.invokeLater {
-                                frame?.clear()
-                            }
+                            frame.clear()
                         }
-                    }
-                    SwingUtilities.invokeLater {
-                        frame?.argumentationGraphPane?.repaint()
                     }
                 }
             }
