@@ -2,6 +2,7 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
     argumentLabellingMode(grounded),
     check_modifiers_in_list(effects, [Goal], [X]),
+    supRules,
     retractall(result(_, _)),
     retractall(explored(_)),
     retractall(bufferedArgument(_, _)),

@@ -4,10 +4,6 @@ modifyArgumentationGraph(standardPref, [Arguments, Attacks, Supports], [Argument
     checkStandardPreferences(Attacks, NewAttacks),
     retractPreferenceCache, !.
 
-supRules :-
-    retractall(superiority(_, _)),
-    findall(_, (sup(X, Y), \+ superiority(X, Y), asserta(superiority(X, Y))), _).
-
 checkStandardPreferences([], []).
 checkStandardPreferences([Attack|Attacks], NewAttacks) :-
     checkStandardPreferences(Attacks, TempAttacks),

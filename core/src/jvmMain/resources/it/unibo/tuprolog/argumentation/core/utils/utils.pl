@@ -69,6 +69,9 @@ argumentChain(A, B, Attacks) :-
 
 %------------------------------------------------------------------
 
+supRules :-
+    retractall(superiority(_, _)),
+    findall(_, (sup(X, Y), \+ superiority(X, Y), asserta(superiority(X, Y))), _).
 
 %------------------------------------------------------------------------
 % Superiority definition
