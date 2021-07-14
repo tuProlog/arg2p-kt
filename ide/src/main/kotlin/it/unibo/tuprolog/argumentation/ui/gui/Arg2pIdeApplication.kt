@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.argumentation.core.Arg2p
+import it.unibo.tuprolog.argumentation.core.meta.MetaInterpreterLib
 import it.unibo.tuprolog.ui.gui.PrologIDEBuilder
 import javafx.application.Application
 import javafx.stage.Stage
@@ -12,11 +13,11 @@ class Arg2pIdeApplication : Application() {
         try {
             PrologIDEBuilder(stage)
                 .title("Arg-tuProlog IDE")
-                .customLibraries(listOf(Arg2p))
+                .customLibraries(listOf(Arg2p, MetaInterpreterLib))
                 .customTabs(
                     listOf(
                         ArgumentationGraphFrame.customTab(),
-                        FlagManagerFrame.customTab(listOf(Arg2p))
+                        FlagManagerFrame.customTab(listOf(Arg2p, MetaInterpreterLib))
                     )
                 )
                 .show()
