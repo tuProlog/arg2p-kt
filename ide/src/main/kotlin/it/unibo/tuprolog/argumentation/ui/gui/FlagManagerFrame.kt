@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -111,10 +112,10 @@ internal class FlagManagerFrame private constructor() {
         fun setupSolver(kb: Theory, target: FlagManagerFrame) {
             if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
             if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
-            if (!target.unrestrictedRebut) kb.assertA(Struct.parse("graphExtension(rebutRestriction)"))
-            if (target.preferences != "none") kb.assertA(Struct.parse("graphExtension(${target.preferences}Pref)"))
+            if (!target.unrestrictedRebut) kb.assertA(Clause.parse("graphExtension(X) :- X = rebutRestriction"))
+            if (target.preferences != "none") kb.assertA(Clause.parse("graphExtension(X) :- X = ${target.preferences}Pref"))
             if (target.prologStrictCompatibility) kb.assertA(Struct.parse("prologStrictCompatibility"))
-            if (target.bpGraph) kb.assertA(Struct.parse("graphExtension(bp)"))
+            if (target.bpGraph) kb.assertA(Clause.parse("graphExtension(X) :- X = bp"))
             kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
             kb.assertA(Struct.parse("argumentLabellingMode(${target.argumentLabellingMode})"))
             kb.assertA(Struct.parse("statementLabellingMode(${target.statementLabellingMode})"))

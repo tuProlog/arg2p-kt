@@ -2,7 +2,7 @@ modifyArgumentationGraph(defeasiblePref, [Arguments, Attacks, Supports], [UnionA
     retractPreferenceCache,
     assertAllSup(Arguments),
     once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
-    convertAttacks(InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
+    convertAttacks(Attacks, InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
     buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
     retractPreferenceCache,
     appendLists([Arguments, NewArguments], UnionArguments),
@@ -37,10 +37,23 @@ filterSupRelatedAttacks([(T, A, B)|Attacks], [(T, A, B)|Valid], Invalid) :-
 *   If an Argument A built in this way attacks the argument B, and this one also attacks a third argument C
 *   through the argument B1 we have to consider an attack from A to B1 (transitive attack)
 */
-convertAttacks(Attacks, [NewArguments, NewAttacks, NewSupports]) :-
-    simpleConversion(Attacks, NewArguments, TempAttacks, NewSupports),
+convertAttacks(AllAttacks, Attacks, [NewArguments, NewAttacks, NewSupports]) :-
+    simpleConversion(Attacks, NewArguments, SimpleAttacks, NewSupports),
+    liftAttacks(AllAttacks, NewSupports, LeftAttacks),
+    appendLists([SimpleAttacks, LeftAttacks], TempAttacks),
     transitiveConversion(TempAttacks, NewSupports, [], TransAttacks), !,
     appendLists([TempAttacks, TransAttacks], NewAttacks).
+
+liftAttacks(AllAttacks, NewSupports, LeftAttacks) :-
+   findall((T, C, B), (
+       member((A, B), NewSupports),
+       member((T, C, A), AllAttacks),
+       \+ attack(T, C, B),
+       attack(T, C, A, D),
+       asserta(attack(T, C, B)),
+       asserta(attack(T, C, B, D))
+   ), LeftAttacks).
+
 
 simpleConversion([], [], [], []) :- !.
 simpleConversion(List, TmpArgs, [RAttack|TmpAtts], TmpSupps) :-

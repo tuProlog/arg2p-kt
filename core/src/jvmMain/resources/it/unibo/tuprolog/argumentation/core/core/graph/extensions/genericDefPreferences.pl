@@ -2,7 +2,7 @@ modifyArgumentationGraph(defeasibleAllPref, [Arguments, Attacks, Supports], [Uni
     retractPreferenceCache,
     assertAllSup(Arguments),
     once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
-    convertAttacks(InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
+    convertAttacks(Attacks, InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
     appendLists([Arguments, NewArguments], Args),
     appendLists([ValidAttacks, NewAttacks], Atts),
     buildPrefAttacks(Args, Atts, ResArguments, ResAttacks, ResSupports), !,
