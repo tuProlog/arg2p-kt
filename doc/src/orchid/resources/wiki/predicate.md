@@ -37,9 +37,14 @@ Note that, in the standalone version of the library, there is no need to put the
   - `bp_grounded` to use the bp grounded semantic (Calegari and Sartor);
   - `bp_grounded_partial` to use the bp partial semantic (Calegari and Sartor); 
   - `bp_grounded_complete` to use the bp complete semantic (Calegari and Sartor);
+- `graphExtension(MODE)` to select the preferred way to handle preferences. If absent, preference handling is disabled.`MODE` can assume the values: 
+  - `standardPref` for ASPIC+ static preferences;
+  - `defeasiblePref` for Dung's model for defeasible preferences;
+  - `defeasibleAllPref` for the enhanced Dung's model enabling the use of all ASPIC+'s comparators;
 - `orderingPrinciple(MODE)` [__REQUIRED__] to select the preferred way to choose the relevant parts of an argument in order to compare them. `MODE` can assume the values `last` and `weakest`.
 - `orderingComparator(MODE)` [__REQUIRED__] to select the comparison strategy to use in argument ranking. `MODE` can assume the values `democrat`, `elitist` and `normal`.
 - `queryMode` to enable the structured evaluation in the `answerQuery/4` predicate. It works only for `grounded` semantic;
 - `autoTransposition` to enable the automatic closure under transposition of the target theory;
-- `unrestrictedRebut` to disable the _rebut restriction_ constraint (enabled by default).
-- `graphExtension(bp)` to enable the meta evaluation for burden of persuasion. If enabled the _bp_ preferences must be included directly inside rules (for example `r : [] => bp(something).` or `r : [] => -bp(something).`). It can be used with any semantic. In the IDE the flag is called _Meta Bp_.
+- `graphExtension(rebutRestriction)` (_Unrestricted Rebut_ in the IDE) to manage the _rebut restriction_ constraint.
+- `graphExtension(bp)` (_Meta Bp_ in the IDE) to enable the meta evaluation for burden of persuasion. If enabled the _bp_ preferences must be included directly inside rules (for example `r : [] => bp(something).` or `r : [] => -bp(something).`). It can be used with any semantic. In the IDE the flag is called _Meta Bp_.
+- `prologStrictCompatibility` (_Prolog Rules Compatibility_ in the IDE) to enable the standard _Prolog_ syntax compatibility for the argumentation language (for example `a :- b, c.` is treated as a strict rule claiming `a`, while `a := b, c.` is the defeasible counterpart). While enabled, it is still possible to use the standard argumentation syntax. 
