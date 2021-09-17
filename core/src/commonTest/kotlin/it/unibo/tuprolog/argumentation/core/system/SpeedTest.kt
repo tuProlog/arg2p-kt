@@ -124,7 +124,7 @@ class SpeedTest {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
                     val query = set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
-                            current_flag(LastCallOptimization.name, V)
+                        current_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
                         ktListOf(query.yes(V to LastCallOptimization.OFF)),

@@ -13,7 +13,6 @@ import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.Argument
 import it.unibo.tuprolog.argumentation.core.mining.Attack
 import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
