@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.argumentation.core.Arg2p
 import it.unibo.tuprolog.argumentation.core.meta.MetaInterpreterLib
-import it.unibo.tuprolog.ui.gui.PrologIDEBuilder
+import it.unibo.tuprolog.ui.gui.TuPrologIDEBuilder
 import javafx.application.Application
 import javafx.stage.Stage
 import kotlin.system.exitProcess
@@ -11,7 +11,7 @@ class Arg2pIdeApplication : Application() {
 
     override fun start(stage: Stage) {
         try {
-            PrologIDEBuilder(stage)
+            TuPrologIDEBuilder(stage)
                 .title("Arg-tuProlog IDE")
                 .customLibraries(listOf(Arg2p, MetaInterpreterLib))
                 .customTabs(

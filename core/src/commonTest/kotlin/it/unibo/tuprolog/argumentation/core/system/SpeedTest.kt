@@ -123,8 +123,8 @@ class SpeedTest {
             prolog {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
-                    val query = set_prolog_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
-                        current_prolog_flag(LastCallOptimization.name, V)
+                    val query = set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
+                            current_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
                         ktListOf(query.yes(V to LastCallOptimization.OFF)),
@@ -155,7 +155,7 @@ class SpeedTest {
             prolog {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
-                    val query = current_prolog_flag(LastCallOptimization.name, V)
+                    val query = current_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
                         ktListOf(query.yes(V to LastCallOptimization.ON)),

@@ -81,7 +81,7 @@ internal class ArgumentationGraphFrame {
             swingNode.content = frame.splitPane
             frame.clear()
             return CustomTab(Tab("Graph", swingNode)) { model ->
-                model.timeout = TimeDuration.MAX_VALUE
+//                model.solveOptions = TimeDuration.MAX_VALUE
                 model.onNewSolution.subscribe { event ->
                     if (!event.event.query.toString().startsWith("buildLabelSets")) {
                         frame.clear()

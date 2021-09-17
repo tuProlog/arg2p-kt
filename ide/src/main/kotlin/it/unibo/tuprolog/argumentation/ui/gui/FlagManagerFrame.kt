@@ -9,7 +9,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
-import it.unibo.tuprolog.ui.gui.PrologIDEModel
+import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
@@ -40,7 +40,7 @@ internal class FlagManagerFrame private constructor() {
 
     companion object {
 
-        private var ideModel: PrologIDEModel? = null
+        private var ideModel: TuPrologIDEModel? = null
 
         @JvmStatic
         fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
@@ -97,10 +97,12 @@ internal class FlagManagerFrame private constructor() {
                             theory = theory,
                             alias = "prolog.argumentation.flags"
                         )
-                    }.also {
+                    }.also { flags ->
                         model.customizeSolver { solver ->
-                            (customLibraries + it).forEach { solver.loadLibrary(it) }
-                            solver.setFlag(Unknown.name, Unknown.FAIL)
+                            solver.also {
+                                (customLibraries + flags).forEach { solver.loadLibrary(it) }
+                                solver.setFlag(Unknown.name, Unknown.FAIL)
+                            }
                         }
                     }
                 }

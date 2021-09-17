@@ -34,21 +34,21 @@ private val theories = sequenceOf(
 
 object Arg2p : AliasedLibrary by
 Library.aliased(
-    operatorSet = OperatorSet(
-        Operator("=>", Specifier.XFX, 1199),
-        Operator(":=>", Specifier.XFX, 1199),
-        Operator(":->", Specifier.XFX, 1199),
-        Operator(":", Specifier.XFX, 1001),
-        Operator(":=", Specifier.XFX, 1199)
-    ),
-    theory = theories.reduce(Theory::plus),
+    alias = "prolog.argumentation",
     primitives = mapOf(
-        ModuleCall.signature to ModuleCall::invoke,
+        ModuleCall.signature to ModuleCall,
         StrictRules1::descriptionPair.get(),
         Axioms1::descriptionPair.get(),
         Bps1::descriptionPair.get(),
         Premises1::descriptionPair.get(),
         DefeasibleRules1::descriptionPair.get()
     ),
-    alias = "prolog.argumentation"
+    theory = theories.reduce(Theory::plus),
+    operatorSet = OperatorSet(
+        Operator("=>", Specifier.XFX, 1199),
+        Operator(":=>", Specifier.XFX, 1199),
+        Operator(":->", Specifier.XFX, 1199),
+        Operator(":", Specifier.XFX, 1001),
+        Operator(":=", Specifier.XFX, 1199)
+    )
 )
