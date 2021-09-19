@@ -77,8 +77,8 @@ class EngineInterfaceTest {
                     "ArgUnd" to Struct.parse(
                         """
                                 [
-                                    [[r3],r3,[neg,c]],
-                                    [[r3,r1,r0],r1,[c]]
+                                    [[r3,r1,r0],r1,[c]],
+                                    [[r3],r3,[neg,c]]
                                 ]"""
                     )
                 )

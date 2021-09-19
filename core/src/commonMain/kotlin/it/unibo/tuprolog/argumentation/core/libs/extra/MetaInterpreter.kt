@@ -1,12 +1,13 @@
-package it.unibo.tuprolog.argumentation.core.meta
+package it.unibo.tuprolog.argumentation.core.libs.extra
 
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
-object MetaInterpreterLib : AliasedLibrary by
+object MetaInterpreter : AliasedLibrary by
 Library.aliased(
+    alias = "prolog.argumentation.meta.crossjustice",
     theory = Theory.parse(
         """
         % with_facts_and_length/3
@@ -76,6 +77,5 @@ Library.aliased(
         is_list([]).
         is_list([_|T]) :- is_list(T).
         """.trimIndent()
-    ),
-    alias = "prolog.argumentation.meta"
+    )
 )

@@ -10,7 +10,6 @@ import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
@@ -36,7 +35,7 @@ object TestingUtils {
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = Libraries.of(Arg2p),
+            otherLibraries = Arg2p,
             staticKb = theory,
             flags = flags.set(Unknown, Unknown.FAIL)
         )

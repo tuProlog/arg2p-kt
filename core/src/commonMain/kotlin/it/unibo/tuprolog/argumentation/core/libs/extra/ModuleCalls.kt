@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.modularity
+package it.unibo.tuprolog.argumentation.core.libs.extra
 
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
@@ -12,8 +12,19 @@ import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.solve.exception.error.TypeError
+import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
+
+object ModuleCalls : AliasedLibrary by
+Library.aliased(
+    alias = "prolog.argumentation.modularity",
+    primitives = mapOf(
+        ModuleCall.signature to ModuleCall
+    )
+)
+
 
 object ModuleCall : Primitive {
 
