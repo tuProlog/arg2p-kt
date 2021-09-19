@@ -1,13 +1,8 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.core.Clause
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.argumentation.core.libs.FlagsBuilder
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
-import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.theory.MutableTheory
-import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.ui.gui.CustomTab
 import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
 import javafx.collections.FXCollections
@@ -89,39 +84,28 @@ internal class FlagManagerFrame private constructor() {
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 ideModel = model
                 model.onReset.subscribe {
-                    MutableTheory.empty().let { theory ->
-                        setupSolver(theory, flagManager)
-                        Library.aliased(
-                            theory = theory,
-                            alias = "prolog.argumentation.flags"
-                        )
-                    }.also { flags ->
-                        model.customizeSolver { solver ->
-                            solver.also {
-                                (customLibraries + flags).forEach { solver.loadLibrary(it) }
-                                solver.setFlag(Unknown.name, Unknown.FAIL)
-                            }
+                    model.customizeSolver { solver ->
+                        solver.also {
+                            (customLibraries + FlagsBuilder(
+                                queryMode = flagManager.queryMode,
+                                autoTransposition = flagManager.autoTransposition,
+                                prologStrictCompatibility = flagManager.prologStrictCompatibility,
+                                unrestrictedRebut = flagManager.unrestrictedRebut,
+                                bpGraph = flagManager.bpGraph,
+                                graphBuildMode = flagManager.graphBuildMode,
+                                argumentLabellingMode = flagManager.argumentLabellingMode,
+                                statementLabellingMode = flagManager.statementLabellingMode,
+                                orderingPrinciple = flagManager.orderingPrinciple,
+                                orderingComparator = flagManager.orderingComparator,
+                                preferences = flagManager.preferences,
+                                modulesPath = flagManager.modulesPath
+                            ).create()).forEach { solver.loadLibrary(it) }
+                            solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
                     }
                 }
                 model.reset()
             }
-        }
-
-        @JvmStatic
-        fun setupSolver(kb: Theory, target: FlagManagerFrame) {
-            if (target.queryMode) kb.assertA(Struct.parse("queryMode"))
-            if (target.autoTransposition) kb.assertA(Struct.parse("autoTransposition"))
-            if (!target.unrestrictedRebut) kb.assertA(Clause.parse("graphExtension(X) :- X = rebutRestriction"))
-            if (target.preferences != "none") kb.assertA(Clause.parse("graphExtension(X) :- X = ${target.preferences}Pref"))
-            if (target.prologStrictCompatibility) kb.assertA(Struct.parse("prologStrictCompatibility"))
-            if (target.bpGraph) kb.assertA(Clause.parse("graphExtension(X) :- X = bp"))
-            kb.assertA(Struct.parse("graphBuildMode(${target.graphBuildMode})"))
-            kb.assertA(Struct.parse("argumentLabellingMode(${target.argumentLabellingMode})"))
-            kb.assertA(Struct.parse("statementLabellingMode(${target.statementLabellingMode})"))
-            kb.assertA(Struct.parse("orderingPrinciple(${target.orderingPrinciple})"))
-            kb.assertA(Struct.parse("orderingComparator(${target.orderingComparator})"))
-            kb.assertA(Struct.parse("modulesPath(${target.modulesPath})"))
         }
 
         @JvmStatic
