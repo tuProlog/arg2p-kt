@@ -1,11 +1,16 @@
 package it.unibo.tuprolog.argumentation.core.libs
 
 import it.unibo.tuprolog.argumentation.core.Sources
-import it.unibo.tuprolog.core.*
+import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
+import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.dsl.theory.PrologScopeWithTheories
 import it.unibo.tuprolog.dsl.theory.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -35,7 +40,6 @@ Library.aliased(
         Operator(":=", Specifier.XFX, 1199)
     )
 )
-
 
 object ConversionUtils {
     fun modifiers(target: Clause, context: Solve.Request<ExecutionContext>): Term =
@@ -117,20 +121,20 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
             clauses
                 .filter {
                     it.isFact && (
-                            it.head!!.functor == ":=" ||
-                                    (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
-                            ) &&
-                            it.head!!.arity == 2
+                        it.head!!.functor == ":=" ||
+                            (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
+                        ) &&
+                        it.head!!.arity == 2
                 }
                 .map { clause ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
                         val term = (
-                                listOf(head!![1]) + (
-                                        clause.head!!.args[1].asTuple()?.args
-                                            ?: listOf(clause.head!!.args[1])
-                                        )
-                                ).toTypedArray()
+                            listOf(head!![1]) + (
+                                clause.head!!.args[1].asTuple()?.args
+                                    ?: listOf(clause.head!!.args[1])
+                                )
+                            ).toTypedArray()
                         prologScope.clauseOf(head[0].asStruct(), *term)
                     } else {
                         prologScope.clauseOf(clause.head!!.args[0].asStruct(), clause.head!!.args[1])
@@ -158,4 +162,3 @@ object Bps : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
                 }.toTerm()
         }
 }
-

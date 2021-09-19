@@ -25,7 +25,6 @@ Library.aliased(
     )
 )
 
-
 object ModuleCall : Primitive {
 
     val signature = Signature("call_module", 2)
