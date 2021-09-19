@@ -10,6 +10,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -49,8 +50,10 @@ object WithLib : Primitive {
         }
 
         val solver = request.context.createMutableSolver(
-            libraries = ClassicSolverFactory.defaultLibraries
-                .plus(Arg2p)
+            libraries = request.context.libraries.minus(ArgLibraries.values()
+                    .map { it.identifier() }
+                    .filter { request.context.libraries.libraryAliases.contains(it) }
+                )
                 .plus(ArgLibraries.fromIdentifier(lib.toString()))
         )
 

@@ -13,11 +13,7 @@ import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
-import javafx.scene.control.CheckBox
-import javafx.scene.control.ChoiceBox
-import javafx.scene.control.Label
-import javafx.scene.control.ListView
-import javafx.scene.control.Tab
+import javafx.scene.control.*
 import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame private constructor() {
@@ -33,6 +29,7 @@ internal class FlagManagerFrame private constructor() {
     private var orderingPrinciple: String = "last"
     private var orderingComparator: String = "elitist"
     private var preferences: String = "standard"
+    private var modulesPath: String = "none"
 
     private var prefPrinciple: ChoiceBox<*>? = null
     private var prefComparator: ChoiceBox<*>? = null
@@ -86,7 +83,8 @@ internal class FlagManagerFrame private constructor() {
                 setupCheckBox("Prolog Rules Compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
                 setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
                     .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
-                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it }
+                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
+                setupTextBox("Modules Path", flagManager.modulesPath) { flagManager.modulesPath = it }
             )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 ideModel = model
@@ -123,6 +121,7 @@ internal class FlagManagerFrame private constructor() {
             kb.assertA(Struct.parse("statementLabellingMode(${target.statementLabellingMode})"))
             kb.assertA(Struct.parse("orderingPrinciple(${target.orderingPrinciple})"))
             kb.assertA(Struct.parse("orderingComparator(${target.orderingComparator})"))
+            kb.assertA(Struct.parse("modulesPath(${target.modulesPath})"))
         }
 
         @JvmStatic
@@ -152,6 +151,21 @@ internal class FlagManagerFrame private constructor() {
                     it.isSelected = isSelected
                     it.setOnAction { _ ->
                         onChange(it.isSelected)
+                        ideModel?.reset()
+                    }
+                }
+            )
+        }
+
+        @JvmStatic
+        fun setupTextBox(label: String, default: String, onChange: (String) -> Unit): HBox {
+            return HBox(
+                Label(label).also { it.prefWidth = 400.0 },
+                TextField().also {
+                    it.text = default
+                    it.prefWidth = 400.0
+                    it.textProperty().addListener { _, _, newText ->
+                        onChange(newText)
                         ideModel?.reset()
                     }
                 }

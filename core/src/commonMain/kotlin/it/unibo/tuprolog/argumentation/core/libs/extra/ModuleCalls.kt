@@ -3,14 +3,12 @@ package it.unibo.tuprolog.argumentation.core.libs.extra
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.theory.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.classic.classic
-import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
@@ -66,7 +64,7 @@ object ModuleCall : Primitive {
 
     private fun mineModulesPath(context: ExecutionContext): String {
         return prolog {
-            Solver.classicWithDefaultBuiltins(staticKb = context.staticKb)
+            Solver.classic(libraries = context.libraries)
                 .solve("modulesPath"(X))
                 .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
                 .first()
@@ -77,10 +75,7 @@ object ModuleCall : Primitive {
         val module = { mod: String -> if (mod.contains(".pl")) mod else "${modulesPath.removeSurrounding("'")}/$mod.pl" }
         return prolog {
             Solver.classic(
-                libraries = context.libraries,
-                staticKb = theoryOf(
-                    fact { Struct.parse("modulesPath($modulesPath)") }
-                )
+                libraries = context.libraries
             ).also { solver: Solver -> modules.forEach { solver.solve("consult"(module(it))).toList() } }
         }
     }
