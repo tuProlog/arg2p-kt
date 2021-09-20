@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.libs.*
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.ui.gui.CustomTab
@@ -43,17 +43,13 @@ internal class FlagManagerFrame private constructor() {
                 },
                 setupChoiceBox(
                     "Argument Labelling Mode",
-                    listOf(
-                        "grounded",
-                        "complete",
-                        "bp_grounded",
-                        "bp_grounded_partial",
-                        "bp_grounded_complete"
-                    )
+                    ArgumentLabellingMode.values()
                 ) {
                     flagManager.argumentLabellingMode = it
                 },
-                setupChoiceBox("Statement Labelling Mode", listOf("base")) {
+                setupChoiceBox("Statement Labelling Mode",
+                    StatementLabellingMode.values()
+                ) {
                     flagManager.statementLabellingMode = it
                 },
                 setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll"), "standard") {
@@ -67,10 +63,14 @@ internal class FlagManagerFrame private constructor() {
                     flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
                     flagManager.restrictedRebut?.isDisable = it == "defeasible"
                 },
-                setupChoiceBox("Ordering Principle", listOf("last", "weakest")) {
+                setupChoiceBox("Ordering Principle",
+                    OrderingPrinciple.values()
+                ) {
                     flagManager.orderingPrinciple = it
                 }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
-                setupChoiceBox("Ordering Comparator", listOf("elitist", "democrat", "normal")) {
+                setupChoiceBox("Ordering Comparator",
+                    OrderingComparator.values()
+                ) {
                     flagManager.orderingComparator = it
                 }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
                 setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
@@ -90,15 +90,17 @@ internal class FlagManagerFrame private constructor() {
                                 queryMode = flagManager.queryMode,
                                 autoTransposition = flagManager.autoTransposition,
                                 prologStrictCompatibility = flagManager.prologStrictCompatibility,
-                                unrestrictedRebut = flagManager.unrestrictedRebut,
-                                bpGraph = flagManager.bpGraph,
                                 graphBuildMode = flagManager.graphBuildMode,
                                 argumentLabellingMode = flagManager.argumentLabellingMode,
                                 statementLabellingMode = flagManager.statementLabellingMode,
                                 orderingPrinciple = flagManager.orderingPrinciple,
                                 orderingComparator = flagManager.orderingComparator,
-                                preferences = flagManager.preferences,
-                                modulesPath = flagManager.modulesPath
+                                modulesPath = flagManager.modulesPath,
+                                graphExtensions = listOf(
+                                    if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
+                                    if (flagManager.bpGraph) listOf("bp") else emptyList(),
+                                    if (flagManager.preferences != "none") listOf("${flagManager.preferences}Pref") else emptyList()
+                                ).flatten()
                             ).create()).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
