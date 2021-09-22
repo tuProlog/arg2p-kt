@@ -4,9 +4,9 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 object TheoryUtils {
-    fun loadTheoryFromPrologFile(fileName: String): Theory {
+    fun loadTheoryFromPrologFile(fileName: String): String {
         return TheoryUtils::class.java.getResource("$fileName.pl").let {
-            Theory.parse(it!!.readText())
+            it!!.readText()
         }
     }
 }

@@ -3,7 +3,7 @@ package it.unibo.tuprolog.argumentation.core.libs
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
-sealed class EngineInterfaceBase : ArgLibrary, RawPrologContent {
+sealed class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
 
     override val baseContent: AliasedLibrary
         get() = Library.aliased(

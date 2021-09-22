@@ -35,7 +35,7 @@ object TestingUtils {
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = Arg2p,
+            otherLibraries = Arg2p.to2pLibraries(),
             staticKb = theory,
             flags = flags.set(Unknown, Unknown.FAIL)
         )

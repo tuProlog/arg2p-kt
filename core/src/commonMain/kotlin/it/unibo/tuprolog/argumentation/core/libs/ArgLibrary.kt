@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.libs
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.theory.parsing.parse
 
 interface ArgLibrary {
     val baseContent : AliasedLibrary
@@ -25,6 +26,13 @@ interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary  {
 
 interface RawPrologContent {
     val prologTheory: Theory
+}
+
+abstract class LazyRawPrologContent : RawPrologContent {
+    abstract val prologRawTheory : String
+    override val prologTheory: Theory by lazy {
+        Theory.parse(prologRawTheory)
+    }
 }
 
 interface Loadable {

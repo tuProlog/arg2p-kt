@@ -1,9 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libs.language
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.RawPrologContent
+import it.unibo.tuprolog.argumentation.core.libs.*
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -24,7 +21,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
-sealed class RuleParserBase : ArgLibrary, RawPrologContent, Loadable {
+sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
             alias = "prolog.argumentation.parser",

@@ -5,6 +5,6 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 actual object RuleParser: RuleParserBase() {
-    override val prologTheory: Theory
-        get() = Theory.parse(RuleTranslator.theoryCode)
+    override val prologRawTheory: String
+        get() = RuleTranslator.theoryCode
 }
