@@ -6,6 +6,7 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 interface ArgLibrary {
+    val alias : String
     val baseContent : AliasedLibrary
     val baseFlags : Iterable<ArgsFlag<*, *>>
 

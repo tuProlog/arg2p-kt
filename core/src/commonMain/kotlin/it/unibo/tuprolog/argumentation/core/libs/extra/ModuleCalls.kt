@@ -19,9 +19,12 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 object ModuleCalls : ArgLibrary, Loadable {
+
+    override val alias = "prolog.argumentation.modularity"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.modularity",
+            alias = this.alias,
             primitives = mapOf(
                 ModuleCall.signature to ModuleCall
             )

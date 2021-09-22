@@ -5,9 +5,12 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
 sealed class StrictPreferencesHandlerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+
+    override val alias = "prolog.argumentation.graph.preferences.strict"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.graph.preferences.strict",
+            alias = this.alias,
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

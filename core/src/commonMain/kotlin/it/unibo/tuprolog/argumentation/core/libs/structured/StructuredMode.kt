@@ -6,9 +6,12 @@ import it.unibo.tuprolog.solve.library.Library
 
 
 sealed class StructuredModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+
+    override val alias = "prolog.argumentation.structured"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.structured",
+            alias = this.alias,
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

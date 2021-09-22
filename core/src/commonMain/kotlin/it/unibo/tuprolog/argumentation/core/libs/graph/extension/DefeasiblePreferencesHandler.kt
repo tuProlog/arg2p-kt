@@ -5,9 +5,12 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
 sealed class DefeasiblePreferencesHandlerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+
+    override val alias = "prolog.argumentation.graph.preferences.defeasible"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.graph.preferences.defeasible",
+            alias = this.alias,
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

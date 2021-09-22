@@ -5,9 +5,12 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
 sealed class BpMetaGraphHandlerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+
+    override val alias = "prolog.argumentation.graph.meta.bp"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.graph.meta.bp",
+            alias = this.alias,
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

@@ -8,9 +8,12 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
 sealed class UtilsBase : ArgLibrary, LazyRawPrologContent() {
+
+    override val alias = "prolog.argumentation.utils"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.utils",
+            alias = this.alias,
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

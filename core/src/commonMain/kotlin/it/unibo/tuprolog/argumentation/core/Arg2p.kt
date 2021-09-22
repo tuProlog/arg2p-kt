@@ -19,40 +19,39 @@ import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.solve.library.Libraries
 
 interface Arg2pSolver {
+    val loader : DynamicLoader
     fun staticLibraries() : Iterable<ArgLibrary>
     fun dynamicLibraries() : Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Libraries.of(staticLibraries().map { it.content() })
+    fun to2pLibraries() = Libraries.of(staticLibraries().plus(loader).map { it.content() })
 
     companion object {
-        fun of(loader:  DynamicLoader, staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
+        fun of(staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
             object : Arg2pSolver {
+                override val loader = DynamicLoader(this)
                 override fun staticLibraries() = staticLibs
                 override fun dynamicLibraries() = dynamicLibs
-            }.also { loader.solver = it }
+            }
     }
 }
 
-val Arg2p = DynamicLoader.let { loader ->
-    Arg2pSolver.of(
-        loader,
-        listOf(EngineInterface, loader, Utils, Debug),
-        listOf(
-            MetaInterpreter,
-            ModuleCalls,
-            ArgumentationGraphBuilder,
-            AttackRestrictionHandler,
-            BpMetaGraphHandler,
-            DefeasiblePreferencesHandler,
-            GenericDefeasiblePreferencesHandler,
-            StrictPreferencesHandler,
-            BpLabeller,
-            CompleteLabeller,
-            GroundedLabeller,
-            StatementLabeller,
-            AbstractMode,
-            StructuredMode,
-            RuleParser
-        )
+val Arg2p : Arg2pSolver = Arg2pSolver.of(
+    listOf(EngineInterface, Utils, Debug),
+    listOf(
+        MetaInterpreter,
+        ModuleCalls,
+        ArgumentationGraphBuilder,
+        AttackRestrictionHandler,
+        BpMetaGraphHandler,
+        DefeasiblePreferencesHandler,
+        GenericDefeasiblePreferencesHandler,
+        StrictPreferencesHandler,
+        BpLabeller,
+        CompleteLabeller,
+        GroundedLabeller,
+        StatementLabeller,
+        AbstractMode,
+        StructuredMode,
+        RuleParser
     )
-}
+)

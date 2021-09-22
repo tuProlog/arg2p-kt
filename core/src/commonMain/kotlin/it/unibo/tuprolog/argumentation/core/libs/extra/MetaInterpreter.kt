@@ -9,9 +9,12 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 object MetaInterpreter : ArgLibrary, Loadable {
+
+    override val alias = "prolog.argumentation.meta.crossjustice"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.meta.crossjustice",
+            alias = this.alias,
             theory = Theory.parse(
                 """
                 % with_facts_and_length/3

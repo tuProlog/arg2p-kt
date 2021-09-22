@@ -5,9 +5,11 @@ import it.unibo.tuprolog.solve.library.Library
 
 sealed class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
 
+    override val alias = "prolog.argumentation.interface"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.interface",
+            alias = this.alias,
             theory = this.prologTheory,
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

@@ -75,9 +75,12 @@ data class FlagsBuilder(
     fun graphExtensions(graphExtensions: Iterable<String>) = apply { this.graphExtensions = graphExtensions }
 
     fun create() = object : ArgLibrary {
+
+        override val alias = "prolog.argumentation.flags"
+
         override val baseContent: AliasedLibrary
             get() = Library.aliased(
-                alias = "prolog.argumentation.flags",
+                alias = this.alias,
                 theory = setupSolver(this@FlagsBuilder),
             )
         override val baseFlags: Iterable<ArgsFlag<*, *>>

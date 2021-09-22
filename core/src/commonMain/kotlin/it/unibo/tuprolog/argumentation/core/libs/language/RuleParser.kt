@@ -22,9 +22,12 @@ import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
 sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+
+    override val alias = "prolog.argumentation.parser"
+
     override val baseContent: AliasedLibrary
         get() = Library.aliased(
-            alias = "prolog.argumentation.parser",
+            alias = this.alias,
             primitives = mapOf(
                 StrictRules::descriptionPair.get(),
                 Axioms::descriptionPair.get(),
