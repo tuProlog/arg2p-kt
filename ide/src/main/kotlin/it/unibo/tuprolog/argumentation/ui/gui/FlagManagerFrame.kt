@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.core.*
+import it.unibo.tuprolog.argumentation.core.libs.core.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.libs.core.OrderingComparator
+import it.unibo.tuprolog.argumentation.core.libs.core.OrderingPrinciple
 import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -10,7 +12,12 @@ import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
-import javafx.scene.control.*
+import javafx.scene.control.CheckBox
+import javafx.scene.control.ChoiceBox
+import javafx.scene.control.Label
+import javafx.scene.control.ListView
+import javafx.scene.control.Tab
+import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame private constructor() {
@@ -49,7 +56,8 @@ internal class FlagManagerFrame private constructor() {
                 ) {
                     flagManager.argumentLabellingMode = it
                 },
-                setupChoiceBox("Statement Labelling Mode",
+                setupChoiceBox(
+                    "Statement Labelling Mode",
                     StatementLabellingMode.values()
                 ) {
                     flagManager.statementLabellingMode = it
@@ -65,12 +73,14 @@ internal class FlagManagerFrame private constructor() {
                     flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
                     flagManager.restrictedRebut?.isDisable = it == "defeasible"
                 },
-                setupChoiceBox("Ordering Principle",
+                setupChoiceBox(
+                    "Ordering Principle",
                     OrderingPrinciple.values()
                 ) {
                     flagManager.orderingPrinciple = it
                 }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
-                setupChoiceBox("Ordering Comparator",
+                setupChoiceBox(
+                    "Ordering Comparator",
                     OrderingComparator.values()
                 ) {
                     flagManager.orderingComparator = it
@@ -88,22 +98,24 @@ internal class FlagManagerFrame private constructor() {
                 model.onReset.subscribe {
                     model.customizeSolver { solver ->
                         solver.also {
-                            (customLibraries + FlagsBuilder(
-                                queryMode = flagManager.queryMode,
-                                autoTransposition = flagManager.autoTransposition,
-                                prologStrictCompatibility = flagManager.prologStrictCompatibility,
-                                graphBuildMode = flagManager.graphBuildMode,
-                                argumentLabellingMode = flagManager.argumentLabellingMode,
-                                statementLabellingMode = flagManager.statementLabellingMode,
-                                orderingPrinciple = flagManager.orderingPrinciple,
-                                orderingComparator = flagManager.orderingComparator,
-                                modulesPath = flagManager.modulesPath,
-                                graphExtensions = listOf(
-                                    if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
-                                    if (flagManager.bpGraph) listOf("bp") else emptyList(),
-                                    if (flagManager.preferences != "none") listOf("${flagManager.preferences}Pref") else emptyList()
-                                ).flatten()
-                            ).create().content()).forEach { solver.loadLibrary(it) }
+                            (
+                                customLibraries + FlagsBuilder(
+                                    queryMode = flagManager.queryMode,
+                                    autoTransposition = flagManager.autoTransposition,
+                                    prologStrictCompatibility = flagManager.prologStrictCompatibility,
+                                    graphBuildMode = flagManager.graphBuildMode,
+                                    argumentLabellingMode = flagManager.argumentLabellingMode,
+                                    statementLabellingMode = flagManager.statementLabellingMode,
+                                    orderingPrinciple = flagManager.orderingPrinciple,
+                                    orderingComparator = flagManager.orderingComparator,
+                                    modulesPath = flagManager.modulesPath,
+                                    graphExtensions = listOf(
+                                        if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
+                                        if (flagManager.bpGraph) listOf("bp") else emptyList(),
+                                        if (flagManager.preferences != "none") listOf("${flagManager.preferences}Pref") else emptyList()
+                                    ).flatten()
+                                ).create().content()
+                                ).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
                     }

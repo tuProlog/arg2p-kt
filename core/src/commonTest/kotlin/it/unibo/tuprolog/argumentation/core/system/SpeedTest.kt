@@ -1,8 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.argumentation.core.libs.EngineInterface
-import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog

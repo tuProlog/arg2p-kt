@@ -1,6 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.extension
 
-import it.unibo.tuprolog.argumentation.core.libs.*
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 

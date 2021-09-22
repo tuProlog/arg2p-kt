@@ -16,5 +16,4 @@ sealed class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
         get() = emptyList()
 }
 
-
 expect object EngineInterface : EngineInterfaceBase

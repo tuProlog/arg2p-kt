@@ -1,6 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libs.language
 
-import it.unibo.tuprolog.argumentation.core.libs.*
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -144,20 +147,20 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
             clauses
                 .filter {
                     it.isFact && (
-                            it.head!!.functor == ":=" ||
-                                    (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
-                            ) &&
-                            it.head!!.arity == 2
+                        it.head!!.functor == ":=" ||
+                            (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
+                        ) &&
+                        it.head!!.arity == 2
                 }
                 .map { clause ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
                         val term = (
-                                listOf(head!![1]) + (
-                                        clause.head!!.args[1].asTuple()?.args
-                                            ?: listOf(clause.head!!.args[1])
-                                        )
-                                ).toTypedArray()
+                            listOf(head!![1]) + (
+                                clause.head!!.args[1].asTuple()?.args
+                                    ?: listOf(clause.head!!.args[1])
+                                )
+                            ).toTypedArray()
                         prologScope.clauseOf(head[0].asStruct(), *term)
                     } else {
                         prologScope.clauseOf(clause.head!!.args[0].asStruct(), clause.head!!.args[1])

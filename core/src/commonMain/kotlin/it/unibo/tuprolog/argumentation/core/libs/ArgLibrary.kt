@@ -6,15 +6,15 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 interface ArgLibrary {
-    val alias : String
-    val baseContent : AliasedLibrary
-    val baseFlags : Iterable<ArgsFlag<*, *>>
+    val alias: String
+    val baseContent: AliasedLibrary
+    val baseFlags: Iterable<ArgsFlag<*, *>>
 
     fun flags() = baseFlags
     fun content() = baseContent
 }
 
-interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary  {
+interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
 
     val parentLibrary: T
 
@@ -30,7 +30,7 @@ interface RawPrologContent {
 }
 
 abstract class LazyRawPrologContent : RawPrologContent {
-    abstract val prologRawTheory : String
+    abstract val prologRawTheory: String
     override val prologTheory: Theory by lazy {
         Theory.parse(prologRawTheory)
     }
@@ -41,7 +41,7 @@ interface Loadable {
 }
 
 interface ArgsFlag<T, G> {
-    fun predicate() : String
-    fun default() : T
-    fun values() : G
+    fun predicate(): String
+    fun default(): T
+    fun values(): G
 }
