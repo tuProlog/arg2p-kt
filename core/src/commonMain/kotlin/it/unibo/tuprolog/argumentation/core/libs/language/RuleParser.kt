@@ -1,6 +1,9 @@
-package it.unibo.tuprolog.argumentation.core.libs
+package it.unibo.tuprolog.argumentation.core.libs.language
 
-import it.unibo.tuprolog.argumentation.core.Sources
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.RawPrologContent
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -21,25 +24,45 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
-object RuleParser : AliasedLibrary by
-Library.aliased(
-    alias = "prolog.argumentation.parser",
-    primitives = mapOf(
-        StrictRules::descriptionPair.get(),
-        Axioms::descriptionPair.get(),
-        Bps::descriptionPair.get(),
-        Premises::descriptionPair.get(),
-        DefeasibleRules::descriptionPair.get()
-    ),
-    theory = Sources.ruleTranslator,
-    operatorSet = OperatorSet(
-        Operator("=>", Specifier.XFX, 1199),
-        Operator(":=>", Specifier.XFX, 1199),
-        Operator(":->", Specifier.XFX, 1199),
-        Operator(":", Specifier.XFX, 1001),
-        Operator(":=", Specifier.XFX, 1199)
-    )
-)
+sealed class RuleParserBase : ArgLibrary, RawPrologContent, Loadable {
+    override val baseContent: AliasedLibrary
+        get() = Library.aliased(
+            alias = "prolog.argumentation.parser",
+            primitives = mapOf(
+                StrictRules::descriptionPair.get(),
+                Axioms::descriptionPair.get(),
+                Bps::descriptionPair.get(),
+                Premises::descriptionPair.get(),
+                DefeasibleRules::descriptionPair.get()
+            ),
+            theory = this.prologTheory,
+            operatorSet = OperatorSet(
+                Operator("=>", Specifier.XFX, 1199),
+                Operator(":=>", Specifier.XFX, 1199),
+                Operator(":->", Specifier.XFX, 1199),
+                Operator(":", Specifier.XFX, 1001),
+                Operator(":=", Specifier.XFX, 1199)
+            )
+        )
+    override val baseFlags: Iterable<ArgsFlag<*, *>>
+        get() = listOf(AutoTransposition, PrologStrictCompatibility)
+
+    override fun identifier(): String = "parser"
+}
+
+expect object RuleParser : RuleParserBase
+
+object AutoTransposition : ArgsFlag<Boolean, Unit> {
+    override fun predicate(): String = "autoTransposition"
+    override fun default(): Boolean = false
+    override fun values() {}
+}
+
+object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
+    override fun predicate(): String = "prologStrictCompatibility"
+    override fun default(): Boolean = true
+    override fun values() {}
+}
 
 object ConversionUtils {
     fun modifiers(target: Clause, context: Solve.Request<ExecutionContext>): Term =
@@ -121,20 +144,20 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
             clauses
                 .filter {
                     it.isFact && (
-                        it.head!!.functor == ":=" ||
-                            (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
-                        ) &&
-                        it.head!!.arity == 2
+                            it.head!!.functor == ":=" ||
+                                    (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
+                            ) &&
+                            it.head!!.arity == 2
                 }
                 .map { clause ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
                         val term = (
-                            listOf(head!![1]) + (
-                                clause.head!!.args[1].asTuple()?.args
-                                    ?: listOf(clause.head!!.args[1])
-                                )
-                            ).toTypedArray()
+                                listOf(head!![1]) + (
+                                        clause.head!!.args[1].asTuple()?.args
+                                            ?: listOf(clause.head!!.args[1])
+                                        )
+                                ).toTypedArray()
                         prologScope.clauseOf(head[0].asStruct(), *term)
                     } else {
                         prologScope.clauseOf(clause.head!!.args[0].asStruct(), clause.head!!.args[1])

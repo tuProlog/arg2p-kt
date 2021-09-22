@@ -1,5 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.extra
 
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -15,13 +18,25 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object ModuleCalls : AliasedLibrary by
-Library.aliased(
-    alias = "prolog.argumentation.modularity",
-    primitives = mapOf(
-        ModuleCall.signature to ModuleCall
-    )
-)
+object ModuleCalls : ArgLibrary, Loadable {
+    override val baseContent: AliasedLibrary
+        get() = Library.aliased(
+            alias = "prolog.argumentation.modularity",
+            primitives = mapOf(
+                ModuleCall.signature to ModuleCall
+            )
+        )
+    override val baseFlags: Iterable<ArgsFlag<*, *>>
+        get() = listOf(ModulesPath)
+
+    override fun identifier(): String = "module"
+}
+
+object ModulesPath : ArgsFlag<String, Unit> {
+    override fun predicate(): String = "modulesPath"
+    override fun default(): String = "none"
+    override fun values() {}
+}
 
 object ModuleCall : Primitive {
 

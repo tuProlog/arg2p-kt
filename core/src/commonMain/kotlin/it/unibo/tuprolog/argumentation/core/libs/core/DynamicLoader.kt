@@ -1,27 +1,34 @@
-package it.unibo.tuprolog.argumentation.core.libs
+package it.unibo.tuprolog.argumentation.core.libs.core
 
-import it.unibo.tuprolog.argumentation.core.Arg2p
-import it.unibo.tuprolog.argumentation.core.ArgLibraries
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
-import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object DynamicLoader : AliasedLibrary by
-Library.aliased(
-    alias = "prolog.argumentation.loader",
-    primitives = mapOf(
-        WithLib.signature to WithLib
-    )
-)
+object DynamicLoader : ArgLibrary {
+
+    var solver : Arg2pSolver? = null
+
+    override val baseContent: AliasedLibrary
+        get() = Library.aliased(
+            alias = "prolog.argumentation.loader",
+            primitives = mapOf(
+                WithLib.signature to WithLib
+            ),
+        )
+    override val baseFlags: Iterable<ArgsFlag<*, *>>
+        get() = emptyList()
+}
 
 object WithLib : Primitive {
 
@@ -50,11 +57,12 @@ object WithLib : Primitive {
         }
 
         val solver = request.context.createMutableSolver(
-            libraries = request.context.libraries.minus(ArgLibraries.values()
-                    .map { it.identifier() }
+            libraries = request.context.libraries.minus(
+                DynamicLoader.solver!!.dynamicLibraries()
+                    .map { it.content().alias }
                     .filter { request.context.libraries.libraryAliases.contains(it) }
                 )
-                .plus(ArgLibraries.fromIdentifier(lib.toString()))
+                .plus( DynamicLoader.solver!!.dynamicLibraries().first { (it as Loadable).identifier() == lib.toString()}.content())
         )
 
         return sequence {

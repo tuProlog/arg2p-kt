@@ -1,46 +1,22 @@
-package it.unibo.tuprolog.argumentation.core.libs
+package it.unibo.tuprolog.argumentation.core.libs.core
 
-import it.unibo.tuprolog.argumentation.core.ArgLibraries
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.extra.ModulesPath
+import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libs.graph.GraphBuildMode
+import it.unibo.tuprolog.argumentation.core.libs.graph.GraphExtension
+import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.libs.language.AutoTransposition
+import it.unibo.tuprolog.argumentation.core.libs.language.PrologStrictCompatibility
+import it.unibo.tuprolog.argumentation.core.libs.structured.QueryMode
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import kotlin.jvm.JvmStatic
-
-interface ArgsFlag<T, G> {
-    fun predicate() : String
-    fun default() : T
-    fun values() : G
-}
-
-interface DynamicLib {
-    fun mapping() : Map<String, ArgLibraries>
-}
-
-object QueryMode : ArgsFlag<Boolean, Unit> {
-    override fun predicate(): String = "queryMode"
-    override fun default(): Boolean = true
-    override fun values() {}
-}
-
-object AutoTransposition : ArgsFlag<Boolean, Unit> {
-    override fun predicate(): String = "autoTransposition"
-    override fun default(): Boolean = false
-    override fun values() {}
-}
-
-object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
-    override fun predicate(): String = "prologStrictCompatibility"
-    override fun default(): Boolean = true
-    override fun values() {}
-}
-
-object ModulesPath : ArgsFlag<String, Unit> {
-    override fun predicate(): String = "modulesPath"
-    override fun default(): String = "none"
-    override fun values() {}
-}
 
 object OrderingPrinciple : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "orderingPrinciple"
@@ -52,59 +28,6 @@ object OrderingComparator : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "orderingComparator"
     override fun default(): String = "elitist"
     override fun values(): Iterable<String> = listOf("elitist", "democrat", "normal")
-}
-
-object GraphExtension : ArgsFlag<Iterable<String>, Iterable<String>>, DynamicLib {
-    override fun predicate(): String = "graphExtension"
-    override fun default(): Iterable<String> = listOf("standardPref")
-    override fun values(): Iterable<String> = listOf("rebutRestriction", "bp", "standardPref", "defeasiblePref", "defeasibleAllPref")
-    override fun mapping(): Map<String, ArgLibraries> = mapOf(
-        "rebutRestriction" to ArgLibraries.REBUT,
-        "bp" to ArgLibraries.METABP,
-        "standardPref" to ArgLibraries.STRICTPREF,
-        "defeasiblePref" to ArgLibraries.DEFPREF,
-        "defeasibleAllPref" to ArgLibraries.GDEFPREF
-    )
-}
-
-object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>>, DynamicLib {
-    override fun predicate(): String = "argumentLabellingMode"
-    override fun default(): String = "grounded"
-    override fun values(): Iterable<String> = listOf(
-        "grounded",
-        "complete",
-        "bp_grounded",
-        "bp_grounded_partial",
-        "bp_grounded_complete"
-    )
-
-    override fun mapping(): Map<String, ArgLibraries> = mapOf(
-        "grounded" to ArgLibraries.GROUNDED,
-        "complete" to ArgLibraries.COMPLETE,
-        "bp_grounded" to ArgLibraries.BP,
-        "bp_grounded_partial" to ArgLibraries.BP,
-        "bp_grounded_complete" to ArgLibraries.BP
-    )
-}
-
-object StatementLabellingMode : ArgsFlag<String, Iterable<String>>, DynamicLib {
-    override fun predicate(): String = "statementLabellingMode"
-    override fun default(): String = "base"
-    override fun values(): Iterable<String> = listOf("base")
-
-    override fun mapping(): Map<String, ArgLibraries> = mapOf(
-        "base" to ArgLibraries.STATEMENT
-    )
-}
-
-object GraphBuildMode : ArgsFlag<String, Iterable<String>>, DynamicLib {
-    override fun predicate(): String = "graphBuildMode"
-    override fun default(): String = "base"
-    override fun values(): Iterable<String> = listOf("base")
-
-    override fun mapping(): Map<String, ArgLibraries> = mapOf(
-        "base" to ArgLibraries.GRAPH
-    )
 }
 
 data class FlagsBuilder(
@@ -151,8 +74,13 @@ data class FlagsBuilder(
     fun modulesPath(modulesPath: String) = apply { this.modulesPath = modulesPath }
     fun graphExtensions(graphExtensions: Iterable<String>) = apply { this.graphExtensions = graphExtensions }
 
-    fun create() = Library.aliased(
-        alias = "prolog.argumentation.flags",
-        theory = setupSolver(this),
-    )
+    fun create() = object : ArgLibrary {
+        override val baseContent: AliasedLibrary
+            get() = Library.aliased(
+                alias = "prolog.argumentation.flags",
+                theory = setupSolver(this@FlagsBuilder),
+            )
+        override val baseFlags: Iterable<ArgsFlag<*, *>>
+            get() = emptyList()
+    }
 }

@@ -12,11 +12,11 @@ class Arg2pIdeApplication : Application() {
         try {
             TuPrologIDEBuilder(stage)
                 .title("Arg-tuProlog IDE")
-                .customLibraries(Arg2p.libraries)
+                .customLibraries(Arg2p.to2pLibraries().libraries)
                 .customTabs(
                     listOf(
                         ArgumentationGraphFrame.customTab(),
-                        FlagManagerFrame.customTab(Arg2p.libraries.toList())
+                        FlagManagerFrame.customTab(Arg2p.to2pLibraries().libraries.toList())
                     )
                 )
                 .show()

@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.*
+import it.unibo.tuprolog.argumentation.core.libs.core.*
+import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.ui.gui.CustomTab
@@ -101,7 +103,7 @@ internal class FlagManagerFrame private constructor() {
                                     if (flagManager.bpGraph) listOf("bp") else emptyList(),
                                     if (flagManager.preferences != "none") listOf("${flagManager.preferences}Pref") else emptyList()
                                 ).flatten()
-                            ).create()).forEach { solver.loadLibrary(it) }
+                            ).create().content()).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
                     }
