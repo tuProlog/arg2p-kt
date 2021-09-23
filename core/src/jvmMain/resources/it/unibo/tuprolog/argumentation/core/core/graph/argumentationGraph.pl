@@ -1,118 +1,57 @@
-% ----------------------------------------------------------------------
-% argumentationGraph.pl
-%
-% PIKA-LAB
-% Year: 2019
-% ----------------------------------------------------------------------
+% Arguments [Rules, TopRule, Conclusion, [LastDefRules, DefRules, DefPremises]]
+% Support (Support, Argument)
+% Attack (Attacker, Attacked, On)
 
-%========================================================================
-% ARGUMENTATION GRAPH
-%========================================================================
-% The argumentation graph consists of a finite set A called arguments and
-% two binary relations on A called attack and support respectively.
-% The argumentation graph is build based on the following definition:
-% - ARGUMENT
-% - ATTACK and CONFLICT
-% - SUPPORT
-% answering the following questions
-% - how can arguments be built, i.e. how can claims be supported with grounds,
-% - and how can arguments be attacked
-%========================================================================
-%========================================================================
-buildArgumentationGraph([Arguments, Attacks, Supports]) :-
-        retractall(argument(_)),
-        retractall(argumentInfo(_, _)),
-		retractall(attack(_, _, _, _)),
-        retractall(attack(_, _, _)),
-	    retractall(support(_, _)),
-	    buildArguments,
-        buildAttacks,
-        findall( [IDPremises,  TopRule,  RuleHead],
-                 ( argument([IDPremises, TopRule, RuleHead]),
-                   ground(argument([IDPremises, TopRule, RuleHead])) ),
-                 Arguments),
-        findall( (A1, A2), support(A1, A2), Supports),
-	    findall( (T, A1, A2), attack(T, A1, A2),  Attacks), !.
+buildArgumentationGraph(Rules, [Arguments, [], Supports]) :-
+	    buildArguments(Rules, Arguments, Supports).
+%        buildAttacks(Arguments, Supports, Attacks), !.
 
-%========================================================================
-% ARGUMENT DEFINITION
-%========================================================================
-% Arguments can be constructed step-by-step by chaining inference rules into trees.
-% Arguments thus contain subarguments, which are the structures that support
-% intermediate conclusions (plus the argument itself and its premises as limiting cases).
-% Arguments are then defined as a chain applications of the inference rules into inference trees,
-% starting with elements from the knowledge base K. In what follows, for a given argument,
-% the function Prem returns all the formulas of K (called premises) used to build the argument,
-% Conc returns its conclusion, Sub returns all its sub-arguments,
-% DefRules returns all the defeasible rules of the argument and TopRule returns the last inference
-% rule used in the argument.
-% An argument A on the basis of an argumentation theory with a knowledge base K
-% and an argumentation system (L, R, n) is
-% (1) φ if φ ∈ K with: Prem(A) = {φ},Conc(A) = φ,Sub(A) = {φ},DefRules(A) = ∅,TopRule(A) = undefined.
-% (2) A1,...An ⇒ ψ if A1,...,An are arguments such that there exists a defeasible rule Conc(A1), . . . ,Conc(An) ⇒ ψ in Rd.
-%     Prem(A) = Prem(A1 ) ∪ . . . ∪ Prem(An ),
-%     Conc(A) = ψ,
-%     Sub(A) = Sub(A1) ∪ . . . ∪ Sub(An) ∪ {A},
-%     DefRules(A) = DefRules(A1 ) ∪ . . . ∪ DefRules(An ) ∪ {Conc(A1 ), . . .
-%     Conc(An) ⇒ ψ},
-%     TopRule(A) = Conc(A1 ), . . . Conc(An ) ⇒ ψ .
-%========================================================================
+buildArguments(Rules, Arguments, []) :-
+	buildArgumentsFromPremises(Rules, Arguments).
+%	buildArgumentsFromRules(Rules, Arguments, AllArguments, Supports).
 
-buildArguments :-
-	buildArgumentsFromPremises,
-	buildArgumentsFromRules,
-	buildArgumentsInfo.
+checkStrict(Rules, Id, [Id]) :- \+ member(strict(Id), Rules).
+checkStrict(Rules, Id, []) :- member(strict(Id), Rules).
 
-buildArgumentsFromPremises :-
-	premise([PremiseID, Premise]),
-	NewArgument = [[PremiseID], none, Premise],
-	\+ argument(NewArgument),
-	asserta(argument(NewArgument)),
-	asserta(prem([PremiseID, Premise], NewArgument)),
-    fail.
-buildArgumentsFromPremises.
+buildArgumentsFromPremises(Rules, Arguments) :-
+    findall(
+        [[PremiseID], none, Premise, [[], [], DefPrem]],
+        (
+            member(premise([PremiseID, Premise]), Rules),
+            checkStrict(Rules, PremiseID, DefPrem)
+        ),
+        Arguments
+    ).
 
-buildArgumentsFromRules :-
-	rule([RuleID, RuleBody, RuleHead]),
-	ruleBodyIsSupported(RuleBody, [], [], PremisesOfSupportingArguments, Supports),
-	\+ member(RuleID, PremisesOfSupportingArguments),
-	append([RuleID], PremisesOfSupportingArguments, IDPremises),
-	sort(IDPremises, SortedPremises),
-    NewArgument = [SortedPremises, RuleID, RuleHead],
-	\+ argument(NewArgument),
-	assertSupports(Supports, NewArgument),
-	liftPremises(Supports, NewArgument),
-	asserta(argument(NewArgument)),
-    buildArgumentsFromRules.
-buildArgumentsFromRules.
+% Check \+ member(RuleID, SupportRules) constraint. Is it avoiding cyclical arguments?
 
-buildArgumentsInfo :-
-	argument(Argument),
-	defeasibleRules(Argument, Rules),
-	ordinaryPremises(Argument, Prem),
-	lastDefeasibleRules(Argument, LastRules),
-	\+ argumentInfo(Argument, [LastRules, Rules, Prem]),
-	asserta(argumentInfo(Argument, [LastRules, Rules, Prem])),
-	fail.
-buildArgumentsInfo.
+buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :-
+	member(rule([RuleID, RuleBody, RuleHead]), Rules),
+	ruleBodyIsSupported(Arguments, RuleBody, [], [], SupportRules, ArgSupports),
+	\+ member(RuleID, SupportRules),
+	sort([RuleID|SupportRules], SortedPremises),
+	buildArgumentInfo(Rules, ArgSupports, RuleID, Info),
+    NewArgument = [SortedPremises, RuleID, RuleHead, Info],
+	\+ member(NewArgument, Arguments),
+	mapSupports(NewArgument, ArgSupports, MappedSupports),
+	append(Supports, MappedSupports, NewSupports),
+    buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports).
+buildArgumentsFromRules(_, Arguments, Supports, Arguments, Supports).
 
-assertSupports([], _).
-assertSupports([Support | OtherSupports], Argument) :-
-	asserta(support(Support, Argument)),
-	assertSupports(OtherSupports, Argument).
+mapSupports(Argument, Supports, MappedSupports) :-
+    findall((S, Argument), member(S, Supports), MappedSupports).
 
-liftPremises(Supports, Argument) :-
-	findall(_, (member(S, Supports), prem(Prem, S), asserta(prem(Prem, Argument))), _).
+% TODO
 
-% Sub-arguments
-sub(A, [A|Subs]) :- findall(Sub, support(Sub, A), Subs).
+buildArgumentInfo(Rules, Supports, RuleId, Info).
 
 % Defeasible Premises
 ordinaryPremises(A, Prem) :- findall(R,  (prem([R, _], A), \+ strict(R)), Prem).
 
 % Defeasible rules
-defeasibleRules([Rules, _, _], DefRules) :- 
-	findall(X, (member(X, Rules), \+ strict(X), \+ premise([X, _])), UnsortedRules),
+defeasibleRules(RuleId, Supports, DefRules) :-
+	findall(Def, member([_, _, _, [_, Def, _]], Rules), UnsortedRules),
+	checkStrict()
 	sort(UnsortedRules, DefRules).
 
 % Last Defeasible Rules
@@ -125,27 +64,18 @@ lastRule([Rules, TopRule, Conc], Influent) :-
 	findall(X, (support([R, TR, C], [Rules, TopRule, Conc]), lastRule([R, TR, C], X)), Res),
 	appendLists(Res, Influent).
 
-%========================================================================
-% SUPPORT DEFINITION
-%========================================================================
-% means that argument a supports argument b if the acceptance of a implies the acceptance of b
-% support are inferences from grounds to claims
-%========================================================================
-ruleBodyIsSupported([], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([ [unless, _] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
+
+ruleBodyIsSupported(_, [], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
+ruleBodyIsSupported(Args, [ [unless, _] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
+	ruleBodyIsSupported(Args, Others, Premises, Supports, ResultPremises, ResultSupports).
 ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	(callable(Check) -> call(Check); Check),
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
-    argument([ArgumentID, RuleID, Statement]),
+	ruleBodyIsSupported(Args, Others, Premises, Supports, ResultPremises, ResultSupports).
+ruleBodyIsSupported(Args, [Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
+    member([ArgumentID, RuleID, Statement, Info], Args),
 	append(ArgumentID, Premises, NewPremises),
-	append([[ArgumentID, RuleID, Statement]], Supports, NewSupports),
-	ruleBodyIsSupported(Others, NewPremises, NewSupports, ResultPremises, ResultSupports).
+	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, Statement, Info]|Supports], ResultPremises, ResultSupports).
 
-%========================================================================
-% ATTACK DEFINITION
-%========================================================================
 
 buildAttacks :-
 	buildDirectAttacks,
@@ -236,10 +166,7 @@ unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 %========================================================================
 % CONFLICT DEFINITION
 %========================================================================
-% Literals statments have the following form.
-% literals: [atom] or [neg, atom]
-% deontic literals: [obl, [atom]] or [obl, [neg, atom]] or [neg, obl,[neg, atom]] or [perm, [neg, atom]]
-%========================================================================
+
 conflict( [Atom], [neg, Atom]).
 conflict( [neg, Atom], [Atom]).
 

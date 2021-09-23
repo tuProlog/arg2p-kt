@@ -15,6 +15,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -58,11 +59,11 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
                 )
                 ).let { library ->
                 request.context.createMutableSolver(
-                    libraries = request.context.libraries.minus(
-                        this@DynamicLoader.solver.dynamicLibraries()
-                            .map { it.alias }
-                            .filter { request.context.libraries.libraryAliases.contains(it) }
-                    ).plus(library.content()),
+                    libraries = Libraries.of(request.context.libraries.libraries.filterNot { lib ->
+                            this@DynamicLoader.solver.dynamicLibraries()
+                                .map { it.alias }
+                                .contains(lib.alias)
+                    }).plus(library.content()),
                     staticKb = request.context.staticKb
                 )
             }

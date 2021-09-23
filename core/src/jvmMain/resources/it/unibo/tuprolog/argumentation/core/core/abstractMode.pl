@@ -1,16 +1,15 @@
-computeGlobalAcceptance([SORTEDSTATIN, SORTEDSTATOUT, SORTEDSTATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    buildGraph([Arguments, Attacks, Supports]),!,
-    modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    buildArgumentLabelling([NewArguments, NewAttacks, NewSupports], [ARGSIN, ARGSOUT, ARGSUND]),
-    buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
-    sort(STATIN, SORTEDSTATIN),
-    sort(STATOUT, SORTEDSTATOUT),
-    sort(STATUND, SORTEDSTATUND),
-    storeResults(ARGSIN, ARGSOUT, ARGSUND).
+computeGlobalAcceptance(Rules, [Arguments, Attacks, Supports], [SORTEDSTATIN, SORTEDSTATOUT, SORTEDSTATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
+    buildGraph(Rules, [Arguments, Attacks, Supports]), !.
+    % modifyGraph(Rules, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
+    % buildArgumentLabelling([NewArguments, NewAttacks, NewSupports], [ARGSIN, ARGSOUT, ARGSUND]),
+    % buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
+    % sort(STATIN, SORTEDSTATIN),
+    % sort(STATOUT, SORTEDSTATOUT),
+    % sort(STATUND, SORTEDSTATUND).
 
-buildGraph([Arguments, Attacks, Supports]) :-
-    graphBuildMode(base),
-    buildArgumentationGraph([Arguments, Attacks, Supports]).
+buildGraph(Rules, [Arguments, Attacks, Supports]) :-
+    graphBuildMode(X),
+    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]).
 
 modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
     findall(X, graphExtension(X), Ext),
@@ -46,6 +45,8 @@ buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
 buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]) :-
     statementLabellingMode(base),
     statementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]).
+
+% TODO
 
 storeResults(ARGSIN, ARGSOUT, ARGSUND) :-
     retractall(argsLabelling(_, _, _)),
