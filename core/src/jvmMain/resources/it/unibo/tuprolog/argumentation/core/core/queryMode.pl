@@ -1,3 +1,5 @@
+pippo(ciao).
+
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
     argumentLabellingMode(grounded),
