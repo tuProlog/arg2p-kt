@@ -40,8 +40,9 @@ interface Arg2pSolver {
 }
 
 val Arg2p: Arg2pSolver = Arg2pSolver.of(
-    listOf(EngineInterface, Utils, Debug),
+    listOf(EngineInterface, Utils),
     listOf(
+        Debug,
         RuleParser,
         MetaInterpreter,
         ModuleCalls,
