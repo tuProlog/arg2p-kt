@@ -23,13 +23,13 @@ buildLabelSets :-
     write('=================================================>'),nl.
 
 buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    parser::convertAllRules,
-    abstract::computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
+    parser::convertAllRules(ArgRules),
+    abstract::computeGlobalAcceptance(ArgRules, [STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
 buildLabelSets(STATIN, STATOUT, STATUND) :-
-    parser::convertAllRules,
-    abstract::computeGlobalAcceptance([STATIN, STATOUT, STATUND], _).
+    parser::convertAllRules(ArgRules),
+    abstract::computeGlobalAcceptance(ArgRules, [STATIN, STATOUT, STATUND], _).
 
 answerQuery(GOAL, YES, NO, UND) :-
-    parser::convertAllRules,
-    structured::computeStatementAcceptance(GOAL, YES, NO, UND).
+    parser::convertAllRules(ArgRules),
+    structured::computeStatementAcceptance(ArgRules, GOAL, YES, NO, UND).

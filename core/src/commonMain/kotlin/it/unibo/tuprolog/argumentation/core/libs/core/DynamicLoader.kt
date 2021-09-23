@@ -62,7 +62,8 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
                         this@DynamicLoader.solver.dynamicLibraries()
                             .map { it.alias }
                             .filter { request.context.libraries.libraryAliases.contains(it) }
-                    ).plus(library.content())
+                    ).plus(library.content()),
+                    staticKb = request.context.staticKb
                 )
             }
 
