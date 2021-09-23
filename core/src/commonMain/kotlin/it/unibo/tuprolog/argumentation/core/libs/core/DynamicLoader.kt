@@ -1,12 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.libs.core
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.operators.Operator
+import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.core.operators.Specifier
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
@@ -16,11 +19,11 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary {
+class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
 
     inner class WithLib : Primitive {
 
-        val signature = Signature("with_lib", 2)
+        val signature = Signature("::", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val lib: Term = request.arguments[0]
@@ -82,6 +85,9 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary {
                 primitives = mapOf(
                     it.signature to it
                 ),
+                operatorSet = OperatorSet(
+                    Operator("::", Specifier.XFX, 700),
+                )
             )
         }
     override val baseFlags: Iterable<ArgsFlag<*, *>>

@@ -27,14 +27,14 @@ interface Arg2pSolver {
     fun staticLibraries(): Iterable<ArgLibrary>
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Libraries.of(staticLibraries().plus(loader).map { it.content() })
+    fun to2pLibraries() = Libraries.of(listOf(loader).plus(staticLibraries()).map { it.content() })
 
     companion object {
         fun of(staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
             object : Arg2pSolver {
                 override val loader = DynamicLoader(this)
-                override fun staticLibraries() = staticLibs
-                override fun dynamicLibraries() = dynamicLibs
+                override fun staticLibraries() = staticLibs.onEach { it.theoryOperators = loader.content().operators }
+                override fun dynamicLibraries() = dynamicLibs.onEach { it.theoryOperators = loader.content().operators }
             }
     }
 }

@@ -4,6 +4,8 @@
 % Year: 2019
 % -------------------------------------------------------------------------------
 
+pippo(ciao).
+
 % rule_name : o(-what_is_mandatory_to_avoid), o(what_is_mandatory), p(what_is_permitted), p(-what_is_permitted), what_is_true, -what_is_true => effect.
 % are converted into lists expressing rules
 % rule([v, [ [obl, [neg, enter]], [enter] ], [violation] ]).

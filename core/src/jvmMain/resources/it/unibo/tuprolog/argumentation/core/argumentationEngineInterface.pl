@@ -1,9 +1,3 @@
-% ----------------------------------------------------------------
-% argumentationEngineInterface.pl
-% PIKA-lab
-% Year: 2019
-% ---------------------------------------------------------------
-
 argTuProlog.
 
 buildLabelSets :-
@@ -29,13 +23,13 @@ buildLabelSets :-
     write('=================================================>'),nl.
 
 buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    convertAllRules,
-    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
+    parser::convertAllRules,
+    abstract::computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
 buildLabelSets(STATIN, STATOUT, STATUND) :-
-    convertAllRules,
-    computeGlobalAcceptance([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
+    parser::convertAllRules,
+    abstract::computeGlobalAcceptance([STATIN, STATOUT, STATUND], _).
 
 answerQuery(GOAL, YES, NO, UND) :-
-    convertAllRules,
-    computeStatementAcceptance(GOAL, YES, NO, UND).
+    parser::convertAllRules,
+    structured::computeStatementAcceptance(GOAL, YES, NO, UND).

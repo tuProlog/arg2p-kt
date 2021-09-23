@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.core
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.extra.ModulesPath
 import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.GraphBuildMode
@@ -74,7 +74,7 @@ data class FlagsBuilder(
     fun modulesPath(modulesPath: String) = apply { this.modulesPath = modulesPath }
     fun graphExtensions(graphExtensions: Iterable<String>) = apply { this.graphExtensions = graphExtensions }
 
-    fun create() = object : ArgLibrary {
+    fun create() = object : BaseArgLibrary() {
 
         override val alias = "prolog.argumentation.flags"
 

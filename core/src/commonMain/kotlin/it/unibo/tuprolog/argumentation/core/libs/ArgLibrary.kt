@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libs
 
+import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
@@ -9,9 +10,15 @@ interface ArgLibrary {
     val alias: String
     val baseContent: AliasedLibrary
     val baseFlags: Iterable<ArgsFlag<*, *>>
+    var theoryOperators: OperatorSet
 
     fun flags() = baseFlags
     fun content() = baseContent
+}
+
+abstract class BaseArgLibrary : ArgLibrary {
+    override var theoryOperators: OperatorSet = OperatorSet.DEFAULT
+        get() = OperatorSet.DEFAULT.plus(if (field == OperatorSet.DEFAULT) field else OperatorSet.DEFAULT.plus(field))
 }
 
 interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
@@ -29,10 +36,10 @@ interface RawPrologContent {
     val prologTheory: Theory
 }
 
-abstract class LazyRawPrologContent : RawPrologContent {
+abstract class LazyRawPrologContent : BaseArgLibrary(), RawPrologContent {
     abstract val prologRawTheory: String
     override val prologTheory: Theory by lazy {
-        Theory.parse(prologRawTheory)
+        Theory.parse(prologRawTheory, theoryOperators)
     }
 }
 
