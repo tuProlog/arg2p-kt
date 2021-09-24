@@ -1,17 +1,14 @@
-% Arguments [Rules, TopRule, Conclusion, [LastDefRules, DefRules, DefPremises]]
-% Support (Support, Argument)
-% Attack (Attacker, Attacked, On)
+% Arguments: [Rules, TopRule, Conclusion, [LastDefRules, DefRules, DefPremises]]
+% Support: (Support, Argument)
+% Attack: (Attacker, Attacked, On)
 
 buildArgumentationGraph(Rules, [Arguments, [], Supports]) :-
 	    buildArguments(Rules, Arguments, Supports).
 %        buildAttacks(Arguments, Supports, Attacks), !.
 
-buildArguments(Rules, Arguments, []) :-
-	buildArgumentsFromPremises(Rules, Arguments).
-%	buildArgumentsFromRules(Rules, Arguments, AllArguments, Supports).
-
-checkStrict(Rules, Id, [Id]) :- \+ member(strict(Id), Rules).
-checkStrict(Rules, Id, []) :- member(strict(Id), Rules).
+buildArguments(Rules, AllArguments, Supports) :-
+	buildArgumentsFromPremises(Rules, Arguments),
+	buildArgumentsFromRules(Rules, Arguments, AllArguments, Supports).
 
 buildArgumentsFromPremises(Rules, Arguments) :-
     findall(
@@ -24,6 +21,7 @@ buildArgumentsFromPremises(Rules, Arguments) :-
     ).
 
 % Check \+ member(RuleID, SupportRules) constraint. Is it avoiding cyclical arguments?
+% Find best Cut placement
 
 buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :-
 	member(rule([RuleID, RuleBody, RuleHead]), Rules),
@@ -34,35 +32,47 @@ buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :
     NewArgument = [SortedPremises, RuleID, RuleHead, Info],
 	\+ member(NewArgument, Arguments),
 	mapSupports(NewArgument, ArgSupports, MappedSupports),
-	append(Supports, MappedSupports, NewSupports),
-    buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports).
+    append(Supports, MappedSupports, NewSupports),
+    buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports), !.
 buildArgumentsFromRules(_, Arguments, Supports, Arguments, Supports).
 
 mapSupports(Argument, Supports, MappedSupports) :-
     findall((S, Argument), member(S, Supports), MappedSupports).
 
-% TODO
+checkStrict(Rules, Id, [Id]) :- \+ member(strict(Id), Rules).
+checkStrict(Rules, Id, []) :- member(strict(Id), Rules).
 
-buildArgumentInfo(Rules, Supports, RuleId, Info).
+% Argument Info
+
+buildArgumentInfo(Rules, Supports, RuleId, [LastDefRules, DefRules, DefPrem]) :-
+    defeasibleRules(Rules, RuleId, Supports, DefRules),
+    ordinaryPremises(Supports, DefPrem),
+    lastDefeasibleRules(Rules, Supports, RuleId, LastDefRules).
 
 % Defeasible Premises
-ordinaryPremises(A, Prem) :- findall(R,  (prem([R, _], A), \+ strict(R)), Prem).
+
+ordinaryPremises(Supports, DefPrem) :-
+    findall(Def, member([_, _, _, [_, _, Def]], Supports), Prem),
+    appendLists(Prem, TempPrem),
+    sortDistinct(TempPrem, DefPrem).
 
 % Defeasible rules
-defeasibleRules(RuleId, Supports, DefRules) :-
-	findall(Def, member([_, _, _, [_, Def, _]], Rules), UnsortedRules),
-	checkStrict()
-	sort(UnsortedRules, DefRules).
+
+defeasibleRules(Rules, RuleId, Supports, DefRules) :-
+	findall(Def, member([_, _, _, [_, Def, _]], Supports), UnsortedRules),
+	checkStrict(Rules, RuleId, DefRule),
+	appendLists([DefRule|UnsortedRules], TempRules),
+	sortDistinct(TempRules, DefRules).
 
 % Last Defeasible Rules
-lastDefeasibleRules(A, Rules) :- lastRule(A, Rules).
-	
-lastRule([Rules, none, Conc], []).
-lastRule([Rules, TopRule, Conc], [TopRule]) :- TopRule \== none, \+ strict(TopRule).
-lastRule([Rules, TopRule, Conc], Influent) :- 
-	strict(TopRule),
-	findall(X, (support([R, TR, C], [Rules, TopRule, Conc]), lastRule([R, TR, C], X)), Res),
-	appendLists(Res, Influent).
+
+lastDefeasibleRules(Rules, _, TopRule, [TopRule]) :-
+    TopRule \== none, \+ member(strict(TopRule), Rules).
+lastDefeasibleRules(Rules, Supports, TopRule, LastRules) :-
+	member(strict(TopRule), Rules),
+	findall(Def, member([_, _, _, [Def, _, _]], Supports), Res),
+	appendLists(Res, TempLastRules),
+	sortDistinct(TempLastRules, LastRules).
 
 
 ruleBodyIsSupported(_, [], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
