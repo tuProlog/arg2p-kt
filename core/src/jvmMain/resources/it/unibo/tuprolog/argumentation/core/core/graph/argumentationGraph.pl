@@ -8,7 +8,7 @@ buildArgumentationGraph(Rules, [Arguments, [], Supports]) :-
 
 buildArguments(Rules, AllArguments, Supports) :-
 	buildArgumentsFromPremises(Rules, Arguments),
-	buildArgumentsFromRules(Rules, Arguments, AllArguments, Supports).
+	buildArgumentsFromRules(Rules, Arguments, [], AllArguments, Supports).
 
 buildArgumentsFromPremises(Rules, Arguments) :-
     findall(
@@ -30,10 +30,10 @@ buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :
 	sort([RuleID|SupportRules], SortedPremises),
 	buildArgumentInfo(Rules, ArgSupports, RuleID, Info),
     NewArgument = [SortedPremises, RuleID, RuleHead, Info],
-	\+ member(NewArgument, Arguments),
+	\+ member(NewArgument, Arguments), !,
 	mapSupports(NewArgument, ArgSupports, MappedSupports),
     append(Supports, MappedSupports, NewSupports),
-    buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports), !.
+    buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports).
 buildArgumentsFromRules(_, Arguments, Supports, Arguments, Supports).
 
 mapSupports(Argument, Supports, MappedSupports) :-
@@ -191,4 +191,3 @@ conflict( [obl, [neg, Atom]],  [perm, [Atom]]).
 
 conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
 conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
-
