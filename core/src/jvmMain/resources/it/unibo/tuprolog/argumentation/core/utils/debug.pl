@@ -13,15 +13,15 @@ printTheory(Rules) :-
 
 printArgumentationGraph(Arguments, Attacks, Supports) :-
 	findall(
-	    [IDPremises, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', RuleHead, '\n'],
-	    member([IDPremises, TopRule, RuleHead], Arguments),
+	    [IDPremises, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', RuleHead, '\n', ' INFO ', Info, '\n'],
+	    member([IDPremises, TopRule, RuleHead, Info], Arguments),
         ArgumentsToPrint
     ),
-    findall((A1, ' SUPPORTS ', A2), member(support(A1, A2), Supports), SupportsToPrint),
-	findall((A1, ' ATTACKS ', A2),  member(attack(A1, A2), Attacks),  AttacksToPrint),
+    findall((A1, ' SUPPORTS ', A2), member((A1, A2), Supports), SupportsToPrint),
+	findall((A1, ' ', T, ' ', A2, ' ON ', A3),  member((T, A1, A2, A3), Attacks),  AttacksToPrint),
     write('HERE THE GROUNDED SEMI-ABSTRACT ARGUMENTATION GRAPH'),write('\n'),
-	writeList(ArgumentsToPrint), write('\n'),write(' '),write('\n'),
-	writeList(SupportsToPrint), write('\n'),write(' '),write('\n'),
+	writeList(ArgumentsToPrint), write('\n'),
+	writeList(SupportsToPrint), write('\n'),
 	writeList(AttacksToPrint), write('\n').
 
 

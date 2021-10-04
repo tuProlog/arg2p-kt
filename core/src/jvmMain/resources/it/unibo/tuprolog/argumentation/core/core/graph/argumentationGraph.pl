@@ -1,10 +1,10 @@
 % Arguments: [Rules, TopRule, Conclusion, [LastDefRules, DefRules, DefPremises]]
 % Support: (Support, Argument)
-% Attack: (Attacker, Attacked, On)
+% Attack: (Type, Attacker, Attacked, On)
 
-buildArgumentationGraph(Rules, [Arguments, [], Supports]) :-
-	    buildArguments(Rules, Arguments, Supports).
-%        buildAttacks(Arguments, Supports, Attacks), !.
+buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]) :-
+    buildArguments(Rules, Arguments, Supports),
+    buildAttacks(Rules, Arguments, Supports, Attacks), !.
 
 buildArguments(Rules, AllArguments, Supports) :-
 	buildArgumentsFromPremises(Rules, Arguments),
@@ -15,7 +15,8 @@ buildArgumentsFromPremises(Rules, Arguments) :-
         [[PremiseID], none, Premise, [[], [], DefPrem]],
         (
             member(premise([PremiseID, Premise]), Rules),
-            checkStrict(Rules, PremiseID, DefPrem)
+            checkStrict(Rules, PremiseID, DefPrem),
+            ground(Premise)
         ),
         Arguments
     ).
@@ -24,9 +25,11 @@ buildArgumentsFromPremises(Rules, Arguments) :-
 % Find best Cut placement
 
 buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :-
-	member(rule([RuleID, RuleBody, RuleHead]), Rules),
+	member(rule([TempRuleID, TempRuleBody, TempRuleHead]), Rules),
+	copy_term([TempRuleID, TempRuleBody, TempRuleHead], [RuleID, RuleBody, RuleHead]),
 	ruleBodyIsSupported(Arguments, RuleBody, [], [], SupportRules, ArgSupports),
 	\+ member(RuleID, SupportRules),
+	ground(RuleHead),
 	sort([RuleID|SupportRules], SortedPremises),
 	buildArgumentInfo(Rules, ArgSupports, RuleID, Info),
     NewArgument = [SortedPremises, RuleID, RuleHead, Info],
@@ -35,9 +38,6 @@ buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :
     append(Supports, MappedSupports, NewSupports),
     buildArgumentsFromRules(Rules, [NewArgument|Arguments], NewSupports, AllArguments, AllSupports).
 buildArgumentsFromRules(_, Arguments, Supports, Arguments, Supports).
-
-mapSupports(Argument, Supports, MappedSupports) :-
-    findall((S, Argument), member(S, Supports), MappedSupports).
 
 checkStrict(Rules, Id, [Id]) :- \+ member(strict(Id), Rules).
 checkStrict(Rules, Id, []) :- member(strict(Id), Rules).
@@ -74,51 +74,50 @@ lastDefeasibleRules(Rules, Supports, TopRule, LastRules) :-
 	appendLists(Res, TempLastRules),
 	sortDistinct(TempLastRules, LastRules).
 
+% Argument Support
 
 ruleBodyIsSupported(_, [], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
 ruleBodyIsSupported(Args, [ [unless, _] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	ruleBodyIsSupported(Args, Others, Premises, Supports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
+ruleBodyIsSupported(Args, [ [prolog(Check)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	(callable(Check) -> call(Check); Check),
 	ruleBodyIsSupported(Args, Others, Premises, Supports, ResultPremises, ResultSupports).
 ruleBodyIsSupported(Args, [Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
     member([ArgumentID, RuleID, Statement, Info], Args),
 	append(ArgumentID, Premises, NewPremises),
-	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, Statement, Info]|Supports], ResultPremises, ResultSupports).
+	ruleBodyIsSupported(Args, Others, NewPremises, [[ArgumentID, RuleID, Statement, Info]|Supports], ResultPremises, ResultSupports).
 
+mapSupports(Argument, Supports, MappedSupports) :-
+    findall((S, Argument), member(S, Supports), MappedSupports).
 
-buildAttacks :-
-	buildDirectAttacks,
-	buildTransitiveAttacks.
+% Attacks
 
-buildDirectAttacks :-
-	argument(A),
-	argument(B),
+buildAttacks(Rules, Arguments, Supports, Attacks) :-
+	buildDirectAttacks(Rules, Arguments, Supports, [], DirAttacks),
+	buildTransitiveAttacks(Rules, Arguments, Supports, DirAttacks, Attacks).
+
+buildDirectAttacks(Rules, Arguments, Supports, Attacks, ResAttacks) :-
+	member(A, Arguments),
+	member(B, Arguments),
 	A \== B,
-    once(attacks(T, A, B)),
-	\+ attack(T, A, B, B),
-	asserta(attack(T, A, B, B)),
-	asserta(attack(T, A, B)),
-	fail.
-buildDirectAttacks.
+    attacks(Rules, Supports, T, A, B),
+	\+ member((T, A, B, B), Attacks), !,
+	buildDirectAttacks(Rules, Arguments, Supports, [(T, A, B, B)|Attacks], ResAttacks).
+buildDirectAttacks(_, _, _, Attacks, Attacks).
 
-buildTransitiveAttacks :-
-	attack(T, A, B, D),
-	support(B, C),
-	\+ attack(T, A, C, D),
-	asserta(attack(T, A, C, D)),
-	asserta(attack(T, A, C)),
-    buildTransitiveAttacks.
-buildTransitiveAttacks.
+buildTransitiveAttacks(Rules, Arguments, Supports, Attacks, ResAttacks) :-
+	member((T, A, B, D), Attacks),
+	member((B, C), Supports),
+	\+ member((T, A, C, D), Attacks), !,
+    buildTransitiveAttacks(Rules, Arguments, Supports, [(T, A, C, D)|Attacks], ResAttacks).
+buildTransitiveAttacks(_, _, _, Attacks, Attacks).
 
 % Attack definition
-attacks(rebut, A, B) :- rebuts(A, B).
-attacks(contrary_rebut, A, B) :- contraryRebuts(A, B).
-attacks(undermine, A, B) :- undermines(A, B).
-attacks(contrary_undermine, A, B) :- contraryUndermines(A, B).
-attacks(undercut, A, B) :- undercuts(A, B).
-
-strictArgument(Argument) :- argumentInfo(Argument, [_, [], []]).
+attacks(Rules, Supports, rebut, A, B) :- rebuts(Rules, Supports, A, B), !.
+attacks(Rules, Supports, contrary_rebut, A, B) :- contraryRebuts(Rules, Supports, A, B), !.
+attacks(Rules, Supports, undermine, A, B) :- undermines(Rules, Supports, A, B), !.
+attacks(Rules, Supports, contrary_undermine, A, B) :- contraryUndermines(Rules, Supports, A, B), !.
+attacks(Rules, Supports, undercut, A, B) :- undercuts(Rules, Supports, A, B), !.
 
 %------------------------------------------------------------------------
 % Rebutting definition: clash of incompatible conclusions
@@ -126,49 +125,49 @@ strictArgument(Argument) :- argumentInfo(Argument, [_, [], []]).
 % rebutting arguments mutually attack each other or only one of them
 % (being preferred) attacks the other
 %------------------------------------------------------------------------
-rebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+rebuts(_, _, [IDPremisesA, RuleA, RuleHeadA, _], [IDPremisesB, RuleB, RuleHeadB, Info]) :-
 	RuleB \== none,
-    \+ strictArgument([IDPremisesB, RuleB, RuleHeadB]),
+    Info \== [[], [], []],
 	conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
 %------------------------------------------------------------------------
-contraryRebuts([IDPremisesA, RuleA, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+contraryRebuts(Rules, Supports, [IDPremisesA, RuleA, RuleHeadA, _], [IDPremisesB, RuleB, RuleHeadB, Info]) :-
 	RuleA \== none,
 	RuleB \== none,
-	rule([RuleB, Body, _]),
-	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
-	member([unless, RuleHeadA], Body).
+	member(rule([RuleB, Body, _]), Rules),
+	recoverUnifiers(Supports, Body, [IDPremisesB, RuleB, RuleHeadB, Info], UnifiedBody),
+	member([unless, RuleHeadA], UnifiedBody).
 
 %------------------------------------------------------------------------
 % Undermining definition: clash of incompatible premises
 %------------------------------------------------------------------------
-undermines([IDPremisesA, RuleA, RuleHeadA], [[IDPremiseB], none, RuleHeadB]) :-
-	\+ strictArgument([IDPremisesB, RuleB, RuleHeadB]),
+undermines(_, _, [IDPremisesA, RuleA, RuleHeadA, _], [[IDPremiseB], none, RuleHeadB, Info]) :-
+	Info \== [[], [], []],
 	conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Undermining definition
 %------------------------------------------------------------------------
-contraryUndermines([IDPremisesA, none, RuleHeadA], [IDPremisesB, RuleB, RuleHeadB]) :-
+contraryUndermines(Rules, Supports, [IDPremisesA, none, RuleHeadA, _], [IDPremisesB, RuleB, RuleHeadB, Info]) :-
 	RuleB \== none,
-	rule([RuleB, Body, _]),
-	recoverUnifiers(Body, [IDPremisesB, RuleB, RuleHeadB]),
-	member([unless, RuleHeadA], Body).
+	member(rule([RuleB, Body, _]), Rules),
+	recoverUnifiers(Supports, Body, [IDPremisesB, RuleB, RuleHeadB, Info], UnifiedBody),
+	member([unless, RuleHeadA], UnifiedBody).
 
 %------------------------------------------------------------------------
 % Undercutting definition: attacks on defeasible inference rule
 %------------------------------------------------------------------------
-undercuts([_, _, [undercut(RuleB)]], [_, RuleB, _]) :-
-	\+ strict(RuleB).
+undercuts(_, _, [_, _, [undercut(RuleB)], _], [_, RuleB, _, [[RuleB], _, _]]).
 
 %------------------------------------------------------------------------
 % Given a not instantiated rule and an argument, grounds the rule body using the argument support
 %------------------------------------------------------------------------
-recoverUnifiers(Body, Argument) :-
-	findall(X, support([_, _, X], Argument), Supports),
-	unifySupports(Body, Supports).
+recoverUnifiers(Supports, Body, Argument, FreshBody) :-
+    copy_term(Body, FreshBody),
+	findall(X, member(([_, _, X, _], Argument), Supports), ArgSupports),
+	unifySupports(FreshBody, ArgSupports).
 
 unifySupports(Body, []).
 unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).

@@ -9,7 +9,8 @@ computeGlobalAcceptance(Rules, [Arguments, Attacks, Supports], [SORTEDSTATIN, SO
 
 buildGraph(Rules, [Arguments, Attacks, Supports]) :-
     graphBuildMode(X),
-    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]).
+    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]),
+    debug::printArgumentationGraph(Arguments, Attacks, Supports).
 
 modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
     findall(X, graphExtension(X), Ext),

@@ -2,8 +2,7 @@ argTuProlog.
 
 buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
     parser::convertAllRules(ArgRules),
-    abstract::computeGlobalAcceptance(ArgRules, X, [STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]),
-    write(X).
+    abstract::computeGlobalAcceptance(ArgRules, X, [STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
 buildLabelSets(STATIN, STATOUT, STATUND) :-
     parser::convertAllRules(ArgRules),
