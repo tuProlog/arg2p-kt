@@ -2,8 +2,10 @@ package it.unibo.tuprolog.argumentation.core.mining
 
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
+import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 class Attack(val attacker: String, val attacked: String) {
@@ -21,13 +23,16 @@ class Attack(val attacker: String, val attacked: String) {
 
         @JsName("mineAttacks")
         fun mineAttacks(engine: Solver, arguments: List<Argument>): Sequence<Attack> {
-            return prolog {
-                engine.solve("attack"(`_`, X, Y))
-                    .filter { it.isYes }
-                    .map { solution ->
+            return prolog{
+                engine.solve("cache_check"("graph"(listOf(Var.anonymous(), X, Var.anonymous()))))
+                    .map { (it.substitution[X] as Cons).toSequence() }
+                    .first()
+                    .map {
+                        Unificator.default.mgu(it, tupleOf(`_`, Z, Y, `_`))
+                    }.filter { it.isSuccess }.map { solution ->
                         Attack(
-                            identifier(solution.substitution[X], arguments),
-                            identifier(solution.substitution[Y], arguments)
+                            identifier(solution[Z], arguments),
+                            identifier(solution[Y], arguments)
                         )
                     }
             }

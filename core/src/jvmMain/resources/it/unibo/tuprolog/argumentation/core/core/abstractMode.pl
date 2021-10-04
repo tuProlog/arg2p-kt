@@ -9,15 +9,21 @@ computeGlobalAcceptance(Rules, [Arguments, Attacks, Supports], [StatIn, StatOut,
 
 buildGraph(Rules, [Arguments, Attacks, Supports]) :-
     graphBuildMode(X),
-    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]).
+    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]),
+    store(graph(_), graph([Arguments, Attacks, Supports])).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [In, Out, Und]) :-
     argumentLabellingMode(X),
-    X::argumentLabelling([Arguments, Attacks, Supports], [In, Out, Und]).
+    X::argumentLabelling([Arguments, Attacks, Supports], [In, Out, Und]),
+    store(labelling(_), labelling([In, Out, Und])).
 
-buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]) :-
+buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]) :-
     statementLabellingMode(X),
-    X::statementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]).
+    X::statementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]).
+
+store(Retract, Assert) :-
+    cache_retract(Retract),
+    cache_assert(Assert).
 
 % modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
 %    findall(X, graphExtension(X), Ext),
@@ -27,10 +33,3 @@ buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]) :-
 % modifyGraph([X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
 %    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
 %    modifyArgumentationGraph(X, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
-
-
-% TODO
-
-storeResults(ARGSIN, ARGSOUT, ARGSUND) :-
-    retractall(argsLabelling(_, _, _)),
-    asserta(argsLabelling(ARGSIN, ARGSOUT, ARGSUND)).

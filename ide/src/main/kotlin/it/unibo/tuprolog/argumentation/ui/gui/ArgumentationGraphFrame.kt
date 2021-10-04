@@ -13,7 +13,7 @@ import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.Argument
 import it.unibo.tuprolog.argumentation.core.mining.Attack
 import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
+import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
@@ -85,9 +85,8 @@ internal class ArgumentationGraphFrame {
                     if (!event.event.query.toString().startsWith("buildLabelSets")) {
                         frame.clear()
                     } else {
-                        val solver = MutableSolver.classicWithDefaultBuiltins(
-                            dynamicKb = event.dynamicKb,
-                            staticKb = event.staticKb,
+                        val solver = MutableSolver.classic(
+                            libraries = event.libraries
                         )
                         try {
                             val arguments = Argument.mineArguments(solver).toList()

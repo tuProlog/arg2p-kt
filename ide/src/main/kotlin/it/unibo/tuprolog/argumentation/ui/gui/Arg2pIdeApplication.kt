@@ -15,8 +15,8 @@ class Arg2pIdeApplication : Application() {
                 .customLibraries(Arg2p.to2pLibraries().libraries)
                 .customTabs(
                     listOf(
-                        ArgumentationGraphFrame.customTab(),
-                        FlagManagerFrame.customTab(Arg2p.to2pLibraries().libraries.toList())
+                        ArgumentationGraphFrame.customTab().also { it.tab.id = "arg-graph" },
+                        FlagManagerFrame.customTab(Arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" }
                     )
                 )
                 .show()

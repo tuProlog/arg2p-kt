@@ -34,9 +34,8 @@ class Cache : BaseArgLibrary() {
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
-            return this@Cache.solver.retractAll(term.castToStruct()).let {
-                sequenceOf(request.replyWith(it.isSuccess))
-            }
+            this@Cache.solver.retractAll(term.castToStruct())
+            return sequenceOf(request.replyWith(true))
         }
     }
 
