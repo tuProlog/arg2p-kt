@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.EngineInterface
+import it.unibo.tuprolog.argumentation.core.libs.core.Cache
 import it.unibo.tuprolog.argumentation.core.libs.core.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
 import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
@@ -40,7 +41,7 @@ interface Arg2pSolver {
 }
 
 val Arg2p: Arg2pSolver = Arg2pSolver.of(
-    listOf(EngineInterface, Utils),
+    listOf(EngineInterface, Utils, Cache()),
     listOf(
         Debug,
         RuleParser,
