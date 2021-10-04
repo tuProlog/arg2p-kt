@@ -19,7 +19,7 @@ sealed class ArgumentationGraphBuilderBase : ArgLibrary, LazyRawPrologContent(),
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "base"
+    override fun identifier(): String = "standard_af"
 }
 
 expect object ArgumentationGraphBuilder : ArgumentationGraphBuilderBase

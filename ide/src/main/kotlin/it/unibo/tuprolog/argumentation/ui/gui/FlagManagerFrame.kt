@@ -27,9 +27,9 @@ internal class FlagManagerFrame private constructor() {
     private var prologStrictCompatibility: Boolean = false
     private var unrestrictedRebut: Boolean = true
     private var bpGraph: Boolean = false
-    private var graphBuildMode: String = "base"
+    private var graphBuildMode: String = "standard_af"
     private var argumentLabellingMode: String = "grounded"
-    private var statementLabellingMode: String = "base"
+    private var statementLabellingMode: String = "statement"
     private var orderingPrinciple: String = "last"
     private var orderingComparator: String = "elitist"
     private var preferences: String = "standard"
@@ -47,7 +47,7 @@ internal class FlagManagerFrame private constructor() {
         fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
-                setupChoiceBox("Graph Build Mode", listOf("base")) {
+                setupChoiceBox("Graph Build Mode", listOf("standard_af")) {
                     flagManager.graphBuildMode = it
                 },
                 setupChoiceBox(

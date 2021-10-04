@@ -9,9 +9,7 @@ buildLabelSets(STATIN, STATOUT, STATUND) :-
     abstract::computeGlobalAcceptance(ArgRules, _, [STATIN, STATOUT, STATUND], _).
 
 buildLabelSets :-
-    buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]),
-    debug::printArgumentLabelling([ARGSIN, ARGSOUT, ARGSUND]),
-    debug::printStatementLabelling([STATIN, STATOUT, STATUND]).
+    buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
 
 answerQuery(GOAL, YES, NO, UND) :-
     parser::convertAllRules(ArgRules),

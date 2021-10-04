@@ -44,12 +44,12 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
 
 object StatementLabellingMode : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "statementLabellingMode"
-    override fun default(): String = "base"
-    override fun values(): Iterable<String> = listOf("base")
+    override fun default(): String = "statement"
+    override fun values(): Iterable<String> = listOf("statement")
 }
 
 object GraphBuildMode : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "graphBuildMode"
-    override fun default(): String = "base"
-    override fun values(): Iterable<String> = listOf("base")
+    override fun default(): String = "standard_af"
+    override fun values(): Iterable<String> = listOf("standard_af")
 }

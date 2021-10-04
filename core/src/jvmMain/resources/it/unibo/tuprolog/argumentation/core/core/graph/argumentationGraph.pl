@@ -2,9 +2,12 @@
 % Support: (Support, Argument)
 % Attack: (Type, Attacker, Attacked, On)
 
-buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]) :-
+buildArgumentationGraph(Rules, [SortedArguments, SortedAttacks, SortedSupports]) :-
     buildArguments(Rules, Arguments, Supports),
-    buildAttacks(Rules, Arguments, Supports, Attacks), !.
+    buildAttacks(Rules, Arguments, Supports, Attacks),
+    sort(Arguments, SortedArguments),
+    sort(Attacks, SortedAttacks),
+    sort(Supports, SortedSupports).
 
 buildArguments(Rules, AllArguments, Supports) :-
 	buildArgumentsFromPremises(Rules, Arguments),
