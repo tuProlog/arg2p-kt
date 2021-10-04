@@ -19,7 +19,7 @@ sealed class AttackRestrictionHandlerBase : ArgLibrary, LazyRawPrologContent(), 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "rebut"
+    override fun identifier(): String = "rebutRestriction"
 }
 
 expect object AttackRestrictionHandler : AttackRestrictionHandlerBase
