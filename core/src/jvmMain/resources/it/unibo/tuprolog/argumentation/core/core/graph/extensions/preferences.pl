@@ -1,25 +1,20 @@
-modifyArgumentationGraph(standardPref, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
-    supRules,
-    retractPreferenceCache,
-    checkStandardPreferences(Attacks, NewAttacks),
-    retractPreferenceCache, !.
+modifyArgumentationGraph(Rules, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
+    superiority::retractPreferenceCache,
+    checkStandardPreferences(Rules, Attacks, NewAttacks),
+    superiority::retractPreferenceCache.
 
-checkStandardPreferences([], []).
-checkStandardPreferences([Attack|Attacks], NewAttacks) :-
-    checkStandardPreferences(Attacks, TempAttacks),
-	once(checkStandardPreference(Attack, R)),
-	appendLists([R, TempAttacks], NewAttacks).
+checkStandardPreferences(_, [], []).
+checkStandardPreferences(Rules, [Attack|Attacks], NewAttacks) :-
+    checkStandardPreferences(Rules, Attacks, TempAttacks),
+	checkStandardPreference(Rules, Attack, R),
+	utils::appendLists([R, TempAttacks], NewAttacks).
 
-checkStandardPreference((T, A, B), [(T, A, B)]) :-
-    attack(T, A, B, C),
-    standardPreferences(T, A, B, C), !.
-checkStandardPreference((T, A, B), []) :-
-    attack(T, A, B, C),
-    retractall(attack(T, A, B, C)),
-    retractall(attack(T, A, B)).
+checkStandardPreference(Rules, (T, A, B, C), [(T, A, B, C)]) :-
+    standardPreferences(Rules, T, A, B, C), !.
+checkStandardPreference(_, (T, A, B, C), []).
 
-standardPreferences(rebut, A, B, C) :- \+ superiorArgument(B, A, C).
-standardPreferences(undermine, A, B, C) :- \+ superiorArgument(B, A, C).
-standardPreferences(contrary_rebut, _, _, _).
-standardPreferences(contrary_undermine, _, _, _).
-standardPreferences(undercut, _, _, _).
+standardPreferences(Rules, rebut, A, B, C) :- \+ superiority::superiorArgument(Rules, B, A, C).
+standardPreferences(Rules, undermine, A, B, C) :- \+ superiority::superiorArgument(Rules, B, A, C).
+standardPreferences(_, contrary_rebut, _, _, _).
+standardPreferences(_, contrary_undermine, _, _, _).
+standardPreferences(_, undercut, _, _, _).

@@ -1,7 +1,3 @@
-supRules :-
-    retractall(superiority(_, _)),
-    findall(_, (sup(X, Y), \+ superiority(X, Y), asserta(superiority(X, Y))), _).
-
 %------------------------------------------------------------------------
 % Superiority definition
 % A superiority relation over a set of rules Rules is an antireflexive and

@@ -1,4 +1,4 @@
-modifyArgumentationGraph([Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
+modifyArgumentationGraph(_, [Arguments, Attacks, Supports], [Arguments, NewAttacks, Supports]) :-
     checkRebutRestrictions(Attacks, NewAttacks).
 
 checkRebutRestrictions([], []).
