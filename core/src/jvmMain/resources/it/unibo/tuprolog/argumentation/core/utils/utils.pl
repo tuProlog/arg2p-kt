@@ -1,3 +1,7 @@
+store(Retract, Assert) :-
+    cache_retract(Retract),
+    cache_assert(Assert).
+
 writeList([]).
 writeList([X|Others]) :-
 	write(X),write('\n'),

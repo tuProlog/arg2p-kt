@@ -1,13 +1,8 @@
-computeGlobalAcceptance(Rules, [Arguments, Attacks, Supports], [StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
+computeGlobalAcceptance(Rules, [NewArguments, NewAttacks, NewSupports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
     buildGraph(Rules, [Arguments, Attacks, Supports]),
     modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    store(graph(_), graph([NewArguments, NewAttacks, NewSupports])),
-    debug::printArgumentationGraph(NewArguments, NewAttacks, NewSupports),
     buildArgumentLabelling([NewArguments, NewAttacks, NewSupports], [ArgsIn, ArgsOut, ArgsUnd]),
-    store(labelling(_), labelling([ArgsIn, ArgsOut, ArgsUnd])),
-    debug::printArgumentLabelling([ArgsIn, ArgsOut, ArgsUnd]),
-    buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
-    debug::printStatementLabelling([StatIn, StatOut, StatUnd]).
+    buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]).
 
 buildGraph(Rules, [Arguments, Attacks, Supports]) :-
     graphBuildMode(X),
@@ -30,6 +25,3 @@ buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]) :-
     statementLabellingMode(X),
     X::statementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]).
 
-store(Retract, Assert) :-
-    cache_retract(Retract),
-    cache_assert(Assert).

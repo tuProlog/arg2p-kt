@@ -1,17 +1,22 @@
 argTuProlog.
 
-buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    parser::convertAllRules(ArgRules),
-    abstract::computeGlobalAcceptance(ArgRules, X, [STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
-
-buildLabelSets(STATIN, STATOUT, STATUND) :-
-    parser::convertAllRules(ArgRules),
-    abstract::computeGlobalAcceptance(ArgRules, _, [STATIN, STATOUT, STATUND], _).
-
-buildLabelSets :-
-    buildLabelSets([STATIN, STATOUT, STATUND], [ARGSIN, ARGSOUT, ARGSUND]).
-
-answerQuery(GOAL, YES, NO, UND) :-
+buildLabelSets([StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
     parser::convertAllRules(ArgRules),
     debug::printTheory(ArgRules),
-    structured::computeStatementAcceptance(ArgRules, GOAL, YES, NO, UND).
+    abstract::computeGlobalAcceptance(ArgRules, [Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
+    utils::store(graph(_), graph([Arguments, Attacks, Supports])),
+    utils::store(labelling(_), labelling([ArgsIn, ArgsOut, ArgsUnd])),
+    debug::printArgumentationGraph(Arguments, Attacks, Supports),
+    debug::printArgumentLabelling([ArgsIn, ArgsOut, ArgsUnd]),
+    debug::printStatementLabelling([StatIn, StatOut, StatUnd]).
+
+buildLabelSets(StatIn, StatOut, StatUnd) :-
+    buildLabelSets([StatIn, StatOut, StatUnd], _).
+
+buildLabelSets :-
+    buildLabelSets(_, _).
+
+answerQuery(Goal, Yes, No, Und) :-
+    parser::convertAllRules(ArgRules),
+    debug::printTheory(ArgRules),
+    structured::computeStatementAcceptance(ArgRules, Goal, Yes, No, Und).
