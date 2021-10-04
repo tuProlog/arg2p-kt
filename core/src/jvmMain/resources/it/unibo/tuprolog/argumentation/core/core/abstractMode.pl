@@ -14,7 +14,7 @@ modifyGraph(Rules, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, Ne
 
 modifyGraph(_, [], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
 modifyGraph(Rules, [X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
+    modifyGraph(Rules, Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
     X::modifyArgumentationGraph(Rules, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
 
 buildArgumentLabelling([Arguments, Attacks, Supports], [In, Out, Und]) :-

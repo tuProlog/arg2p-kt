@@ -19,7 +19,7 @@ sealed class StrictPreferencesHandlerBase : ArgLibrary, LazyRawPrologContent(), 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "strictpref"
+    override fun identifier(): String = "standardPref"
 }
 
 expect object StrictPreferencesHandler : StrictPreferencesHandlerBase

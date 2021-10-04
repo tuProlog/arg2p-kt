@@ -1,39 +1,35 @@
-%------------------------------------------------------------------------
-% Superiority definition
-% A superiority relation over a set of rules Rules is an antireflexive and
-% antisymmetric binary relation over Rules
-%------------------------------------------------------------------------
-
 retractPreferenceCache :-
-    retractall(superiorCache(_, _, _, _)).
+    cache_retract(preferences(_)),
+    cache_retract(superior(_, _, _, _)).
 
-superiorArgument(_, B, C) :- once(superiorArgumentSupportBuffered(C, B, _)).
-superiorArgument(_, B, C, SupSet) :- once(superiorArgumentSupportBuffered(C, B, SupSet)).
+setupPreferences(Pref) :-
+    cache_assert(preferences(Pref)).
+
+superiorArgument(A, B) :- superiorArgumentSupportBuffered(A, B, _).
+superiorArgument(A, B, SupSet) :- superiorArgumentSupportBuffered(A, B, SupSet).
 
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    superiorCache(A, B, SupSet, true).
+    cache_check(superior(A, B, SupSet, true)), !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    superiorCache(A, B, SupSet, false),
-    fail.
+    cache_check(superior(A, B, SupSet, false)),
+    fail, !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    \+ superiorCache(A, B, SupSet, _),
+    \+ cache_check(superior(A, B, _, _)),
     superiorArgumentSupport(A, B, SupSet),
-    asserta(superiorCache(A, B, SupSet, true)).
+    cache_assert(superior(A, B, SupSet, true)), !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    \+ superiorCache(A, B, SupSet, _),
-    asserta(superiorCache(A, B, SupSet, false)),
-    fail.
+    \+ cache_check(superior(A, B, _, _)),
+    cache_assert(superior(A, B, [], false)),
+    fail, !.
 
-superiorArgumentSupport(A, B, SupSet) :-
-	argumentInfo(A, [LastDefRulesA, DefRulesA, DefPremisesA]),
-	argumentInfo(B, [LastDefRulesB, DefRulesB, DefPremisesB]),
-	superiorArgument(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
+superiorArgumentSupport([_, _, _, [LastDefRulesA, DefRulesA, DefPremisesA]], [_, _, _, [LastDefRulesB, DefRulesB, DefPremisesB]], SupSet) :-
+	superiorArgumentSupport(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
 
-superiorArgument(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-
+superiorArgumentSupport(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-
     orderingPrinciple(last),
 	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB, SupSet).
 
-superiorArgument(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB, SupSet) :-
+superiorArgumentSupport(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB, SupSet) :-
     orderingPrinciple(weakest),
 	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB, SupSet).
 
@@ -52,7 +48,7 @@ superior(DefRulesA, PremisesA, DefRulesB, PremisesB, SupSet) :-
 	(PremisesA \== []; PremisesB \== []),
 	weaker(DefRulesB, DefRulesA, SupSetA),
 	weaker(PremisesB, PremisesA, SupSetB),
-	appendLists([SupSetA, SupSetB], SupSet).
+	utils::appendLists([SupSetA, SupSetB], SupSet).
 
 weaker(RulesA, [], []) :-
 	RulesA \== [].
@@ -61,14 +57,16 @@ weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(elitist),
+	cache_check(preferences(Pref)),
 	member(Rule, RulesA),
-	allStronger(Rule, RulesB, SupSet), !.
+	allStronger(Pref, Rule, RulesB, SupSet), !.
 
 weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(democrat),
-	weakerDemo(RulesA, RulesB, SupSet).
+	cache_check(preferences(Pref)),
+	weakerDemo(Pref, RulesA, RulesB, SupSet).
 
 %(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′)
 % and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).
@@ -77,20 +75,21 @@ weaker(RulesA, RulesB, [sup(X, W)]) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(normal),
+	cache_check(preferences(Pref)),
 	member(W, RulesA),
 	member(X, RulesB),
-	superiority(X, W), !.
+	member(sup(X, W), Pref), !.
 
-weakerDemo([], _, []).
-weakerDemo([H|T], Rules, [Sup|SupSet]) :-
-	singleStronger(H, Rules, Sup),
-	weakerDemo(T, Rules, SupSet).
+weakerDemo(_, [], _, []).
+weakerDemo(Pref, [H|T], Rules, [Sup|SupSet]) :-
+	singleStronger(Pref, H, Rules, Sup),
+	weakerDemo(Pref, T, Rules, SupSet).
 
-singleStronger(Target, Rules, sup(Rule, Target)) :-
+singleStronger(Pref, Target, Rules, sup(Rule, Target)) :-
 	member(Rule, Rules),
-	superiority(Rule, Target), !.
+	member(sup(Rule, Target), Pref), !.
 
-allStronger(_, [], []).
-allStronger(Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
-	superiority(Rule, Target),
-	allStronger(Target, Rules, SupSet).
+allStronger(_, _, [], []).
+allStronger(Pref, Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
+	member(sup(Rule, Target), Pref),
+	allStronger(Pref, Target, Rules, SupSet).
