@@ -23,9 +23,10 @@ class Attack(val attacker: String, val attacked: String) {
 
         @JsName("mineAttacks")
         fun mineAttacks(engine: Solver, arguments: List<Argument>): Sequence<Attack> {
+            if (arguments.isEmpty()) return emptySequence()
             return prolog{
                 engine.solve("cache_check"("graph"(listOf(Var.anonymous(), X, Var.anonymous()))))
-                    .map { (it.substitution[X] as Cons).toSequence() }
+                    .map { if (it.substitution[X]!!.isEmptyList) emptySequence() else (it.substitution[X] as Cons).toSequence() }
                     .first()
                     .map {
                         Unificator.default.mgu(it, tupleOf(`_`, Z, Y, `_`))

@@ -54,7 +54,9 @@ class Argument(
         private fun arguments(engine: Solver, label: String, arguments: Term?): Sequence<Argument> {
             if (arguments?.isEmptyList == true) return emptySequence()
             val supports = prolog{
-                engine.solve("cache_check"("graph"(listOf(Var.anonymous(), Var.anonymous(), X)))).map { (it.substitution[X] as Cons).toList() }.first()
+                engine.solve("cache_check"("graph"(listOf(Var.anonymous(), Var.anonymous(), X)))).map {
+                    if (it.substitution[X]!!.isEmptyList) emptyList() else (it.substitution[X] as Cons).toList()
+                }.first()
             }
             return (arguments as Cons).toSequence().map {
                 (it as Cons).toList().let { arg ->

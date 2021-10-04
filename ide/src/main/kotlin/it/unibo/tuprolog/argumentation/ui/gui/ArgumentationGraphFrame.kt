@@ -82,19 +82,15 @@ internal class ArgumentationGraphFrame {
             return CustomTab(Tab("Graph", swingNode)) { model ->
 //                model.solveOptions = TimeDuration.MAX_VALUE
                 model.onNewSolution.subscribe { event ->
-                    if (!event.event.query.toString().startsWith("buildLabelSets")) {
+                    val solver = MutableSolver.classic(
+                        libraries = event.libraries
+                    )
+                    try {
+                        val arguments = Argument.mineArguments(solver).toList()
+                        val attacks = Attack.mineAttacks(solver, arguments).toList()
+                        frame.printArgumentationInfo(arguments, attacks)
+                    } catch (e: Exception) {
                         frame.clear()
-                    } else {
-                        val solver = MutableSolver.classic(
-                            libraries = event.libraries
-                        )
-                        try {
-                            val arguments = Argument.mineArguments(solver).toList()
-                            val attacks = Attack.mineAttacks(solver, arguments).toList()
-                            frame.printArgumentationInfo(arguments, attacks)
-                        } catch (e: Exception) {
-                            frame.clear()
-                        }
                     }
                 }
             }
