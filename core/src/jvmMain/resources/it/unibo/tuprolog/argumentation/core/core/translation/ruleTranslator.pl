@@ -16,10 +16,10 @@ convertAllRules(ArgRules) :-
     ordinaryPremises(Premises),
     axiomPremises(Axioms, AxiomsIds),
     specialRules(SpecialRules),
-    appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
+    utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
     convertAllRules(L, Rules), !,
     findall(sup(X, Y), sup(X, Y), Sups),
-    appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules).
+    utils::appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules).
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),

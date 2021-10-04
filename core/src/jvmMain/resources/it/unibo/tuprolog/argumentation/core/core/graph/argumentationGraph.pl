@@ -5,9 +5,9 @@
 buildArgumentationGraph(Rules, [SortedArguments, SortedAttacks, SortedSupports]) :-
     buildArguments(Rules, Arguments, Supports),
     buildAttacks(Rules, Arguments, Supports, Attacks),
-    sort(Arguments, SortedArguments),
-    sort(Attacks, SortedAttacks),
-    sort(Supports, SortedSupports).
+    utils::sort(Arguments, SortedArguments),
+    utils::sort(Attacks, SortedAttacks),
+    utils::sort(Supports, SortedSupports).
 
 buildArguments(Rules, AllArguments, Supports) :-
 	buildArgumentsFromPremises(Rules, Arguments),
@@ -33,7 +33,7 @@ buildArgumentsFromRules(Rules, Arguments, Supports, AllArguments, AllSupports) :
 	ruleBodyIsSupported(Arguments, RuleBody, [], [], SupportRules, ArgSupports),
 	\+ member(RuleID, SupportRules),
 	ground(RuleHead),
-	sort([RuleID|SupportRules], SortedPremises),
+	utils::sort([RuleID|SupportRules], SortedPremises),
 	buildArgumentInfo(Rules, ArgSupports, RuleID, Info),
     NewArgument = [SortedPremises, RuleID, RuleHead, Info],
 	\+ member(NewArgument, Arguments), !,
@@ -56,16 +56,16 @@ buildArgumentInfo(Rules, Supports, RuleId, [LastDefRules, DefRules, DefPrem]) :-
 
 ordinaryPremises(Supports, DefPrem) :-
     findall(Def, member([_, _, _, [_, _, Def]], Supports), Prem),
-    appendLists(Prem, TempPrem),
-    sortDistinct(TempPrem, DefPrem).
+    utils::appendLists(Prem, TempPrem),
+    utils::sortDistinct(TempPrem, DefPrem).
 
 % Defeasible rules
 
 defeasibleRules(Rules, RuleId, Supports, DefRules) :-
 	findall(Def, member([_, _, _, [_, Def, _]], Supports), UnsortedRules),
 	checkStrict(Rules, RuleId, DefRule),
-	appendLists([DefRule|UnsortedRules], TempRules),
-	sortDistinct(TempRules, DefRules).
+	utils::appendLists([DefRule|UnsortedRules], TempRules),
+	utils::sortDistinct(TempRules, DefRules).
 
 % Last Defeasible Rules
 
@@ -74,8 +74,8 @@ lastDefeasibleRules(Rules, _, TopRule, [TopRule]) :-
 lastDefeasibleRules(Rules, Supports, TopRule, LastRules) :-
 	member(strict(TopRule), Rules),
 	findall(Def, member([_, _, _, [Def, _, _]], Supports), Res),
-	appendLists(Res, TempLastRules),
-	sortDistinct(TempLastRules, LastRules).
+	utils::appendLists(Res, TempLastRules),
+	utils::sortDistinct(TempLastRules, LastRules).
 
 % Argument Support
 

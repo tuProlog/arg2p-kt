@@ -9,6 +9,6 @@ statementLabelling([ArgsIn, ArgsOut, ArgsUnd], [SortedIn, SortedNo, SortedUnd]) 
         \+ member(Conc, In),
         \+ member(Conc, No)
     ), Und),
-    sort(In, SortedIn),
-    sort(No, SortedNo),
-    sort(Und, SortedUnd).
+    utils::sort(In, SortedIn),
+    utils::sort(No, SortedNo),
+    utils::sort(Und, SortedUnd).

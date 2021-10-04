@@ -1,18 +1,18 @@
 argumentLabelling([Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
     groundedLabelling(Arguments, Attacks, [], [], Arguments, In, Out, Und),
-    sort(In, SortedIn),
-    sort(Out, SortedOut),
-    sort(Und, SortedUnd).
+    utils::sort(In, SortedIn),
+    utils::sort(Out, SortedOut),
+    utils::sort(Und, SortedUnd).
 
 groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
     member(A, UND), 
     allAttacksOUT(Attacks, A, OUT), !,
-    subtract(UND, [A], NewUND),
+    utils::subtract(UND, [A], NewUND),
     groundedLabelling(Arguments, Attacks, [A|IN], OUT, NewUND, ResultIN, ResultOUT, ResultUND).
 groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
     member(A, UND), 
     oneAttackIN(Attacks, A, IN), !,
-    subtract(UND, [A], NewUND),
+    utils::subtract(UND, [A], NewUND),
     groundedLabelling(Arguments, Attacks, IN, [A|OUT], NewUND, ResultIN, ResultOUT, ResultUND).
 groundedLabelling(_, _, IN, OUT, UND, IN, OUT, UND).
 
