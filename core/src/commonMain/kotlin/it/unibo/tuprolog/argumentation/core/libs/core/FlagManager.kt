@@ -10,6 +10,8 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.language.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.libs.language.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.libs.structured.QueryMode
+import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
+import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -17,18 +19,6 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import kotlin.jvm.JvmStatic
-
-object OrderingPrinciple : ArgsFlag<String, Iterable<String>> {
-    override fun predicate(): String = "orderingPrinciple"
-    override fun default(): String = "last"
-    override fun values(): Iterable<String> = listOf("last", "weakest")
-}
-
-object OrderingComparator : ArgsFlag<String, Iterable<String>> {
-    override fun predicate(): String = "orderingComparator"
-    override fun default(): String = "elitist"
-    override fun values(): Iterable<String> = listOf("elitist", "democrat", "normal")
-}
 
 data class FlagsBuilder(
     var queryMode: Boolean = QueryMode.default(),

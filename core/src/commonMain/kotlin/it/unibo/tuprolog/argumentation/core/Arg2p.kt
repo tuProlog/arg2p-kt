@@ -20,6 +20,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabell
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
+import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.solve.library.Libraries
 
@@ -59,6 +60,7 @@ val Arg2p: Arg2pSolver = Arg2pSolver.of(
         GroundedLabeller,
         StatementLabeller,
         AbstractMode,
-        StructuredMode
+        StructuredMode,
+        SuperiorityRelation
     )
 )

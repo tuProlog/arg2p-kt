@@ -15,3 +15,4 @@ QueryMode.kt
 RuleTranslator.kt
 StatementLabelling.kt
 Utils.kt
+SuperiorityRelation.kt
