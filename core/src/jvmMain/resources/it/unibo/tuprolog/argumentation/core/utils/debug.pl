@@ -47,3 +47,9 @@ printStatementLabelling([In, Ni, Und]) :-
     write('    '),write('\n'),
     write('HERE THE STATEMENTS LABELLED UND: '),write('\n'),
     utils::writeList(Und),write('\n').
+
+
+writeDebug(List) :-
+    debug,
+    utils::writeList(List).
+writeDebug(_) :- \+ debug.

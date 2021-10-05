@@ -1,8 +1,8 @@
 % Lists Utils
 
-writeList([]).
+writeList([]) :- nl.
 writeList([X|Others]) :-
-	write(X),write('\n'),
+	write(X),
 	writeList(Others).
 
 

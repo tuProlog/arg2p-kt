@@ -1,19 +1,19 @@
 argumentLabelling(_, [Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
-    groundedLabelling(Arguments, Attacks, [], [], Arguments, In, Out, Und),
+    groundedLabelling(Attacks, [], [], Arguments, In, Out, Und),
     utils::sort(In, SortedIn),
     utils::sort(Out, SortedOut),
     utils::sort(Und, SortedUnd).
 
-groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+groundedLabelling(Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
     member(A, UND), 
     allAttacksOUT(Attacks, A, OUT), !,
     utils::subtract(UND, [A], NewUND),
-    groundedLabelling(Arguments, Attacks, [A|IN], OUT, NewUND, ResultIN, ResultOUT, ResultUND).
-groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
-    member(A, UND), 
+    groundedLabelling(Attacks, [A|IN], OUT, NewUND, ResultIN, ResultOUT, ResultUND).
+groundedLabelling(Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+    member(A, UND),
     oneAttackIN(Attacks, A, IN), !,
     utils::subtract(UND, [A], NewUND),
-    groundedLabelling(Arguments, Attacks, IN, [A|OUT], NewUND, ResultIN, ResultOUT, ResultUND).
+    groundedLabelling(Attacks, IN, [A|OUT], NewUND, ResultIN, ResultOUT, ResultUND).
 groundedLabelling(_, _, IN, OUT, UND, IN, OUT, UND).
 
 % If an attack exists, it should come from an OUT argument

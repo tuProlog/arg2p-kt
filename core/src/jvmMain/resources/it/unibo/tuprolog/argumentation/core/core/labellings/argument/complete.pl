@@ -10,7 +10,7 @@ completeLabelling(_, Attacks, In, Out, Und, In, Out, Und) :-
 completeLabelling(Arguments, Attacks, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
     member(X, Und),
     utils::subtract(Und, [X], NewUnd),
-    grounded::groundedLabelling(Arguments, Attacks, [X|In], Out, NewUnd, TempIn, TempOut, TempUnd),
+    grounded::groundedLabelling(Attacks, [X|In], Out, NewUnd, TempIn, TempOut, TempUnd),
     completeLabelling(Arguments, Attacks, TempIn, TempOut, TempUnd, ResultIn, ResultOut, ResultUnd).
 
 % If there is an attacker to an In argument, then should exist also a In argument attacking the attacker
