@@ -1,4 +1,4 @@
-argumentLabelling([Arguments, Attacks, Supports], [In, Out, Und]) :-
+argumentLabelling(_, [Arguments, Attacks, Supports], [In, Out, Und]) :-
     cache_retract(complete(_,_,_)),
     grounded::argumentLabelling([Arguments, Attacks, Supports], [GroundedIn, GroundedOut, GroundedUnd]),
     completeLabelling(Arguments, Attacks, GroundedIn, GroundedOut, GroundedUnd, In, Out, Und).

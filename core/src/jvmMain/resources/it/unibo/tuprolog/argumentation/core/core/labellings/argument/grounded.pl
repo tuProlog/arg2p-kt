@@ -1,4 +1,4 @@
-argumentLabelling([Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
+argumentLabelling(_, [Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
     groundedLabelling(Arguments, Attacks, [], [], Arguments, In, Out, Und),
     utils::sort(In, SortedIn),
     utils::sort(Out, SortedOut),

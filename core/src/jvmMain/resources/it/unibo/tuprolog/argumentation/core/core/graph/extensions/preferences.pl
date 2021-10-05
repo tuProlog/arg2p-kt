@@ -2,8 +2,7 @@ modifyArgumentationGraph(Rules, [Arguments, Attacks, Supports], [Arguments, NewA
     superiority::retractPreferenceCache,
     findall(sup(X, Y), member(sup(X, Y), Rules), Pref),
     superiority::setupPreferences(Pref),
-    checkStandardPreferences(Attacks, NewAttacks),
-    superiority::retractPreferenceCache.
+    checkStandardPreferences(Attacks, NewAttacks).
 
 checkStandardPreferences([], []).
 checkStandardPreferences([Attack|Attacks], NewAttacks) :-

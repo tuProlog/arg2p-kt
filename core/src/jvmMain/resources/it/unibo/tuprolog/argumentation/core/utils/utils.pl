@@ -73,10 +73,3 @@ search(F, L, S) :-
 between(N, M, K) :- N < M, K = N.
 between(N, M, K) :- N == M, !, K = N.
 between(N, M, K) :- N < M, N1 is N+1, between(N1, M, K).
-
-
-argumentChain(A, A, _) :- !.
-argumentChain(A, B, Attacks) :-
-    A \== B,
-    member((_, A, C), Attacks),
-    argumentChain(C, B, Attacks).
