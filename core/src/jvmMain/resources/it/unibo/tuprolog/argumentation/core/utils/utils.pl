@@ -5,6 +5,10 @@ writeList([X|Others]) :-
 	write(X),
 	writeList(Others).
 
+writeListNl([]).
+writeListNl([X|Others]) :-
+	write(X),nl,
+	writeListNl(Others).
 
 assertaList([]).
 assertaList([X|Others]) :-

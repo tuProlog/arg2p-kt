@@ -14,7 +14,7 @@ groundedLabelling(Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
     oneAttackIN(Attacks, A, IN), !,
     utils::subtract(UND, [A], NewUND),
     groundedLabelling(Attacks, IN, [A|OUT], NewUND, ResultIN, ResultOUT, ResultUND).
-groundedLabelling(_, _, IN, OUT, UND, IN, OUT, UND).
+groundedLabelling(_, IN, OUT, UND, IN, OUT, UND).
 
 % If an attack exists, it should come from an OUT argument
 
