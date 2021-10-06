@@ -16,6 +16,6 @@ checkStandardPreference((T, A, B, C), []).
 
 standardPreferences(rebut, A, _, C) :- \+ superiority::superiorArgument(C, A).
 standardPreferences(undermine, A, _, C) :- \+ superiority::superiorArgument(C, A).
-standardPreferences(_, contrary_rebut, _, _, _).
-standardPreferences(_, contrary_undermine, _, _, _).
-standardPreferences(_, undercut, _, _, _).
+standardPreferences(contrary_rebut, _, _, _).
+standardPreferences(contrary_undermine, _, _, _).
+standardPreferences(undercut, _, _, _).
