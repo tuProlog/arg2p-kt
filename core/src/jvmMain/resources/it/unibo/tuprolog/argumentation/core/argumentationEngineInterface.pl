@@ -3,7 +3,7 @@ argTuProlog.
 buildLabelSets([StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
     parser::convertAllRules(ArgRules),
     debug::printTheory(ArgRules),
-    abstract::computeGlobalAcceptance(ArgRules, [Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
+    abstract::computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
     utils::store(graph(_), graph([Arguments, Attacks, Supports])),
     utils::store(labelling(_), labelling([ArgsIn, ArgsOut, ArgsUnd])),
     debug::printArgumentationGraph(Arguments, Attacks, Supports),

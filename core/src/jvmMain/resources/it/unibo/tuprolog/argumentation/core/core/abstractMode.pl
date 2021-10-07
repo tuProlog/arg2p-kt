@@ -1,27 +1,27 @@
-computeGlobalAcceptance(Rules, [NewArguments, NewAttacks, NewSupports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
-    buildGraph(Rules, [Arguments, Attacks, Supports]),
-    modifyGraph(Rules, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    buildArgumentLabelling(Rules, [NewArguments, NewAttacks, NewSupports], [ArgsIn, ArgsOut, ArgsUnd]),
-    buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]).
+computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
+    buildGraph.
+%    modifyGraph,
+%    buildArgumentLabelling,
+%    buildStatementLabelling.
 
-buildGraph(Rules, [Arguments, Attacks, Supports]) :-
+buildGraph :-
     graphBuildMode(X),
-    X::buildArgumentationGraph(Rules, [Arguments, Attacks, Supports]).
+    X::buildArgumentationGraph.
 
-modifyGraph(Rules, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+modifyGraph :-
     findall(X, graphExtension(X), Ext),
-    modifyGraph(Rules, Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
+    modifyGraph(Ext).
 
-modifyGraph(_, [], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
-modifyGraph(Rules, [X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    modifyGraph(Rules, Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    X::modifyArgumentationGraph(Rules, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
+modifyGraph([]).
+modifyGraph([X|Ext]) :-
+    modifyGraph(Ext),
+    X::modifyArgumentationGraph.
 
-buildArgumentLabelling(Rules, [Arguments, Attacks, Supports], [In, Out, Und]) :-
+buildArgumentLabelling :-
     argumentLabellingMode(X),
-    X::argumentLabelling(Rules, [Arguments, Attacks, Supports], [In, Out, Und]).
+    X::argumentLabelling.
 
-buildStatementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]) :-
+buildStatementLabelling :-
     statementLabellingMode(X),
-    X::statementLabelling([ArgsIn, ArgsOut, ArgsUnd], [In, Out, Und]).
+    X::statementLabelling.
 
