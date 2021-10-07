@@ -6,6 +6,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -16,6 +17,7 @@ import it.unibo.tuprolog.theory.Theory
 class Cache : BaseArgLibrary() {
 
     private val solver : MutableSolver = MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
+        .also { it.setFlag(Unknown.name, Unknown.FAIL) }
 
     inner class CacheAssert : Primitive {
 

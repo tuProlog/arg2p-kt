@@ -1,34 +1,35 @@
-argumentLabelling(_, [Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
-    groundedLabelling(Attacks, [], [], Arguments, In, Out, Und),
-    utils::sort(In, SortedIn),
-    utils::sort(Out, SortedOut),
-    utils::sort(Und, SortedUnd).
+argumentLabelling :-
+    findall(X, cache_check(argument(X)), Arguments),
+    groundedLabelling(Arguments).
 
-groundedLabelling(Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+groundedLabelling(UND) :-
     member(A, UND), 
-    allAttacksOUT(Attacks, A, OUT), !,
+    allAttacksOUT(A), !,
     utils::subtract(UND, [A], NewUND),
-    groundedLabelling(Attacks, [A|IN], OUT, NewUND, ResultIN, ResultOUT, ResultUND).
-groundedLabelling(Attacks, IN, OUT, UND, ResultIN, ResultOUT, ResultUND) :-
+    cache_assert(in(A)),
+    groundedLabelling(NewUND).
+groundedLabelling(UND) :-
     member(A, UND),
-    oneAttackIN(Attacks, A, IN), !,
+    oneAttackIN(A), !,
     utils::subtract(UND, [A], NewUND),
-    groundedLabelling(Attacks, IN, [A|OUT], NewUND, ResultIN, ResultOUT, ResultUND).
-groundedLabelling(_, IN, OUT, UND, IN, OUT, UND).
+    cache_assert(out(A)),
+    write(A),nl,
+    groundedLabelling(NewUND).
+groundedLabelling(Args) :- findall(_, (member(A, Args), cache_assert(und(A))), _).
 
 % If an attack exists, it should come from an OUT argument
 
-allAttacksOUT(Attacks, A, OUT) :-
-    \+ ( member((_, B, A, _), Attacks), \+ (member(B, OUT))).
+allAttacksOUT(A) :-
+    \+ ( cache_check(attack(_, B, A, _)), \+ (cache_check(out(B)))).
 
 % Find an attack, if exists, from an IN argument, then ends
 
-oneAttackIN(Attacks, A, IN) :-
-    member((_, B, A, _), Attacks),
-    member(B, IN), !.
+oneAttackIN(A) :-
+    cache_check(attack(_, B, A, _)),
+    cache_check(in(B)), !.
 
 % If A attacks an IN argument, then A is OUT
 
-oneAttackIN(Attacks, A, IN) :-
-    member((_, A, B, _), Attacks),
-    member(B, IN), !.
+oneAttackIN(A) :-
+    cache_check(attack(_, A, B, _)),
+    cache_check(in(B)), !.

@@ -1,7 +1,10 @@
-computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
-    buildGraph.
+computeGlobalAcceptance([[], [], []], [ArgsIn, ArgsOut, ArgsUnd], [[], [], []]) :-
+    buildGraph,
 %    modifyGraph,
-%    buildArgumentLabelling,
+    buildArgumentLabelling,
+    findall(X, cache_check(in(X)), ArgsIn),
+    findall(X, cache_check(out(X)), ArgsOut),
+    findall(X, cache_check(und(X)), ArgsUnd).
 %    buildStatementLabelling.
 
 buildGraph :-

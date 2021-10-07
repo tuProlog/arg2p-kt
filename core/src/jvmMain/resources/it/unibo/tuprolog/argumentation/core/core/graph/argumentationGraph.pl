@@ -105,7 +105,7 @@ buildAttacks :-
 
 buildDirectAttacks([]).
 buildDirectAttacks([H|T]) :-
-    findall(_, buildDirectAttack(H),_),
+    findall(_, buildDirectAttack(H), _),
     buildDirectAttacks(T).
 
 buildDirectAttack(A) :-
@@ -168,15 +168,6 @@ contraryUndermines([IDPremisesA, none, RuleHeadA, _, _], [IDPremisesB, RuleB, Ru
 %------------------------------------------------------------------------
 undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 
-%------------------------------------------------------------------------
-% Given a not instantiated rule and an argument, grounds the rule body using the argument support
-%------------------------------------------------------------------------
-recoverUnifiers(Body, Argument) :-
-	findall(X, cache_check(support([_, _, X, _], Argument)), ArgSupports),
-	unifySupports(Body, ArgSupports).
-
-unifySupports(Body, []).
-unifySupports(Body, [X|T]) :- member(X, Body), unifySupports(Body, T).
 
 %========================================================================
 % CONFLICT DEFINITION
