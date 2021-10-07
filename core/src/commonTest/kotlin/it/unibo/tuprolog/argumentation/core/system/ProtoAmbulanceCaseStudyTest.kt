@@ -1,13 +1,18 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.SolveOptions
+import it.unibo.tuprolog.solve.TimeDuration
+import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@Ignore
 class ProtoAmbulanceCaseStudyTest {
 
     private val baseTheory: String =
@@ -101,8 +106,8 @@ class ProtoAmbulanceCaseStudyTest {
         f24 :-> production_manager(mike).
         f25 :=> claim(mike, test_ok(ambulance)).
         
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
@@ -121,13 +126,18 @@ class ProtoAmbulanceCaseStudyTest {
     @ExperimentalTime
     fun abstractResolutionSpeedTest() {
         val time = measureTime {
+            val solver = TestingUtils.solver()
+            solver.loadStaticKb(Theory.parse(baseTheory, solver.operators))
+            SolveOptions.DEFAULT
+            solver.solve(Struct.parse("buildLabelSets"), SolveOptions.allEagerly()).first()
+/*
             TestingUtils.answerQuery(
                 baseTheory,
                 "responsible(X)",
                 "[responsible(pino)]",
                 "[responsible(lisa), responsible(lisa)]",
                 "[responsible(demers)]"
-            )
+            )*/
         }
 
         println(time.toDouble(DurationUnit.SECONDS))
