@@ -1,10 +1,14 @@
-computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
+computeGlobalAcceptance :-
     buildGraph,
 %    modifyGraph,
     buildArgumentLabelling,
-    buildStatementLabelling(StatIn, StatOut, StatUnd),
-    recoverGraph(Arguments, Attacks, Supports),
-    recoverLabelling(ArgsIn, ArgsOut, ArgsUnd).
+    buildStatementLabelling.
+
+computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
+    computeGlobalAcceptance,
+    utils::recoverGraph(Arguments, Attacks, Supports),
+    utils::recoverArgumentLabelling(ArgsIn, ArgsOut, ArgsUnd),
+    utils::recoverStatementLabelling(StatIn, StatOut, StatUnd).
 
 buildGraph :-
     graphBuildMode(X),
@@ -23,22 +27,6 @@ buildArgumentLabelling :-
     argumentLabellingMode(X),
     X::argumentLabelling.
 
-buildStatementLabelling(StatIn, StatOut, StatUnd) :-
+buildStatementLabelling :-
     statementLabellingMode(X),
-    X::statementLabelling(StatIn, StatOut, StatUnd).
-
-recoverGraph(Args, Attacks, Supports) :-
-        findall(X, cache_check(argument(X)), TempArgs),
-        findall((T, A, B, C), cache_check(attack(T, A, B, C)), TempAttacks),
-        findall((A, B), cache_check(support(A, B)), TempSupports),
-        utils::sort(TempArgs, Args),
-        utils::sort(TempAttacks, Attacks),
-        utils::sort(TempSupports, Supports).
-
-recoverLabelling(ArgsIn, ArgsOut, ArgsUnd) :-
-        findall(X, cache_check(in(X)), TempArgsIn),
-        findall(X, cache_check(out(X)), TempArgsOut),
-        findall(X, cache_check(und(X)), TempArgsUnd),
-        utils::sort(TempArgsIn, ArgsIn),
-        utils::sort(TempArgsOut, ArgsOut),
-        utils::sort(TempArgsUnd, ArgsUnd).
+    X::statementLabelling.

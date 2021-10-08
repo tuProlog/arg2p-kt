@@ -1,4 +1,5 @@
 argumentLabelling :-
+    cache_dynamic_branch(0, _),
     findall(X, cache_check(argument(X)), Arguments),
     groundedLabelling(Arguments).
 
@@ -6,16 +7,16 @@ groundedLabelling(UND) :-
     member(A, UND), 
     allAttacksOUT(A), !,
     utils::subtract(UND, [A], NewUND),
-    cache_assert(in(A)),
+    cache_dynamic_assert(in(A)),
     groundedLabelling(NewUND).
 groundedLabelling(UND) :-
     member(A, UND),
     oneAttackIN(A), !,
     utils::subtract(UND, [A], NewUND),
-    cache_assert(out(A)),
+    cache_dynamic_assert(out(A)),
     write(A),nl,
     groundedLabelling(NewUND).
-groundedLabelling(Args) :- findall(_, (member(A, Args), cache_assert(und(A))), _).
+groundedLabelling(Args) :- findall(_, (member(A, Args), cache_dynamic_assert(und(A))), _).
 
 % If an attack exists, it should come from an OUT argument
 
