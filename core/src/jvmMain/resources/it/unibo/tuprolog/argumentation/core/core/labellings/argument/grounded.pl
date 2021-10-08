@@ -14,23 +14,22 @@ groundedLabelling(UND) :-
     oneAttackIN(A), !,
     utils::subtract(UND, [A], NewUND),
     cache_dynamic_assert(out(A)),
-    write(A),nl,
     groundedLabelling(NewUND).
 groundedLabelling(Args) :- findall(_, (member(A, Args), cache_dynamic_assert(und(A))), _).
 
 % If an attack exists, it should come from an OUT argument
 
 allAttacksOUT(A) :-
-    \+ ( cache_check(attack(_, B, A, _)), \+ (cache_check(out(B)))).
+    \+ ( cache_check(attack(_, B, A, _)), \+ (cache_dynamic_check(out(B)))).
 
 % Find an attack, if exists, from an IN argument, then ends
 
 oneAttackIN(A) :-
     cache_check(attack(_, B, A, _)),
-    cache_check(in(B)), !.
+    cache_dynamic_check(in(B)), !.
 
 % If A attacks an IN argument, then A is OUT
 
 oneAttackIN(A) :-
     cache_check(attack(_, A, B, _)),
-    cache_check(in(B)), !.
+    cache_dynamic_check(in(B)), !.

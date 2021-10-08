@@ -1,27 +1,32 @@
-argumentLabelling(_, [Arguments, Attacks, Supports], [In, Out, Und]) :-
+argumentLabelling :-
     cache_retract(complete(_,_,_)),
-    grounded::argumentLabelling([Arguments, Attacks, Supports], [GroundedIn, GroundedOut, GroundedUnd]),
-    completeLabelling(Arguments, Attacks, GroundedIn, GroundedOut, GroundedUnd, In, Out, Und).
+    grounded::argumentLabelling,
+    cache_dynamic_active(Branch),
+    completeLabelling(Branch).
 
-completeLabelling(_, Attacks, In, Out, Und, In, Out, Und) :-
-    admissible(In, In, Attacks),
+completeLabelling(_) :-
+    admissibleSet,
+    utils::recoverArgumentLabelling(In, Out, Und),
     \+ cache_check(complete(In, Out, Und)),
     cache_assert(complete(In, Out, Und)).
-completeLabelling(Arguments, Attacks, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
-    member(X, Und),
-    utils::subtract(Und, [X], NewUnd),
-    grounded::groundedLabelling(Attacks, [X|In], Out, NewUnd, TempIn, TempOut, TempUnd),
-    completeLabelling(Arguments, Attacks, TempIn, TempOut, TempUnd, ResultIn, ResultOut, ResultUnd).
+completeLabelling(Branch) :-
+    cache_dynamic_check(und(X)),
+    cache_dynamic_branch(Branch, NewBranch),
+    findall(Y, (cache_dynamic_check(und(Y)), Y \= X), Arguments),
+    cache_dynamic_retract(und(_)),
+    cache_dynamic_assert(in(X)),
+    grounded::groundedLabelling(Arguments),
+    completeLabelling(NewBranch).
 
 % If there is an attacker to an In argument, then should exist also a In argument attacking the attacker
 
-admissible(_, [], _).
-admissible(In, [H|T], Attacks) :-
+admissibleSet :-
+    \+ (cache_dynamic_check(in(H)), \+ admissible(H)).
+admissible(H) :-
     \+ (
-        member((_, Attacker, H), Attacks),
+        cache_check(attack(_, Attacker, H, _)),
         \+ (
-            member((_, Defendant, Attacker, _), Attacks),
-            member(Defendant, In)
+            cache_check(attack(_, Defendant, Attacker, _)),
+            cache_dynamic_check(in(Defendant))
         )
-    ),
-    admissible(In, T, Attacks).
+    ).
