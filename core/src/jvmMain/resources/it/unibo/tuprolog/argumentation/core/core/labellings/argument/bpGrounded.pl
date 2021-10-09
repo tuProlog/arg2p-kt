@@ -2,92 +2,102 @@
 % BP LABELLING [ICAIL]
 %==============================================================================
 
-argumentLabelling(Rules, [Arguments, Attacks, _], [SortedIn, SortedOut, SortedUnd]) :-
-    reifyBurdenOfProofs(Rules, Arguments, Bps),
-    filterBpDefeat(Bps, Attacks, FilteredAttacks),
-    smartBpLabelling(Bps, Arguments, FilteredAttacks, [], [], [], In, Out, Und),
-    utils::sort(In, SortedIn),
-    utils::sort(Out, SortedOut),
-    utils::sort(Und, SortedUnd).
+argumentLabelling :-
+    reifyBurdenOfProofs,
+    filterBpDefeats,
+    findall(X, context_check(argument(X)), Arguments),
+    bpLabelling(Arguments).
 
-smartBpLabelling(Bps, Arguments, Attacks, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
+bpLabelling(Arguments) :-
     member(A, Arguments),
-    grounded::allAttacksOUT(Attacks, A, Out),
+    grounded::allAttacksOUT(A), !,
+    context_assert(in(A)),
     utils::subtract(Arguments, [A], NewArguments),
-    smartBpLabelling(Bps, NewArguments, Attacks, [A|In], Out, Und, ResultIn, ResultOut, ResultUnd).
-smartBpLabelling(Bps, Arguments, Attacks, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
+    bpLabelling(NewArguments).
+bpLabelling(Arguments) :-
     member(A, Arguments),
-    \+ isArgumentInBurdenOfProof(Bps, A),
-    grounded::oneAttackIN(Attacks, A, In),
+    \+ isArgumentInBurdenOfProof(A),
+    grounded::oneAttackIN(A), !,
+    context_assert(out(A)),
     utils::subtract(Arguments, [A], NewArguments),
-    smartBpLabelling(Bps, NewArguments, Attacks, In, [A|Out], Und, ResultIn, ResultOut, ResultUnd).
-smartBpLabelling(Bps, Arguments, Attacks, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
-    mostGroundedBpUnd(Bps, Arguments, Attacks, A),
+    bpLabelling(NewArguments).
+bpLabelling(Arguments) :-
+    context_active(Branch),
+    mostGroundedBpUnd(Arguments, A),
+    context_branch(Branch, _),
+    context_assert(out(A)),
     utils::subtract(Arguments, [A], NewArguments),
-    smartBpLabelling(Bps, NewArguments, Attacks, In, [A|Out], Und, ResultIn, ResultOut, ResultUnd).
-smartBpLabelling(_, Arguments, _, In, Out, _, In, Out, Arguments).
+    bpLabelling(NewArguments).
+bpLabelling(Args) :-
+    notLabelled(Args),
+    findall(_, (member(A, Args), context_assert(und(A))), _).
+
+notLabelled(Args) :-
+    \+ (
+        member(A, Args),
+        (
+            context_check(in(A));
+            context_check(out(A));
+            context_check(und(A))
+        )
+    ).
+
 
 %==============================================================================
 % BP LABELLING UTILITIES
 %==============================================================================
 
-isInBurdenOfProof(Bps, Conclusion) :-
-    member(reifiedBp(Literals), Bps),
+isInBurdenOfProof(Conclusion) :-
+    context_check(reifiedBp(Literals)),
     member(Conclusion, Literals), !.
 
+isArgumentInBurdenOfProof([_, _, Conclusion, _, _]) :-
+    isInBurdenOfProof(Conclusion).
 
-isArgumentInBurdenOfProof(Bps, [_, _, Conclusion, _]) :-
-    isInBurdenOfProof(Bps, Conclusion).
+filterBpDefeats :-
+    findall(_, (
+        context_check(attack(T, A, B, C)),
+        filterBpDefeat(T, A, B, C)
+    ), _).
 
-
-filterBpDefeat(_, [], []).
-filterBpDefeat(Bps, [(T, B, A, C)|Attacks], FilteredAttacks) :-
+filterBpDefeat(T, B, A, C) :-
     (T = rebut; T = undermine),
-    isArgumentInBurdenOfProof(Bps, B),
+    isArgumentInBurdenOfProof(B),
     \+ superiority::superiorArgument(B, C),
-    filterBpDefeat(Bps, Attacks, FilteredAttacks), !.
-filterBpDefeat(Bps, [A|Attacks], [A|FilteredAttacks]) :-
-    filterBpDefeat(Bps, Attacks, FilteredAttacks).
+    context_retract(attack(T, B, A, C)).
 
-
-mostGroundedBpUnd(Bps, Arguments, Attacks, Arg) :-
+mostGroundedBpUnd(Arguments, Arg) :-
     member(Arg, Arguments),
-    isArgumentInBurdenOfProof(Bps, Arg),
+    isArgumentInBurdenOfProof(Arg),
     \+ (
-        (member(A, Arguments), Arg \= A,
-        isArgumentInBurdenOfProof(Bps, A)),
-        argumentChain(A, Arg, Attacks)
+        member(A, Arguments), Arg \= A,
+        isArgumentInBurdenOfProof(A),
+        argumentChain(A, Arg)
     ).
 
-
-argumentChain(A, A, _) :- !.
-argumentChain(A, B, Attacks) :-
+argumentChain(A, A) :- !.
+argumentChain(A, B) :-
     A \== B,
-    member((_, A, C, _), Attacks),
-    argumentChain(C, B, Attacks).
+    context_check(attack(_, A, C, _)),
+    argumentChain(C, B).
 
 %==============================================================================
 % BURDEN OF PROOF REIFICATION
 %==============================================================================
 
-reifyBurdenOfProofs(Rules, Arguments, Bps) :-
-    extractConclusions(Arguments, Conclusions),
-    computeBp(Rules, Conclusions, [], Bps).
-
-extractConclusions(Arguments, Conclusions) :-
-    findall(Conclusion, member([_, _, Conclusion, _], Arguments), AllConclusions),
-    utils::sort(AllConclusions, Conclusions).
-
-computeBp(Rules, Conclusions, TempBps, Bps) :-
-    member(abstractBp(AbstractBp), Rules),
-    fillTemplate(AbstractBp, Conclusions, R),
-    \+ member(reifiedBp(R), TempBps),
-    computeBp(Rules, Conclusions, [reifiedBp(R)|TempBps], Bps).
-computeBp(_, _, Bps, Bps).
+reifyBurdenOfProofs :-
+    findall(_, (
+        context_check(abstractBp(AbstractBp)),
+        fillTemplate(AbstractBp, R),
+        \+ context_check(reifiedBp(R)),
+        context_assert(reifiedBp(R))
+    ), _).
 
 /*
-    Fill the template (first parameter) using predicates belonging
-    to the second list (second parameter)
+    Fill the template (first parameter) using arguments conclusions
 */
-fillTemplate([], _, []).
-fillTemplate([H|T], C, [H|R]) :- member(H, C), fillTemplate(T, C, R).
+
+fillTemplate([], []).
+fillTemplate([H|T], [H|R]) :-
+    context_check(argument([_, _, Conclusion, _, _])),
+    fillTemplate(T, R).
