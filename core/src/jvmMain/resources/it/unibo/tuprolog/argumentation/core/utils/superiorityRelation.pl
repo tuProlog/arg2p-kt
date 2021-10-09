@@ -1,6 +1,3 @@
-setupPreferences(Rules) :-
-    findall(_, (memeber(X, Rules), context_assert(X)), _).
-
 superiorArgument(A, B) :- superiorArgumentSupportBuffered(A, B, _).
 superiorArgument(A, B, SupSet) :- superiorArgumentSupportBuffered(A, B, SupSet).
 
@@ -78,11 +75,11 @@ weakerDemo([H|T], Rules, [Sup|SupSet]) :-
 	singleStronger(H, Rules, Sup),
 	weakerDemo(T, Rules, SupSet).
 
-singleStronger(Pref, Target, Rules, sup(Rule, Target)) :-
+singleStronger(Target, Rules, sup(Rule, Target)) :-
 	member(Rule, Rules),
 	context_check(sup(Rule, Target)), !.
 
 allStronger(_, [], []).
 allStronger(Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
 	context_check(sup(Rule, Target)),
-	allStronger(Pref, Target, Rules, SupSet).
+	allStronger(Target, Rules, SupSet).
