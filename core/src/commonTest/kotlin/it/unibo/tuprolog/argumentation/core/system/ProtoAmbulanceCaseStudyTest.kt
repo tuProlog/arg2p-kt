@@ -128,7 +128,6 @@ class ProtoAmbulanceCaseStudyTest {
         val time = measureTime {
             val solver = TestingUtils.solver()
             solver.loadStaticKb(Theory.parse(baseTheory, solver.operators))
-            SolveOptions.DEFAULT
             solver.solve(Struct.parse("buildLabelSets"), SolveOptions.allEagerly()).first()
 /*
             TestingUtils.answerQuery(

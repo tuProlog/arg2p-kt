@@ -12,7 +12,7 @@ computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUn
 
 buildGraph :-
     graphBuildMode(X),
-    X::buildArgumentationGraph.
+    X:::buildArgumentationGraph.
 
 modifyGraph :-
     findall(X, graphExtension(X), Ext),
@@ -21,12 +21,12 @@ modifyGraph :-
 modifyGraph([]).
 modifyGraph([X|Ext]) :-
     modifyGraph(Ext),
-    X::modifyArgumentationGraph.
+    X:::modifyArgumentationGraph.
 
 buildArgumentLabelling :-
     argumentLabellingMode(X),
-    X::argumentLabelling.
+    X:::argumentLabelling.
 
 buildStatementLabelling :-
     statementLabellingMode(X),
-    X::statementLabelling.
+    X:::statementLabelling.

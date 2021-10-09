@@ -20,7 +20,7 @@ convertAllRules(ArgRules) :-
     convertAllRules(L, Rules), !,
     findall(sup(X, Y), sup(X, Y), Sups),
     utils::appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules),
-    findall(_, (member(X, ArgRules), cache_assert(X)), _).
+    findall(_, (member(X, ArgRules), context_assert(X)), _).
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),

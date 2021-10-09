@@ -1,4 +1,4 @@
-% Arguments: [Rules, TopRule, Conclusion, [LastDefRules, DefRules, DefPremises]]
+% Arguments: [Rules, TopRule, Conclusion, Body, [LastDefRules, DefRules, DefPremises]]
 % Support: (Support, Argument)
 % Attack: (Type, Attacker, Attacked, On)
 
@@ -8,17 +8,17 @@ buildArgumentationGraph :-
 
 buildArguments :-
 	buildArgumentsFromPremises,
-	findall([RuleID, RuleBody, RuleHead], cache_check(rule([RuleID, RuleBody, RuleHead])), Rules),
+	findall([RuleID, RuleBody, RuleHead], context_check(rule([RuleID, RuleBody, RuleHead])), Rules),
 	buildArgumentsFromRules(Rules, Rules, n).
 
 buildArgumentsFromPremises :-
     findall(
         _,
         (
-            cache_check(premise([PremiseID, Premise])),
+            context_check(premise([PremiseID, Premise])),
             checkStrict(PremiseID, DefPrem),
             ground(Premise),
-            cache_assert(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]))
+            context_assert(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]))
         ),
         _
     ).
@@ -39,14 +39,14 @@ buildArgumentsFromRule([RuleID, RuleBody, RuleHead]) :-
 	\+ member(RuleID, SupportRules),
 	ground(RuleHead),
 	utils::sort([RuleID|SupportRules], SortedPremises),
-	\+ cache_check(argument([SortedPremises, RuleID, RuleHead, RuleBody, _])),
+	\+ context_check(argument([SortedPremises, RuleID, RuleHead, RuleBody, _])),
 	buildArgumentInfo(ArgSupports, RuleID, Info),
     NewArgument = [SortedPremises, RuleID, RuleHead, RuleBody, Info],
-	cache_assert(argument(NewArgument)),
+	context_assert(argument(NewArgument)),
 	supports(NewArgument, ArgSupports).
 
-checkStrict(Id, [Id]) :- \+ cache_check(strict(Id)).
-checkStrict(Id, []) :- cache_check(strict(Id)).
+checkStrict(Id, [Id]) :- \+ context_check(strict(Id)).
+checkStrict(Id, []) :- context_check(strict(Id)).
 
 % Argument Info
 
@@ -73,9 +73,9 @@ defeasibleRules(RuleId, Supports, DefRules) :-
 % Last Defeasible Rules
 
 lastDefeasibleRules(_, TopRule, [TopRule]) :-
-    TopRule \== none, \+ cache_check(strict(TopRule)).
+    TopRule \== none, \+ context_check(strict(TopRule)).
 lastDefeasibleRules(Supports, TopRule, LastRules) :-
-	cache_check(strict(TopRule)),
+	context_check(strict(TopRule)),
 	findall(Def, member([_, _, _, [Def, _, _]], Supports), Res),
 	utils::appendLists(Res, TempLastRules),
 	utils::sortDistinct(TempLastRules, LastRules).
@@ -89,17 +89,17 @@ ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremi
 	(callable(Check) -> call(Check); Check),
 	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
 ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
-    cache_check(argument([ArgumentID, RuleID, Statement, Body, Info])),
+    context_check(argument([ArgumentID, RuleID, Statement, Body, Info])),
 	append(ArgumentID, Premises, NewPremises),
 	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, Statement, Body, Info]|Supports], ResultPremises, ResultSupports).
 
 supports(Argument, Supports) :-
-    findall(_, (member(S, Supports), cache_assert(support(S, Argument))), _).
+    findall(_, (member(S, Supports), context_assert(support(S, Argument))), _).
 
 % Attacks
 
 buildAttacks :-
-    findall(X, cache_check(argument(X)), Args),
+    findall(X, context_check(argument(X)), Args),
 	buildDirectAttacks(Args),
 	buildTransitiveAttacks.
 
@@ -109,17 +109,17 @@ buildDirectAttacks([H|T]) :-
     buildDirectAttacks(T).
 
 buildDirectAttack(A) :-
-	cache_check(argument(B)),
+	context_check(argument(B)),
 	A \== B,
     attacks(T, A, B),
-	\+ cache_check(attack(T, A, B, B)),
-	cache_assert(attack(T, A, B, B)).
+	\+ context_check(attack(T, A, B, B)),
+	context_assert(attack(T, A, B, B)).
 
 buildTransitiveAttacks :-
-	cache_check(attack(T, A, B, D)),
-	cache_check(support(B, C)),
-	\+ cache_check(attack(T, A, C, D)), !,
-	cache_assert(attack(T, A, C, D)),
+	context_check(attack(T, A, B, D)),
+	context_check(support(B, C)),
+	\+ context_check(attack(T, A, C, D)), !,
+	context_assert(attack(T, A, C, D)),
     buildTransitiveAttacks.
 buildTransitiveAttacks.
 

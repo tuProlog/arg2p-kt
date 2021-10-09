@@ -10,11 +10,12 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
+import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.library.Library
@@ -23,9 +24,10 @@ import it.unibo.tuprolog.solve.primitive.Solve
 
 class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
 
-    inner class WithLib : Primitive {
+    abstract inner class AbstractWithLib : Primitive {
 
-        val signature = Signature("::", 2)
+        abstract val signature : Signature
+        abstract fun execute(module: String, solver: MutableSolver)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val lib: Term = request.arguments[0]
@@ -69,6 +71,8 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
                     )
             }
 
+            execute(lib.toString(), solver)
+
             return sequence {
                 yieldAll(
                     solver.solve(goal).map {
@@ -79,17 +83,33 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
         }
     }
 
+    inner class WithLib : AbstractWithLib() {
+        override val signature = Signature("::", 2)
+        override fun execute(module: String, solver: MutableSolver) = Unit
+    }
+
+    inner class WithLibInNewContext : AbstractWithLib() {
+        override val signature = Signature(":::", 2)
+        override fun execute(module: String, solver: MutableSolver) =
+            prolog {
+                solver.solve("context_active"(X))
+                    .filter { it.isYes }
+                    .forEach {
+                        solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()
+                    }
+            }
+    }
+
     override val alias = "prolog.argumentation.loader"
 
     override val baseContent: AliasedLibrary
-        get() = WithLib().let {
+        get() = listOf(WithLib(), WithLibInNewContext()).let {
             Library.aliased(
                 alias = this.alias,
-                primitives = mapOf(
-                    it.signature to it
-                ),
+                primitives = it.associateBy { prim -> prim.signature },
                 operatorSet = OperatorSet(
                     Operator("::", Specifier.XFX, 700),
+                    Operator(":::", Specifier.XFX, 700),
                 )
             )
         }

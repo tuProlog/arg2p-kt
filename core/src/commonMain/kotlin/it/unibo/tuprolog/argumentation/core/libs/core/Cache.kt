@@ -32,9 +32,24 @@ class Cache : BaseArgLibrary() {
             MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
                 .also { it.setFlag(Unknown.name, Unknown.FAIL) })
 
+    inner class DynamicCacheReset : PrimitiveWithSignature {
+
+        override val signature = Signature("context_reset", 0)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            this@Cache.selectedSolver = 0
+            this@Cache.nextSolver = 1
+            this@Cache.dynamicSolver.clear()
+            this@Cache.dynamicSolver[0] =
+                MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
+                    .also { it.setFlag(Unknown.name, Unknown.FAIL) }
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
     inner class DynamicCacheSelected : PrimitiveWithSignature {
 
-        override val signature = Signature("cache_dynamic_active", 1)
+        override val signature = Signature("context_active", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
@@ -44,7 +59,7 @@ class Cache : BaseArgLibrary() {
 
     inner class DynamicCacheBranch : PrimitiveWithSignature {
 
-        override val signature = Signature("cache_dynamic_branch", 2)
+        override val signature = Signature("context_branch", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val target: Int = request.arguments[0].castToInteger().intValue.toInt()
@@ -59,7 +74,7 @@ class Cache : BaseArgLibrary() {
 
     inner class DynamicCacheAssert : PrimitiveWithSignature {
 
-        override val signature = Signature("cache_dynamic_assert", 1)
+        override val signature = Signature("context_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
 
@@ -71,7 +86,7 @@ class Cache : BaseArgLibrary() {
 
     inner class DynamicCacheRetract : PrimitiveWithSignature {
 
-        override val signature = Signature("cache_dynamic_retract", 1)
+        override val signature = Signature("context_retract", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
@@ -82,7 +97,7 @@ class Cache : BaseArgLibrary() {
 
     inner class DynamicCacheGet : PrimitiveWithSignature {
 
-        override val signature = Signature("cache_dynamic_check", 1)
+        override val signature = Signature("context_check", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
@@ -145,6 +160,7 @@ class Cache : BaseArgLibrary() {
                 CacheAssert(),
                 CacheRetract(),
                 CacheGet(),
+                DynamicCacheReset(),
                 DynamicCacheSelected(),
                 DynamicCacheBranch(),
                 DynamicCacheAssert(),

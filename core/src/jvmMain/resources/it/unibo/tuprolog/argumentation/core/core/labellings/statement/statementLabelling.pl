@@ -1,19 +1,19 @@
 statementLabelling :-
     findall(_, (
-        cache_dynamic_check(in([_, _, Conc, _, _])),
-        \+ cache_dynamic_check(statIn(Conc)),
-        cache_dynamic_assert(statIn(Conc))
+        context_check(in([_, _, Conc, _, _])),
+        \+ context_check(statIn(Conc)),
+        context_assert(statIn(Conc))
     ), _),
     findall(_, (
-        cache_dynamic_check(out([_, _, Conc, _, _])),
-        \+ cache_dynamic_check(statIn(Conc)),
-        \+ cache_dynamic_check(statOut(Conc)),
-        cache_dynamic_assert(statOut(Conc))
+        context_check(out([_, _, Conc, _, _])),
+        \+ context_check(statIn(Conc)),
+        \+ context_check(statOut(Conc)),
+        context_assert(statOut(Conc))
     ), _),
     findall(_, (
-        cache_dynamic_check(und([_, _, Conc, _, _])),
-        \+ cache_dynamic_check(statIn(Conc)),
-        \+ cache_dynamic_check(statOut(Conc)),
-        \+ cache_dynamic_check(statUnd(Conc)),
-        cache_dynamic_assert(statUnd(Conc))
+        context_check(und([_, _, Conc, _, _])),
+        \+ context_check(statIn(Conc)),
+        \+ context_check(statOut(Conc)),
+        \+ context_check(statUnd(Conc)),
+        context_assert(statUnd(Conc))
     ), _).

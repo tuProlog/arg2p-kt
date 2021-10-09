@@ -80,26 +80,25 @@ between(N, M, K) :- N < M, N1 is N+1, between(N1, M, K).
 
 
 recoverGraph(Args, Attacks, Supports) :-
-        findall(X, cache_check(argument(X)), TempArgs),
-        findall((T, A, B, C), cache_check(attack(T, A, B, C)), TempAttacks),
-        findall((A, B), cache_check(support(A, B)), TempSupports),
+        findall(X, context_check(argument(X)), TempArgs),
+        findall((T, A, B, C), context_check(attack(T, A, B, C)), TempAttacks),
+        findall((A, B), context_check(support(A, B)), TempSupports),
         utils::sort(TempArgs, Args),
         utils::sort(TempAttacks, Attacks),
         utils::sort(TempSupports, Supports).
 
-
 recoverArgumentLabelling(ArgsIn, ArgsOut, ArgsUnd) :-
-        findall(X, cache_dynamic_check(in(X)), TempArgsIn),
-        findall(X, cache_dynamic_check(out(X)), TempArgsOut),
-        findall(X, cache_dynamic_check(und(X)), TempArgsUnd),
+        findall(X, context_check(in(X)), TempArgsIn),
+        findall(X, context_check(out(X)), TempArgsOut),
+        findall(X, context_check(und(X)), TempArgsUnd),
         utils::sort(TempArgsIn, ArgsIn),
         utils::sort(TempArgsOut, ArgsOut),
         utils::sort(TempArgsUnd, ArgsUnd).
 
 recoverStatementLabelling(In, Out, Und) :-
-        findall(X, cache_dynamic_check(statIn(X)), TempIn),
-        findall(X, cache_dynamic_check(statOut(X)), TempOut),
-        findall(X, cache_dynamic_check(statUnd(X)), TempUnd),
+        findall(X, context_check(statIn(X)), TempIn),
+        findall(X, context_check(statOut(X)), TempOut),
+        findall(X, context_check(statUnd(X)), TempUnd),
         utils::sort(TempIn, In),
         utils::sort(TempOut, Out),
         utils::sort(TempUnd, Und).

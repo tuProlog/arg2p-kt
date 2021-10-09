@@ -1,28 +1,24 @@
-retractPreferenceCache :-
-    cache_retract(preferences(_)),
-    cache_retract(superior(_, _, _, _)).
-
-setupPreferences(Pref) :-
-    cache_assert(preferences(Pref)).
+setupPreferences(Rules) :-
+    findall(_, (memeber(X, Rules), context_assert(X)), _).
 
 superiorArgument(A, B) :- superiorArgumentSupportBuffered(A, B, _).
 superiorArgument(A, B, SupSet) :- superiorArgumentSupportBuffered(A, B, SupSet).
 
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    cache_check(superior(A, B, SupSet, true)), !.
+    context_check(superior(A, B, SupSet, true)), !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    cache_check(superior(A, B, SupSet, false)),
+    context_check(superior(A, B, SupSet, false)),
     fail, !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
-    \+ cache_check(superior(A, B, _, _)),
+    \+ context_check(superior(A, B, _, _)),
     superiorArgumentSupport(A, B, SupSet),
-    cache_assert(superior(A, B, SupSet, true)), !.
+    context_assert(superior(A, B, SupSet, true)), !.
 superiorArgumentSupportBuffered(A, B, SupSet) :-
     \+ cache_check(superior(A, B, _, _)),
-    cache_assert(superior(A, B, [], false)),
+    context_assert(superior(A, B, [], false)),
     fail, !.
 
-superiorArgumentSupport([_, _, _, [LastDefRulesA, DefRulesA, DefPremisesA]], [_, _, _, [LastDefRulesB, DefRulesB, DefPremisesB]], SupSet) :-
+superiorArgumentSupport([_, _, _, _, [LastDefRulesA, DefRulesA, DefPremisesA]], [_, _, _, _, [LastDefRulesB, DefRulesB, DefPremisesB]], SupSet) :-
 	superiorArgumentSupport(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
 
 superiorArgumentSupport(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-
@@ -57,16 +53,14 @@ weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(elitist),
-	cache_check(preferences(Pref)),
 	member(Rule, RulesA),
-	allStronger(Pref, Rule, RulesB, SupSet), !.
+	allStronger(Rule, RulesB, SupSet), !.
 
 weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(democrat),
-	cache_check(preferences(Pref)),
-	weakerDemo(Pref, RulesA, RulesB, SupSet).
+	weakerDemo(RulesA, RulesB, SupSet).
 
 %(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′)
 % and there is no defeasible rule d ∈ ldr(A) such that d ≺ last(B′).
@@ -75,21 +69,20 @@ weaker(RulesA, RulesB, [sup(X, W)]) :-
 	RulesA \== [],
 	RulesB \== [],
 	orderingComparator(normal),
-	cache_check(preferences(Pref)),
 	member(W, RulesA),
 	member(X, RulesB),
-	member(sup(X, W), Pref), !.
+	context_check(sup(X, W)), !.
 
-weakerDemo(_, [], _, []).
-weakerDemo(Pref, [H|T], Rules, [Sup|SupSet]) :-
-	singleStronger(Pref, H, Rules, Sup),
-	weakerDemo(Pref, T, Rules, SupSet).
+weakerDemo([], _, []).
+weakerDemo([H|T], Rules, [Sup|SupSet]) :-
+	singleStronger(H, Rules, Sup),
+	weakerDemo(T, Rules, SupSet).
 
 singleStronger(Pref, Target, Rules, sup(Rule, Target)) :-
 	member(Rule, Rules),
-	member(sup(Rule, Target), Pref), !.
+	context_check(sup(Rule, Target)), !.
 
-allStronger(_, _, [], []).
-allStronger(Pref, Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
-	member(sup(Rule, Target), Pref),
+allStronger(_, [], []).
+allStronger(Target, [Rule|Rules], [sup(Rule, Target)|SupSet]) :-
+	context_check(sup(Rule, Target)),
 	allStronger(Pref, Target, Rules, SupSet).
