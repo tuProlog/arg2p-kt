@@ -2,20 +2,21 @@
 % BP COMPLETE LABELLING [ICLP]
 %==============================================================================
 
-argumentLabelling(Rules, [Arguments, Attacks, Supports], [In, Out, Und]) :-
-    bp_grounded::reifyBurdenOfProofs(Rules, Arguments, Bps),
-    utils::sort(Arguments, ArgumentsS),
-    hbpComplete(go, Bps, Arguments, Attacks, Supports, [], [], ArgumentsS, In, Out, Und).
+argumentLabelling :-
+    bp_grounded::reifyBurdenOfProofs,
+    findall(X, context_check(argument(X)), Arguments),
+    completeBpLabelling(go, Arguments).
 
-hbpComplete(stop, _, _, _, _, In, Out, Und, In, Out, Und).
-hbpComplete(go, Bps, Arguments, Attacks, Supports, In, Out, Und, ResultIn, ResultOut, ResultUnd) :-
-    bp_grounded_partial::partialHBPLabelling(Bps, Arguments, Supports, Und, In, Out, [], BaseIn, BaseOut, BaseUnd),
-    grounded::groundedLabelling(Attacks, BaseIn, BaseOut, BaseUnd, CompleteIn, CompleteOut, CompleteUnd),
-    utils::sort(CompleteIn, CompleteInS),
-    utils::sort(CompleteOut, CompleteOutS),
-    utils::sort(CompleteUnd, CompleteUndS),
-    stopCondition(Stop, In, CompleteInS, Out, CompleteOutS, Und, CompleteUndS),
-    hbpComplete(Stop, Bps, Attacks, Supports, CompleteInS, CompleteOutS, CompleteUndS, ResultIn, ResultOut, ResultUnd).
+completeBpLabelling(stop, _).
+completeBpLabelling(go, Arguments) :-
+    bp_grounded_partial::partialBpLabelling(Arguments), !,
+    findall(X, (context_check(und(X)), context_retract(und(X))), NewArgs),
+    grounded::groundedLabelling(NewArgs),
+    findall(X, context_check(und(X)), LeftArguments),
+    stopCondition(Stop, Arguments, LeftArguments),
+    completeBpLabelling(Stop, LeftArguments).
 
-stopCondition(stop, In, In, Out, Out, Und, Und) :- !.
-stopCondition(go, _, _, _, _, _, _).
+stopCondition(stop, Args, NewArgs) :-
+    utils::sort(Args, SortedArgs),
+    utils::sort(NewArgs, SortedArgs), !.
+stopCondition(go, _, _) :- context_retract(und(_)).

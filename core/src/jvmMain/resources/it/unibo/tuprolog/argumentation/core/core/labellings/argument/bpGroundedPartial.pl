@@ -11,7 +11,7 @@ argumentLabelling :-
 
 partialBpLabelling([]).
 partialBpLabelling(Arguments) :-
-    more_grounded_argument(Arguments, A),
+    mostGroundedArgument(Arguments, A),
     debug::writeDebug(['Evaluating ', A]),
     demonstration(Arguments, A, [A], Evaluated),
     utils::subtract(Arguments, [Evaluated], NewArgs),
@@ -165,14 +165,14 @@ isComplementInBurdenOfProof(A) :-
     complement(A, Complement),
     bp_grounded::isInBurdenOfProof(Complement), !.
 
-more_grounded_argument([], []).
-more_grounded_argument([X], X).
-more_grounded_argument([[L, _, _, _]|T], [L2, Q2, W2, I2]) :-
-    more_grounded_argument(T, [L2, Q2, W2, I2]),
+mostGroundedArgument([], []).
+mostGroundedArgument([X], X).
+mostGroundedArgument([[L, _, _, _, _]|T], [L2, Q2, W2, B2, I2]) :-
+    mostGroundedArgument(T, [L2, Q2, W2, B2, I2]),
     length(L, LN1),
     length(L2, LN2),
     LN1 > LN2, !.
-more_grounded_argument([A|_], A).
+mostGroundedArgument([A|_], A).
 
 /*
     Get a conclusion complement
