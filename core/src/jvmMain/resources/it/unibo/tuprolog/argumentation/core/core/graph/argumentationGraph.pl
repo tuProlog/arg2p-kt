@@ -45,6 +45,12 @@ buildArgumentsFromRule([RuleID, RuleBody, RuleHead]) :-
 	context_assert(argument(NewArgument)),
 	supports(NewArgument, ArgSupports).
 
+supports(Argument, Supports) :-
+    findall(_, (
+        member(S, Supports),
+        context_assert(support(S, Argument))
+    ), _).
+
 checkStrict(Id, [Id]) :- \+ context_check(strict(Id)).
 checkStrict(Id, []) :- context_check(strict(Id)).
 
@@ -58,14 +64,14 @@ buildArgumentInfo(Supports, RuleId, [LastDefRules, DefRules, DefPrem]) :-
 % Defeasible Premises
 
 ordinaryPremises(Supports, DefPrem) :-
-    findall(Def, member([_, _, _, [_, _, Def]], Supports), Prem),
+    findall(Def, member([_, _, _, _, [_, _, Def]], Supports), Prem),
     utils::appendLists(Prem, TempPrem),
     utils::sortDistinct(TempPrem, DefPrem).
 
 % Defeasible rules
 
 defeasibleRules(RuleId, Supports, DefRules) :-
-	findall(Def, member([_, _, _, [_, Def, _]], Supports), UnsortedRules),
+	findall(Def, member([_, _, _, _, [_, Def, _]], Supports), UnsortedRules),
 	checkStrict(RuleId, DefRule),
 	utils::appendLists([DefRule|UnsortedRules], TempRules),
 	utils::sortDistinct(TempRules, DefRules).
@@ -76,7 +82,7 @@ lastDefeasibleRules(_, TopRule, [TopRule]) :-
     TopRule \== none, \+ context_check(strict(TopRule)).
 lastDefeasibleRules(Supports, TopRule, LastRules) :-
 	context_check(strict(TopRule)),
-	findall(Def, member([_, _, _, [Def, _, _]], Supports), Res),
+	findall(Def, member([_, _, _, _, [Def, _, _]], Supports), Res),
 	utils::appendLists(Res, TempLastRules),
 	utils::sortDistinct(TempLastRules, LastRules).
 
@@ -92,9 +98,6 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
     context_check(argument([ArgumentID, RuleID, Statement, Body, Info])),
 	append(ArgumentID, Premises, NewPremises),
 	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, Statement, Body, Info]|Supports], ResultPremises, ResultSupports).
-
-supports(Argument, Supports) :-
-    findall(_, (member(S, Supports), context_assert(support(S, Argument))), _).
 
 % Attacks
 

@@ -1,6 +1,6 @@
 computeGlobalAcceptance :-
     buildGraph,
-%    modifyGraph,
+    modifyGraph,
     buildArgumentLabelling,
     buildStatementLabelling.
 
