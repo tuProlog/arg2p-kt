@@ -42,19 +42,19 @@ class Argument(
         }
 
         private fun argSupports(engine: Solver, context: Int, argument: Term): Sequence<Support> =
-            prolog { engine.solve("context_check"(context, "support"(X, argument)))
-                .filter { it.isYes }
-                .map { it.substitution[X]!! }
-                .map { solution ->
-                    Support(
-                        argRules(argumentAsList(solution)),
-                        argConclusion(argumentAsList(solution))
-                    )
-                }
+            prolog {
+                engine.solve("context_check"(context, "support"(X, argument)))
+                    .filter { it.isYes }
+                    .map { it.substitution[X]!! }
+                    .map { solution ->
+                        Support(
+                            argRules(argumentAsList(solution)),
+                            argConclusion(argumentAsList(solution))
+                        )
+                    }
             }
 
         private fun argLabel(engine: Solver, context: Int, argument: Term): String {
-
             fun checkFunctor(functor: String) =
                 prolog {
                     engine.solve("context_check"(context, functor(argument)))
@@ -63,8 +63,8 @@ class Argument(
                         .firstOrNull()
                 }
 
-            return checkFunctor("in") ?:
-                checkFunctor("out") ?: "und"
+            return checkFunctor("in")
+                ?: checkFunctor("out") ?: "und"
         }
 
         @JsName("mineArguments")
@@ -82,7 +82,8 @@ class Argument(
                             argConclusion(argumentAsList(solution)),
                             argSupports(engine, context, solution).toList()
                         )
-                    } }.toList()
+                    }
+            }.toList()
 
             arguments
                 .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))

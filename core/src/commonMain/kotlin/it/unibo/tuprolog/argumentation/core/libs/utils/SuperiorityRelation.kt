@@ -4,10 +4,6 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
-import it.unibo.tuprolog.argumentation.core.libs.graph.GraphBuildMode
-import it.unibo.tuprolog.argumentation.core.libs.graph.GraphExtension
-import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 

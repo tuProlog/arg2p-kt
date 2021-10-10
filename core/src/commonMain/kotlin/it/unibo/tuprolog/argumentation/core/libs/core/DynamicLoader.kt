@@ -26,7 +26,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
 
     abstract inner class AbstractWithLib : Primitive {
 
-        abstract val signature : Signature
+        abstract val signature: Signature
         abstract fun execute(module: String, solver: MutableSolver)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -61,14 +61,16 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
                     lib
                 )
                 ).let { library ->
-                    request.context.createMutableSolver(
-                        libraries = Libraries.of(request.context.libraries.libraries.filterNot { lib ->
-                                this@DynamicLoader.solver.dynamicLibraries()
-                                    .map { it.alias }
-                                    .contains(lib.alias)
-                        }).plus(library.content()),
-                        staticKb = request.context.staticKb
-                    )
+                request.context.createMutableSolver(
+                    libraries = Libraries.of(
+                        request.context.libraries.libraries.filterNot { lib ->
+                            this@DynamicLoader.solver.dynamicLibraries()
+                                .map { it.alias }
+                                .contains(lib.alias)
+                        }
+                    ).plus(library.content()),
+                    staticKb = request.context.staticKb
+                )
             }
 
             execute(lib.toString(), solver)

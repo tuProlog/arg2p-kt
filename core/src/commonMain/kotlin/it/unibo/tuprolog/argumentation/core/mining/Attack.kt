@@ -13,7 +13,7 @@ class Attack(val attacker: String, val attacked: String) {
         @JsName("mineAttacks")
         fun mineAttacks(context: Int, engine: Solver, arguments: List<Argument>): List<Attack> {
             if (arguments.isEmpty()) return emptyList()
-            return prolog{
+            return prolog {
                 engine.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
                     .filter { it.isYes }
                     .map { solution ->

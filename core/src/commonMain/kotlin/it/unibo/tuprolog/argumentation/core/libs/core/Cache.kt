@@ -17,20 +17,22 @@ import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 
 interface PrimitiveWithSignature : Primitive {
-    val signature : Signature
+    val signature: Signature
 }
 
 class Cache : BaseArgLibrary() {
 
-    private val solver : MutableSolver =
+    private val solver: MutableSolver =
         MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
             .also { it.setFlag(Unknown.name, Unknown.FAIL) }
 
-    private var nextSolver : Int = 1
-    private var selectedSolver : Int = 0
-    private val dynamicSolver : MutableMap<Int, MutableSolver> = mutableMapOf(0 to
+    private var nextSolver: Int = 1
+    private var selectedSolver: Int = 0
+    private val dynamicSolver: MutableMap<Int, MutableSolver> = mutableMapOf(
+        0 to
             MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
-                .also { it.setFlag(Unknown.name, Unknown.FAIL) })
+                .also { it.setFlag(Unknown.name, Unknown.FAIL) }
+    )
 
     inner class DynamicCacheReset : PrimitiveWithSignature {
 
@@ -89,7 +91,6 @@ class Cache : BaseArgLibrary() {
         override val signature = Signature("context_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-
             val term: Term = request.arguments[0]
             this@Cache.dynamicSolver[this@Cache.selectedSolver]!!.assertA(term.castToStruct())
             return sequenceOf(request.replyWith(true))
@@ -147,7 +148,6 @@ class Cache : BaseArgLibrary() {
         override val signature = Signature("cache_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-
             val term: Term = request.arguments[0]
             this@Cache.solver.assertA(term.castToStruct())
             return sequenceOf(request.replyWith(true))

@@ -7,6 +7,7 @@ import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.yes
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -105,12 +106,12 @@ class SpeedTest {
         f24 :-> production_manager(mike).
         f25 :=> claim(mike, test_ok(ambulance)).
         
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
-        unrestrictedRebut.
+        graphExtension(standardPref).
         
         """.trimIndent()
 
@@ -118,6 +119,7 @@ class SpeedTest {
 
     @Test
     @ExperimentalTime
+    @Ignore
     fun structuredResolutionSpeedTestNoLastCall() {
         val time = measureTime {
             prolog {
@@ -137,7 +139,7 @@ class SpeedTest {
                     ) {
                         it.yes(
                             "StatIn" to Struct.parse("[responsible(pino)]"),
-                            "StatOut" to Struct.parse("[responsible(lisa), responsible(lisa)]"),
+                            "StatOut" to Struct.parse("[responsible(lisa)]"),
                             "StatUnd" to Struct.parse("[responsible(demers)]")
                         )
                     }
@@ -168,7 +170,7 @@ class SpeedTest {
                     ) {
                         it.yes(
                             "StatIn" to Struct.parse("[responsible(pino)]"),
-                            "StatOut" to Struct.parse("[responsible(lisa), responsible(lisa)]"),
+                            "StatOut" to Struct.parse("[responsible(lisa)]"),
                             "StatUnd" to Struct.parse("[responsible(demers)]")
                         )
                     }

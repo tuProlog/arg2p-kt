@@ -29,7 +29,8 @@ buildArgumentsFromPremises :-
 buildArgumentsFromRules(Rules, [], n).
 buildArgumentsFromRules(Rules, [], y) :- buildArgumentsFromRules(Rules, Rules, n).
 buildArgumentsFromRules(Rules, [H|T], _) :-
-    buildArgumentsFromRule(H),
+    copy_term(H, HH),
+    buildArgumentsFromRule(HH),
     buildArgumentsFromRules(Rules, T, y), !.
 buildArgumentsFromRules(Rules, [_|T], X) :-
     buildArgumentsFromRules(Rules, T, X).

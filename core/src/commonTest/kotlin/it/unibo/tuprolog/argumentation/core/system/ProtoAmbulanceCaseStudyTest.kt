@@ -1,13 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -111,7 +104,7 @@ class ProtoAmbulanceCaseStudyTest {
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
-        unrestrictedRebut.
+        graphExtension(standardPref).
         
         """.trimIndent()
 
@@ -126,17 +119,13 @@ class ProtoAmbulanceCaseStudyTest {
     @ExperimentalTime
     fun abstractResolutionSpeedTest() {
         val time = measureTime {
-            val solver = TestingUtils.solver()
-            solver.loadStaticKb(Theory.parse(baseTheory, solver.operators))
-            solver.solve(Struct.parse("buildLabelSets"), SolveOptions.allEagerly()).first()
-/*
             TestingUtils.answerQuery(
                 baseTheory,
                 "responsible(X)",
                 "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
+                "[responsible(lisa)]",
                 "[responsible(demers)]"
-            )*/
+            )
         }
 
         println(time.toDouble(DurationUnit.SECONDS))
@@ -150,7 +139,7 @@ class ProtoAmbulanceCaseStudyTest {
                 structuredTheory,
                 "responsible(X)",
                 "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
+                "[responsible(lisa)]",
                 "[responsible(demers)]"
             )
         }
@@ -162,7 +151,7 @@ class ProtoAmbulanceCaseStudyTest {
     fun responsible() = evaluateBoth(
         "responsible(X)",
         "[responsible(pino)]",
-        "[responsible(lisa), responsible(lisa)]",
+        "[responsible(lisa)]",
         "[responsible(demers)]"
     )
 

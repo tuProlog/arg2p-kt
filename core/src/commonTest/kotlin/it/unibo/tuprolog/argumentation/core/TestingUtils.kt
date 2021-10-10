@@ -4,6 +4,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
@@ -49,7 +50,7 @@ object TestingUtils {
     }
 
     fun testGoalNoBacktracking(goal: Struct, solver: BaseSolver = solver(), expectedSolutions: (Struct) -> Solution) {
-        val solution = solver.solve(goal, duration).first()
+        val solution = solver.solve(goal, SolveOptions.allEagerlyWithTimeout(duration)).first()
         assertSolutionEquals(
             listOf(expectedSolutions(goal)),
             listOf(solution)

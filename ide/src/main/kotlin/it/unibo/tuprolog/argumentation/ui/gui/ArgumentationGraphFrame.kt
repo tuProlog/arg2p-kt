@@ -24,8 +24,16 @@ import java.awt.Color
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
-import javax.swing.*
-
+import javax.swing.BoxLayout
+import javax.swing.JButton
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JSplitPane
+import javax.swing.JTabbedPane
+import javax.swing.JTextArea
+import javax.swing.JTextPane
+import javax.swing.SwingUtilities
 
 internal class ArgumentationGraphFrame {
 
@@ -34,27 +42,27 @@ internal class ArgumentationGraphFrame {
     private val treeTheoryPane: JScrollPane = JScrollPane()
     val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
-    private val next : JButton = JButton("Next").also { button ->
+    private val next: JButton = JButton("Next").also { button ->
         button.addActionListener {
             this.selectedContext =
                 if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
             this.update()
         }
     }
-    private val back : JButton = JButton("Back").also { button ->
+    private val back: JButton = JButton("Back").also { button ->
         button.addActionListener {
             this.selectedContext =
                 if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
             this.update()
         }
     }
-    private val context : JLabel = JLabel()
+    private val context: JLabel = JLabel()
 
-    private val minContext : Int = 0
-    private var maxContext : Int = 0
-    private var selectedContext : Int = 0
+    private val minContext: Int = 0
+    private var maxContext: Int = 0
+    private var selectedContext: Int = 0
 
-    private var mutableSolver : MutableSolver? = null
+    private var mutableSolver: MutableSolver? = null
 
     init {
 

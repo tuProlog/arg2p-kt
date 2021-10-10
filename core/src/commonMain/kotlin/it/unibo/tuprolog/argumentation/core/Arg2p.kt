@@ -13,7 +13,12 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHand
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.*
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
