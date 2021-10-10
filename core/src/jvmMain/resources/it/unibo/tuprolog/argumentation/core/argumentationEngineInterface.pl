@@ -16,6 +16,6 @@ buildLabelSets :-
     buildLabelSets(_, _).
 
 answerQuery(Goal, Yes, No, Und) :-
-    parser::convertAllRules(ArgRules),
-    debug::printTheory(ArgRules),
-    structured::computeStatementAcceptance(ArgRules, Goal, Yes, No, Und).
+    context_reset,
+    parser:::convertAllRules(_),
+    structured:::computeStatementAcceptance(Goal, Yes, No, Und).

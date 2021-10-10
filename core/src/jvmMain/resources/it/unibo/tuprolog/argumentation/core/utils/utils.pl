@@ -16,18 +16,14 @@ assertaList([X|Others]) :-
 	assertaList(Others).
 
 
-sortDistinct(List, Deduplicated) :-
-    sort(List, Sorted),
-    deduplicate(Sorted, Deduplicated).
+sortDistinct(List, Sorted) :-
+    deduplicate(List, Deduplicated),
+    sort(Deduplicated, Sorted).
 
 deduplicate([], []).
-deduplicate([H|T], Deduplicated) :-
-    deduplicate(T, Deduplicated),
-    member(H, Deduplicated), !.
-deduplicate([H|T], [H|Deduplicated]) :-
-    deduplicate(T, Deduplicated),
-    \+ member(H, Deduplicated), !.
-
+deduplicate(List, Output) :-
+    List \== [],
+    setof(X, member(X, List), Output).
 
 sort(List,Sorted) :- q_sort(List, [], Sorted).
 

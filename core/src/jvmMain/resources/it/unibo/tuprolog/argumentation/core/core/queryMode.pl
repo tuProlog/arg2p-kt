@@ -1,95 +1,94 @@
-pippo(ciao).
+computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+    \+ queryMode,
+    abstract:::computeGlobalAcceptance,
+    mineResults(Goal, YesResult, NoResult, UndResult).
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
     argumentLabellingMode(grounded),
-    check_modifiers_in_list(effects, [Goal], [X]),
-    supRules,
-    retractall(result(_, _)),
-    retractall(explored(_)),
-    retractall(bufferedArgument(_, _)),
-    retractPreferenceCache,
-    findall([X, Res], query(X, Res), Result),
-    retractall(result(_, _)),
-    retractall(explored(_)),
-    retractall(bufferedArgument(_, _)),
-    retractPreferenceCache,
-    populateResultSets(Result, ArgsIn, ArgsOut, ArgsUnd),
-    beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
+    parser::check_modifiers_in_list(effects, [Goal], [X]),
+    findall(_, query(X, _), _),
+    statementLabellingMode(Y),
+    Y:::statementLabelling,
+    mineResults(Goal, YesResult, NoResult, UndResult).
 
-computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
-    \+ queryMode,
-    computeGlobalAcceptance([_, _, _], [In, Out, Und]),
-    findall(X, member([_, _, X], In), ArgsIn),
-    findall(X, member([_, _, X], Out), ArgsOut),
-    findall(X, member([_, _, X], Und), ArgsUnd),
-    beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, YesResult, NoResult, UndResult), !.
+mineResults(Goal, YesResult, NoResult, UndResult) :-
+    parser::check_modifiers_in_list(effects, [Goal], [X]),
+    findall(Goal, context_check(statIn(X)), In),
+    findall(Goal, context_check(statOut(X)), Out),
+    findall(Goal, context_check(statUnd(X)), Und),
+    utils::sort(In, YesResult),
+    utils::sort(Out, NoResult),
+    utils::sort(Und, UndResult).
 
-beautifyResult(Goal, ArgsIn, ArgsOut, ArgsUnd, SIn, SOut, SUnd) :-
-    findall(Goal, answerSingleQuery(Goal, ArgsIn), In),
-    findall(Goal, answerSingleQuery(Goal, ArgsOut), Out),
-    findall(Goal, answerSingleQuery(Goal, ArgsUnd), Und),
-    sort(In, SIn),
-    sort(Out, SOut),
-    sort(Und, SUnd).
 
-answerSingleQuery(Goal, Args) :-
-    check_modifiers_in_list(effects, [Goal], [X]),
-    findall(Y, member(Y, Args), Set),
-    member(X, Set).
-
-populateResultSets([], [], [], []).
-populateResultSets([[Query,yes]|T], [Query|Yes], No, Und) :- populateResultSets(T, Yes, No, Und).
-populateResultSets([[Query,no]|T], Yes, [Query|No], Und) :- populateResultSets(T, Yes, No, Und).
-populateResultSets([[Query,und]|T], Yes, No, [Query|Und]) :- populateResultSets(T, Yes, No, Und).
+%==============================================================================
+% QUERY ALGORITHM
+%==============================================================================
 
 query(Query, Res) :-
     buildArgument(Query, Argument),
-    write(Argument),nl,
     once(defend(Argument, [], Res)).
 query(Query, und) :- \+ buildArgument(Query, _).
 
-% Buffering of the already examinated arguments
-defend(Argument, _, no) :- result(Argument, no).
-defend(Argument, _, und) :- result(Argument, und).
-defend(Argument, _, yes) :- result(Argument, yes).
+% Check already evaluated arguments
 
-% Caso base: esiste fra i miei attaccanti un verificato -> io sono out
+defend(Argument, _, no) :- context_check(out(Argument)).
+defend(Argument, _, und) :- context_check(und(Argument)).
+defend(Argument, _, yes) :- context_check(in(Argument)).
+
+% Exists a IN attacker -> OUT argument
+
 defend(Argument, QueryChain, no) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
     once(defend(Attacker, [Argument|QueryChain], X)),
     X == yes,
     bufferResult(Argument, no), !.
-% Caso ciclo: esiste fra i miei attaccanti un argomento già incontrato (ciclo) sono Und
+
+% Exists a cycle in the inference chain attacker -> UND argument
+
 defend(Argument, QueryChain, und) :-
     findAttacker(Argument, QueryChain, Attacker, no),
     bufferResult(Argument, und), !.
-% Caso indeterminatezza: con solo un attaccante Und sono Und
+
+% Exists a UND attacker -> UND argument
+
 defend(Argument, QueryChain, und) :-
     findAttacker(Argument, QueryChain, Attacker, yes),
     once(defend(Attacker, [Argument|QueryChain], X)),
     X == und,
     bufferResult(Argument, und), !.
-% Negli altri casi sono In
+
+% IN in the other cases
+
 defend(Argument, QueryChain, yes) :- bufferResult(Argument, yes).
 
-bufferResult(Argument, Result) :- \+ result(Argument, Result), asserta(result(Argument, Result)), !.
-bufferResult(Argument, Result) :- result(Argument, Result).
+bufferResult(Argument, no) :- \+ context_check(out(Argument)), context_assert(out(Argument)), !.
+bufferResult(Argument, yes) :- \+ context_check(in(Argument)), context_assert(in(Argument)), !.
+bufferResult(Argument, und) :- \+ context_check(und(Argument)), context_assert(und(Argument)), !.
+bufferResult(_, _).
 
-% Considero le mie parti attaccabili
-%  - Rules per undercut e rebut
-%  - Premises per undercut e undermine
-%  - Attenzione al corpo delle regole, per contrary-undercut e contrary-undermine
+
+%==============================================================================
+% ATTACKER RESEARCH
+%==============================================================================
+
 findAttacker(Target, QueryChain, Attacker, IsValid) :-
     attacker(Target, Attacker),
-    findAttackerCicle(Attacker, QueryChain, IsValid).
+    bufferAttacker(Attacker, Target),
+    detectCycle(Attacker, QueryChain, IsValid).
 
-findAttackerCicle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
-findAttackerCicle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
+bufferAttacker(Attacker, Target) :-
+    \+ context_check(attack(none, Attacker, Target, none)),
+    context_assert(attack(none, Attacker, Target, none)), !.
+bufferAttacker(_, _).
+
+detectCycle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
+detectCycle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
 
 attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
     member(X, Rules),
-    \+ strict(X),
+    \+ context_check(strict(X)),
     attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
 
 attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
@@ -97,116 +96,107 @@ attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
     attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
 
 % undercut
+
 attackerOnRule(Rule, _, Argument) :-
     buildArgument([undercut(Rule)], Argument).
 
 % rebut / undermine
 
-attackerOnTerm(Term, [TargetRules, TargetTopRule, TargetConc, _, [LDRA, DRA, DPA]], [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]) :-
-    Term \== [unless, _],
-    \+ strictArgumentStructured(DRA, DPA),
-    conflict(Term, X),
-    restrictStructured(Term, TargetRules),
-    buildArgument(X, [Rules, TopRule, Conc, Grondings, [LDRB, DRB, DPB]]),
-    \+ superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, Term, TargetRules).
+attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], Attacker) :-
+    Term \= [unless, _],
+    \+ strict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]),
+    buildSubArgument(Term, TargetRules, SubArgument),
+    rebutRestriction(SubArgument),
+    standard_af::conflict(Term, X),
+    buildArgument(X, Attacker),
+    \+ superiorArgument(SubArgument, Attacker).
 
-buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, SubGrounds, [LDRC, DRC, DPC]]) :-
-    buildArgument(Term, [SubRules, SubTopRule, SubConcl, SubGrounds, [LDRC, DRC, DPC]]),
-    contained(SubRules, Rules).
+% contrary-rebut / contrary-undermine
 
-strictArgumentStructured([], []).
+attackerOnTerm([unless, X], _, Attacker) :-
+    buildArgument(X, Attacker).
 
-restrictStructured(Term, Rules) :-
+% Strict arguments restriction
+
+strict([_, _, _, _, [_, [], []]]).
+
+% Rebut restriction
+
+rebutRestriction([TargetRules, none, Conclusion, Groundings, ArgInfo]) :-
+    graphExtension(rebutRestriction).
+rebutRestriction([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]) :-
     graphExtension(rebutRestriction),
-    buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConcl, _, _]),
-    once(restrict([SubRules, SubTopRule, SubConcl])).
-restrictStructured(_, _) :- \+ graphExtension(rebutRestriction).
+    TopRule \= none,
+    rebutRestriction::restrict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]).
+rebutRestriction(_) :- \+ graphExtension(rebutRestriction).
 
-superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, TargetTerm, TargetRules) :-
-%    orderingComparator(normal),
-    buildSubArgument(TargetTerm, TargetRules, [_, _, _, _, [LDRC, DRC, DPC]]),
-    superiorArgument(LDRC, DRC, DPC, LDRB, DRB, DPB, _).
-%superiorArgumentStructured(LDRA, DRA, DPA, LDRB, DRB, DPB, _, _) :-
-%    \+ orderingComparator(normal),
-%    superiorArgument(LDRA, DRA, DPA, LDRB, DRB, DPB).
+% Preferences
+
+superiorArgument(SubArgument, Attacker) :-
+    superiority::superiorArgument(SubArgument, Attacker).
+
+buildSubArgument(Term, Rules, [SubRules, SubTopRule, SubConclusion, SubGrounds, Info]) :-
+    buildArgument(Term, [SubRules, SubTopRule, SubConclusion, SubGrounds, Info]),
+    contained(SubRules, Rules).
 
 contained([], _).
 contained([H|T], Target) :- member(H, Target), contained(T, Target).
 
-% contrary-rebut / contrary-undermine
-attackerOnTerm([unless, X], [Rules, TopRule, Conclusion, _, _], [XR, XTR, XC, XG, XI]) :-
-    buildArgument(X, [XR, XTR, XC, XG, XI]).
-
-% Ricorsione sul corpo di 
-%   - rule([id, [premises], conclusion])
-%   - premise([id, conclusion])
-% fino ad arrivare a una regola senza premesse o ad una premessa
-% Mi porto dietro il grounding dei termini per poter derivare gli attacchi e le info sulla derivazione dell'argomento (defRules, lastDefRules, defPremises)
+%==============================================================================
+% ARGUMENT CONSTRUCTION
+%==============================================================================
 
 buildArgument(Query, Argument) :-
-    \+ explored(Query),
-    findall(_, (buildSingleArgument(Query, Argument), asserta(bufferedArgument(Query, Argument))), _),
-    asserta(explored(Query)),
+    \+ context_check(explored(Query)),
+    findall(_, (
+        buildSingleArgument(Query, Argument),
+        context_assert(argument(Argument))
+    ), _),
+    context_assert(explored(Query)),
     fail.
-buildArgument(Query, Argument) :-
-    bufferedArgument(Query, Argument).
+buildArgument(Query, [R, T, Query, B, I]) :- context_check(argument([R, T, Query, B, I])).
 
 buildSingleArgument(Query, Argument) :-
     build(Query, Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
-    once(deduplicate(DefRules, CDefRules)),
-    once(deduplicate(DefPremises, CDefPremises)),
-    once(deduplicate(Groundings, CGroundings)),
+    utils::deduplicate(DefRules, CDefRules),
+    utils::deduplicate(DefPremises, CDefPremises),
+    utils::deduplicate(Groundings, CGroundings),
     Argument = [AllRules, TopRule, Query, CGroundings, [LastDefRules, CDefRules, CDefPremises]].
 
-premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ strict(Id).
-premiseRules(Id, [[Id], none, [], [], []]) :- strict(Id).
+% Premise
 
-ruleRules(Id, [AllRules, _, DefRules, DefPremises], 
-    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ strict(Id).
-ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises], 
-    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- strict(Id).
-
-% Da qui posso prendere la top Rule e le def premises
 build(Conclusion, [Conclusion], Rules) :-
-    premise([Id, Conclusion]),
+    context_check(premise([Id, Conclusion])),
     premiseRules(Id, Rules).
 
-% Da qui posso prendere la top rule, le DefRules e le LastDefRules 
-build(Conclusion, [Conclusion|Concls], Rules) :-
-    rule([Id, Premises, Conclusion]),
-    buildPremises(Premises, Concls, ResRules),
+% Rule
+
+build(Conclusion, [Conclusion|Conclusions], Rules) :-
+    context_check(rule([Id, Premises, Conclusion])),
+    buildPremises(Premises, Conclusions, ResRules),
     ruleRules(Id, ResRules, Rules).
 
 build([prolog(Check)], [], []) :- (callable(Check) -> call(Check); Check).
 build([unless, Atom], [[unless, Atom]], []).
 
-mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]).
-mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
-   appendLists([HAR, TAR], AR),
-   appendLists([HLDR, TLDR], LDR),
-   appendLists([HDR, TDR], DR),
-   appendLists([HDP, TDP], DP).
-
 buildPremises([], [], [[], [], [], []]).
-buildPremises([H|T], Concls, Rules) :-
-    build(H, HConcls, HRules),
-    buildPremises(T, TConcls, TRules),
-    appendLists([HConcls, TConcls], Concls),
+buildPremises([H|T], Conclusions, Rules) :-
+    build(H, HConclusions, HRules),
+    buildPremises(T, TConclusions, TRules),
+    utils::appendLists([HConclusions, TConclusions], Conclusions),
     mergeRules(HRules, TRules, Rules).
 
-deduplicate([], []).
-deduplicate(List, Output) :- List \== [], setof(X, member(X, List), Output).
+premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ context_check(strict(Id)).
+premiseRules(Id, [[Id], none, [], [], []]) :- context_check(strict(Id)).
 
-% isSkepticallyAcceptable(Goal) :-
-%     convertAllRules,
-%     findall(STATIN, computeGlobalAcceptance([STATIN, _, _], [_, _, _]), SOLUTIONS),
-%     check_modifiers_in_list(effects, [Goal], [X]),
-%     all(X, SOLUTIONS), !.
+ruleRules(Id, [AllRules, _, DefRules, DefPremises], 
+    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ context_check(strict(Id)).
+ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises], 
+    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- context_check(strict(Id)).
 
-% all(_, []).
-% all(Goal, [H|T]) :- member(Goal, H), all(Goal, T).
-
-% isCredulouslyAcceptable(Goal) :-
-%     convertAllRules,
-%     computeGlobalAcceptance([STATIN, _, _], [_, _, _]),
-%     answerSingleQuery(Goal, STATIN), !.
+mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]).
+mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
+   utils::appendLists([HAR, TAR], AR),
+   utils::appendLists([HLDR, TLDR], LDR),
+   utils::appendLists([HDR, TDR], DR),
+   utils::appendLists([HDP, TDP], DP).
