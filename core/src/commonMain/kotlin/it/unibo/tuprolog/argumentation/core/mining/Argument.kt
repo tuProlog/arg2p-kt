@@ -2,15 +2,14 @@ package it.unibo.tuprolog.argumentation.core.mining
 
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 data class Support(val rules: List<String>, val conclusion: String, var identifier: String = "")
 
 class Argument(
+    val term: Term,
     val label: String,
     val topRule: String,
     val rules: List<String>,
@@ -29,6 +28,8 @@ class Argument(
 
     companion object {
 
+        private fun argumentAsList(argument: Term?): List<Term> = (argument as Cons).toList()
+
         private fun argTopRule(argument: List<Term>): String = argument[1].toString()
 
         private fun argConclusion(argument: List<Term>): String = argument[2].toString()
@@ -40,45 +41,48 @@ class Argument(
                 ).map { x -> x.toString() }
         }
 
-        private fun argSupports(supports: List<Term>, argument: Term): List<Support> {
-            return prolog {
-                supports.map {
-                    Unificator.default.mgu(it, tupleOf(X, argument))
-                }.filter { it.isSuccess }.map { solution ->
-                    (solution[X] as Cons)
-                        .toList().let { arg -> Support(argRules(arg), argConclusion(arg)) }
-                }.toList()
-            }
-        }
-
-        private fun arguments(engine: Solver, label: String, arguments: Term?): Sequence<Argument> {
-            if (arguments?.isEmptyList == true) return emptySequence()
-            val supports = prolog{
-                engine.solve("cache_check"("graph"(listOf(Var.anonymous(), Var.anonymous(), X)))).map {
-                    if (it.substitution[X]!!.isEmptyList) emptyList() else (it.substitution[X] as Cons).toList()
-                }.first()
-            }
-            return (arguments as Cons).toSequence().map {
-                (it as Cons).toList().let { arg ->
-                    Argument(label, argTopRule(arg), argRules(arg), argConclusion(arg), argSupports(supports, it))
+        private fun argSupports(engine: Solver, context: Int, argument: Term): Sequence<Support> =
+            prolog { engine.solve("context_check"(context, "support"(X, argument)))
+                .filter { it.isYes }
+                .map { it.substitution[X]!! }
+                .map { solution ->
+                    Support(
+                        argRules(argumentAsList(solution)),
+                        argConclusion(argumentAsList(solution))
+                    )
                 }
             }
+
+        private fun argLabel(engine: Solver, context: Int, argument: Term): String {
+
+            fun checkFunctor(functor: String) =
+                prolog {
+                    engine.solve("context_check"(context, functor(argument)))
+                        .filter { it.isYes }
+                        .map { functor }
+                        .firstOrNull()
+                }
+
+            return checkFunctor("in") ?:
+                checkFunctor("out") ?: "und"
         }
 
         @JsName("mineArguments")
-        fun mineArguments(engine: Solver): Sequence<Argument> {
+        fun mineArguments(context: Int, engine: Solver): List<Argument> {
             val arguments = prolog {
-                engine.solve("cache_check"("labelling"(listOf(X, Y, Z))))
+                engine.solve("context_check"(context, "argument"(X)))
                     .filter { it.isYes }
+                    .map { it.substitution[X]!! }
                     .map { solution ->
-                        sequenceOf(
-                            arguments(engine, "in", solution.substitution[X]),
-                            arguments(engine, "out", solution.substitution[Y]),
-                            arguments(engine, "und", solution.substitution[Z])
-                        ).flatten()
-                    }
-                    .firstOrNull()?.toList()
-            } ?: emptyList()
+                        Argument(
+                            solution,
+                            argLabel(engine, context, solution),
+                            argTopRule(argumentAsList(solution)),
+                            argRules(argumentAsList(solution)),
+                            argConclusion(argumentAsList(solution)),
+                            argSupports(engine, context, solution).toList()
+                        )
+                    } }.toList()
 
             arguments
                 .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
@@ -96,7 +100,7 @@ class Argument(
                         }
                 }
 
-            return arguments.asSequence()
+            return arguments
         }
     }
 }

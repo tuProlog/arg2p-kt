@@ -1,42 +1,28 @@
 package it.unibo.tuprolog.argumentation.core.mining
 
-import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 class Attack(val attacker: String, val attacked: String) {
     companion object {
-        private fun identifier(argument: Term?, arguments: List<Argument>): String =
-            (argument as Cons).toList().let {
-                val rules = (it[0] as Cons).toList().map { x -> x.toString() }
-                val conclusion = it[2].toString()
-                arguments.first { x ->
-                    x.rules.containsAll(rules) &&
-                        rules.containsAll(x.rules) &&
-                        x.conclusion == conclusion
-                }.identifier
-            }
+        private fun identifier(argument: Term, arguments: List<Argument>): String =
+            arguments.first { it.term == argument }.identifier
 
         @JsName("mineAttacks")
-        fun mineAttacks(engine: Solver, arguments: List<Argument>): Sequence<Attack> {
-            if (arguments.isEmpty()) return emptySequence()
+        fun mineAttacks(context: Int, engine: Solver, arguments: List<Argument>): List<Attack> {
+            if (arguments.isEmpty()) return emptyList()
             return prolog{
-                engine.solve("cache_check"("graph"(listOf(Var.anonymous(), X, Var.anonymous()))))
-                    .map { if (it.substitution[X]!!.isEmptyList) emptySequence() else (it.substitution[X] as Cons).toSequence() }
-                    .first()
-                    .map {
-                        Unificator.default.mgu(it, tupleOf(`_`, Z, Y, `_`))
-                    }.filter { it.isSuccess }.map { solution ->
+                engine.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
+                    .filter { it.isYes }
+                    .map { solution ->
                         Attack(
-                            identifier(solution[Z], arguments),
-                            identifier(solution[Y], arguments)
+                            identifier(solution.substitution[X]!!, arguments),
+                            identifier(solution.substitution[Y]!!, arguments)
                         )
                     }
-            }
+            }.toList()
         }
     }
 }

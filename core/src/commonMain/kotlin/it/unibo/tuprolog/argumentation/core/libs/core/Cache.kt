@@ -112,6 +112,24 @@ class Cache : BaseArgLibrary() {
         }
     }
 
+    inner class DynamicCacheGetIndexed : PrimitiveWithSignature {
+
+        override val signature = Signature("context_check", 2)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val index: Int = request.arguments[0].asNumeric()!!.intValue.toInt()
+            val term: Term = request.arguments[1]
+
+            return sequence {
+                yieldAll(
+                    this@Cache.dynamicSolver[index]!!.solve(term.castToStruct()).map {
+                        request.replyWith(it.substitution)
+                    }
+                )
+            }
+        }
+    }
+
     inner class CacheAssert : PrimitiveWithSignature {
 
         override val signature = Signature("cache_assert", 1)
@@ -165,7 +183,8 @@ class Cache : BaseArgLibrary() {
                 DynamicCacheBranch(),
                 DynamicCacheAssert(),
                 DynamicCacheRetract(),
-                DynamicCacheGet()
+                DynamicCacheGet(),
+                DynamicCacheGetIndexed()
             ).let { primitives ->
                 Library.aliased(
                     alias = this.alias,

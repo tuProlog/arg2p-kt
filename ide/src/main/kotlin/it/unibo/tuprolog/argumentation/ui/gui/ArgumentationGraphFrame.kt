@@ -12,7 +12,10 @@ import edu.uci.ics.jung.visualization.decorators.ToStringLabeller
 import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.Argument
 import it.unibo.tuprolog.argumentation.core.mining.Attack
+import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.MutableSolver
+import it.unibo.tuprolog.solve.SolveOptions
+import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
@@ -21,12 +24,8 @@ import java.awt.Color
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
-import javax.swing.JScrollPane
-import javax.swing.JSplitPane
-import javax.swing.JTabbedPane
-import javax.swing.JTextArea
-import javax.swing.JTextPane
-import javax.swing.SwingUtilities
+import javax.swing.*
+
 
 internal class ArgumentationGraphFrame {
 
@@ -35,39 +34,86 @@ internal class ArgumentationGraphFrame {
     private val treeTheoryPane: JScrollPane = JScrollPane()
     val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
+    private val next : JButton = JButton("Next").also { button ->
+        button.addActionListener {
+            this.selectedContext =
+                if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
+            this.update()
+        }
+    }
+    private val back : JButton = JButton("Back").also { button ->
+        button.addActionListener {
+            this.selectedContext =
+                if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
+            this.update()
+        }
+    }
+
+    private val minContext : Int = 0
+    private var maxContext : Int = 0
+    private var selectedContext : Int = 0
+
+    private var mutableSolver : MutableSolver? = null
+
     init {
+
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
+        val buttonPanel = JPanel()
+        buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.X_AXIS)
+        buttonPanel.add(back)
+        buttonPanel.add(next)
+
         val tabbedPane = JTabbedPane()
         tabbedPane.addTab("Classic", classicTheoryPane)
         tabbedPane.addTab("Tree", treeTheoryPane)
-        splitPane.add(tabbedPane)
+
+        panel.add(tabbedPane)
+        panel.add(buttonPanel)
+
+        splitPane.add(panel)
         splitPane.add(graphPane)
+
         splitPane.isOneTouchExpandable = true
         splitPane.dividerLocation = 150
     }
 
-    fun printArgumentationInfo(arguments: List<Argument>, attacks: List<Attack>) {
+    private fun update() {
         SwingUtilities.invokeLater {
-            printGraph(this.graphPane, arguments, attacks)
-            printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
+            back.isEnabled = this.selectedContext > this.minContext
+            next.isEnabled = this.selectedContext < this.maxContext
         }
+        mutableSolver?.also { solver ->
+            try {
+                val arguments = Argument.mineArguments(this.selectedContext, solver)
+                val attacks = Attack.mineAttacks(this.selectedContext, solver, arguments)
+                SwingUtilities.invokeLater {
+                    printGraph(this.graphPane, arguments, attacks)
+                    printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
+                }
+            } catch (e: Exception) {
+                this.clear()
+            }
+        } ?: clear()
         revalidate()
     }
 
-    fun clear() {
+    private fun clear() {
         SwingUtilities.invokeLater {
             this.graphPane.viewport.removeAll()
             this.classicTheoryPane.viewport.removeAll()
             this.treeTheoryPane.viewport.removeAll()
         }
-        revalidate()
     }
 
-    fun revalidate() {
+    private fun revalidate() {
         SwingUtilities.invokeLater {
             this.splitPane.repaint()
         }
     }
     companion object {
+
         @JvmStatic
         fun customTab(): CustomTab {
             val frame = ArgumentationGraphFrame()
@@ -78,20 +124,20 @@ internal class ArgumentationGraphFrame {
                 }
             })
             swingNode.content = frame.splitPane
-            frame.clear()
+            frame.update()
             return CustomTab(Tab("Graph", swingNode)) { model ->
-//                model.solveOptions = TimeDuration.MAX_VALUE
+                model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
                 model.onNewSolution.subscribe { event ->
-                    val solver = MutableSolver.classic(
+                    frame.mutableSolver = MutableSolver.classic(
                         libraries = event.libraries
                     )
-                    try {
-                        val arguments = Argument.mineArguments(solver).toList()
-                        val attacks = Attack.mineAttacks(solver, arguments).toList()
-                        frame.printArgumentationInfo(arguments, attacks)
-                    } catch (e: Exception) {
-                        frame.clear()
+                    frame.selectedContext = prolog {
+                        frame.mutableSolver!!.solve("context_active"(X))
+                            .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
+                            .first()
                     }
+                    frame.maxContext = frame.selectedContext
+                    frame.update()
                 }
             }
         }
