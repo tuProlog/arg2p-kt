@@ -64,10 +64,6 @@ appendLists([H|T], R) :-
 
 % Misc utils
 
-store(Retract, Assert) :-
-    cache_retract(Retract),
-    cache_assert(Assert).
-
 
 search(F, L, S) :-
    between(1, L, N),

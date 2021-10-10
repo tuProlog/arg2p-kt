@@ -48,6 +48,7 @@ internal class ArgumentationGraphFrame {
             this.update()
         }
     }
+    private val context : JLabel = JLabel()
 
     private val minContext : Int = 0
     private var maxContext : Int = 0
@@ -64,6 +65,7 @@ internal class ArgumentationGraphFrame {
         buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.X_AXIS)
         buttonPanel.add(back)
         buttonPanel.add(next)
+        buttonPanel.add(context)
 
         val tabbedPane = JTabbedPane()
         tabbedPane.addTab("Classic", classicTheoryPane)
@@ -83,6 +85,7 @@ internal class ArgumentationGraphFrame {
         SwingUtilities.invokeLater {
             back.isEnabled = this.selectedContext > this.minContext
             next.isEnabled = this.selectedContext < this.maxContext
+            context.text = this.selectedContext.toString()
         }
         mutableSolver?.also { solver ->
             try {

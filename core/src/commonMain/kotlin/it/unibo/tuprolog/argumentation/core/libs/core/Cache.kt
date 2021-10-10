@@ -57,6 +57,18 @@ class Cache : BaseArgLibrary() {
         }
     }
 
+    inner class DynamicCacheCheckout : PrimitiveWithSignature {
+
+        override val signature = Signature("context_checkout", 1)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val target: Int = request.arguments[0].castToInteger().intValue.toInt()
+            val result = dynamicSolver.keys.contains(target)
+            this@Cache.selectedSolver = target
+            return sequenceOf(request.replyWith(result))
+        }
+    }
+
     inner class DynamicCacheBranch : PrimitiveWithSignature {
 
         override val signature = Signature("context_branch", 2)
@@ -179,6 +191,7 @@ class Cache : BaseArgLibrary() {
                 CacheRetract(),
                 CacheGet(),
                 DynamicCacheReset(),
+                DynamicCacheCheckout(),
                 DynamicCacheSelected(),
                 DynamicCacheBranch(),
                 DynamicCacheAssert(),
