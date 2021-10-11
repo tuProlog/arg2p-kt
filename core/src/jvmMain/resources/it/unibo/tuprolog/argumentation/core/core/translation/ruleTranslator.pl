@@ -1,8 +1,3 @@
-:- op(1199, xfx, '=>').
-:- op(1199, xfx, ':=>').
-:- op(1199, xfx, ':->').
-:- op(1001, xfx, ':').
-
 /*
  *  Main directive. Find all the rules in the theory in the format (Name : Preconditions => Conclusion)
  *  or (Name : Effects) and then if:

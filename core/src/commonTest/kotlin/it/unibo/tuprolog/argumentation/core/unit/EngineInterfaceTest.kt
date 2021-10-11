@@ -20,8 +20,8 @@ class EngineInterfaceTest {
                 
                 bp(-a).
                 
-                graphBuildMode(base).
-                statementLabellingMode(base).
+                graphBuildMode(standard_af).
+                statementLabellingMode(statement).
                 argumentLabellingMode(bp_grounded_partial).
                 graphExtension(rebutRestriction).
                 graphExtension(standardPref).

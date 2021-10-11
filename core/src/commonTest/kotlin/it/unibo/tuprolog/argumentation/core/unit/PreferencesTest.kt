@@ -18,8 +18,8 @@ class PreferencesTest {
             r4 : a => d.
             r5 : -a => e.
             
-            graphBuildMode(base).
-            statementLabellingMode(base).
+            graphBuildMode(standard_af).
+            statementLabellingMode(statement).
             argumentLabellingMode(grounded).
             graphExtension(rebutRestriction).
             graphExtension(standardPref).
@@ -39,7 +39,7 @@ class PreferencesTest {
     )
 
     private fun attacksSize(solver: Solver): Int = prolog {
-        solver.solve("attack"("X", "Y", "Z"))
+        solver.solve("context_check"("attack"("X", "Y", "Z", "U")))
             .filter { it.isYes }.count()
     }
 

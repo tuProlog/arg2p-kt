@@ -24,6 +24,16 @@ sealed class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
+
+    init {
+        OperatorSet(
+            Operator("=>", Specifier.XFX, 1199),
+            Operator(":=>", Specifier.XFX, 1199),
+            Operator(":->", Specifier.XFX, 1199),
+            Operator(":", Specifier.XFX, 1001),
+            Operator(":=", Specifier.XFX, 1199)
+        ).also { theoryOperators = it }
+    }
 }
 
 expect object EngineInterface : EngineInterfaceBase

@@ -23,16 +23,7 @@ object TestingUtils {
         get() = Long.MAX_VALUE
 
     fun withArgOperators(theory: String) =
-        Theory.parse(
-            (
-                """
-                    :- op(1199, xfx, ':=>').
-                    :- op(1199, xfx, ':->').
-                    :- op(1199, xfx, '=>').
-                    :- op(1001, xfx, ':').
-                """ + theory
-                ).trimIndent()
-        )
+        Theory.parse(theory, Arg2p.operators())
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(

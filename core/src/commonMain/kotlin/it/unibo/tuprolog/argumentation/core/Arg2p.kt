@@ -24,6 +24,7 @@ import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
 import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
+import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Libraries
 
 interface Arg2pSolver {
@@ -32,13 +33,23 @@ interface Arg2pSolver {
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
     fun to2pLibraries() = Libraries.of(listOf(loader).plus(staticLibraries()).map { it.content() })
+    fun operators() = listOf(loader).plus(staticLibraries())
+        .map { it.theoryOperators }.reduce(OperatorSet::plus)
 
     companion object {
         fun of(staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
             object : Arg2pSolver {
+
                 override val loader = DynamicLoader(this)
-                override fun staticLibraries() = staticLibs.onEach { it.theoryOperators = loader.content().operators }
-                override fun dynamicLibraries() = dynamicLibs.onEach { it.theoryOperators = loader.content().operators }
+                override fun staticLibraries() = staticLibs
+                override fun dynamicLibraries() = dynamicLibs
+
+                init {
+                    operators().also { operators ->
+                        staticLibs.onEach { it.theoryOperators = operators }
+                        dynamicLibs.onEach { it.theoryOperators = operators }
+                    }
+                }
             }
     }
 }

@@ -38,14 +38,7 @@ sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 Premises::descriptionPair.get(),
                 DefeasibleRules::descriptionPair.get()
             ),
-            theory = this.prologTheory,
-            operatorSet = OperatorSet(
-                Operator("=>", Specifier.XFX, 1199),
-                Operator(":=>", Specifier.XFX, 1199),
-                Operator(":->", Specifier.XFX, 1199),
-                Operator(":", Specifier.XFX, 1001),
-                Operator(":=", Specifier.XFX, 1199)
-            )
+            theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(AutoTransposition, PrologStrictCompatibility)

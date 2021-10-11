@@ -117,4 +117,11 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
         }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
+
+    init {
+        theoryOperators = OperatorSet(
+            Operator("::", Specifier.XFX, 700),
+            Operator(":::", Specifier.XFX, 700),
+        )
+    }
 }
