@@ -10,11 +10,6 @@ writeListNl([X|Others]) :-
 	write(X),nl,
 	writeListNl(Others).
 
-assertaList([]).
-assertaList([X|Others]) :-
-	asserta(X),
-	assertaList(Others).
-
 
 sortDistinct(List, Sorted) :-
     deduplicate(List, Deduplicated),

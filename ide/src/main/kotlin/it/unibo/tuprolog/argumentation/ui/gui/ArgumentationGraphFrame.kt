@@ -10,8 +10,9 @@ import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller
 import edu.uci.ics.jung.visualization.renderers.Renderer
-import it.unibo.tuprolog.argumentation.core.mining.Argument
-import it.unibo.tuprolog.argumentation.core.mining.Attack
+import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.Attack
+import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
@@ -97,11 +98,10 @@ internal class ArgumentationGraphFrame {
         }
         mutableSolver?.also { solver ->
             try {
-                val arguments = Argument.mineArguments(this.selectedContext, solver)
-                val attacks = Attack.mineAttacks(this.selectedContext, solver, arguments)
+                val graph = solver.graph(this.selectedContext)
                 SwingUtilities.invokeLater {
-                    printGraph(this.graphPane, arguments, attacks)
-                    printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
+                    printGraph(this.graphPane, graph.labellings, graph.attacks)
+                    printTheory(this.classicTheoryPane, this.treeTheoryPane, graph.labellings)
                 }
             } catch (e: Exception) {
                 this.clear()
@@ -154,15 +154,15 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun buildGraph(arguments: List<Argument>, attacks: List<Attack>): Graph<String, String> {
+        private fun buildGraph(arguments: List<LabelledArgument>, attacks: List<Attack>): Graph<String, String> {
             val graph: Graph<String, String> = SparseMultigraph()
-            arguments.map(Argument::identifier)
+            arguments.map { it.argument.identifier }
                 .forEach(graph::addVertex)
             attacks.forEach { x ->
                 graph.addEdge(
-                    x.attacker + x.attacked,
-                    x.attacker,
-                    x.attacked,
+                    x.attacker.identifier + x.target.identifier,
+                    x.attacker.identifier,
+                    x.target.identifier,
                     EdgeType.DIRECTED
                 )
             }
@@ -170,13 +170,13 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printGraph(graphPane: JScrollPane, arguments: List<Argument>, attacks: List<Attack>) {
+        private fun printGraph(graphPane: JScrollPane, arguments: List<LabelledArgument>, attacks: List<Attack>) {
             val layout: Layout<String, String> = KKLayout(buildGraph(arguments, attacks))
             layout.size = Dimension(350, 300)
             val vv: VisualizationViewer<String, String> = VisualizationViewer(layout)
             vv.preferredSize = Dimension(350, 300)
             vv.renderContext.setVertexFillPaintTransformer { i ->
-                when (arguments.first { x -> x.identifier == i }.label) {
+                when (arguments.first { x -> x.argument.identifier == i }.label) {
                     "in" -> Color.GREEN
                     "out" -> Color.RED
                     else -> Color.GRAY
@@ -191,11 +191,11 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<Argument>) {
+        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<LabelledArgument>) {
             val textArea = JTextArea()
             textArea.isEditable = false
-            arguments.sortedBy { it.identifier.drop(1).toInt() }
-                .forEach { x -> textArea.append(x.descriptor + "\n") }
+            arguments.sortedBy { it.argument.identifier.drop(1).toInt() }
+                .forEach { x -> textArea.append(x.argument.descriptor + "\n") }
             classicTheoryPane.viewport.view = textArea
 
             val textAreaTree = JTextPane()
@@ -206,18 +206,18 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun formatResolutionTree(arguments: List<Argument>): String {
-            fun tree(arg: Argument, arguments: List<Argument>): String =
-                "<li>${arg.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
-                    arg.supports.joinToString(separator = "") { sub ->
+        private fun formatResolutionTree(arguments: List<LabelledArgument>): String {
+            fun tree(arg: LabelledArgument, arguments: List<LabelledArgument>): String =
+                "<li>${arg.argument.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
+                    arg.argument.supports.joinToString(separator = "") { sub ->
                         tree(
-                            arguments.first { it.identifier == sub.identifier },
+                            arguments.first { it.argument.identifier == sub.identifier },
                             arguments
                         )
                     }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
 
             return "<html><ul>" + arguments
-                .sortedBy { it.identifier.drop(1).toInt() }
+                .sortedBy { it.argument.identifier.drop(1).toInt() }
                 .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
         }
     }

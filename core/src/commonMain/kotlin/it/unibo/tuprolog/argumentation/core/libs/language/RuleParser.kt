@@ -9,9 +9,6 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.operators.Operator
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.core.operators.Specifier
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.dsl.theory.PrologScopeWithTheories

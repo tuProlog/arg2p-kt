@@ -1,80 +1,77 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
-import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoalNoBacktracking
-import it.unibo.tuprolog.argumentation.core.TestingUtils.withArgOperators
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
-import it.unibo.tuprolog.solve.yes
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.model.Argument
+import it.unibo.tuprolog.argumentation.core.model.Attack
+import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.argumentation.core.model.Support
+import it.unibo.tuprolog.solve.MutableSolver
 import kotlin.test.Test
 
 class ArgumentGroundedLabellingTest {
 
-    private fun solverWithTheory() = solver(
-        withArgOperators(
-            """
-            attack(rebut,[[r2,r0],r2,[neg,r('Pippo')]],[[r3,r1],r3,[r('Pippo')]]).
-            attack(rebut,[[r2,r0],r2,[neg,r('Pippo')]],[[r4,r3,r1],r4,[s('Pippo')]]).
-            attack(rebut,[[r4,r3,r1],r4,[s('Pippo')]],[[r5],r5,[neg,s('Pippo')]]).
-            attack(rebut,[[r5],r5,[neg,s('Pippo')]],[[r4,r3,r1],r4,[s('Pippo')]]).
-        """
-        )
-    )
+    private fun prepareContext(solver: MutableSolver, graph: Graph) =
+        arg2pScope {
+            graph.arguments.forEach {
+                solver.solve("context_assert"(it.toString()))
+            }
+            graph.attacks.forEach {
+                solver.solve("context_assert"(it.toString()))
+            }
+            graph.supports.forEach {
+                solver.solve("context_assert"(it.toString()))
+            }
+        }
 
-    private fun argumentationGraph() =
-        Struct.parse(
-            """
-            [
-                [
-                    [[r5],r5,[neg,s('Pippo')]],
-                    [[r4,r3,r1],r4,[s('Pippo')]],
-                    [[r3,r1],r3,[r('Pippo')]],
-                    [[r2,r0],r2,[neg,r('Pippo')]],
-                    [[r1],r1,[q('Pippo')]],
-                    [[r0],r0,[a('Pippo')]]
-                ],
-                [
-                    (rebut,[[r2,r0],r2,[neg,r('Pippo')]],[[r3,r1],r3,[r('Pippo')]]),
-                    (rebut,[[r2,r0],r2,[neg,r('Pippo')]],[[r4,r3,r1],r4,[s('Pippo')]]),
-                    (rebut,[[r4,r3,r1],r4,[s('Pippo')]],[[r5],r5,[neg,s('Pippo')]]),
-                    (rebut,[[r5],r5,[neg,s('Pippo')]],[[r4,r3,r1],r4,[s('Pippo')]])
-                ],
-                [
-                    ([[r3,r1],r3,[r('Pippo')]],[[r4,r3,r1],r4,[s('Pippo')]]),
-                    ([[r1],r1,[q('Pippo')]],[[r3,r1],r3,[r('Pippo')]]),
-                    ([[r0],r0,[a('Pippo')]],[[r2,r0],r2,[neg,r('Pippo')]])
-                ]
-            ]
-        """
+    private fun checkResults(solver: MutableSolver, graph: Graph) =
+        arg2pScope {
+            graph.labellings.forEach {
+                solver.solve("context_check"(it.toString()))
+            }
+        }
+
+    private fun prepareGraph(): Graph {
+        val arg1 = Argument(listOf("r5"), "r5", "[neg,s('Pippo')]")
+        val arg2 = Argument(listOf("r4", "r3", "r1"), "r4", "[s('Pippo')]")
+        val arg3 = Argument(listOf("r3", "r1"), "r3", "[r('Pippo')]")
+        val arg4 = Argument(listOf("r2", "r0"), "r2", "[neg,r('Pippo')]")
+        val arg5 = Argument(listOf("r1"), "r1", "[q('Pippo')]")
+        val arg6 = Argument(listOf("r0"), "r0", "[a('Pippo')]")
+
+        return Graph.of(
+            listOf(
+                LabelledArgument(arg1, "in"),
+                LabelledArgument(arg2, "out"),
+                LabelledArgument(arg3, "out"),
+                LabelledArgument(arg4, "in"),
+                LabelledArgument(arg5, "in"),
+                LabelledArgument(arg6, "in")
+            ),
+            listOf(
+                Attack(arg4, arg3),
+                Attack(arg4, arg2),
+                Attack(arg2, arg1),
+                Attack(arg1, arg2)
+            ),
+            listOf(
+                Support(arg3, arg2),
+                Support(arg5, arg3),
+                Support(arg6, arg4)
+            )
         )
+    }
 
     @Test
     fun labelArguments() {
-        prolog {
-            testGoalNoBacktracking(
-                "argumentGroundedLabelling"(argumentationGraph(), listOf("IN", "OUT", "UND")),
-                solverWithTheory()
-            ) {
-                it.yes(
-                    "IN" to Struct.parse(
-                        """
-                            [
-                                [[r5],r5,[neg,s('Pippo')]],
-                                [[r0],r0,[a('Pippo')]],
-                                [[r1],r1,[q('Pippo')]],
-                                [[r2,r0],r2,[neg,r('Pippo')]]
-                            ]"""
-                    ),
-                    "OUT" to Struct.parse(
-                        """
-                            [
-                                [[r3,r1],r3,[r('Pippo')]],
-                                [[r4,r3,r1],r4,[s('Pippo')]]
-                            ]"""
-                    ),
-                    "UND" to emptyList
-                )
+        prepareGraph().also { graph ->
+            arg2pScope {
+                solver().also {
+                    prepareContext(it, graph)
+                    it.solve("grounded" call "argumentLabelling").first()
+                    checkResults(it, graph)
+                }
             }
         }
     }
