@@ -1,8 +1,12 @@
 package it.unibo.tuprolog.argumentation.core
 
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
@@ -23,14 +27,16 @@ object TestingUtils {
         get() = Long.MAX_VALUE
 
     fun withArgOperators(theory: String) =
-        Theory.parse(theory, Arg2p.operators())
+        Theory.parse(theory, arg2p().operators())
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = Arg2p.to2pLibraries(),
+            otherLibraries = arg2p().to2pLibraries(),
             staticKb = theory,
             flags = flags.set(Unknown, Unknown.FAIL)
         )
+
+    fun solverWithTheory(theory: String) = solver(withArgOperators(theory))
 
     fun testGoal(goal: Struct, solver: BaseSolver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
         val solutions = solver.solve(goal, duration).toList()
@@ -66,8 +72,6 @@ object TestingUtils {
     fun testNoGoal(goals: Iterable<Struct>, solver: BaseSolver = solver()) =
         goals.forEach { testNoGoal(it, solver) }
 
-    fun solverWithTheory(theory: String) = TestingUtils.solver(TestingUtils.withArgOperators(theory))
-
     fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String): Solver {
         return prolog {
             solverWithTheory(theory).also { solver ->
@@ -101,4 +105,44 @@ object TestingUtils {
             }
         }
     }
+
+    fun prepareContext(solver: MutableSolver, theory: it.unibo.tuprolog.argumentation.core.model.Theory) =
+        arg2pScope {
+            theory.forEach {
+                solver.solve("context_assert"(it.toTerm())).first()
+            }
+        }
+
+    fun prepareContext(solver: MutableSolver, graph: Graph) =
+        arg2pScope {
+            graph.arguments.forEach {
+                solver.solve("context_assert"(it.toTerm())).first()
+            }
+            graph.attacks.forEach {
+                solver.solve("context_assert"(it.toTerm())).first()
+            }
+            graph.supports.forEach {
+                solver.solve("context_assert"(it.toTerm())).first()
+            }
+        }
+
+    fun checkResults(solver: MutableSolver, labellings: Iterable<LabelledArgument>) =
+        arg2pScope {
+            labellings.forEach {
+                testYesGoal("context_check"(it.toTerm()), solver)
+            }
+        }
+
+    fun checkResults(solver: MutableSolver, graph: Graph) =
+        arg2pScope {
+            graph.arguments.forEach {
+                testYesGoal("context_check"(it.toTerm()), solver)
+            }
+            graph.attacks.forEach {
+                testYesGoal("context_check"(it.toTerm()), solver)
+            }
+            graph.supports.forEach {
+                testYesGoal("context_check"(it.toTerm()), solver)
+            }
+        }
 }

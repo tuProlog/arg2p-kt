@@ -99,12 +99,11 @@ class AmbulanceCaseStudyTest {
         f24 :-> production_manager(mike).
         f25 :=> claim(mike, test_ok(ambulance)).
         
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
-        unrestrictedRebut.
         graphExtension(standardPref).
         
         """.trimIndent()
@@ -124,7 +123,7 @@ class AmbulanceCaseStudyTest {
                 baseTheory,
                 "responsible(X)",
                 "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
+                "[responsible(lisa)]",
                 "[responsible(demers)]"
             )
         }
@@ -140,7 +139,7 @@ class AmbulanceCaseStudyTest {
                 structuredTheory,
                 "responsible(X)",
                 "[responsible(pino)]",
-                "[responsible(lisa), responsible(lisa)]",
+                "[responsible(lisa)]",
                 "[responsible(demers)]"
             )
         }
@@ -152,7 +151,7 @@ class AmbulanceCaseStudyTest {
     fun responsible() = evaluateBoth(
         "responsible(X)",
         "[responsible(pino)]",
-        "[responsible(lisa), responsible(lisa)]",
+        "[responsible(lisa)]",
         "[responsible(demers)]"
     )
 

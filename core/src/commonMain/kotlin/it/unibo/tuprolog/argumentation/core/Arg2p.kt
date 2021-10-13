@@ -54,7 +54,7 @@ interface Arg2pSolver {
     }
 }
 
-val Arg2p: Arg2pSolver = Arg2pSolver.of(
+fun arg2p(): Arg2pSolver = Arg2pSolver.of(
     listOf(EngineInterface, Cache()),
     listOf(
         Utils,

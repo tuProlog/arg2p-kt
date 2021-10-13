@@ -39,7 +39,6 @@ printStatementLabelling([In, Ni, Und]) :-
     write('HERE THE STATEMENTS LABELLED UND: '),nl,
     utils::writeListNl(Und).
 
-debug.
 
 writeDebug(List) :-
     debug,

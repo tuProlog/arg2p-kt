@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
+import it.unibo.tuprolog.argumentation.core.TestingUtils.checkResults
+import it.unibo.tuprolog.argumentation.core.TestingUtils.prepareContext
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.model.Argument
@@ -7,30 +9,9 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
-import it.unibo.tuprolog.solve.MutableSolver
 import kotlin.test.Test
 
 class ArgumentGroundedLabellingTest {
-
-    private fun prepareContext(solver: MutableSolver, graph: Graph) =
-        arg2pScope {
-            graph.arguments.forEach {
-                solver.solve("context_assert"(it.toString()))
-            }
-            graph.attacks.forEach {
-                solver.solve("context_assert"(it.toString()))
-            }
-            graph.supports.forEach {
-                solver.solve("context_assert"(it.toString()))
-            }
-        }
-
-    private fun checkResults(solver: MutableSolver, graph: Graph) =
-        arg2pScope {
-            graph.labellings.forEach {
-                solver.solve("context_check"(it.toString()))
-            }
-        }
 
     private fun prepareGraph(): Graph {
         val arg1 = Argument(listOf("r5"), "r5", "[neg,s('Pippo')]")
@@ -70,7 +51,7 @@ class ArgumentGroundedLabellingTest {
                 solver().also {
                     prepareContext(it, graph)
                     it.solve("grounded" call "argumentLabelling").first()
-                    checkResults(it, graph)
+                    checkResults(it, graph.labellings)
                 }
             }
         }

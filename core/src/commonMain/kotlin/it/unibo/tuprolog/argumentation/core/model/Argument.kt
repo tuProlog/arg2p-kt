@@ -6,13 +6,13 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 
 data class Argument(
-    val rules: List<Rule>,
-    val topRule: Rule,
+    val rules: List<RuleIdentifier>,
+    val topRule: RuleIdentifier,
     val conclusion: Literal,
     val groundings: List<Literal> = emptyList(),
-    val defeasibleRules: List<Rule> = emptyList(),
-    val defeasiblePremises: List<Rule> = emptyList(),
-    val lastDefeasibleRules: List<Rule> = emptyList()
+    val defeasibleRules: List<RuleIdentifier> = emptyList(),
+    val defeasiblePremises: List<RuleIdentifier> = emptyList(),
+    val lastDefeasibleRules: List<RuleIdentifier> = emptyList()
 ) {
 
     var identifier: String = ""
@@ -30,6 +30,10 @@ data class Argument(
 
     override fun toString(): String {
         return "argument(${this.termRepresentation()})"
+    }
+
+    fun toTerm(): Term {
+        return Struct.parse(this.toString())
     }
 
     companion object {

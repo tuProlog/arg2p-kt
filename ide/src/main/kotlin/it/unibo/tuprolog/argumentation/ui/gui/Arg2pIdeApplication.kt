@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.Arg2p
+import it.unibo.tuprolog.argumentation.core.arg2p
 import it.unibo.tuprolog.ui.gui.TuPrologIDEBuilder
 import javafx.application.Application
 import javafx.stage.Stage
@@ -10,13 +10,14 @@ class Arg2pIdeApplication : Application() {
 
     override fun start(stage: Stage) {
         try {
+            val arg2p = arg2p()
             TuPrologIDEBuilder(stage)
                 .title("Arg-tuProlog IDE")
-                .customLibraries(Arg2p.to2pLibraries().libraries)
+                .customLibraries(arg2p.to2pLibraries().libraries)
                 .customTabs(
                     listOf(
                         ArgumentationGraphFrame.customTab().also { it.tab.id = "arg-graph" },
-                        FlagManagerFrame.customTab(Arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" }
+                        FlagManagerFrame.customTab(arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" }
                     )
                 )
                 .show()

@@ -79,7 +79,6 @@ transposition_sequential(LPrec, [H|T], Effect, Id, Skipped, NewPrec, XNegated, N
     transposition_sequential(LPrec, T, Effect, Id, [H|Skipped], NewPrec, XNegated, NewId).
 transposition_sequential(LPrec, [X|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
     prologEscape(X),
-    write(X), nl,
     append(Skipped, T, CleanedPrec),
     negate(X, XNegated),
     negate(Effect, EffectNegated),
