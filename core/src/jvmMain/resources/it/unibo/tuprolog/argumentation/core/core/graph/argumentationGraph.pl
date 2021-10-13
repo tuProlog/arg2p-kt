@@ -191,3 +191,8 @@ conflict( [obl, [neg, Atom]],  [perm, [Atom]]).
 
 conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
 conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
+
+% BP CONFLICT
+
+conflict([bp, Atom], [neg, bp, Atom]).
+conflict([neg, bp, Atom], [bp, Atom]).

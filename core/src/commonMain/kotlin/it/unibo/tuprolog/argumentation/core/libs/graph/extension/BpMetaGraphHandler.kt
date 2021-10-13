@@ -19,7 +19,7 @@ sealed class BpMetaGraphHandlerBase : ArgLibrary, LazyRawPrologContent(), Loadab
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "metabp"
+    override fun identifier(): String = "bp"
 }
 
 expect object BpMetaGraphHandler : BpMetaGraphHandlerBase

@@ -2,7 +2,7 @@
 % BP PARTIAL LABELLING [ICLP]
 %==============================================================================
 
-% TODO: handle branching and cuts
+% TODO: handle branching and cuts (complements also)
 
 argumentLabelling :-
     bp_grounded::reifyBurdenOfProofs,
