@@ -9,6 +9,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
@@ -22,7 +23,7 @@ class Context : BaseArgLibrary() {
     private var selectedSolver: Int = 0
     private val dynamicSolver: MutableMap<Int, MutableSolver> = mutableMapOf(
         0 to
-            MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
+            MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
                 .also { it.setFlag(Unknown.name, Unknown.FAIL) }
     )
 
@@ -35,7 +36,7 @@ class Context : BaseArgLibrary() {
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.empty())
+                MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             return sequenceOf(request.replyWith(true))
         }
@@ -71,7 +72,7 @@ class Context : BaseArgLibrary() {
             val target: Int = request.arguments[0].castToInteger().intValue.toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                MutableSolver.classic.mutableSolverOf(Theory.empty(), MutableTheory.of(this@Context.dynamicSolver[target]!!.dynamicKb))
+                MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(this@Context.dynamicSolver[target]!!.dynamicKb))
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
             return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))
