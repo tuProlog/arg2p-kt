@@ -16,7 +16,6 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 
-
 class Context : BaseArgLibrary() {
 
     private var nextSolver: Int = 1
