@@ -4,7 +4,7 @@ modifyArgumentationGraph :-
         member(Y, Checked),
         context_check(argument([Z, P, Y, GG, II]))
     ), TemplateBpPairs),
-    once(checkBpArguments(TemplateBpPairs)).
+    checkBpArguments(TemplateBpPairs).
 
 
 checkBpArguments([]).

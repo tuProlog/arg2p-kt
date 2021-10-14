@@ -1,33 +1,33 @@
-modifyArgumentationGraph(defeasiblePref, [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    retractPreferenceCache,
-    assertAllSup(Arguments),
-    once(filterSupRelatedAttacks(Attacks, ValidAttacks, InvalidAttacks)),
-    convertAttacks(Attacks, InvalidAttacks, [NewArguments, NewAttacks, NewSupports]),
-    buildPrefAttacks(Arguments, NewArguments, PrefAttacks),
-    retractPreferenceCache,
-    appendLists([Arguments, NewArguments], UnionArguments),
-    appendLists([ValidAttacks, NewAttacks, PrefAttacks], UnionAttacks),
-    appendLists([Supports, NewSupports], UnionSupports), !.
+modifyArgumentationGraph :-
+    assertAllSup,
+    findall((T, A, B, C), context_check(attack(T, A, B, C)), Attacks),
+    filterSupRelatedAttacks(Attacks, InvalidAttacks),
+    convertAttacks(InvalidAttacks),
+    buildPrefAttacks.
 
-assertAllSup(Arguments) :-
-    retractall(superiority(_, _)),
+% Add the defeasible rules in the theory to the work context
+
+assertAllSup :-
+    context_retract(sup(_, _)),
     findall(_,
         (
-            member([_, _, [sup(RuleOne, RuleTwo)]], Arguments),
-            \+ superiority(RuleOne, RuleTwo),
-            asserta(superiority(RuleOne, RuleTwo))
+            context_check(argument([_, _, [sup(RuleOne, RuleTwo)], _, _])),
+            \+ context_check(sup(RuleOne, RuleTwo)),
+            context_assert(sup(RuleOne, RuleTwo))
         ),
     _).
 
-filterSupRelatedAttacks([], [], []).
-filterSupRelatedAttacks([(T, A, B)|Attacks], Valid, [(T, A, B)|Invalid]) :-
-    attack(T, A, B, C),
+filterSupRelatedAttacks([], []).
+filterSupRelatedAttacks([(T, A, B, C)|Attacks], [(T, A, B, C)|Invalid]) :-
     invalid(T, A, B, C, _),
-    filterSupRelatedAttacks(Attacks, Valid, Invalid).
-filterSupRelatedAttacks([(T, A, B)|Attacks], [(T, A, B)|Valid], Invalid) :-
-    attack(T, A, B, C),
-    \+ invalid(T, A, B, C, _),
-    filterSupRelatedAttacks(Attacks, Valid, Invalid).
+    filterSupRelatedAttacks(Attacks, Invalid), !.
+filterSupRelatedAttacks([_|Attacks], Invalid) :-
+    filterSupRelatedAttacks(Attacks, Invalid).
+
+
+invalid(rebut, A, B, C, SupSet) :- superiority::superiorArgument(C, A, SupSet), !.
+invalid(undermine, A, B, C, SupSet) :- superiority::superiorArgument(C, A, SupSet), !.
+
 
 /*
 *   Translates the attack relations identified during the building phase.
@@ -37,104 +37,49 @@ filterSupRelatedAttacks([(T, A, B)|Attacks], [(T, A, B)|Valid], Invalid) :-
 *   If an Argument A built in this way attacks the argument B, and this one also attacks a third argument C
 *   through the argument B1 we have to consider an attack from A to B1 (transitive attack)
 */
-convertAttacks(AllAttacks, Attacks, [NewArguments, NewAttacks, NewSupports]) :-
-    simpleConversion(Attacks, NewArguments, SimpleAttacks, NewSupports),
-    liftAttacks(AllAttacks, NewSupports, LeftAttacks),
-    appendLists([SimpleAttacks, LeftAttacks], TempAttacks),
-    transitiveConversion(TempAttacks, NewSupports, [], TransAttacks), !,
-    appendLists([TempAttacks, TransAttacks], NewAttacks).
 
-liftAttacks(AllAttacks, NewSupports, LeftAttacks) :-
-   findall((T, C, B), (
-       member((A, B), NewSupports),
-       member((T, C, A), AllAttacks),
-       \+ attack(T, C, B),
-       attack(T, C, A, D),
-       asserta(attack(T, C, B)),
-       asserta(attack(T, C, B, D))
-   ), LeftAttacks).
+convertAttacks(Attacks) :-
+    conversion(Attacks),
+    standard_af::buildTransitiveAttacks.
 
+conversion(List) :-
+    member((T, A, B, B), List),
+    generateDirectAttackArgument(T, A, B, B),
+    fail.
+conversion(List) :-
+    member((T, A, B, C), List),
+    C \= B,
+    generateTransitiveAttackArgument(T, A, B, C),
+    fail.
+conversion(_).
 
-simpleConversion([], [], [], []) :- !.
-simpleConversion(List, TmpArgs, [RAttack|TmpAtts], TmpSupps) :-
-    member((T, A, B), List),
-    attack(T, A, B, C),
-    C \= B, !,
-    subtract(List, [(T, A, B)], Tail),
-    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
-    generateTransRebArg((T, A, B, C), RAttack).
-simpleConversion(List, [RArgument|TmpArgs], [RAttack|TmpAtts], [RSupport|TmpSupps]) :-
-    member((T, A, B), List),
-    attack(T, A, B, B), !,
-    subtract(List, [(T, A, B)], Tail),
-    simpleConversion(Tail, TmpArgs, TmpAtts, TmpSupps),
-    generateDirectRebArg((T, A, B), RArgument, RSupport, RAttack).
+generateTransitiveAttackArgument(T, A, B, C) :-
+    context_check(argument([Id, attack, [attack(T, A, C, C)], G, I])),
+    context_assert(attack(T, [Id, attack, [attack(T, A, C, C)], G, I], B, C)),
+    context_retract(attack(T, A, B, C)).
 
-generateTransRebArg((T, A, B, C), (T, [[Id], attack, attack(T, A, C, C)], B)) :-
-    argument([[Id], attack, attack(T, A, C, C)]),
-    asserta(attack(T, [[Id], attack, attack(T, A, C, C)], B)),
-    asserta(attack(T, [[Id], attack, attack(T, A, C, C)], B, C)),
-    retractall(attack(T, A, B)),
-    retractall(attack(T, A, B, C)).
+generateDirectAttackArgument(T, A, B, B) :-
+    RArgument = [[attack], attack, [attack(T, A, B, B)], [], [[attack], [attack], []]],
+    \+ context_check(argument(RArgument)),
+    context_assert(argument(RArgument)),
+    context_assert(support(A, RArgument)),
+    context_assert(attack(T, RArgument, B, B)),
+    context_retract(attack(T, A, B, B)).
 
-generateDirectRebArg((T, A, B), RArgument, (A, RArgument), (T, RArgument, B)) :-
-    generateId(A, B, Id),
-    RArgument = [[Id], attack, attack(T, A, B, B)],
-    \+ argument(RArgument),
-    asserta(argument(RArgument)),
-    asserta(support(A, RArgument)),
-    asserta(attack(T, RArgument, B)),
-    asserta(attack(T, RArgument, B, B)),
-    retractall(attack(T, A, B)),
-    retractall(attack(T, A, B, B)).
-
-generateId([IdA, _, _], [IdB, _, _], Res) :-
-    concate(IdA, A),
-    concate(IdB, B),
-    concate([A, B], Res).
-
-concate([],'').
-concate([X|Tail], Res) :-
-	concate(Tail, IntermediateRes),
-   	atom_concat(X, IntermediateRes, Res).
-
-transitiveConversion(Attacks, Supports, TempAttacks, ResAttacks) :-
-    member((T, A, B), Attacks),
-    member((B, C), Supports),
-    ResAttack = (T, A, C),
-    \+ attack(T, A, C, D),
-    attack(T, A, B, D),
-    asserta(attack(T, A, C)),
-    asserta(attack(T, A, C, D)),
-    transitiveConversion(Attacks, Supports, [ResAttack|TempAttacks], ResAttacks).
-
-transitiveConversion(_, _, TempAttacks, TempAttacks).
 
 /*
 *   Computes the pref attack. If an Argument A has a conclusion in the form sup(a, b), we verify if
 *   the attacks involving arguments built on the rules a or b are compatible with this preference.
 *   If there are some contradictions we add an attack from the argument A towards the incompatible attack
 */
-buildPrefAttacks(Arguments, AttackArguments, PrefAttacks) :-
-    findPrefAttack(Arguments, AttackArguments, [], PrefAttacks), !.
 
-findPrefAttack(Arguments, AttackArguments, TempAttacks, ResAttacks) :-
-    member([IdB, attack, attack(T, A, B, C)], AttackArguments),
+buildPrefAttacks :-
+    context_check(argument([IdB, attack, [attack(T, A, B, C)], G, I])),
     invalid(T, A, B, C, SupSet),
     member(X, SupSet),
-    member([IdA, TRA, [X]], Arguments),
-    Attack = (pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)]),
-    \+ member(Attack, TempAttacks),
-    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)])),
-    asserta(attack(pref, [IdA, TRA, [X]], [IdB, attack, attack(T, A, B, C)], [IdB, attack, attack(T, A, B, C)])),
-    findPrefAttack(Arguments, AttackArguments, [Attack|TempAttacks], ResAttacks).
-
-findPrefAttack(_, _, TempAttacks, TempAttacks).
-
-/*
-*   Specification of a new constraint in the contrary function
-*/
-conflict([sup(X, Y)],  [sup(Y, X)]).
-
-invalid(rebut, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.
-invalid(undermine, A, B, C, SupSet) :- superiorArgument(B, A, C, SupSet), !.
+    context_check(argument([IdA, TRA, [X], GG, II])),
+    Attack = attack(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
+    \+ context_check(Attack),
+    context_assert(Attack),
+    fail.
+buildPrefAttacks.

@@ -196,3 +196,7 @@ conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
 
 conflict([bp, Atom], [neg, bp, Atom]).
 conflict([neg, bp, Atom], [bp, Atom]).
+
+% SUP CONFLICT
+
+conflict([sup(X, Y)],  [sup(Y, X)]).
