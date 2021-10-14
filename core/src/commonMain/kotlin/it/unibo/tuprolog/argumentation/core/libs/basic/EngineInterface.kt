@@ -1,5 +1,8 @@
-package it.unibo.tuprolog.argumentation.core.libs
+package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier

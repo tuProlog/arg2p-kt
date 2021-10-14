@@ -1,8 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libs
 
 import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
@@ -51,4 +53,8 @@ interface ArgsFlag<T, G> {
     fun predicate(): String
     fun default(): T
     fun values(): G
+}
+
+interface PrimitiveWithSignature : Primitive {
+    val signature: Signature
 }

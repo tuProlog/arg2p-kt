@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.libs
+package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.libs.sources.ArgumentationEngineInterface
 

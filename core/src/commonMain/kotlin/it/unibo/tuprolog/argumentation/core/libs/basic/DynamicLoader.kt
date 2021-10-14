@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.libs.core
+package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.core.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator

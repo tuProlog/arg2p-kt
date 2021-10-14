@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.libs.core
+package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary

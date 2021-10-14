@@ -1,9 +1,10 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.EngineInterface
-import it.unibo.tuprolog.argumentation.core.libs.core.Cache
-import it.unibo.tuprolog.argumentation.core.libs.core.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.basic.Cache
+import it.unibo.tuprolog.argumentation.core.libs.basic.Context
+import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
 import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
 import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
 import it.unibo.tuprolog.argumentation.core.libs.graph.AbstractMode
@@ -55,7 +56,7 @@ interface Arg2pSolver {
 }
 
 fun arg2p(): Arg2pSolver = Arg2pSolver.of(
-    listOf(EngineInterface, Cache()),
+    listOf(EngineInterface, Context(), Cache()),
     listOf(
         Utils,
         Debug,
