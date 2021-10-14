@@ -19,7 +19,7 @@ sealed class GenericDefeasiblePreferencesHandlerBase : ArgLibrary, LazyRawProlog
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "gdefpref"
+    override fun identifier(): String = "defeasibleAllPref"
 }
 
 expect object GenericDefeasiblePreferencesHandler : GenericDefeasiblePreferencesHandlerBase
