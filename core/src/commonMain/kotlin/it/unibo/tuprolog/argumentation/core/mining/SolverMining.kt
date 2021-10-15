@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
+import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 @JsName("mineGraph")
@@ -43,8 +44,8 @@ fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
             .filter { it.isYes }
             .map { solution ->
                 Attack(
-                    arguments.first { it.termRepresentation() == solution.substitution[X]!! },
-                    arguments.first { it.termRepresentation() == solution.substitution[Y]!! }
+                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.substitution[X]!!) },
+                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.substitution[Y]!!) }
                 )
             }
     }.toList()
@@ -59,7 +60,7 @@ fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
                 .map { it.substitution[X]!! }
                 .map { solution ->
                     Support(
-                        arguments.first { it.termRepresentation() == solution },
+                        arguments.first { Unificator.default.match(it.termRepresentation(), solution) },
                         argument
                     ).also {
                         argument.supports.add(it.supporter)
