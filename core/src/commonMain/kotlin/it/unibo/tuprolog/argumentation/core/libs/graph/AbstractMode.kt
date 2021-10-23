@@ -45,7 +45,7 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
 object StatementLabellingMode : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "statementLabellingMode"
     override fun default(): String = "statement"
-    override fun values(): Iterable<String> = listOf("statement", "statement_pass_through")
+    override fun values(): Iterable<String> = listOf("statement", "statement_pass_through", "statement_binary")
 }
 
 object GraphBuildMode : ArgsFlag<String, Iterable<String>> {

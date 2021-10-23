@@ -17,7 +17,7 @@ sealed class StructuredModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             theory = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(QueryMode)
+        get() = listOf(QueryMode, AmbiguityBlocking)
 
     override fun identifier(): String = "structured"
 }
@@ -26,6 +26,12 @@ expect object StructuredMode : StructuredModeBase
 
 object QueryMode : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "queryMode"
+    override fun default(): Boolean = true
+    override fun values() {}
+}
+
+object AmbiguityBlocking : ArgsFlag<Boolean, Unit> {
+    override fun predicate(): String = "ambiguityBlocking"
     override fun default(): Boolean = true
     override fun values() {}
 }

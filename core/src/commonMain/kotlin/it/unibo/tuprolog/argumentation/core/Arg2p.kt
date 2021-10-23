@@ -14,6 +14,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHand
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
@@ -79,6 +80,7 @@ fun arg2p(): Arg2pSolver = Arg2pSolver.of(
         SuperiorityRelation,
         BpPartialLabeller,
         BpCompleteLabeller,
-        PassThroughStatementLabeller
+        PassThroughStatementLabeller,
+        BinaryStatementLabeller
     )
 )

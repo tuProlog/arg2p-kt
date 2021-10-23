@@ -8,8 +8,11 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     argumentLabellingMode(grounded),
     parser::check_modifiers_in_list(effects, [Goal], [X]),
     findall(_, query(X, _), _),
-    statementLabellingMode(Y),
-    Y:::statementLabelling,
+    (ambiguityBlocking ->
+        statement_binary:::statementLabelling;
+        statementLabellingMode(Y),
+        Y:::statementLabelling
+    ),
     mineResults(Goal, YesResult, NoResult, UndResult).
 
 mineResults(Goal, YesResult, NoResult, UndResult) :-
@@ -45,18 +48,27 @@ defend(Argument, QueryChain, no) :-
     X == yes,
     bufferResult(Argument, no), !.
 
+% Exists a UND attacker -> UND argument
+
+defend(Argument, QueryChain, Res) :-
+    findAttacker(Argument, QueryChain, Attacker, yes),
+    once(defend(Attacker, [Argument|QueryChain], X)),
+    X == und,
+    ambiguityCheck(Argument, Attacker, Res),
+    bufferResult(Argument, Res), !.
+
+complementary([_, _, ConclusionA, _, _], [_, _, ConclusionB, _, _]) :-
+    standard_af::conflict(ConclusionA, ConclusionB).
+
+ambiguityCheck(A, B, no) :- ambiguityBlocking,
+    \+ complementary(A, B),
+    context_check(attack(direct, B, A, _)), !.
+ambiguityCheck(_, _, und).
+
 % Exists a cycle in the inference chain attacker -> UND argument
 
 defend(Argument, QueryChain, und) :-
     findAttacker(Argument, QueryChain, Attacker, no),
-    bufferResult(Argument, und), !.
-
-% Exists a UND attacker -> UND argument
-
-defend(Argument, QueryChain, und) :-
-    findAttacker(Argument, QueryChain, Attacker, yes),
-    once(defend(Attacker, [Argument|QueryChain], X)),
-    X == und,
     bufferResult(Argument, und), !.
 
 % IN in the other cases
@@ -74,35 +86,35 @@ bufferResult(_, _).
 %==============================================================================
 
 findAttacker(Target, QueryChain, Attacker, IsValid) :-
-    attacker(Target, Attacker),
-    bufferAttacker(Attacker, Target),
+    attacker(Target, Attacker, Type),
+    bufferAttacker(Attacker, Target, Type),
     detectCycle(Attacker, QueryChain, IsValid).
 
-bufferAttacker(Attacker, Target) :-
-    \+ context_check(attack(none, Attacker, Target, none)),
-    context_assert(attack(none, Attacker, Target, none)), !.
-bufferAttacker(_, _).
+bufferAttacker(Attacker, Target, Type) :-
+    \+ context_check(attack(Type, Attacker, Target, none)),
+    context_assert(attack(Type, Attacker, Target, none)), !.
+bufferAttacker(_, _, _).
 
 detectCycle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
 detectCycle(Attacker, QueryChain, no) :- member(Attacker, QueryChain).
 
-attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
+attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument, Type) :-
     member(X, Rules),
     \+ context_check(strict(X)),
-    attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
+    attackerOnRule(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument, Type).
 
-attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument) :-
+attacker([Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument, Type) :-
     member(X, Groundings),
-    attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument).
+    attackerOnTerm(X, [Rules, TopRule, Conclusion, Groundings, ArgInfo], Argument, Type).
 
 % undercut
 
-attackerOnRule(Rule, _, Argument) :-
+attackerOnRule(Rule, _, Argument, undercut) :-
     buildArgument([undercut(Rule)], Argument).
 
 % rebut / undermine
 
-attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], Attacker) :-
+attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], Attacker, direct) :-
     Term \= [unless, _],
     \+ strict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]),
     buildSubArgument(Term, TargetRules, SubArgument),
@@ -113,7 +125,7 @@ attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], At
 
 % contrary-rebut / contrary-undermine
 
-attackerOnTerm([unless, X], _, Attacker) :-
+attackerOnTerm([unless, X], _, Attacker, contrary) :-
     buildArgument(X, Attacker).
 
 % Strict arguments restriction
