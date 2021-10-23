@@ -19,6 +19,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
@@ -77,6 +78,7 @@ fun arg2p(): Arg2pSolver = Arg2pSolver.of(
         StructuredMode,
         SuperiorityRelation,
         BpPartialLabeller,
-        BpCompleteLabeller
+        BpCompleteLabeller,
+        PassThroughStatementLabeller
     )
 )
