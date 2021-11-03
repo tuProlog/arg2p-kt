@@ -7,7 +7,7 @@ val javaFxVersion: String by project
 plugins {
     application
     id("org.openjfx.javafxplugin") version "0.0.10"
-    id("com.github.johnrengelman.shadow") version "6.1.0"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 dependencies {

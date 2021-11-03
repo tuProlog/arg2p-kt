@@ -18,8 +18,8 @@ class RationalityTest {
         s2: m -> hw.
         d1: wr => m.
         d2: go => b.
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(standardPref).
         orderingPrinciple(last).
@@ -35,8 +35,8 @@ class RationalityTest {
         s1 : b,e -> -c.
         d1 : a => b.
         d2 : d => e.
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(standardPref).
         orderingPrinciple(last).
@@ -54,8 +54,8 @@ class RationalityTest {
         d2 : b => c.
         d3 : d => e.
         d4 : e => f.
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(standardPref).
         orderingPrinciple(last).
@@ -73,8 +73,8 @@ class RationalityTest {
         d1 : a => d.
         d2 : b => e.
         d3 : c => f.
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         graphExtension(standardPref).
         orderingPrinciple(last).
         orderingComparator(elitist). 

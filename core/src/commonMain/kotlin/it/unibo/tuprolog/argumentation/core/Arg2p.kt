@@ -1,54 +1,86 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.core.modularity.ModuleCall
-import it.unibo.tuprolog.argumentation.core.primitives.Axioms1
-import it.unibo.tuprolog.argumentation.core.primitives.Bps1
-import it.unibo.tuprolog.argumentation.core.primitives.DefeasibleRules1
-import it.unibo.tuprolog.argumentation.core.primitives.Premises1
-import it.unibo.tuprolog.argumentation.core.primitives.StrictRules1
-import it.unibo.tuprolog.core.operators.Operator
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.basic.Cache
+import it.unibo.tuprolog.argumentation.core.libs.basic.Context
+import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
+import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
+import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
+import it.unibo.tuprolog.argumentation.core.libs.graph.AbstractMode
+import it.unibo.tuprolog.argumentation.core.libs.graph.builder.ArgumentationGraphBuilder
+import it.unibo.tuprolog.argumentation.core.libs.graph.extension.AttackRestrictionHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
+import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
+import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
+import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
+import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.core.operators.Specifier
-import it.unibo.tuprolog.solve.library.AliasedLibrary
-import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.solve.library.Libraries
 
-private val theories = sequenceOf(
-    Sources.utils,
-    Sources.debug,
-    Sources.ruleTranslator,
-    Sources.argumentationGraph,
-    Sources.preferences,
-    Sources.defPreferences,
-    Sources.genericDefPreferences,
-    Sources.attackRestriction,
-    Sources.bpArgumentationGraph,
-    Sources.groundedLabelling,
-    Sources.completeLabelling,
-    Sources.bpLabelling,
-    Sources.statementLabelling,
-    Sources.abstractMode,
-    Sources.queryMode,
-    Sources.argumentationEngineInterface
-)
+interface Arg2pSolver {
+    val loader: DynamicLoader
+    fun staticLibraries(): Iterable<ArgLibrary>
+    fun dynamicLibraries(): Iterable<ArgLibrary>
 
-object Arg2p : AliasedLibrary by
-Library.aliased(
-    operatorSet = OperatorSet(
-        Operator("=>", Specifier.XFX, 1199),
-        Operator(":=>", Specifier.XFX, 1199),
-        Operator(":->", Specifier.XFX, 1199),
-        Operator(":", Specifier.XFX, 1001),
-        Operator(":=", Specifier.XFX, 1199)
-    ),
-    theory = theories.reduce(Theory::plus),
-    primitives = mapOf(
-        ModuleCall.signature to ModuleCall::invoke,
-        StrictRules1::descriptionPair.get(),
-        Axioms1::descriptionPair.get(),
-        Bps1::descriptionPair.get(),
-        Premises1::descriptionPair.get(),
-        DefeasibleRules1::descriptionPair.get()
-    ),
-    alias = "prolog.argumentation"
+    fun to2pLibraries() = Libraries.of(listOf(loader).plus(staticLibraries()).map { it.content() })
+    fun operators() = listOf(loader).plus(staticLibraries())
+        .map { it.theoryOperators }.reduce(OperatorSet::plus)
+
+    companion object {
+        fun of(staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
+            object : Arg2pSolver {
+
+                override val loader = DynamicLoader(this)
+                override fun staticLibraries() = staticLibs
+                override fun dynamicLibraries() = dynamicLibs
+
+                init {
+                    operators().also { operators ->
+                        staticLibs.onEach { it.theoryOperators = operators }
+                        dynamicLibs.onEach { it.theoryOperators = operators }
+                    }
+                }
+            }
+    }
+}
+
+fun arg2p(): Arg2pSolver = Arg2pSolver.of(
+    listOf(EngineInterface, Context(), Cache()),
+    listOf(
+        Utils,
+        Debug,
+        RuleParser,
+        MetaInterpreter,
+        ModuleCalls,
+        ArgumentationGraphBuilder,
+        AttackRestrictionHandler,
+        BpMetaGraphHandler,
+        DefeasiblePreferencesHandler,
+        GenericDefeasiblePreferencesHandler,
+        StrictPreferencesHandler,
+        BpLabeller,
+        CompleteLabeller,
+        GroundedLabeller,
+        StatementLabeller,
+        AbstractMode,
+        StructuredMode,
+        SuperiorityRelation,
+        BpPartialLabeller,
+        BpCompleteLabeller,
+        PassThroughStatementLabeller,
+        BinaryStatementLabeller
+    )
 )

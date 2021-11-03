@@ -10,11 +10,14 @@ import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller
 import edu.uci.ics.jung.visualization.renderers.Renderer
-import it.unibo.tuprolog.argumentation.core.mining.Argument
-import it.unibo.tuprolog.argumentation.core.mining.Attack
+import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.Attack
+import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.MutableSolver
+import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
+import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
@@ -22,6 +25,10 @@ import java.awt.Color
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
+import javax.swing.BoxLayout
+import javax.swing.JButton
+import javax.swing.JLabel
+import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JSplitPane
 import javax.swing.JTabbedPane
@@ -36,39 +43,88 @@ internal class ArgumentationGraphFrame {
     private val treeTheoryPane: JScrollPane = JScrollPane()
     val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
+    private val next: JButton = JButton("Next").also { button ->
+        button.addActionListener {
+            this.selectedContext =
+                if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
+            this.update()
+        }
+    }
+    private val back: JButton = JButton("Back").also { button ->
+        button.addActionListener {
+            this.selectedContext =
+                if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
+            this.update()
+        }
+    }
+    private val context: JLabel = JLabel()
+
+    private val minContext: Int = 0
+    private var maxContext: Int = 0
+    private var selectedContext: Int = 0
+
+    private var mutableSolver: MutableSolver? = null
+
     init {
+
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
+        val buttonPanel = JPanel()
+        buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.X_AXIS)
+        buttonPanel.add(back)
+        buttonPanel.add(next)
+        buttonPanel.add(context)
+
         val tabbedPane = JTabbedPane()
         tabbedPane.addTab("Classic", classicTheoryPane)
         tabbedPane.addTab("Tree", treeTheoryPane)
-        splitPane.add(tabbedPane)
+
+        panel.add(tabbedPane)
+        panel.add(buttonPanel)
+
+        splitPane.add(panel)
         splitPane.add(graphPane)
+
         splitPane.isOneTouchExpandable = true
         splitPane.dividerLocation = 150
     }
 
-    fun printArgumentationInfo(arguments: List<Argument>, attacks: List<Attack>) {
+    private fun update() {
         SwingUtilities.invokeLater {
-            printGraph(this.graphPane, arguments, attacks)
-            printTheory(this.classicTheoryPane, this.treeTheoryPane, arguments)
+            back.isEnabled = this.selectedContext > this.minContext
+            next.isEnabled = this.selectedContext < this.maxContext
+            context.text = this.selectedContext.toString()
         }
+        mutableSolver?.also { solver ->
+            try {
+                val graph = solver.graph(this.selectedContext)
+                SwingUtilities.invokeLater {
+                    printGraph(this.graphPane, graph.labellings, graph.attacks)
+                    printTheory(this.classicTheoryPane, this.treeTheoryPane, graph.labellings)
+                }
+            } catch (e: Exception) {
+                this.clear()
+            }
+        } ?: clear()
         revalidate()
     }
 
-    fun clear() {
+    private fun clear() {
         SwingUtilities.invokeLater {
             this.graphPane.viewport.removeAll()
             this.classicTheoryPane.viewport.removeAll()
             this.treeTheoryPane.viewport.removeAll()
         }
-        revalidate()
     }
 
-    fun revalidate() {
+    private fun revalidate() {
         SwingUtilities.invokeLater {
             this.splitPane.repaint()
         }
     }
     companion object {
+
         @JvmStatic
         fun customTab(): CustomTab {
             val frame = ArgumentationGraphFrame()
@@ -79,39 +135,34 @@ internal class ArgumentationGraphFrame {
                 }
             })
             swingNode.content = frame.splitPane
-            frame.clear()
+            frame.update()
             return CustomTab(Tab("Graph", swingNode)) { model ->
-                model.timeout = TimeDuration.MAX_VALUE
+                model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
                 model.onNewSolution.subscribe { event ->
-                    if (!event.event.query.toString().startsWith("buildLabelSets")) {
-                        frame.clear()
-                    } else {
-                        val solver = MutableSolver.classicWithDefaultBuiltins(
-                            dynamicKb = event.dynamicKb,
-                            staticKb = event.staticKb,
-                        )
-                        try {
-                            val arguments = Argument.mineArguments(solver).toList()
-                            val attacks = Attack.mineAttacks(solver, arguments).toList()
-                            frame.printArgumentationInfo(arguments, attacks)
-                        } catch (e: Exception) {
-                            frame.clear()
-                        }
+                    frame.mutableSolver = MutableSolver.classic(
+                        libraries = event.libraries
+                    )
+                    frame.selectedContext = prolog {
+                        frame.mutableSolver!!.solve("context_active"(X))
+                            .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
+                            .first()
                     }
+                    frame.maxContext = frame.selectedContext
+                    frame.update()
                 }
             }
         }
 
         @JvmStatic
-        private fun buildGraph(arguments: List<Argument>, attacks: List<Attack>): Graph<String, String> {
+        private fun buildGraph(arguments: List<LabelledArgument>, attacks: List<Attack>): Graph<String, String> {
             val graph: Graph<String, String> = SparseMultigraph()
-            arguments.map(Argument::identifier)
+            arguments.map { it.argument.identifier }
                 .forEach(graph::addVertex)
             attacks.forEach { x ->
                 graph.addEdge(
-                    x.attacker + x.attacked,
-                    x.attacker,
-                    x.attacked,
+                    x.attacker.identifier + x.target.identifier,
+                    x.attacker.identifier,
+                    x.target.identifier,
                     EdgeType.DIRECTED
                 )
             }
@@ -119,13 +170,13 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printGraph(graphPane: JScrollPane, arguments: List<Argument>, attacks: List<Attack>) {
+        private fun printGraph(graphPane: JScrollPane, arguments: List<LabelledArgument>, attacks: List<Attack>) {
             val layout: Layout<String, String> = KKLayout(buildGraph(arguments, attacks))
             layout.size = Dimension(350, 300)
             val vv: VisualizationViewer<String, String> = VisualizationViewer(layout)
             vv.preferredSize = Dimension(350, 300)
             vv.renderContext.setVertexFillPaintTransformer { i ->
-                when (arguments.first { x -> x.identifier == i }.label) {
+                when (arguments.first { x -> x.argument.identifier == i }.label) {
                     "in" -> Color.GREEN
                     "out" -> Color.RED
                     else -> Color.GRAY
@@ -140,11 +191,11 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<Argument>) {
+        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<LabelledArgument>) {
             val textArea = JTextArea()
             textArea.isEditable = false
-            arguments.sortedBy { it.identifier.drop(1).toInt() }
-                .forEach { x -> textArea.append(x.descriptor + "\n") }
+            arguments.sortedBy { it.argument.identifier.drop(1).toInt() }
+                .forEach { x -> textArea.append(x.argument.descriptor + "\n") }
             classicTheoryPane.viewport.view = textArea
 
             val textAreaTree = JTextPane()
@@ -155,18 +206,18 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun formatResolutionTree(arguments: List<Argument>): String {
-            fun tree(arg: Argument, arguments: List<Argument>): String =
-                "<li>${arg.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
-                    arg.supports.joinToString(separator = "") { sub ->
+        private fun formatResolutionTree(arguments: List<LabelledArgument>): String {
+            fun tree(arg: LabelledArgument, arguments: List<LabelledArgument>): String =
+                "<li>${arg.argument.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
+                    arg.argument.supports.joinToString(separator = "") { sub ->
                         tree(
-                            arguments.first { it.identifier == sub.identifier },
+                            arguments.first { it.argument.identifier == sub.identifier },
                             arguments
                         )
                     }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
 
             return "<html><ul>" + arguments
-                .sortedBy { it.identifier.drop(1).toInt() }
+                .sortedBy { it.argument.identifier.drop(1).toInt() }
                 .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
         }
     }

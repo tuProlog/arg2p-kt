@@ -1,23 +1,3 @@
-% ----------------------------------------------------------------
-% ruleTranslator.pl
-% PIKA-lab
-% Year: 2019
-% -------------------------------------------------------------------------------
-
-% rule_name : o(-what_is_mandatory_to_avoid), o(what_is_mandatory), p(what_is_permitted), p(-what_is_permitted), what_is_true, -what_is_true => effect.
-% are converted into lists expressing rules
-% rule([v, [ [obl, [neg, enter]], [enter] ], [violation] ]).
-% rule([rPerm, [ [emer] ], [perm, [enter]] ]).
-
-:- op(1199, xfx, '=>').
-:- op(1199, xfx, ':=>').
-:- op(1199, xfx, ':->').
-:- op(1001, xfx, ':').
-
-in(A, A) :- nonvar(A), A \= (_ , _).
-in(A, (A, _)).
-in(A, (_ , Cs)) :- in(A, Cs).
-
 /*
  *  Main directive. Find all the rules in the theory in the format (Name : Preconditions => Conclusion)
  *  or (Name : Effects) and then if:
@@ -25,42 +5,40 @@ in(A, (_ , Cs)) :- in(A, Cs).
  *  - It is a bp rule, translate it to (abstractBp([Effects]))
  *  During the process, clean them from the unallowed symbols (-, o, p).
  */
-convertAllRules :-
-    retractall(rule(_)),
-    retractall(premise(_)),
-    retractall(abstractBp(_)),
-    retractall(reifiedBp(_)),
-    retractall(strict(_)),
+convertAllRules(ArgRules) :-
     defeasibleRules(DefeasibleRules),
-    strictRules(StrictRules),
+    strictRules(StrictRules, RulesIds),
     ordinaryPremises(Premises),
-    axiomPremises(Axioms),
+    axiomPremises(Axioms, AxiomsIds),
     specialRules(SpecialRules),
-    appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
-    convertAllRules(L), !.
+    utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
+    convertAllRules(L, Rules), !,
+    findall(sup(X, Y), sup(X, Y), Sups),
+    utils::appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules),
+    findall(_, (member(X, ArgRules), context_assert(X)), _).
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
     prologDefeasibleRules(DefeasibleRulesNew),
     append(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
 
-strictRules(CtrRules) :-
+strictRules(CtrRules, Ids) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
     prologStrictRules(StrictRulesNew),
     append(StrictRulesOld, StrictRulesNew, StrictRules),
     transpose(StrictRules, StrictRules, CtrRules),
-    findall(_, (member([RN, _, _], CtrRules), assert(strict(RN))), _).
+    findall(strict(RN), member([RN, _, _], CtrRules), Ids).
 
 ordinaryPremises(Premises) :-
     findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
     prologPremises(PremisesNew),
     append(PremisesOld, PremisesNew, Premises).
 
-axiomPremises(Axioms) :-
+axiomPremises(Axioms, Ids) :-
     findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
     prologAxioms(AxiomsNew),
     append(AxiomsOld, AxiomsNew, Axioms),
-    findall(_, (member([RN, _], Axioms), assert(strict(RN))), _).
+    findall(strict(RN), member([RN, _], Axioms), Ids).
 
 specialRules(SpecialRules) :-
     bpsNew(SpecialRules).
@@ -101,7 +79,6 @@ transposition_sequential(LPrec, [H|T], Effect, Id, Skipped, NewPrec, XNegated, N
     transposition_sequential(LPrec, T, Effect, Id, [H|Skipped], NewPrec, XNegated, NewId).
 transposition_sequential(LPrec, [X|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
     prologEscape(X),
-    write(X), nl,
     append(Skipped, T, CleanedPrec),
     negate(X, XNegated),
     negate(Effect, EffectNegated),
@@ -138,9 +115,9 @@ prologEscape(X) :- \+ functor(X, 'prolog', _), \+ functor(X, '~', _).
  *   Special rules (RuleName : Effects)
  */
 
-convertAllRules([]).
-convertAllRules([[H,P,E]|T]) :- convertRule(H, P, E), convertAllRules(T).
-convertAllRules([[H,E]|T]) :- convertRule(H, E), convertAllRules(T).
+convertAllRules([], []).
+convertAllRules([[H,P,E]|T], [R|Rules]) :- convertRule(H, P, E, R), convertAllRules(T, Rules).
+convertAllRules([[H,E]|T], [R|Rules]) :- convertRule(H, E, R), convertAllRules(T, Rules).
 
 /*
  *   Convert the given rule to the standard format
@@ -148,14 +125,13 @@ convertAllRules([[H,E]|T]) :- convertRule(H, E), convertAllRules(T).
  *   r2: followedGuidelines(X), doctor(X) => -liable(X)
  *   rule([r2,[[followedGuidelines(X_e4149)],[doctor(X_e4149)]],[neg,liable(X_e4149)]]).
  */
-convertRule(RuleName, Preconditions, Effects) :-
+convertRule(RuleName, Preconditions, Effects, rule(List)) :-
     tuple_to_list(Preconditions, Lprecond),
     tuple_to_list(Effects, Leffects),
     check_modifiers_in_list(preconditions, Lprecond, LprecondChecked),
     check_modifiers_in_list(effects, Leffects, LeffectsChecked),
     flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened),
-    List = [RuleName, LprecondChecked, LeffectsCheckedFlattened],
-    assert(rule(List)).
+    List = [RuleName, LprecondChecked, LeffectsCheckedFlattened].
 
 /*
  *   Convert the given special rule
@@ -163,18 +139,16 @@ convertRule(RuleName, Preconditions, Effects) :-
  *   bp(-liable(X)).
  *   abastractBp([[neg, liable(X_e4149)]]).
  */
-convertRule(bps, Effects) :-
+convertRule(bps, Effects, abstractBp(Checked)) :-
     functor(Effects, 'bp', _),
     Effects =.. L,
     removehead(L, LC),
-    check_modifiers_in_list(effects, LC, Checked),
-    assert(abstractBp(Checked)).
+    check_modifiers_in_list(effects, LC, Checked).
 
-convertRule(Name, Effects) :-
+convertRule(Name, Effects, premise([Name, LeffectsCheckedFlattened])) :-
     tuple_to_list(Effects, Leffects),
     check_modifiers_in_list(effects, Leffects, LeffectsChecked),
-    flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened),
-    assert(premise([Name, LeffectsCheckedFlattened])).
+    flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened).
 
 %=======================================================================================================================
 
@@ -243,6 +217,11 @@ flatten_first_level([X], X).
 flatten_first_level.
 
 removehead([_|Tail], Tail).
+
+
+in(A, A) :- nonvar(A), A \= (_ , _).
+in(A, (A, _)).
+in(A, (_ , Cs)) :- in(A, Cs).
 
 
 defeasible_admissible([unless, Term]) :- admissible(Term).

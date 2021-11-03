@@ -1,52 +1,32 @@
-computeGlobalAcceptance([SORTEDSTATIN, SORTEDSTATOUT, SORTEDSTATUND], [ARGSIN, ARGSOUT, ARGSUND]) :-
-    buildGraph([Arguments, Attacks, Supports]),!,
-    modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    buildArgumentLabelling([NewArguments, NewAttacks, NewSupports], [ARGSIN, ARGSOUT, ARGSUND]),
-    buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [STATIN, STATOUT, STATUND]),
-    sort(STATIN, SORTEDSTATIN),
-    sort(STATOUT, SORTEDSTATOUT),
-    sort(STATUND, SORTEDSTATUND),
-    storeResults(ARGSIN, ARGSOUT, ARGSUND).
+computeGlobalAcceptance :-
+    buildGraph,
+    modifyGraph,
+    buildArgumentLabelling,
+    buildStatementLabelling.
 
-buildGraph([Arguments, Attacks, Supports]) :-
-    graphBuildMode(base),
-    buildArgumentationGraph([Arguments, Attacks, Supports]).
+computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
+    computeGlobalAcceptance,
+    utils::recoverGraph(Arguments, Attacks, Supports),
+    utils::recoverArgumentLabelling(ArgsIn, ArgsOut, ArgsUnd),
+    utils::recoverStatementLabelling(StatIn, StatOut, StatUnd).
 
-modifyGraph([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
+buildGraph :-
+    graphBuildMode(X),
+    X:::buildArgumentationGraph.
+
+modifyGraph :-
     findall(X, graphExtension(X), Ext),
-    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
+    modifyGraph(Ext).
 
-modifyGraph([], [Arguments, Attacks, Supports], [Arguments, Attacks, Supports]).
-modifyGraph([X|Ext], [Arguments, Attacks, Supports], [UnionArguments, UnionAttacks, UnionSupports]) :-
-    modifyGraph(Ext, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]),
-    modifyArgumentationGraph(X, [NewArguments, NewAttacks, NewSupports], [UnionArguments, UnionAttacks, UnionSupports]).
+modifyGraph([]).
+modifyGraph([X|Ext]) :-
+    modifyGraph(Ext),
+    X:::modifyArgumentationGraph.
 
-buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
-    argumentLabellingMode(grounded),
-    argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]).
+buildArgumentLabelling :-
+    argumentLabellingMode(X),
+    X:::argumentLabelling.
 
-buildArgumentLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
-    argumentLabellingMode(complete),
-    argumentCompleteLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]).
-
-buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
-    argumentLabellingMode(bp_grounded),
-    argumentBPLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]).
-
-buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
-    argumentLabellingMode(bp_grounded_partial),
-    argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
-    argumentBPLabelling(partial, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
-
-buildArgumentLabelling([Arguments, Attacks, Supports], [BPIN, BPOUT, BPUND]) :-
-    argumentLabellingMode(bp_grounded_complete),
-    argumentGroundedLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]),
-    argumentBPLabelling(complete, [IN, OUT, UND], [BPIN, BPOUT, BPUND]).
-
-buildStatementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]) :-
-    statementLabellingMode(base),
-    statementLabelling([ARGSIN, ARGSOUT, ARGSUND], [IN, OUT, UND]).
-
-storeResults(ARGSIN, ARGSOUT, ARGSUND) :-
-    retractall(argsLabelling(_, _, _)),
-    asserta(argsLabelling(ARGSIN, ARGSOUT, ARGSUND)).
+buildStatementLabelling :-
+    statementLabellingMode(X),
+    X:::statementLabelling.

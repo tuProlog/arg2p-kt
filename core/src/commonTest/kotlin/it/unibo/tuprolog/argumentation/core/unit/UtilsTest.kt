@@ -2,30 +2,17 @@ package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoal
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.collections.listOf as ktListOf
 
 class UtilsTest {
-
-    @Test
-    fun assertaList() {
-        prolog {
-            val solver = solver()
-            assertEquals(0, solver.dynamicKb.size)
-            solver.solve("assertaList"(listOf("a", "b"))).toList()
-            assertEquals(2, solver.dynamicKb.size)
-        }
-    }
-
     @Test
     fun sort() {
-        prolog {
-            testGoal("sort"(listOf("b", "a", "c", "d"), "X")) {
+        arg2pScope {
+            testGoal("utils" call "sort"(listOf("b", "a", "c", "d"), "X")) {
                 ktListOf(
                     it.yes("X" to listOf("d", "c", "b", "a")),
                     it.no()
@@ -36,8 +23,8 @@ class UtilsTest {
 
     @Test
     fun subtractList() {
-        prolog {
-            testGoal("subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")) {
+        arg2pScope {
+            testGoal("utils" call "subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")) {
                 ktListOf(
                     it.yes("X" to listOf("c", "d"))
                 )
@@ -47,12 +34,12 @@ class UtilsTest {
 
     @Test
     fun isEmptyList() {
-        prolog {
-            testGoal("isEmptyList"(emptyList)) {
+        arg2pScope {
+            testGoal("utils" call "isEmptyList"(emptyList)) {
                 ktListOf(it.yes())
             }
 
-            testGoal("isEmptyList"(listOf("a"))) {
+            testGoal("utils" call "isEmptyList"(listOf("a"))) {
                 ktListOf(it.no())
             }
         }
@@ -60,14 +47,14 @@ class UtilsTest {
 
     @Test
     fun appendaList() {
-        prolog {
-            testGoal("appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
+        arg2pScope {
+            testGoal("utils" call "appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
                 ktListOf(
                     it.yes("X" to listOf("a", "b", "c", "d", "e", "f"))
                 )
             }
 
-            testGoal("appendLists"(listOf(listOf("a", "b")), "X")) {
+            testGoal("utils" call "appendLists"(listOf(listOf("a", "b")), "X")) {
                 ktListOf(
                     it.yes("X" to listOf("a", "b"))
                 )
@@ -77,7 +64,7 @@ class UtilsTest {
 
     @Test
     fun search() {
-        prolog {
+        arg2pScope {
             val solver = solver(
                 Theory.Companion.of(
                     ktListOf(
@@ -89,7 +76,7 @@ class UtilsTest {
                 )
             )
 
-            testGoal("search"("a", 4, "X"), solver) {
+            testGoal("utils" call "search"("a", 4, "X"), solver) {
                 ktListOf(
                     it.yes("X" to "a"(1)),
                     it.yes("X" to "a"(1, 2)),
@@ -98,14 +85,14 @@ class UtilsTest {
                 )
             }
 
-            testGoal("search"("a", 2, "X"), solver) {
+            testGoal("utils" call "search"("a", 2, "X"), solver) {
                 ktListOf(
                     it.yes("X" to "a"(1)),
                     it.yes("X" to "a"(1, 2))
                 )
             }
 
-            testGoal("search"("b", 2, "X"), solver) {
+            testGoal("utils" call "search"("b", 2, "X"), solver) {
                 ktListOf(it.no())
             }
         }

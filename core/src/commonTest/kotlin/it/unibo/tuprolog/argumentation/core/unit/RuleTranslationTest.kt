@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.unit
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.TestingUtils.testYesGoal
 import it.unibo.tuprolog.argumentation.core.TestingUtils.withArgOperators
+import it.unibo.tuprolog.argumentation.core.arg2p
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
@@ -12,9 +13,11 @@ class RuleTranslationTest {
 
     private fun testTranslation(theory: String, vararg expected: String) {
         prolog {
+            val arg2p = arg2p()
             val solver = solver(withArgOperators(theory))
-            solver.solve(Struct.parse("convertAllRules")).toList()
-            expected.forEach { testYesGoal(Struct.parse(it), solver) }
+            solver.solve(Struct.parse("context_reset", arg2p.operators())).first()
+            solver.solve(Struct.parse("parser::convertAllRules(_)", arg2p.operators())).toList()
+            expected.forEach { testYesGoal(Struct.parse("context_check($it)"), solver) }
         }
     }
 

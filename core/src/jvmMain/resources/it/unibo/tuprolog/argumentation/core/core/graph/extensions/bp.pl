@@ -1,68 +1,69 @@
-modifyArgumentationGraph(bp, [Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
-    generateBp([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]).
-
-generateBp([Arguments, Attacks, Supports], [NewArguments, NewAttacks, NewSupports]) :-
-    findall(([Rules, Top, [bp, Checked]], [Z, P, Y]), (
-        member([Rules, Top, [bp, Checked]], Arguments),
+modifyArgumentationGraph :-
+    findall(([Rules, Top, [bp, Checked], G, I], [Z, P, Y, GG, II]), (
+        context_check(argument([Rules, Top, [bp, Checked], G, I])),
         member(Y, Checked),
-        member([Z, P, Y], Arguments)
-    ), Res),
-    once(checkBpArguments(Res, Arguments, Attacks, Supports, NewArguments, NewAttacks, NewSupports)).
+        context_check(argument([Z, P, Y, GG, II]))
+    ), TemplateBpPairs),
+    checkBpArguments(TemplateBpPairs).
 
-checkBpArguments([], Arguments, Attacks, Supports, Arguments, Attacks, Supports).
-checkBpArguments(Res, Arguments, Attacks, Supports, NewArguments, FinalAttacks, NewSupports) :-
-    createBpArguments(Res, Arguments, Attacks, Supports, BpArguments, NewArguments, NewAttacks, NewSupports),
-    createBpAttacks(BpArguments, NewArguments, NewAttacks, NewSupports, FinalAttacks).
 
-createBpArguments([], Arguments, Attacks, Supports, [], Arguments, Attacks, Supports).
-createBpArguments([(Original, [Z, P, Y])|Others], Arguments, Attacks, Supports, [(Conflict,[Z, P, Y])|BpArguments], [Conflict|NewArguments], NewAttacks, [(Original, Conflict)|NewSupports]) :-
-    Conflict = [[artificial|Z], artificial, [neg, burdmet(Y)]],
-    asserta(argument(Conflict)),
-    asserta(support(Original, Conflict)),
-    liftBpAttacks(Original, Conflict, Attacks, LiftedAttacks),
-    createBpArguments(Others, Arguments, LiftedAttacks, Supports, BpArguments, NewArguments, NewAttacks, NewSupports).
+checkBpArguments([]).
+checkBpArguments(TemplateBpPairs) :-
+    createBpArguments(TemplateBpPairs, BpPairs),
+    createBpAttacks(BpPairs).
 
-liftBpAttacks(Original, BpArg, Attacks, NewAttacks) :-
-    findall((T, A, BpArg), (
-        member((T, A, Original), Attacks),
-        asserta(attack(T, A, BpArg)),
-        attack(T, A, Original, C),
-        asserta(attack(T, A, BpArg, C))
-    ), LiftedAttacks),
-    append(Attacks, LiftedAttacks, NewAttacks).
 
-createBpAttacks(BpArguments, Arguments, Attacks, Supports, NewAttacks) :-
-    generateBpsEvaluationChain(BpArguments, Attacks, OrderedBpArguments),
-    evaluateBurdenedArgs(OrderedBpArguments, Arguments, Attacks, Supports, NewAttacks).
+% Bp Argument Creation
 
-evaluateBurdenedArgs([], _, Attacks, _, Attacks).
-evaluateBurdenedArgs([(Bp, Burdened)|Others], Arguments, Attacks, Supports, FinalAttacks) :-
-    argumentGroundedLabelling([Arguments, Attacks, Supports], [In, Out, Und]),
-    statusToAttack((Bp, Burdened), [In, Out, Und], NewAttack),
-    evaluateBurdenedArgs(Others, Arguments, [NewAttack|Attacks], Supports, FinalAttacks).
+createBpArguments([], []).
+createBpArguments([(Original, [Z, P, Y, B, I])|Others], [(Conflict, [Z, P, Y, B, I])|BpPairs]) :-
+    Conflict = [[artificial|Z], artificial, [neg, burdmet(Y)], [], [[artificial], [artificial], []]],
+    context_assert(argument(Conflict)),
+    context_assert(support(Original, Conflict)),
+    liftBpAttacks(Original, Conflict),
+    createBpArguments(Others, BpPairs).
 
-statusToAttack((Bp, Burdened), [In, Out, Und], (bprebut, Burdened, Bp)) :-
-    member(Burdened, In),
-    asserta(attack(bprebut, Burdened, Bp)),
-    asserta(attack(bprebut, Burdened, Bp, Bp)).
-statusToAttack((Bp, Burdened), [In, Out, Und], (bprebut, Bp, Burdened)) :-
-    \+ member(Burdened, In),
-    asserta(attack(bprebut, Bp, Burdened)),
-    asserta(attack(bprebut, Bp, Burdened, Burdened)).
+liftBpAttacks(Template, BpArg) :-
+    findall(_, (
+        context_check(attack(T, A, Template, O)),
+        context_assert(attack(T, A, BpArg, O))
+    ), _).
 
-% Devo dare un ordine di valutazione
-%   Per ogni membro della lista valuto se è un mio predecessore, al primo che non lo è lo inserisco prima
-generateBpsEvaluationChain([], Attacks, []).
-generateBpsEvaluationChain([Arg|Others], Attacks, OrderedBpArguments) :-
-    generateBpsEvaluationChain(Others, Attacks, Old),
-    insertBpArg(Arg, Attacks, Old, OrderedBpArguments).
 
-insertBpArg(Arg, Attacks, [], [Arg]).
-insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]) :-
-    \+ argumentChain(BurdenedL, Burdened, Attacks).
-insertBpArg((Bp, Burdened), Attacks, [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
-    argumentChain(BurdenedL, Burdened, Attacks),
-    insertBpArg((Bp, Burdened), Attacks, Others, Return).
+% Bp Arguments Evaluation
 
-conflict([bp, Atom], [neg, bp, Atom]).
-conflict([neg, bp, Atom], [bp, Atom]).
+createBpAttacks(BpPairs) :-
+    generateBpsEvaluationChain(BpPairs, OrderedBpPairs),
+    evaluateBurdenedArgs(OrderedBpPairs).
+
+% The function provide an evaluation order for the bp pairs given in input.
+% The ordering is based on the attack relation between the nodes
+%   If it is possible to reach a node A from a node B using attacks, then B should be evaluated before A
+%   The algorithm does not admit cycles in the graph
+
+generateBpsEvaluationChain([], []).
+generateBpsEvaluationChain([BpPair|BpPairs], OrderedBpPairs) :-
+    generateBpsEvaluationChain(BpPairs, TempOrderedBpPairs),
+    insertBpPair(BpPair, TempOrderedBpPairs, OrderedBpPairs).
+
+insertBpPair(BpPair, [], [BpPair]).
+insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
+    bp_grounded::argumentChain(BurdenedL, Burdened),
+    insertBpPair((Bp, Burdened), Others, Return), !.
+insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]).
+
+% BpPairs Evaluation
+
+evaluateBurdenedArgs([]).
+evaluateBurdenedArgs([(Bp, Burdened)|Others]) :-
+    context_active(X),
+    grounded:::argumentLabelling,
+    statusToAttack((Bp, Burdened), Attack),
+    context_checkout(X),
+    context_assert(Attack),
+    evaluateBurdenedArgs(Others).
+
+statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-
+    context_check(in(Burdened)).
+statusToAttack((Bp, Burdened), attack(bprebut, Bp, Burdened, Burdened)) :-
+    \+ context_check(in(Burdened)).

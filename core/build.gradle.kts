@@ -69,7 +69,7 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
         it.include("**/*.pl")
     }.files
     val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
-    val pckg = "it.unibo.tuprolog.argumentation.core"
+    val pckg = "it.unibo.tuprolog.argumentation.core.libs.sources"
     val destDir = jsMainDir.resolve(pckg.replace('.', '/'))
     for (file in plFiles) {
         inputs.file(file)

@@ -11,8 +11,8 @@ class AttacksTest {
 
     private val baseConfig =
         """
-        graphBuildMode(base).
-        statementLabellingMode(base).
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(rebutRestriction).
         graphExtension(standardPref).
@@ -28,7 +28,7 @@ class AttacksTest {
                 attacks.forEach { attack ->
                     assertEquals(
                         attack.value,
-                        solver.solve("attack"(attack.key, "Y", "Z")).filter { it.isYes }.count()
+                        solver.solve("context_check"("attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count()
                     )
                 }
             }

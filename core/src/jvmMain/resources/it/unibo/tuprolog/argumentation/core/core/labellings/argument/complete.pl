@@ -1,43 +1,32 @@
-argumentCompleteLabelling([Arguments, Attacks, Supports], [IN, OUT, UND]) :-
-    retractall(compl(_,_,_)),
-    grounded(Arguments, Attacks, [], [], Arguments, RAttacks, RIN, ROUT, RUND),
-    completeLabellingT(Arguments, RAttacks, RIN, ROUT, RUND, _, IN, OUT, UND),
-    cleanTempSup.
+argumentLabelling :-
+    cache_retract(complete(_,_,_)),
+    grounded:::argumentLabelling,
+    context_active(Branch),
+    completeLabelling(Branch).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+completeLabelling(_) :-
+    admissibleSet,
+    utils::recoverArgumentLabelling(In, Out, Und),
+    \+ cache_check(complete(In, Out, Und)),
+    cache_assert(complete(In, Out, Und)).
+completeLabelling(Branch) :-
+    context_check(und(X)),
+    context_branch(Branch, NewBranch),
+    findall(Y, (context_check(und(Y)), Y \= X), Arguments),
+    context_retract(und(_)),
+    context_assert(in(X)),
+    grounded::groundedLabelling(Arguments),
+    completeLabelling(NewBranch).
 
+% If there is an attacker to an In argument, then should exist also a In argument attacking the attacker
 
-completeLabellingT(_, Attacks, IN, OUT, UND, Attacks, IN, OUT, UND) :- 
-    admissible(IN, IN, Attacks),
-    sort(IN, SortIN),
-    sort(OUT, SortOUT),
-    sort(UND, SortUND),
-    \+ compl(SortIN, SortOUT, SortUND),
-    assert(compl(SortIN, SortOUT, SortUND)).
-completeLabellingT(Arguments, Attacks, IN, OUT, UND, ResultAttacks, ResultIN, ResultOUT, ResultUND) :-
-    member(X, UND),
-    subtract(UND, [X], NewUND),
-    grounded(Arguments, Attacks, [X|IN], OUT, NewUND, RAttacks, RIN, ROUT, RUND),
-    completeLabellingT(Arguments, RAttacks, RIN, ROUT, RUND, ResultAttacks, ResultIN, ResultOUT, ResultUND).
-
-
-grounded(Arguments, Attacks, IN, OUT, UND, ResultAttacks, ResultIN, ResultOUT, ResultUND) :-
-    groundedLabelling(Arguments, Attacks, IN, OUT, UND, ResultAttacks, ResultIN, ResultOUT, ResultUND), !.
-
-
-admissible(_, [], _).
-admissible(IN, [H|T], Attacks) :-
-    \+ (member((_, Attacker, H), Attacks), 
-        \+ ( member((_, Defendant, Attacker), Attacks), member(Defendant, IN))),
-    admissible(IN, T, Attacks).
-
-/*
-    Pick 0, 1, N arguments under these conditions:
-        - the resulting set must be conflict-free
-*/
-% findConflictFreeSet([], _, _, []).
-% findConflictFreeSet([H|T], Attacks, Supports, [H|T2]) :-
-%     findConflictFreeSet(T, Attacks, Supports, T2),
-%     \+ (member((_, H, Y), Attacks), member(Y, T2)),
-%     \+ (member((_, Z, H), Attacks), member(Z, T2)).
-% findConflictFreeSet([_|T], Attacks, Supports, T2) :- findConflictFreeSet(T, Attacks, Supports, T2).
+admissibleSet :-
+    \+ (context_check(in(H)), \+ admissible(H)).
+admissible(H) :-
+    \+ (
+        context_check(attack(_, Attacker, H, _)),
+        \+ (
+            context_check(attack(_, Defendant, Attacker, _)),
+            context_check(in(Defendant))
+        )
+    ).
