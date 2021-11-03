@@ -33,7 +33,7 @@ subprojects {
 kotlinMultiplatform {
     preventPublishingOfRootProject.set(true)
     developer("Giuseppe Pisano", "g.pisano@unibo.it", "https://www.unibo.it/sitoweb/g.pisano/en")
-    jvmOnlyProjects("ide")
+    jvmOnlyProjects("ide", "actor-solver")
     otherProjects("doc")
     ktProjects(allOtherSubprojects)
 }
