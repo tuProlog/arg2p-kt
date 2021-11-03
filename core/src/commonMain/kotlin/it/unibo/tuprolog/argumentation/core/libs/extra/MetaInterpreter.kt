@@ -83,6 +83,14 @@ object MetaInterpreter : BaseArgLibrary(), Loadable {
                 is_list(X) :- var(X), !, fail.
                 is_list([]).
                 is_list([_|T]) :- is_list(T).
+                
+                % fetch_argument_facts/2
+        
+                fetch_argument_facts(Conclusion, Facts) :-
+                    argument([R, TR, [Conclusion]]),
+                    findall(user_fact(Fact), 
+                        support([_, _, [user_fact(Fact)]], [R, TR, [Conclusion]]),
+                    Facts).
                 """.trimIndent()
             )
         )
