@@ -156,17 +156,17 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
 class Evaluator private constructor(context: ActorContext<KbMessage>, private val master: ActorRef<KbMessage>) : AbstractBehavior<KbMessage>(context) {
 
     data class ActiveQuery(
-        val type : Int,
+        val type: Int,
         val id: String,
         var expectedResponses: Int,
         val query: String,
         val argument: String,
         val replyTo: ActorRef<KbMessage>,
         var completed: Boolean = false,
-        val responses : MutableList<AttackerResponse> = mutableListOf()
+        val responses: MutableList<AttackerResponse> = mutableListOf()
     )
 
-    private val activeQueries : MutableList<ActiveQuery> = mutableListOf()
+    private val activeQueries: MutableList<ActiveQuery> = mutableListOf()
 
     private val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
         otherLibraries = arg2p().to2pLibraries().plus(FlagsBuilder().create().baseContent),
@@ -213,12 +213,9 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
                     command.replyTo.tell(AttackerResponse(command.id, "", command.queryChain, Label.OUT))
                 }
                 result.forEach {
-                    if (it.second == "no")
-                    {
+                    if (it.second == "no") {
                         command.replyTo.tell(AttackerResponse(command.id, it.first, command.queryChain + it.first, Label.UND))
-                    }
-                    else
-                    {
+                    } else {
                         val query = ActiveQuery(1, "query_${Random.nextInt()}", -1, command.argument, it.first, command.replyTo)
                         activeQueries.add(query)
                         master.tell(FindAttacker(query.id, query.argument, listOf(), this@Evaluator.context.self))
@@ -227,16 +224,30 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
                 this
             }
             .onMessage(AttackerResponse::class.java) { command ->
-//        if there are no attackers -> reply IN
-//        if there is an IN attacker -> reply OUT
-//        if there is a UND attacker -> reply UND
-                when (command.response) {
-
-                    Label.IN -> {
-                        val active = activeQueries.first { it.id == command.id }
-                        // casino
-                        active.replyTo
+                val active = activeQueries.first { it.id == command.id }
+                if (active.completed) return@onMessage this
+                val reply = { label: Label ->
+                    if (active.type == 0) {
+                        active.replyTo.tell(EvalResponse(active.query, label))
+                    } else {
+                        active.replyTo.tell(AttackerResponse(active.id, active.argument, command.queryChain, label))
                     }
+                }
+                when (command.response) {
+                    Label.IN -> {
+                        reply(Label.OUT)
+                        active.completed = true
+                        return@onMessage this
+                    }
+                    else -> {
+                        active.responses.add(command)
+                    }
+                }
+                active.completed = active.expectedResponses == active.responses.count()
+                if (active.completed && active.responses.any { it.response == Label.UND }) {
+                    reply(Label.UND)
+                } else if (active.completed) {
+                    reply(Label.IN)
                 }
                 this
             }
