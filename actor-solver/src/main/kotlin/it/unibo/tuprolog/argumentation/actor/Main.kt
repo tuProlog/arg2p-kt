@@ -20,10 +20,20 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.random.Random
 
+enum class Label {
+    IN, OUT, UND
+}
+
 interface KbMessage
+
 data class Add(val elem: String) : KbMessage
+
 data class Eval(val elem: String) : KbMessage
-data class Response(val elem: String, val response: String) : KbMessage
+data class EvalResponse(val elem: String, val response: Label) : KbMessage
+
+data class FindAttacker(val id: String, val argument: String, val queryChain: List<String>, val replyTo: ActorRef<KbMessage>) : KbMessage
+data class ExpectedResponses(val id: String, val number: Int) : KbMessage
+data class AttackerResponse(val id: String, val argument: String, val queryChain: List<String>, val response: Label) : KbMessage
 
 class KbDistributor private constructor(context: ActorContext<KbMessage>) : AbstractBehavior<KbMessage>(context) {
 
@@ -127,8 +137,12 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 workers.forEach { it.ref.tell(command) }
                 this
             }
-            .onMessage(Response::class.java) { command ->
+            .onMessage(EvalResponse::class.java) { command ->
                 context.log.info("The result for ${command.elem} is ${command.response}")
+                this
+            }.onMessage(FindAttacker::class.java) { command ->
+                command.replyTo.tell(ExpectedResponses(command.id, workers.count()))
+                workers.forEach { it.ref.tell(command) }
                 this
             }
             .build()
@@ -140,6 +154,19 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
 }
 
 class Evaluator private constructor(context: ActorContext<KbMessage>, private val master: ActorRef<KbMessage>) : AbstractBehavior<KbMessage>(context) {
+
+    data class ActiveQuery(
+        val type : Int,
+        val id: String,
+        var expectedResponses: Int,
+        val query: String,
+        val argument: String,
+        val replyTo: ActorRef<KbMessage>,
+        var completed: Boolean = false,
+        val responses : MutableList<AttackerResponse> = mutableListOf()
+    )
+
+    private val activeQueries : MutableList<ActiveQuery> = mutableListOf()
 
     private val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
         otherLibraries = arg2p().to2pLibraries().plus(FlagsBuilder().create().baseContent),
@@ -154,15 +181,63 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
             }
             .onMessage(Eval::class.java) { command ->
                 val result = arg2pScope {
-                    solver.solve("answerQuery"(command.elem, X, Y, Z)).filter {
+                    solver.solve("buildArgument"(command.elem, X)).filter {
                         it.isYes
                     }.map {
-                        if (!(it.substitution[X]?.isEmptyList)!!) "IN"
-                        else if (!(it.substitution[Y]?.isEmptyList)!!) "OUT"
-                        else "UND"
-                    }.first()
+                        it.substitution[X]!!
+                    }
+                }.toList()
+                if (result.isEmpty()) {
+                    master.tell(EvalResponse(command.elem, Label.UND))
                 }
-                master.tell(Response(command.elem, result))
+                result.forEach {
+                    val query = ActiveQuery(0, "query_${Random.nextInt()}", -1, command.elem, it.toString(), master)
+                    activeQueries.add(query)
+                    master.tell(FindAttacker(query.id, it.toString(), listOf(), context.self))
+                }
+                this
+            }
+            .onMessage(ExpectedResponses::class.java) { command ->
+                activeQueries.first { it.id == command.id }.expectedResponses = command.number
+                this
+            }
+            .onMessage(FindAttacker::class.java) { command ->
+                val result = arg2pScope {
+                    solver.solve("findAttacker"(command.argument, listOf(command.queryChain), X, Y)).filter {
+                        it.isYes
+                    }.map {
+                        Pair(it.substitution[X]!!.toString(), it.substitution[Y]!!.toString())
+                    }
+                }.toList()
+                if (result.isEmpty()) {
+                    command.replyTo.tell(AttackerResponse(command.id, "", command.queryChain, Label.OUT))
+                }
+                result.forEach {
+                    if (it.second == "no")
+                    {
+                        command.replyTo.tell(AttackerResponse(command.id, it.first, command.queryChain + it.first, Label.UND))
+                    }
+                    else
+                    {
+                        val query = ActiveQuery(1, "query_${Random.nextInt()}", -1, command.argument, it.first, command.replyTo)
+                        activeQueries.add(query)
+                        master.tell(FindAttacker(query.id, query.argument, listOf(), this@Evaluator.context.self))
+                    }
+                }
+                this
+            }
+            .onMessage(AttackerResponse::class.java) { command ->
+//        if there are no attackers -> reply IN
+//        if there is an IN attacker -> reply OUT
+//        if there is a UND attacker -> reply UND
+                when (command.response) {
+
+                    Label.IN -> {
+                        val active = activeQueries.first { it.id == command.id }
+                        // casino
+                        active.replyTo
+                    }
+                }
                 this
             }
             .build()
@@ -172,6 +247,3 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
             Behaviors.setup { context -> Evaluator(context, master) }
     }
 }
-
-// Distribution OK
-// Solving ...
