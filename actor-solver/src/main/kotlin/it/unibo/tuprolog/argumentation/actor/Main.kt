@@ -27,9 +27,10 @@ enum class Label {
 interface KbMessage
 
 data class Add(val elem: String) : KbMessage
+data class RequireEvaluation(val elem: String) : KbMessage
 
-data class Eval(val elem: String) : KbMessage
-data class EvalResponse(val elem: String, val response: Label) : KbMessage
+data class Eval(val id: String, val elem: String) : KbMessage
+data class EvalResponse(val id: String, val elem: String, val response: Label, val queryChain: List<String>) : KbMessage
 
 data class FindAttacker(val id: String, val argument: String, val queryChain: List<String>, val replyTo: ActorRef<KbMessage>) : KbMessage
 data class ExpectedResponses(val id: String, val number: Int) : KbMessage
@@ -38,8 +39,10 @@ data class AttackerResponse(val id: String, val argument: String, val queryChain
 class KbDistributor private constructor(context: ActorContext<KbMessage>) : AbstractBehavior<KbMessage>(context) {
 
     data class HelpWorker(val id: String, val ref: ActorRef<KbMessage>, val theory: MutableSolver, val rules: MutableList<String>)
+    data class EvaluationCache(val id: String, val query: String, val responseNumber: Int, val responses: MutableList<EvalResponse> = mutableListOf())
 
     private val workers: MutableList<HelpWorker> = mutableListOf()
+    private val evaluationCache: MutableList<EvaluationCache> = mutableListOf()
     private val actorLibrary = Library.aliased(
         alias = "prolog.argumentation.actors.helpers",
         theory = Theory.parse(
@@ -125,6 +128,19 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         }
     }
 
+    private fun evaluateResponses(cache: EvaluationCache) {
+        if (cache.responses.size < cache.responseNumber) return
+
+        val response = {
+            if (cache.responses.any { it.response == Label.OUT }) Label.OUT
+            else if (cache.responses.any { it.response == Label.IN }) Label.IN
+            else Label.UND
+        }
+
+        evaluationCache.remove(cache)
+        context.log.info("The result for ${cache.query} is ${response()}")
+    }
+
     override fun createReceive(): Receive<KbMessage> =
         newReceiveBuilder()
             .onMessage(Add::class.java) { command ->
@@ -132,13 +148,17 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 updateWorkers(command.elem)
                 this
             }
-            .onMessage(Eval::class.java) { command ->
+            .onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
-                workers.forEach { it.ref.tell(command) }
+                val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, workers.size)
+                evaluationCache.add(cache)
+                workers.forEach { it.ref.tell(Eval(cache.id, command.elem)) }
                 this
             }
             .onMessage(EvalResponse::class.java) { command ->
-                context.log.info("The result for ${command.elem} is ${command.response}")
+                val cache = evaluationCache.first { it.id == command.id }
+                cache.responses.add(command)
+                evaluateResponses(cache)
                 this
             }.onMessage(FindAttacker::class.java) { command ->
                 command.replyTo.tell(ExpectedResponses(command.id, workers.count()))
@@ -162,6 +182,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
         val query: String,
         val argument: String,
         val replyTo: ActorRef<KbMessage>,
+        val parentId: String = "",
         var completed: Boolean = false,
         val responses: MutableList<AttackerResponse> = mutableListOf()
     )
@@ -177,23 +198,28 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
         newReceiveBuilder()
             .onMessage(Add::class.java) { command ->
                 solver.assertA(Struct.parse(command.elem, arg2p().operators()))
+                arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
                 this
             }
             .onMessage(Eval::class.java) { command ->
                 val result = arg2pScope {
-                    solver.solve("buildArgument"(command.elem, X)).filter {
+                    val query = solver.solve("parser" call "check_modifiers_in_list"("effects", listOf(Struct.parse(command.elem)), listOf(Y)))
+                        .filter { it.isYes }
+                        .map { it.substitution[Y]!! }
+                        .first()
+                    solver.solve("structured" call "buildArgument"(query, X)).filter {
                         it.isYes
                     }.map {
                         it.substitution[X]!!
                     }
                 }.toList()
                 if (result.isEmpty()) {
-                    master.tell(EvalResponse(command.elem, Label.UND))
+                    master.tell(EvalResponse(command.id, command.elem, Label.UND, listOf()))
                 }
                 result.forEach {
-                    val query = ActiveQuery(0, "query_${Random.nextInt()}", -1, command.elem, it.toString(), master)
+                    val query = ActiveQuery(0, "query_${Random.nextInt(0, Int.MAX_VALUE)}", -1, command.elem, it.toString(), master, parentId = command.id)
                     activeQueries.add(query)
-                    master.tell(FindAttacker(query.id, it.toString(), listOf(), context.self))
+                    master.tell(FindAttacker(query.id, it.toString(), listOf(it.toString()), context.self))
                 }
                 this
             }
@@ -203,7 +229,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
             }
             .onMessage(FindAttacker::class.java) { command ->
                 val result = arg2pScope {
-                    solver.solve("findAttacker"(command.argument, listOf(command.queryChain), X, Y)).filter {
+                    solver.solve("structured" call "findAttacker"(Struct.parse(command.argument), listOf(command.queryChain.map(Struct::parse)), X, Y)).filter {
                         it.isYes
                     }.map {
                         Pair(it.substitution[X]!!.toString(), it.substitution[Y]!!.toString())
@@ -216,9 +242,9 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
                     if (it.second == "no") {
                         command.replyTo.tell(AttackerResponse(command.id, it.first, command.queryChain + it.first, Label.UND))
                     } else {
-                        val query = ActiveQuery(1, "query_${Random.nextInt()}", -1, command.argument, it.first, command.replyTo)
+                        val query = ActiveQuery(1, "query_${Random.nextInt(0, Int.MAX_VALUE)}", -1, command.argument, it.first, command.replyTo, parentId = command.id)
                         activeQueries.add(query)
-                        master.tell(FindAttacker(query.id, query.argument, listOf(), this@Evaluator.context.self))
+                        master.tell(FindAttacker(query.id, query.argument, command.queryChain + it.first, this@Evaluator.context.self))
                     }
                 }
                 this
@@ -228,9 +254,9 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
                 if (active.completed) return@onMessage this
                 val reply = { label: Label ->
                     if (active.type == 0) {
-                        active.replyTo.tell(EvalResponse(active.query, label))
+                        active.replyTo.tell(EvalResponse(active.parentId, active.query, label, command.queryChain))
                     } else {
-                        active.replyTo.tell(AttackerResponse(active.id, active.argument, command.queryChain, label))
+                        active.replyTo.tell(AttackerResponse(active.parentId, active.argument, command.queryChain, label))
                     }
                 }
                 when (command.response) {
