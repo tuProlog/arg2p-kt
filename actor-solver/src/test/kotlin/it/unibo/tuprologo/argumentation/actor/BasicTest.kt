@@ -1,9 +1,9 @@
 package it.unibo.tuprologo.argumentation.actor
 
 import akka.actor.typed.ActorSystem
-import it.unibo.tuprolog.argumentation.actor.Add
-import it.unibo.tuprolog.argumentation.actor.KbDistributor
-import it.unibo.tuprolog.argumentation.actor.RequireEvaluation
+import it.unibo.tuprolog.argumentation.actor.actors.KbDistributor
+import it.unibo.tuprolog.argumentation.actor.message.Add
+import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
 import org.junit.Test
 
 class BasicTest {

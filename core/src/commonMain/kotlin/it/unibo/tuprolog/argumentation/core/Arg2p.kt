@@ -54,33 +54,34 @@ interface Arg2pSolver {
                     }
                 }
             }
+
+        fun default(staticLibs: Iterable<ArgLibrary> = emptyList(), dynamicLibs: Iterable<ArgLibrary> = emptyList()) =
+            of(
+                listOf(EngineInterface, Context(), Cache()) + staticLibs,
+                listOf(
+                    Utils,
+                    Debug,
+                    RuleParser,
+                    MetaInterpreter,
+                    ModuleCalls,
+                    ArgumentationGraphBuilder,
+                    AttackRestrictionHandler,
+                    BpMetaGraphHandler,
+                    DefeasiblePreferencesHandler,
+                    GenericDefeasiblePreferencesHandler,
+                    StrictPreferencesHandler,
+                    BpLabeller,
+                    CompleteLabeller,
+                    GroundedLabeller,
+                    StatementLabeller,
+                    AbstractMode,
+                    StructuredMode,
+                    SuperiorityRelation,
+                    BpPartialLabeller,
+                    BpCompleteLabeller,
+                    PassThroughStatementLabeller,
+                    BinaryStatementLabeller
+                ) + dynamicLibs
+            )
     }
 }
-
-fun arg2p(): Arg2pSolver = Arg2pSolver.of(
-    listOf(EngineInterface, Context(), Cache()),
-    listOf(
-        Utils,
-        Debug,
-        RuleParser,
-        MetaInterpreter,
-        ModuleCalls,
-        ArgumentationGraphBuilder,
-        AttackRestrictionHandler,
-        BpMetaGraphHandler,
-        DefeasiblePreferencesHandler,
-        GenericDefeasiblePreferencesHandler,
-        StrictPreferencesHandler,
-        BpLabeller,
-        CompleteLabeller,
-        GroundedLabeller,
-        StatementLabeller,
-        AbstractMode,
-        StructuredMode,
-        SuperiorityRelation,
-        BpPartialLabeller,
-        BpCompleteLabeller,
-        PassThroughStatementLabeller,
-        BinaryStatementLabeller
-    )
-)

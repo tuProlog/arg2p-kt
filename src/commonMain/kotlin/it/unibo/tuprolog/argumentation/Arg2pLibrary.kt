@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.arg2p
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 
 object Arg2pLibrary {
-    fun get() = arg2p()
+    fun get() = Arg2pSolver.default()
     fun version() = "0.6.0"
 }
