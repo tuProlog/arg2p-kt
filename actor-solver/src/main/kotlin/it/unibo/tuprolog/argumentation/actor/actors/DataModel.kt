@@ -6,8 +6,20 @@ import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.solve.MutableSolver
 
-data class HelpWorker(val id: String, val ref: ActorRef<KbMessage>, val theory: MutableSolver, val rules: MutableList<String>)
-data class EvaluationCache(val id: String, val query: String, val responseNumber: Int, val responses: MutableList<EvalResponse> = mutableListOf())
+data class HelpWorker(
+    val id: String,
+    val ref: ActorRef<KbMessage>,
+    val theory: MutableSolver,
+    val rules: MutableList<String>
+)
+
+data class EvaluationCache(
+    val id: String,
+    val query: String,
+    val responseNumber: Int,
+    val caller: ActorRef<KbMessage>,
+    val responses: MutableList<EvalResponse> = mutableListOf()
+)
 
 data class ActiveQuery(
     val type: Int,

@@ -48,7 +48,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
                     }
                 }.toList()
                 if (result.isEmpty()) {
-                    master.tell(EvalResponse(command.id, command.elem, Label.UND, listOf()))
+                    master.tell(EvalResponse(command.id, command.elem, Label.NOT_FOUND, listOf()))
                 }
                 result.forEach {
                     val query = ActiveQuery(0, "query_${Random.nextInt(0, Int.MAX_VALUE)}", -1, command.elem, it.toString(), master, parentId = command.id)

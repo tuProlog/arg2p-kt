@@ -6,14 +6,7 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import it.unibo.tuprolog.argumentation.actor.libs.TheoryChainer
-import it.unibo.tuprolog.argumentation.actor.message.Add
-import it.unibo.tuprolog.argumentation.actor.message.Eval
-import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
-import it.unibo.tuprolog.argumentation.actor.message.ExpectedResponses
-import it.unibo.tuprolog.argumentation.actor.message.FindAttacker
-import it.unibo.tuprolog.argumentation.actor.message.KbMessage
-import it.unibo.tuprolog.argumentation.actor.message.Label
-import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
+import it.unibo.tuprolog.argumentation.actor.message.*
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
@@ -28,12 +21,20 @@ import kotlin.random.Random
 
 class KbDistributor private constructor(context: ActorContext<KbMessage>) : AbstractBehavior<KbMessage>(context) {
 
-    private val helperSolver = solver()
     private val workers: MutableList<HelpWorker> = mutableListOf()
     private val evaluationCache: MutableList<EvaluationCache> = mutableListOf()
 
     override fun createReceive(): Receive<KbMessage> =
         newReceiveBuilder()
+            .onMessage(Reset::class.java) {
+                context.log.info("Resetting")
+                workers.forEach {
+                    context.stop(it.ref)
+                }
+                workers.clear()
+                evaluationCache.clear()
+                this
+            }
             .onMessage(Add::class.java) { command ->
                 context.log.info("Adding ${command.elem}")
                 updateWorkers(command.elem)
@@ -41,15 +42,16 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
             }
             .onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
-                val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, workers.size)
+                val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, workers.size, command.replyTo)
                 evaluationCache.add(cache)
                 workers.forEach { it.ref.tell(Eval(cache.id, command.elem)) }
                 this
             }
             .onMessage(EvalResponse::class.java) { command ->
-                val cache = evaluationCache.first { it.id == command.id }
-                cache.responses.add(command)
-                evaluateResponses(cache)
+                evaluationCache.firstOrNull { it.id == command.id }?.let {
+                    it.responses.add(command)
+                    evaluateResponses(it)
+                }
                 this
             }.onMessage(FindAttacker::class.java) { command ->
                 command.replyTo.tell(ExpectedResponses(command.id, workers.count()))
@@ -101,6 +103,7 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
     }
 
     private fun updateWorkers(rule: String) {
+        val helperSolver = solver()
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
             helperSolver.solve("parser" call "convertAllRules"(X))
@@ -122,14 +125,21 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
     private fun evaluateResponses(cache: EvaluationCache) {
         if (cache.responses.size < cache.responseNumber) return
 
+        val filter = { label: Label ->
+            cache.responses.filter { it.response == label }.map { Response(
+                it.elem,
+                it.queryChain
+            ) }
+        }
+
+        cache.caller.tell(EvaluationResponse(
+            inArgs = filter(Label.IN),
+            outArgs = filter(Label.OUT),
+            undArgs = if (cache.responses.any { it.response != Label.NOT_FOUND })
+                filter(Label.UND) else filter(Label.NOT_FOUND).distinct()
+        ))
+
         evaluationCache.remove(cache)
-        context.log.info(
-            "The result for ${cache.query} is ${
-            if (cache.responses.any { it.response == Label.OUT }) Label.OUT
-            else if (cache.responses.any { it.response == Label.IN }) Label.IN
-            else Label.UND
-            }"
-        )
     }
 
     companion object {
