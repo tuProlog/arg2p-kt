@@ -7,6 +7,14 @@ import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Reset
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -98,6 +106,55 @@ class BasicTest {
                 assertEquals(it.inArgs.size, 1)
                 assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 0)
+            }
+        }
+    }
+
+    @Test
+    fun stressTest() {
+        val rules = IntRange(1, 100).map {
+            listOf(
+                "r0$it :=> a$it",
+                "r1$it : a$it => b$it",
+                "r2$it : b$it => c$it",
+                "r3$it : c$it => d$it",
+            )
+        }.flatten()
+
+        withActorSystem { system, master ->
+            rules.forEach {
+                master.tell(Add(it))
+            }
+
+            ResponseConsumer.getResponse("d99", system, master).also {
+                assertEquals(it.inArgs.size, 1)
+                assertEquals(it.outArgs.size, 0)
+                assertEquals(it.undArgs.size, 0)
+            }
+        }
+    }
+
+    @Test
+    fun stressTestIterative() {
+        val rules = IntRange(1, 100).map {
+            listOf(
+                "r0$it :=> a$it.",
+                "r1$it : a$it => b$it.",
+                "r2$it : b$it => c$it.",
+                "r3$it : c$it => d$it.",
+            ).joinToString("\n")
+        }.joinToString("\n")
+
+        arg2pScope {
+            ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+                otherLibraries = Arg2pSolver.default(
+                    kotlin.collections.listOf(FlagsBuilder().create()),
+                ).to2pLibraries(),
+                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL)
+            ).also {
+                it.loadStaticKb(Theory.parse(rules, it.operators))
+                val a = it.solve("answerQuery"("d99", X, Y, Z)).first()
+                assertEquals(a.isYes, true)
             }
         }
     }
