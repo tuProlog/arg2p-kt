@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor.libs
 
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
@@ -21,11 +21,10 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
-
 class ActorSolver : BaseArgLibrary(), Loadable {
 
-    private lateinit var actorSystem : ActorSystem<KbMessage>
-    private lateinit var masterActor : ActorRef<KbMessage>
+    private lateinit var actorSystem: ActorSystem<KbMessage>
+    private lateinit var masterActor: ActorRef<KbMessage>
 
     inner class ParallelSolve : PrimitiveWithSignature {
 
@@ -37,11 +36,17 @@ class ActorSolver : BaseArgLibrary(), Loadable {
             val response = ResponseConsumer.getResponse(goal.toString(), actorSystem, masterActor)
 
             return arg2pScope {
-                sequenceOf(request.replyWith(Substitution.Companion.of(mapOf(
-                    Pair(request.arguments[1] as Var, listOf(response.inArgs.map { it.claim })),
-                    Pair(request.arguments[2] as Var, listOf(response.outArgs.map { it.claim })),
-                    Pair(request.arguments[3] as Var, listOf(response.undArgs.map { it.claim }))
-                ))))
+                sequenceOf(
+                    request.replyWith(
+                        Substitution.Companion.of(
+                            mapOf(
+                                Pair(request.arguments[1] as Var, listOf(response.inArgs.map { it.claim })),
+                                Pair(request.arguments[2] as Var, listOf(response.outArgs.map { it.claim })),
+                                Pair(request.arguments[3] as Var, listOf(response.undArgs.map { it.claim }))
+                            )
+                        )
+                    )
+                )
             }
         }
     }
@@ -117,7 +122,6 @@ class ActorSolver : BaseArgLibrary(), Loadable {
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
-
 
     override fun identifier(): String = "parallel"
 }

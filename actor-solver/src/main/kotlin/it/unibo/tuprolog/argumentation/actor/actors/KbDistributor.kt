@@ -1,14 +1,24 @@
 package it.unibo.tuprolog.argumentation.actor.actors
 
-import akka.cluster.sharding.typed.javadsl.ClusterSharding
-import akka.cluster.sharding.typed.javadsl.EntityTypeKey
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import akka.cluster.sharding.typed.javadsl.ClusterSharding
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey
 import it.unibo.tuprolog.argumentation.actor.libs.TheoryChainer
-import it.unibo.tuprolog.argumentation.actor.message.*
+import it.unibo.tuprolog.argumentation.actor.message.Add
+import it.unibo.tuprolog.argumentation.actor.message.Eval
+import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
+import it.unibo.tuprolog.argumentation.actor.message.EvaluationResponse
+import it.unibo.tuprolog.argumentation.actor.message.ExpectedResponses
+import it.unibo.tuprolog.argumentation.actor.message.FindAttacker
+import it.unibo.tuprolog.argumentation.actor.message.KbMessage
+import it.unibo.tuprolog.argumentation.actor.message.Label
+import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
+import it.unibo.tuprolog.argumentation.actor.message.Reset
+import it.unibo.tuprolog.argumentation.actor.message.Response
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
@@ -30,9 +40,9 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         newReceiveBuilder()
             .onMessage(Reset::class.java) {
                 context.log.info("Resetting")
-                //workers.forEach {
+                // workers.forEach {
                 //    context.stop(it.ref)
-                //}
+                // }
                 workers.clear()
                 evaluationCache.clear()
                 this
@@ -132,18 +142,24 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         if (cache.responses.size < cache.responseNumber) return
 
         val filter = { label: Label ->
-            cache.responses.filter { it.response == label }.map { Response(
-                it.elem,
-                it.queryChain
-            ) }
+            cache.responses.filter { it.response == label }.map {
+                Response(
+                    it.elem,
+                    it.queryChain
+                )
+            }
         }
 
-        cache.caller.tell(EvaluationResponse(
-            inArgs = filter(Label.IN),
-            outArgs = filter(Label.OUT),
-            undArgs = if (cache.responses.any { it.response != Label.NOT_FOUND })
-                filter(Label.UND) else filter(Label.NOT_FOUND).distinct()
-        ))
+        cache.caller.tell(
+            EvaluationResponse(
+                inArgs = filter(Label.IN),
+                outArgs = filter(Label.OUT),
+                undArgs =
+                if (cache.responses.any { it.response != Label.NOT_FOUND }) {
+                    filter(Label.UND)
+                } else filter(Label.NOT_FOUND).distinct()
+            )
+        )
 
         evaluationCache.remove(cache)
     }

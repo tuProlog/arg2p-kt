@@ -28,7 +28,7 @@ class ResponseConsumer private constructor(context: ActorContext<KbMessage>, pri
         private fun create(consumer: CompletableFuture<EvaluationResponse>): Behavior<KbMessage> =
             Behaviors.setup { context -> ResponseConsumer(context, consumer) }
 
-        fun getResponse(goal: String, actorSystem: ActorSystem<KbMessage>, master: ActorRef<KbMessage>) : EvaluationResponse {
+        fun getResponse(goal: String, actorSystem: ActorSystem<KbMessage>, master: ActorRef<KbMessage>): EvaluationResponse {
             val future = CompletableFuture<EvaluationResponse>()
             val actor = actorSystem.systemActorOf(create(future), "listener_${Random.nextInt()}", Props.empty())
             master.tell(RequireEvaluation(goal, actor))
