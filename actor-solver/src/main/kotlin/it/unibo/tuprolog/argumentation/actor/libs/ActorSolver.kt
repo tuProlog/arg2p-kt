@@ -1,9 +1,11 @@
 package it.unibo.tuprolog.argumentation.actor.libs
 
 import akka.actor.typed.ActorSystem
-import it.unibo.tuprolog.argumentation.actor.actors.KbDistributor
+import akka.actor.typed.ActorRef
+import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
+import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
@@ -19,9 +21,11 @@ import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
+
 class ActorSolver : BaseArgLibrary(), Loadable {
 
-    private val actorSystem = ActorSystem.create(KbDistributor.create(), "solver")
+    private lateinit var actorSystem : ActorSystem<KbMessage>
+    private lateinit var masterActor : ActorRef<KbMessage>
 
     inner class ParallelSolve : PrimitiveWithSignature {
 
@@ -30,7 +34,7 @@ class ActorSolver : BaseArgLibrary(), Loadable {
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val goal: Term = request.arguments[0]
 
-            val response = ResponseConsumer.getResponse(goal.toString(), actorSystem)
+            val response = ResponseConsumer.getResponse(goal.toString(), actorSystem, masterActor)
 
             return arg2pScope {
                 sequenceOf(request.replyWith(Substitution.Companion.of(mapOf(
@@ -48,7 +52,37 @@ class ActorSolver : BaseArgLibrary(), Loadable {
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             request.context.staticKb.forEach {
-                actorSystem.tell(Add(it.toString()))
+                masterActor.tell(Add(it.head.toString()))
+            }
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
+    inner class ParallelInit : PrimitiveWithSignature {
+
+        override val signature = Signature("join", 1)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val port = request.arguments[0].toString()
+            ClusterInitializer.joinCluster("127.0.0.1:$port", port).let {
+                this@ActorSolver.actorSystem = it.first
+                this@ActorSolver.masterActor = it.second
+            }
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
+    inner class ParallelJoin : PrimitiveWithSignature {
+
+        override val signature = Signature("join", 2)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            ClusterInitializer.joinCluster(
+                request.arguments[1].toString(),
+                request.arguments[0].toString()
+            ).let {
+                this@ActorSolver.actorSystem = it.first
+                this@ActorSolver.masterActor = it.second
             }
             return sequenceOf(request.replyWith(true))
         }
@@ -59,7 +93,7 @@ class ActorSolver : BaseArgLibrary(), Loadable {
         override val signature = Signature("reset", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            actorSystem.tell(Reset)
+            masterActor.tell(Reset)
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -71,7 +105,9 @@ class ActorSolver : BaseArgLibrary(), Loadable {
             listOf(
                 ParallelSolve(),
                 ParallelLoad(),
-                ParallelReset()
+                ParallelReset(),
+                ParallelInit(),
+                ParallelJoin()
             ).let { primitives ->
                 Library.aliased(
                     alias = this.alias,

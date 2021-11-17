@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor.actors
 
+import akka.cluster.sharding.typed.javadsl.ClusterSharding
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
@@ -28,9 +30,9 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         newReceiveBuilder()
             .onMessage(Reset::class.java) {
                 context.log.info("Resetting")
-                workers.forEach {
-                    context.stop(it.ref)
-                }
+                //workers.forEach {
+                //    context.stop(it.ref)
+                //}
                 workers.clear()
                 evaluationCache.clear()
                 this
@@ -70,7 +72,9 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         solver().also {
             context.log.info("Creating $rule")
             val id = "solver_${Random.nextInt()}"
-            val worker = HelpWorker(id, context.spawn(Evaluator.create(context.self), id), it, mutableListOf(rule))
+            val ref = ClusterSharding.get(context.system)
+                .entityRefFor(EntityTypeKey.create(KbMessage::class.java, "evaluator"), id)
+            val worker = HelpWorker(id, ref, it, mutableListOf(rule))
             workers.add(worker)
             it.assertA(Struct.parse(rule, it.operators))
             arg2pScope { it.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
@@ -89,10 +93,12 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
         context.log.info("Merging $rule")
         workers.removeAll(oldWorkers)
         val kb = oldWorkers.flatMap { it.rules }.toMutableList().also { it.add(rule) }
-        oldWorkers.forEach { context.stop(it.ref) }
+        // oldWorkers.forEach { context.stop(it.ref) }
         solver().also { solver ->
             val id = "solver_${Random.nextInt()}"
-            val worker = HelpWorker(id, context.spawn(Evaluator.create(context.self), id), solver, kb)
+            val ref = ClusterSharding.get(context.system)
+                .entityRefFor(EntityTypeKey.create(KbMessage::class.java, "evaluator"), id)
+            val worker = HelpWorker(id, ref, solver, kb)
             workers.add(worker)
             kb.forEach {
                 worker.ref.tell(Add(it))

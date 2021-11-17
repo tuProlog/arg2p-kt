@@ -24,7 +24,7 @@ import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import kotlin.random.Random
 
-class Evaluator private constructor(context: ActorContext<KbMessage>, private val master: ActorRef<KbMessage>) : AbstractBehavior<KbMessage>(context) {
+class Evaluator private constructor(context: ActorContext<KbMessage>, private val master: ActorRef<KbMessage>, private val entityId: String) : AbstractBehavior<KbMessage>(context) {
 
     private val activeQueries: MutableList<ActiveQuery> = mutableListOf()
 
@@ -131,7 +131,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
     )
 
     companion object {
-        fun create(master: ActorRef<KbMessage>): Behavior<KbMessage> =
-            Behaviors.setup { context -> Evaluator(context, master) }
+        fun create(master: ActorRef<KbMessage>, entityId: String): Behavior<KbMessage> =
+            Behaviors.setup { context -> Evaluator(context, master, entityId) }
     }
 }

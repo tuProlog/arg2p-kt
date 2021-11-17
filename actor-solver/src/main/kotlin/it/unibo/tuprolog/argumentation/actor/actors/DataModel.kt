@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor.actors
 
 import akka.actor.typed.ActorRef
+import akka.cluster.sharding.typed.javadsl.EntityRef
 import it.unibo.tuprolog.argumentation.actor.message.AttackerResponse
 import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
@@ -8,7 +9,7 @@ import it.unibo.tuprolog.solve.MutableSolver
 
 data class HelpWorker(
     val id: String,
-    val ref: ActorRef<KbMessage>,
+    val ref: EntityRef<KbMessage>,
     val theory: MutableSolver,
     val rules: MutableList<String>
 )

@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
+import it.unibo.tuprolog.argumentation.actor.libs.ActorSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.ui.gui.TuPrologIDEBuilder
 import javafx.application.Application
@@ -10,7 +11,7 @@ class Arg2pIdeApplication : Application() {
 
     override fun start(stage: Stage) {
         try {
-            val arg2p = Arg2pSolver.default()
+            val arg2p = Arg2pSolver.default(staticLibs = emptyList(), dynamicLibs = listOf(ActorSolver()))
             TuPrologIDEBuilder(stage)
                 .title("Arg-tuProlog IDE")
                 .customLibraries(arg2p.to2pLibraries().libraries)

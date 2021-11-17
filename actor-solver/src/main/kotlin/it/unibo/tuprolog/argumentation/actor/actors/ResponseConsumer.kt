@@ -14,7 +14,7 @@ import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
 import java.util.concurrent.CompletableFuture
 import kotlin.random.Random
 
-class ResponseConsumer private constructor(context: ActorContext<KbMessage>, private val master: ActorRef<KbMessage>, private val consumer: CompletableFuture<EvaluationResponse>) : AbstractBehavior<KbMessage>(context) {
+class ResponseConsumer private constructor(context: ActorContext<KbMessage>, private val consumer: CompletableFuture<EvaluationResponse>) : AbstractBehavior<KbMessage>(context) {
 
     override fun createReceive(): Receive<KbMessage> =
         newReceiveBuilder()
@@ -25,13 +25,13 @@ class ResponseConsumer private constructor(context: ActorContext<KbMessage>, pri
             .build()
 
     companion object {
-        private fun create(master: ActorRef<KbMessage>, consumer: CompletableFuture<EvaluationResponse>): Behavior<KbMessage> =
-            Behaviors.setup { context -> ResponseConsumer(context, master, consumer) }
+        private fun create(consumer: CompletableFuture<EvaluationResponse>): Behavior<KbMessage> =
+            Behaviors.setup { context -> ResponseConsumer(context, consumer) }
 
-        fun getResponse(goal: String, actorSystem: ActorSystem<KbMessage>) : EvaluationResponse {
+        fun getResponse(goal: String, actorSystem: ActorSystem<KbMessage>, master: ActorRef<KbMessage>) : EvaluationResponse {
             val future = CompletableFuture<EvaluationResponse>()
-            val actor = actorSystem.systemActorOf(create(actorSystem, future), "listener_${Random.nextInt()}", Props.empty())
-            actorSystem.tell(RequireEvaluation(goal, actor))
+            val actor = actorSystem.systemActorOf(create(future), "listener_${Random.nextInt()}", Props.empty())
+            master.tell(RequireEvaluation(goal, actor))
             return future.join()
         }
     }
