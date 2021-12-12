@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
@@ -22,7 +23,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary() {
+class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary(), ArgLoader {
 
     abstract inner class AbstractWithLib : Primitive {
 

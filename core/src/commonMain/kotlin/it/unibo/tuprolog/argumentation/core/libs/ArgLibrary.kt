@@ -8,6 +8,9 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
+interface ArgContext : ArgLibrary
+interface ArgLoader : ArgLibrary
+
 interface ArgLibrary {
     val alias: String
     val baseContent: AliasedLibrary

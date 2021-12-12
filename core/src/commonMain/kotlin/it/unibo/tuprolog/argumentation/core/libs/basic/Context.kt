@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.libs.ArgContext
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
@@ -17,7 +18,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 
-class Context : BaseArgLibrary() {
+class Context : BaseArgLibrary(), ArgContext {
 
     private var nextSolver: Int = 1
     private var selectedSolver: Int = 0
