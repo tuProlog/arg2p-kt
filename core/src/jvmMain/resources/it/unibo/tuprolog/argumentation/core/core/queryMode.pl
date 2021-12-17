@@ -117,11 +117,19 @@ attackerOnRule(Rule, _, Argument, undercut) :-
 attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], Attacker, direct) :-
     Term \= [unless, _],
     \+ strict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]),
-%    buildSubArgument(Term, TargetRules, SubArgument),
-%    rebutRestriction(SubArgument),
+    (graphExtension(rebutRestriction) ->
+        (
+            buildSubArgument(Term, TargetRules, SubArgument),
+            rebutRestriction(SubArgument)
+        );
+        true
+    ),
     standard_af::conflict(Term, X),
-    buildArgument(X, Attacker).
-%    \+ superiorArgument(SubArgument, Attacker).
+    buildArgument(X, Attacker),
+    (ground(SubArgument) ->
+        \+ superiorArgument(SubArgument, Attacker);
+        true
+    ).
 
 % contrary-rebut / contrary-undermine
 
