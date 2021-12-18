@@ -61,8 +61,8 @@ interface Arg2pSolver {
                 }
             }
 
-        fun default() = of(
-            listOf(EngineInterface, Cache()),
+        fun default(staticLibs: Iterable<ArgLibrary> = emptyList(), dynamicLibs: Iterable<ArgLibrary> = emptyList()) = of(
+            listOf(EngineInterface, Cache()) + staticLibs,
             listOf(
                 Utils,
                 Debug,
@@ -86,7 +86,7 @@ interface Arg2pSolver {
                 BpCompleteLabeller,
                 PassThroughStatementLabeller,
                 BinaryStatementLabeller
-            )
+            ) + dynamicLibs
         )
     }
 }
