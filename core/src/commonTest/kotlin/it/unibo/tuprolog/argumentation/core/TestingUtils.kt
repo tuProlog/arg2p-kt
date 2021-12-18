@@ -27,11 +27,11 @@ object TestingUtils {
         get() = Long.MAX_VALUE
 
     fun withArgOperators(theory: String) =
-        Theory.parse(theory, arg2p().operators())
+        Theory.parse(theory, Arg2pSolver.default().operators())
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = arg2p().to2pLibraries(),
+            otherLibraries = Arg2pSolver.default().to2pLibraries(),
             staticKb = theory,
             flags = flags.set(Unknown, Unknown.FAIL)
         )

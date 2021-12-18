@@ -26,6 +26,7 @@ dependencies {
 
     implementation("it.unibo.tuprolog:ide:$tuPrologVersion")
     api(project(":core"))
+    api(project(":actor-solver"))
     testImplementation(kotlin("test-junit"))
 }
 
@@ -56,3 +57,9 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 }
 
 configureUploadToGithub(shadowJar)
+
+tasks.withType<ShadowJar> {
+    val newTransformer = com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer()
+    newTransformer.resource = "reference.conf"
+    transformers.add(newTransformer)
+}
