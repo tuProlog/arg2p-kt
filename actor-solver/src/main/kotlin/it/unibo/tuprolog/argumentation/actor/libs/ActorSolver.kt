@@ -103,6 +103,17 @@ class ActorSolver : BaseArgLibrary(), Loadable {
         }
     }
 
+    inner class ParallelLeave : PrimitiveWithSignature {
+
+        override val signature = Signature("leave", 0)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            masterActor.tell(Reset)
+            ClusterInitializer.leaveCluster(actorSystem)
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
     override val alias = "prolog.argumentation.actor.solver"
 
     override val baseContent: AliasedLibrary
@@ -112,7 +123,8 @@ class ActorSolver : BaseArgLibrary(), Loadable {
                 ParallelLoad(),
                 ParallelReset(),
                 ParallelInit(),
-                ParallelJoin()
+                ParallelJoin(),
+                ParallelLeave()
             ).let { primitives ->
                 Library.aliased(
                     alias = this.alias,

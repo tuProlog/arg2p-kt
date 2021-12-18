@@ -67,4 +67,10 @@ object ClusterInitializer {
 
         return Pair(actorSystem, masterActor)
     }
+
+    fun leaveCluster(actorSystem: ActorSystem<KbMessage>) {
+        Cluster.get(actorSystem).also {
+            it.leave(it.selfAddress())
+        }
+    }
 }

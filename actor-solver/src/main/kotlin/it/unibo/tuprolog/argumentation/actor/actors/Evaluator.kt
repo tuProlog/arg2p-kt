@@ -125,7 +125,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
             .build()
 
     private val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-        otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder().create()))
+        otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
             .to2pLibraries(),
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL)
     )

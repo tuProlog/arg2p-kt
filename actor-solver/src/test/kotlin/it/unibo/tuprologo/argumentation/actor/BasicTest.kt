@@ -11,6 +11,8 @@ import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -20,7 +22,7 @@ import org.junit.Ignore
 import org.junit.Test
 import kotlin.test.assertEquals
 
-val cluster = ClusterInitializer.joinCluster("127.0.0.1:2551", "2551")
+val cluster = ClusterInitializer.joinCluster("127.0.0.1:2552", "2552")
 
 private fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
     cluster.let {
@@ -114,7 +116,7 @@ class BasicTest {
 
     @Test
     fun stressTest() {
-        val rules = IntRange(1, 100).joinToString("\n") {
+        val rules = IntRange(1, 10).joinToString("\n") {
             listOf(
                 "r0$it :=> a$it.",
                 "r1$it : a$it => b$it.",
@@ -132,6 +134,7 @@ class BasicTest {
                 it.solve("join"(2551) and "load").first()
                 val a = it.solve("solve"("d99", X, Y, Z)).first()
                 assertEquals(a.isYes, true)
+                it.solve(Struct.parse("leave")).first()
             }
         }
     }

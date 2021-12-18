@@ -126,7 +126,11 @@ attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], At
     ),
     standard_af::conflict(Term, X),
     buildArgument(X, Attacker),
-    (ground(SubArgument) ->
+    (graphExtension(standardPref) ->
+        (ground(SubArgument) ->
+            true;
+            buildSubArgument(Term, TargetRules, SubArgument)
+        ),
         \+ superiorArgument(SubArgument, Attacker);
         true
     ).
