@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.system
 
-import it.unibo.tuprolog.argumentation.core.arg2p
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
@@ -13,7 +13,7 @@ class LibraryIntegrationTest {
     @Test
     fun libraryLoading() {
         val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
-            otherLibraries = arg2p().to2pLibraries()
+            otherLibraries = Arg2pSolver.default().to2pLibraries()
         )
         val query = Struct.parse("argTuProlog")
         val solutions = solver.solve(query)
@@ -25,8 +25,8 @@ class LibraryIntegrationTest {
 
     @Test
     fun library() {
-        val libraries = arg2p().to2pLibraries()
-        val theory = arg2p().to2pLibraries().theory
+        val libraries = Arg2pSolver.default().to2pLibraries()
+        val theory = Arg2pSolver.default().to2pLibraries().theory
         val libTheory = libraries.theory
         assertEquals(libTheory, theory)
     }
