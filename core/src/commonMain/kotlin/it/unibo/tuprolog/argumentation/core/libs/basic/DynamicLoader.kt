@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
@@ -23,7 +23,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary(), ArgLoader {
+class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
 
     abstract inner class AbstractWithLib : Primitive {
 
@@ -110,17 +110,16 @@ class DynamicLoader(private val solver: Arg2pSolver) : BaseArgLibrary(), ArgLoad
             Library.aliased(
                 alias = this.alias,
                 primitives = it.associateBy { prim -> prim.signature },
-                operatorSet = OperatorSet(
-                    Operator("::", Specifier.XFX, 700),
-                    Operator(":::", Specifier.XFX, 700),
-                )
+                operatorSet = operators()
             )
         }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    init {
-        theoryOperators = OperatorSet(
+    override var theoryOperators = operators()
+
+    companion object {
+        fun operators() = OperatorSet(
             Operator("::", Specifier.XFX, 700),
             Operator(":::", Specifier.XFX, 700),
         )

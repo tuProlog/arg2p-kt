@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -15,7 +15,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 
-class Cache : BaseArgLibrary() {
+class Cache : ArgLibrary {
 
     private val solver: MutableSolver =
         MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())

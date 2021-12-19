@@ -39,8 +39,8 @@ interface Arg2pSolver {
     fun staticLibraries(): Iterable<ArgLibrary>
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Libraries.of(listOf(loader).plus(staticLibraries()).map { it.content() })
-    fun operators() = listOf(loader).plus(staticLibraries())
+    fun to2pLibraries() = Libraries.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
+    fun operators() = listOf(loader, context).plus(staticLibraries())
         .map { it.theoryOperators }.reduce(OperatorSet::plus)
 
     companion object {
@@ -52,13 +52,6 @@ interface Arg2pSolver {
 
                 override fun staticLibraries() = staticLibs
                 override fun dynamicLibraries() = dynamicLibs
-
-                init {
-                    operators().also { operators ->
-                        staticLibs.onEach { it.theoryOperators = operators }
-                        dynamicLibs.onEach { it.theoryOperators = operators }
-                    }
-                }
             }
 
         fun default(staticLibs: Iterable<ArgLibrary> = emptyList(), dynamicLibs: Iterable<ArgLibrary> = emptyList()) = of(

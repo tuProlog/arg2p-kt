@@ -1,10 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.Scope
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.library.AliasedLibrary
@@ -12,7 +14,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.rule.RuleWrapper
 import it.unibo.tuprolog.theory.Theory
 
-object BinaryStatementLabeller : BaseArgLibrary(), Loadable {
+object BinaryStatementLabeller : ArgLibrary, Loadable {
 
     override val alias = "prolog.argumentation.graph.labelling.statement.binary"
 
@@ -25,6 +27,9 @@ object BinaryStatementLabeller : BaseArgLibrary(), Loadable {
         get() = emptyList()
 
     override fun identifier(): String = "statement_binary"
+
+    override val theoryOperators = DynamicLoader.operators()
+        .plus(OperatorSet.DEFAULT)
 }
 
 private object BinaryLabelling : RuleWrapper<ExecutionContext>("statementLabelling", 0) {

@@ -15,15 +15,12 @@ interface ArgLibrary {
     val alias: String
     val baseContent: AliasedLibrary
     val baseFlags: Iterable<ArgsFlag<*, *>>
-    var theoryOperators: OperatorSet
+
+    val theoryOperators: OperatorSet
+        get() = OperatorSet.DEFAULT
 
     fun flags() = baseFlags
     fun content() = baseContent
-}
-
-abstract class BaseArgLibrary : ArgLibrary {
-    override var theoryOperators: OperatorSet = OperatorSet.DEFAULT
-        get() = OperatorSet.DEFAULT.plus(if (field == OperatorSet.DEFAULT) field else OperatorSet.DEFAULT.plus(field))
 }
 
 interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
@@ -41,7 +38,7 @@ interface RawPrologContent {
     val prologTheory: Theory
 }
 
-abstract class LazyRawPrologContent : BaseArgLibrary(), RawPrologContent {
+abstract class LazyRawPrologContent : ArgLibrary, RawPrologContent {
     abstract val prologRawTheory: String
     override val prologTheory: Theory by lazy {
         Theory.parse(prologRawTheory, theoryOperators)

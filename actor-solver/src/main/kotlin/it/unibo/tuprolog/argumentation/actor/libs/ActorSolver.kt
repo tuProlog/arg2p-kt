@@ -8,20 +8,22 @@ import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.BaseArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class ActorSolver : BaseArgLibrary(), Loadable {
+class ActorSolver : ArgLibrary, Loadable {
 
     private lateinit var actorSystem: ActorSystem<KbMessage>
     private lateinit var masterActor: ActorRef<KbMessage>
@@ -40,9 +42,9 @@ class ActorSolver : BaseArgLibrary(), Loadable {
                     request.replyWith(
                         Substitution.Companion.of(
                             mapOf(
-                                Pair(request.arguments[1] as Var, listOf(response.inArgs.map { it.claim })),
-                                Pair(request.arguments[2] as Var, listOf(response.outArgs.map { it.claim })),
-                                Pair(request.arguments[3] as Var, listOf(response.undArgs.map { it.claim }))
+                                Pair(request.arguments[1] as Var, response.inArgs.map { it.claim }.toTerm()),
+                                Pair(request.arguments[2] as Var, response.outArgs.map { it.claim }.toTerm()),
+                                Pair(request.arguments[3] as Var, response.undArgs.map { it.claim }.toTerm())
                             )
                         )
                     )
@@ -128,7 +130,8 @@ class ActorSolver : BaseArgLibrary(), Loadable {
             ).let { primitives ->
                 Library.aliased(
                     alias = this.alias,
-                    primitives = primitives.associateBy { it.signature }
+                    primitives = primitives.associateBy { it.signature },
+                    operatorSet = RuleParserBase.operators()
                 )
             }
 
@@ -136,4 +139,7 @@ class ActorSolver : BaseArgLibrary(), Loadable {
         get() = emptyList()
 
     override fun identifier(): String = "parallel"
+
+    override var theoryOperators = RuleParserBase.operators()
+        .plus(OperatorSet.DEFAULT)
 }
