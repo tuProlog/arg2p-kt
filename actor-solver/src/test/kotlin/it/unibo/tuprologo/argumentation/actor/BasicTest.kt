@@ -4,10 +4,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
-import it.unibo.tuprolog.argumentation.actor.arg2pParallelSolver
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Reset
+import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
@@ -127,7 +127,7 @@ class BasicTest {
 
         arg2pScope {
             ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                otherLibraries = arg2pParallelSolver().to2pLibraries(),
+                otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
                 flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL)
             ).also {
                 it.loadStaticKb(Theory.parse(rules, it.operators))
