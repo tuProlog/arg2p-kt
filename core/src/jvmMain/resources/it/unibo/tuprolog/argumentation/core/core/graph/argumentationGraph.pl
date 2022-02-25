@@ -8,7 +8,11 @@ buildArgumentationGraph :-
 
 buildArguments :-
 	buildArgumentsFromPremises,
-	findall([RuleID, RuleBody, RuleHead], context_check(rule([RuleID, RuleBody, RuleHead])), Rules),
+	buildArgumentsFromEmptyRules,
+	findall([RuleID, RuleBody, RuleHead], (
+	    context_check(rule([RuleID, RuleBody, RuleHead])),
+	    \+ emptyRule([RuleID, RuleBody, RuleHead])
+    ), Rules),
 	buildArgumentsFromRules(Rules, Rules, n).
 
 buildArgumentsFromPremises :-
@@ -22,6 +26,28 @@ buildArgumentsFromPremises :-
         ),
         _
     ).
+
+buildArgumentsFromEmptyRules :-
+    findall(
+        _,
+        (
+            emptyRule([RuleID, RulePrem, RuleHead]),
+            checkStrict(RuleID, DefRule),
+            ground(RuleHead),
+            context_assert(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]))
+        ),
+        _
+    ).
+
+% Check Rule
+emptyRule([RuleID, [], RuleHead]) :-
+    context_check(rule([RuleID, [], RuleHead])).
+emptyRule([RuleID, [[unless, X]], RuleHead]) :-
+    context_check(rule([RuleID, [[unless, X]], RuleHead])).
+emptyRule([RuleID, [[prolog(Check)]], RuleHead]) :-
+    context_check(rule([RuleID, [[prolog(Check)]], RuleHead])),
+    (callable(Check) -> call(Check); Check).
+
 
 % Check \+ member(RuleID, SupportRules) constraint. Is it avoiding cyclical arguments?
 % Find best Cut placement
@@ -102,6 +128,12 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 
 % Attacks
 
+findPossibleAttackers([_, _, Head, _, _], [_, _, Conf, _, _]) :-
+    conflict(Head, Conf).
+findPossibleAttackers([_, _, _, Prem, _], [_, _, Conf, _, _]) :-
+    member([unless, Conf], Prem).
+findPossibleAttackers([_, RuleID, _, Prem, _], [_, _, [undercut(RuleID)], _, _]).
+
 buildAttacks :-
     findall(X, context_check(argument(X)), Args),
 	buildDirectAttacks(Args),
@@ -112,7 +144,9 @@ buildDirectAttacks([H|T]) :-
     findall(_, buildDirectAttack(H), _),
     buildDirectAttacks(T).
 
+% Selezione Attaccanti prima della check su argomento
 buildDirectAttack(A) :-
+    findPossibleAttackers(A, B),
 	context_check(argument(B)),
 	A \== B,
     attacks(T, A, B),

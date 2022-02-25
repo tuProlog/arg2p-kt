@@ -73,7 +73,7 @@ object AutoTransposition : ArgsFlag<Boolean, Unit> {
 
 object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "prologStrictCompatibility"
-    override fun default(): Boolean = true
+    override fun default(): Boolean = false
     override fun values() {}
 }
 
