@@ -4,7 +4,6 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -169,5 +168,4 @@ class LawCaseStudyTest {
         println(time.toDouble(DurationUnit.SECONDS))
         println(time2.toDouble(DurationUnit.SECONDS))
     }
-
 }
