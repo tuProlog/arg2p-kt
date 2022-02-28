@@ -51,7 +51,7 @@ isEmptyList([]).
 appendLists([], []).
 appendLists([H|T], R) :-
     appendLists(T, AT),
-    append(H, AT, R).
+    append_fast(H, AT, R).
 
 % Misc utils
 
