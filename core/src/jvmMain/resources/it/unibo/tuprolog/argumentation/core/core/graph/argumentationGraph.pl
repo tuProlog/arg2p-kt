@@ -146,7 +146,6 @@ buildDirectAttacks([H|T]) :-
 
 % Selezione Attaccanti prima della check su argomento
 buildDirectAttack(A) :-
-    findPossibleAttackers(A, B),
 	context_check(argument(B)),
 	A \== B,
     attacks(T, B, A),
