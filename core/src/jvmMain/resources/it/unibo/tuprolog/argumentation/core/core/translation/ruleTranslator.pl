@@ -13,32 +13,32 @@ convertAllRules(ArgRules) :-
     specialRules(SpecialRules),
     utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
     convertAllRules(L, Rules),
-    findall(sup(X, Y), sup(X, Y), Sups),
-    utils::appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules),
-    findall(_, (member(X, ArgRules), context_assert(X)), _), !.
+    findall(sup(X, Y), sup(X, Y), Sup),
+    utils::appendLists([Rules, AxiomsIds, RulesIds, Sup], ArgRules),
+    utils::assert_all(ArgRules), !.
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
     prologDefeasibleRules(DefeasibleRulesNew),
-    append(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
+    utils::append_fast(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
 
 strictRules(CtrRules, Ids) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
     prologStrictRules(StrictRulesNew),
-    append(StrictRulesOld, StrictRulesNew, StrictRules),
+    utils::append_fast(StrictRulesOld, StrictRulesNew, StrictRules),
     transpose(StrictRules, StrictRules, CtrRules),
-    findall(strict(RN), member([RN, _, _], CtrRules), Ids).
+    extract_id(CtrRules, Ids).
 
 ordinaryPremises(Premises) :-
     findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
     prologPremises(PremisesNew),
-    append(PremisesOld, PremisesNew, Premises).
+    utils::append_fast(PremisesOld, PremisesNew, Premises).
 
 axiomPremises(Axioms, Ids) :-
     findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
     prologAxioms(AxiomsNew),
-    append(AxiomsOld, AxiomsNew, Axioms),
-    findall(strict(RN), member([RN, _], Axioms), Ids).
+    utils::append_fast(AxiomsOld, AxiomsNew, Axioms),
+    extract_id(Axioms, Ids).
 
 specialRules(SpecialRules) :-
     bpsNew(SpecialRules).
@@ -56,7 +56,7 @@ transpose([H|T], TempCtrRules, CtrRules) :-
     mergeCtrRules(CR, Tran, CtrRules).
 
 mergeCtrRules(All, ToMerge, X) :-
-    append(All, ToMerge, XT),
+    utils::append_fast(All, ToMerge, XT),
     deduplicate(XT, X).
 
 deduplicate([], []).
@@ -79,7 +79,7 @@ transposition_sequential(LPrec, [H|T], Effect, Id, Skipped, NewPrec, XNegated, N
     transposition_sequential(LPrec, T, Effect, Id, [H|Skipped], NewPrec, XNegated, NewId).
 transposition_sequential(LPrec, [X|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
     prologEscape(X),
-    append(Skipped, T, CleanedPrec),
+    utils::append_fast(Skipped, T, CleanedPrec),
     negate(X, XNegated),
     negate(Effect, EffectNegated),
     list_to_tuple([EffectNegated|CleanedPrec], NewPrec),
@@ -162,7 +162,7 @@ check_modifiers_in_list(MODE, [H|T], L) :- H \== [],
                             check_modifiers_once(H, LH),
                             % check_admissibility(MODE, H, LH),
                             check_modifiers_in_list(MODE, T, LT),
-                            append([LH], LT, L).
+                            utils::append_fast([LH], LT, L).
 
 check_modifiers_once(H, List) :- once(check_modifiers(H, List)).
 
@@ -171,7 +171,7 @@ check_modifiers(H, List) :-
     functor(H, '-', _) -> (
         arg(1, H, Arg),
         check_modifiers_once(Arg, Lobl),
-        append([neg], Lobl, Lf),
+        utils::append_fast([neg], Lobl, Lf),
         List = Lf);
     functor(H, 'o', _) -> (
         arg(1, H, Arg),
@@ -198,7 +198,7 @@ tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
 tuple_to_list((A,B),L) :-
     tuple_to_list(A, La),
     tuple_to_list(B, Lb),
-    append(La, Lb,L).
+    utils::append_fast(La, Lb,L).
 
 list_to_tuple([H], (H)) :- !.
 list_to_tuple([H|T], (H,TT)) :- list_to_tuple(T,TT).

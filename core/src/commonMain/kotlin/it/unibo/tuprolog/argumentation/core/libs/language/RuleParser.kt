@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -20,6 +21,7 @@ import it.unibo.tuprolog.dsl.theory.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
@@ -37,7 +39,8 @@ sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 Axioms::descriptionPair.get(),
                 Bps::descriptionPair.get(),
                 Premises::descriptionPair.get(),
-                DefeasibleRules::descriptionPair.get()
+                DefeasibleRules::descriptionPair.get(),
+                ExtractStrictIds::descriptionPair.get()
             ),
             theory = this.prologTheory,
             operatorSet = operators()
@@ -197,4 +200,18 @@ object Bps : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
                     )
                 }.toTerm()
         }
+}
+
+object ExtractStrictIds : BinaryRelation.WithoutSideEffects<ExecutionContext>("extract_id") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+        sequenceOf(
+            Substitution.of(
+                second.asVar()!!,
+                List.of(
+                    first.asList()!!.toList().map {
+                        Struct.of("strict", it.asCons()!!.head)
+                    }
+                )
+            )
+        )
 }
