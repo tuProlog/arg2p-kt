@@ -158,11 +158,12 @@ convertRule(Name, Effects, premise([Name, LeffectsCheckedFlattened])) :-
  */
 check_modifiers_in_list(MODE, [], []) :- !.
 check_modifiers_in_list(MODE, [H|T], L) :- H == [], L = [], !.
-check_modifiers_in_list(MODE, [H|T], L) :- H \== [],
+check_modifiers_in_list(MODE, [H|T], R) :- H \== [],
                             check_modifiers_once(H, LH),
                             % check_admissibility(MODE, H, LH),
                             check_modifiers_in_list(MODE, T, LT),
-                            utils::append_fast([LH], LT, L).
+                            utils::append_fast([LH], LT, L),
+                            R = L.
 
 check_modifiers_once(H, List) :- once(check_modifiers(H, List)).
 
