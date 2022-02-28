@@ -181,7 +181,7 @@ buildArgument(Query, Argument) :-
 buildArgument(Query, [R, T, Query, B, I]) :- context_check(argument([R, T, Query, B, I])).
 
 buildSingleArgument(Query, Argument) :-
-    build(Query, Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
+    build(Query, [], Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
     utils::deduplicate(DefRules, CDefRules),
     utils::deduplicate(DefPremises, CDefPremises),
     utils::deduplicate(Groundings, CGroundings),
@@ -189,24 +189,25 @@ buildSingleArgument(Query, Argument) :-
 
 % Premise
 
-build(Conclusion, [Conclusion], Rules) :-
+build(Conclusion, _, [Conclusion], Rules) :-
     context_check(premise([Id, Conclusion])),
     premiseRules(Id, Rules).
 
 % Rule
 
-build(Conclusion, [Conclusion|Conclusions], Rules) :-
+build(Conclusion, Ids, [Conclusion|Conclusions], Rules) :-
     context_check(rule([Id, Premises, Conclusion])),
-    buildPremises(Premises, Conclusions, ResRules),
+    \+ member(Id, Ids),
+    buildPremises(Premises, [Id|Ids], Conclusions, ResRules),
     ruleRules(Id, ResRules, Rules).
 
-build([prolog(Check)], [], []) :- (callable(Check) -> call(Check); Check).
-build([unless, Atom], [[unless, Atom]], []).
+build([prolog(Check)], _, [], []) :- (callable(Check) -> call(Check); Check).
+build([unless, Atom], _, [[unless, Atom]], []).
 
-buildPremises([], [], [[], [], [], []]).
-buildPremises([H|T], Conclusions, Rules) :-
-    build(H, HConclusions, HRules),
-    buildPremises(T, TConclusions, TRules),
+buildPremises([], _, [], [[], [], [], []]).
+buildPremises([H|T], Ids, Conclusions, Rules) :-
+    build(H, Ids, HConclusions, HRules),
+    buildPremises(T, Ids, TConclusions, TRules),
     utils::appendLists([HConclusions, TConclusions], Conclusions),
     mergeRules(HRules, TRules, Rules).
 

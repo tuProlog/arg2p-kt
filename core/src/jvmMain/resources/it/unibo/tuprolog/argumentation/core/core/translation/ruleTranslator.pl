@@ -12,10 +12,10 @@ convertAllRules(ArgRules) :-
     axiomPremises(Axioms, AxiomsIds),
     specialRules(SpecialRules),
     utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
-    convertAllRules(L, Rules), !,
+    convertAllRules(L, Rules),
     findall(sup(X, Y), sup(X, Y), Sups),
     utils::appendLists([Rules, AxiomsIds, RulesIds, Sups], ArgRules),
-    findall(_, (member(X, ArgRules), context_assert(X)), _).
+    findall(_, (member(X, ArgRules), context_assert(X)), _), !.
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
@@ -48,7 +48,7 @@ specialRules(SpecialRules) :-
 % TRANSPOSITION
 %=======================================================================================================================
 
-transpose(_, CtrRules, CtrRules) :- \+ autoTransposition. 
+transpose(_, CtrRules, CtrRules) :- \+ autoTransposition, !.
 transpose([], CtrRules, CtrRules).
 transpose([H|T], TempCtrRules, CtrRules) :-
     transpose(T, TempCtrRules, CR),
@@ -131,7 +131,7 @@ convertRule(RuleName, Preconditions, Effects, rule(List)) :-
     check_modifiers_in_list(preconditions, Lprecond, LprecondChecked),
     check_modifiers_in_list(effects, Leffects, LeffectsChecked),
     flatten_first_level(LeffectsChecked, LeffectsCheckedFlattened),
-    List = [RuleName, LprecondChecked, LeffectsCheckedFlattened].
+    List = [RuleName, LprecondChecked, LeffectsCheckedFlattened], !.
 
 /*
  *   Convert the given special rule
@@ -143,7 +143,7 @@ convertRule(bps, Effects, abstractBp(Checked)) :-
     functor(Effects, 'bp', _),
     Effects =.. L,
     removehead(L, LC),
-    check_modifiers_in_list(effects, LC, Checked).
+    check_modifiers_in_list(effects, LC, Checked), !.
 
 convertRule(Name, Effects, premise([Name, LeffectsCheckedFlattened])) :-
     tuple_to_list(Effects, Leffects),
@@ -156,40 +156,34 @@ convertRule(Name, Effects, premise([Name, LeffectsCheckedFlattened])) :-
  *   Find negations(-), obligations(o), permissions(p) on a list of preconditions/effects and
  *   raplace them with the assigned literal (neg, obl, perm)
  */
-check_modifiers_in_list(MODE, [], []).
-check_modifiers_in_list(MODE, [H|T], L) :- H == [], L = [].
+check_modifiers_in_list(MODE, [], []) :- !.
+check_modifiers_in_list(MODE, [H|T], L) :- H == [], L = [], !.
 check_modifiers_in_list(MODE, [H|T], L) :- H \== [],
-                            check_modifiers(H, LH),
-                            check_admissibility(MODE, H, LH),
+                            check_modifiers_once(H, LH),
+                            % check_admissibility(MODE, H, LH),
                             check_modifiers_in_list(MODE, T, LT),
                             append([LH], LT, L).
 
-check_admissibility(preconditions, H, LH) :-
-    \+ defeasible_admissible(LH),
-    throw(['Premise  ', H, '  is not a well formed member of the argumentation language.']).
-check_admissibility(effects, H, LH) :-
-    \+ admissible(LH),
-    throw(['Conclusion  ', H, '  is not a well formed member of the argumentation language.']).
-check_admissibility(_, _, _).
+check_modifiers_once(H, List) :- once(check_modifiers(H, List)).
 
 check_modifiers([], []).
 check_modifiers(H, List) :-
     functor(H, '-', _) -> (
         arg(1, H, Arg),
-        check_modifiers(Arg, Lobl),
+        check_modifiers_once(Arg, Lobl),
         append([neg], Lobl, Lf),
         List = Lf);
     functor(H, 'o', _) -> (
         arg(1, H, Arg),
-        check_modifiers(Arg, Lobl),
+        check_modifiers_once(Arg, Lobl),
         List = [obl|[Lobl]]);
     functor(H, 'p', _) -> (
         arg(1, H, Arg),
-        check_modifiers(Arg, Lper),
+        check_modifiers_once(Arg, Lper),
         List = [perm|[Lper]]);
     functor(H, '~', _) -> (
         arg(1, H, Arg),
-        check_modifiers(Arg, Lper),
+        check_modifiers_once(Arg, Lper),
         List = [unless|[Lper]]);
     functor(H, 'bp', _) -> (
         H =.. [_|Arg],
@@ -200,29 +194,40 @@ check_modifiers(H, List) :-
 /*
  *   Convert the given tuple to list
  */
-tuple_to_list((A,B),L) :- tuple_to_list(A, La), tuple_to_list(B, Lb), append(La, Lb,L).
-tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _).
+tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
+tuple_to_list((A,B),L) :-
+    tuple_to_list(A, La),
+    tuple_to_list(B, Lb),
+    append(La, Lb,L).
 
-list_to_tuple([H], (H)).
+list_to_tuple([H], (H)) :- !.
 list_to_tuple([H|T], (H,TT)) :- list_to_tuple(T,TT).
 
 /*
  *   Replace all the occurences of a given element with the given argument
  */
-replace(_, _, [],[]).
-replace(O, R, [O|T], [R|T2]) :- replace(O, R, T, T2).
+replace(_, _, [],[]) :- !.
+replace(O, R, [O|T], [R|T2]) :- replace(O, R, T, T2), !.
 replace(O, R, [H|T], [H|T2]) :- H \= O, replace(O, R, T, T2).
 
-flatten_first_level([X], X).
+flatten_first_level([X], X) :- !.
 flatten_first_level.
 
 removehead([_|Tail], Tail).
 
-
-in(A, A) :- nonvar(A), A \= (_ , _).
-in(A, (A, _)).
+in(A, A) :- nonvar(A), A \= (_ , _), !.
+in(A, (A, _)) :- !.
 in(A, (_ , Cs)) :- in(A, Cs).
 
+% Admissibility check
+
+check_admissibility(preconditions, H, LH) :-
+    \+ defeasible_admissible(LH),
+    throw(['Premise  ', H, '  is not a well formed member of the argumentation language.']).
+check_admissibility(effects, H, LH) :-
+    \+ admissible(LH),
+    throw(['Conclusion  ', H, '  is not a well formed member of the argumentation language.']).
+check_admissibility(_, _, _).
 
 defeasible_admissible([unless, Term]) :- admissible(Term).
 defeasible_admissible(Term) :- admissible(Term).
