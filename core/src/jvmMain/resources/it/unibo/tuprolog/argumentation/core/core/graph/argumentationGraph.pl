@@ -132,7 +132,7 @@ findPossibleAttackers([_, _, Head, _, _], [_, _, Conf, _, _]) :-
     conflict(Head, Conf).
 findPossibleAttackers([_, _, _, Prem, _], [_, _, Conf, _, _]) :-
     member([unless, Conf], Prem).
-findPossibleAttackers([_, RuleID, _, Prem, _], [_, _, [undercut(RuleID)], _, _]).
+findPossibleAttackers([_, RuleID, _, _, _], [_, _, [undercut(RuleID)], _, _]).
 
 buildAttacks :-
     findall(X, context_check(argument(X)), Args),
@@ -149,9 +149,9 @@ buildDirectAttack(A) :-
     findPossibleAttackers(A, B),
 	context_check(argument(B)),
 	A \== B,
-    attacks(T, A, B),
-	\+ context_check(attack(T, A, B, B)),
-	context_assert(attack(T, A, B, B)).
+    attacks(T, B, A),
+	\+ context_check(attack(T, B, A, A)),
+	context_assert(attack(T, B, A, A)).
 
 buildTransitiveAttacks :-
 	context_check(attack(T, A, B, D)),
