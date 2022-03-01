@@ -233,3 +233,33 @@ conflict([neg, bp, Atom], [bp, Atom]).
 % SUP CONFLICT
 
 conflict([sup(X, Y)],  [sup(Y, X)]).
+
+
+
+%========================================================================
+% CONFLICT DEFINITION (NEW)
+%========================================================================
+
+conflictt([Atom], [-Atom]).
+conflictt([-Atom], [Atom]).
+
+conflictt([o(Atom)], [o(-Atom)]).
+conflictt([o(-Atom)], [o(Atom)]).
+
+conflictt([o(Lit)], [-o(Lit)]).
+conflictt([-o(Lit)], [o(Lit)]).
+
+conflictt([p(Atom)], [o(-Atom)]).
+conflictt([o(-Atom)], [p(Atom)]).
+
+conflictt([p(-Atom)], [o(Atom)]).
+conflictt([o(Atom)], [p(-Atom)]).
+
+% BP CONFLICT
+
+conflict([bp, Atom], [neg, bp, Atom]).
+conflict([neg, bp, Atom], [bp, Atom]).
+
+% SUP CONFLICT
+
+conflict([sup(X, Y)],  [sup(Y, X)]).

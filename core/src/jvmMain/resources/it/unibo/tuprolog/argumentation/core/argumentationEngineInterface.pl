@@ -18,6 +18,6 @@ buildLabelSets :-
     debug::printStatementLabelling([StatIn, StatOut, StatUnd]).
 
 answerQuery(Goal, Yes, No, Und) :-
-    context_reset,
-    parser:::convertAllRules(_),
+%    context_reset,
+%    parser:::convertAllRules(_),
     structured:::computeStatementAcceptance(Goal, Yes, No, Und).
