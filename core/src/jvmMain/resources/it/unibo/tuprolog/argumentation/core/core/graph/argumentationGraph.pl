@@ -210,56 +210,26 @@ undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 % CONFLICT DEFINITION
 %========================================================================
 
-conflict( [Atom], [neg, Atom]).
-conflict( [neg, Atom], [Atom]).
+conflict([Atom], [-Atom]).
+conflict([-Atom], [Atom]).
 
-conflict( [obl, [Atom]],  [obl, [neg, Atom]]).
-conflict( [obl, [neg, Atom]],  [obl, [Atom]]).
+conflict([o(Atom)], [o(-Atom)]).
+conflict([o(-Atom)], [o(Atom)]).
 
-conflict( [obl, Lit],  [neg, obl, Lit]).
-conflict( [neg, obl, Lit],  [obl, Lit]).
+conflict([o(Lit)], [-o(Lit)]).
+conflict([-o(Lit)], [o(Lit)]).
 
-conflict( [perm, [Atom]],  [obl, [neg, Atom]]).
-conflict( [obl, [neg, Atom]],  [perm, [Atom]]).
+conflict([p(Atom)], [o(-Atom)]).
+conflict([o(-Atom)], [p(Atom)]).
 
-conflict( [perm, [neg, Atom]],  [obl, [Atom]]).
-conflict( [obl, [Atom]],  [perm, [neg, Atom]]).
-
-% BP CONFLICT
-
-conflict([bp, Atom], [neg, bp, Atom]).
-conflict([neg, bp, Atom], [bp, Atom]).
-
-% SUP CONFLICT
-
-conflict([sup(X, Y)],  [sup(Y, X)]).
-
-
-
-%========================================================================
-% CONFLICT DEFINITION (NEW)
-%========================================================================
-
-conflictt([Atom], [-Atom]).
-conflictt([-Atom], [Atom]).
-
-conflictt([o(Atom)], [o(-Atom)]).
-conflictt([o(-Atom)], [o(Atom)]).
-
-conflictt([o(Lit)], [-o(Lit)]).
-conflictt([-o(Lit)], [o(Lit)]).
-
-conflictt([p(Atom)], [o(-Atom)]).
-conflictt([o(-Atom)], [p(Atom)]).
-
-conflictt([p(-Atom)], [o(Atom)]).
-conflictt([o(Atom)], [p(-Atom)]).
+conflict([p(-Atom)], [o(Atom)]).
+conflict([o(Atom)], [p(-Atom)]).
 
 % BP CONFLICT
 
-conflict([bp, Atom], [neg, bp, Atom]).
-conflict([neg, bp, Atom], [bp, Atom]).
+% conflict([bp(Atom)], [-bp(Atom)]).
+% conflict([-bp(Atom)], [bp(Atom)]).
 
 % SUP CONFLICT
 
-conflict([sup(X, Y)],  [sup(Y, X)]).
+conflict([sup(X, Y)], [sup(Y, X)]).

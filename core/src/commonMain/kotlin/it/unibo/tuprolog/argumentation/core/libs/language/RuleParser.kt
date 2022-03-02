@@ -40,7 +40,8 @@ sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 Bps::descriptionPair.get(),
                 Premises::descriptionPair.get(),
                 DefeasibleRules::descriptionPair.get(),
-                ExtractStrictIds::descriptionPair.get()
+                ExtractStrictIds::descriptionPair.get(),
+                RuleToClause::descriptionPair.get()
             ),
             theory = this.prologTheory,
             operatorSet = operators()
@@ -215,3 +216,23 @@ object ExtractStrictIds : BinaryRelation.WithoutSideEffects<ExecutionContext>("e
             )
         )
 }
+
+object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_to_clause") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+        sequenceOf(
+            Substitution.of(
+                second.asVar()!!,
+                List.of(first.asList()!!.toList()
+                .map { original ->
+                    original.asList()!!.toList().let {
+                        when (it.size) {
+                            2 -> Clause.of(it[1].asStruct(), original)
+                            3 -> Clause.of(it[2].asStruct(), original)
+                            else -> throw IllegalArgumentException()
+                        }
+                    }
+                })
+            )
+        )
+}
+

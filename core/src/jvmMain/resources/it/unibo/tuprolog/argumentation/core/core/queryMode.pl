@@ -6,7 +6,6 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     queryMode,
     argumentLabellingMode(grounded),
-%    parser::check_modifiers_in_list(effects, [Goal], [X]),
     findall(_, query(Goal, _), _),
     (ambiguityBlocking ->
         statement_binary:::statementLabelling;
@@ -16,7 +15,6 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     mineResults(Goal, YesResult, NoResult, UndResult).
 
 mineResults(Goal, YesResult, NoResult, UndResult) :-
-%    parser::check_modifiers_in_list(effects, [Goal], [X]),
     findall(Goal, context_check(statIn([Goal])), In),
     findall(Goal, context_check(statOut([Goal])), Out),
     findall(Goal, context_check(statUnd([Goal])), Und),
@@ -58,7 +56,7 @@ defend(Argument, QueryChain, Res) :-
     bufferResult(Argument, Res), !.
 
 complementary([_, _, ConclusionA, _, _], [_, _, ConclusionB, _, _]) :-
-    standard_af::conflictt(ConclusionA, ConclusionB).
+    standard_af::conflict(ConclusionA, ConclusionB).
 
 ambiguityCheck(A, B, no) :- ambiguityBlocking,
     \+ complementary(A, B),
@@ -120,19 +118,18 @@ attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], At
     \+ strict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]),
     (graphExtension(rebutRestriction) ->
         (
-            buildSubArgument(Term, TargetRules, SubArgument),
+            getSubArgument(Term, TargetRules, SubArgument),
             rebutRestriction(SubArgument)
         );
         true
     ),
-    standard_af::conflictt(Term, [X]),
+    standard_af::conflict(Term, [X]),
     buildArgument(X, Attacker),
     (graphExtension(standardPref) ->
-        (ground(SubArgument) ->
-            true;
-            buildSubArgument(Term, TargetRules, SubArgument)
-        ),
-        \+ superiorArgument(SubArgument, Attacker);
+        (
+            once(getSubArgument(Term, TargetRules, SubArgument)),
+            \+ superiorArgument(SubArgument, Attacker)
+        );
         true
     ).
 
@@ -161,8 +158,8 @@ rebutRestriction(_) :- \+ graphExtension(rebutRestriction).
 superiorArgument(SubArgument, Attacker) :-
     superiority::superiorArgument(SubArgument, Attacker).
 
-buildSubArgument([Term], Rules, [SubRules, SubTopRule, SubConclusion, SubGrounds, Info]) :-
-    buildArgument(Term, [SubRules, SubTopRule, SubConclusion, SubGrounds, Info]),
+getSubArgument(Term, Rules, [SubRules, SubTopRule, SubConclusion, SubGrounds, Info]) :-
+    context_check(clause(support(Term), argument([SubRules, SubTopRule, SubConclusion, SubGrounds, Info]))),
     contained(SubRules, Rules).
 
 contained([], _).
@@ -182,6 +179,8 @@ buildArgument(Query, Argument) :-
     fail.
 buildArgument(Query, [R, T, [Query], B, I]) :- context_check(argument([R, T, [Query], B, I])).
 
+% buildArgument(Query, Argument) :- buildSingleArgument([Query], Argument).
+
 buildSingleArgument(Query, Argument) :-
     build(Query, [], Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
     utils::deduplicate(DefRules, CDefRules),
@@ -196,17 +195,19 @@ build(Unless, _, [Unless], []) :- parser::contrary(Unless, _), !.
 
 % Premise
 
-build(Conclusion, _, [Conclusion], Rules) :-
+build(Conclusion, _, [Conclusion], [AllRules, TopRule, LastDefRules, DefRules, DefPremises]) :-
     parser::premise(Id, Conclusion),
-    premiseRules(Id, Rules).
+    premiseRules(Id, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
+    context_assert(support(Conclusion) :- argument([AllRules, TopRule, Conclusion, [Conclusion], [LastDefRules, DefRules, DefPremises]])).
 
 % Rule
 
-build(Conclusion, Ids, [Conclusion|Conclusions], Rules) :-
+build(Conclusion, Ids, [Conclusion|Conclusions], [AllRules, TopRule, LastDefRules, DefRules, DefPremises]) :-
     parser::rule(Id, Premises, Conclusion),
     \+ member(Id, Ids),
     buildPremises(Premises, [Id|Ids], Conclusions, ResRules),
-    ruleRules(Id, ResRules, Rules).
+    ruleRules(Id, ResRules, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]),
+    context_assert(support(Conclusion) :- argument([AllRules, TopRule, Conclusion, [Conclusion|Conclusions], [LastDefRules, DefRules, DefPremises]])).
 
 buildPremises([], _, [], [[], [], [], []]).
 buildPremises([H|T], Ids, Conclusions, Rules) :-
@@ -215,13 +216,13 @@ buildPremises([H|T], Ids, Conclusions, Rules) :-
     utils::appendLists([HConclusions, TConclusions], Conclusions),
     mergeRules(HRules, TRules, Rules).
 
-premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ parser::strict(Id), !.
-premiseRules(Id, [[Id], none, [], [], []]) :- parser::strict(Id).
+premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ parser::check_strict(Id), !.
+premiseRules(Id, [[Id], none, [], [], []]) :- parser::check_strict(Id).
 
 ruleRules(Id, [AllRules, _, DefRules, DefPremises],
-    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ parser::strict(Id), !.
+    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ parser::check_strict(Id), !.
 ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises],
-    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- parser::strict(Id).
+    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- parser::check_strict(Id).
 
 mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]) :- !.
 mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-

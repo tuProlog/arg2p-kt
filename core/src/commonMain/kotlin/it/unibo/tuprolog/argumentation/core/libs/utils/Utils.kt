@@ -104,7 +104,7 @@ object AssertAll : Primitive {
         }
 
         arg2pScope {
-            list.toSequence().forEach { request.solve("context_assert"(it)).first() }
+            list.toList().forEach { request.solve("context_assert"(it)).first() }
         }
 
         return sequence {
