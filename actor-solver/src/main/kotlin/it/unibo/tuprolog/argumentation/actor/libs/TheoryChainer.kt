@@ -18,19 +18,35 @@ object TheoryChainer : ArgLibrary, Loadable {
             theory = Theory.parse(
                 """            
                 chainable(X) :-
-                    member(rule([_, Prem, _]), X),
-                    member(P, Prem),
-                    (context_check(rule([_, _, P])); context_check(premise([_, P]))).
+                    member(rl(_) :- [_, Prem, _], X),
+                    tuple_to_list(Prem, LPrem),
+                    ff(LPrem, LLPrem),
+                    member(P, LLPrem),
+                    context_check(clause(rl(P), _)).
                     
                 chainable(X) :- 
-                    member(rule([_, _, Conclusion]), X),
-                    context_check(rule([_, Prem, _])),
-                    member(Conclusion, Prem).
+                    member(rl(Conclusion) :- [_, _, Conclusion], X),
+                    context_check(clause(rl(_), [_, Prem, _])),
+                    tuple_to_list(Prem, LPrem),
+                    ff(LPrem, LLPrem),
+                    member(Conclusion, LLPrem).
                     
                 chainable(X) :- 
-                    member(premise([_, Conclusion]), X),
-                    context_check(rule([_, Prem, _])),
-                    member(Conclusion, Prem).
+                    member(rl(Conclusion) :- [_, Conclusion], X),
+                    context_check(clause(rl(_), [_, Prem])),
+                    tuple_to_list(Prem, LPrem),
+                    ff(LPrem, LLPrem),
+                    member(Conclusion, LLPrem).
+                    
+                tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
+                tuple_to_list((A,B),L) :-
+                    tuple_to_list(A, La),
+                    tuple_to_list(B, Lb),
+                    append(La, Lb,L).
+
+                ff([[]], []) :- !.
+                ff([[X]], [X]) :- !.
+                ff(X, X).
                 """.trimIndent()
             )
         )

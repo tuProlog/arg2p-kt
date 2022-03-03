@@ -37,11 +37,7 @@ class Evaluator private constructor(context: ActorContext<KbMessage>, private va
             }
             .onMessage(Eval::class.java) { command ->
                 val result = arg2pScope {
-                    val query = solver.solve("parser" call "check_modifiers_in_list"("effects", listOf(Struct.parse(command.elem)), listOf(Y)))
-                        .filter { it.isYes }
-                        .map { it.substitution[Y]!! }
-                        .first()
-                    solver.solve("structured" call "buildArgument"(query, X)).filter {
+                    solver.solve("structured" call "buildArgument"(Struct.parse(command.elem), X)).filter {
                         it.isYes
                     }.map {
                         it.substitution[X]!!
