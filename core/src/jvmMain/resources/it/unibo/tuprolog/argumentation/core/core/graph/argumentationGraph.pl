@@ -8,10 +8,10 @@ buildArgumentationGraph :-
 
 buildArguments :-
 	buildArgumentsFromPremises,
-%	buildArgumentsFromEmptyRules,
+	buildArgumentsFromEmptyRules,
 	findall([RuleID, RuleBody, RuleHead], (
-	    parser::classic_rule(RuleID, RuleBody, RuleHead)
-%	    \+ emptyRule([RuleID, RuleBody, RuleHead])
+	    parser::classic_rule(RuleID, RuleBody, RuleHead),
+	    \+ emptyRule([RuleID, RuleBody, RuleHead])
     ), Rules),
 	buildArgumentsFromRules(b, Rules, Rules, n).
 
@@ -38,20 +38,26 @@ buildArgumentsFromEmptyRules :-
             emptyRule([RuleID, RulePrem, RuleHead]),
             checkStrict(RuleID, DefRule),
             ground(RuleHead),
-            context_assert(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]))
+            context_assert(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
+            context_assert(conc(Premise) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
+            context_assert(newConc(a, Premise)),
+            utils::hash(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]), Id),
+            context_assert(arg(Id) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]))
         ),
         _
     ).
 
 % Check Rule
-emptyRule([RuleID, [], RuleHead]) :-
-    context_check(rule([RuleID, [], RuleHead])).
-emptyRule([RuleID, [[unless, X]], RuleHead]) :-
-    context_check(rule([RuleID, [[unless, X]], RuleHead])).
-emptyRule([RuleID, [[prolog(Check)]], RuleHead]) :-
-    context_check(rule([RuleID, [[prolog(Check)]], RuleHead])),
-    (callable(Check) -> call(Check); Check).
+emptyRule([RuleID, Body, RuleHead]) :-
+    parser::classic_rule(RuleID, Body, RuleHead),
+    \+ (member(X, Body), X \= ~(_), X \= prolog(_)),
+    checkPrologClauses(Body).
 
+checkPrologClauses([]) :- !.
+checkPrologClauses([~(_)|T]) :- checkPrologClauses(T), !.
+checkPrologClauses([prolog(Check)|T]) :-
+    (callable(Check) -> call(Check); Check),
+    checkPrologClauses(T).
 
 % Check \+ member(RuleID, SupportRules) constraint. Is it avoiding cyclical arguments?
 % Find best Cut placement
@@ -61,7 +67,6 @@ clean(Tn, Rules) :-
     context_retract(newConc(Tx, _)),
     buildArgumentsFromRules(Tx, Rules, Rules, n).
 
-check_new(_, [_, [], _]) :- !.
 check_new(Tn, H) :-
     copy_term(H, [_, RuleBody, _]),
     member(X, RuleBody),
@@ -141,9 +146,9 @@ lastDefeasibleRules(Supports, TopRule, LastRules) :-
 % Argument Support
 
 ruleBodyIsSupported([], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([ [~(_)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
+ruleBodyIsSupported([~(_)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremises, ResultSupports) :-
+ruleBodyIsSupported([prolog(Check)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	(callable(Check) -> call(Check); Check),
 	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
 ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
@@ -217,7 +222,7 @@ rebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, _,
 %------------------------------------------------------------------------
 % Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
 %------------------------------------------------------------------------
-contraryRebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
+contraryRebuts([IDPremisesA, RuleA, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
 	RuleA \== none,
 	RuleB \== none,
 	member(~(RuleHeadA), Body).
@@ -232,7 +237,7 @@ undermines([IDPremisesA, RuleA, RuleHeadA, _, _], [[IDPremiseB], none, RuleHeadB
 %------------------------------------------------------------------------
 % Contrary Undermining definition
 %------------------------------------------------------------------------
-contraryUndermines([IDPremisesA, none, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
+contraryUndermines([IDPremisesA, none, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
 	RuleB \== none,
 	member(~(RuleHeadA), Body).
 
@@ -246,7 +251,9 @@ undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 % CONFLICT DEFINITION
 %========================================================================
 
-conflict([Atom], [-Atom]).
+check(-Atom).
+
+conflict([Atom], [-Atom]) :- \+ check(Atom).
 conflict([-Atom], [Atom]).
 
 conflict([o(Atom)], [o(-Atom)]).

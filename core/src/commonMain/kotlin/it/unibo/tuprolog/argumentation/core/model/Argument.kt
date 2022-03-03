@@ -26,7 +26,7 @@ data class Argument(
             }
             ) + " : " + conclusion
 
-    fun termRepresentation(): Term = Struct.parse("[$rules, $topRule, $conclusion, $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]")
+    fun termRepresentation(): Term = Struct.parse("[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]")
 
     override fun toString(): String {
         return "argument(${this.termRepresentation()})"

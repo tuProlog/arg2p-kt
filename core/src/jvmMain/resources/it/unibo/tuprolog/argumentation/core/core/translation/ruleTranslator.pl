@@ -268,8 +268,8 @@ admissible_terms_complete([H|T]) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%% REFACTOR %%%%%%%%%%%%%%%%%%%%%%%
 
-rule(Id, PP, [Conclusion]) :- context_check(clause(Conclusion, [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
-premise(Id, [Conclusion]) :- context_check(clause(Conclusion, [Id, Conclusion])).
+rule(Id, PP, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
+premise(Id, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Conclusion])).
 check_strict(Id) :- context_check(strict(Id)).
 
 prolog([prolog(Term)], Term).
@@ -290,8 +290,5 @@ ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
 ff(X, X).
 
-
-classic_rule(Id, PP, [Conclusion]) :- (Id : Premises -> Conclusion), tuple_to_list(Premises, P), ff(P, PP).
-classic_rule(Id, PP, [Conclusion]) :- (Id : Premises => Conclusion), tuple_to_list(Premises, P), ff(P, PP).
-classic_rule(Id, [Conclusion]) :- (Id :-> Conclusion).
-classic_rule(Id, [Conclusion]) :- (Id :=> Conclusion).
+classic_rule(X, Y, Z) :- rule(X, Y, Z).
+classic_rule(X, Y) :- premise(X, Y).

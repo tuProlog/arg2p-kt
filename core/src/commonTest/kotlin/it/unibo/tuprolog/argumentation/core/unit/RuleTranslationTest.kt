@@ -7,8 +7,10 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.withArgOperators
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.prolog
+import kotlin.test.Ignore
 import kotlin.test.Test
 
+@Ignore
 class RuleTranslationTest {
 
     private fun testTranslation(theory: String, vararg expected: String) {

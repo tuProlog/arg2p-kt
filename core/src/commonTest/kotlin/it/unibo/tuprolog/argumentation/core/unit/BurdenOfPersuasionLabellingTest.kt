@@ -12,10 +12,10 @@ import kotlin.test.Test
 class BurdenOfPersuasionLabellingTest {
 
     private fun prepareGraph(): Graph {
-        val arg1 = Argument(listOf("r3", "r1", "r0"), "r1", "[c]")
-        val arg2 = Argument(listOf("r3", "r0"), "r0", "[a]")
-        val arg3 = Argument(listOf("r3"), "r3", "[neg,c]")
-        val arg4 = Argument(listOf("r2"), "r2", "[neg,a]")
+        val arg1 = Argument(listOf("r3", "r1", "r0"), "r1", "c")
+        val arg2 = Argument(listOf("r3", "r0"), "r0", "a")
+        val arg3 = Argument(listOf("r3"), "r3", "-c")
+        val arg4 = Argument(listOf("r2"), "r2", "-a")
 
         return Graph(
             listOf(
@@ -101,7 +101,7 @@ class BurdenOfPersuasionLabellingTest {
         groundedGraph().also { graph ->
             arg2pScope {
                 TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf(listOf("neg", "a"))))).first()
+                    it.solve("context_assert"("abstractBp"(listOf("-a")))).first()
                     TestingUtils.prepareContext(it, graph)
                     it.solve("grounded" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -115,7 +115,7 @@ class BurdenOfPersuasionLabellingTest {
         groundedBpGraph().also { graph ->
             arg2pScope {
                 TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf(listOf("neg", "a"))))).first()
+                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -129,7 +129,7 @@ class BurdenOfPersuasionLabellingTest {
         groundedBpPartialGraph().also { graph ->
             arg2pScope {
                 TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf(listOf("neg", "a"))))).first()
+                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded_partial" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -143,7 +143,7 @@ class BurdenOfPersuasionLabellingTest {
         groundedBpCompleteGraph().also { graph ->
             arg2pScope {
                 TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf(listOf("neg", "a"))))).first()
+                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded_complete" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)

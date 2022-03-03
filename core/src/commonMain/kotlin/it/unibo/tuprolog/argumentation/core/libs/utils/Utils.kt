@@ -7,9 +7,9 @@ import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Numeric
+import it.unibo.tuprolog.core.Substitution
+import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext

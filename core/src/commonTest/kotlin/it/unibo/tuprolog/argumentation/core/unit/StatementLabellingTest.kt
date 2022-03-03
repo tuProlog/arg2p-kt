@@ -13,10 +13,10 @@ class StatementLabellingTest {
 
     private fun prepareGraph(): List<LabelledArgument> =
         listOf(
-            LabelledArgument(Argument(listOf("r3", "r1", "r0"), "r1", "[c]"), "out"),
-            LabelledArgument(Argument(listOf("r3", "r0"), "r0", "[a]"), "in"),
-            LabelledArgument(Argument(listOf("r3"), "r3", "[neg,c]"), "in"),
-            LabelledArgument(Argument(listOf("r2"), "r2", "[neg,a]"), "out")
+            LabelledArgument(Argument(listOf("r3", "r1", "r0"), "r1", "c"), "out"),
+            LabelledArgument(Argument(listOf("r3", "r0"), "r0", "a"), "in"),
+            LabelledArgument(Argument(listOf("r3"), "r3", "-c"), "in"),
+            LabelledArgument(Argument(listOf("r2"), "r2", "-a"), "out")
         )
 
     @Test
@@ -32,9 +32,9 @@ class StatementLabellingTest {
                         testYesGoal(
                             "context_check"(
                                 when (it.label) {
-                                    "in" -> "statIn"(Struct.parse(it.argument.conclusion))
-                                    "out" -> "statOut"(Struct.parse(it.argument.conclusion))
-                                    else -> "statUnd"(Struct.parse(it.argument.conclusion))
+                                    "in" -> "statIn"(listOf(Struct.parse(it.argument.conclusion)))
+                                    "out" -> "statOut"(listOf(Struct.parse(it.argument.conclusion)))
+                                    else -> "statUnd"(listOf(Struct.parse(it.argument.conclusion)))
                                 }
                             ),
                             solver

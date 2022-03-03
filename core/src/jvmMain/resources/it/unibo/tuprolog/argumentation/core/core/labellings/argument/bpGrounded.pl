@@ -98,6 +98,6 @@ reifyBurdenOfProofs :-
 */
 
 fillTemplate([], []).
-fillTemplate([H|T], [H|R]) :-
-    context_check(argument([_, _, Conclusion, _, _])),
+fillTemplate([H|T], [[H]|R]) :-
+    context_check(argument([_ , _, [P], _, _])),
     fillTemplate(T, R).
