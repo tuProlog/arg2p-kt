@@ -16,15 +16,13 @@ groundedLabelling :-
 groundedLabelling :- finalize.
 
 finalize :-
-    write(completed),
     argument_to_evaluate(A, _),
     context_assert(und(A)),
     fail.
-finalize :- write(completedII).
+finalize.
 
 argument_to_evaluate(X, IdX) :-
-    context_check(clause(arg(IdX), X)),
-%    utils::hash(argument(X), IdX),
+    context_check(clause(arg(IdX), argument(X))),
     \+ context_check(outId(IdX)),
     \+ context_check(inId(IdX)).
 

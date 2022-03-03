@@ -4,9 +4,9 @@ computeGlobalAcceptance :-
     write(extension),nl,
     modifyGraph,
     write(labelling),nl,
-    buildArgumentLabelling.
-%    write(statement),nl,
-%    buildStatementLabelling.
+    buildArgumentLabelling,
+    write(statement),nl,
+    buildStatementLabelling.
 
 computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
     computeGlobalAcceptance,

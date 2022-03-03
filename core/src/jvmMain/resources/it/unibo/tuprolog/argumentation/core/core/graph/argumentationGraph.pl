@@ -25,7 +25,7 @@ buildArgumentsFromPremises :-
             context_assert(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]])),
             context_assert(conc(Premise) :- argument([[PremiseID], none, Premise, [], [[], [], DefPrem]])),
             context_assert(newConc(a, Premise)),
-            utils::hash(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]], Id)),
+            utils::hash(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]), Id),
             context_assert(arg(Id) :- argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]))
         ),
         _
@@ -61,6 +61,7 @@ clean(Tn, Rules) :-
     context_retract(newConc(Tx, _)),
     buildArgumentsFromRules(Tx, Rules, Rules, n).
 
+check_new(_, [_, [], _]) :- !.
 check_new(Tn, H) :-
     copy_term(H, [_, RuleBody, _]),
     member(X, RuleBody),
@@ -148,7 +149,7 @@ ruleBodyIsSupported([ [prolog(Check)] | Others], Premises, Supports, ResultPremi
 ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
     context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, Info]))),
 	append(ArgumentID, Premises, NewPremises),
-	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, Statement, Body, Info]|Supports], ResultPremises, ResultSupports).
+	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, [Statement], Body, Info]|Supports], ResultPremises, ResultSupports).
 
 % Attacks
 
