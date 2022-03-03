@@ -47,7 +47,7 @@ object TestingUtils {
     }
 
     fun testGoalNoBacktracking(goal: Struct, solver: BaseSolver = solver(), expectedSolutions: (Struct) -> Solution) {
-        val solution = solver.solve(goal, SolveOptions.allEagerlyWithTimeout(duration)).first()
+        val solution = solver.solve(goal, SolveOptions.allLazilyWithTimeout(duration)).first()
         assertSolutionEquals(
             listOf(expectedSolutions(goal)),
             listOf(solution)

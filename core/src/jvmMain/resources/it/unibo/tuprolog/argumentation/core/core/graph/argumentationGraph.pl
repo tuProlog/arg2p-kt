@@ -166,11 +166,8 @@ findPossibleAttackers([_, RuleID, _, _, _], [undercut(RuleID)]).
 
 buildAttacks :-
 %    findall(X, context_check(argument(X)), Args),
-    write(direct),nl,
 	buildDirectAttacks,
-	write(transitive),nl,
-	buildTransitiveAttacks,
-	write(done),nl.
+	buildTransitiveAttacks.
 
 buildDirectAttacks :-
     findall(_, buildDirectAttack, _).

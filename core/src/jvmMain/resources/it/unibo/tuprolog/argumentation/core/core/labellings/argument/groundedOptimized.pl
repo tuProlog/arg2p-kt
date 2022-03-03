@@ -2,24 +2,30 @@ argumentLabelling :-
     groundedLabelling.
 
 groundedLabelling :-
-    argument_to_evaluate(A, IdA),
-    allAttacksOUT(IdA), !,
-    context_assert(in(A)),
-    context_assert(inId(IdA)),
-    groundedLabelling.
-groundedLabelling :-
-    argument_to_evaluate(A, IdA),
-    oneAttackIN(IdA), !,
-    context_assert(out(A)),
-    context_assert(outId(IdA)),
-    groundedLabelling.
-groundedLabelling :- finalize.
+    findall(t, evaluateIn, I),
+    findall(t, evaluateOut, O),
+    finalize(I, O).
 
-finalize :-
+evaluateIn :-
+    argument_to_evaluate(A, IdA),
+    allAttacksOUT(IdA),
+    context_assert(in(A)),
+    context_assert(inId(IdA)).
+
+evaluateOut :-
+    argument_to_evaluate(A, IdA),
+    oneAttackIN(IdA),
+    context_assert(out(A)),
+    context_assert(outId(IdA)).
+
+finalize(I, O) :- I \= [], !, groundedLabelling.
+finalize(I, O) :- O \= [], !, groundedLabelling.
+
+finalize([], []) :-
     argument_to_evaluate(A, _),
     context_assert(und(A)),
     fail.
-finalize.
+finalize(_, _).
 
 argument_to_evaluate(X, IdX) :-
     context_check(clause(arg(IdX), argument(X))),
