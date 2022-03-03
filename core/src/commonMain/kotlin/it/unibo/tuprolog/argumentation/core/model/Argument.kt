@@ -52,7 +52,7 @@ data class Argument(
 
             fun argTopRule(argument: List<Term>): String = argument[1].toString()
 
-            fun argConclusion(argument: List<Term>): String = argument[2].toString()
+            fun argConclusion(argument: List<Term>): String = argument[2].asList()!![0].toString()
 
             fun argGroundings(argument: List<Term>): List<String> = toStringList(argument, 3)
 
