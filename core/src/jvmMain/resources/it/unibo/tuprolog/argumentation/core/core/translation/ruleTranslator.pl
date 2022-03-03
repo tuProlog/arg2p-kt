@@ -289,3 +289,9 @@ tuple_to_list((A,B),L) :-
 ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
 ff(X, X).
+
+
+classic_rule(Id, PP, [Conclusion]) :- (Id : Premises -> Conclusion), tuple_to_list(Premises, P), ff(P, PP).
+classic_rule(Id, PP, [Conclusion]) :- (Id : Premises => Conclusion), tuple_to_list(Premises, P), ff(P, PP).
+classic_rule(Id, [Conclusion]) :- (Id :-> Conclusion).
+classic_rule(Id, [Conclusion]) :- (Id :=> Conclusion).

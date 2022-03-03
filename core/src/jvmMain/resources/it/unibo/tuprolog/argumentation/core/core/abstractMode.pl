@@ -1,8 +1,12 @@
 computeGlobalAcceptance :-
+    write(building),nl,
     buildGraph,
+    write(extension),nl,
     modifyGraph,
-    buildArgumentLabelling,
-    buildStatementLabelling.
+    write(labelling),nl,
+    buildArgumentLabelling.
+%    write(statement),nl,
+%    buildStatementLabelling.
 
 computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
     computeGlobalAcceptance,
