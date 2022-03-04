@@ -11,10 +11,11 @@ convertAllRules(ArgRules) :-
     ordinaryPremises(Premises),
     axiomPremises(Axioms, AxiomsIds),
     specialRules(SpecialRules),
-    utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms, SpecialRules], L),
-    convertAllRules(L, Rules),
+    utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
+%    convertAllRules(L, Rules),
+    rule_to_clause(Rules, Clauses),
     findall(sup(X, Y), sup(X, Y), Sup),
-    utils::appendLists([Rules, AxiomsIds, RulesIds, Sup], ArgRules),
+    utils::appendLists([Clauses, AxiomsIds, RulesIds, Sup, SpecialRules], ArgRules),
     utils::assert_all(ArgRules), !.
 
 defeasibleRules(DefeasibleRules) :-
@@ -192,15 +193,6 @@ check_modifiers(H, List) :-
         List = [bp|[Lper]]);
     List = [H].
 
-/*
- *   Convert the given tuple to list
- */
-tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
-tuple_to_list((A,B),L) :-
-    tuple_to_list(A, La),
-    tuple_to_list(B, Lb),
-    utils::append_fast(La, Lb,L).
-
 list_to_tuple([H], (H)) :- !.
 list_to_tuple([H|T], (H,TT)) :- list_to_tuple(T,TT).
 
@@ -271,3 +263,32 @@ admissible_terms_complete([]).
 admissible_terms_complete([H|T]) :-
     admissible(H),
     admissible_terms_complete(T).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%% REFACTOR %%%%%%%%%%%%%%%%%%%%%%%
+
+rule(Id, PP, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
+premise(Id, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Conclusion])).
+check_strict(Id) :- context_check(strict(Id)).
+
+prolog([prolog(Term)], Term).
+contrary([~(Term)], Term).
+undercut(undercut(Rule), Rule).
+superiority(sup(Id1, Id2), Id1, Id2).
+
+/*
+ *   Convert the given tuple to list
+ */
+tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
+tuple_to_list((A,B),L) :-
+    tuple_to_list(A, La),
+    tuple_to_list(B, Lb),
+    utils::append_fast(La, Lb,L).
+
+ff([[]], []) :- !.
+ff([[X]], [X]) :- !.
+ff(X, X).
+
+classic_rule(X, Y, Z) :- rule(X, Y, Z).
+classic_rule(X, Y) :- premise(X, Y).

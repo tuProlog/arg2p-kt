@@ -29,11 +29,11 @@ class PreferencesTest {
     private val undResults = mapOf(
         "in" to "[[c],[b]]",
         "out" to "[]",
-        "und" to "[[neg,a],[e],[d],[a]]"
+        "und" to "[[-a],[e],[d],[a]]"
     )
 
     private val definedResults = mapOf(
-        "in" to "[[neg,a],[e],[c],[b]]",
+        "in" to "[[-a],[e],[c],[b]]",
         "out" to "[[d],[a]]",
         "und" to "[]"
     )

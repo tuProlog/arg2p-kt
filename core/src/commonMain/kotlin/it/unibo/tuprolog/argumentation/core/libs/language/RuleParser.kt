@@ -40,7 +40,8 @@ sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 Bps::descriptionPair.get(),
                 Premises::descriptionPair.get(),
                 DefeasibleRules::descriptionPair.get(),
-                ExtractStrictIds::descriptionPair.get()
+                ExtractStrictIds::descriptionPair.get(),
+                RuleToClause::descriptionPair.get()
             ),
             theory = this.prologTheory,
             operatorSet = operators()
@@ -61,7 +62,8 @@ sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             Operator(":=>", Specifier.XFX, 1199),
             Operator(":->", Specifier.XFX, 1199),
             Operator(":", Specifier.XFX, 1001),
-            Operator(":=", Specifier.XFX, 1199)
+            Operator(":=", Specifier.XFX, 1199),
+//            Operator("->", Specifier.XFX, 1050)
         )
     }
 }
@@ -194,10 +196,7 @@ object Bps : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
             clauses
                 .filter { it.isFact && it.head?.functor == "bp" }
                 .map {
-                    prologScope.listOf(
-                        "bps",
-                        it.head!!
-                    )
+                    Struct.of("abstractBp", prologScope.listOf(it.head!!.args))
                 }.toTerm()
         }
 }
@@ -211,6 +210,27 @@ object ExtractStrictIds : BinaryRelation.WithoutSideEffects<ExecutionContext>("e
                     first.asList()!!.toList().map {
                         Struct.of("strict", it.asCons()!!.head)
                     }
+                )
+            )
+        )
+}
+
+object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_to_clause") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+        sequenceOf(
+            Substitution.of(
+                second.asVar()!!,
+                List.of(
+                    first.asList()!!.toList()
+                        .map { original ->
+                            original.asList()!!.toList().let {
+                                when (it.size) {
+                                    2 -> Clause.of(Struct.Companion.of("rl", it[1]), original)
+                                    3 -> Clause.of(Struct.Companion.of("rl", it[2]), original)
+                                    else -> throw IllegalArgumentException()
+                                }
+                            }
+                        }
                 )
             )
         )

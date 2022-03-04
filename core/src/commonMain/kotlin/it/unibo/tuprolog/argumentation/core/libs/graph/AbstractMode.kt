@@ -40,6 +40,7 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
     override fun default(): String = "grounded"
     override fun values(): Iterable<String> = listOf(
         "grounded",
+        "grounded_hash",
         "complete",
         "bp_grounded",
         "bp_grounded_partial",

@@ -82,7 +82,7 @@ class RationalityTest {
         """.trimIndent()
 
     private fun protoTest(theory: String, argsIn: Iterable<String>, argsOut: Iterable<String>, argsUnd: Iterable<String>) {
-        val prepare = { term: String -> if (term.startsWith("-")) "[neg,${term.removePrefix("-")}]" else "[$term]" }
+        val prepare = { term: String -> "[$term]" }
         val parse = { args: Iterable<String> -> args.map { prepare(it) }.joinToString(",", "[", "]") }
 
         argsIn.forEach { answerQuery("$theory\nqueryMode.", it, "[$it]", "[]", "[]") }
@@ -103,7 +103,7 @@ class RationalityTest {
     @Test
     fun caminadaExample4restricted() = protoTest(
         example4theory + "graphExtension(rebutRestriction).",
-        listOf("wr", "-hw", "m", "hw", "go", "b"),
+        listOf("-hw", "wr", "m", "hw", "go", "b"),
         listOf(),
         listOf(),
     )

@@ -52,33 +52,33 @@ class EngineInterfaceTest {
                     "StatOut" to Struct.parse(
                         """
                                 [
-                                    [neg,a]
+                                    [-a]
                                 ]"""
                     ),
                     "StatUnd" to Struct.parse(
                         """
                                 [
-                                    [neg, c],
+                                    [-c],
                                     [c]
                                 ]"""
                     ),
                     "ArgIn" to Struct.parse(
                         """
                                 [
-                                    [[r3,r0],r0,[a],[[neg,c]],[[r0],[r3,r0],[]]]
+                                    [[r3,r0],r0,[a],[-c],[[r0],[r3,r0],[]]]
                                 ]"""
                     ),
                     "ArgOut" to Struct.parse(
                         """
                                 [
-                                    [[r2],r2,[neg,a],[],[[r2],[r2],[]]]
+                                    [[r2],r2,[-a],[],[[r2],[r2],[]]]
                                 ]"""
                     ),
                     "ArgUnd" to Struct.parse(
                         """
                                 [
-                                    [[r3,r1,r0],r1,[c],[[a]],[[r1],[r3,r1,r0],[]]],
-                                    [[r3],r3,[neg,c],[],[[r3],[r3],[]]]
+                                    [[r3,r1,r0],r1,[c],[a],[[r1],[r3,r1,r0],[]]],
+                                    [[r3],r3,[-c],[],[[r3],[r3],[]]]
                                 ]"""
                     )
                 )

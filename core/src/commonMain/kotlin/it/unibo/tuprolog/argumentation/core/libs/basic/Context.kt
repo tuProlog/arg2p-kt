@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgContext
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
@@ -10,7 +11,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.classic
+import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
@@ -24,7 +25,7 @@ class Context : ArgLibrary, ArgContext {
     private var selectedSolver: Int = 0
     private val dynamicSolver: MutableMap<Int, MutableSolver> = mutableMapOf(
         0 to
-            MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
+            MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
                 .also { it.setFlag(Unknown.name, Unknown.FAIL) }
     )
 
@@ -37,7 +38,7 @@ class Context : ArgLibrary, ArgContext {
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
+                MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             return sequenceOf(request.replyWith(true))
         }
@@ -73,7 +74,7 @@ class Context : ArgLibrary, ArgContext {
             val target: Int = request.arguments[0].castToInteger().intValue.toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(this@Context.dynamicSolver[target]!!.dynamicKb))
+                MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(this@Context.dynamicSolver[target]!!.dynamicKb))
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
             return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))
@@ -86,7 +87,7 @@ class Context : ArgLibrary, ArgContext {
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
-            this@Context.dynamicSolver[this@Context.selectedSolver]!!.assertA(term.castToStruct())
+            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve("asserta"(term)) }.first()
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -97,7 +98,7 @@ class Context : ArgLibrary, ArgContext {
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
-            this@Context.dynamicSolver[this@Context.selectedSolver]!!.retractAll(term.castToStruct())
+            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve("retractall"(term)) }.first()
             return sequenceOf(request.replyWith(true))
         }
     }

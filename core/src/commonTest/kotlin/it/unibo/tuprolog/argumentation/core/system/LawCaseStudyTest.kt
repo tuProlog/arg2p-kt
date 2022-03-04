@@ -1,12 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.system
 
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
-import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -133,39 +127,5 @@ class LawCaseStudyTest {
         }
 
         println(time.toDouble(DurationUnit.SECONDS))
-    }
-
-    @Test
-    @ExperimentalTime
-    fun structuredTest() {
-        val arg2p = Arg2pSolver.default()
-        val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = arg2p.to2pLibraries().plus(FlagsBuilder().create().content()),
-            staticKb = Theory.parse(baseTheory, arg2p.operators())
-        )
-        val time = measureTime {
-            arg2pScope {
-                solver.solve("parser" call "convertAllRules"(`_`)).first()
-            }
-        }
-        val time2 = measureTime {
-            arg2pScope {
-                val violation = solver.solve("structured" call "computeStatementAcceptance"("violation"(W), X, `_`, `_`))
-                    .filter { it.isYes }
-                    .map { it.substitution[X]!!.castToList() }
-                    .first()
-                val obligation = solver.solve("structured" call "computeStatementAcceptance"("o"("remove"(W)), X, `_`, `_`))
-                    .filter { it.isYes }
-                    .map { it.substitution[X]!!.castToList() }
-                    .first()
-                println(violation)
-                println(obligation)
-                // solver.solve("structured" call "computeStatementAcceptance"(Struct.parse("violation(viol(epr))", arg2p.operators()), X, Y, Z)).first()
-                // solver.solve("structured" call "computeStatementAcceptance"(Struct.parse("violation(viol(ca(epr, x, r)))", arg2p.operators()), X, Y, Z)).first()
-            }
-        }
-
-        println(time.toDouble(DurationUnit.SECONDS))
-        println(time2.toDouble(DurationUnit.SECONDS))
     }
 }

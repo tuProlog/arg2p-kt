@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.List
+import it.unibo.tuprolog.core.Numeric
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
@@ -16,6 +17,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
@@ -29,7 +31,8 @@ sealed class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             theory = this.prologTheory,
             primitives = mapOf(
                 AppendOptimized.signature to AppendOptimized,
-                AssertAll.signature to AssertAll
+                AssertAll.signature to AssertAll,
+                ArgumentHash.descriptionPair
             )
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
@@ -104,7 +107,7 @@ object AssertAll : Primitive {
         }
 
         arg2pScope {
-            list.toSequence().forEach { request.solve("context_assert"(it)).first() }
+            list.toList().forEach { request.solve("context_assert"(it)).first() }
         }
 
         return sequence {
@@ -113,4 +116,14 @@ object AssertAll : Primitive {
             )
         }
     }
+}
+
+object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+        sequenceOf(
+            Substitution.of(
+                second.asVar()!!,
+                Numeric.of(first.toString().hashCode())
+            )
+        )
 }

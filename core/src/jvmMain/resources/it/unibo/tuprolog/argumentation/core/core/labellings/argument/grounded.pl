@@ -3,7 +3,7 @@ argumentLabelling :-
     groundedLabelling(Arguments).
 
 groundedLabelling(UND) :-
-    member(A, UND), 
+    member(A, UND),
     allAttacksOUT(A), !,
     utils::subtract(UND, [A], NewUND),
     context_assert(in(A)),
