@@ -33,7 +33,7 @@ object TheoryChainer : ArgLibrary, Loadable {
                     
                 chainable(X) :- 
                     member(rl(Conclusion) :- [_, Conclusion], X),
-                    context_check(clause(rl(_), [_, Prem])),
+                    context_check(clause(rl(_), [_, Prem, _])),
                     tuple_to_list(Prem, LPrem),
                     ff(LPrem, LLPrem),
                     member(Conclusion, LLPrem).

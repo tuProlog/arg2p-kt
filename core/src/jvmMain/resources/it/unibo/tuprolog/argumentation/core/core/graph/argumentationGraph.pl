@@ -147,10 +147,10 @@ lastDefeasibleRules(Supports, TopRule, LastRules) :-
 
 ruleBodyIsSupported([], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
 ruleBodyIsSupported([~(_)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
+	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports), !.
 ruleBodyIsSupported([prolog(Check)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
 	(callable(Check) -> call(Check); Check),
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports).
+	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports), !.
 ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
     context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, Info]))),
 	append(ArgumentID, Premises, NewPremises),
@@ -253,17 +253,17 @@ check(-Atom).
 conflict([Atom], [-Atom]) :- \+ check(Atom).
 conflict([-Atom], [Atom]).
 
-conflict([o(Atom)], [o(-Atom)]).
+conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
 conflict([o(-Atom)], [o(Atom)]).
 
-conflict([o(Lit)], [-o(Lit)]).
-conflict([-o(Lit)], [o(Lit)]).
+% conflict([o(Lit)], [-o(Lit)]).
+% conflict([-o(Lit)], [o(Lit)]).
 
-conflict([p(Atom)], [o(-Atom)]).
+conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
 conflict([o(-Atom)], [p(Atom)]).
 
 conflict([p(-Atom)], [o(Atom)]).
-conflict([o(Atom)], [p(-Atom)]).
+conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
 
 % BP CONFLICT
 
