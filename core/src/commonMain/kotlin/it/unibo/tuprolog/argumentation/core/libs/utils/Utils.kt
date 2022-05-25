@@ -32,6 +32,7 @@ sealed class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             primitives = mapOf(
                 AppendOptimized.signature to AppendOptimized,
                 AssertAll.signature to AssertAll,
+                Check.signature to Check,
                 ArgumentHash.descriptionPair
             )
         )
@@ -126,4 +127,26 @@ object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash"
                 Numeric.of(first.toString().hashCode())
             )
         )
+}
+
+
+object Check : Primitive {
+
+    val signature: Signature = Signature("check_structure", 2)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val a: Term = request.arguments[0]
+        val b: Term = request.arguments[1]
+
+        var termA = a.toString()
+        var termB = b.toString()
+        a.variables.forEach { termA = termA.replace(it.toString(), "Z") }
+        b.variables.forEach { termB = termB.replace(it.toString(), "Z") }
+
+        return sequence {
+            yield(
+                request.replyWith(termA == termB)
+            )
+        }
+    }
 }
