@@ -69,6 +69,9 @@ clean(Tn, Rules) :-
 
 check_new(Tn, H) :-
     copy_term(H, [_, RuleBody, _]),
+    member(prolog(_), RuleBody), !.
+check_new(Tn, H) :-
+    copy_term(H, [_, RuleBody, _]),
     member(X, RuleBody),
     invert(Tn, Tx),
     context_check(newConc(Tx, [X])).
@@ -159,7 +162,9 @@ ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, Resu
 % Attacks
 
 findPossibleAttackers([_, _, Head, _, _], Conf) :-
-    conflict(Head, Conf).
+    conflict(Conf, Head, Guard).
+findPossibleAttackers([_, _, Head, _, _], Conf) :-
+    conflict(Conf, Head).
 findPossibleAttackers([_, _, _, Prem, _], [Conf]) :-
     member(~(Conf), Prem).
 findPossibleAttackers([_, RuleID, _, _, _], [undercut(RuleID)]).
@@ -205,6 +210,12 @@ attacks(undermine, A, B) :- undermines(A, B), !.
 attacks(contrary_undermine, A, B) :- contraryUndermines(A, B), !.
 attacks(undercut, A, B) :- undercuts(A, B), !.
 
+expanded_conflict(HeadA, HeadB) :-
+    conflict(HeadA, HeadB).
+expanded_conflict(HeadA, HeadB) :-
+    conflict(HeadA, HeadB, Guard),
+    (callable(Guard) -> call(Guard); Guard).
+
 %------------------------------------------------------------------------
 % Rebutting definition: clash of incompatible conclusions
 % we assume a preference relation over arguments determining whether two
@@ -214,7 +225,7 @@ attacks(undercut, A, B) :- undercuts(A, B), !.
 rebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, _, Info]) :-
 	RuleB \== none,
     Info \== [[], [], []],
-	conflict(RuleHeadA, RuleHeadB).
+	expanded_conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
@@ -229,7 +240,7 @@ contraryRebuts([IDPremisesA, RuleA, [RuleHeadA], _, _], [IDPremisesB, RuleB, Rul
 %------------------------------------------------------------------------
 undermines([IDPremisesA, RuleA, RuleHeadA, _, _], [[IDPremiseB], none, RuleHeadB, _, Info]) :-
 	Info \== [[], [], []],
-	conflict(RuleHeadA, RuleHeadB).
+	expanded_conflict(RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Undermining definition
