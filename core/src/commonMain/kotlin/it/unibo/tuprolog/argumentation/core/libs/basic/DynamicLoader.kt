@@ -15,6 +15,8 @@ import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.SolveOptions
+import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.AliasedLibrary
@@ -78,7 +80,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
 
             return sequence {
                 yieldAll(
-                    solver.solve(goal).map {
+                    solver.solve(goal, SolveOptions.someEagerlyWithTimeout(1000, TimeDuration.MAX_VALUE)).map {
                         request.replyWith(it.substitution)
                     }
                 )

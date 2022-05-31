@@ -1,10 +1,11 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import edu.uci.ics.jung.algorithms.layout.KKLayout
+import edu.uci.ics.jung.algorithms.layout.FRLayout
 import edu.uci.ics.jung.algorithms.layout.Layout
 import edu.uci.ics.jung.graph.Graph
 import edu.uci.ics.jung.graph.SparseMultigraph
 import edu.uci.ics.jung.graph.util.EdgeType
+import edu.uci.ics.jung.visualization.GraphZoomScrollPane
 import edu.uci.ics.jung.visualization.VisualizationViewer
 import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse
@@ -21,6 +22,7 @@ import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
@@ -38,7 +40,7 @@ import javax.swing.SwingUtilities
 
 internal class ArgumentationGraphFrame {
 
-    private val graphPane: JScrollPane = JScrollPane()
+    private val graphPane: JPanel = JPanel(BorderLayout())
     private val classicTheoryPane: JScrollPane = JScrollPane()
     private val treeTheoryPane: JScrollPane = JScrollPane()
     val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
@@ -98,11 +100,13 @@ internal class ArgumentationGraphFrame {
         }
         mutableSolver?.also { solver ->
             try {
-                val graph = solver.graph(this.selectedContext)
-                SwingUtilities.invokeLater {
-                    printGraph(this.graphPane, graph.labellings, graph.attacks)
-                    printTheory(this.classicTheoryPane, this.treeTheoryPane, graph.labellings)
-                }
+                Thread {
+                    val graph = solver.graph(this.selectedContext)
+                    SwingUtilities.invokeLater {
+                        printGraph(this.graphPane, graph.labellings, graph.attacks)
+                        printTheory(this.classicTheoryPane, this.treeTheoryPane, graph.labellings)
+                    }
+                }.start()
             } catch (e: Exception) {
                 this.clear()
             }
@@ -112,7 +116,7 @@ internal class ArgumentationGraphFrame {
 
     private fun clear() {
         SwingUtilities.invokeLater {
-            this.graphPane.viewport.removeAll()
+            this.graphPane.removeAll()
             this.classicTheoryPane.viewport.removeAll()
             this.treeTheoryPane.viewport.removeAll()
         }
@@ -170,10 +174,11 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printGraph(graphPane: JScrollPane, arguments: List<LabelledArgument>, attacks: List<Attack>) {
-            val layout: Layout<String, String> = KKLayout(buildGraph(arguments, attacks))
+        private fun printGraph(graphPane: JPanel, arguments: List<LabelledArgument>, attacks: List<Attack>) {
+            val layout: Layout<String, String> = FRLayout(buildGraph(arguments, attacks))
             layout.size = Dimension(350, 300)
             val vv: VisualizationViewer<String, String> = VisualizationViewer(layout)
+
             vv.preferredSize = Dimension(350, 300)
             vv.renderContext.setVertexFillPaintTransformer { i ->
                 when (arguments.first { x -> x.argument.identifier == i }.label) {
@@ -187,7 +192,8 @@ internal class ArgumentationGraphFrame {
             val graphMouse: DefaultModalGraphMouse<String, String> = DefaultModalGraphMouse()
             graphMouse.setMode(ModalGraphMouse.Mode.PICKING)
             vv.graphMouse = graphMouse
-            graphPane.viewport.view = vv
+            vv.addKeyListener(graphMouse.modeKeyListener)
+            graphPane.add(GraphZoomScrollPane(vv), BorderLayout.CENTER)
         }
 
         @JvmStatic
