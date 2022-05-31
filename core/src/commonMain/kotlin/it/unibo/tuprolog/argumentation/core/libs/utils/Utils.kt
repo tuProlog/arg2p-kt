@@ -20,6 +20,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.unify.Unificator
 
 sealed class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
@@ -32,7 +33,9 @@ sealed class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             primitives = mapOf(
                 AppendOptimized.signature to AppendOptimized,
                 AssertAll.signature to AssertAll,
-                ArgumentHash.descriptionPair
+                ArgumentHash.descriptionPair,
+                Contains.signature to Contains,
+                ContainsAny.signature to ContainsAny
             )
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
@@ -126,4 +129,63 @@ object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash"
                 Numeric.of(first.toString().hashCode())
             )
         )
+}
+
+object Contains : Primitive {
+
+    val signature: Signature = Signature("contains", 2)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val elem: Term = request.arguments[0]
+        val list: Term = request.arguments[1]
+
+        if (list !is List) {
+            throw TypeError.forGoal(
+                request.context,
+                request.signature,
+                TypeError.Expected.LIST,
+                list
+            )
+        }
+
+        return sequence {
+            yield(
+                request.replyWith(list.toList().any { Unificator.default.match(it, elem) })
+            )
+        }
+    }
+}
+
+object ContainsAny : Primitive {
+
+    val signature: Signature = Signature("contains_any", 2)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val elemList: Term = request.arguments[0]
+        val list: Term = request.arguments[1]
+
+        if (list !is List) {
+            throw TypeError.forGoal(
+                request.context,
+                request.signature,
+                TypeError.Expected.LIST,
+                list
+            )
+        }
+
+        if (elemList !is List) {
+            throw TypeError.forGoal(
+                request.context,
+                request.signature,
+                TypeError.Expected.LIST,
+                list
+            )
+        }
+
+        return sequence {
+            yield(
+                request.replyWith(list.toSequence().any { elemList.toSequence().any { elem -> Unificator.default.match(it, elem) } })
+            )
+        }
+    }
 }

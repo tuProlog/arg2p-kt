@@ -13,7 +13,8 @@ buildArguments :-
 	    parser::classic_rule(RuleID, RuleBody, RuleHead),
 	    \+ emptyRule([RuleID, RuleBody, RuleHead])
     ), Rules),
-	buildArgumentsFromRules(b, Rules, Rules, n).
+    findall(X, context_check(newConc(a, [X])), N),
+	buildArgumentsFromRules(N, b, Rules, Rules, n).
 
 buildArgumentsFromPremises :-
     findall(
@@ -39,8 +40,8 @@ buildArgumentsFromEmptyRules :-
             checkStrict(RuleID, DefRule),
             ground(RuleHead),
             context_assert(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
-            context_assert(conc(Premise) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
-            context_assert(newConc(a, Premise)),
+            context_assert(conc(RuleHead) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
+            context_assert(newConc(a, RuleHead)),
             utils::hash(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]), Id),
             context_assert(arg(Id) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]))
         ),
@@ -65,99 +66,72 @@ checkPrologClauses([prolog(Check)|T]) :-
 clean(Tn, Rules) :-
     invert(Tn, Tx),
     context_retract(newConc(Tx, _)),
-    buildArgumentsFromRules(Tx, Rules, Rules, n).
-
-check_new(Tn, H) :-
-    copy_term(H, [_, RuleBody, _]),
-    member(prolog(_), RuleBody), !.
-check_new(Tn, H) :-
-    copy_term(H, [_, RuleBody, _]),
-    member(X, RuleBody),
-    invert(Tn, Tx),
-    context_check(newConc(Tx, [X])).
+    findall(X, context_check(newConc(Tn, [X])), N),
+    buildArgumentsFromRules(N, Tx, Rules, Rules, n).
 
 invert(a, b).
 invert(b, a).
 
-buildArgumentsFromRules(_, Rules, [], n).
-buildArgumentsFromRules(Tn, Rules, [], y) :- clean(Tn, Rules).
-buildArgumentsFromRules(Tn, Rules, [H|T], _) :-
-    once(check_new(Tn, H)),
-    copy_term(H, HH),
-    findall(true, buildArgumentsFromRule(Tn, HH), R),
+buildArgumentsFromRules(_, _, Rules, [], n) :- !.
+buildArgumentsFromRules(_, Tn, Rules, [], y) :- !, clean(Tn, Rules).
+buildArgumentsFromRules(N, Tn, Rules, [[Id, Body, Conc]|T], _) :-
+%    write([Id, Body, Conc]),nl,
+    utils::contains_any(Body, N),
+%    write([Id, Body, Conc]),nl,
+    findall(true, buildArgumentsFromRule(Tn, [Id, Body, Conc]), R),
     R \== [],
-    buildArgumentsFromRules(Tn, Rules, T, y), !.
-buildArgumentsFromRules(Tn, Rules, [_|T], X) :-
-    buildArgumentsFromRules(Tn, Rules, T, X).
+    buildArgumentsFromRules(N, Tn, Rules, T, y), !.
+buildArgumentsFromRules(N, Tn, Rules, [_|T], X) :-
+    buildArgumentsFromRules(N, Tn, Rules, T, X).
 
 buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
-	ruleBodyIsSupported(RuleBody, [], [], SupportRules, ArgSupports),
-	\+ member(RuleID, SupportRules),
-	ground(RuleHead),
-	utils::sort([RuleID|SupportRules], SortedPremises),
-	\+ context_check(argument([SortedPremises, RuleID, RuleHead, RuleBody, _])),
-	buildArgumentInfo(ArgSupports, RuleID, Info),
-    NewArgument = [SortedPremises, RuleID, RuleHead, RuleBody, Info],
-    context_assert(conc(RuleHead) :- argument(NewArgument)),
-    context_assert(newConc(Tn, RuleHead)),
-	context_assert(argument(NewArgument)),
-	utils::hash(argument(NewArgument), Id),
-	context_assert(arg(Id) :- argument(NewArgument)),
-	supports(NewArgument, ArgSupports).
+	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, RuleBody, [[], [], [], []], Argument),
+    context_assert(newConc(Tn, RuleHead)).
 
-supports(Argument, Supports) :-
-    findall(_, (
-        member(S, Supports),
-        context_assert(support(S, Argument))
-    ), _).
+checkStrict(Id, []) :- parser::check_strict(Id), !.
+checkStrict(Id, [Id]).
 
-checkStrict(Id, [Id]) :- \+ parser::check_strict(Id).
-checkStrict(Id, []) :- parser::check_strict(Id).
+% New Argument Info
 
-% Argument Info
+defRules(Id, Def, Def) :- parser::check_strict(Id), !.
+defRules(Id, Def, [Id|Def]).
 
-buildArgumentInfo(Supports, RuleId, [LastDefRules, DefRules, DefPrem]) :-
-    defeasibleRules(RuleId, Supports, DefRules),
-    ordinaryPremises(Supports, DefPrem),
-    lastDefeasibleRules(Supports, RuleId, LastDefRules).
+lastDefRules(Id, LDef, LDef) :- parser::check_strict(Id), !.
+lastDefRules(Id, LDef, [Id]) :- Id \== none, \+ parser::check_strict(Id).
 
-% Defeasible Premises
-
-ordinaryPremises(Supports, DefPrem) :-
-    findall(Def, member([_, _, _, _, [_, _, Def]], Supports), Prem),
-    utils::appendLists(Prem, TempPrem),
-    utils::sortDistinct(TempPrem, DefPrem).
-
-% Defeasible rules
-
-defeasibleRules(RuleId, Supports, DefRules) :-
-	findall(Def, member([_, _, _, _, [_, Def, _]], Supports), UnsortedRules),
-	checkStrict(RuleId, DefRule),
-	utils::appendLists([DefRule|UnsortedRules], TempRules),
-	utils::sortDistinct(TempRules, DefRules).
-
-% Last Defeasible Rules
-
-lastDefeasibleRules(_, TopRule, [TopRule]) :-
-    TopRule \== none, \+ parser::check_strict(TopRule).
-lastDefeasibleRules(Supports, TopRule, LastRules) :-
-	parser::check_strict(TopRule),
-	findall(Def, member([_, _, _, _, [Def, _, _]], Supports), Res),
-	utils::appendLists(Res, TempLastRules),
-	utils::sortDistinct(TempLastRules, LastRules).
+argumentInfo(RuleId, LDef, Def, Prem, [FLDef, FDef, FPrem]) :-
+    utils::sortDistinct(Prem, FPrem),
+    defRules(RuleId, Def, NDef),
+    utils::sortDistinct(NDef, FDef),
+    lastDefRules(RuleId, LDef, NLDef),
+    utils::sortDistinct(NLDef, FLDef).
 
 % Argument Support
 
-ruleBodyIsSupported([], ResultPremises, ResultSupports, ResultPremises, ResultSupports).
-ruleBodyIsSupported([~(_)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports), !.
-ruleBodyIsSupported([prolog(Check)|Others], Premises, Supports, ResultPremises, ResultSupports) :-
+ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], Argument) :-
+    ground(RuleHead),
+    \+ context_check(clause(conc(RuleHead), argument([_, RuleID, RuleHead, RuleBody, _]))),
+    utils::appendLists(TAll, All),
+    \+ utils::contains(RuleID, All),
+    utils::appendLists(TLDef, LDef),
+    utils::appendLists(TDef, Def),
+    utils::appendLists(TPrem, Prem),
+    argumentInfo(RuleID, LDef, Def, Prem, Info),
+    utils::sort([RuleID|All], Rules),
+    Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
+    context_assert(conc(RuleHead) :- argument(Argument)),
+    context_assert(argument(Argument)),
+    utils::hash(argument(Argument), Id),
+    context_assert(arg(Id) :- argument(Argument)).
+ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [~(_)|Others], Info, Argument) :-
+	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, Others, Info, Argument).
+ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [prolog(Check)|Others], Info, Argument) :-
 	(callable(Check) -> call(Check); Check),
-	ruleBodyIsSupported(Others, Premises, Supports, ResultPremises, ResultSupports), !.
-ruleBodyIsSupported([Statement|Others], Premises, Supports, ResultPremises, ResultSupports) :-
-    context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, Info]))),
-	append(ArgumentID, Premises, NewPremises),
-	ruleBodyIsSupported(Others, NewPremises, [[ArgumentID, RuleID, [Statement], Body, Info]|Supports], ResultPremises, ResultSupports).
+	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, Others, Info, Argument).
+ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, Def, Prem], Argument) :-
+    context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]]))),
+	ruleBodyIsSupported(RuleId, RuleHead, RuleBody, Others, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
+	context_assert(support([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument)).
 
 % Attacks
 
@@ -233,7 +207,7 @@ rebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, _,
 contraryRebuts([IDPremisesA, RuleA, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
 	RuleA \== none,
 	RuleB \== none,
-	member(~(RuleHeadA), Body).
+	utils::contains(~(RuleHeadA), Body).
 
 %------------------------------------------------------------------------
 % Undermining definition: clash of incompatible premises
@@ -247,7 +221,7 @@ undermines([IDPremisesA, RuleA, RuleHeadA, _, _], [[IDPremiseB], none, RuleHeadB
 %------------------------------------------------------------------------
 contraryUndermines([IDPremisesA, none, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
 	RuleB \== none,
-	member(~(RuleHeadA), Body).
+	utils::contains(~(RuleHeadA), Body).
 
 %------------------------------------------------------------------------
 % Undercutting definition: attacks on defeasible inference rule
