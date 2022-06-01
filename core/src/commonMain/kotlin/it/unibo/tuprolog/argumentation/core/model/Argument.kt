@@ -12,8 +12,13 @@ data class Argument(
     val groundings: List<Literal> = emptyList(),
     val defeasibleRules: List<RuleIdentifier> = emptyList(),
     val defeasiblePremises: List<RuleIdentifier> = emptyList(),
-    val lastDefeasibleRules: List<RuleIdentifier> = emptyList()
+    val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
+    private val term: Term? = null,
 ) {
+
+    override fun hashCode(): Int {
+        return term.hashCode()
+    }
 
     var identifier: String = ""
     val supports: MutableList<Argument> = mutableListOf()
@@ -26,7 +31,7 @@ data class Argument(
             }
             ) + " : " + conclusion
 
-    fun termRepresentation(): Term = Struct.parse("[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]")
+    fun termRepresentation(): Term = term ?: Struct.parse("[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]")
 
     override fun toString(): String {
         return "argument(${this.termRepresentation()})"
@@ -73,7 +78,8 @@ data class Argument(
                     argGroundings(it),
                     argDefeasibleRules(it),
                     argDefeasiblePremises(it),
-                    argLastDefeasibleRules(it)
+                    argLastDefeasibleRules(it),
+                    term
                 )
             }
         }
