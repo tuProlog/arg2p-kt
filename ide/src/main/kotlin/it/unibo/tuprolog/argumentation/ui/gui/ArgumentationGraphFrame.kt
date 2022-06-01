@@ -99,19 +99,22 @@ internal class ArgumentationGraphFrame {
             context.text = this.selectedContext.toString()
         }
         mutableSolver?.also { solver ->
-            try {
-                Thread {
+            Thread {
+                try {
                     val graph = solver.graph(this.selectedContext)
                     SwingUtilities.invokeLater {
+                        this.graphPane.removeAll()
+                        this.classicTheoryPane.viewport.removeAll()
+                        this.treeTheoryPane.viewport.removeAll()
                         printGraph(this.graphPane, graph.labellings, graph.attacks)
                         printTheory(this.classicTheoryPane, this.treeTheoryPane, graph.labellings)
+                        this.splitPane.revalidate()
                     }
-                }.start()
-            } catch (e: Exception) {
-                this.clear()
-            }
+                } catch (e: Exception) {
+                    this.clear()
+                }
+            }.start()
         } ?: clear()
-        revalidate()
     }
 
     private fun clear() {
@@ -119,6 +122,7 @@ internal class ArgumentationGraphFrame {
             this.graphPane.removeAll()
             this.classicTheoryPane.viewport.removeAll()
             this.treeTheoryPane.viewport.removeAll()
+            revalidate()
         }
     }
 

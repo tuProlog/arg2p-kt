@@ -7,7 +7,6 @@ import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
 import it.unibo.tuprolog.dsl.prolog
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 @JsName("mineGraph")
@@ -42,10 +41,11 @@ fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
     return prolog {
         this@attacks.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
             .filter { it.isYes }
+            .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
                 Attack(
-                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.substitution[X]!!) },
-                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.substitution[Y]!!) }
+                    arguments.first { it.hashCode() == solution.first.hashCode() },
+                    arguments.first { it.hashCode() == solution.second.hashCode() }
                 )
             }
     }.toList()
@@ -53,20 +53,20 @@ fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
 
 @JsName("mineSupports")
 fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
-    arguments.flatMap { argument ->
-        prolog {
-            this@supports.solve("context_check"(context, "support"(X, argument.termRepresentation())))
-                .filter { it.isYes }
-                .map { it.substitution[X]!! }
-                .map { solution ->
+    prolog {
+        this@supports.solve("context_check"(context, "support"(X, Y)))
+            .filter { it.isYes }
+            .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
+            .map { solution ->
+                arguments.first { it.hashCode() == solution.second.hashCode() }.let { argument ->
                     Support(
-                        arguments.first { Unificator.default.match(it.termRepresentation(), solution) },
+                        arguments.first { it.hashCode() == solution.first.hashCode() },
                         argument
                     ).also {
                         argument.supports.add(it.supporter)
                     }
-                }.toList()
-        }
+                }
+            }.toList()
     }
 
 @JsName("mineLabels")
