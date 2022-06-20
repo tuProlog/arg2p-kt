@@ -19,7 +19,7 @@ gitSemVer {
     developmentIdentifier.set("dev")
     noTagIdentifier.set("archeo")
     developmentCounterLength.set(2) // How many digits after `dev`
-    assignGitSemanticVersion()// THIS IS MANDATORY, AND MUST BE LAST IN THIS BLOCK!
+    assignGitSemanticVersion()
 }
 
 group = "it.unibo.tuprolog.argumentation"
