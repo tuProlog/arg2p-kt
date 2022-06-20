@@ -36,141 +36,141 @@ cache:
     - '**/build/'
     - core/src/commonMain/kotlin/it/unibo/tuprolog/Info.kt
 
-stages:
-  - check
-  - build
-  - test
-  #  - doc
-  #  - sign
-  - deploy
-
-Check Code Style:
-  stage: check
-  script:
-    - $GCMD $BEFORE_TASK $CHECK_CODE_TASK $AFTER_TASK $GOPTS
-  artifacts:
-    paths:
-      - "**/build/reports/ktlint/"
-  only:
-    - branches
-  #  needs: []
-
-Compile:
-  stage: build
-  script:
-    - $GCMD $BEFORE_TASK $BUILD_TASK $AFTER_TASK $GOPTS
-  only:
-    - branches
-#  needs:
-#    - job: Check Code Style
-
-Test JVM:
-  stage: test
-  script: $GCMD $BEFORE_TASK $TEST_JVM_TASK $AFTER_TASK $GOPTS
-  artifacts:
-    reports:
-      junit: "**/build/test-results/jvmTest/*.xml"
-  only:
-    - branches
+#stages:
+#  - check
+#  - build
+#  - test
+#  #  - doc
+#  #  - sign
+#  - deploy
+#
+#Check Code Style:
+#  stage: check
+#  script:
+#    - $GCMD $BEFORE_TASK $CHECK_CODE_TASK $AFTER_TASK $GOPTS
+#  artifacts:
+#    paths:
+#      - "**/build/reports/ktlint/"
+#  only:
+#    - branches
+#  #  needs: []
+#
+#Compile:
+#  stage: build
+#  script:
+#    - $GCMD $BEFORE_TASK $BUILD_TASK $AFTER_TASK $GOPTS
+#  only:
+#    - branches
+##  needs:
+##    - job: Check Code Style
+#
+#Test JVM:
+#  stage: test
+#  script: $GCMD $BEFORE_TASK $TEST_JVM_TASK $AFTER_TASK $GOPTS
+#  artifacts:
+#    reports:
+#      junit: "**/build/test-results/jvmTest/*.xml"
+#  only:
+#    - branches
+##  needs:
+##    - job: Compile
+#
+#Test JS:
+#  stage: test
+#  script: $GCMD $BEFORE_TASK $TEST_JS_TASK $AFTER_TASK $GOPTS
+#  only:
+#    - branches
 #  needs:
 #    - job: Compile
-
-Test JS:
-  stage: test
-  script: $GCMD $BEFORE_TASK $TEST_JS_TASK $AFTER_TASK $GOPTS
-  only:
-    - branches
-  needs:
-    - job: Compile
-
-Generate Doc:
-  #  stage: doc
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $DOC_TASK $AFTER_TASK $GOPTS
-  only:
-    - /^(master)|(release)|(develop)$/
-  when: manual
-#  needs:
-#    - job: Test JVM
-#    - job: Test JS
-
-Sign Artefacts:
-  #  stage: doc
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $SIGN_TASK $AFTER_TASK $GOPTS
-  only:
-    - /^(master)|(release)|(develop)$/
-  when: manual
-#  needs:
-#    - job: Generate Doc
-
-#Deploy to Bintray:
+#
+#Generate Doc:
+#  #  stage: doc
 #  stage: deploy
 #  script:
-#    - $GCMD $BEFORE_TASK $BINTRAY_TASK $AFTER_TASK $GOPTS
-#  environment:
-#    name: Bintray
-#    url: "https://bintray.com/pika-lab/argumentation"
+#    - $GCMD $BEFORE_TASK $DOC_TASK $AFTER_TASK $GOPTS
 #  only:
 #    - /^(master)|(release)|(develop)$/
 #  when: manual
-#  needs:
-#    - job: Sign Artefacts
-
-Deploy to Maven Central (S01):
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $CENTRAL_TASK_S01 $AFTER_TASK $GOPTS
-  environment:
-    name: Maven Central
-    url: "https://oss.sonatype.org"
-  only:
-    - /^(master)|(release)$/
-  when: manual
-#  needs:
-#    - job: Sign Artefacts
-
-Deploy to Maven Central:
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $CENTRAL_TASK $AFTER_TASK $GOPTS
-  environment:
-    name: Maven Central
-    url: "https://oss.sonatype.org"
-  only:
-    - /^(master)|(release)$/
-  when: manual
-#  needs:
-#    - job: Sign Artefacts
-
-Deploy to NPM:
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $JS_COMPILE_TASK $AFTER_TASK $GOPTS
-    - $GCMD $BEFORE_TASK $NPM_PUBLISH_TASK $AFTER_TASK $GOPTS
-  environment:
-    name: NPM
-    url: "https://www.npmjs.com/org/tuprolog"
-  only:
-    - /^(master)|(release)|(develop)$/
-  when: manual
-#  needs:
-#    - job: Sign Artefacts
-
-Deploy to GitHub:
-  stage: deploy
-  script:
-    - $GCMD $BEFORE_TASK $GITHUB_PUBLISH_TASK $AFTER_TASK $GOPTS
-  environment:
-    name: GitHub
-    url: "https://github.com/tuProlog/arg2p-kt/releases"
-  only:
-    - /^(master)|(release)|(develop)$/
-  when: manual
-#  needs:
-#    - job: Sign Artefacts
+##  needs:
+##    - job: Test JVM
+##    - job: Test JS
+#
+#Sign Artefacts:
+#  #  stage: doc
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $SIGN_TASK $AFTER_TASK $GOPTS
+#  only:
+#    - /^(master)|(release)|(develop)$/
+#  when: manual
+##  needs:
+##    - job: Generate Doc
+#
+##Deploy to Bintray:
+##  stage: deploy
+##  script:
+##    - $GCMD $BEFORE_TASK $BINTRAY_TASK $AFTER_TASK $GOPTS
+##  environment:
+##    name: Bintray
+##    url: "https://bintray.com/pika-lab/argumentation"
+##  only:
+##    - /^(master)|(release)|(develop)$/
+##  when: manual
+##  needs:
+##    - job: Sign Artefacts
+#
+#Deploy to Maven Central (S01):
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $CENTRAL_TASK_S01 $AFTER_TASK $GOPTS
+#  environment:
+#    name: Maven Central
+#    url: "https://oss.sonatype.org"
+#  only:
+#    - /^(master)|(release)$/
+#  when: manual
+##  needs:
+##    - job: Sign Artefacts
+#
+#Deploy to Maven Central:
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $CENTRAL_TASK $AFTER_TASK $GOPTS
+#  environment:
+#    name: Maven Central
+#    url: "https://oss.sonatype.org"
+#  only:
+#    - /^(master)|(release)$/
+#  when: manual
+##  needs:
+##    - job: Sign Artefacts
+#
+#Deploy to NPM:
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $JS_COMPILE_TASK $AFTER_TASK $GOPTS
+#    - $GCMD $BEFORE_TASK $NPM_PUBLISH_TASK $AFTER_TASK $GOPTS
+#  environment:
+#    name: NPM
+#    url: "https://www.npmjs.com/org/tuprolog"
+#  only:
+#    - /^(master)|(release)|(develop)$/
+#  when: manual
+##  needs:
+##    - job: Sign Artefacts
+#
+#Deploy to GitHub:
+#  stage: deploy
+#  script:
+#    - $GCMD $BEFORE_TASK $GITHUB_PUBLISH_TASK $AFTER_TASK $GOPTS
+#  environment:
+#    name: GitHub
+#    url: "https://github.com/tuProlog/arg2p-kt/releases"
+#  only:
+#    - /^(master)|(release)|(develop)$/
+#  when: manual
+##  needs:
+##    - job: Sign Artefacts
 
 pages:
   script:
