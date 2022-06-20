@@ -49,14 +49,15 @@ More information on the Arg2p usage can be found on the [API & Flags page]({{ si
 - First include the library with:
   
 ```kotlin
-import it.unibo.tuprolog.argumentation.Arg2pLibrary
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 ```
 
 - You can create a new Prolog solver including the Arg2p library with the following notation (for more info on 2P-Kt refer to the [official page](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin)):
 
 ```kotlin
+val arg2p = Arg2pSolver.default()
 val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Libraries.of(Arg2pLibrary.get())
+    otherLibraries = arg2p.to2pLibraries()
 )
 ```
 
@@ -64,26 +65,26 @@ val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
 
 ```kotlin
 solver.loadStaticKb(Theory.parse("""
-            graphBuildMode(base).
+            graphBuildMode(standard_af).
             argumentLabellingMode(grounded).
-            statementLabellingMode(base).
-            orderingPrinciple(last).
-            orderingComparator(elitist).
+            statementLabellingMode(statement).
+            
             d1 : bird(X) => flies(X).
             d2 : penguin(X) => bird(X).
             s1 : penguin(X) -> -flies(X).
             a1 :-> penguin(tweety).
-        """.trimIndent()))
+
+        """.trimIndent(), arg2p.operators()))
 ```
 
-- Require the evaluation of a goal. For example:
+- Require the evaluation of the theory. For example:
 
 ```kotlin
 prolog {
-    solver.solve("buildLabelSets"(In, Out, Und))
+    solver.solve("buildLabelSets"(X, Y, Z))
         .map { 
             when(it) {
-                Solution.Yes -> "In statements: ${it.substitution[In].toString()}"
+                Solution.Yes -> "In statements: ${it.substitution[X].toString()}"
                 Solution.No -> "No available solution"
                 Solution.Halt -> "Error in resolution process"
             } 

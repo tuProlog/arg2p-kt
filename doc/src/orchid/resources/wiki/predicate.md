@@ -29,8 +29,8 @@ allowing to query the engine about a given _Goal_. The result are collected in t
 The resolution process behaviour can be adjusted through the use of these flags. Some of them are required in order to successfully complete the evaluation process. 
 Note that, in the standalone version of the library, there is no need to put them in the target theory, but it is possible to manage them through the _Arg Flags_ tab.
     
-- `graphBuildMode(MODE)` [__REQUIRED__] to select the preferred way to build the argumentation graph starting from the statements. `MODE` can only assume the value `base`.
-- `statementLabellingMode(MODE)` [__REQUIRED__] to select the preferred way to execute the statement labelling. `MODE` can only assume the value `base`.
+- `graphBuildMode(MODE)` [__REQUIRED__] to select the preferred way to build the argumentation graph starting from the statements. `MODE` can only assume the value `standard_af`.
+- `statementLabellingMode(MODE)` [__REQUIRED__] to select the preferred way to execute the statement labelling. `MODE` can only assume the value `statement`.
 - `argumentLabellingMode(MODE)` [__REQUIRED__] to select the preferred way to execute the argument labelling. `MODE` can assume the values:
   - `grounded` to use the Dung's grounded semantic; 
   - `complete` to use the Dung's complete semantic;
