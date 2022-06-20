@@ -31,6 +31,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 14
       - name: Setup Gradle
         run: ./gradlew ${{ env.gradle-options }}
