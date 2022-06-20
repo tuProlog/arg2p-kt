@@ -27,7 +27,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
-sealed class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.parser"
 

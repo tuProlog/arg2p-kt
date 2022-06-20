@@ -22,7 +22,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.unify.Unificator
 
-sealed class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.utils"
 

@@ -131,3 +131,5 @@ gradle-app.setting
 *.tokens
 
 *.hprof
+
+yarn.lock
