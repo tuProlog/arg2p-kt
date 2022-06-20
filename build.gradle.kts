@@ -4,7 +4,7 @@ import io.github.gciatto.kt.node.NpmPublishExtension
 
 plugins {
     kotlin("multiplatform") version "1.7.0"
-    id("org.danilopianini.git-sensitive-semantic-versioning") version "0.2.3"
+    id("org.danilopianini.git-sensitive-semantic-versioning") version "0.3.0"
     id("io.github.gciatto.kt-mpp-pp") version "0.3.5"
 }
 
