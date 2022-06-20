@@ -5,7 +5,7 @@ dependencies {
     api(project(":core"))
     testImplementation(kotlin("test-junit"))
 
-    implementation(platform("com.typesafe.akka:akka-bom_$akkaVersion:2.6.17"))
+    implementation(platform("com.typesafe.akka:akka-bom_$akkaVersion:2.6.19"))
     implementation("com.typesafe.akka:akka-actor-typed_$akkaVersion")
     implementation("com.typesafe.akka:akka-cluster-sharding-typed_$akkaVersion")
     implementation("com.typesafe.akka:akka-serialization-jackson_$akkaVersion")
