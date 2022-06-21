@@ -71,19 +71,13 @@ fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
 
 @JsName("mineLabels")
 fun Solver.labels(context: Int, arguments: List<Argument>): List<LabelledArgument> {
-    fun checkFunctor(functor: String, argument: Argument) =
+    fun checkFunctor(functor: String) =
         prolog {
-            this@labels.solve("context_check"(context, functor(argument.termRepresentation())))
+            this@labels.solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
-                .map { functor }
-                .firstOrNull()
+                .map { res -> LabelledArgument(arguments.first { it.hashCode() == res.substitution[X].hashCode() }, functor,) }
+                .toList()
         }
 
-    return arguments.map {
-        LabelledArgument(
-            it,
-            checkFunctor("in", it)
-                ?: checkFunctor("out", it) ?: "und"
-        )
-    }
+    return checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
 }
