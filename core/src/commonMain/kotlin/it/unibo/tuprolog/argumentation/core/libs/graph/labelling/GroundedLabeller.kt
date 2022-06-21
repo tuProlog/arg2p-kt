@@ -9,7 +9,7 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
-sealed class GroundedLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class GroundedLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.graph.labelling.grounded"
 

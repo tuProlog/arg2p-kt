@@ -9,7 +9,7 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
-sealed class AbstractModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class AbstractModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.abstract"
 
