@@ -12,7 +12,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
 
     testImplementation("com.typesafe.akka:akka-actor-testkit-typed_$akkaVersion")
-    implementation("ch.qos.logback:logback-classic:1.2.11")
+    implementation("ch.qos.logback:logback-classic:1.4.0")
 
 
     implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
