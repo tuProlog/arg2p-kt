@@ -9,7 +9,7 @@ dependencies {
     implementation("com.typesafe.akka:akka-actor-typed_$akkaVersion")
     implementation("com.typesafe.akka:akka-cluster-sharding-typed_$akkaVersion")
     implementation("com.typesafe.akka:akka-serialization-jackson_$akkaVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.4")
 
     testImplementation("com.typesafe.akka:akka-actor-testkit-typed_$akkaVersion")
     implementation("ch.qos.logback:logback-classic:1.4.0")
