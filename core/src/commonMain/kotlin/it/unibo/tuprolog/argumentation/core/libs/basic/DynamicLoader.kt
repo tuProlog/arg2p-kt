@@ -80,7 +80,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
 
             return sequence {
                 yieldAll(
-                    solver.solve(goal, SolveOptions.someEagerlyWithTimeout(1000, TimeDuration.MAX_VALUE)).map {
+                    solver.solve(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
                         request.replyWith(it.substitution)
                     }
                 )

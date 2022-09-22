@@ -3,8 +3,8 @@ import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
 import io.github.gciatto.kt.node.NpmPublishExtension
 
 plugins {
-    kotlin("multiplatform") version "1.7.0"
-    id("org.danilopianini.git-sensitive-semantic-versioning") version "0.2.3"
+    kotlin("multiplatform") version "1.7.10"
+    id("org.danilopianini.git-sensitive-semantic-versioning") version "0.3.0"
     id("io.github.gciatto.kt-mpp-pp") version "0.3.5"
 }
 
@@ -19,7 +19,7 @@ gitSemVer {
     developmentIdentifier.set("dev")
     noTagIdentifier.set("archeo")
     developmentCounterLength.set(2) // How many digits after `dev`
-    version = computeGitSemVer() // THIS IS MANDATORY, AND MUST BE LAST IN THIS BLOCK!
+    assignGitSemanticVersion()
 }
 
 group = "it.unibo.tuprolog.argumentation"
