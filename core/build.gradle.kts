@@ -11,6 +11,7 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
+                implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
             }
@@ -18,7 +19,7 @@ kotlin {
 
         val commonTest by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
+                implementation("it.unibo.tuprolog:test-solve:0.20.4")
             }
         }
     }
