@@ -1,12 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.meta
 
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
-object MetaInterpreterLib : AliasedLibrary by
-Library.aliased(
+object MetaInterpreterLib : Library by
+Library.of(
     theory = Theory.parse(
         """
         % with_facts_and_length/3

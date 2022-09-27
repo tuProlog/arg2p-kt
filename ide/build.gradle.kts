@@ -11,22 +11,28 @@ plugins {
 }
 
 dependencies {
+
+    api("it.unibo.tuprolog:ide:$tuPrologVersion")
+
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:win")
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:linux")
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:mac")
 
     /* JUNG DEPENDENCIES */
-    api("ch.qos.logback", "logback-classic", "1.4.1")
-    api("ch.qos.logback", "logback-core", "1.4.1")
-    api("net.sf.jung", "jung-api", "2.1.1")
-    api("net.sf.jung", "jung-visualization", "2.1.1")
-    api("net.sf.jung", "jung-graph-impl", "2.1.1")
-    api("net.sf.jung", "jung-algorithms", "2.1.1")
-    api("net.sf.jung", "jung-io", "2.1.1")
+    implementation("ch.qos.logback", "logback-classic", "1.4.1")
+    implementation("ch.qos.logback", "logback-core", "1.4.1")
+    implementation("net.sf.jung", "jung-api", "2.1.1")
+    implementation("net.sf.jung", "jung-visualization", "2.1.1")
+    implementation("net.sf.jung", "jung-graph-impl", "2.1.1")
+    implementation("net.sf.jung", "jung-algorithms", "2.1.1")
+    implementation("net.sf.jung", "jung-io", "2.1.1")
 
-    implementation("it.unibo.tuprolog:ide:$tuPrologVersion")
-    api(project(":core"))
-    api(project(":actor-solver"))
+//    implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
+//    implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
+//    implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
+    implementation(project(":core"))
+    implementation(project(":actor-solver"))
+
     testImplementation(kotlin("test-junit"))
 }
 

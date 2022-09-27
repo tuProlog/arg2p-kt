@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsName
 
@@ -21,7 +21,7 @@ fun Solver.graph(context: Int) =
 
 @JsName("mineArguments")
 fun Solver.arguments(context: Int): List<Argument> =
-    prolog {
+    logicProgramming {
         this@arguments.solve("context_check"(context, "argument"(X)))
             .filter { it.isYes }
             .map { it.substitution[X]!! }
@@ -38,7 +38,7 @@ fun Solver.arguments(context: Int): List<Argument> =
 @JsName("mineAttacks")
 fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
     if (arguments.isEmpty()) return emptyList()
-    return prolog {
+    return logicProgramming {
         this@attacks.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
@@ -53,7 +53,7 @@ fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
 
 @JsName("mineSupports")
 fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
-    prolog {
+    logicProgramming {
         this@supports.solve("context_check"(context, "support"(X, Y)))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
@@ -72,7 +72,7 @@ fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
 @JsName("mineLabels")
 fun Solver.labels(context: Int, arguments: List<Argument>): List<LabelledArgument> {
     fun checkFunctor(functor: String) =
-        prolog {
+        logicProgramming {
             this@labels.solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
                 .map { res -> LabelledArgument(arguments.first { it.hashCode() == res.substitution[X].hashCode() }, functor,) }

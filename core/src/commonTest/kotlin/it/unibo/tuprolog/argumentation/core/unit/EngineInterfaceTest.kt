@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoalNoBacktracking
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
 
@@ -33,7 +33,7 @@ class EngineInterfaceTest {
 
     @Test
     fun buildLabelSets() {
-        prolog {
+        logicProgramming {
             val solver = solverWithTheory()
             testGoalNoBacktracking(
                 "buildLabelSets"(
@@ -88,7 +88,7 @@ class EngineInterfaceTest {
 
     @Test
     fun answerQuery() {
-        prolog {
+        logicProgramming {
             testGoalNoBacktracking("answerQuery"("a", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
                     "Y" to listOf("a"),

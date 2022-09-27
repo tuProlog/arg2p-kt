@@ -15,7 +15,6 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -26,8 +25,8 @@ abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.utils"
 
-    override val baseContent: AliasedLibrary
-        get() = Library.aliased(
+    override val baseContent: Library
+        get() = Library.of(
             alias = this.alias,
             theory = this.prologTheory,
             primitives = mapOf(

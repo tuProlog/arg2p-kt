@@ -31,7 +31,7 @@ import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
 import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.Libraries
+import it.unibo.tuprolog.solve.library.Runtime
 
 interface Arg2pSolver {
     val loader: ArgLoader
@@ -40,7 +40,7 @@ interface Arg2pSolver {
     fun staticLibraries(): Iterable<ArgLibrary>
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Libraries.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
+    fun to2pLibraries() = Runtime.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
     fun operators() = listOf(loader, context).plus(staticLibraries())
         .map { it.theoryOperators }.reduce(OperatorSet::plus)
 

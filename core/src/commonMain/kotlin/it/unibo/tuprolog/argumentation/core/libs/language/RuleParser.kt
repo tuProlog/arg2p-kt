@@ -16,10 +16,9 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.core.toTerm
-import it.unibo.tuprolog.dsl.theory.PrologScopeWithTheories
-import it.unibo.tuprolog.dsl.theory.prolog
+import it.unibo.tuprolog.dsl.theory.LogicProgrammingScopeWithTheories
+import it.unibo.tuprolog.dsl.theory.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
@@ -31,8 +30,8 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.parser"
 
-    override val baseContent: AliasedLibrary
-        get() = Library.aliased(
+    override val baseContent: Library
+        get() = Library.of(
             alias = this.alias,
             primitives = mapOf(
                 StrictRules::descriptionPair.get(),
@@ -44,7 +43,7 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 RuleToClause::descriptionPair.get()
             ),
             theory = this.prologTheory,
-            operatorSet = operators()
+            operators = operators()
         )
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
@@ -84,7 +83,7 @@ object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
 
 object ConversionUtils {
     fun modifiers(target: Clause, context: Solve.Request<ExecutionContext>): Term =
-        prolog {
+        logicProgramming {
             target.bodyItems.map { term ->
                 if (term.isStruct && term.asStruct()?.functor == "\\+") "~"(term.asStruct()!!.args[0])
                 else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) "prolog"(term)
@@ -96,10 +95,10 @@ object ConversionUtils {
         context: Solve.Request<ExecutionContext>,
         first: Term,
         force: Boolean = false,
-        mapper: (Iterable<Clause>, PrologScopeWithTheories) -> Term
+        mapper: (Iterable<Clause>, LogicProgrammingScopeWithTheories) -> Term
     ): Sequence<Substitution> {
         context.ensuringArgumentIsVariable(0)
-        return prolog {
+        return logicProgramming {
             sequenceOf(
                 Substitution.of(
                     first.castToVar(),

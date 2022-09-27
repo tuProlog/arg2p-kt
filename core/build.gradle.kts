@@ -19,7 +19,7 @@ kotlin {
 
         val commonTest by getting {
             dependencies {
-                implementation("it.unibo.tuprolog:test-solve:0.20.4")
+                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
             }
         }
     }
