@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.core.libs
 
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
@@ -13,7 +12,7 @@ interface ArgLoader : ArgLibrary
 
 interface ArgLibrary {
     val alias: String
-    val baseContent: AliasedLibrary
+    val baseContent: Library
     val baseFlags: Iterable<ArgsFlag<*, *>>
 
     val theoryOperators: OperatorSet
@@ -28,7 +27,7 @@ interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
     val parentLibrary: T
 
     override fun flags() = baseFlags.union(parentLibrary.flags())
-    override fun content() = Library.aliased(
+    override fun content() = Library.of(
         alias = baseContent.alias,
         theory = baseContent.theory.plus(parentLibrary.content().theory)
     )

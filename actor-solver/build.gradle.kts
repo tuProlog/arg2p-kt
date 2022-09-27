@@ -2,7 +2,7 @@ val akkaVersion: String by project
 val tuPrologVersion: String by project
 
 dependencies {
-    api(project(":core"))
+    implementation(project(":core"))
     testImplementation(kotlin("test-junit"))
 
     implementation(platform("com.typesafe.akka:akka-bom_$akkaVersion:2.6.20"))

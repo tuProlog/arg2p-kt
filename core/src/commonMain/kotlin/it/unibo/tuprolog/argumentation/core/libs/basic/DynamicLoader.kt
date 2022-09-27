@@ -11,7 +11,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
@@ -19,9 +19,8 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.library.AliasedLibrary
-import it.unibo.tuprolog.solve.library.Libraries
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
@@ -65,7 +64,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
                 )
                 ).let { library ->
                 request.context.createMutableSolver(
-                    libraries = Libraries.of(
+                    libraries = Runtime.of(
                         request.context.libraries.libraries.filterNot { lib ->
                             this@DynamicLoader.solver.dynamicLibraries()
                                 .map { it.alias }
@@ -96,7 +95,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
     inner class WithLibInNewContext : AbstractWithLib() {
         override val signature = Signature(":::", 2)
         override fun execute(module: String, solver: MutableSolver) =
-            prolog {
+            logicProgramming {
                 solver.solve("context_active"(X))
                     .filter { it.isYes }
                     .forEach {
@@ -107,12 +106,12 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
 
     override val alias = "prolog.argumentation.loader"
 
-    override val baseContent: AliasedLibrary
+    override val baseContent: Library
         get() = listOf(WithLib(), WithLibInNewContext()).let {
-            Library.aliased(
+            Library.of(
                 alias = this.alias,
                 primitives = it.associateBy { prim -> prim.signature },
-                operatorSet = operators()
+                operators = operators()
             )
         }
     override val baseFlags: Iterable<ArgsFlag<*, *>>

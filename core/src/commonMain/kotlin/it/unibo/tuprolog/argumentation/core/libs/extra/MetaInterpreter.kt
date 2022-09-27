@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.core.libs.extra
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -12,8 +11,8 @@ object MetaInterpreter : ArgLibrary, Loadable {
 
     override val alias = "prolog.argumentation.meta.crossjustice"
 
-    override val baseContent: AliasedLibrary
-        get() = Library.aliased(
+    override val baseContent: Library
+        get() = Library.of(
             alias = this.alias,
             theory = Theory.parse(
                 """

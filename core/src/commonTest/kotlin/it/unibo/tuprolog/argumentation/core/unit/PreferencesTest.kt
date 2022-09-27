@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
 import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,7 +38,7 @@ class PreferencesTest {
         "und" to "[]"
     )
 
-    private fun attacksSize(solver: Solver): Int = prolog {
+    private fun attacksSize(solver: Solver): Int = logicProgramming {
         solver.solve("context_check"("attack"("X", "Y", "Z", "U")))
             .filter { it.isYes }.count()
     }

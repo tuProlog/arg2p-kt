@@ -3,7 +3,7 @@ package it.unibo.tuprolog.argumentation.core.unit
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -22,7 +22,7 @@ class AttacksTest {
         """.trimIndent()
 
     private fun checkAttacks(theory: String, attacks: Map<String, Int>) {
-        prolog {
+        logicProgramming {
             TestingUtils.solverWithTheory(theory).also { solver ->
                 solver.solve(Struct.parse("buildLabelSets")).toList()
                 attacks.forEach { attack ->

@@ -19,7 +19,6 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
@@ -118,7 +117,7 @@ class ActorSolver : ArgLibrary, Loadable {
 
     override val alias = "prolog.argumentation.actor.solver"
 
-    override val baseContent: AliasedLibrary
+    override val baseContent: Library
         get() =
             listOf(
                 ParallelSolve(),
@@ -128,10 +127,10 @@ class ActorSolver : ArgLibrary, Loadable {
                 ParallelJoin(),
                 ParallelLeave()
             ).let { primitives ->
-                Library.aliased(
+                Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
-                    operatorSet = RuleParserBase.operators()
+                    operators = RuleParserBase.operators()
                 )
             }
 

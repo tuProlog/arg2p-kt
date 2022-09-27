@@ -9,7 +9,6 @@ import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
@@ -62,14 +61,14 @@ class Cache : ArgLibrary {
 
     override val alias = "prolog.argumentation.cache"
 
-    override val baseContent: AliasedLibrary
+    override val baseContent: Library
         get() =
             listOf(
                 CacheAssert(),
                 CacheRetract(),
                 CacheGet()
             ).let { primitives ->
-                Library.aliased(
+                Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature }
                 )

@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
 import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.library.AliasedLibrary
+import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.ui.gui.CustomTab
 import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
 import javafx.collections.FXCollections
@@ -44,7 +44,7 @@ internal class FlagManagerFrame private constructor() {
         private var ideModel: TuPrologIDEModel? = null
 
         @JvmStatic
-        fun customTab(customLibraries: List<AliasedLibrary>): CustomTab {
+        fun customTab(customLibraries: List<Library>): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> = FXCollections.observableArrayList(
                 setupChoiceBox("Graph Build Mode", listOf("standard_af")) {

@@ -7,9 +7,8 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.Scope
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.rule.RuleWrapper
 import it.unibo.tuprolog.theory.Theory
@@ -18,8 +17,8 @@ object PassThroughStatementLabeller : ArgLibrary, Loadable {
 
     override val alias = "prolog.argumentation.graph.labelling.statement.pt"
 
-    override val baseContent: AliasedLibrary
-        get() = Library.aliased(
+    override val baseContent: Library
+        get() = Library.of(
             alias = this.alias,
             theory = Theory.of(Labelling.implementation)
         )
@@ -34,7 +33,7 @@ object PassThroughStatementLabeller : ArgLibrary, Loadable {
 
 private object Labelling : RuleWrapper<ExecutionContext>("statementLabelling", 0) {
     override val Scope.body: Term
-        get() = prolog {
+        get() = logicProgramming {
             tupleOf(
                 "findall"(
                     `_`,

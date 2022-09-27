@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.testYesGoal
 import it.unibo.tuprolog.argumentation.core.TestingUtils.withArgOperators
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import kotlin.test.Ignore
 import kotlin.test.Test
 
@@ -14,7 +14,7 @@ import kotlin.test.Test
 class RuleTranslationTest {
 
     private fun testTranslation(theory: String, vararg expected: String) {
-        prolog {
+        logicProgramming {
             val arg2p = Arg2pSolver.default()
             val solver = solver(withArgOperators(theory))
             solver.solve(Struct.parse("context_reset", arg2p.operators())).first()
