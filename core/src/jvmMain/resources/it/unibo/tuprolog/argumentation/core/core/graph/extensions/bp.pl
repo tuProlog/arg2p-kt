@@ -1,8 +1,8 @@
 modifyArgumentationGraph :-
-    findall(([Rules, Top, [bp, Checked], G, I], [Z, P, Y, GG, II]), (
-        context_check(argument([Rules, Top, [bp, Checked], G, I])),
-        member(Y, Checked),
-        context_check(argument([Z, P, Y, GG, II]))
+    findall(([Rules, Top, [bp(Checked)], G, I], [Z, P, [Y], GG, II]), (
+        context_check(argument([Rules, Top, [bp(Checked)], G, I])),
+        member(Y, [Checked]),
+        context_check(argument([Z, P, [Y], GG, II]))
     ), TemplateBpPairs),
     checkBpArguments(TemplateBpPairs).
 
@@ -17,7 +17,7 @@ checkBpArguments(TemplateBpPairs) :-
 
 createBpArguments([], []).
 createBpArguments([(Original, [Z, P, Y, B, I])|Others], [(Conflict, [Z, P, Y, B, I])|BpPairs]) :-
-    Conflict = [[artificial|Z], artificial, [neg, burdmet(Y)], [], [[artificial], [artificial], []]],
+    Conflict = [[artificial|Z], artificial, [-burdmet(Y)], [], [[artificial], [artificial], []]],
     context_assert(argument(Conflict)),
     context_assert(support(Original, Conflict)),
     liftBpAttacks(Original, Conflict),
