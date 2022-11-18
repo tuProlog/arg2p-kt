@@ -6,15 +6,14 @@ import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 
 abstract class ArgumentationGraphBuilderBase : ArgLibrary, LazyRawPrologContent(), Loadable {
 
     override val alias = "prolog.argumentation.graph"
 
-    override val baseContent: AliasedLibrary
-        get() = Library.aliased(
+    override val baseContent: Library
+        get() = Library.of(
             alias = this.alias,
             theory = this.prologTheory
         )

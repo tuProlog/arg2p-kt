@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
@@ -73,7 +73,7 @@ object TestingUtils {
         goals.forEach { testNoGoal(it, solver) }
 
     fun buildLabelSets(theory: String, argsIn: String, argsOut: String, argsUnd: String): Solver {
-        return prolog {
+        return logicProgramming {
             solverWithTheory(theory).also { solver ->
                 testGoalNoBacktracking(
                     "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
@@ -90,7 +90,7 @@ object TestingUtils {
     }
 
     fun answerQuery(theory: String, query: String, argsIn: String, argsOut: String, argsUnd: String) {
-        prolog {
+        logicProgramming {
             solverWithTheory(theory).also { solver ->
                 TestingUtils.testGoalNoBacktracking(
                     "answerQuery"(Struct.parse(query), "StatIn", "StatOut", "StatUnd"),

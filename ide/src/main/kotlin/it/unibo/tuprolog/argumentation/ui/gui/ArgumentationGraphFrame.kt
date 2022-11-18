@@ -14,7 +14,7 @@ import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
@@ -150,7 +150,7 @@ internal class ArgumentationGraphFrame {
                     frame.mutableSolver = MutableSolver.classic(
                         libraries = event.libraries
                     )
-                    frame.selectedContext = prolog {
+                    frame.selectedContext = logicProgramming {
                         frame.mutableSolver!!.solve("context_active"(X))
                             .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
                             .first()

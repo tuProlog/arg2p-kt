@@ -3,7 +3,7 @@ package it.unibo.tuprolog.argumentation.core.system
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.prolog
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.yes
@@ -122,7 +122,7 @@ class SpeedTest {
     @Ignore
     fun structuredResolutionSpeedTestNoLastCall() {
         val time = measureTime {
-            prolog {
+            logicProgramming {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
                     val query = set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
@@ -154,7 +154,7 @@ class SpeedTest {
     @ExperimentalTime
     fun structuredResolutionSpeedLastCall() {
         val time = measureTime {
-            prolog {
+            logicProgramming {
                 TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
                     val query = current_flag(LastCallOptimization.name, V)

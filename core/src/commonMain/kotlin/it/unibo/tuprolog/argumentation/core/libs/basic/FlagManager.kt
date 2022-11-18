@@ -15,7 +15,6 @@ import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.library.AliasedLibrary
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import kotlin.jvm.JvmStatic
@@ -68,8 +67,8 @@ data class FlagsBuilder(
 
         override val alias = "prolog.argumentation.flags"
 
-        override val baseContent: AliasedLibrary
-            get() = Library.aliased(
+        override val baseContent: Library
+            get() = Library.of(
                 alias = this.alias,
                 theory = setupSolver(this@FlagsBuilder),
             )
