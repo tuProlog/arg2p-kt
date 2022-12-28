@@ -3,7 +3,7 @@ import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
 import io.github.gciatto.kt.node.NpmPublishExtension
 
 plugins {
-    kotlin("multiplatform") version "1.7.21"
+    kotlin("multiplatform") version "1.8.0"
     id("org.danilopianini.git-sensitive-semantic-versioning") version "0.3.0"
     id("io.github.gciatto.kt-mpp-pp") version "0.3.5"
 }
