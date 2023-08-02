@@ -79,6 +79,7 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     tasks.withType<KotlinJsCompile>().forEach {
         it.dependsOn(this)
     }
+    tasks.sourcesJar.get().dependsOn(this)
     doLast {
         for (file in plFiles) {
             file.convertIntoKotlinSource(destDir, pckg)
