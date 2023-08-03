@@ -7,17 +7,18 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.classic
+import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.unify.Unificator
 
 class Cache : ArgLibrary {
 
     private val solver: MutableSolver =
-        MutableSolver.classic(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
+        Solver.prolog.mutableSolverOf(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
             .also { it.setFlag(Unknown.name, Unknown.FAIL) }
 
     inner class CacheAssert : PrimitiveWithSignature {

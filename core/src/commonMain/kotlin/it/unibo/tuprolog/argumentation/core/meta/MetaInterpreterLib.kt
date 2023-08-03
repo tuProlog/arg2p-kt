@@ -6,7 +6,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 
 object MetaInterpreterLib : Library by
 Library.of(
-    theory = Theory.parse(
+    clauses = Theory.parse(
         """
         % with_facts_and_length/3
         with_facts_and_length(X, Y, L) :-

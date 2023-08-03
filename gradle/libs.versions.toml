@@ -1,0 +1,24 @@
+[versions]
+kotlin = "1.8.21"
+jvm = "11"
+node = "18-latest"
+ktMpp = "2.2.1"
+semVer = "1.1.10"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+ktMppHelper = { id = "io.github.gciatto.kt-mpp.multi-project-helper", version.ref = "ktMpp" }
+ktMpp-bugFinder = { id = "io.github.gciatto.kt-mpp.bug-finder", version.ref = "ktMpp" }
+ktMpp-documentation = { id = "io.github.gciatto.kt-mpp.documentation", version.ref = "ktMpp" }
+ktMpp-linter = { id = "io.github.gciatto.kt-mpp.linter", version.ref = "ktMpp" }
+ktMpp-mavenPublish = { id = "io.github.gciatto.kt-mpp.maven-publish", version.ref = "ktMpp" }
+ktMpp-npmPublish = { id = "io.github.gciatto.kt-mpp.npm-publish", version.ref = "ktMpp" }
+ktMpp-versions = { id = "io.github.gciatto.kt-mpp.versions", version.ref = "ktMpp" }
+ktMpp-jsOnly = { id = "io.github.gciatto.kt-mpp.js-only", version.ref = "ktMpp" }
+ktMpp-jvmOnly = { id = "io.github.gciatto.kt-mpp.jvm-only", version.ref = "ktMpp" }
+ktMpp-multiplatform = { id = "io.github.gciatto.kt-mpp.multiplatform", version.ref = "ktMpp" }
+gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
+shadowJar = "com.github.johnrengelman.shadow:8.1.1"
+
+[libraries]
+shadowJar = "gradle.plugin.com.github.johnrengelman:shadow:8.0.0"

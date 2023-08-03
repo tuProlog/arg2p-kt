@@ -1,64 +1,101 @@
-import io.github.gciatto.kt.mpp.ProjectExtensions.jsProjects
-import io.github.gciatto.kt.mpp.ProjectExtensions.ktProjects
-import io.github.gciatto.kt.node.NpmPublishExtension
+import io.github.gciatto.kt.mpp.Plugins
+import io.github.gciatto.kt.mpp.ProjectType
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    kotlin("multiplatform") version "1.7.21"
-    id("org.danilopianini.git-sensitive-semantic-versioning") version "1.1.10"
-    id("io.github.gciatto.kt-mpp-pp") version "0.3.5"
+    alias(libs.plugins.ktMppHelper)
+    alias(libs.plugins.gitSemVer)
+    // id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
 }
 
-repositories {
-    mavenCentral()
-//    maven("https://dl.bintray.com/pika-lab/tuprolog/")
-//    jcenter()
+group = "it.unibo.tuprolog.argumentation"
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
 }
 
 gitSemVer {
     minimumVersion.set("0.1.0")
     developmentIdentifier.set("dev")
     noTagIdentifier.set("archeo")
-    developmentCounterLength.set(2) // How many digits after `dev`
+    developmentCounterLength.set(2)
     assignGitSemanticVersion()
 }
 
-group = "it.unibo.tuprolog.argumentation"
 
-subprojects {
-    group = rootProject.group
-    version = rootProject.version
-    repositories.addAll(rootProject.repositories)
-}
+multiProjectHelper {
+    defaultProjectType = ProjectType.JS
 
-kotlinMultiplatform {
-    preventPublishingOfRootProject.set(true)
-    developer("Giuseppe Pisano", "g.pisano@unibo.it", "https://www.unibo.it/sitoweb/g.pisano/en")
-    jvmOnlyProjects("ide", "actor-solver")
-    otherProjects("doc")
-    ktProjects(allOtherSubprojects)
-}
+    ktProjects(rootProject.path, ":core")
+    jvmProjects(":ide", ":actor-solver")
+    // jsProjects(":js-empty")
+    otherProjects(":doc")
 
-kotlin {
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                api(project(":core"))
-            }
-        }
+    val baseProjectTemplate = buildSet {
+        add(Plugins.documentation)
+        add(Plugins.versions)
     }
-}
 
-(ktProjects + jsProjects).forEach { project ->
-    project.configure<NpmPublishExtension> {
-        liftPackageJson {
-            dependencies = dependencies?.mapKeys { (key, _) ->
-                key.takeIf { it.startsWith("2p-") }?.let { "@tuprolog/$it" } ?: key
-            }?.toMutableMap()
-        }
-
-        liftJsSources { _, _, line ->
-            line.replace("'2p", "'@tuprolog/2p")
-                .replace("\"2p", "\"@tuprolog/2p")
-        }
+    ktProjectTemplate = buildSet {
+        addAll(baseProjectTemplate)
+        add(Plugins.multiplatform)
     }
+
+    jvmProjectTemplate = buildSet {
+        addAll(baseProjectTemplate)
+        add(Plugins.jvmOnly)
+    }
+
+    jsProjectTemplate = buildSet {
+        addAll(baseProjectTemplate)
+        add(Plugins.jsOnly)
+    }
+
+    otherProjectTemplate = buildSet {
+        add(Plugins.versions)
+    }
+
+    applyProjectTemplates()
 }
+
+
+//subprojects {
+//    group = rootProject.group
+//    version = rootProject.version
+//    repositories.addAll(rootProject.repositories)
+//}
+
+//kotlinMultiplatform {
+//    preventPublishingOfRootProject.set(true)
+//    developer("Giuseppe Pisano", "g.pisano@unibo.it", "https://www.unibo.it/sitoweb/g.pisano/en")
+//    jvmOnlyProjects("ide", "actor-solver")
+//    otherProjects("doc")
+//    ktProjects(allOtherSubprojects)
+//}
+
+//kotlin {
+//    sourceSets {
+//        commonMain {
+//            dependencies {
+//                api(project(":core"))
+//            }
+//        }
+//    }
+//}
+
+//(ktProjects + jsProjects).forEach { project ->
+//    project.configure<NpmPublishExtension> {
+//        liftPackageJson {
+//            dependencies = dependencies?.mapKeys { (key, _) ->
+//                key.takeIf { it.startsWith("2p-") }?.let { "@tuprolog/$it" } ?: key
+//            }?.toMutableMap()
+//        }
+//
+//        liftJsSources { _, _, line ->
+//            line.replace("'2p", "'@tuprolog/2p")
+//                .replace("\"2p", "\"@tuprolog/2p")
+//        }
+//    }
+//}

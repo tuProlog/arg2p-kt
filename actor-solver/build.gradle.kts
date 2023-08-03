@@ -1,6 +1,10 @@
 val akkaVersion: String by project
 val tuPrologVersion: String by project
 
+plugins {
+    id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
+}
+
 dependencies {
     implementation(project(":core"))
     testImplementation(kotlin("test-junit"))

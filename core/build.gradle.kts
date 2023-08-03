@@ -1,15 +1,17 @@
-import org.gradle.api.file.DuplicatesStrategy.WARN
+import org.gradle.api.file.DuplicatesStrategy.INCLUDE
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import java.io.File
 import kotlin.streams.asSequence
 
 val tuPrologVersion: String by project
 
+plugins {
+    id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
+}
+
 kotlin {
-
     sourceSets {
-
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
                 implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
@@ -17,7 +19,7 @@ kotlin {
             }
         }
 
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
             }
@@ -28,9 +30,8 @@ kotlin {
 private val PL_COMMENT_REGEX =
     """^\s*%.*""".toRegex()
 
-val String.isSkipable: Boolean get() {
-    return isBlank() || PL_COMMENT_REGEX.matches(this)
-}
+val String.isSkippable: Boolean get() =
+    isBlank() || PL_COMMENT_REGEX.matches(this)
 
 fun File.resolveDest(destinationFolder: File): File =
     destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
@@ -50,7 +51,7 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
             w.write("        \"\"\"")
             w.newLine()
             for (line in lines) {
-                if (!line.isSkipable) {
+                if (!line.isSkippable) {
                     w.write("    ")
                     w.write(line)
                     w.newLine()
@@ -66,27 +67,29 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
 
 tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     val jvmResourcesDir = kotlin.jvm().compilations["main"].kotlinSourceSets.single().resources.sourceDirectories.single()
+    val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
     val plFiles = fileTree(jvmResourcesDir).also {
         it.include("**/*.pl")
     }.files
-    val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
-    val pckg = "it.unibo.tuprolog.argumentation.core.libs.sources"
-    val destDir = jsMainDir.resolve(pckg.replace('.', '/'))
+    val packageName = "it.unibo.tuprolog.argumentation.core.libs.sources"
+    val destDir = jsMainDir.resolve(packageName.replace('.', '/'))
+
     for (file in plFiles) {
         inputs.file(file)
         outputs.file(file.resolveDest(destDir))
     }
-    tasks.withType<KotlinJsCompile>().forEach {
-        it.dependsOn(this)
-    }
+
+    tasks.compileKotlinJs.get().dependsOn(this)
     tasks.sourcesJar.get().dependsOn(this)
+    tasks.dokkaHtml.get().dependsOn(this)
+
     doLast {
         for (file in plFiles) {
-            file.convertIntoKotlinSource(destDir, pckg)
+            file.convertIntoKotlinSource(destDir, packageName)
         }
     }
 }
 
 tasks.getByName<Copy>("jvmProcessResources") {
-    duplicatesStrategy = WARN
+    duplicatesStrategy = INCLUDE
 }

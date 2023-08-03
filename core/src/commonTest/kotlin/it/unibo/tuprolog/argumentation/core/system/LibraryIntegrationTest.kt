@@ -26,8 +26,8 @@ class LibraryIntegrationTest {
     @Test
     fun library() {
         val libraries = Arg2pSolver.default().to2pLibraries()
-        val theory = Arg2pSolver.default().to2pLibraries().theory
-        val libTheory = libraries.theory
+        val theory = Arg2pSolver.default().to2pLibraries().clauses
+        val libTheory = libraries.clauses
         assertEquals(libTheory, theory)
     }
 }

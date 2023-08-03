@@ -20,7 +20,7 @@ object PassThroughStatementLabeller : ArgLibrary, Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = Theory.of(Labelling.implementation)
+            clauses = Theory.of(Labelling.implementation)
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()

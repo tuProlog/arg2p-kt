@@ -15,7 +15,7 @@ abstract class GenericDefeasiblePreferencesHandlerBase : ArgLibrary, LazyRawProl
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = this.prologTheory
+            clauses = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()

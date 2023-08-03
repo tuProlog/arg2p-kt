@@ -14,12 +14,12 @@ import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
-import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
+import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.ui.gui.CustomTab
+import it.unibo.tuprolog.dsl.logicProgramming
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
 import java.awt.BorderLayout
@@ -147,7 +147,7 @@ internal class ArgumentationGraphFrame {
             return CustomTab(Tab("Graph", swingNode)) { model ->
                 model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
                 model.onNewSolution.subscribe { event ->
-                    frame.mutableSolver = MutableSolver.classic(
+                    frame.mutableSolver = Solver.prolog.mutableSolverOf(
                         libraries = event.libraries
                     )
                     frame.selectedContext = logicProgramming {

@@ -15,7 +15,7 @@ abstract class SuperiorityRelationBase : ArgLibrary, LazyRawPrologContent(), Loa
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = this.prologTheory
+            clauses = this.prologTheory
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(OrderingPrinciple, OrderingComparator)

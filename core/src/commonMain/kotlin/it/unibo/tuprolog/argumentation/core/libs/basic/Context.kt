@@ -11,12 +11,13 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.classicWithDefaultBuiltins
+import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.unify.Unificator
 
 class Context : ArgLibrary, ArgContext {
 
@@ -24,8 +25,10 @@ class Context : ArgLibrary, ArgContext {
     private var selectedSolver: Int = 0
     private val dynamicSolver: MutableMap<Int, MutableSolver> = mutableMapOf(
         0 to
-            MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
-                .also { it.setFlag(Unknown.name, Unknown.FAIL) }
+            Solver.prolog.mutableSolverWithDefaultBuiltins(
+                staticKb = Theory.empty(),
+                dynamicKb = MutableTheory.empty(Unificator.default)
+            ).also { it.setFlag(Unknown.name, Unknown.FAIL) }
     )
 
     inner class DynamicCacheReset : PrimitiveWithSignature {
@@ -37,7 +40,7 @@ class Context : ArgLibrary, ArgContext {
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty())
+                Solver.prolog.mutableSolverWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             return sequenceOf(request.replyWith(true))
         }
@@ -73,7 +76,8 @@ class Context : ArgLibrary, ArgContext {
             val target: Int = request.arguments[0].castToInteger().intValue.toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                MutableSolver.classicWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(this@Context.dynamicSolver[target]!!.dynamicKb))
+                Solver.prolog.mutableSolverWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(
+                    Unificator.default, this@Context.dynamicSolver[target]!!.dynamicKb))
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
             return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))

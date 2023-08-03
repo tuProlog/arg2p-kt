@@ -42,7 +42,7 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 ExtractStrictIds::descriptionPair.get(),
                 RuleToClause::descriptionPair.get()
             ),
-            theory = this.prologTheory,
+            clauses = this.prologTheory,
             operators = operators()
         )
 

@@ -17,6 +17,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
+import it.unibo.tuprolog.unify.Unificator
 import kotlin.jvm.JvmStatic
 
 data class FlagsBuilder(
@@ -35,7 +36,7 @@ data class FlagsBuilder(
     companion object {
         @JvmStatic
         fun setupSolver(target: FlagsBuilder) =
-            MutableTheory.empty().also { kb ->
+            MutableTheory.empty(Unificator.default).also { kb ->
                 target.graphExtensions.forEach { kb.assertA(Clause.parse("${GraphExtension.predicate()}(X) :- X = $it")) }
                 if (target.queryMode) kb.assertA(Struct.parse(QueryMode.predicate()))
                 if (target.autoTransposition) kb.assertA(Struct.parse(AutoTransposition.predicate()))
@@ -70,7 +71,7 @@ data class FlagsBuilder(
         override val baseContent: Library
             get() = Library.of(
                 alias = this.alias,
-                theory = setupSolver(this@FlagsBuilder),
+                clauses = setupSolver(this@FlagsBuilder),
             )
         override val baseFlags: Iterable<ArgsFlag<*, *>>
             get() = emptyList()

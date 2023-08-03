@@ -7,6 +7,17 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
+//primitives: Map<Signature, Primitive> = emptyMap(),
+//clauses: Iterable<Clause> = emptyList(),
+//operators: OperatorSet = OperatorSet(),
+//functions: Map<Signature, LogicFunction> = emptyMap()
+
+fun Theory.toLibrary(alias: String) : Library =
+    Library.of(alias, clauses = this.clauses)
+
+fun Library.toTheory() : Theory =
+    Theory.of(this.clauses)
+
 interface ArgContext : ArgLibrary
 interface ArgLoader : ArgLibrary
 
@@ -22,16 +33,16 @@ interface ArgLibrary {
     fun content() = baseContent
 }
 
-interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
-
-    val parentLibrary: T
-
-    override fun flags() = baseFlags.union(parentLibrary.flags())
-    override fun content() = Library.of(
-        alias = baseContent.alias,
-        theory = baseContent.theory.plus(parentLibrary.content().theory)
-    )
-}
+//interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
+//
+//    val parentLibrary: T
+//
+//    override fun flags() = baseFlags.union(parentLibrary.flags())
+//    override fun content() = Library.of(
+//        alias = baseContent.alias,
+//        theory = baseContent.theory.plus(parentLibrary.content().theory)
+//    )
+//}
 
 interface RawPrologContent {
     val prologTheory: Theory

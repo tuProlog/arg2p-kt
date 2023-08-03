@@ -28,7 +28,7 @@ abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = this.prologTheory,
+            clauses = this.prologTheory,
             primitives = mapOf(
                 AppendOptimized.signature to AppendOptimized,
                 AssertAll.signature to AssertAll,

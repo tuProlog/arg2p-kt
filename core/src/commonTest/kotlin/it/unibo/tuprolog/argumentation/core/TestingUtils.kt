@@ -30,7 +30,7 @@ object TestingUtils {
         Theory.parse(theory, Arg2pSolver.default().operators())
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
-        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        Solver.prolog.mutableSolverWithDefaultBuiltins(
             otherLibraries = Arg2pSolver.default().to2pLibraries(),
             staticKb = theory,
             flags = flags.set(Unknown, Unknown.FAIL)

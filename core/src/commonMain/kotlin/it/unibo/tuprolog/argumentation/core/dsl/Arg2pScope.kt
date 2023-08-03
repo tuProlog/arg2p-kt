@@ -9,6 +9,6 @@ interface PrologWithArgumentation : LogicProgrammingScopeWithTheories {
 }
 
 internal class PrologWithArgumentationImpl :
-    PrologWithArgumentation, LogicProgrammingScope by LogicProgrammingScope.empty(), Unificator by Unificator.default
+    PrologWithArgumentation, LogicProgrammingScopeWithTheories by LogicProgrammingScopeWithTheories.of()
 
 fun <R> arg2pScope(function: PrologWithArgumentation.() -> R): R = PrologWithArgumentationImpl().function()
