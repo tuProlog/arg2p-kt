@@ -1,8 +1,11 @@
 import org.gradle.api.file.DuplicatesStrategy.INCLUDE
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 import java.io.File
 import kotlin.streams.asSequence
 
 val tuPrologVersion: String by project
+val jvmStackSize: String by project
+val jvmMaxHeapSize: String by project
 
 plugins {
     id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
@@ -24,6 +27,11 @@ kotlin {
             }
         }
     }
+}
+
+tasks.withType<KotlinJvmTest> {
+    maxHeapSize = jvmMaxHeapSize
+    jvmArgs("-Xss$jvmStackSize")
 }
 
 private val PL_COMMENT_REGEX =
