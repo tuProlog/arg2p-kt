@@ -38,7 +38,7 @@ object TestingUtils {
     fun solverWithTheory(theory: String) = solver(withArgOperators(theory))
 
     fun testGoal(goal: Struct, solver: BaseSolver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
-        val solutions = solver.solve(goal, duration).toList()
+        val solutions = solver.solve(goal, SolveOptions.allLazilyWithTimeout(duration)).toList()
         assertSolutionEquals(
             expectedSolutions(goal),
             solutions
