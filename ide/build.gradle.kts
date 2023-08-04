@@ -16,7 +16,7 @@ dependencies {
     runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:mac")
 
     /* JUNG DEPENDENCIES */
-    api("ch.qos.logback", "logback-classic", "1.4.8")
+    api("ch.qos.logback", "logback-classic", "1.4.9")
     api("ch.qos.logback", "logback-core", "1.4.8")
     api("net.sf.jung", "jung-api", "2.1.1")
     api("net.sf.jung", "jung-visualization", "2.1.1")
