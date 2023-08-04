@@ -1,5 +1,4 @@
 import org.gradle.api.file.DuplicatesStrategy.INCLUDE
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import java.io.File
 import kotlin.streams.asSequence
 

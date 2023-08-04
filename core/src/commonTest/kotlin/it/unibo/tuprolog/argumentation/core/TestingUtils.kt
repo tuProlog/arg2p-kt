@@ -12,7 +12,6 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.no

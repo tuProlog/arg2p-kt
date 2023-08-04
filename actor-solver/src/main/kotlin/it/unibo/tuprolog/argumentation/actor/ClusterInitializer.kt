@@ -60,7 +60,7 @@ object ClusterInitializer {
 
         ClusterSharding.get(actorSystem).init(
             Entity.of(EntityTypeKey.create(KbMessage::class.java, "evaluator")) {
-                ctx ->
+                    ctx ->
                 Evaluator.create(masterActor, ctx.entityId)
             }
         )

@@ -76,8 +76,6 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     dependsOn("classes")
 }
 
-
-
 tasks.withType<ShadowJar> {
     val newTransformer = com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer()
     newTransformer.resource = "reference.conf"
@@ -86,7 +84,7 @@ tasks.withType<ShadowJar> {
 
 // configureUploadToGithub(shadowJar)
 
-//fun Project.configureUploadToGithub(vararg tasks: Zip) {
+// fun Project.configureUploadToGithub(vararg tasks: Zip) {
 //    if (ktMpp.githubToken.isPresent.not() || ktMpp.githubToken.get().isBlank()) return
 //
 //    val archiveFiles = tasks.map { it.archiveFile }
@@ -100,16 +98,16 @@ tasks.withType<ShadowJar> {
 //            releaseTask.dependsOn(*tasks)
 //        }
 //    }
-//}
+// }
 //
-//fun Project.configureUploadToGithub(
+// fun Project.configureUploadToGithub(
 //    jarTaskPositiveFilter: (String) -> Boolean = { "jar" in it },
 //    jarTaskNegativeFilter: (String) -> Boolean = { "dokka" in it || "source" in it }
-//) {
+// ) {
 //    tasks.withType(Zip::class.java).matching {
 //        val name = it.name.toLowerCase()
 //        jarTaskPositiveFilter(name) && !jarTaskNegativeFilter(name)
 //    }.all {
 //        configureUploadToGithub(it)
 //    }
-//}
+// }

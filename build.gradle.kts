@@ -24,7 +24,6 @@ gitSemVer {
     assignGitSemanticVersion()
 }
 
-
 multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
@@ -36,6 +35,7 @@ multiProjectHelper {
     val baseProjectTemplate = buildSet {
         add(Plugins.documentation)
         add(Plugins.versions)
+        add(Plugins.linter)
     }
 
     ktProjectTemplate = buildSet {
@@ -60,22 +60,21 @@ multiProjectHelper {
     applyProjectTemplates()
 }
 
-
-//subprojects {
+// subprojects {
 //    group = rootProject.group
 //    version = rootProject.version
 //    repositories.addAll(rootProject.repositories)
-//}
+// }
 
-//kotlinMultiplatform {
+// kotlinMultiplatform {
 //    preventPublishingOfRootProject.set(true)
 //    developer("Giuseppe Pisano", "g.pisano@unibo.it", "https://www.unibo.it/sitoweb/g.pisano/en")
 //    jvmOnlyProjects("ide", "actor-solver")
 //    otherProjects("doc")
 //    ktProjects(allOtherSubprojects)
-//}
+// }
 
-//kotlin {
+// kotlin {
 //    sourceSets {
 //        commonMain {
 //            dependencies {
@@ -83,9 +82,9 @@ multiProjectHelper {
 //            }
 //        }
 //    }
-//}
+// }
 
-//(ktProjects + jsProjects).forEach { project ->
+// (ktProjects + jsProjects).forEach { project ->
 //    project.configure<NpmPublishExtension> {
 //        liftPackageJson {
 //            dependencies = dependencies?.mapKeys { (key, _) ->
@@ -98,4 +97,4 @@ multiProjectHelper {
 //                .replace("\"2p", "\"@tuprolog/2p")
 //        }
 //    }
-//}
+// }

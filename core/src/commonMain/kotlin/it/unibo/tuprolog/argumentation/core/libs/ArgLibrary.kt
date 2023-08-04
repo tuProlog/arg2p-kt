@@ -7,15 +7,15 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
-//primitives: Map<Signature, Primitive> = emptyMap(),
-//clauses: Iterable<Clause> = emptyList(),
-//operators: OperatorSet = OperatorSet(),
-//functions: Map<Signature, LogicFunction> = emptyMap()
+// primitives: Map<Signature, Primitive> = emptyMap(),
+// clauses: Iterable<Clause> = emptyList(),
+// operators: OperatorSet = OperatorSet(),
+// functions: Map<Signature, LogicFunction> = emptyMap()
 
-fun Theory.toLibrary(alias: String) : Library =
+fun Theory.toLibrary(alias: String): Library =
     Library.of(alias, clauses = this.clauses)
 
-fun Library.toTheory() : Theory =
+fun Library.toTheory(): Theory =
     Theory.of(this.clauses)
 
 interface ArgContext : ArgLibrary
@@ -33,7 +33,7 @@ interface ArgLibrary {
     fun content() = baseContent
 }
 
-//interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
+// interface UnionArgLibrary<T> : ArgLibrary where T : ArgLibrary {
 //
 //    val parentLibrary: T
 //
@@ -42,7 +42,7 @@ interface ArgLibrary {
 //        alias = baseContent.alias,
 //        theory = baseContent.theory.plus(parentLibrary.content().theory)
 //    )
-//}
+// }
 
 interface RawPrologContent {
     val prologTheory: Theory

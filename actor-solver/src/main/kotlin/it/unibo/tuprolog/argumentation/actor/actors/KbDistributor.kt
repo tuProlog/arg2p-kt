@@ -77,7 +77,9 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 undArgs =
                 if (cache.responses.any { it.response != Label.NOT_FOUND }) {
                     filter(Label.UND)
-                } else filter(Label.NOT_FOUND).distinct()
+                } else {
+                    filter(Label.NOT_FOUND).distinct()
+                }
             )
         )
 

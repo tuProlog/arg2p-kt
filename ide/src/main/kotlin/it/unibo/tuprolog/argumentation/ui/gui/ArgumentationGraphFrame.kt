@@ -14,12 +14,12 @@ import edu.uci.ics.jung.visualization.renderers.Renderer
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.ui.gui.CustomTab
-import it.unibo.tuprolog.dsl.logicProgramming
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
 import java.awt.BorderLayout

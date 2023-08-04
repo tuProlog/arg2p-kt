@@ -75,7 +75,7 @@ fun Solver.labels(context: Int, arguments: List<Argument>): List<LabelledArgumen
         logicProgramming {
             this@labels.solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
-                .map { res -> LabelledArgument(arguments.first { it.hashCode() == res.substitution[X].hashCode() }, functor,) }
+                .map { res -> LabelledArgument(arguments.first { it.hashCode() == res.substitution[X].hashCode() }, functor) }
                 .toList()
         }
 

@@ -76,8 +76,13 @@ class Context : ArgLibrary, ArgContext {
             val target: Int = request.arguments[0].castToInteger().intValue.toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                Solver.prolog.mutableSolverWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.of(
-                    Unificator.default, this@Context.dynamicSolver[target]!!.dynamicKb))
+                Solver.prolog.mutableSolverWithDefaultBuiltins(
+                    staticKb = Theory.empty(),
+                    dynamicKb = MutableTheory.of(
+                        Unificator.default,
+                        this@Context.dynamicSolver[target]!!.dynamicKb
+                    )
+                )
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
             return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))

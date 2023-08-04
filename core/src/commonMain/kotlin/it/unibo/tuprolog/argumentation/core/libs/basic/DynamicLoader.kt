@@ -122,7 +122,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
     companion object {
         fun operators() = OperatorSet(
             Operator("::", Specifier.XFX, 700),
-            Operator(":::", Specifier.XFX, 700),
+            Operator(":::", Specifier.XFX, 700)
         )
     }
 }

@@ -105,7 +105,7 @@ class RationalityTest {
         example4theory + "graphExtension(rebutRestriction).",
         listOf("-hw", "wr", "m", "hw", "go", "b"),
         listOf(),
-        listOf(),
+        listOf()
     )
 
     @Test

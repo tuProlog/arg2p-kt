@@ -71,7 +71,7 @@ data class FlagsBuilder(
         override val baseContent: Library
             get() = Library.of(
                 alias = this.alias,
-                clauses = setupSolver(this@FlagsBuilder),
+                clauses = setupSolver(this@FlagsBuilder)
             )
         override val baseFlags: Iterable<ArgsFlag<*, *>>
             get() = emptyList()

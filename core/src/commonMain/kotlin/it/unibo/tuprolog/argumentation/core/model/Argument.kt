@@ -13,7 +13,7 @@ data class Argument(
     val defeasibleRules: List<RuleIdentifier> = emptyList(),
     val defeasiblePremises: List<RuleIdentifier> = emptyList(),
     val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
-    private val term: Term? = null,
+    private val term: Term? = null
 ) {
 
     override fun hashCode(): Int {
@@ -25,7 +25,9 @@ data class Argument(
 
     val descriptor: String
         get() = "$identifier : " + (
-            if (topRule == "none") rules.firstOrNull() ?: "" else {
+            if (topRule == "none") {
+                rules.firstOrNull() ?: ""
+            } else {
                 supports.map { it.identifier }.plus(topRule)
                     .reduce { a: String, b: String -> "$a,$b" }
             }
@@ -48,8 +50,11 @@ data class Argument(
 
             fun toStringList(argument: List<Term>, target: Int): List<String> {
                 return (
-                    if (argument[target].isEmptyList) emptyList()
-                    else (argument[target] as Cons).toList()
+                    if (argument[target].isEmptyList) {
+                        emptyList()
+                    } else {
+                        (argument[target] as Cons).toList()
+                    }
                     ).map { x -> x.toString() }
             }
 
