@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: zulu
-          java-version: 14
+          java-version: 17
       - name: Setup Gradle
         run: ./gradlew ${{ env.gradle-options }}
       - name: Check Code Style
