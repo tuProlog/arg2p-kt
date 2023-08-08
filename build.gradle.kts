@@ -5,9 +5,8 @@ import io.github.gciatto.kt.mpp.nodeVersion
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    alias(libs.plugins.ktMppHelper)
+    alias(libs.plugins.ktMpp.multiProjectHelper)
     alias(libs.plugins.gitSemVer)
-    // id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
 }
 
 group = "it.unibo.tuprolog.argumentation"
@@ -20,10 +19,7 @@ allprojects {
 }
 
 gitSemVer {
-    minimumVersion.set("0.1.0")
-    developmentIdentifier.set("dev")
-    noTagIdentifier.set("archeo")
-    developmentCounterLength.set(2)
+    excludeLightweightTags()
     assignGitSemanticVersion()
 }
 

@@ -13,6 +13,10 @@ plugins {
 }
 
 kotlin {
+    js {
+        binaries.library()
+    }
+
     sourceSets {
         commonMain {
             dependencies {
