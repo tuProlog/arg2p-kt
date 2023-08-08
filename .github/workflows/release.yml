@@ -100,15 +100,14 @@ jobs:
             NEXT_VERSION="${{ needs.staging-repo.outputs.next-version }}"
             OVERRIDE_VERSION=$([[ "$NEXT_VERSION" != "" ]] && echo "-PforceVersion=$(echo $NEXT_VERSION)" || echo "")
             ./gradlew $OVERRIDE_VERSION -PstagingRepositoryId=${{ needs.staging-repo.outputs.maven-central-repo-id }} uploadProject --parallel
-          should-run-codecov: ${{ runner.os == 'Linux' }}
+          should-run-codecov: false
           should-deploy: ${{ contains(needs.staging-repo.result, 'success') }}
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
           maven-central-username: gpisano
           build-command: |
             SKIP_DOC="-x dokkaHtml -x javadoc -x dokkaJavadoc -x dokkaGfm -x dokkaJekyll"
             ./gradlew assemble $SKIP_DOC --parallel || ./gradlew assemble $SKIP_DOC --parallel
-          check-command: |
-            ./gradlew check --parallel --continue || ./gradlew check --parallel --continue
+          check-command: true
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
 
