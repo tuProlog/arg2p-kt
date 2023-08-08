@@ -20,7 +20,7 @@ object BinaryStatementLabeller : ArgLibrary, Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = Theory.of(BinaryLabelling.implementation)
+            clauses = Theory.of(BinaryLabelling.implementation)
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
@@ -38,7 +38,7 @@ private object BinaryLabelling : RuleWrapper<ExecutionContext>("statementLabelli
                 "findall"(
                     `_`,
                     tupleOf(
-                        "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`,))),
+                        "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`))),
                         not("contextCheck"("statIn"(X))),
                         "context_assert"("statIn"(X))
                     ),
@@ -47,7 +47,7 @@ private object BinaryLabelling : RuleWrapper<ExecutionContext>("statementLabelli
                 "findall"(
                     `_`,
                     tupleOf(
-                        "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`,))) or "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`,))),
+                        "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`))) or "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`))),
                         not("context_check"("statOut"(X))),
                         "context_assert"("statOut"(X))
                     ),

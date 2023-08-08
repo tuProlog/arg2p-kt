@@ -72,7 +72,7 @@ class ArgumentationGraphTest {
             ),
             listOf(
                 Support(arg2, arg1),
-                Support(arg3, arg2),
+                Support(arg3, arg2)
             )
         )
     }
@@ -81,7 +81,7 @@ class ArgumentationGraphTest {
         Rule("r0", listOf("-c"), "a"),
         Rule("r1", listOf("a"), "c"),
         Rule("r2", listOf(), "-a"),
-        Rule("r3", listOf(), "-c"),
+        Rule("r3", listOf(), "-c")
     )
 
     @Test

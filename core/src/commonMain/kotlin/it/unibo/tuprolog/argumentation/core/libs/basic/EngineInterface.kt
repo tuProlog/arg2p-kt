@@ -14,7 +14,7 @@ abstract class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = this.prologTheory,
+            clauses = this.prologTheory,
             operators = RuleParserBase.operators()
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>

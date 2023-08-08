@@ -42,7 +42,7 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
                 ExtractStrictIds::descriptionPair.get(),
                 RuleToClause::descriptionPair.get()
             ),
-            theory = this.prologTheory,
+            clauses = this.prologTheory,
             operators = operators()
         )
 
@@ -61,7 +61,7 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
             Operator(":=>", Specifier.XFX, 1199),
             Operator(":->", Specifier.XFX, 1199),
             Operator(":", Specifier.XFX, 1001),
-            Operator(":=", Specifier.XFX, 1199),
+            Operator(":=", Specifier.XFX, 1199)
 //            Operator("->", Specifier.XFX, 1050)
         )
     }
@@ -85,9 +85,13 @@ object ConversionUtils {
     fun modifiers(target: Clause, context: Solve.Request<ExecutionContext>): Term =
         logicProgramming {
             target.bodyItems.map { term ->
-                if (term.isStruct && term.asStruct()?.functor == "\\+") "~"(term.asStruct()!!.args[0])
-                else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) "prolog"(term)
-                else term
+                if (term.isStruct && term.asStruct()?.functor == "\\+") {
+                    "~"(term.asStruct()!!.args[0])
+                } else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) {
+                    "prolog"(term)
+                } else {
+                    term
+                }
             }.let { if (it.count() > 1) tupleOf(it) else it.first() }
         }
 

@@ -15,6 +15,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -121,14 +122,14 @@ class BasicTest {
                 "r0$it :=> a$it.",
                 "r1$it : a$it => b$it.",
                 "r2$it : b$it => c$it.",
-                "r3$it : c$it => d$it.",
+                "r3$it : c$it => d$it."
             ).joinToString("\n")
         }
 
         arg2pScope {
             ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
                 otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL)
+                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
             ).also {
                 it.loadStaticKb(Theory.parse(rules, it.operators))
                 it.solve("join"(2551) and "load").first()
@@ -147,16 +148,16 @@ class BasicTest {
                 "r0$it :=> a$it.",
                 "r1$it : a$it => b$it.",
                 "r2$it : b$it => c$it.",
-                "r3$it : c$it => d$it.",
+                "r3$it : c$it => d$it."
             ).joinToString("\n")
         }
 
         arg2pScope {
             ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
                 otherLibraries = Arg2pSolver.default(
-                    kotlin.collections.listOf(FlagsBuilder().create()),
+                    kotlin.collections.listOf(FlagsBuilder().create())
                 ).to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL)
+                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
             ).also {
                 it.loadStaticKb(Theory.parse(rules, it.operators))
                 val a = it.solve("answerQuery"("d99", X, Y, Z)).first()

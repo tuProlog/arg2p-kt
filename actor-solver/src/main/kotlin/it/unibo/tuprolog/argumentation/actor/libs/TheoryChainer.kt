@@ -14,7 +14,7 @@ object TheoryChainer : ArgLibrary, Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = Theory.parse(
+            clauses = Theory.parse(
                 """            
                 chainable(X) :-
                     member(rl(_) :- [_, Prem, _], X),

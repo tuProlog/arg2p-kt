@@ -12,8 +12,8 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
@@ -30,16 +30,16 @@ object TestingUtils {
         Theory.parse(theory, Arg2pSolver.default().operators())
 
     fun solver(theory: Theory = Theory.empty(), flags: FlagStore = FlagStore.DEFAULT) =
-        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        Solver.prolog.mutableSolverWithDefaultBuiltins(
             otherLibraries = Arg2pSolver.default().to2pLibraries(),
             staticKb = theory,
-            flags = flags.set(Unknown, Unknown.FAIL)
+            flags = flags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
         )
 
     fun solverWithTheory(theory: String) = solver(withArgOperators(theory))
 
     fun testGoal(goal: Struct, solver: BaseSolver = solver(), expectedSolutions: (Struct) -> Iterable<Solution>) {
-        val solutions = solver.solve(goal, duration).toList()
+        val solutions = solver.solve(goal, SolveOptions.allLazilyWithTimeout(duration)).toList()
         assertSolutionEquals(
             expectedSolutions(goal),
             solutions

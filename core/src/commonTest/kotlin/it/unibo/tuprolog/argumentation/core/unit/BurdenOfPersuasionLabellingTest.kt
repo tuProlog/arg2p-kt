@@ -35,7 +35,7 @@ class BurdenOfPersuasionLabellingTest {
             ),
             listOf(
                 Support(arg2, arg1),
-                Support(arg3, arg2),
+                Support(arg3, arg2)
             )
         )
     }

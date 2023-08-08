@@ -20,7 +20,7 @@ object PassThroughStatementLabeller : ArgLibrary, Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = Theory.of(Labelling.implementation)
+            clauses = Theory.of(Labelling.implementation)
         )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
@@ -38,7 +38,7 @@ private object Labelling : RuleWrapper<ExecutionContext>("statementLabelling", 0
                 "findall"(
                     `_`,
                     tupleOf(
-                        "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`,))),
+                        "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`))),
                         "context_assert"("statIn"(X))
                     ),
                     `_`
@@ -46,7 +46,7 @@ private object Labelling : RuleWrapper<ExecutionContext>("statementLabelling", 0
                 "findall"(
                     `_`,
                     tupleOf(
-                        "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`,))),
+                        "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`))),
                         "context_assert"("statOut"(X))
                     ),
                     `_`
@@ -54,7 +54,7 @@ private object Labelling : RuleWrapper<ExecutionContext>("statementLabelling", 0
                 "findall"(
                     `_`,
                     tupleOf(
-                        "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`,))),
+                        "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`))),
                         "context_assert"("statUnd"(X))
                     ),
                     `_`

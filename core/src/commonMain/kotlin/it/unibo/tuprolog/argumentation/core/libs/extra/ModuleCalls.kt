@@ -11,7 +11,6 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.solve.classic.classic
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -81,7 +80,7 @@ object ModuleCall : Primitive {
 
     private fun mineModulesPath(context: ExecutionContext): String {
         return logicProgramming {
-            Solver.classic(libraries = context.libraries)
+            Solver.prolog.solverOf(libraries = context.libraries)
                 .solve("modulesPath"(X))
                 .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
                 .first()
@@ -91,7 +90,7 @@ object ModuleCall : Primitive {
     private fun getCleanSolver(context: ExecutionContext, modulesPath: String, modules: Iterable<String>): Solver {
         val module = { mod: String -> if (mod.contains(".pl")) mod else "${modulesPath.removeSurrounding("'")}/$mod.pl" }
         return logicProgramming {
-            Solver.classic(
+            Solver.prolog.solverOf(
                 libraries = context.libraries
             ).also { solver: Solver -> modules.forEach { solver.solve("consult"(module(it))).toList() } }
         }

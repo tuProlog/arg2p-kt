@@ -14,7 +14,7 @@ object MetaInterpreter : ArgLibrary, Loadable {
     override val baseContent: Library
         get() = Library.of(
             alias = this.alias,
-            theory = Theory.parse(
+            clauses = Theory.parse(
                 """
                 % with_facts_and_length/3
                 with_facts_and_length(X, Y, L) :-
