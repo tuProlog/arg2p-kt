@@ -133,3 +133,5 @@ gradle-app.setting
 *.hprof
 
 yarn.lock
+
+node_modules

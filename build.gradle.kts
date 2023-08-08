@@ -1,5 +1,7 @@
 import io.github.gciatto.kt.mpp.Plugins
 import io.github.gciatto.kt.mpp.ProjectType
+import io.github.gciatto.kt.mpp.log
+import io.github.gciatto.kt.mpp.nodeVersion
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -12,6 +14,7 @@ group = "it.unibo.tuprolog.argumentation"
 
 allprojects {
     repositories {
+        google()
         mavenCentral()
     }
 }
@@ -58,6 +61,17 @@ multiProjectHelper {
     }
 
     applyProjectTemplates()
+}
+
+project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
+    nodeVersion(it)
+    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
+}
+
+afterEvaluate {
+    subprojects {
+        version = rootProject.version
+    }
 }
 
 // subprojects {
