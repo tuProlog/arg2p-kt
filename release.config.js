@@ -27,5 +27,4 @@ config.plugins.push(
     ],
     "@semantic-release/git",
 )
-config.dryRun = true
 module.exports = config
