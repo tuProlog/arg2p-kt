@@ -20,15 +20,15 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
-                implementation("it.unibo.tuprolog:parser-theory:$tuPrologVersion")
+                implementation(libs.tuprolog.dsl.solve)
+                implementation(libs.tuprolog.solve.classic)
+                implementation(libs.tuprolog.parser.theory)
             }
         }
 
         commonTest {
             dependencies {
-                implementation("it.unibo.tuprolog:test-solve:$tuPrologVersion")
+                implementation(libs.tuprolog.test.solve)
             }
         }
     }

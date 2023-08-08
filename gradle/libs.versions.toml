@@ -4,6 +4,9 @@ jvm = "11"
 node = "18-latest"
 ktMpp = "2.2.1"
 semVer = "1.1.10"
+shadowVer = "8.1.1"
+javaFxVer = "0.0.14"
+
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -18,7 +21,28 @@ ktMpp-jsOnly = { id = "io.github.gciatto.kt-mpp.js-only", version.ref = "ktMpp" 
 ktMpp-jvmOnly = { id = "io.github.gciatto.kt-mpp.jvm-only", version.ref = "ktMpp" }
 ktMpp-multiplatform = { id = "io.github.gciatto.kt-mpp.multiplatform", version.ref = "ktMpp" }
 gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
-shadowJar = "com.github.johnrengelman.shadow:8.1.1"
+shadowJar = { id = "com.github.johnrengelman.shadow", version.ref = "shadowVer" }
+javaFx = { id = "org.openjfx.javafxplugin", version.ref = "javaFxVer" }
 
 [libraries]
-shadowJar = "gradle.plugin.com.github.johnrengelman:shadow:8.0.0"
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktNpmPublish = "io.github.gciatto:kt-npm-publish:0.3.9"
+javaFxLib = "org.openjfx:javafx-graphics:21-ea+24"
+logback-classic = "ch.qos.logback:logback-classic:1.4.8"
+logback-core = "ch.qos.logback:logback-core:1.4.8"
+jung-api = "net.sf.jung:jung-api:2.1.1"
+jung-visualization = "net.sf.jung:jung-visualization:2.1.1"
+jung-graphimpl = "net.sf.jung:jung-graph-impl:2.1.1"
+jung-algorithms = "net.sf.jung:jung-algorithms:2.1.1"
+jung-io = "net.sf.jung:jung-io:2.1.1"
+tuprolog-ide = "it.unibo.tuprolog:ide:0.31.11"
+tuprolog-dsl-solve = "it.unibo.tuprolog:dsl-solve:0.31.11"
+tuprolog-solve-classic = "it.unibo.tuprolog:solve-classic:0.31.11"
+tuprolog-parser-theory = "it.unibo.tuprolog:parser-theory:0.31.11"
+tuprolog-test-solve = "it.unibo.tuprolog:test-solve:0.31.11"
+akka-bom = "com.typesafe.akka:akka-bom_2.13:2.8.3"
+akka-actor-typed = "com.typesafe.akka:akka-actor-typed_2.13:2.8.3"
+akka-cluster-sharding-typed = "com.typesafe.akka:akka-cluster-sharding-typed_2.13:2.8.3"
+akka-serialization-jackson = "com.typesafe.akka:akka-serialization-jackson_2.13:2.8.3"
+akka-actor-testkit-typed = "com.typesafe.akka:akka-actor-testkit-typed_2.13:2.8.3"
+jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2"

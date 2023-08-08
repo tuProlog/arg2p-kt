@@ -120,8 +120,7 @@ jobs:
     if: |
       always() &&
       needs.check-secrets.outputs.run-with-secrets == 'true' &&
-      needs.build.result == 'success' &&
-      (needs.test-extensively.result == 'success' || needs.test-extensively.result == 'skipped')
+      needs.build.result == 'success'
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v3.5.3

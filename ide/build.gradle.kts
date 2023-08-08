@@ -1,32 +1,36 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-val tuPrologVersion: String by project
-val javaFxVersion: String by project
-
 plugins {
     application
-    id("org.openjfx.javafxplugin") version "0.0.14"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
+    alias(libs.plugins.shadowJar)
+    alias(libs.plugins.javaFx)
 }
 
+val supportedPlatforms by extra { listOf("win", "linux", "mac") }
+
 dependencies {
-    runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:win")
-    runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:linux")
-    runtimeOnly("org.openjfx:javafx-graphics:$javaFxVersion:mac")
+
+    for (platform in supportedPlatforms) {
+        val dependency = libs.javaFxLib.get().let {
+            "${it.module.group}:${it.module.name}:${it.versionConstraint.requiredVersion}"
+        }
+        runtimeOnly("$dependency:$platform")
+    }
 
     /* JUNG DEPENDENCIES */
-    api("ch.qos.logback", "logback-classic", "1.4.8")
-    api("ch.qos.logback", "logback-core", "1.4.8")
-    api("net.sf.jung", "jung-api", "2.1.1")
-    api("net.sf.jung", "jung-visualization", "2.1.1")
-    api("net.sf.jung", "jung-graph-impl", "2.1.1")
-    api("net.sf.jung", "jung-algorithms", "2.1.1")
-    api("net.sf.jung", "jung-io", "2.1.1")
+    api(libs.logback.classic)
+    api(libs.logback.core)
+    api(libs.jung.api)
+    api(libs.jung.visualization)
+    api(libs.jung.graphimpl)
+    api(libs.jung.algorithms)
+    api(libs.jung.io)
 
-    implementation("it.unibo.tuprolog:ide:$tuPrologVersion")
-    implementation("it.unibo.tuprolog:dsl-solve:$tuPrologVersion")
-    implementation("it.unibo.tuprolog:solve-classic:$tuPrologVersion")
+    implementation(libs.tuprolog.ide)
+    implementation(libs.tuprolog.dsl.solve)
+    implementation(libs.tuprolog.solve.classic)
+
     implementation(project(":core"))
     implementation(project(":actor-solver"))
 
@@ -34,7 +38,7 @@ dependencies {
 }
 
 javafx {
-    version = javaFxVersion
+    version = libs.javaFxLib.get().version
     modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics", "javafx.swing")
 }
 
