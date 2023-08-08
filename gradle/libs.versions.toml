@@ -7,7 +7,7 @@ semVer = "1.1.10"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-ktMppHelper = { id = "io.github.gciatto.kt-mpp.multi-project-helper", version.ref = "ktMpp" }
+ktMpp-helper = { id = "io.github.gciatto.kt-mpp.multi-project-helper", version.ref = "ktMpp" }
 ktMpp-bugFinder = { id = "io.github.gciatto.kt-mpp.bug-finder", version.ref = "ktMpp" }
 ktMpp-documentation = { id = "io.github.gciatto.kt-mpp.documentation", version.ref = "ktMpp" }
 ktMpp-linter = { id = "io.github.gciatto.kt-mpp.linter", version.ref = "ktMpp" }

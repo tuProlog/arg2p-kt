@@ -5,7 +5,9 @@ import io.github.gciatto.kt.mpp.nodeVersion
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    alias(libs.plugins.ktMpp.multiProjectHelper)
+    alias(libs.plugins.ktMpp.helper)
+    alias(libs.plugins.ktMpp.mavenPublish)
+    alias(libs.plugins.ktMpp.multiplatform)
     alias(libs.plugins.gitSemVer)
 }
 
@@ -26,9 +28,9 @@ gitSemVer {
 multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
-    ktProjects(rootProject.path, ":core", ":arg2p")
+    ktProjects(rootProject.path, ":core")
     jvmProjects(":ide", ":actor-solver")
-    // jsProjects(":js-empty")
+    // jsProjects()
     otherProjects(":doc")
 
     val baseProjectTemplate = buildSet {
@@ -59,6 +61,16 @@ multiProjectHelper {
     applyProjectTemplates()
 }
 
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(project(":core"))
+            }
+        }
+    }
+}
+
 project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
     nodeVersion(it)
     log("override NodeJS version: $it", LogLevel.LIFECYCLE)
@@ -69,6 +81,7 @@ afterEvaluate {
         version = rootProject.version
     }
 }
+
 
 // subprojects {
 //    group = rootProject.group

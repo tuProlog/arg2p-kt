@@ -1,6 +1,5 @@
-rootProject.name = "arg2p-kt"
+rootProject.name = "arg2p"
 
-include("arg2p")
 include("core")
 include("ide")
 include("doc")
