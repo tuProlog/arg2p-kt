@@ -93,6 +93,7 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
 
     tasks.compileKotlinJs.get().dependsOn(this)
     tasks.sourcesJar.get().dependsOn(this)
+    tasks.jsSourcesJar.get().dependsOn(this)
     tasks.dokkaHtml.get().dependsOn(this)
 
     doLast {
