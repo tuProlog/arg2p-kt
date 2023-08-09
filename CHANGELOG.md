@@ -1,3 +1,10 @@
+## [0.7.2](https://github.com/tuProlog/arg2p-kt/compare/0.7.1...0.7.2) (2023-08-09)
+
+
+### Bug Fixes
+
+* generate npm package ([4322654](https://github.com/tuProlog/arg2p-kt/commit/4322654f561a0bc47e90c1e5e01e93d7a580e254))
+
 ## [0.7.1](https://github.com/tuProlog/arg2p-kt/compare/0.7.0...0.7.1) (2023-08-08)
 
 
