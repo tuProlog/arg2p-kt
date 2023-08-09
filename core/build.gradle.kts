@@ -12,7 +12,13 @@ plugins {
 }
 
 kotlin {
+
     js {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
+            }
+        }
         binaries.library()
     }
 
@@ -30,6 +36,8 @@ kotlin {
                 implementation(libs.tuprolog.test.solve)
             }
         }
+
+        val jsMain by getting
     }
 }
 
