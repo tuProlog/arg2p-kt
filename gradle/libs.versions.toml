@@ -2,7 +2,7 @@
 kotlin = "1.8.21"
 jvm = "11"
 node = "18-latest"
-ktMpp = "2.2.1"
+ktMpp = "2.3.4"
 semVer = "1.1.10"
 shadowVer = "8.1.1"
 javaFxVer = "0.0.14"
