@@ -5,7 +5,7 @@ node = "18-latest"
 ktMpp = "2.2.1"
 semVer = "1.1.10"
 shadowVer = "8.1.1"
-javaFxVer = "0.0.14"
+javaFxVer = "0.1.0"
 
 
 [plugins]
