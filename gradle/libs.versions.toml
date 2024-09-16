@@ -29,7 +29,7 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 ktNpmPublish = "io.github.gciatto:kt-npm-publish:0.3.9"
 javaFxLib = "org.openjfx:javafx-graphics:21-ea+24"
 logback-classic = "ch.qos.logback:logback-classic:1.4.9"
-logback-core = "ch.qos.logback:logback-core:1.4.9"
+logback-core = "ch.qos.logback:logback-core:1.5.8"
 jung-api = "net.sf.jung:jung-api:2.1.1"
 jung-visualization = "net.sf.jung:jung-visualization:2.1.1"
 jung-graphimpl = "net.sf.jung:jung-graph-impl:2.1.1"
