@@ -36,7 +36,7 @@ javafx-fxml = { module = "org.openjfx:javafx-fxml", version.ref = "javaFx" }
 javafx-controls = { module = "org.openjfx:javafx-controls", version.ref = "javaFx" }
 javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javaFx" }
 javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javaFx" }
-richtextFx = "org.fxmisc.richtext:richtextfx:0.11.2"
+richtextFx = "org.fxmisc.richtext:richtextfx:0.11.3"
 
 jung-api = "net.sf.jung:jung-api:2.1.1"
 jung-visualization = "net.sf.jung:jung-visualization:2.1.1"
