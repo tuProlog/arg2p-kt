@@ -37,8 +37,7 @@ javafx-controls = { module = "org.openjfx:javafx-controls", version.ref = "javaF
 javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javaFx" }
 javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javaFx" }
 richtextFx = "org.fxmisc.richtext:richtextfx:0.11.2"
-logback-classic = "ch.qos.logback:logback-classic:1.4.9"
-logback-core = "ch.qos.logback:logback-core:1.4.9"
+
 jung-api = "net.sf.jung:jung-api:2.1.1"
 jung-visualization = "net.sf.jung:jung-visualization:2.1.1"
 jung-graphimpl = "net.sf.jung:jung-graph-impl:2.1.1"
@@ -56,3 +55,5 @@ akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-shardin
 akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2"
+logback-classic = "ch.qos.logback:logback-classic:1.5.8"
+logback-core = "ch.qos.logback:logback-core:1.5.8"

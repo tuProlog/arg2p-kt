@@ -80,7 +80,7 @@ class Evaluator private constructor(
                             "structured" call
                                 "findAttacker"(
                                     Struct.parse(command.argument),
-                                    listOf(
+                                    logicListOf(
                                         command.queryChain.map(
                                             Struct::parse,
                                         ),

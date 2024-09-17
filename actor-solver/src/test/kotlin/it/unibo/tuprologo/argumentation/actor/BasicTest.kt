@@ -93,7 +93,7 @@ class BasicTest {
             master.tell(Add("r1 :=> b"))
             master.tell(Add("r5 :=> -b"))
 
-            ResponseConsumer.getResponse("c", system, master).also {
+            ResponseConsumer.getResponse("b", system, master).also {
                 assertEquals(it.inArgs.size, 0)
                 assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 1)
