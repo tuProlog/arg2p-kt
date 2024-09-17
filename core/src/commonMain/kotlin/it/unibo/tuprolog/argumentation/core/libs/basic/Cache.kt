@@ -16,13 +16,11 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
 class Cache : ArgLibrary {
-
     private val solver: MutableSolver =
         Solver.prolog.mutableSolverOf(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
             .also { it.setFlag(Unknown.name, Unknown.FAIL) }
 
     inner class CacheAssert : PrimitiveWithSignature {
-
         override val signature = Signature("cache_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -33,7 +31,6 @@ class Cache : ArgLibrary {
     }
 
     inner class CacheRetract : PrimitiveWithSignature {
-
         override val signature = Signature("cache_retract", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -44,7 +41,6 @@ class Cache : ArgLibrary {
     }
 
     inner class CacheGet : PrimitiveWithSignature {
-
         override val signature = Signature("cache_check", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -54,7 +50,7 @@ class Cache : ArgLibrary {
                 yieldAll(
                     this@Cache.solver.solve(term.castToStruct()).map {
                         request.replyWith(it.substitution)
-                    }
+                    },
                 )
             }
         }
@@ -67,11 +63,11 @@ class Cache : ArgLibrary {
             listOf(
                 CacheAssert(),
                 CacheRetract(),
-                CacheGet()
+                CacheGet(),
             ).let { primitives ->
                 Library.of(
                     alias = this.alias,
-                    primitives = primitives.associateBy { it.signature }
+                    primitives = primitives.associateBy { it.signature },
                 )
             }
 

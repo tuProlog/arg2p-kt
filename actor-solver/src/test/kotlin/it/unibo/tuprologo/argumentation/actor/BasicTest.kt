@@ -32,7 +32,6 @@ private fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage
     }
 
 class BasicTest {
-
     @Test
     fun dummy() {
         withActorSystem { system, master ->
@@ -117,19 +116,20 @@ class BasicTest {
 
     @Test
     fun stressTest() {
-        val rules = IntRange(1, 10).joinToString("\n") {
-            listOf(
-                "r0$it :=> a$it.",
-                "r1$it : a$it => b$it.",
-                "r2$it : b$it => c$it.",
-                "r3$it : c$it => d$it."
-            ).joinToString("\n")
-        }
+        val rules =
+            IntRange(1, 10).joinToString("\n") {
+                listOf(
+                    "r0$it :=> a$it.",
+                    "r1$it : a$it => b$it.",
+                    "r2$it : b$it => c$it.",
+                    "r3$it : c$it => d$it.",
+                ).joinToString("\n")
+            }
 
         arg2pScope {
             ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
                 otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
+                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             ).also {
                 it.loadStaticKb(Theory.parse(rules, it.operators))
                 it.solve("join"(2551) and "load").first()
@@ -143,21 +143,23 @@ class BasicTest {
     @Ignore
     @Test
     fun stressTestIterative() {
-        val rules = IntRange(1, 100).joinToString("\n") {
-            listOf(
-                "r0$it :=> a$it.",
-                "r1$it : a$it => b$it.",
-                "r2$it : b$it => c$it.",
-                "r3$it : c$it => d$it."
-            ).joinToString("\n")
-        }
+        val rules =
+            IntRange(1, 100).joinToString("\n") {
+                listOf(
+                    "r0$it :=> a$it.",
+                    "r1$it : a$it => b$it.",
+                    "r2$it : b$it => c$it.",
+                    "r3$it : c$it => d$it.",
+                ).joinToString("\n")
+            }
 
         arg2pScope {
             ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                otherLibraries = Arg2pSolver.default(
-                    kotlin.collections.listOf(FlagsBuilder().create())
-                ).to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
+                otherLibraries =
+                    Arg2pSolver.default(
+                        kotlin.collections.listOf(FlagsBuilder().create()),
+                    ).to2pLibraries(),
+                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             ).also {
                 it.loadStaticKb(Theory.parse(rules, it.operators))
                 val a = it.solve("answerQuery"("d99", X, Y, Z)).first()

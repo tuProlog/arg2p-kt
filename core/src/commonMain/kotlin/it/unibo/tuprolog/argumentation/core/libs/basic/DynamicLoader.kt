@@ -25,11 +25,13 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
-
     abstract inner class AbstractWithLib : Primitive {
-
         abstract val signature: Signature
-        abstract fun execute(module: String, solver: MutableSolver)
+
+        abstract fun execute(
+            module: String,
+            solver: MutableSolver,
+        )
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val lib: Term = request.arguments[0]
@@ -40,7 +42,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
                     request.context,
                     request.signature,
                     TypeError.Expected.LIST,
-                    lib
+                    lib,
                 )
             }
 
@@ -49,31 +51,33 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
                     request.context,
                     request.signature,
                     TypeError.Expected.CALLABLE,
-                    goal
+                    goal,
                 )
             }
 
-            val solver = (
-                this@DynamicLoader.solver.dynamicLibraries().firstOrNull {
-                    (it as Loadable).identifier() == lib.toString()
-                } ?: throw DomainError.forGoal(
-                    request.context,
-                    request.signature,
-                    DomainError.Expected.of("Loadable Lib"),
-                    lib
-                )
+            val solver =
+                (
+                    this@DynamicLoader.solver.dynamicLibraries().firstOrNull {
+                        (it as Loadable).identifier() == lib.toString()
+                    } ?: throw DomainError.forGoal(
+                        request.context,
+                        request.signature,
+                        DomainError.Expected.of("Loadable Lib"),
+                        lib,
+                    )
                 ).let { library ->
-                request.context.createMutableSolver(
-                    libraries = Runtime.of(
-                        request.context.libraries.libraries.filterNot { lib ->
-                            this@DynamicLoader.solver.dynamicLibraries()
-                                .map { it.alias }
-                                .contains(lib.alias)
-                        }
-                    ).plus(library.content()),
-                    staticKb = request.context.staticKb
-                )
-            }
+                    request.context.createMutableSolver(
+                        libraries =
+                            Runtime.of(
+                                request.context.libraries.libraries.filterNot { lib ->
+                                    this@DynamicLoader.solver.dynamicLibraries()
+                                        .map { it.alias }
+                                        .contains(lib.alias)
+                                },
+                            ).plus(library.content()),
+                        staticKb = request.context.staticKb,
+                    )
+                }
 
             execute(lib.toString(), solver)
 
@@ -81,7 +85,7 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
                 yieldAll(
                     solver.solve(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
                         request.replyWith(it.substitution)
-                    }
+                    },
                 )
             }
         }
@@ -89,40 +93,49 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
 
     inner class WithLib : AbstractWithLib() {
         override val signature = Signature("::", 2)
-        override fun execute(module: String, solver: MutableSolver) = Unit
+
+        override fun execute(
+            module: String,
+            solver: MutableSolver,
+        ) = Unit
     }
 
     inner class WithLibInNewContext : AbstractWithLib() {
         override val signature = Signature(":::", 2)
-        override fun execute(module: String, solver: MutableSolver) =
-            logicProgramming {
-                solver.solve("context_active"(X))
-                    .filter { it.isYes }
-                    .forEach {
-                        solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()
-                    }
-            }
+
+        override fun execute(
+            module: String,
+            solver: MutableSolver,
+        ) = logicProgramming {
+            solver.solve("context_active"(X))
+                .filter { it.isYes }
+                .forEach {
+                    solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()
+                }
+        }
     }
 
     override val alias = "prolog.argumentation.loader"
 
     override val baseContent: Library
-        get() = listOf(WithLib(), WithLibInNewContext()).let {
-            Library.of(
-                alias = this.alias,
-                primitives = it.associateBy { prim -> prim.signature },
-                operators = operators()
-            )
-        }
+        get() =
+            listOf(WithLib(), WithLibInNewContext()).let {
+                Library.of(
+                    alias = this.alias,
+                    primitives = it.associateBy { prim -> prim.signature },
+                    operators = operators(),
+                )
+            }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
     override var theoryOperators = operators()
 
     companion object {
-        fun operators() = OperatorSet(
-            Operator("::", Specifier.XFX, 700),
-            Operator(":::", Specifier.XFX, 700)
-        )
+        fun operators() =
+            OperatorSet(
+                Operator("::", Specifier.XFX, 700),
+                Operator(":::", Specifier.XFX, 700),
+            )
     }
 }

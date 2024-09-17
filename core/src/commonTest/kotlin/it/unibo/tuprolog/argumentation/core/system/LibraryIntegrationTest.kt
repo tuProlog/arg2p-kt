@@ -9,17 +9,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class LibraryIntegrationTest {
-
     @Test
     fun libraryLoading() {
-        val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
-            otherLibraries = Arg2pSolver.default().to2pLibraries()
-        )
+        val solver =
+            ClassicSolverFactory.solverWithDefaultBuiltins(
+                otherLibraries = Arg2pSolver.default().to2pLibraries(),
+            )
         val query = Struct.parse("argTuProlog")
         val solutions = solver.solve(query)
         assertEquals(
             listOf(Solution.yes(query)),
-            solutions.toList()
+            solutions.toList(),
         )
     }
 

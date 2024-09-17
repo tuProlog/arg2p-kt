@@ -14,51 +14,53 @@ import it.unibo.tuprolog.solve.rule.RuleWrapper
 import it.unibo.tuprolog.theory.Theory
 
 object PassThroughStatementLabeller : ArgLibrary, Loadable {
-
     override val alias = "prolog.argumentation.graph.labelling.statement.pt"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = Theory.of(Labelling.implementation)
-        )
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses = Theory.of(Labelling.implementation),
+            )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
     override fun identifier(): String = "statement_pass_through"
 
-    override val theoryOperators = DynamicLoader.operators()
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        DynamicLoader.operators()
+            .plus(OperatorSet.DEFAULT)
 }
 
 private object Labelling : RuleWrapper<ExecutionContext>("statementLabelling", 0) {
     override val Scope.body: Term
-        get() = logicProgramming {
-            tupleOf(
-                "findall"(
-                    `_`,
-                    tupleOf(
-                        "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`))),
-                        "context_assert"("statIn"(X))
+        get() =
+            logicProgramming {
+                tupleOf(
+                    "findall"(
+                        `_`,
+                        tupleOf(
+                            "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`))),
+                            "context_assert"("statIn"(X)),
+                        ),
+                        `_`,
                     ),
-                    `_`
-                ),
-                "findall"(
-                    `_`,
-                    tupleOf(
-                        "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`))),
-                        "context_assert"("statOut"(X))
+                    "findall"(
+                        `_`,
+                        tupleOf(
+                            "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`))),
+                            "context_assert"("statOut"(X)),
+                        ),
+                        `_`,
                     ),
-                    `_`
-                ),
-                "findall"(
-                    `_`,
-                    tupleOf(
-                        "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`))),
-                        "context_assert"("statUnd"(X))
+                    "findall"(
+                        `_`,
+                        tupleOf(
+                            "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`))),
+                            "context_assert"("statUnd"(X)),
+                        ),
+                        `_`,
                     ),
-                    `_`
                 )
-            )
-        }
+            }
 }

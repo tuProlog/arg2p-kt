@@ -4,7 +4,6 @@ import it.unibo.tuprolog.argumentation.actor.actors.HelpWorker
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 
 class SplitKnowledgeBase {
-
     val workers: MutableList<HelpWorker> = mutableListOf()
 
     fun reset() = workers.clear()

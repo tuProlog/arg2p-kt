@@ -9,33 +9,38 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
 abstract class StructuredModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
-
     override val alias = "prolog.argumentation.structured"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = this.prologTheory
-        )
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses = this.prologTheory,
+            )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(QueryMode, AmbiguityBlocking)
 
     override fun identifier(): String = "structured"
 
-    override val theoryOperators = DynamicLoader.operators()
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        DynamicLoader.operators()
+            .plus(OperatorSet.DEFAULT)
 }
 
 expect object StructuredMode : StructuredModeBase
 
 object QueryMode : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "queryMode"
+
     override fun default(): Boolean = true
+
     override fun values() {}
 }
 
 object AmbiguityBlocking : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "ambiguityBlocking"
+
     override fun default(): Boolean = true
+
     override fun values() {}
 }

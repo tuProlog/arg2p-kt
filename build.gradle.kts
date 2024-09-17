@@ -1,7 +1,6 @@
 import io.github.gciatto.kt.mpp.Plugins
-import io.github.gciatto.kt.mpp.ProjectType
-import io.github.gciatto.kt.mpp.log
-import io.github.gciatto.kt.mpp.nodeVersion
+import io.github.gciatto.kt.mpp.helpers.ProjectType
+// import io.github.gciatto.kt.mpp.nodeVersion
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -33,30 +32,35 @@ multiProjectHelper {
     // jsProjects()
     otherProjects(":doc")
 
-    val baseProjectTemplate = buildSet {
-        add(Plugins.documentation)
-        add(Plugins.versions)
-        add(Plugins.linter)
-    }
+    val baseProjectTemplate =
+        buildSet {
+            add(Plugins.documentation)
+            add(Plugins.versions)
+            add(Plugins.linter)
+        }
 
-    ktProjectTemplate = buildSet {
-        addAll(baseProjectTemplate)
-        add(Plugins.multiplatform)
-    }
+    ktProjectTemplate =
+        buildSet {
+            addAll(baseProjectTemplate)
+            add(Plugins.multiplatform)
+        }
 
-    jvmProjectTemplate = buildSet {
-        addAll(baseProjectTemplate)
-        add(Plugins.jvmOnly)
-    }
+    jvmProjectTemplate =
+        buildSet {
+            addAll(baseProjectTemplate)
+            add(Plugins.jvmOnly)
+        }
 
-    jsProjectTemplate = buildSet {
-        addAll(baseProjectTemplate)
-        add(Plugins.jsOnly)
-    }
+    jsProjectTemplate =
+        buildSet {
+            addAll(baseProjectTemplate)
+            add(Plugins.jsOnly)
+        }
 
-    otherProjectTemplate = buildSet {
-        add(Plugins.versions)
-    }
+    otherProjectTemplate =
+        buildSet {
+            add(Plugins.versions)
+        }
 
     applyProjectTemplates()
 }
@@ -71,10 +75,10 @@ kotlin {
     }
 }
 
-project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
-    nodeVersion(it)
-    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
-}
+// project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
+//    nodeVersion(it)
+//    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
+// }
 
 afterEvaluate {
     subprojects {

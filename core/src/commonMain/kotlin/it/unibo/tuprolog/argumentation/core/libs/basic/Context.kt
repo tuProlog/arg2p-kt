@@ -20,19 +20,18 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
 class Context : ArgLibrary, ArgContext {
-
     private var nextSolver: Int = 1
     private var selectedSolver: Int = 0
-    private val dynamicSolver: MutableMap<Int, MutableSolver> = mutableMapOf(
-        0 to
-            Solver.prolog.mutableSolverWithDefaultBuiltins(
-                staticKb = Theory.empty(),
-                dynamicKb = MutableTheory.empty(Unificator.default)
-            ).also { it.setFlag(Unknown.name, Unknown.FAIL) }
-    )
+    private val dynamicSolver: MutableMap<Int, MutableSolver> =
+        mutableMapOf(
+            0 to
+                Solver.prolog.mutableSolverWithDefaultBuiltins(
+                    staticKb = Theory.empty(),
+                    dynamicKb = MutableTheory.empty(Unificator.default),
+                ).also { it.setFlag(Unknown.name, Unknown.FAIL) },
+        )
 
     inner class DynamicCacheReset : PrimitiveWithSignature {
-
         override val signature = Signature("context_reset", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -40,14 +39,16 @@ class Context : ArgLibrary, ArgContext {
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                Solver.prolog.mutableSolverWithDefaultBuiltins(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
+                Solver.prolog.mutableSolverWithDefaultBuiltins(
+                    staticKb = Theory.empty(),
+                    dynamicKb = MutableTheory.empty(Unificator.default),
+                )
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             return sequenceOf(request.replyWith(true))
         }
     }
 
     inner class DynamicCacheSelected : PrimitiveWithSignature {
-
         override val signature = Signature("context_active", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -57,7 +58,6 @@ class Context : ArgLibrary, ArgContext {
     }
 
     inner class DynamicCacheCheckout : PrimitiveWithSignature {
-
         override val signature = Signature("context_checkout", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -69,7 +69,6 @@ class Context : ArgLibrary, ArgContext {
     }
 
     inner class DynamicCacheBranch : PrimitiveWithSignature {
-
         override val signature = Signature("context_branch", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -78,10 +77,11 @@ class Context : ArgLibrary, ArgContext {
             this@Context.dynamicSolver[this@Context.nextSolver] =
                 Solver.prolog.mutableSolverWithDefaultBuiltins(
                     staticKb = Theory.empty(),
-                    dynamicKb = MutableTheory.of(
-                        Unificator.default,
-                        this@Context.dynamicSolver[target]!!.dynamicKb
-                    )
+                    dynamicKb =
+                        MutableTheory.of(
+                            Unificator.default,
+                            this@Context.dynamicSolver[target]!!.dynamicKb,
+                        ),
                 )
                     .also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
@@ -90,7 +90,6 @@ class Context : ArgLibrary, ArgContext {
     }
 
     inner class DynamicCacheAssert : PrimitiveWithSignature {
-
         override val signature = Signature("context_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -101,18 +100,16 @@ class Context : ArgLibrary, ArgContext {
     }
 
     inner class DynamicCacheRetract : PrimitiveWithSignature {
-
         override val signature = Signature("context_retract", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
-            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve("retractall"(term)) }.first()
+            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve(("retractall"(term))) }.first()
             return sequenceOf(request.replyWith(true))
         }
     }
 
     inner class DynamicCacheGet : PrimitiveWithSignature {
-
         override val signature = Signature("context_check", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -122,14 +119,13 @@ class Context : ArgLibrary, ArgContext {
                 yieldAll(
                     this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve(term.castToStruct()).map {
                         request.replyWith(it.substitution)
-                    }
+                    },
                 )
             }
         }
     }
 
     inner class DynamicCacheGetIndexed : PrimitiveWithSignature {
-
         override val signature = Signature("context_check", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -140,7 +136,7 @@ class Context : ArgLibrary, ArgContext {
                 yieldAll(
                     this@Context.dynamicSolver[index]!!.solve(term.castToStruct()).map {
                         request.replyWith(it.substitution)
-                    }
+                    },
                 )
             }
         }
@@ -158,11 +154,11 @@ class Context : ArgLibrary, ArgContext {
                 DynamicCacheAssert(),
                 DynamicCacheRetract(),
                 DynamicCacheGet(),
-                DynamicCacheGetIndexed()
+                DynamicCacheGetIndexed(),
             ).let { primitives ->
                 Library.of(
                     alias = this.alias,
-                    primitives = primitives.associateBy { it.signature }
+                    primitives = primitives.associateBy { it.signature },
                 )
             }
 

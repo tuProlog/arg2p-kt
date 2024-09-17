@@ -172,14 +172,14 @@ cache:
 ##  needs:
 ##    - job: Sign Artefacts
 
-pages:
-  script:
-    - mkdir public
-    - $GCMD $BEFORE_TASK $PAGES_TASK $AFTER_TASK $GOPTS
-    - cp -r doc/build/docs/orchid/* public
-  artifacts:
-    paths:
-      - public
-  #  allow_failure: true
-  only:
-    - /^(master)|(release)|(documentation)$/
+#pages:
+#  script:
+#    - mkdir public
+#    - $GCMD $BEFORE_TASK $PAGES_TASK $AFTER_TASK $GOPTS
+#    - cp -r doc/build/docs/orchid/* public
+#  artifacts:
+#    paths:
+#      - public
+#  #  allow_failure: true
+#  only:
+#    - /^(master)|(release)|(documentation)$/

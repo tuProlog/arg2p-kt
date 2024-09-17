@@ -21,7 +21,6 @@ import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 
 internal class FlagManagerFrame private constructor() {
-
     private var queryMode: Boolean = true
     private var autoTransposition: Boolean = false
     private var prologStrictCompatibility: Boolean = false
@@ -40,82 +39,91 @@ internal class FlagManagerFrame private constructor() {
     private var restrictedRebut: CheckBox? = null
 
     companion object {
-
         private var ideModel: TuPrologIDEModel? = null
 
         @JvmStatic
         fun customTab(customLibraries: List<Library>): CustomTab {
             val flagManager = FlagManagerFrame()
-            val items: ObservableList<HBox> = FXCollections.observableArrayList(
-                setupChoiceBox("Graph Build Mode", listOf("standard_af")) {
-                    flagManager.graphBuildMode = it
-                },
-                setupChoiceBox(
-                    "Argument Labelling Mode",
-                    ArgumentLabellingMode.values()
-                ) {
-                    flagManager.argumentLabellingMode = it
-                },
-                setupChoiceBox(
-                    "Statement Labelling Mode",
-                    StatementLabellingMode.values()
-                ) {
-                    flagManager.statementLabellingMode = it
-                },
-                setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll"), "standard") {
-                    flagManager.preferences = it
-                    if (it == "defeasible") {
-                        flagManager.prefPrinciple?.value = "last"
-                        flagManager.prefComparator?.value = "normal"
-                        flagManager.restrictedRebut?.isSelected = false
-                    }
-                    flagManager.prefPrinciple?.isDisable = it == "defeasible" || it == "none"
-                    flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
-                    flagManager.restrictedRebut?.isDisable = it == "defeasible"
-                },
-                setupChoiceBox(
-                    "Ordering Principle",
-                    OrderingPrinciple.values()
-                ) {
-                    flagManager.orderingPrinciple = it
-                }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
-                setupChoiceBox(
-                    "Ordering Comparator",
-                    OrderingComparator.values()
-                ) {
-                    flagManager.orderingComparator = it
-                }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
-                setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
-                setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-                setupCheckBox("Prolog Rules Compatibility", flagManager.prologStrictCompatibility) { flagManager.prologStrictCompatibility = it },
-                setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
-                    .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
-                setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
-                setupTextBox("Modules Path", flagManager.modulesPath) { flagManager.modulesPath = it }
-            )
+            val items: ObservableList<HBox> =
+                FXCollections.observableArrayList(
+                    setupChoiceBox("Graph Build Mode", listOf("standard_af")) {
+                        flagManager.graphBuildMode = it
+                    },
+                    setupChoiceBox(
+                        "Argument Labelling Mode",
+                        ArgumentLabellingMode.values(),
+                    ) {
+                        flagManager.argumentLabellingMode = it
+                    },
+                    setupChoiceBox(
+                        "Statement Labelling Mode",
+                        StatementLabellingMode.values(),
+                    ) {
+                        flagManager.statementLabellingMode = it
+                    },
+                    setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll"), "standard") {
+                        flagManager.preferences = it
+                        if (it == "defeasible") {
+                            flagManager.prefPrinciple?.value = "last"
+                            flagManager.prefComparator?.value = "normal"
+                            flagManager.restrictedRebut?.isSelected = false
+                        }
+                        flagManager.prefPrinciple?.isDisable = it == "defeasible" || it == "none"
+                        flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
+                        flagManager.restrictedRebut?.isDisable = it == "defeasible"
+                    },
+                    setupChoiceBox(
+                        "Ordering Principle",
+                        OrderingPrinciple.values(),
+                    ) {
+                        flagManager.orderingPrinciple = it
+                    }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
+                    setupChoiceBox(
+                        "Ordering Comparator",
+                        OrderingComparator.values(),
+                    ) {
+                        flagManager.orderingComparator = it
+                    }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
+                    setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
+                    setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
+                    setupCheckBox(
+                        "Prolog Rules Compatibility",
+                        flagManager.prologStrictCompatibility,
+                    ) { flagManager.prologStrictCompatibility = it },
+                    setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
+                        .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
+                    setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
+                    setupTextBox("Modules Path", flagManager.modulesPath) { flagManager.modulesPath = it },
+                )
             return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
                 ideModel = model
                 model.onReset.subscribe {
                     model.customizeSolver { solver ->
                         solver.also {
                             (
-                                customLibraries + FlagsBuilder(
-                                    queryMode = flagManager.queryMode,
-                                    autoTransposition = flagManager.autoTransposition,
-                                    prologStrictCompatibility = flagManager.prologStrictCompatibility,
-                                    graphBuildMode = flagManager.graphBuildMode,
-                                    argumentLabellingMode = flagManager.argumentLabellingMode,
-                                    statementLabellingMode = flagManager.statementLabellingMode,
-                                    orderingPrinciple = flagManager.orderingPrinciple,
-                                    orderingComparator = flagManager.orderingComparator,
-                                    modulesPath = flagManager.modulesPath,
-                                    graphExtensions = listOf(
-                                        if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
-                                        if (flagManager.bpGraph) listOf("bp") else emptyList(),
-                                        if (flagManager.preferences != "none") listOf("${flagManager.preferences}Pref") else emptyList()
-                                    ).flatten()
-                                ).create().content()
-                                ).forEach { solver.loadLibrary(it) }
+                                customLibraries +
+                                    FlagsBuilder(
+                                        queryMode = flagManager.queryMode,
+                                        autoTransposition = flagManager.autoTransposition,
+                                        prologStrictCompatibility = flagManager.prologStrictCompatibility,
+                                        graphBuildMode = flagManager.graphBuildMode,
+                                        argumentLabellingMode = flagManager.argumentLabellingMode,
+                                        statementLabellingMode = flagManager.statementLabellingMode,
+                                        orderingPrinciple = flagManager.orderingPrinciple,
+                                        orderingComparator = flagManager.orderingComparator,
+                                        modulesPath = flagManager.modulesPath,
+                                        graphExtensions =
+                                            listOf(
+                                                if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
+                                                if (flagManager.bpGraph) listOf("bp") else emptyList(),
+                                                if (flagManager.preferences != "none") {
+                                                    listOf("${flagManager.preferences}Pref")
+                                                } else {
+                                                    emptyList()
+                                                },
+                                            ).flatten(),
+                                    ).create().content()
+                            ).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
                         }
                     }
@@ -125,7 +133,12 @@ internal class FlagManagerFrame private constructor() {
         }
 
         @JvmStatic
-        fun setupChoiceBox(label: String, values: Iterable<String>, default: String = values.first(), onChange: (String) -> Unit): HBox {
+        fun setupChoiceBox(
+            label: String,
+            values: Iterable<String>,
+            default: String = values.first(),
+            onChange: (String) -> Unit,
+        ): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 ChoiceBox<String>().also {
@@ -136,7 +149,7 @@ internal class FlagManagerFrame private constructor() {
                         onChange(it.value)
                         ideModel?.reset()
                     }
-                }
+                },
             ).also {
                 it.prefHeight = 20.0
                 it.alignment = Pos.CENTER_LEFT
@@ -144,7 +157,11 @@ internal class FlagManagerFrame private constructor() {
         }
 
         @JvmStatic
-        fun setupCheckBox(label: String, isSelected: Boolean, onChange: (Boolean) -> Unit): HBox {
+        fun setupCheckBox(
+            label: String,
+            isSelected: Boolean,
+            onChange: (Boolean) -> Unit,
+        ): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 CheckBox().also {
@@ -153,12 +170,16 @@ internal class FlagManagerFrame private constructor() {
                         onChange(it.isSelected)
                         ideModel?.reset()
                     }
-                }
+                },
             )
         }
 
         @JvmStatic
-        fun setupTextBox(label: String, default: String, onChange: (String) -> Unit): HBox {
+        fun setupTextBox(
+            label: String,
+            default: String,
+            onChange: (String) -> Unit,
+        ): HBox {
             return HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 TextField().also {
@@ -168,7 +189,7 @@ internal class FlagManagerFrame private constructor() {
                         onChange(newText)
                         ideModel?.reset()
                     }
-                }
+                },
             )
         }
     }

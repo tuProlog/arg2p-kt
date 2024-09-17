@@ -30,9 +30,8 @@ data class FlagsBuilder(
     var orderingPrinciple: String = OrderingPrinciple.default(),
     var orderingComparator: String = OrderingComparator.default(),
     var modulesPath: String = ModulesPath.default(),
-    var graphExtensions: Iterable<String> = GraphExtension.default()
+    var graphExtensions: Iterable<String> = GraphExtension.default(),
 ) {
-
     companion object {
         @JvmStatic
         fun setupSolver(target: FlagsBuilder) =
@@ -51,29 +50,34 @@ data class FlagsBuilder(
     }
 
     fun queryMode(queryMode: Boolean) = apply { this.queryMode = queryMode }
-    fun prologStrictCompatibility(prologStrictCompatibility: Boolean) =
-        apply { this.prologStrictCompatibility = prologStrictCompatibility }
+
+    fun prologStrictCompatibility(prologStrictCompatibility: Boolean) = apply { this.prologStrictCompatibility = prologStrictCompatibility }
+
     fun graphBuildMode(graphBuildMode: String) = apply { this.graphBuildMode = graphBuildMode }
-    fun argumentLabellingMode(argumentLabellingMode: String) =
-        apply { this.argumentLabellingMode = argumentLabellingMode }
-    fun statementLabellingMode(statementLabellingMode: String) =
-        apply { this.statementLabellingMode = statementLabellingMode }
+
+    fun argumentLabellingMode(argumentLabellingMode: String) = apply { this.argumentLabellingMode = argumentLabellingMode }
+
+    fun statementLabellingMode(statementLabellingMode: String) = apply { this.statementLabellingMode = statementLabellingMode }
 
     fun orderingPrinciple(orderingPrinciple: String) = apply { this.orderingPrinciple = orderingPrinciple }
+
     fun orderingComparator(orderingComparator: String) = apply { this.orderingComparator = orderingComparator }
+
     fun modulesPath(modulesPath: String) = apply { this.modulesPath = modulesPath }
+
     fun graphExtensions(graphExtensions: Iterable<String>) = apply { this.graphExtensions = graphExtensions }
 
-    fun create() = object : ArgLibrary {
+    fun create() =
+        object : ArgLibrary {
+            override val alias = "prolog.argumentation.flags"
 
-        override val alias = "prolog.argumentation.flags"
-
-        override val baseContent: Library
-            get() = Library.of(
-                alias = this.alias,
-                clauses = setupSolver(this@FlagsBuilder)
-            )
-        override val baseFlags: Iterable<ArgsFlag<*, *>>
-            get() = emptyList()
-    }
+            override val baseContent: Library
+                get() =
+                    Library.of(
+                        alias = this.alias,
+                        clauses = setupSolver(this@FlagsBuilder),
+                    )
+            override val baseFlags: Iterable<ArgsFlag<*, *>>
+                get() = emptyList()
+        }
 }

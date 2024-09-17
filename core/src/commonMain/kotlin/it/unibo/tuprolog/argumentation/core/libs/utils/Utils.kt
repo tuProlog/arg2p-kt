@@ -22,34 +22,35 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.unify.Unificator
 
 abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
-
     override val alias = "prolog.argumentation.utils"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = this.prologTheory,
-            primitives = mapOf(
-                AppendOptimized.signature to AppendOptimized,
-                AssertAll.signature to AssertAll,
-                ArgumentHash.descriptionPair,
-                Contains.signature to Contains,
-                ContainsAny.signature to ContainsAny
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses = this.prologTheory,
+                primitives =
+                    mapOf(
+                        AppendOptimized.signature to AppendOptimized,
+                        AssertAll.signature to AssertAll,
+                        ArgumentHash.descriptionPair,
+                        Contains.signature to Contains,
+                        ContainsAny.signature to ContainsAny,
+                    ),
             )
-        )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
     override fun identifier(): String = "utils"
 
-    override val theoryOperators = DynamicLoader.operators()
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        DynamicLoader.operators()
+            .plus(OperatorSet.DEFAULT)
 }
 
 expect object Utils : UtilsBase
 
 object AppendOptimized : Primitive {
-
     val signature: Signature = Signature("append_fast", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -62,7 +63,7 @@ object AppendOptimized : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list1
+                list1,
             )
         }
 
@@ -71,7 +72,7 @@ object AppendOptimized : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list2
+                list2,
             )
         }
 
@@ -80,20 +81,19 @@ object AppendOptimized : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.VARIABLE,
-                res
+                res,
             )
         }
 
         return sequence {
             yield(
-                request.replyWith(Substitution.of(res, List.of(list1.toList() + list2.toList())))
+                request.replyWith(Substitution.of(res, List.of(list1.toList() + list2.toList()))),
             )
         }
     }
 }
 
 object AssertAll : Primitive {
-
     val signature: Signature = Signature("assert_all", 1)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -104,7 +104,7 @@ object AssertAll : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list
+                list,
             )
         }
 
@@ -114,24 +114,26 @@ object AssertAll : Primitive {
 
         return sequence {
             yield(
-                request.replyWith(true)
+                request.replyWith(true),
             )
         }
     }
 }
 
 object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> =
         sequenceOf(
             Substitution.of(
                 second.asVar()!!,
-                Numeric.of(first.toString().hashCode())
-            )
+                Numeric.of(first.toString().hashCode()),
+            ),
         )
 }
 
 object Contains : Primitive {
-
     val signature: Signature = Signature("contains", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -143,20 +145,19 @@ object Contains : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list
+                list,
             )
         }
 
         return sequence {
             yield(
-                request.replyWith(list.toList().any { Unificator.default.match(it, elem) })
+                request.replyWith(list.toList().any { Unificator.default.match(it, elem) }),
             )
         }
     }
 }
 
 object ContainsAny : Primitive {
-
     val signature: Signature = Signature("contains_any", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -168,7 +169,7 @@ object ContainsAny : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list
+                list,
             )
         }
 
@@ -177,13 +178,13 @@ object ContainsAny : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list
+                list,
             )
         }
 
         return sequence {
             yield(
-                request.replyWith(list.toSequence().any { elemList.toSequence().any { elem -> Unificator.default.match(it, elem) } })
+                request.replyWith(list.toSequence().any { elemList.toSequence().any { elem -> Unificator.default.match(it, elem) } }),
             )
         }
     }

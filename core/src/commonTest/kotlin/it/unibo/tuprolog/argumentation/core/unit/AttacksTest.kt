@@ -8,7 +8,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AttacksTest {
-
     private val baseConfig =
         """
         graphBuildMode(standard_af).
@@ -21,14 +20,17 @@ class AttacksTest {
         
         """.trimIndent()
 
-    private fun checkAttacks(theory: String, attacks: Map<String, Int>) {
+    private fun checkAttacks(
+        theory: String,
+        attacks: Map<String, Int>,
+    ) {
         logicProgramming {
             TestingUtils.solverWithTheory(theory).also { solver ->
                 solver.solve(Struct.parse("buildLabelSets")).toList()
                 attacks.forEach { attack ->
                     assertEquals(
                         attack.value,
-                        solver.solve("context_check"("attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count()
+                        solver.solve("context_check"("attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count(),
                     )
                 }
             }
@@ -38,125 +40,137 @@ class AttacksTest {
     @Test
     fun rebut() {
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : [] => a.
                 r2 : a => b.
                 r3 : [] => -a.
-            """.trimIndent(),
-            mapOf("rebut" to 3)
+                """.trimIndent(),
+            mapOf("rebut" to 3),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : [] -> a.
                 r2 : a -> b.
                 r3 : [] -> -a.
-            """.trimIndent(),
-            mapOf("rebut" to 0)
+                """.trimIndent(),
+            mapOf("rebut" to 0),
         )
     }
 
     @Test
     fun undermine() {
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 :=> a.
                 r2 : a => b.
                 r3 : [] => -a.
-            """.trimIndent(),
-            mapOf("undermine" to 0, "rebut" to 1)
+                """.trimIndent(),
+            mapOf("undermine" to 0, "rebut" to 1),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 :=> a.
                 r2 : a => b.
                 r3 :=> -a.
-            """.trimIndent(),
-            mapOf("undermine" to 3)
+                """.trimIndent(),
+            mapOf("undermine" to 3),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 :-> a.
                 r2 : a -> b.
                 r3 : [] -> -a.
-            """.trimIndent(),
-            mapOf("rebut" to 0, "undermine" to 0)
+                """.trimIndent(),
+            mapOf("rebut" to 0, "undermine" to 0),
         )
     }
 
     @Test
     fun undercut() {
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : [] => a.
                 r2 : a => b.
                 r3 : [] => undercut(r1).
                 r4 :=> undercut(r2).
-            """.trimIndent(),
-            mapOf("undercut" to 3)
+                """.trimIndent(),
+            mapOf("undercut" to 3),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 :=> a.
                 r2 : a => b.
                 r3 : [] => undercut(r1).
-            """.trimIndent(),
-            mapOf("undercut" to 0)
+                """.trimIndent(),
+            mapOf("undercut" to 0),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 :-> a.
                 r2 : a -> b.
                 r3 : [] => undercut(r1).
                 r4 : [] => undercut(r2).
-            """.trimIndent(),
-            mapOf("undercut" to 0)
+                """.trimIndent(),
+            mapOf("undercut" to 0),
         )
     }
 
     @Test
     fun contraryRebut() {
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : ~(c) => a.
                 r2 : a => b.
                 r3 : [] => c.
-            """.trimIndent(),
-            mapOf("contrary_rebut" to 2)
+                """.trimIndent(),
+            mapOf("contrary_rebut" to 2),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : ~(c) -> a.
                 r2 : a -> b.
                 r3 : [] -> c.
-            """.trimIndent(),
-            mapOf("contrary_rebut" to 2)
+                """.trimIndent(),
+            mapOf("contrary_rebut" to 2),
         )
     }
 
     @Test
     fun contraryUndermine() {
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : ~(c) => a.
                 r2 : a => b.
                 r3 :=> c.
-            """.trimIndent(),
-            mapOf("contrary_undermine" to 2)
+                """.trimIndent(),
+            mapOf("contrary_undermine" to 2),
         )
 
         checkAttacks(
-            baseConfig + """
+            baseConfig +
+                """
                 r1 : ~(c) -> a.
                 r2 : a -> b.
                 r3 :=> c.
-            """.trimIndent(),
-            mapOf("contrary_undermine" to 2)
+                """.trimIndent(),
+            mapOf("contrary_undermine" to 2),
         )
     }
 }

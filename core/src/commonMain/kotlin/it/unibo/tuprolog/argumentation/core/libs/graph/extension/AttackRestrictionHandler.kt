@@ -9,21 +9,22 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
 abstract class AttackRestrictionHandlerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
-
     override val alias = "prolog.argumentation.graph.rebutrestriction"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = this.prologTheory
-        )
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses = this.prologTheory,
+            )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
     override fun identifier(): String = "rebutRestriction"
 
-    override val theoryOperators = DynamicLoader.operators()
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        DynamicLoader.operators()
+            .plus(OperatorSet.DEFAULT)
 }
 
 expect object AttackRestrictionHandler : AttackRestrictionHandlerBase

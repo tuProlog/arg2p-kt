@@ -12,7 +12,6 @@ import it.unibo.tuprolog.argumentation.core.model.Support
 import kotlin.test.Test
 
 class ArgumentGroundedLabellingTest {
-
     private fun prepareGraph(): Graph {
         val arg1 = Argument(listOf("r5"), "r5", "[neg,s('Pippo')]")
         val arg2 = Argument(listOf("r4", "r3", "r1"), "r4", "[s('Pippo')]")
@@ -28,19 +27,19 @@ class ArgumentGroundedLabellingTest {
                 LabelledArgument(arg3, "out"),
                 LabelledArgument(arg4, "in"),
                 LabelledArgument(arg5, "in"),
-                LabelledArgument(arg6, "in")
+                LabelledArgument(arg6, "in"),
             ),
             listOf(
                 Attack(arg4, arg3),
                 Attack(arg4, arg2),
                 Attack(arg2, arg1),
-                Attack(arg1, arg2)
+                Attack(arg1, arg2),
             ),
             listOf(
                 Support(arg3, arg2),
                 Support(arg5, arg3),
-                Support(arg6, arg4)
-            )
+                Support(arg6, arg4),
+            ),
         )
     }
 

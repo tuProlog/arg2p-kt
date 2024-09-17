@@ -6,13 +6,15 @@ plugins {
 }
 
 dependencies {
-    orchidRuntimeOnly("io.github.javaeden.orchid:OrchidDocs:$orchidVersion")
-    orchidRuntimeOnly("io.github.javaeden.orchid:OrchidEditorial:$orchidVersion")
+    // orchidRuntimeOnly("io.github.javaeden.orchid:OrchidDocs:$orchidVersion")
+    // orchidRuntimeOnly("io.github.javaeden.orchid:OrchidEditorial:$orchidVersion")
 }
 
+@Suppress("Deprecation")
 repositories {
-    mavenCentral()
+    maven("https://jitpack.io")
     jcenter()
+    maven("https://kotlin.bintray.com/kotlinx")
 }
 
 orchid {

@@ -9,10 +9,10 @@ import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
 
 class EngineInterfaceTest {
-
-    private fun solverWithTheory() = TestingUtils.solver(
-        TestingUtils.withArgOperators(
-            """
+    private fun solverWithTheory() =
+        TestingUtils.solver(
+            TestingUtils.withArgOperators(
+                """
                 r0 : -c => a.
                 r1 : a => c.
                 r2 : [] => -a.
@@ -27,9 +27,9 @@ class EngineInterfaceTest {
                 graphExtension(standardPref).
                 orderingPrinciple(last).
                 orderingComparator(democrat).
-            """
+            """,
+            ),
         )
-    )
 
     @Test
     fun buildLabelSets() {
@@ -38,49 +38,55 @@ class EngineInterfaceTest {
             testGoalNoBacktracking(
                 "buildLabelSets"(
                     listOf("StatIn", "StatOut", "StatUnd"),
-                    listOf("ArgIn", "ArgOut", "ArgUnd")
+                    listOf("ArgIn", "ArgOut", "ArgUnd"),
                 ),
-                solver
+                solver,
             ) {
                 it.yes(
-                    "StatIn" to Struct.parse(
-                        """
+                    "StatIn" to
+                        Struct.parse(
+                            """
                                 [
                                     [a]
-                                ]"""
-                    ),
-                    "StatOut" to Struct.parse(
-                        """
+                                ]""",
+                        ),
+                    "StatOut" to
+                        Struct.parse(
+                            """
                                 [
                                     [-a]
-                                ]"""
-                    ),
-                    "StatUnd" to Struct.parse(
-                        """
+                                ]""",
+                        ),
+                    "StatUnd" to
+                        Struct.parse(
+                            """
                                 [
                                     [-c],
                                     [c]
-                                ]"""
-                    ),
-                    "ArgIn" to Struct.parse(
-                        """
+                                ]""",
+                        ),
+                    "ArgIn" to
+                        Struct.parse(
+                            """
                                 [
                                     [[r3,r0],r0,[a],[-c],[[r0],[r3,r0],[]]]
-                                ]"""
-                    ),
-                    "ArgOut" to Struct.parse(
-                        """
+                                ]""",
+                        ),
+                    "ArgOut" to
+                        Struct.parse(
+                            """
                                 [
                                     [[r2],r2,[-a],[],[[r2],[r2],[]]]
-                                ]"""
-                    ),
-                    "ArgUnd" to Struct.parse(
-                        """
+                                ]""",
+                        ),
+                    "ArgUnd" to
+                        Struct.parse(
+                            """
                                 [
                                     [[r3,r1,r0],r1,[c],[a],[[r1],[r3,r1,r0],[]]],
                                     [[r3],r3,[-c],[],[[r3],[r3],[]]]
-                                ]"""
-                    )
+                                ]""",
+                        ),
                 )
             }
         }
@@ -92,16 +98,16 @@ class EngineInterfaceTest {
             testGoalNoBacktracking("answerQuery"("a", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
                     "Y" to listOf("a"),
-                    "O" to emptyList,
-                    "U" to emptyList
+                    "O" to emptyLogicList,
+                    "U" to emptyLogicList,
                 )
             }
 
             testGoalNoBacktracking("answerQuery"("c", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
-                    "Y" to emptyList,
-                    "O" to emptyList,
-                    "U" to listOf("c")
+                    "Y" to emptyLogicList,
+                    "O" to emptyLogicList,
+                    "U" to listOf("c"),
                 )
             }
         }

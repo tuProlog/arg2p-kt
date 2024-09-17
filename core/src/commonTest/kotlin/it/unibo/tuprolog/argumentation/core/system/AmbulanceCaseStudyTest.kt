@@ -7,7 +7,6 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 class AmbulanceCaseStudyTest {
-
     private val baseTheory: String =
         """
         r1 : on_road(V),
@@ -110,7 +109,12 @@ class AmbulanceCaseStudyTest {
 
     private val structuredTheory = baseTheory + "queryMode."
 
-    private fun evaluateBoth(query: String, argsIn: String, argsOut: String, argsUnd: String) {
+    private fun evaluateBoth(
+        query: String,
+        argsIn: String,
+        argsOut: String,
+        argsUnd: String,
+    ) {
         TestingUtils.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
         TestingUtils.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
     }
@@ -118,15 +122,16 @@ class AmbulanceCaseStudyTest {
     @Test
     @ExperimentalTime
     fun abstractResolutionSpeedTest() {
-        val time = measureTime {
-            TestingUtils.answerQuery(
-                baseTheory,
-                "responsible(X)",
-                "[responsible(pino)]",
-                "[responsible(lisa)]",
-                "[responsible(demers)]"
-            )
-        }
+        val time =
+            measureTime {
+                TestingUtils.answerQuery(
+                    baseTheory,
+                    "responsible(X)",
+                    "[responsible(pino)]",
+                    "[responsible(lisa)]",
+                    "[responsible(demers)]",
+                )
+            }
 
         println(time.toDouble(DurationUnit.SECONDS))
     }
@@ -134,56 +139,62 @@ class AmbulanceCaseStudyTest {
     @Test
     @ExperimentalTime
     fun structuredResolutionSpeedTest() {
-        val time = measureTime {
-            TestingUtils.answerQuery(
-                structuredTheory,
-                "responsible(X)",
-                "[responsible(pino)]",
-                "[responsible(lisa)]",
-                "[responsible(demers)]"
-            )
-        }
+        val time =
+            measureTime {
+                TestingUtils.answerQuery(
+                    structuredTheory,
+                    "responsible(X)",
+                    "[responsible(pino)]",
+                    "[responsible(lisa)]",
+                    "[responsible(demers)]",
+                )
+            }
 
         println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test
-    fun responsible() = evaluateBoth(
-        "responsible(X)",
-        "[responsible(pino)]",
-        "[responsible(lisa)]",
-        "[responsible(demers)]"
-    )
+    fun responsible() =
+        evaluateBoth(
+            "responsible(X)",
+            "[responsible(pino)]",
+            "[responsible(lisa)]",
+            "[responsible(demers)]",
+        )
 
     @Test
-    fun obligationToStop() = evaluateBoth(
-        "o(stop(X))",
-        "[o(stop(pedestrian)), o(stop(car))]",
-        "[o(stop(ambulance))]",
-        "[]"
-    )
+    fun obligationToStop() =
+        evaluateBoth(
+            "o(stop(X))",
+            "[o(stop(pedestrian)), o(stop(car))]",
+            "[o(stop(ambulance))]",
+            "[]",
+        )
 
     @Test
-    fun permissionToProceed() = evaluateBoth(
-        "p(-stop(X))",
-        "[p(-stop(ambulance))]",
-        "[p(-stop(pedestrian))]",
-        "[]"
-    )
+    fun permissionToProceed() =
+        evaluateBoth(
+            "p(-stop(X))",
+            "[p(-stop(ambulance))]",
+            "[p(-stop(pedestrian))]",
+            "[]",
+        )
 
     @Test
-    fun highSpeed() = evaluateBoth(
-        "high_speed(X)",
-        "[]",
-        "[]",
-        "[high_speed(ambulance)]"
-    )
+    fun highSpeed() =
+        evaluateBoth(
+            "high_speed(X)",
+            "[]",
+            "[]",
+            "[high_speed(ambulance)]",
+        )
 
     @Test
-    fun notHighSpeed() = evaluateBoth(
-        "-high_speed(X)",
-        "[]",
-        "[]",
-        "[-high_speed(ambulance)]"
-    )
+    fun notHighSpeed() =
+        evaluateBoth(
+            "-high_speed(X)",
+            "[]",
+            "[]",
+            "[-high_speed(ambulance)]",
+        )
 }
