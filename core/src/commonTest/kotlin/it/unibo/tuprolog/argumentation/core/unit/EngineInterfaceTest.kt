@@ -92,15 +92,15 @@ class EngineInterfaceTest {
             testGoalNoBacktracking("answerQuery"("a", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
                     "Y" to listOf("a"),
-                    "O" to emptyList,
-                    "U" to emptyList
+                    "O" to emptyLogicList,
+                    "U" to emptyLogicList
                 )
             }
 
             testGoalNoBacktracking("answerQuery"("c", "Y", "O", "U"), solverWithTheory()) {
                 it.yes(
-                    "Y" to emptyList,
-                    "O" to emptyList,
+                    "Y" to emptyLogicList,
+                    "O" to emptyLogicList,
                     "U" to listOf("c")
                 )
             }

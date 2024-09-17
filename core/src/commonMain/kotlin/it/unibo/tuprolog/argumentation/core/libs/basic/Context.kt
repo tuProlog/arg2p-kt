@@ -106,7 +106,7 @@ class Context : ArgLibrary, ArgContext {
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
-            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve("retractall"(term)) }.first()
+            arg2pScope { this@Context.dynamicSolver[this@Context.selectedSolver]!!.solve(("retractall"(term))) }.first()
             return sequenceOf(request.replyWith(true))
         }
     }

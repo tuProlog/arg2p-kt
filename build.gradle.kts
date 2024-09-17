@@ -1,7 +1,7 @@
 import io.github.gciatto.kt.mpp.Plugins
-import io.github.gciatto.kt.mpp.ProjectType
-import io.github.gciatto.kt.mpp.log
-import io.github.gciatto.kt.mpp.nodeVersion
+import io.github.gciatto.kt.mpp.helpers.ProjectType
+import io.github.gciatto.kt.mpp.utils.log
+// import io.github.gciatto.kt.mpp.nodeVersion
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -71,10 +71,10 @@ kotlin {
     }
 }
 
-project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
-    nodeVersion(it)
-    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
-}
+//project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
+//    nodeVersion(it)
+//    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
+//}
 
 afterEvaluate {
     subprojects {

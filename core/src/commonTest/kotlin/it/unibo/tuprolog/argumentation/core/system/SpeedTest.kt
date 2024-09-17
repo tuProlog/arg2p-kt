@@ -129,7 +129,7 @@ class SpeedTest {
                         current_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
-                        ktListOf(query.yes(V to LastCallOptimization.OFF)),
+                        listOf(query.yes(V to LastCallOptimization.OFF)),
                         solver.solve(query).toList()
                     )
 
@@ -160,7 +160,7 @@ class SpeedTest {
                     val query = current_flag(LastCallOptimization.name, V)
 
                     assertSolutionEquals(
-                        ktListOf(query.yes(V to LastCallOptimization.ON)),
+                        listOf(query.yes(V to LastCallOptimization.ON)),
                         solver.solve(query).toList()
                     )
 

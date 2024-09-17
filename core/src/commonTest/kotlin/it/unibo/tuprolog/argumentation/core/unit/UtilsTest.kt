@@ -13,7 +13,7 @@ class UtilsTest {
     fun sort() {
         arg2pScope {
             testGoal("utils" call "sort"(listOf("b", "a", "c", "d"), "X")) {
-                ktListOf(
+                listOf(
                     it.yes("X" to listOf("d", "c", "b", "a")),
                     it.no()
                 )
@@ -25,7 +25,7 @@ class UtilsTest {
     fun subtractList() {
         arg2pScope {
             testGoal("utils" call "subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")) {
-                ktListOf(
+                listOf(
                     it.yes("X" to listOf("c", "d"))
                 )
             }
@@ -35,12 +35,12 @@ class UtilsTest {
     @Test
     fun isEmptyList() {
         arg2pScope {
-            testGoal("utils" call "isEmptyList"(emptyList)) {
-                ktListOf(it.yes())
+            testGoal("utils" call "isEmptyList"(emptyLogicList)) {
+                listOf(it.yes())
             }
 
             testGoal("utils" call "isEmptyList"(listOf("a"))) {
-                ktListOf(it.no())
+                listOf(it.no())
             }
         }
     }
@@ -49,13 +49,13 @@ class UtilsTest {
     fun appendaList() {
         arg2pScope {
             testGoal("utils" call "appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
-                ktListOf(
+                listOf(
                     it.yes("X" to listOf("a", "b", "c", "d", "e", "f"))
                 )
             }
 
             testGoal("utils" call "appendLists"(listOf(listOf("a", "b")), "X")) {
-                ktListOf(
+                listOf(
                     it.yes("X" to listOf("a", "b"))
                 )
             }
@@ -67,7 +67,7 @@ class UtilsTest {
         arg2pScope {
             val solver = solver(
                 Theory.Companion.of(
-                    ktListOf(
+                    listOf(
                         fact { "a"(1) },
                         fact { "a"(1, 2) },
                         fact { "a"(1, 2, 3) },
@@ -77,7 +77,7 @@ class UtilsTest {
             )
 
             testGoal("utils" call "search"("a", 4, "X"), solver) {
-                ktListOf(
+                listOf(
                     it.yes("X" to "a"(1)),
                     it.yes("X" to "a"(1, 2)),
                     it.yes("X" to "a"(1, 2, 3)),
@@ -86,14 +86,14 @@ class UtilsTest {
             }
 
             testGoal("utils" call "search"("a", 2, "X"), solver) {
-                ktListOf(
+                listOf(
                     it.yes("X" to "a"(1)),
                     it.yes("X" to "a"(1, 2))
                 )
             }
 
             testGoal("utils" call "search"("b", 2, "X"), solver) {
-                ktListOf(it.no())
+                listOf(it.no())
             }
         }
     }
