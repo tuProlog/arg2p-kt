@@ -56,9 +56,9 @@ jobs:
       - name: Next Version
         id: compute-next-version
         run: |
-          mv release.config.mjs base.mjs
+          mv release.config.js base.js
           mv pre-release.config.mjs release.config.mjs 
-          npx semantic-release --extends=./base.mjs --dry-run --no-ci
+          npx semantic-release --extends=./base.js --dry-run --no-ci
           if [[ -s .next-version ]]; then
             echo "New release will be triggered: $(cat .next-version)"
             echo "will-release=true" >> $GITHUB_OUTPUT
@@ -67,7 +67,7 @@ jobs:
             echo "No release will be triggered"
             echo "will-release=false" >> $GITHUB_OUTPUT
           fi
-          mv base.mjs release.config.mjs
+          mv base.js release.config.js
       - uses: DanySK/build-check-deploy-gradle-action@2.4.22
         with:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
