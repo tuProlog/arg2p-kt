@@ -6,7 +6,8 @@ var publishCmd = `
 ./gradlew ${version} ${staging} publishJsPackageToNpmjsRegistry || exit 4
 `
 
-var config = require('semantic-release-preconfigured-conventional-commits');
+import config from 'semantic-release-preconfigured-conventional-commits'  assert { type: "json" };
+
 config.plugins.push(
     [
         "@semantic-release/exec",
@@ -27,4 +28,5 @@ config.plugins.push(
     ],
     "@semantic-release/git",
 )
-module.exports = config
+
+export default config;

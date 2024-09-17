@@ -40,34 +40,34 @@ jobs:
         uses: actions/checkout@v4.1.7
         with:
           fetch-depth: 0
-#      - name: Compute next release version
-#        id: compute-next-version
-#        uses: nicolasfara/precompute-semantic-release-version-action@2.0.1
-#        with:
-#          github-token: ${{ github.token }}
-      - name: Setup Nodejs
-        uses: actions/setup-node@v4.0.3
-        with:
-          node-version-file: ./package.json
-      - name: Install Dependecies
-        working-directory: .
-        run: npm ci
-        shell: bash
-      - name: Next Version
+      - name: Compute next release version
         id: compute-next-version
-        run: |
-          mv release.config.js base.js
-          mv pre-release.config.mjs release.config.mjs 
-          npx semantic-release --extends=./base.js --dry-run --no-ci
-          if [[ -s .next-version ]]; then
-            echo "New release will be triggered: $(cat .next-version)"
-            echo "will-release=true" >> $GITHUB_OUTPUT
-            echo "next-version=$(cat .next-version)" >> $GITHUB_OUTPUT
-          else
-            echo "No release will be triggered"
-            echo "will-release=false" >> $GITHUB_OUTPUT
-          fi
-          mv base.js release.config.js
+        uses: nicolasfara/precompute-semantic-release-version-action@2.0.1
+        with:
+          github-token: ${{ github.token }}
+#      - name: Setup Nodejs
+#        uses: actions/setup-node@v4.0.3
+#        with:
+#          node-version-file: ./package.json
+#      - name: Install Dependecies
+#        working-directory: .
+#        run: npm ci
+#        shell: bash
+#      - name: Next Version
+#        id: compute-next-version
+#        run: |
+#          mv release.config.mjs base.js
+#          mv pre-release.config.mjs release.config.mjs
+#          npx semantic-release --extends=./base.js --dry-run --no-ci
+#          if [[ -s .next-version ]]; then
+#            echo "New release will be triggered: $(cat .next-version)"
+#            echo "will-release=true" >> $GITHUB_OUTPUT
+#            echo "next-version=$(cat .next-version)" >> $GITHUB_OUTPUT
+#          else
+#            echo "No release will be triggered"
+#            echo "will-release=false" >> $GITHUB_OUTPUT
+#          fi
+#          mv base.js release.config.mjs
       - uses: DanySK/build-check-deploy-gradle-action@2.4.22
         with:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}

@@ -4,5 +4,6 @@
   },
   "engines": {
     "node": "20.17"
-  }
+  },
+  "type": "module"
 }
