@@ -21,7 +21,6 @@ import it.unibo.tuprolog.argumentation.actor.message.Response
 import kotlin.random.Random
 
 class KbDistributor private constructor(context: ActorContext<KbMessage>) : AbstractBehavior<KbMessage>(context) {
-
     private val kb: SplitKnowledgeBase = SplitKnowledgeBase()
     private val evaluationCache: MutableList<EvaluationCache> = mutableListOf()
 
@@ -65,7 +64,7 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
             cache.responses.filter { it.response == label }.map {
                 Response(
                     it.elem,
-                    it.queryChain
+                    it.queryChain,
                 )
             }
         }
@@ -75,19 +74,18 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 inArgs = filter(Label.IN),
                 outArgs = filter(Label.OUT),
                 undArgs =
-                if (cache.responses.any { it.response != Label.NOT_FOUND }) {
-                    filter(Label.UND)
-                } else {
-                    filter(Label.NOT_FOUND).distinct()
-                }
-            )
+                    if (cache.responses.any { it.response != Label.NOT_FOUND }) {
+                        filter(Label.UND)
+                    } else {
+                        filter(Label.NOT_FOUND).distinct()
+                    },
+            ),
         )
 
         evaluationCache.remove(cache)
     }
 
     companion object {
-        fun create(): Behavior<KbMessage> =
-            Behaviors.setup { context -> KbDistributor(context) }
+        fun create(): Behavior<KbMessage> = Behaviors.setup { context -> KbDistributor(context) }
     }
 }

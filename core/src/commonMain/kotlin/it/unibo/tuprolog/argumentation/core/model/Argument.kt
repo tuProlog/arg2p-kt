@@ -13,9 +13,8 @@ data class Argument(
     val defeasibleRules: List<RuleIdentifier> = emptyList(),
     val defeasiblePremises: List<RuleIdentifier> = emptyList(),
     val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
-    private val term: Term? = null
+    private val term: Term? = null,
 ) {
-
     override fun hashCode(): Int {
         return term.hashCode()
     }
@@ -24,16 +23,20 @@ data class Argument(
     val supports: MutableList<Argument> = mutableListOf()
 
     val descriptor: String
-        get() = "$identifier : " + (
-            if (topRule == "none") {
-                rules.firstOrNull() ?: ""
-            } else {
-                supports.map { it.identifier }.plus(topRule)
-                    .reduce { a: String, b: String -> "$a,$b" }
-            }
+        get() =
+            "$identifier : " + (
+                if (topRule == "none") {
+                    rules.firstOrNull() ?: ""
+                } else {
+                    supports.map { it.identifier }.plus(topRule)
+                        .reduce { a: String, b: String -> "$a,$b" }
+                }
             ) + " : " + conclusion
 
-    fun termRepresentation(): Term = term ?: Struct.parse("[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]")
+    fun termRepresentation(): Term =
+        term ?: Struct.parse(
+            "[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]",
+        )
 
     override fun toString(): String {
         return "argument(${this.termRepresentation()})"
@@ -44,18 +47,20 @@ data class Argument(
     }
 
     companion object {
-
         fun of(term: Term): Argument {
             fun termAsList(t: Term?): List<Term> = (t as Cons).toList()
 
-            fun toStringList(argument: List<Term>, target: Int): List<String> {
+            fun toStringList(
+                argument: List<Term>,
+                target: Int,
+            ): List<String> {
                 return (
                     if (argument[target].isEmptyList) {
                         emptyList()
                     } else {
                         (argument[target] as Cons).toList()
                     }
-                    ).map { x -> x.toString() }
+                ).map { x -> x.toString() }
             }
 
             fun argRules(argument: List<Term>): List<String> = toStringList(argument, 0)
@@ -66,14 +71,11 @@ data class Argument(
 
             fun argGroundings(argument: List<Term>): List<String> = toStringList(argument, 3)
 
-            fun argDefeasibleRules(argument: List<Term>): List<String> =
-                toStringList(termAsList(argument[4]), 1)
+            fun argDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 1)
 
-            fun argDefeasiblePremises(argument: List<Term>): List<String> =
-                toStringList(termAsList(argument[4]), 2)
+            fun argDefeasiblePremises(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 2)
 
-            fun argLastDefeasibleRules(argument: List<Term>): List<String> =
-                toStringList(termAsList(argument[4]), 0)
+            fun argLastDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 0)
 
             return termAsList(term).let {
                 Argument(
@@ -84,7 +86,7 @@ data class Argument(
                     argDefeasibleRules(it),
                     argDefeasiblePremises(it),
                     argLastDefeasibleRules(it),
-                    term
+                    term,
                 )
             }
         }

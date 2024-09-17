@@ -46,16 +46,15 @@ tasks.withType<KotlinJvmTest> {
     jvmArgs("-Xss$jvmStackSize")
 }
 
-private val PL_COMMENT_REGEX =
-    """^\s*%.*""".toRegex()
-
 val String.isSkippable: Boolean get() =
-    isBlank() || PL_COMMENT_REGEX.matches(this)
+    isBlank() || """^\s*%.*""".toRegex().matches(this)
 
-fun File.resolveDest(destinationFolder: File): File =
-    destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
+fun File.resolveDest(destinationFolder: File): File = destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
 
-fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
+fun File.convertIntoKotlinSource(
+    destinationFolder: File,
+    `package`: String,
+) {
     this.bufferedReader().use { r ->
         val lines = r.lines().asSequence()
         val dest = resolveDest(destinationFolder)
@@ -87,9 +86,10 @@ fun File.convertIntoKotlinSource(destinationFolder: File, `package`: String) {
 tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     val jvmResourcesDir = kotlin.jvm().compilations["main"].kotlinSourceSets.single().resources.sourceDirectories.single()
     val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
-    val plFiles = fileTree(jvmResourcesDir).also {
-        it.include("**/*.pl")
-    }.files
+    val plFiles =
+        fileTree(jvmResourcesDir).also {
+            it.include("**/*.pl")
+        }.files
     val packageName = "it.unibo.tuprolog.argumentation.core.libs.sources"
     val destDir = jsMainDir.resolve(packageName.replace('.', '/'))
 

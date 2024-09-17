@@ -15,7 +15,7 @@ fun Solver.graph(context: Int) =
         Graph.of(
             this.labels(context, it),
             this.attacks(context, it),
-            this.supports(context, it)
+            this.supports(context, it),
         )
     }
 
@@ -36,7 +36,10 @@ fun Solver.arguments(context: Int): List<Argument> =
     }.toList()
 
 @JsName("mineAttacks")
-fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
+fun Solver.attacks(
+    context: Int,
+    arguments: List<Argument>,
+): List<Attack> {
     if (arguments.isEmpty()) return emptyList()
     return logicProgramming {
         this@attacks.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
@@ -45,14 +48,17 @@ fun Solver.attacks(context: Int, arguments: List<Argument>): List<Attack> {
             .map { solution ->
                 Attack(
                     arguments.first { it.hashCode() == solution.first.hashCode() },
-                    arguments.first { it.hashCode() == solution.second.hashCode() }
+                    arguments.first { it.hashCode() == solution.second.hashCode() },
                 )
             }
     }.toList()
 }
 
 @JsName("mineSupports")
-fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
+fun Solver.supports(
+    context: Int,
+    arguments: List<Argument>,
+): List<Support> =
     logicProgramming {
         this@supports.solve("context_check"(context, "support"(X, Y)))
             .filter { it.isYes }
@@ -61,7 +67,7 @@ fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
                 arguments.first { it.hashCode() == solution.second.hashCode() }.let { argument ->
                     Support(
                         arguments.first { it.hashCode() == solution.first.hashCode() },
-                        argument
+                        argument,
                     ).also {
                         argument.supports.add(it.supporter)
                     }
@@ -70,7 +76,10 @@ fun Solver.supports(context: Int, arguments: List<Argument>): List<Support> =
     }
 
 @JsName("mineLabels")
-fun Solver.labels(context: Int, arguments: List<Argument>): List<LabelledArgument> {
+fun Solver.labels(
+    context: Int,
+    arguments: List<Argument>,
+): List<LabelledArgument> {
     fun checkFunctor(functor: String) =
         logicProgramming {
             this@labels.solve("context_check"(context, functor(X)))

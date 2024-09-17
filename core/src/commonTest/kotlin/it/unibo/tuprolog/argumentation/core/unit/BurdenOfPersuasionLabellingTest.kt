@@ -10,7 +10,6 @@ import it.unibo.tuprolog.argumentation.core.model.Support
 import kotlin.test.Test
 
 class BurdenOfPersuasionLabellingTest {
-
     private fun prepareGraph(): Graph {
         val arg1 = Argument(listOf("r3", "r1", "r0"), "r1", "c")
         val arg2 = Argument(listOf("r3", "r0"), "r0", "a")
@@ -22,7 +21,7 @@ class BurdenOfPersuasionLabellingTest {
                 arg1,
                 arg2,
                 arg3,
-                arg4
+                arg4,
             ),
             listOf(
                 Attack(arg1, arg1),
@@ -31,12 +30,12 @@ class BurdenOfPersuasionLabellingTest {
                 Attack(arg3, arg1),
                 Attack(arg2, arg4),
                 Attack(arg1, arg3),
-                Attack(arg1, arg2)
+                Attack(arg1, arg2),
             ),
             listOf(
                 Support(arg2, arg1),
-                Support(arg3, arg2)
-            )
+                Support(arg3, arg2),
+            ),
         )
     }
 
@@ -47,10 +46,10 @@ class BurdenOfPersuasionLabellingTest {
                     LabelledArgument(it.arguments[0], "und"),
                     LabelledArgument(it.arguments[1], "und"),
                     LabelledArgument(it.arguments[2], "und"),
-                    LabelledArgument(it.arguments[3], "und")
+                    LabelledArgument(it.arguments[3], "und"),
                 ),
                 it.attacks,
-                it.supports
+                it.supports,
             )
         }
 
@@ -61,10 +60,10 @@ class BurdenOfPersuasionLabellingTest {
                     LabelledArgument(it.arguments[0], "und"),
                     LabelledArgument(it.arguments[1], "und"),
                     LabelledArgument(it.arguments[2], "und"),
-                    LabelledArgument(it.arguments[3], "out")
+                    LabelledArgument(it.arguments[3], "out"),
                 ),
                 it.attacks,
-                it.supports
+                it.supports,
             )
         }
 
@@ -75,10 +74,10 @@ class BurdenOfPersuasionLabellingTest {
                     LabelledArgument(it.arguments[0], "und"),
                     LabelledArgument(it.arguments[1], "in"),
                     LabelledArgument(it.arguments[2], "und"),
-                    LabelledArgument(it.arguments[3], "out")
+                    LabelledArgument(it.arguments[3], "out"),
                 ),
                 it.attacks,
-                it.supports
+                it.supports,
             )
         }
 
@@ -89,10 +88,10 @@ class BurdenOfPersuasionLabellingTest {
                     LabelledArgument(it.arguments[0], "out"),
                     LabelledArgument(it.arguments[1], "in"),
                     LabelledArgument(it.arguments[2], "in"),
-                    LabelledArgument(it.arguments[3], "out")
+                    LabelledArgument(it.arguments[3], "out"),
                 ),
                 it.attacks,
-                it.supports
+                it.supports,
             )
         }
 

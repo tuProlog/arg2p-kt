@@ -14,7 +14,6 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 class SpeedTest {
-
     private val baseTheory: String =
         """
         r1 : on_road(V),
@@ -121,31 +120,33 @@ class SpeedTest {
     @ExperimentalTime
     @Ignore
     fun structuredResolutionSpeedTestNoLastCall() {
-        val time = measureTime {
-            logicProgramming {
-                TestingUtils.solverWithTheory(structuredTheory).also { solver ->
+        val time =
+            measureTime {
+                logicProgramming {
+                    TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
-                    val query = set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
-                        current_flag(LastCallOptimization.name, V)
+                        val query =
+                            set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
+                                current_flag(LastCallOptimization.name, V)
 
-                    assertSolutionEquals(
-                        listOf(query.yes(V to LastCallOptimization.OFF)),
-                        solver.solve(query).toList()
-                    )
-
-                    TestingUtils.testGoalNoBacktracking(
-                        "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
-                        solver
-                    ) {
-                        it.yes(
-                            "StatIn" to Struct.parse("[responsible(pino)]"),
-                            "StatOut" to Struct.parse("[responsible(lisa)]"),
-                            "StatUnd" to Struct.parse("[responsible(demers)]")
+                        assertSolutionEquals(
+                            listOf(query.yes(V to LastCallOptimization.OFF)),
+                            solver.solve(query).toList(),
                         )
+
+                        TestingUtils.testGoalNoBacktracking(
+                            "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                            solver,
+                        ) {
+                            it.yes(
+                                "StatIn" to Struct.parse("[responsible(pino)]"),
+                                "StatOut" to Struct.parse("[responsible(lisa)]"),
+                                "StatUnd" to Struct.parse("[responsible(demers)]"),
+                            )
+                        }
                     }
                 }
             }
-        }
 
         println(time.toDouble(DurationUnit.SECONDS))
     }
@@ -153,30 +154,31 @@ class SpeedTest {
     @Test
     @ExperimentalTime
     fun structuredResolutionSpeedLastCall() {
-        val time = measureTime {
-            logicProgramming {
-                TestingUtils.solverWithTheory(structuredTheory).also { solver ->
+        val time =
+            measureTime {
+                logicProgramming {
+                    TestingUtils.solverWithTheory(structuredTheory).also { solver ->
 
-                    val query = current_flag(LastCallOptimization.name, V)
+                        val query = current_flag(LastCallOptimization.name, V)
 
-                    assertSolutionEquals(
-                        listOf(query.yes(V to LastCallOptimization.ON)),
-                        solver.solve(query).toList()
-                    )
-
-                    TestingUtils.testGoalNoBacktracking(
-                        "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
-                        solver
-                    ) {
-                        it.yes(
-                            "StatIn" to Struct.parse("[responsible(pino)]"),
-                            "StatOut" to Struct.parse("[responsible(lisa)]"),
-                            "StatUnd" to Struct.parse("[responsible(demers)]")
+                        assertSolutionEquals(
+                            listOf(query.yes(V to LastCallOptimization.ON)),
+                            solver.solve(query).toList(),
                         )
+
+                        TestingUtils.testGoalNoBacktracking(
+                            "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                            solver,
+                        ) {
+                            it.yes(
+                                "StatIn" to Struct.parse("[responsible(pino)]"),
+                                "StatOut" to Struct.parse("[responsible(lisa)]"),
+                                "StatUnd" to Struct.parse("[responsible(demers)]"),
+                            )
+                        }
                     }
                 }
             }
-        }
 
         println(time.toDouble(DurationUnit.SECONDS))
     }

@@ -8,7 +8,6 @@ import javafx.stage.Stage
 import kotlin.system.exitProcess
 
 class Arg2pIdeApplication : Application() {
-
     override fun start(stage: Stage) {
         try {
             val arg2p = Arg2pSolver.default(staticLibs = emptyList(), dynamicLibs = listOf(ActorSolver()))
@@ -18,8 +17,8 @@ class Arg2pIdeApplication : Application() {
                 .customTabs(
                     listOf(
                         ArgumentationGraphFrame.customTab().also { it.tab.id = "arg-graph" },
-                        FlagManagerFrame.customTab(arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" }
-                    )
+                        FlagManagerFrame.customTab(arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" },
+                    ),
                 )
                 .show()
         } catch (e: Throwable) {

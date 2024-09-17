@@ -8,21 +8,22 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
 abstract class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
-
     override val alias = "prolog.argumentation.interface"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = this.prologTheory,
-            operators = RuleParserBase.operators()
-        )
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses = this.prologTheory,
+                operators = RuleParserBase.operators(),
+            )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override val theoryOperators = RuleParserBase.operators()
-        .plus(DynamicLoader.operators())
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        RuleParserBase.operators()
+            .plus(DynamicLoader.operators())
+            .plus(OperatorSet.DEFAULT)
 }
 
 expect object EngineInterface : EngineInterfaceBase

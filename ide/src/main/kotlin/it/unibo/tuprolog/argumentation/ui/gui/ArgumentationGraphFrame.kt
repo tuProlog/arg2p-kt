@@ -39,26 +39,27 @@ import javax.swing.JTextPane
 import javax.swing.SwingUtilities
 
 internal class ArgumentationGraphFrame {
-
     private val graphPane: JPanel = JPanel(BorderLayout())
     private val classicTheoryPane: JScrollPane = JScrollPane()
     private val treeTheoryPane: JScrollPane = JScrollPane()
     val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
-    private val next: JButton = JButton("Next").also { button ->
-        button.addActionListener {
-            this.selectedContext =
-                if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
-            this.update()
+    private val next: JButton =
+        JButton("Next").also { button ->
+            button.addActionListener {
+                this.selectedContext =
+                    if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
+                this.update()
+            }
         }
-    }
-    private val back: JButton = JButton("Back").also { button ->
-        button.addActionListener {
-            this.selectedContext =
-                if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
-            this.update()
+    private val back: JButton =
+        JButton("Back").also { button ->
+            button.addActionListener {
+                this.selectedContext =
+                    if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
+                this.update()
+            }
         }
-    }
     private val context: JLabel = JLabel()
 
     private val minContext: Int = 0
@@ -131,30 +132,34 @@ internal class ArgumentationGraphFrame {
             this.splitPane.repaint()
         }
     }
-    companion object {
 
+    companion object {
         @JvmStatic
         fun customTab(): CustomTab {
             val frame = ArgumentationGraphFrame()
             val swingNode = SwingNode()
-            frame.splitPane.addComponentListener(object : ComponentAdapter() {
-                override fun componentResized(e: ComponentEvent) {
-                    frame.revalidate()
-                }
-            })
+            frame.splitPane.addComponentListener(
+                object : ComponentAdapter() {
+                    override fun componentResized(e: ComponentEvent) {
+                        frame.revalidate()
+                    }
+                },
+            )
             swingNode.content = frame.splitPane
             frame.update()
             return CustomTab(Tab("Graph", swingNode)) { model ->
                 model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
                 model.onNewSolution.subscribe { event ->
-                    frame.mutableSolver = Solver.prolog.mutableSolverOf(
-                        libraries = event.libraries
-                    )
-                    frame.selectedContext = logicProgramming {
-                        frame.mutableSolver!!.solve("context_active"(X))
-                            .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
-                            .first()
-                    }
+                    frame.mutableSolver =
+                        Solver.prolog.mutableSolverOf(
+                            libraries = event.libraries,
+                        )
+                    frame.selectedContext =
+                        logicProgramming {
+                            frame.mutableSolver!!.solve("context_active"(X))
+                                .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
+                                .first()
+                        }
                     frame.maxContext = frame.selectedContext
                     frame.update()
                 }
@@ -162,7 +167,10 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun buildGraph(arguments: List<LabelledArgument>, attacks: List<Attack>): Graph<String, String> {
+        private fun buildGraph(
+            arguments: List<LabelledArgument>,
+            attacks: List<Attack>,
+        ): Graph<String, String> {
             val graph: Graph<String, String> = SparseMultigraph()
             arguments.map { it.argument.identifier }
                 .forEach(graph::addVertex)
@@ -171,14 +179,18 @@ internal class ArgumentationGraphFrame {
                     x.attacker.identifier + x.target.identifier,
                     x.attacker.identifier,
                     x.target.identifier,
-                    EdgeType.DIRECTED
+                    EdgeType.DIRECTED,
                 )
             }
             return graph
         }
 
         @JvmStatic
-        private fun printGraph(graphPane: JPanel, arguments: List<LabelledArgument>, attacks: List<Attack>) {
+        private fun printGraph(
+            graphPane: JPanel,
+            arguments: List<LabelledArgument>,
+            attacks: List<Attack>,
+        ) {
             val layout: Layout<String, String> = FRLayout(buildGraph(arguments, attacks))
             layout.size = Dimension(350, 300)
             val vv: VisualizationViewer<String, String> = VisualizationViewer(layout)
@@ -201,7 +213,11 @@ internal class ArgumentationGraphFrame {
         }
 
         @JvmStatic
-        private fun printTheory(classicTheoryPane: JScrollPane, treeTheoryPane: JScrollPane, arguments: List<LabelledArgument>) {
+        private fun printTheory(
+            classicTheoryPane: JScrollPane,
+            treeTheoryPane: JScrollPane,
+            arguments: List<LabelledArgument>,
+        ) {
             val textArea = JTextArea()
             textArea.isEditable = false
             arguments.sortedBy { it.argument.identifier.drop(1).toInt() }
@@ -217,18 +233,22 @@ internal class ArgumentationGraphFrame {
 
         @JvmStatic
         private fun formatResolutionTree(arguments: List<LabelledArgument>): String {
-            fun tree(arg: LabelledArgument, arguments: List<LabelledArgument>): String =
+            fun tree(
+                arg: LabelledArgument,
+                arguments: List<LabelledArgument>,
+            ): String =
                 "<li>${arg.argument.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
                     arg.argument.supports.joinToString(separator = "") { sub ->
                         tree(
                             arguments.first { it.argument.identifier == sub.identifier },
-                            arguments
+                            arguments,
                         )
                     }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
 
-            return "<html><ul>" + arguments
-                .sortedBy { it.argument.identifier.drop(1).toInt() }
-                .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
+            return "<html><ul>" +
+                arguments
+                    .sortedBy { it.argument.identifier.drop(1).toInt() }
+                    .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
         }
     }
 }

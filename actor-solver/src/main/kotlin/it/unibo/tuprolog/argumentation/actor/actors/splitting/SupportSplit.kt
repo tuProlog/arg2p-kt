@@ -21,8 +21,11 @@ import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.random.Random
 
 object SupportSplit : SplittingPrinciple {
-
-    override fun updateWorkers(rule: String, kb: SplitKnowledgeBase, context: ActorContext<KbMessage>) {
+    override fun updateWorkers(
+        rule: String,
+        kb: SplitKnowledgeBase,
+        context: ActorContext<KbMessage>,
+    ) {
         val helperSolver = solver()
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
@@ -30,9 +33,10 @@ object SupportSplit : SplittingPrinciple {
                 .filter { it.isYes }
                 .map { it.substitution[X]!! }
                 .first().also { rules ->
-                    val selected = kb.workers.filter { elem ->
-                        elem.theory.solve("chainer" call "chainable"(rules)).filter { it.isYes }.any()
-                    }
+                    val selected =
+                        kb.workers.filter { elem ->
+                            elem.theory.solve("chainer" call "chainable"(rules)).filter { it.isYes }.any()
+                        }
                     when (selected.count()) {
                         0 -> createSolver(rule, kb.workers, context)
                         1 -> updateSolverKnowledge(rule, selected.first(), context)
@@ -42,11 +46,15 @@ object SupportSplit : SplittingPrinciple {
         }
     }
 
-    private fun createWorker(rules: MutableList<String>, context: ActorContext<KbMessage>): HelpWorker =
+    private fun createWorker(
+        rules: MutableList<String>,
+        context: ActorContext<KbMessage>,
+    ): HelpWorker =
         solver().let { solver ->
             val id = "solver_${Random.nextInt()}"
-            val ref = ClusterSharding.get(context.system)
-                .entityRefFor(EntityTypeKey.create(KbMessage::class.java, "evaluator"), id)
+            val ref =
+                ClusterSharding.get(context.system)
+                    .entityRefFor(EntityTypeKey.create(KbMessage::class.java, "evaluator"), id)
             val worker = HelpWorker(id, ref, solver, rules)
             rules.forEach {
                 worker.ref.tell(Add(it))
@@ -56,17 +64,25 @@ object SupportSplit : SplittingPrinciple {
             worker
         }
 
-    private fun createSolver(rule: String, workers: MutableList<HelpWorker>, context: ActorContext<KbMessage>) {
+    private fun createSolver(
+        rule: String,
+        workers: MutableList<HelpWorker>,
+        context: ActorContext<KbMessage>,
+    ) {
         context.log.info("Creating $rule")
         workers.add(
             createWorker(
                 mutableListOf(rule),
-                context
-            )
+                context,
+            ),
         )
     }
 
-    private fun updateSolverKnowledge(rule: String, worker: HelpWorker, context: ActorContext<KbMessage>) {
+    private fun updateSolverKnowledge(
+        rule: String,
+        worker: HelpWorker,
+        context: ActorContext<KbMessage>,
+    ) {
         context.log.info("Updating $rule")
         worker.theory.assertA(Struct.parse(rule, worker.theory.operators))
         worker.rules.add(rule)
@@ -74,20 +90,27 @@ object SupportSplit : SplittingPrinciple {
         worker.ref.tell(Add(rule))
     }
 
-    private fun mergeSolvers(rule: String, oldWorkers: List<HelpWorker>, workers: MutableList<HelpWorker>, context: ActorContext<KbMessage>) {
+    private fun mergeSolvers(
+        rule: String,
+        oldWorkers: List<HelpWorker>,
+        workers: MutableList<HelpWorker>,
+        context: ActorContext<KbMessage>,
+    ) {
         context.log.info("Merging $rule")
         workers.removeAll(oldWorkers)
         workers.add(
             createWorker(
                 oldWorkers.flatMap { it.rules }.toMutableList().also { it.add(rule) },
-                context
-            )
+                context,
+            ),
         )
     }
 
-    private fun solver() = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-        otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder().create()), listOf(TheoryChainer))
-            .to2pLibraries(),
-        flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON)
-    )
+    private fun solver() =
+        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+            otherLibraries =
+                Arg2pSolver.default(listOf(FlagsBuilder().create()), listOf(TheoryChainer))
+                    .to2pLibraries(),
+            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+        )
 }

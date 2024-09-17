@@ -11,7 +11,7 @@ data class HelpWorker(
     val id: String,
     val ref: EntityRef<KbMessage>,
     val theory: MutableSolver,
-    val rules: MutableList<String>
+    val rules: MutableList<String>,
 )
 
 data class EvaluationCache(
@@ -19,7 +19,7 @@ data class EvaluationCache(
     val query: String,
     val responseNumber: Int,
     val caller: ActorRef<KbMessage>,
-    val responses: MutableList<EvalResponse> = mutableListOf()
+    val responses: MutableList<EvalResponse> = mutableListOf(),
 )
 
 data class ActiveQuery(
@@ -31,5 +31,5 @@ data class ActiveQuery(
     val replyTo: ActorRef<KbMessage>,
     val parentId: String = "",
     var completed: Boolean = false,
-    val responses: MutableList<AttackerResponse> = mutableListOf()
+    val responses: MutableList<AttackerResponse> = mutableListOf(),
 )

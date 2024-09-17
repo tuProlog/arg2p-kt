@@ -14,7 +14,7 @@ multiPlatformHelper {
 }
 
 dependencies {
-    /* JUNG DEPENDENCIES */
+    // JUNG DEPENDENCIES
     api(libs.logback.classic)
     api(libs.logback.core)
     api(libs.jung.api)
@@ -31,7 +31,7 @@ dependencies {
     implementation(project(":actor-solver"))
 
     api(libs.richtextFx)
-    for (jfxModule in listOf(libs.javafx.base, libs.javafx.controls, libs.javafx.fxml, libs.javafx.graphics)) {
+    for (jfxModule in listOf(libs.javafx.base, libs.javafx.controls, libs.javafx.fxml, libs.javafx.graphics, libs.javafx.swing)) {
         for (platform in multiPlatformHelper.fatJarPlatforms) {
             val dependency =
                 jfxModule.get().let {
@@ -68,8 +68,8 @@ dependencies {
         runtimeOnly("$dependency:$platform")
     }
 
-    */
-/* JUNG DEPENDENCIES *//*
+// JUNG DEPENDENCIES
+
 
     api(libs.logback.classic)
     api(libs.logback.core)
@@ -99,9 +99,7 @@ val entryPoint = "it.unibo.tuprolog.argumentation.ui.gui.Main"
 application {
     mainClass = entryPoint
 }
-*/
 
-/*
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     manifest { attributes("Main-Class" to entryPoint) }
     archiveBaseName.set("${rootProject.name}-${project.name}")

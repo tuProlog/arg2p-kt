@@ -27,43 +27,46 @@ import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
 abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
-
     override val alias = "prolog.argumentation.parser"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            primitives = mapOf(
-                StrictRules::descriptionPair.get(),
-                Axioms::descriptionPair.get(),
-                Bps::descriptionPair.get(),
-                Premises::descriptionPair.get(),
-                DefeasibleRules::descriptionPair.get(),
-                ExtractStrictIds::descriptionPair.get(),
-                RuleToClause::descriptionPair.get()
-            ),
-            clauses = this.prologTheory,
-            operators = operators()
-        )
+        get() =
+            Library.of(
+                alias = this.alias,
+                primitives =
+                    mapOf(
+                        StrictRules::descriptionPair.get(),
+                        Axioms::descriptionPair.get(),
+                        Bps::descriptionPair.get(),
+                        Premises::descriptionPair.get(),
+                        DefeasibleRules::descriptionPair.get(),
+                        ExtractStrictIds::descriptionPair.get(),
+                        RuleToClause::descriptionPair.get(),
+                    ),
+                clauses = this.prologTheory,
+                operators = operators(),
+            )
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(AutoTransposition, PrologStrictCompatibility)
 
     override fun identifier() = "parser"
 
-    override val theoryOperators = DynamicLoader.operators()
-        .plus(operators())
-        .plus(OperatorSet.DEFAULT)
+    override val theoryOperators =
+        DynamicLoader.operators()
+            .plus(operators())
+            .plus(OperatorSet.DEFAULT)
 
     companion object {
-        fun operators() = OperatorSet(
-            Operator("=>", Specifier.XFX, 1199),
-            Operator(":=>", Specifier.XFX, 1199),
-            Operator(":->", Specifier.XFX, 1199),
-            Operator(":", Specifier.XFX, 1001),
-            Operator(":=", Specifier.XFX, 1199)
+        fun operators() =
+            OperatorSet(
+                Operator("=>", Specifier.XFX, 1199),
+                Operator(":=>", Specifier.XFX, 1199),
+                Operator(":->", Specifier.XFX, 1199),
+                Operator(":", Specifier.XFX, 1001),
+                Operator(":=", Specifier.XFX, 1199),
 //            Operator("->", Specifier.XFX, 1050)
-        )
+            )
     }
 }
 
@@ -71,18 +74,25 @@ expect object RuleParser : RuleParserBase
 
 object AutoTransposition : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "autoTransposition"
+
     override fun default(): Boolean = false
+
     override fun values() {}
 }
 
 object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "prologStrictCompatibility"
+
     override fun default(): Boolean = false
+
     override fun values() {}
 }
 
 object ConversionUtils {
-    fun modifiers(target: Clause, context: Solve.Request<ExecutionContext>): Term =
+    fun modifiers(
+        target: Clause,
+        context: Solve.Request<ExecutionContext>,
+    ): Term =
         prolog {
             target.bodyItems.map { term ->
                 if (term.isStruct && term.asStruct()?.functor == "\\+") {
@@ -99,7 +109,7 @@ object ConversionUtils {
         context: Solve.Request<ExecutionContext>,
         first: Term,
         force: Boolean = false,
-        mapper: (Iterable<Clause>, LogicProgrammingScope) -> Term
+        mapper: (Iterable<Clause>, LogicProgrammingScope) -> Term,
     ): Sequence<Substitution> {
         context.ensuringArgumentIsVariable(0)
         return prolog {
@@ -110,8 +120,8 @@ object ConversionUtils {
                         mapper(context.context.staticKb.clauses, this)
                     } else {
                         emptyLogicList
-                    }
-                )
+                    },
+                ),
             )
         }
     }
@@ -125,7 +135,7 @@ object StrictRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prolog
                     prologScope.logicListOf(
                         "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
                         ConversionUtils.modifiers(it, this@computeAllSubstitutions),
-                        it.head!!
+                        it.head!!,
                     )
                 }.toTerm()
         }
@@ -139,7 +149,7 @@ object Axioms : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologAxiom
                 .map {
                     prologScope.logicListOf(
                         "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
-                        it.head!!
+                        it.head!!,
                     )
                 }.toTerm()
         }
@@ -153,7 +163,7 @@ object Premises : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologPre
                 .map {
                     prologScope.logicListOf(
                         "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
-                        it.head!!.args[0]
+                        it.head!!.args[0],
                     )
                 }.toTerm()
         }
@@ -167,16 +177,17 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
                     it.isFact && (
                         it.head!!.functor == ":=" ||
                             (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
-                        ) &&
+                    ) &&
                         it.head!!.arity == 2
                 }
                 .map { clause ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
-                        val term = (
-                            listOf(head!![1]) + (
-                                clause.head!!.args[1].asTuple()?.args
-                                    ?: listOf(clause.head!!.args[1])
+                        val term =
+                            (
+                                listOf(head!![1]) + (
+                                    clause.head!!.args[1].asTuple()?.args
+                                        ?: listOf(clause.head!!.args[1])
                                 )
                             ).toTypedArray()
                         prologScope.clauseOf(head[0].asStruct(), *term)
@@ -186,7 +197,7 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
                         prologScope.logicListOf(
                             "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
                             ConversionUtils.modifiers(it, this@computeAllSubstitutions),
-                            it.head!!
+                            it.head!!,
                         )
                     }
                 }.toTerm()
@@ -205,21 +216,27 @@ object Bps : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
 }
 
 object ExtractStrictIds : BinaryRelation.WithoutSideEffects<ExecutionContext>("extract_id") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> =
         sequenceOf(
             Substitution.of(
                 second.asVar()!!,
                 List.of(
                     first.asList()!!.toList().map {
                         Struct.of("strict", it.asCons()!!.head)
-                    }
-                )
-            )
+                    },
+                ),
+            ),
         )
 }
 
 object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_to_clause") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term, second: Term): Sequence<Substitution> =
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> =
         sequenceOf(
             Substitution.of(
                 second.asVar()!!,
@@ -233,8 +250,8 @@ object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_
                                     else -> throw IllegalArgumentException()
                                 }
                             }
-                        }
-                )
-            )
+                        },
+                ),
+            ),
         )
 }

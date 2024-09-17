@@ -7,6 +7,7 @@ semVer = "3.1.7"
 #shadowVer = "8.1.1"
 javaFxVer = "0.0.14"
 javaFx = "19.0.2.1"
+akka = "2.8.6"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -34,6 +35,7 @@ javafx-base = { module = "org.openjfx:javafx-base", version.ref = "javaFx" }
 javafx-fxml = { module = "org.openjfx:javafx-fxml", version.ref = "javaFx" }
 javafx-controls = { module = "org.openjfx:javafx-controls", version.ref = "javaFx" }
 javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javaFx" }
+javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javaFx" }
 richtextFx = "org.fxmisc.richtext:richtextfx:0.11.2"
 logback-classic = "ch.qos.logback:logback-classic:1.4.9"
 logback-core = "ch.qos.logback:logback-core:1.4.9"
@@ -47,9 +49,10 @@ tuprolog-dsl-solve = "it.unibo.tuprolog:dsl-solve:1.0.4"
 tuprolog-solve-classic = "it.unibo.tuprolog:solve-classic:1.0.4"
 tuprolog-parser-theory = "it.unibo.tuprolog:parser-theory:1.0.4"
 tuprolog-test-solve = "it.unibo.tuprolog:test-solve:1.0.4"
-akka-bom = "com.typesafe.akka:akka-bom_2.13:2.8.3"
-akka-actor-typed = "com.typesafe.akka:akka-actor-typed_2.13:2.8.3"
-akka-cluster-sharding-typed = "com.typesafe.akka:akka-cluster-sharding-typed_2.13:2.8.3"
-akka-serialization-jackson = "com.typesafe.akka:akka-serialization-jackson_2.13:2.8.3"
-akka-actor-testkit-typed = "com.typesafe.akka:akka-actor-testkit-typed_2.13:2.8.3"
-jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2"
+
+akka-bom = { module = "com.typesafe.akka:akka-bom_2.13", version.ref = "akka" }
+akka-actor-typed = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
+akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-sharding-typed_2.13", version.ref = "akka" }
+akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
+akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
+jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2"

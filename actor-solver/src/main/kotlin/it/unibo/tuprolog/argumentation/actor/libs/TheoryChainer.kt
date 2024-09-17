@@ -8,47 +8,48 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 object TheoryChainer : ArgLibrary, Loadable {
-
     override val alias = "prolog.argumentation.actor.helper"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            clauses = Theory.parse(
-                """            
-                chainable(X) :-
-                    member(rl(_) :- [_, Prem, _], X),
-                    tuple_to_list(Prem, LPrem),
-                    ff(LPrem, LLPrem),
-                    member(P, LLPrem),
-                    context_check(clause(rl(P), _)).
-                    
-                chainable(X) :- 
-                    member(rl(Conclusion) :- [_, _, Conclusion], X),
-                    context_check(clause(rl(_), [_, Prem, _])),
-                    tuple_to_list(Prem, LPrem),
-                    ff(LPrem, LLPrem),
-                    member(Conclusion, LLPrem).
-                    
-                chainable(X) :- 
-                    member(rl(Conclusion) :- [_, Conclusion], X),
-                    context_check(clause(rl(_), [_, Prem, _])),
-                    tuple_to_list(Prem, LPrem),
-                    ff(LPrem, LLPrem),
-                    member(Conclusion, LLPrem).
-                    
-                tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
-                tuple_to_list((A,B),L) :-
-                    tuple_to_list(A, La),
-                    tuple_to_list(B, Lb),
-                    append(La, Lb,L).
+        get() =
+            Library.of(
+                alias = this.alias,
+                clauses =
+                    Theory.parse(
+                        """            
+                        chainable(X) :-
+                            member(rl(_) :- [_, Prem, _], X),
+                            tuple_to_list(Prem, LPrem),
+                            ff(LPrem, LLPrem),
+                            member(P, LLPrem),
+                            context_check(clause(rl(P), _)).
+                            
+                        chainable(X) :- 
+                            member(rl(Conclusion) :- [_, _, Conclusion], X),
+                            context_check(clause(rl(_), [_, Prem, _])),
+                            tuple_to_list(Prem, LPrem),
+                            ff(LPrem, LLPrem),
+                            member(Conclusion, LLPrem).
+                            
+                        chainable(X) :- 
+                            member(rl(Conclusion) :- [_, Conclusion], X),
+                            context_check(clause(rl(_), [_, Prem, _])),
+                            tuple_to_list(Prem, LPrem),
+                            ff(LPrem, LLPrem),
+                            member(Conclusion, LLPrem).
+                            
+                        tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
+                        tuple_to_list((A,B),L) :-
+                            tuple_to_list(A, La),
+                            tuple_to_list(B, Lb),
+                            append(La, Lb,L).
 
-                ff([[]], []) :- !.
-                ff([[X]], [X]) :- !.
-                ff(X, X).
-                """.trimIndent()
+                        ff([[]], []) :- !.
+                        ff([[X]], [X]) :- !.
+                        ff(X, X).
+                        """.trimIndent(),
+                    ),
             )
-        )
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()

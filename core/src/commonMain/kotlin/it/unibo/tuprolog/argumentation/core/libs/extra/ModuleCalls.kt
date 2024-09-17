@@ -17,16 +17,17 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 object ModuleCalls : ArgLibrary, Loadable {
-
     override val alias = "prolog.argumentation.modularity"
 
     override val baseContent: Library
-        get() = Library.of(
-            alias = this.alias,
-            primitives = mapOf(
-                ModuleCall.signature to ModuleCall
+        get() =
+            Library.of(
+                alias = this.alias,
+                primitives =
+                    mapOf(
+                        ModuleCall.signature to ModuleCall,
+                    ),
             )
-        )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(ModulesPath)
 
@@ -35,12 +36,13 @@ object ModuleCalls : ArgLibrary, Loadable {
 
 object ModulesPath : ArgsFlag<String, Unit> {
     override fun predicate(): String = "modulesPath"
+
     override fun default(): String = "none"
+
     override fun values() {}
 }
 
 object ModuleCall : Primitive {
-
     val signature = Signature("call_module", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -52,7 +54,7 @@ object ModuleCall : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                modules
+                modules,
             )
         }
 
@@ -61,7 +63,7 @@ object ModuleCall : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.CALLABLE,
-                goal
+                goal,
             )
         }
 
@@ -73,7 +75,7 @@ object ModuleCall : Primitive {
                         is Solution.Yes -> request.replySuccess(it.substitution)
                         else -> request.replyFail()
                     }
-                }
+                },
             )
         }
     }
@@ -87,11 +89,15 @@ object ModuleCall : Primitive {
         }
     }
 
-    private fun getCleanSolver(context: ExecutionContext, modulesPath: String, modules: Iterable<String>): Solver {
+    private fun getCleanSolver(
+        context: ExecutionContext,
+        modulesPath: String,
+        modules: Iterable<String>,
+    ): Solver {
         val module = { mod: String -> if (mod.contains(".pl")) mod else "${modulesPath.removeSurrounding("'")}/$mod.pl" }
         return logicProgramming {
             Solver.prolog.solverOf(
-                libraries = context.libraries
+                libraries = context.libraries,
             ).also { solver: Solver -> modules.forEach { solver.solve("consult"(module(it))).toList() } }
         }
     }

@@ -16,7 +16,6 @@ import it.unibo.tuprolog.argumentation.actor.actors.KbDistributor
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 
 object ClusterInitializer {
-
     private fun createConfiguration(port: String) =
         ConfigFactory.load(
             ConfigFactory.parseString(
@@ -45,24 +44,28 @@ object ClusterInitializer {
               jackson-modules += "com.fasterxml.jackson.module.kotlin.KotlinModule"
             }
         }
-        """
-            ).withFallback(ConfigFactory.load())
+        """,
+            ).withFallback(ConfigFactory.load()),
         )
 
-    fun joinCluster(seedAddress: String, localPort: String): Pair<ActorSystem<KbMessage>, ActorRef<KbMessage>> {
+    fun joinCluster(
+        seedAddress: String,
+        localPort: String,
+    ): Pair<ActorSystem<KbMessage>, ActorRef<KbMessage>> {
         val actorSystem: ActorSystem<KbMessage> =
             ActorSystem.create(Behaviors.empty(), "actor_solver", createConfiguration(localPort))
 
         Cluster.get(actorSystem).join(AddressFromURIString.parse("akka://actor_solver@${seedAddress.replace("'", "")}"))
 
-        val masterActor = ClusterSingleton.get(actorSystem)
-            .init(SingletonActor.of(KbDistributor.create(), "distributor"))
+        val masterActor =
+            ClusterSingleton.get(actorSystem)
+                .init(SingletonActor.of(KbDistributor.create(), "distributor"))
 
         ClusterSharding.get(actorSystem).init(
             Entity.of(EntityTypeKey.create(KbMessage::class.java, "evaluator")) {
                     ctx ->
                 Evaluator.create(masterActor, ctx.entityId)
-            }
+            },
         )
 
         return Pair(actorSystem, masterActor)

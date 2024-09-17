@@ -12,13 +12,12 @@ import it.unibo.tuprolog.theory.parsing.parse
 // operators: OperatorSet = OperatorSet(),
 // functions: Map<Signature, LogicFunction> = emptyMap()
 
-fun Theory.toLibrary(alias: String): Library =
-    Library.of(alias, clauses = this.clauses)
+fun Theory.toLibrary(alias: String): Library = Library.of(alias, clauses = this.clauses)
 
-fun Library.toTheory(): Theory =
-    Theory.of(this.clauses)
+fun Library.toTheory(): Theory = Theory.of(this.clauses)
 
 interface ArgContext : ArgLibrary
+
 interface ArgLoader : ArgLibrary
 
 interface ArgLibrary {
@@ -30,6 +29,7 @@ interface ArgLibrary {
         get() = OperatorSet.DEFAULT
 
     fun flags() = baseFlags
+
     fun content() = baseContent
 }
 
@@ -61,7 +61,9 @@ interface Loadable {
 
 interface ArgsFlag<T, G> {
     fun predicate(): String
+
     fun default(): T
+
     fun values(): G
 }
 

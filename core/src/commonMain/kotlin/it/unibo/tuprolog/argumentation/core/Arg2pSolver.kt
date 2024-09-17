@@ -38,24 +38,32 @@ interface Arg2pSolver {
     val context: ArgContext
 
     fun staticLibraries(): Iterable<ArgLibrary>
+
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
     fun to2pLibraries() = Runtime.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
-    fun operators() = listOf(loader, context).plus(staticLibraries())
-        .map { it.theoryOperators }.reduce(OperatorSet::plus)
+
+    fun operators() =
+        listOf(loader, context).plus(staticLibraries())
+            .map { it.theoryOperators }.reduce(OperatorSet::plus)
 
     companion object {
-        fun of(staticLibs: Iterable<ArgLibrary>, dynamicLibs: Iterable<ArgLibrary>) =
-            object : Arg2pSolver {
+        fun of(
+            staticLibs: Iterable<ArgLibrary>,
+            dynamicLibs: Iterable<ArgLibrary>,
+        ) = object : Arg2pSolver {
+            override val loader = DynamicLoader(this)
+            override val context: ArgContext = Context()
 
-                override val loader = DynamicLoader(this)
-                override val context: ArgContext = Context()
+            override fun staticLibraries() = staticLibs
 
-                override fun staticLibraries() = staticLibs
-                override fun dynamicLibraries() = dynamicLibs
-            }
+            override fun dynamicLibraries() = dynamicLibs
+        }
 
-        fun default(staticLibs: Iterable<ArgLibrary> = emptyList(), dynamicLibs: Iterable<ArgLibrary> = emptyList()) = of(
+        fun default(
+            staticLibs: Iterable<ArgLibrary> = emptyList(),
+            dynamicLibs: Iterable<ArgLibrary> = emptyList(),
+        ) = of(
             listOf(EngineInterface, Cache()) + staticLibs,
             listOf(
                 Utils,
@@ -80,8 +88,8 @@ interface Arg2pSolver {
                 BpCompleteLabeller,
                 PassThroughStatementLabeller,
                 BinaryStatementLabeller,
-                GroundedLabellerOptimized
-            ) + dynamicLibs
+                GroundedLabellerOptimized,
+            ) + dynamicLibs,
         )
     }
 }

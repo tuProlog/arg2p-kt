@@ -9,7 +9,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class RationalityTest {
-
     private val example4theory =
         """
         f1 :-> wr.
@@ -81,7 +80,12 @@ class RationalityTest {
         
         """.trimIndent()
 
-    private fun protoTest(theory: String, argsIn: Iterable<String>, argsOut: Iterable<String>, argsUnd: Iterable<String>) {
+    private fun protoTest(
+        theory: String,
+        argsIn: Iterable<String>,
+        argsOut: Iterable<String>,
+        argsUnd: Iterable<String>,
+    ) {
         val prepare = { term: String -> "[$term]" }
         val parse = { args: Iterable<String> -> args.map { prepare(it) }.joinToString(",", "[", "]") }
 
@@ -93,115 +97,131 @@ class RationalityTest {
     }
 
     @Test
-    fun caminadaExample4() = protoTest(
-        example4theory,
-        listOf("wr", "m", "go", "b"),
-        listOf(),
-        listOf("-hw", "hw")
-    )
+    fun caminadaExample4() =
+        protoTest(
+            example4theory,
+            listOf("wr", "m", "go", "b"),
+            listOf(),
+            listOf("-hw", "hw"),
+        )
 
     @Test
-    fun caminadaExample4restricted() = protoTest(
-        example4theory + "graphExtension(rebutRestriction).",
-        listOf("-hw", "wr", "m", "hw", "go", "b"),
-        listOf(),
-        listOf()
-    )
+    fun caminadaExample4restricted() =
+        protoTest(
+            example4theory + "graphExtension(rebutRestriction).",
+            listOf("-hw", "wr", "m", "hw", "go", "b"),
+            listOf(),
+            listOf(),
+        )
 
     @Test
-    fun caminadaExample4transposed() = protoTest(
-        example4theory + """
-            autoTransposition.
-        """.trimIndent(),
-        listOf("wr", "go"),
-        listOf(),
-        listOf("-m", "-hw", "-b", "m", "hw", "b")
-    )
+    fun caminadaExample4transposed() =
+        protoTest(
+            example4theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("wr", "go"),
+            listOf(),
+            listOf("-m", "-hw", "-b", "m", "hw", "b"),
+        )
 
     @Test
-    fun caminadaExample5() = protoTest(
-        example5theory,
-        listOf("e", "d", "c", "b", "a"),
-        listOf("-c"),
-        listOf()
-    )
+    fun caminadaExample5() =
+        protoTest(
+            example5theory,
+            listOf("e", "d", "c", "b", "a"),
+            listOf("-c"),
+            listOf(),
+        )
 
     @Test
-    fun caminadaExample5restricted() = protoTest(
-        example5theory + "graphExtension(rebutRestriction).",
-        listOf("-c", "e", "d", "c", "b", "a"),
-        listOf(),
-        listOf()
-    )
+    fun caminadaExample5restricted() =
+        protoTest(
+            example5theory + "graphExtension(rebutRestriction).",
+            listOf("-c", "e", "d", "c", "b", "a"),
+            listOf(),
+            listOf(),
+        )
 
     @Test
-    fun caminadaExample5transposed() = protoTest(
-        example5theory + """
-            autoTransposition.
-        """.trimIndent(),
-        listOf("d", "c", "a"),
-        listOf("-c"),
-        listOf("-e", "-b", "e", "b")
-    )
+    fun caminadaExample5transposed() =
+        protoTest(
+            example5theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("d", "c", "a"),
+            listOf("-c"),
+            listOf("-e", "-b", "e", "b"),
+        )
 
     @Test
-    fun caminadaExample6() = protoTest(
-        example6theory,
-        listOf("g", "f", "e", "d", "c", "b", "a"),
-        listOf("-g"),
-        listOf()
-    )
+    fun caminadaExample6() =
+        protoTest(
+            example6theory,
+            listOf("g", "f", "e", "d", "c", "b", "a"),
+            listOf("-g"),
+            listOf(),
+        )
 
     @Test
-    fun caminadaExample6restricted() = protoTest(
-        example6theory + "graphExtension(rebutRestriction).",
-        listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
-        listOf(),
-        listOf()
-    )
+    fun caminadaExample6restricted() =
+        protoTest(
+            example6theory + "graphExtension(rebutRestriction).",
+            listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
+            listOf(),
+            listOf(),
+        )
 
     @Test
-    fun caminadaExample6transposed() = protoTest(
-        example6theory + """
-            autoTransposition.
-        """.trimIndent(),
-        listOf("g", "d", "a"),
-        listOf("-g"),
-        listOf("-f", "-e", "-c", "-b", "f", "e", "c", "b")
-    )
+    fun caminadaExample6transposed() =
+        protoTest(
+            example6theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("g", "d", "a"),
+            listOf("-g"),
+            listOf("-f", "-e", "-c", "-b", "f", "e", "c", "b"),
+        )
 
     @Test
-    fun caminadaExample7transposed() = protoTest(
-        example7theory + """
-            argumentLabellingMode(grounded).
-            autoTransposition.
-        """.trimIndent(),
-        listOf("g", "c", "b", "a"),
-        listOf("-g"),
-        listOf("-f", "-e", "-d", "f", "e", "d")
-    )
+    fun caminadaExample7transposed() =
+        protoTest(
+            example7theory +
+                """
+                argumentLabellingMode(grounded).
+                autoTransposition.
+                """.trimIndent(),
+            listOf("g", "c", "b", "a"),
+            listOf("-g"),
+            listOf("-f", "-e", "-d", "f", "e", "d"),
+        )
 
     @Test
     fun caminadaExample7completeSemantic() {
         assertEquals(
             11,
             TestingUtils.solverWithTheory(
-                example7theory + """
-                argumentLabellingMode(complete).
-                autoTransposition.
-                """.trimIndent()
-            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count()
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    """.trimIndent(),
+            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count(),
         )
 
         assertEquals(
             4,
             TestingUtils.solverWithTheory(
-                example7theory + """
-                argumentLabellingMode(complete).
-                autoTransposition.
-                graphExtension(rebutRestriction).
-                """.trimIndent()
-            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count()
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    graphExtension(rebutRestriction).
+                    """.trimIndent(),
+            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count(),
         )
     }
 }

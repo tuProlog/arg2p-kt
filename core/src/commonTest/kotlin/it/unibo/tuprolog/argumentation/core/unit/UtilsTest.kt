@@ -15,7 +15,7 @@ class UtilsTest {
             testGoal("utils" call "sort"(listOf("b", "a", "c", "d"), "X")) {
                 listOf(
                     it.yes("X" to listOf("d", "c", "b", "a")),
-                    it.no()
+                    it.no(),
                 )
             }
         }
@@ -26,7 +26,7 @@ class UtilsTest {
         arg2pScope {
             testGoal("utils" call "subtract"(listOf("b", "a", "c", "d", "a"), listOf("b", "a"), "X")) {
                 listOf(
-                    it.yes("X" to listOf("c", "d"))
+                    it.yes("X" to listOf("c", "d")),
                 )
             }
         }
@@ -50,13 +50,13 @@ class UtilsTest {
         arg2pScope {
             testGoal("utils" call "appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
                 listOf(
-                    it.yes("X" to listOf("a", "b", "c", "d", "e", "f"))
+                    it.yes("X" to listOf("a", "b", "c", "d", "e", "f")),
                 )
             }
 
             testGoal("utils" call "appendLists"(listOf(listOf("a", "b")), "X")) {
                 listOf(
-                    it.yes("X" to listOf("a", "b"))
+                    it.yes("X" to listOf("a", "b")),
                 )
             }
         }
@@ -65,30 +65,31 @@ class UtilsTest {
     @Test
     fun search() {
         arg2pScope {
-            val solver = solver(
-                Theory.Companion.of(
-                    listOf(
-                        fact { "a"(1) },
-                        fact { "a"(1, 2) },
-                        fact { "a"(1, 2, 3) },
-                        fact { "a"(1, 2, 3, 4) }
-                    )
+            val solver =
+                solver(
+                    Theory.Companion.of(
+                        listOf(
+                            fact { "a"(1) },
+                            fact { "a"(1, 2) },
+                            fact { "a"(1, 2, 3) },
+                            fact { "a"(1, 2, 3, 4) },
+                        ),
+                    ),
                 )
-            )
 
             testGoal("utils" call "search"("a", 4, "X"), solver) {
                 listOf(
                     it.yes("X" to "a"(1)),
                     it.yes("X" to "a"(1, 2)),
                     it.yes("X" to "a"(1, 2, 3)),
-                    it.yes("X" to "a"(1, 2, 3, 4))
+                    it.yes("X" to "a"(1, 2, 3, 4)),
                 )
             }
 
             testGoal("utils" call "search"("a", 2, "X"), solver) {
                 listOf(
                     it.yes("X" to "a"(1)),
-                    it.yes("X" to "a"(1, 2))
+                    it.yes("X" to "a"(1, 2)),
                 )
             }
 

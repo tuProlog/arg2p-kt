@@ -23,12 +23,10 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
 class ActorSolver : ArgLibrary, Loadable {
-
     private lateinit var actorSystem: ActorSystem<KbMessage>
     private lateinit var masterActor: ActorRef<KbMessage>
 
     inner class ParallelSolve : PrimitiveWithSignature {
-
         override val signature = Signature("solve", 4)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -43,17 +41,16 @@ class ActorSolver : ArgLibrary, Loadable {
                             mapOf(
                                 Pair(request.arguments[1] as Var, response.inArgs.map { it.claim }.toTerm()),
                                 Pair(request.arguments[2] as Var, response.outArgs.map { it.claim }.toTerm()),
-                                Pair(request.arguments[3] as Var, response.undArgs.map { it.claim }.toTerm())
-                            )
-                        )
-                    )
+                                Pair(request.arguments[3] as Var, response.undArgs.map { it.claim }.toTerm()),
+                            ),
+                        ),
+                    ),
                 )
             }
         }
     }
 
     inner class ParallelLoad : PrimitiveWithSignature {
-
         override val signature = Signature("load", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -65,7 +62,6 @@ class ActorSolver : ArgLibrary, Loadable {
     }
 
     inner class ParallelInit : PrimitiveWithSignature {
-
         override val signature = Signature("join", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -79,13 +75,12 @@ class ActorSolver : ArgLibrary, Loadable {
     }
 
     inner class ParallelJoin : PrimitiveWithSignature {
-
         override val signature = Signature("join", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             ClusterInitializer.joinCluster(
                 request.arguments[1].toString(),
-                request.arguments[0].toString()
+                request.arguments[0].toString(),
             ).let {
                 this@ActorSolver.actorSystem = it.first
                 this@ActorSolver.masterActor = it.second
@@ -95,7 +90,6 @@ class ActorSolver : ArgLibrary, Loadable {
     }
 
     inner class ParallelReset : PrimitiveWithSignature {
-
         override val signature = Signature("reset", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -105,7 +99,6 @@ class ActorSolver : ArgLibrary, Loadable {
     }
 
     inner class ParallelLeave : PrimitiveWithSignature {
-
         override val signature = Signature("leave", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -125,12 +118,12 @@ class ActorSolver : ArgLibrary, Loadable {
                 ParallelReset(),
                 ParallelInit(),
                 ParallelJoin(),
-                ParallelLeave()
+                ParallelLeave(),
             ).let { primitives ->
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
-                    operators = RuleParserBase.operators()
+                    operators = RuleParserBase.operators(),
                 )
             }
 
@@ -139,6 +132,7 @@ class ActorSolver : ArgLibrary, Loadable {
 
     override fun identifier(): String = "parallel"
 
-    override var theoryOperators = RuleParserBase.operators()
-        .plus(OperatorSet.DEFAULT)
+    override var theoryOperators =
+        RuleParserBase.operators()
+            .plus(OperatorSet.DEFAULT)
 }
