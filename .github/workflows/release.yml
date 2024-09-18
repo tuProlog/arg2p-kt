@@ -182,7 +182,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.1.7
         with:
-          token: ${{ secrets.ARG2P_CI_GITHUB_TOKEN }}
+          token: ${{ github.token }}
       - name: Find the version of Node from package.json
         id: node-version
         run: echo "version=$(jq -r .engines.node package.json)" >> $GITHUB_OUTPUT
