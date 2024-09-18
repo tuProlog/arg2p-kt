@@ -1,3 +1,34 @@
+## [0.7.3](https://github.com/tuProlog/arg2p-kt/compare/0.7.2...0.7.3) (2024-09-18)
+
+### Dependency updates
+
+* **deps:** update dependencies ([27f4d92](https://github.com/tuProlog/arg2p-kt/commit/27f4d929793b564dfca29cd56989e3c607f0f9d9))
+* **deps:** update dependencies ([d274d09](https://github.com/tuProlog/arg2p-kt/commit/d274d095c06c2c2c373044956873b933a2c722d0))
+
+### Bug Fixes
+
+* actor solver ([61aebe7](https://github.com/tuProlog/arg2p-kt/commit/61aebe77ba91e936914b15c4a0334248a9712d5a))
+* **ci:** github token ([2a42ab0](https://github.com/tuProlog/arg2p-kt/commit/2a42ab054dbcc5c2199c458bb11344c73efbc70f))
+* **ci:** github token ([7caa5ae](https://github.com/tuProlog/arg2p-kt/commit/7caa5ae552c456e3e35d371e7831ad76cca8c253))
+* **ci:** maven username ([cb63353](https://github.com/tuProlog/arg2p-kt/commit/cb6335322b384e7d4d993d06934feb5ccd29d544))
+* jvm build ([3b5cd5a](https://github.com/tuProlog/arg2p-kt/commit/3b5cd5a848e8871db4bee9e2d6efaf151e48e9a7))
+
+### Build and continuous integration
+
+* **deps:** manual next version ([188735b](https://github.com/tuProlog/arg2p-kt/commit/188735b03e7a8ff53259a7ba118f03f013d15455))
+* **deps:** manual next version ([913efdf](https://github.com/tuProlog/arg2p-kt/commit/913efdf0810f9bfbd23fbc138deb36ed851e83b6))
+* **deps:** new 2p-kt version ([4f9ee1e](https://github.com/tuProlog/arg2p-kt/commit/4f9ee1ebab50d2165185b933d3197f7a298f14bd))
+* **deps:** next version ([faeef00](https://github.com/tuProlog/arg2p-kt/commit/faeef00ca914cf13f9d18699ce994f426e71fbc2))
+* **deps:** update dependencies ([5bf3b54](https://github.com/tuProlog/arg2p-kt/commit/5bf3b544a4b30d8ca025b36e960c10e2bccf0a59))
+* **deps:** update dependencies ([eb79262](https://github.com/tuProlog/arg2p-kt/commit/eb792629a71ac51cb7b1dc03362b5645afea98cb))
+* **deps:** update dependencies ([ef553d7](https://github.com/tuProlog/arg2p-kt/commit/ef553d715097da5975c499d9b72915eff74ff439))
+* **deps:** update dependencies ([455cbed](https://github.com/tuProlog/arg2p-kt/commit/455cbed3039b044da0115daf5a68ca791d62ea7d))
+* **deps:** update dependencies ([01fc23b](https://github.com/tuProlog/arg2p-kt/commit/01fc23b0cdadbaaf43a146a726337d747fe6891d))
+* **deps:** update dependencies ([2dfb20e](https://github.com/tuProlog/arg2p-kt/commit/2dfb20e511d67e67d11e58fcd8baa26ed167fe4e))
+* **deps:** update dependencies ([004ff5f](https://github.com/tuProlog/arg2p-kt/commit/004ff5f8aa7c562e8a14c33ac936a523031e8a77))
+* **deps:** update dependencies ([e3da537](https://github.com/tuProlog/arg2p-kt/commit/e3da5371c82b43deb692e63259a52cf60a1e7c64))
+* **deps:** update nicolasfara/precompute-semantic-release-version-action action to v2 ([a8ad871](https://github.com/tuProlog/arg2p-kt/commit/a8ad871261a00a62bc9ef722e192a203492e270e))
+
 ## [0.7.2](https://github.com/tuProlog/arg2p-kt/compare/0.7.1...0.7.2) (2023-08-09)
 
 
