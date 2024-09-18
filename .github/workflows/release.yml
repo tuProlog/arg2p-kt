@@ -71,7 +71,7 @@ jobs:
       - uses: DanySK/build-check-deploy-gradle-action@2.4.22
         with:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
-          maven-central-username: gpisano
+          maven-central-username: ${{ secrets.MAVEN_USERNAME }}
           should-run-codecov: false
           should-deploy: true
           build-command: true
@@ -127,7 +127,7 @@ jobs:
           should-run-codecov: false
           should-deploy: ${{ contains(needs.staging-repo.result, 'success') }}
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
-          maven-central-username: gpisano
+          maven-central-username: ${{ secrets.MAVEN_USERNAME }}
           build-command: |
             SKIP_DOC="-x dokkaHtml -x javadoc -x dokkaJavadoc -x dokkaGfm -x dokkaJekyll"
             ./gradlew assemble $SKIP_DOC --parallel || ./gradlew assemble $SKIP_DOC --parallel
@@ -151,7 +151,7 @@ jobs:
       - uses: DanySK/build-check-deploy-gradle-action@2.4.22
         with:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
-          maven-central-username: gpisano
+          maven-central-username: ${{ secrets.MAVEN_USERNAME }}
           should-run-codecov: false
           should-deploy: true
           build-command: true
@@ -208,7 +208,7 @@ jobs:
           should-deploy: true
           github-token: ${{ github.token }}
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
-          maven-central-username: gpisano
+          maven-central-username: ${{ secrets.MAVEN_USERNAME }}
           npm-token: ${{ secrets.NPM_TOKEN }}
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}

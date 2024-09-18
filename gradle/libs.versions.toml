@@ -4,13 +4,15 @@ jvm = "11"
 node = "18-latest"
 ktMpp = "4.1.4"
 semVer = "3.1.7"
-#shadowVer = "8.1.1"
-javaFxVer = "0.0.14"
 javaFx = "19.0.2.1"
 akka = "2.8.6"
+tuprolog = "1.0.4"
+jung = "2.1.1"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
+
 ktMpp-helper = { id = "io.github.gciatto.kt-mpp.multi-project-helper", version.ref = "ktMpp" }
 ktMpp-bugFinder = { id = "io.github.gciatto.kt-mpp.bug-finder", version.ref = "ktMpp" }
 ktMpp-documentation = { id = "io.github.gciatto.kt-mpp.documentation", version.ref = "ktMpp" }
@@ -22,38 +24,36 @@ ktMpp-jsOnly = { id = "io.github.gciatto.kt-mpp.js-only", version.ref = "ktMpp" 
 ktMpp-jvmOnly = { id = "io.github.gciatto.kt-mpp.jvm-only", version.ref = "ktMpp" }
 ktMpp-multiplatform = { id = "io.github.gciatto.kt-mpp.multiplatform", version.ref = "ktMpp" }
 ktMpp-fatJar = { id = "io.github.gciatto.kt-mpp.fat-jar", version.ref = "ktMpp" }
-gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
-#shadowJar = { id = "com.github.johnrengelman.shadow", version.ref = "shadowVer" }
-#javaFx = { id = "org.openjfx.javafxplugin", version.ref = "javaFxVer" }
-
 
 [libraries]
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ktNpmPublish = "io.github.gciatto:kt-npm-publish:0.3.9"
-#javaFxLib = "org.openjfx:javafx-graphics:21-ea+24"
+
 javafx-base = { module = "org.openjfx:javafx-base", version.ref = "javaFx" }
 javafx-fxml = { module = "org.openjfx:javafx-fxml", version.ref = "javaFx" }
 javafx-controls = { module = "org.openjfx:javafx-controls", version.ref = "javaFx" }
 javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javaFx" }
 javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javaFx" }
-richtextFx = "org.fxmisc.richtext:richtextfx:0.11.2"
+richtextFx = "org.fxmisc.richtext:richtextfx:0.11.3"
 
-jung-api = "net.sf.jung:jung-api:2.1.1"
-jung-visualization = "net.sf.jung:jung-visualization:2.1.1"
-jung-graphimpl = "net.sf.jung:jung-graph-impl:2.1.1"
-jung-algorithms = "net.sf.jung:jung-algorithms:2.1.1"
-jung-io = "net.sf.jung:jung-io:2.1.1"
-tuprolog-ide = "it.unibo.tuprolog:ide:1.0.4"
-tuprolog-dsl-solve = "it.unibo.tuprolog:dsl-solve:1.0.4"
-tuprolog-solve-classic = "it.unibo.tuprolog:solve-classic:1.0.4"
-tuprolog-parser-theory = "it.unibo.tuprolog:parser-theory:1.0.4"
-tuprolog-test-solve = "it.unibo.tuprolog:test-solve:1.0.4"
+jung-api = { module = "net.sf.jung:jung-api", version.ref = "jung" }
+jung-visualization = { module = "net.sf.jung:jung-visualization", version.ref = "jung" }
+jung-graphimpl = { module = "net.sf.jung:jung-graph-impl", version.ref = "jung" }
+jung-algorithms = { module = "net.sf.jung:jung-algorithms", version.ref = "jung" }
+jung-io = { module = "net.sf.jung:jung-io", version.ref = "jung" }
+
+tuprolog-ide = { module = "it.unibo.tuprolog:ide", version.ref = "tuprolog" }
+tuprolog-dsl-solve = { module = "it.unibo.tuprolog:dsl-solve", version.ref = "tuprolog" }
+tuprolog-solve-classic = { module = "it.unibo.tuprolog:solve-classic", version.ref = "tuprolog" }
+tuprolog-parser-theory = { module = "it.unibo.tuprolog:parser-theory", version.ref = "tuprolog" }
+tuprolog-test-solve = { module = "it.unibo.tuprolog:test-solve", version.ref = "tuprolog" }
 
 akka-bom = { module = "com.typesafe.akka:akka-bom_2.13", version.ref = "akka" }
 akka-actor-typed = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
 akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-sharding-typed_2.13", version.ref = "akka" }
 akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
+
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2"
 logback-classic = "ch.qos.logback:logback-classic:1.5.8"
 logback-core = "ch.qos.logback:logback-core:1.5.8"
