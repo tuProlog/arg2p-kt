@@ -1,3 +1,13 @@
+## [0.8.0](https://github.com/tuProlog/arg2p-kt/compare/0.7.3...0.8.0) (2024-09-20)
+
+### Features
+
+* js exports ([e532e15](https://github.com/tuProlog/arg2p-kt/commit/e532e154b46c54a764f48c097d64527d5077f3a0))
+
+### Bug Fixes
+
+* remove JsExport from Arg2pSolver ([c9afbb6](https://github.com/tuProlog/arg2p-kt/commit/c9afbb6d1f3f75dac2e3eb29fa5dd3b7fd8ba6ba))
+
 ## [0.7.3](https://github.com/tuProlog/arg2p-kt/compare/0.7.2...0.7.3) (2024-09-18)
 
 ### Dependency updates
