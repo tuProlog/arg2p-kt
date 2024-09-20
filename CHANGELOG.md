@@ -1,3 +1,9 @@
+## [0.8.1](https://github.com/tuProlog/arg2p-kt/compare/0.8.0...0.8.1) (2024-09-20)
+
+### Bug Fixes
+
+* formatting terms ([9813593](https://github.com/tuProlog/arg2p-kt/commit/9813593d2e958df8bb85832b0752523de0acc003))
+
 ## [0.8.0](https://github.com/tuProlog/arg2p-kt/compare/0.7.3...0.8.0) (2024-09-20)
 
 ### Features
