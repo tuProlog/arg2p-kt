@@ -1,3 +1,9 @@
+## [0.8.2](https://github.com/tuProlog/arg2p-kt/compare/0.8.1...0.8.2) (2024-09-20)
+
+### Bug Fixes
+
+* Solver:prolog to ClassicSolverFactory ([cd9a872](https://github.com/tuProlog/arg2p-kt/commit/cd9a872ab70ad732072db07fd03e64cca5e21912))
+
 ## [0.8.1](https://github.com/tuProlog/arg2p-kt/compare/0.8.0...0.8.1) (2024-09-20)
 
 ### Bug Fixes
