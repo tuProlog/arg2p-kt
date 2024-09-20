@@ -136,15 +136,17 @@ object JsBridge {
         val solver = solverOf(outputConsumer, flagsText)
         val query = it.unibo.tuprolog.core.Struct.parse(queryText, solver.operators)
         val theory = it.unibo.tuprolog.theory.Theory.parse(theoryText, solver.operators)
+        val formatter = it.unibo.tuprolog.core.TermFormatter.prettyExpressions()
         solver.loadStaticKb(theory)
+
         val solutions =
             solver.solve(query).map { sol ->
                 if (sol.isYes) {
                     BridgedSolution(
                         "yes",
-                        sol.solvedQuery.toString(),
+                        formatter.format(sol.solvedQuery!!),
                         sol.substitution
-                            .map { JsPair(it.value.toString(), it.key.toString()) }.toTypedArray(),
+                            .map { JsPair(formatter.format(it.key), formatter.format(it.value)) }.toTypedArray(),
                         "",
                         graphOf(solver),
                     )
@@ -162,7 +164,6 @@ object JsBridge {
                 hasNextFunction = { i.hasNext() },
             )
 
-        val formattedQuery = it.unibo.tuprolog.core.TermFormatter.prettyExpressions().format(query)
-        return BridgedResult(jsIt, formattedQuery)
+        return BridgedResult(jsIt, formatter.format(query))
     }
 }
