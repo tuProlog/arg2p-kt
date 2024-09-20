@@ -5,7 +5,6 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.TrackVariables
@@ -117,7 +116,7 @@ object JsBridge {
         val flags = it.unibo.tuprolog.theory.Theory.parse(flagsText)
         val libFlags = it.unibo.tuprolog.solve.library.Library.of(alias = "argumentation.flags", clauses = flags)
 
-        return Solver.prolog.mutableSolverWithDefaultBuiltins(
+        return ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = ClassicSolverFactory.defaultRuntime.plus(Arg2pSolver.default().to2pLibraries().plus(libFlags)),
             flags = ClassicSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = it.unibo.tuprolog.theory.Theory.empty(),
