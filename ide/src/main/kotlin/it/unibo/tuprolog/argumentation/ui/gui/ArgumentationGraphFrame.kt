@@ -17,8 +17,8 @@ import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
+import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.ui.gui.CustomTab
 import javafx.embed.swing.SwingNode
 import javafx.scene.control.Tab
@@ -151,7 +151,7 @@ internal class ArgumentationGraphFrame {
                 model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
                 model.onNewSolution.subscribe { event ->
                     frame.mutableSolver =
-                        Solver.prolog.mutableSolverOf(
+                        ClassicSolverFactory.mutableSolverOf(
                             libraries = event.libraries,
                         )
                     frame.selectedContext =

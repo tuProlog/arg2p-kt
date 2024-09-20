@@ -12,6 +12,7 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
+import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -30,7 +31,7 @@ object TestingUtils {
     fun solver(
         theory: Theory = Theory.empty(),
         flags: FlagStore = FlagStore.DEFAULT,
-    ) = Solver.prolog.mutableSolverWithDefaultBuiltins(
+    ) = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
         otherLibraries = Arg2pSolver.default().to2pLibraries(),
         staticKb = theory,
         flags = flags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
