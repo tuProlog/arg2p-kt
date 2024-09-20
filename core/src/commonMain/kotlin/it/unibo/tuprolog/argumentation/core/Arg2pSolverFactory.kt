@@ -1,12 +1,10 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
-@OptIn(ExperimentalJsExport::class)
-@Suppress("NON_EXPORTABLE_TYPE")
 @JsExport
+@Suppress("NON_EXPORTABLE_TYPE")
 object Arg2pSolverFactory {
     fun of(
         staticLibs: Iterable<ArgLibrary>,

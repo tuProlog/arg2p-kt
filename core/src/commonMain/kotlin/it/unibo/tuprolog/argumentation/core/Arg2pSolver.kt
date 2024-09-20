@@ -32,7 +32,10 @@ import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Runtime
+import kotlin.js.JsExport
 
+@JsExport
+@Suppress("NON_EXPORTABLE_TYPE")
 interface Arg2pSolver {
     val loader: ArgLoader
     val context: ArgContext
