@@ -4,9 +4,21 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 
-data class Attack(val attacker: Argument, val target: Argument, val type: AttackType? = null, val on: Argument? = null) {
+data class Attack(
+    val attacker: Argument,
+    val
+    target: Argument,
+    val type: AttackType? = null,
+    val on: Argument? = null,
+) {
     override fun toString(): String {
-        return "attack(${type ?: "none"}, ${attacker.termRepresentation()}, ${target.termRepresentation()}, ${on?.termRepresentation() ?: "none"})"
+        fun <T> parse(x: T?): Any {
+            return x ?: "none"
+        }
+
+        return "attack(${parse(
+            type,
+        )}, ${attacker.termRepresentation()}, ${target.termRepresentation()}, ${parse(on?.termRepresentation())})"
     }
 
     fun toTerm(): Term {
