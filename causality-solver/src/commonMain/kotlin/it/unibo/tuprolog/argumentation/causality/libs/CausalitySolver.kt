@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.causality.libs
 
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
@@ -19,10 +19,6 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
@@ -36,14 +32,18 @@ class CausalitySolver : ArgLibrary, Loadable {
         override val signature = Signature("solve", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val cause: Term = request.arguments[0]
-            val goal: Term = request.arguments[1]
+            fun clean(string: String) = string.replace(" ", "").replace("'", "")
+
+            fun equalTerms(
+                a: String,
+                b: String,
+            ) = Unificator.default.match(Term.parse(a), Term.parse(b))
 
             fun checkCause(
                 x: Argument,
                 cause: String,
             ): Boolean =
-                if (x.conclusion == cause) {
+                if (equalTerms(x.conclusion, cause)) {
                     true
                 } else {
                     x.supports.map { checkCause(it, cause) }.any { it }
@@ -76,19 +76,15 @@ class CausalitySolver : ArgLibrary, Loadable {
                         attackers(att.argument, graph).flatMap { supporters(it.argument, graph) }
                     }
 
-            fun complement(t: Term): String =
-                t.toString()
-                    .replace(" ", "")
-                    .replace("'", "").let {
-                        if (it.startsWith("-")) {
-                            it.drop(1)
-                        } else {
-                            "-$it"
-                        }
-                    }
+            fun complement(t: String): String =
+                if (t.startsWith("-")) {
+                    t.drop(1)
+                } else {
+                    "-$t"
+                }
 
             fun remove(
-                term: Term,
+                term: String,
                 kb: Theory,
             ): Theory =
                 Theory.of(
@@ -102,10 +98,9 @@ class CausalitySolver : ArgLibrary, Loadable {
 
             fun solveFresh(kb: Theory): Graph =
                 arg2pScope {
-                    ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                        otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList()).create())).to2pLibraries(),
-                        flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-                        staticKb = kb,
+                    Arg2pSolverFactory.default(
+                        theory = kb.toString(true),
+                        settings = FlagsBuilder(graphExtensions = emptyList()).create(),
                     ).let { solver ->
                         solver.solve(Struct.parse("buildLabelSetsSilent") and "context_active"(X))
                             .filter { it.isYes }
@@ -116,25 +111,36 @@ class CausalitySolver : ArgLibrary, Loadable {
                 }
 
             //  1a. check justifications (new semantics - temporarily use grounded), or
-            fun checkJustification(graph: Graph): Boolean =
-                graph.labellings.asSequence().filter { it.label == "in" && it.argument.conclusion == goal.toString() }
+            fun checkJustification(
+                graph: Graph,
+                cause: String,
+                effect: String,
+            ): Boolean =
+                graph.labellings.asSequence().filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
                     .flatMap { supporters(it.argument, graph) }
                     .filter { it.label == "in" }
-                    .map { checkCause(it.argument, cause.toString()) }
+                    .map { checkCause(it.argument, cause) }
                     .any { it }
 
             //  2b. check if its intervention (graph built on rule base + negation) refutes the goal
-            fun checkRefutation(graph: Graph): Boolean =
-                graph.labellings.asSequence().filter { it.label == "out" && it.argument.conclusion == goal.toString() }
+            fun checkRefutation(
+                graph: Graph,
+                cause: String,
+                effect: String,
+            ): Boolean =
+                graph.labellings.asSequence().filter { it.label == "out" && equalTerms(it.argument.conclusion, effect) }
                     .flatMap { opponents(it.argument, graph) }
                     .filter { it.label == "in" }
                     .map { checkCause(it.argument, complement(cause)) }
                     .any { it }
 
+            val cause: String = clean(request.arguments[0].toString())
+            val effect: String = clean(request.arguments[1].toString())
+
             return sequenceOf(
                 request.replyWith(
-                    checkJustification(solveFresh(request.context.staticKb)) ||
-                        checkRefutation(solveFresh(remove(cause, request.context.staticKb))),
+                    checkJustification(solveFresh(request.context.staticKb), cause, effect) ||
+                        checkRefutation(solveFresh(remove(cause, request.context.staticKb)), cause, effect),
                 ),
             )
         }
