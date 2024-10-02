@@ -110,7 +110,6 @@ argumentInfo(RuleId, LDef, Def, Prem, [FLDef, FDef, FPrem]) :-
 
 ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], Argument) :-
     ground(RuleHead),
-    \+ context_check(clause(conc(RuleHead), argument([_, RuleID, RuleHead, RuleBody, _]))),
     utils::appendLists(TAll, All),
     \+ utils::contains(RuleID, All),
     utils::appendLists(TLDef, LDef),
@@ -119,6 +118,7 @@ ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], 
     argumentInfo(RuleID, LDef, Def, Prem, Info),
     utils::sort([RuleID|All], Rules),
     Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
+    \+ context_check(clause(conc(RuleHead), argument(Argument))),
     context_assert(conc(RuleHead) :- argument(Argument)),
     context_assert(argument(Argument)),
     utils::hash(argument(Argument), Id),
