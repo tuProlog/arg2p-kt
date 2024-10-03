@@ -120,9 +120,9 @@ class BasicTest {
     @Test
     fun soldiers(): Unit =
         """
-        r_0 : so_sh => pr_di.
-        r_1 : se_sh => pr_di.
-        r_2 : -so_sh => se_sh.
+            r_0 : so_sh => pr_di.
+            r_1 : se_sh => pr_di.
+            r_2 : -so_sh => se_sh.
         """.trimIndent().let { theory ->
             Arg2pSolverFactory.causality("$theory\nf1 :-> so_sh.\n").let {
                 isCause(it, "so_sh", "pr_di")
@@ -138,12 +138,12 @@ class BasicTest {
     fun doubleShootingTemporal(): Unit =
         Arg2pSolverFactory.causality(
             """
-            r_1(X, Y, T) : sh(X, Y, T), prolog(T1 is T + 1) => hit(X, Y, T1).
-            r_2(X, Y, T) : hit(X, Y, T) => di(Y, T).
-            r_3(X, Z, Y, T1, T2) : hit(X, Y, T1), hit(Z, Y, T2), prolog((X \= Z, T1 < T2)) => undercut(r_2(Z, Y, T2)).
-            
-            f_1 :-> sh(bu, ge, 1).
-            f_2 :-> sh(dl, ge, 3).
+                r_1(X, Y, T) : sh(X, Y, T), prolog(T1 is T + 1) => hit(X, Y, T1).
+                r_2(X, Y, T) : hit(X, Y, T) => di(Y, T).
+                r_3(X, Z, Y, T1, T2) : hit(X, Y, T1), hit(Z, Y, T2), prolog((X \= Z, T1 < T2)) => undercut(r_2(Z, Y, T2)).
+                
+                f_1 :-> sh(bu, ge, 1).
+                f_2 :-> sh(dl, ge, 3).
             """.trimIndent(),
         ).let { solver ->
             isCause(solver, "sh(bu, ge, 1)", "di(ge, 2)")
