@@ -133,4 +133,21 @@ class BasicTest {
                 isCause(it, "se_sh", "pr_di")
             }
         }
+
+    @Test
+    fun doubleShootingTemporal(): Unit =
+        Arg2pSolverFactory.causality(
+            """
+            r_1(X, Y, T) : sh(X, Y, T), prolog(T1 is T + 1) => hit(X, Y, T1).
+            r_2(X, Y, T) : hit(X, Y, T) => di(Y, T).
+            r_3(X, Z, Y, T1, T2) : hit(X, Y, T1), hit(Z, Y, T2), prolog((X \= Z, T1 < T2)) => undercut(r_2(Z, Y, T2)).
+            
+            f_1 :-> sh(bu, ge, 1).
+            f_2 :-> sh(dl, ge, 3).
+            """.trimIndent(),
+        ).let { solver ->
+            isCause(solver, "sh(bu, ge, 1)", "di(ge, 2)")
+            isCause(solver, "sh(dl, ge, 3)", "di(ge, 2)", false)
+            isCause(solver, "sh(dl, ge, 3)", "di(ge, 4)", false)
+        }
 }
