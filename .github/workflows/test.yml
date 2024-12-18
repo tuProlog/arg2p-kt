@@ -35,7 +35,7 @@ jobs:
       matrix:
         os: [ ubuntu-22.04 ]
         node-version:
-          - '20'
+          - '20.18.1'
     runs-on: ${{ matrix.os }}
     env:
       ORG_GRADLE_PROJECT_nodeVersion: ${{ matrix.node-version }}
