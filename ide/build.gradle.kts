@@ -13,6 +13,14 @@ multiPlatformHelper {
     fatJarEntryPoint.set("it.unibo.tuprolog.argumentation.ui.gui.Main")
 }
 
+tasks.shadowJar {
+    manifest {
+        attributes(
+            "Main-Class" to "it.unibo.tuprolog.argumentation.ui.gui.Main"
+        )
+    }
+}
+
 dependencies {
     // JUNG DEPENDENCIES
     api(libs.logback.classic)
