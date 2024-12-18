@@ -102,6 +102,7 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     tasks.sourcesJar.get().dependsOn(this)
     tasks.jsSourcesJar.get().dependsOn(this)
     tasks.dokkaHtml.get().dependsOn(this)
+    tasks.dokkaHtmlPartial.get().dependsOn(this)
 
     doLast {
         for (file in plFiles) {
