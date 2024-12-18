@@ -1,3 +1,26 @@
+## [0.9.0](https://github.com/tuProlog/arg2p-kt/compare/0.8.3...0.9.0) (2024-12-18)
+
+### Features
+
+* arg2p solver factoru ([6023b34](https://github.com/tuProlog/arg2p-kt/commit/6023b3455c502f69a9d10164e22926979fd360b3))
+* causality examples tested ([acc70ea](https://github.com/tuProlog/arg2p-kt/commit/acc70ead00b07c69826c648a30a6bcda174ee39f))
+* CausalitySolver init ([c8c7ecf](https://github.com/tuProlog/arg2p-kt/commit/c8c7ecfc0931ead3e023f2c4c67e2d9c7c8c25d2))
+* CausalitySolver solve ([195cdc6](https://github.com/tuProlog/arg2p-kt/commit/195cdc6468fc3fa7f8713296838e792cb431d9a0))
+
+### Bug Fixes
+
+* argumentation graph generation ([0c7cee2](https://github.com/tuProlog/arg2p-kt/commit/0c7cee2694f6f5eaf3e2aedde92f57672dadcb9f))
+* causality solve ([ceaf765](https://github.com/tuProlog/arg2p-kt/commit/ceaf7654ae107998ed4feeed5b57c262da37ee44))
+* formatting ([2ddb36d](https://github.com/tuProlog/arg2p-kt/commit/2ddb36d1eb4fc2626a5a04400cc8a5767e2331be))
+* jar Main-Class ([c36066f](https://github.com/tuProlog/arg2p-kt/commit/c36066ff19adddfcd715ded590e96af9db3c0590))
+* lib version ([e9a6730](https://github.com/tuProlog/arg2p-kt/commit/e9a67308f8c145388853dd796a265d76cfc71ed5))
+
+### Build and continuous integration
+
+* generateJsSourcesFromJvmResources dependencies ([744bfd3](https://github.com/tuProlog/arg2p-kt/commit/744bfd3ead4d155aaff0edad7810011191d0f7f2))
+* node version ([e563c86](https://github.com/tuProlog/arg2p-kt/commit/e563c862f4f9ffee6a78dfc7bcca461a63eacd7f))
+* node version ([f2be969](https://github.com/tuProlog/arg2p-kt/commit/f2be969492e00e9bc53a13ce14c08d5565b5a26c))
+
 ## [0.8.3](https://github.com/tuProlog/arg2p-kt/compare/0.8.2...0.8.3) (2024-09-20)
 
 ### Bug Fixes
