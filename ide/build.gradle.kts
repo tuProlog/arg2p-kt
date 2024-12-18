@@ -29,6 +29,7 @@ dependencies {
 
     implementation(project(":core"))
     implementation(project(":actor-solver"))
+    implementation(project(":causality-solver"))
 
     api(libs.richtextFx)
     for (jfxModule in listOf(libs.javafx.base, libs.javafx.controls, libs.javafx.fxml, libs.javafx.graphics, libs.javafx.swing)) {
