@@ -9,6 +9,16 @@ import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsName
 
+@JsName("mineActiveGraph")
+fun Solver.graph() =
+    logicProgramming {
+        this@graph.solve("context_active"(X))
+            .filter { it.isYes }
+            .map { it.substitution[X]!!.toString().toInt() }
+            .map { context -> this@graph.graph(context) }
+            .firstOrNull() ?: error("couldn't find a graph")
+    }
+
 @JsName("mineGraph")
 fun Solver.graph(context: Int) =
     this.arguments(context).let {

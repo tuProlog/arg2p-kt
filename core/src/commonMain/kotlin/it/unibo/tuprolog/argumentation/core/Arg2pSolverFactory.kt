@@ -1,7 +1,12 @@
 package it.unibo.tuprolog.argumentation.core
 
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
@@ -35,4 +40,16 @@ object Arg2pSolverFactory {
             staticKb = Theory.parse(theory, it.operators()),
         )
     }
+
+    fun evaluate(kb: String, flags: FlagsBuilder): Sequence<Graph> =
+        arg2pScope {
+            default(
+                theory = kb,
+                settings = flags.create(),
+            ).let { solver ->
+                solver.solve(Struct.parse("buildLabelSetsSilent"))
+                    .filter { it.isYes }
+                    .map { solver.graph() }
+            }
+        }
 }
