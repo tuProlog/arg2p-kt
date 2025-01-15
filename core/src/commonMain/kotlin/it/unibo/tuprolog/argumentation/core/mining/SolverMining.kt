@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
+import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 @JsName("mineActiveGraph")
@@ -57,8 +58,8 @@ fun Solver.attacks(
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
                 Attack(
-                    arguments.first { it.hashCode() == solution.first.hashCode() },
-                    arguments.first { it.hashCode() == solution.second.hashCode() },
+                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.first) },
+                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.second) },
                 )
             }
     }.toList()
@@ -74,9 +75,9 @@ fun Solver.supports(
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
-                arguments.first { it.hashCode() == solution.second.hashCode() }.let { argument ->
+                arguments.first { Unificator.default.match(it.termRepresentation(), solution.second) }.let { argument ->
                     Support(
-                        arguments.first { it.hashCode() == solution.first.hashCode() },
+                        arguments.first { Unificator.default.match(it.termRepresentation(), solution.first) },
                         argument,
                     ).also {
                         argument.supports.add(it.supporter)
@@ -94,7 +95,10 @@ fun Solver.labels(
         logicProgramming {
             this@labels.solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
-                .map { res -> LabelledArgument(arguments.first { it.hashCode() == res.substitution[X].hashCode() }, functor) }
+                .map {
+                        res ->
+                    LabelledArgument(arguments.first { Unificator.default.match(it.termRepresentation(), res.substitution[X]!!) }, functor)
+                }
                 .toList()
         }
 

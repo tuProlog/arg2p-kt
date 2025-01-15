@@ -41,7 +41,10 @@ object Arg2pSolverFactory {
         )
     }
 
-    fun evaluate(kb: String, flags: FlagsBuilder): Sequence<Graph> =
+    fun evaluate(
+        kb: String,
+        flags: FlagsBuilder,
+    ): Sequence<Graph> =
         arg2pScope {
             default(
                 theory = kb,

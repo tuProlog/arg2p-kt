@@ -109,6 +109,7 @@ class CausalitySolver : ArgLibrary, Loadable {
                             .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
                     }
                 }
+
             //  1a. check justifications (new semantics - temporarily use grounded), or
             fun checkJustification(
                 graph: Graph,
