@@ -1,14 +1,12 @@
 package it.unibo.tuprolog.argumentation.causality.libs
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
-import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
@@ -22,10 +20,10 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.unify.Unificator
 import kotlin.random.Random
 import kotlin.random.nextUInt
+import it.unibo.tuprolog.core.List as PlList
 
 class CausalitySolver : ArgLibrary, Loadable {
     inner class CausalitySolve : PrimitiveWithSignature {
@@ -39,16 +37,6 @@ class CausalitySolver : ArgLibrary, Loadable {
                 b: String,
             ) = Unificator.default.match(Term.parse(a), Term.parse(b))
 
-            fun checkCause(
-                x: Argument,
-                cause: String,
-            ): Boolean =
-                if (equalTerms(x.conclusion, cause)) {
-                    true
-                } else {
-                    x.supports.map { checkCause(it, cause) }.any { it }
-                }
-
             fun attackers(
                 x: Argument,
                 graph: Graph,
@@ -56,14 +44,6 @@ class CausalitySolver : ArgLibrary, Loadable {
                 graph.attacks
                     .filter { it.target.identifier == x.identifier }
                     .map { arg -> graph.labellings.find { arg.attacker.identifier == it.argument.identifier }!! }
-
-            fun opponents(
-                x: Argument,
-                graph: Graph,
-            ): List<LabelledArgument> =
-                attackers(x, graph).let { a ->
-                    a + a.flatMap { att -> attackers(att.argument, graph).flatMap { opponents(it.argument, graph) } }
-                }
 
             fun supporters(
                 x: Argument,
@@ -76,72 +56,45 @@ class CausalitySolver : ArgLibrary, Loadable {
                         attackers(att.argument, graph).flatMap { supporters(it.argument, graph) }
                     }
 
-            fun complement(t: String): String =
-                if (t.startsWith("-")) {
-                    t.drop(1)
-                } else {
-                    "-$t"
-                }
+            // solve using grounded
+            fun solveFresh(kb: Theory) =
+                Arg2pSolverFactory.evaluate(
+                    kb.toString(asPrologText = true),
+                    FlagsBuilder(graphExtensions = emptyList()),
+                ).firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
 
-            fun remove(
-                term: String,
-                kb: Theory,
-            ): Theory =
-                Theory.of(
-                    kb.filterNot {
-                        Unificator.default.match(
-                            it.head!!.asTerm(),
-                            Struct.parse(":->(_, $term)"),
-                        )
-                    },
-                ).plus(Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, ${complement(term)})")))
-
-            fun solveFresh(kb: Theory): Graph =
-                arg2pScope {
-                    Arg2pSolverFactory.default(
-                        theory = kb.toString(true),
-                        settings = FlagsBuilder(graphExtensions = emptyList()).create(),
-                    ).let { solver ->
-                        solver.solve(Struct.parse("buildLabelSetsSilent") and "context_active"(X))
-                            .filter { it.isYes }
-                            .map { it.substitution[X]!!.toString().toInt() }
-                            .map { context -> solver.graph(context) }
-                            .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
-                    }
-                }
-
-            //  1a. check justifications (new semantics - temporarily use grounded), or
-            fun checkJustification(
+            // get support set (union of all explanations)
+            fun getSupports(
                 graph: Graph,
-                cause: String,
                 effect: String,
-            ): Boolean =
+            ): Sequence<Argument> =
                 graph.labellings.asSequence().filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
                     .flatMap { supporters(it.argument, graph) }
                     .filter { it.label == "in" }
-                    .map { checkCause(it.argument, cause) }
-                    .any { it }
+                    .map { it.argument }
 
-            //  2b. check if its intervention (graph built on rule base + negation) refutes the goal
-            fun checkRefutation(
-                graph: Graph,
-                cause: String,
+            fun checkIntervention(
+                intervention: PlList,
                 effect: String,
-            ): Boolean =
-                graph.labellings.asSequence().filter { it.label == "out" && equalTerms(it.argument.conclusion, effect) }
-                    .flatMap { opponents(it.argument, graph) }
-                    .filter { it.label == "in" }
-                    .map { checkCause(it.argument, complement(cause)) }
-                    .any { it }
+            ) = solveFresh(request.context.staticKb).let {
+                val support = getSupports(it, effect).map { a -> a.termRepresentation() }
+                val x = intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, $int)")) }
+                solveFresh(request.context.staticKb.plus(Theory.of(x))).let { naf ->
+                    naf.labellings
+                        .filter { a -> a.label == "out" || a.label == "und" }
+                        .map { a -> a.argument.termRepresentation() }
+                        .any { a -> support.any { b -> Unificator.default.match(a, b) } }
+                }
+            }
 
-            val cause: String = clean(request.arguments[0].toString())
+            // if exists an explanation that is refuted trough intervention (we need minimal sets of literals from L)
+            // explanations are grounded chains (grounded games are equivalent to strongly admissible sets)
+
+            val intervention: PlList = request.arguments[0].castToList() // intervention list
             val effect: String = clean(request.arguments[1].toString())
 
             return sequenceOf(
-                request.replyWith(
-                    checkJustification(solveFresh(request.context.staticKb), cause, effect) ||
-                        checkRefutation(solveFresh(remove(cause, request.context.staticKb)), cause, effect),
-                ),
+                request.replyWith(checkIntervention(intervention, effect)),
             )
         }
     }
