@@ -9,16 +9,59 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class BasicTest {
+    private fun isIntervention(
+        solver: MutableSolver,
+        cause: String,
+        effect: String,
+        outcome: Boolean = true,
+    ) = arg2pScope {
+        solver.solve("context_reset" and "evaluate_intervention"(Term.parse(cause), effect)).first().also {
+            assertEquals(it.isYes, outcome)
+        }
+    }
+
     private fun isCause(
         solver: MutableSolver,
         cause: String,
         effect: String,
         outcome: Boolean = true,
     ) = arg2pScope {
-        solver.solve("solve"(Term.parse(cause), effect)).first().also {
+        solver.solve("context_reset" and "evaluate"(X, Term.parse(cause), effect)).first().also {
             assertEquals(it.isYes, outcome)
+            println(it.substitution[X])
         }
     }
+
+    @Test
+    fun testSubset(): Unit =
+        Arg2pSolverFactory.causality().let { solver ->
+            arg2pScope {
+                solver.solve("proper_subsets"(Term.parse("[a, b, c]"), X)).filter { it.isYes }.forEach {
+                    println(it.substitution[X])
+                }
+            }
+        }
+
+    @Test
+    fun causalityTestComplex(): Unit =
+        Arg2pSolverFactory.causality(
+            """
+            tx2 : d, e => undercut(r2).
+
+            r1 :=> a.
+            r2 : a => -b.
+            """.trimIndent(),
+        ).let { solver ->
+            isIntervention(solver, "[d]", "-b", false)
+            isIntervention(solver, "[d,e]", "-b", true)
+            isIntervention(solver, "[d,e,c]", "-b", false)
+            isCause(solver, "-d", "-b", true)
+            isCause(solver, "b", "a", false)
+            isCause(solver, "d", "-b", false)
+            isCause(solver, "-e", "-b", true)
+            isCause(solver, "a", "-b", true)
+            isCause(solver, "r2", "-b", true)
+        }
 
     @Test
     fun causalityTest(): Unit =
@@ -30,10 +73,14 @@ class BasicTest {
             r2 : a => -b.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-a]", "-b", true)
-            isCause(solver, "[-b]", "a", false)
-            isCause(solver, "[-d]", "-b", false)
-            isCause(solver, "[d]", "-b", true)
+            isIntervention(solver, "[-a]", "-b", true)
+            isIntervention(solver, "[-b]", "a", false)
+            isIntervention(solver, "[-d]", "-b", false)
+            isIntervention(solver, "[d]", "-b", true)
+            isCause(solver, "a", "-b", true)
+            isCause(solver, "b", "a", false)
+            isCause(solver, "d", "-b", false)
+            isCause(solver, "-d", "-b", true)
         }
 
     @Test
@@ -50,9 +97,9 @@ class BasicTest {
             f_3 :=> ex_3.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-ex_1]", "di")
-            isCause(solver, "[-ex_2]", "di")
-            isCause(solver, "[-ex_3]", "di")
+            isIntervention(solver, "[-ex_1]", "di")
+            isIntervention(solver, "[-ex_2]", "di")
+            isIntervention(solver, "[-ex_3]", "di")
         }
 
     @Test
@@ -65,7 +112,7 @@ class BasicTest {
             f_1 :=> ge_di.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-sm_to]", "lu_ca", false)
+            isIntervention(solver, "[-sm_to]", "lu_ca", false)
         }
 
     @Test
@@ -82,8 +129,8 @@ class BasicTest {
             f_1 :=> dl_sh.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-bu_sh]", "ge_di")
-            isCause(solver, "[-dl_sh]", "ge_di", false)
+            isIntervention(solver, "[-bu_sh]", "ge_di")
+            isIntervention(solver, "[-dl_sh]", "ge_di", false)
         }
 
     @Test
@@ -98,8 +145,8 @@ class BasicTest {
             f_2 :=> -pa_co.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-ch_le]", "ch_di")
-            isCause(solver, "[pa_co]", "ch_di")
+            isIntervention(solver, "[-ch_le]", "ch_di")
+            isIntervention(solver, "[pa_co]", "ch_di")
         }
 
     @Test
@@ -115,8 +162,8 @@ class BasicTest {
             f_2 :=> -dr_pu.
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[dr_pu]", "ac_ha")
-            isCause(solver, "[-br_ma]", "ac_ha", false)
+            isIntervention(solver, "[dr_pu]", "ac_ha")
+            isIntervention(solver, "[-br_ma]", "ac_ha", false)
         }
 
     @Test
@@ -127,12 +174,12 @@ class BasicTest {
         r_2 : -so_sh => se_sh.
         """.trimIndent().let { theory ->
             Arg2pSolverFactory.causality("$theory\nf1 :=> so_sh.\n").let {
-                isCause(it, "[-so_sh]", "pr_di")
-                isCause(it, "[-se_sh]", "pr_di", false)
+                isIntervention(it, "[-so_sh]", "pr_di")
+                isIntervention(it, "[-se_sh]", "pr_di", false)
             }
             Arg2pSolverFactory.causality("$theory\nf1 :=> -so_sh.\n").let {
-                isCause(it, "[so_sh]", "pr_di")
-                isCause(it, "[-se_sh]", "pr_di")
+                isIntervention(it, "[so_sh]", "pr_di")
+                isIntervention(it, "[-se_sh]", "pr_di")
             }
         }
 
@@ -148,8 +195,8 @@ class BasicTest {
             f_2 :=> sh(dl, ge, 3).
             """.trimIndent(),
         ).let { solver ->
-            isCause(solver, "[-sh(bu, ge, 1)]", "di(ge, 2)")
-            isCause(solver, "[-sh(dl, ge, 3)]", "di(ge, 2)", false)
-            isCause(solver, "[-sh(dl, ge, 3)]", "di(ge, 4)", false)
+            isIntervention(solver, "[-sh(bu, ge, 1)]", "di(ge, 2)")
+            isIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 2)", false)
+            isIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 4)", false)
         }
 }

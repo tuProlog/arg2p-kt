@@ -10,13 +10,13 @@ plugins {
 
 multiPlatformHelper {
     javaFxFatJars()
-    fatJarEntryPoint.set("it.unibo.tuprolog.argumentation.ui.gui.Main")
+    fatJarEntryPoint.set("it.unibo.tuprolog.argumentation.ui.gui.ReplKt")
 }
 
 tasks.shadowJar {
     manifest {
         attributes(
-            "Main-Class" to "it.unibo.tuprolog.argumentation.ui.gui.Main"
+            "Main-Class" to "it.unibo.tuprolog.argumentation.ui.gui.ReplKt",
         )
     }
 }
