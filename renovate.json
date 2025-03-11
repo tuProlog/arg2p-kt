@@ -15,9 +15,10 @@
     },
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr"
     }
   ],
-  "prConcurrentLimit": 0,
-  "prHourlyLimit": 0
+  "prConcurrentLimit": 30,
+  "prHourlyLimit": 30
 }
