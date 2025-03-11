@@ -16,7 +16,7 @@
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
-      "automergeType": "pr"
+      "automergeType": "branch"
     }
   ],
   "prConcurrentLimit": 30,
