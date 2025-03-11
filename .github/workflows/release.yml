@@ -9,7 +9,7 @@ on:
 jobs:
   check-secrets:
     environment: release_env
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       run-with-secrets: ${{ steps.require-secrets.outputs.run-with-secrets }}
     steps:
@@ -25,7 +25,7 @@ jobs:
 
   staging-repo:
     environment: release_env
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - check-secrets
     concurrency:
@@ -106,7 +106,7 @@ jobs:
     #        os: [ windows-2022, macos-12, ubuntu-22.04 ]
     #    runs-on: ${{ matrix.os }}
     # Comment if cross-compilation is needed
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     concurrency:
       group: build-${{ github.workflow }}-${{ matrix.os }}-${{ github.event.number || github.ref }}
       cancel-in-progress: true
@@ -140,7 +140,7 @@ jobs:
     needs:
       - staging-repo
       - build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: |
       always() &&
       needs.check-secrets.outputs.run-with-secrets == 'true' &&
@@ -173,7 +173,7 @@ jobs:
       - staging-repo
       - build
       - close-staging-repos
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: |
       always() &&
       needs.check-secrets.outputs.run-with-secrets == 'true' &&
@@ -214,7 +214,7 @@ jobs:
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
 
   success:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - check-secrets
       - staging-repo
