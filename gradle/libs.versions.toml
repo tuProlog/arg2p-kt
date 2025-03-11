@@ -5,7 +5,7 @@ node = "18.20.5"
 ktMpp = "4.1.4"
 semVer = "3.1.10"
 javaFx = "19.0.2.1"
-akka = "2.8.6"
+akka = "2.8.8"
 tuprolog = "1.0.4"
 jung = "2.1.1"
 
