@@ -2,6 +2,7 @@ import org.gradle.api.file.DuplicatesStrategy.INCLUDE
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 import java.io.File
 import kotlin.streams.asSequence
+import kotlin.text.replaceFirstChar
 
 val jvmStackSize: String by project
 val jvmMaxHeapSize: String by project
@@ -49,7 +50,8 @@ tasks.withType<KotlinJvmTest> {
 val String.isSkippable: Boolean get() =
     isBlank() || """^\s*%.*""".toRegex().matches(this)
 
-fun File.resolveDest(destinationFolder: File): File = destinationFolder.resolve("${this.nameWithoutExtension.capitalize()}.kt")
+fun File.resolveDest(destinationFolder: File): File =
+    destinationFolder.resolve("${this.nameWithoutExtension.replaceFirstChar(Char::titlecase)}.kt")
 
 fun File.convertIntoKotlinSource(
     destinationFolder: File,
@@ -62,7 +64,7 @@ fun File.convertIntoKotlinSource(
             w.write("package $`package`")
             w.newLine()
             w.newLine()
-            w.write("object ${nameWithoutExtension.capitalize()} {")
+            w.write("object ${nameWithoutExtension.replaceFirstChar(Char::titlecase)} {")
             w.newLine()
             w.write("    val theoryCode: String =")
             w.newLine()
@@ -70,7 +72,7 @@ fun File.convertIntoKotlinSource(
             w.newLine()
             for (line in lines) {
                 if (!line.isSkippable) {
-                    w.write("    ")
+                    w.write("        ")
                     w.write(line)
                     w.newLine()
                 }
@@ -103,6 +105,7 @@ tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
     tasks.jsSourcesJar.get().dependsOn(this)
     tasks.dokkaHtml.get().dependsOn(this)
     tasks.dokkaHtmlPartial.get().dependsOn(this)
+    tasks.runKtlintCheckOverJsMainSourceSet.get().dependsOn(this)
 
     doLast {
         for (file in plFiles) {
