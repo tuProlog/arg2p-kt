@@ -16,18 +16,23 @@ buildArguments :-
     findall(X, context_check(newConc(a, [X])), N),
 	buildArgumentsFromRules(N, b, Rules, Rules, n).
 
+saveArgument(T, Conclusion, Argument) :-
+    ground(Conclusion),
+    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    context_assert(newConc(T, Conclusion)),
+    utils::hash(argument(Argument), Id),
+    context_assert(argument(Argument)),
+    context_assert(conc(Conclusion) :- argument(Argument)),
+    context_assert(arg(Id) :- argument(Argument)).
+
+
 buildArgumentsFromPremises :-
     findall(
         _,
         (
             parser::classic_rule(PremiseID, Premise),
             checkStrict(PremiseID, DefPrem),
-            ground(Premise),
-            context_assert(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]])),
-            context_assert(conc(Premise) :- argument([[PremiseID], none, Premise, [], [[], [], DefPrem]])),
-            context_assert(newConc(a, Premise)),
-            utils::hash(argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]), Id),
-            context_assert(arg(Id) :- argument([[PremiseID], none, Premise, [], [[], [], DefPrem]]))
+            saveArgument(a, Premise, [[PremiseID], none, Premise, [], [[], [], DefPrem]])
         ),
         _
     ).
@@ -38,12 +43,7 @@ buildArgumentsFromEmptyRules :-
         (
             emptyRule([RuleID, RulePrem, RuleHead]),
             checkStrict(RuleID, DefRule),
-            ground(RuleHead),
-            context_assert(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
-            context_assert(conc(RuleHead) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])),
-            context_assert(newConc(a, RuleHead)),
-            utils::hash(argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]), Id),
-            context_assert(arg(Id) :- argument([[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]]))
+            saveArgument(a, RuleHead, [[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])
         ),
         _
     ).
@@ -52,7 +52,8 @@ buildArgumentsFromEmptyRules :-
 emptyRule([RuleID, Body, RuleHead]) :-
     parser::classic_rule(RuleID, Body, RuleHead),
     \+ (member(X, Body), X \= ~(_), X \= prolog(_)),
-    checkPrologClauses(Body).
+    ruleBodyIsSupported(RuleID, RuleHead, Body, Body, [[], [], [], []], _).
+%    checkPrologClauses(Body).
 
 checkPrologClauses([]) :- !.
 checkPrologClauses([~(_)|T]) :- checkPrologClauses(T), !.
@@ -60,8 +61,26 @@ checkPrologClauses([prolog(Check)|T]) :-
     (callable(Check) -> call(Check); Check),
     checkPrologClauses(T).
 
-% Check \+ member(RuleID, SupportRules) constraint. Is it avoiding cyclical arguments?
-% Find best Cut placement
+
+checkStrict(Id, []) :- parser::check_strict(Id), !.
+checkStrict(Id, [Id]).
+
+
+% Argument Construction
+
+buildArgumentsFromRules(_, _, Rules, [], n) :- !.
+buildArgumentsFromRules(_, Tn, Rules, [], y) :- !, clean(Tn, Rules).
+buildArgumentsFromRules(N, Tn, Rules, [[Id, Body, Conc]|T], _) :-
+    utils::contains_any(Body, N),
+    findall(true, buildArgumentsFromRule(Tn, [Id, Body, Conc]), R),
+    R \== [],
+    buildArgumentsFromRules(N, Tn, Rules, T, y), !.
+buildArgumentsFromRules(N, Tn, Rules, [_|T], X) :-
+    buildArgumentsFromRules(N, Tn, Rules, T, X).
+
+buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
+	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, RuleBody, [[], [], [], []], Argument),
+	saveArgument(Tn, RuleHead, Argument).
 
 clean(Tn, Rules) :-
     invert(Tn, Tx),
@@ -72,26 +91,8 @@ clean(Tn, Rules) :-
 invert(a, b).
 invert(b, a).
 
-buildArgumentsFromRules(_, _, Rules, [], n) :- !.
-buildArgumentsFromRules(_, Tn, Rules, [], y) :- !, clean(Tn, Rules).
-buildArgumentsFromRules(N, Tn, Rules, [[Id, Body, Conc]|T], _) :-
-%    write([Id, Body, Conc]),nl,
-    utils::contains_any(Body, N),
-%    write([Id, Body, Conc]),nl,
-    findall(true, buildArgumentsFromRule(Tn, [Id, Body, Conc]), R),
-    R \== [],
-    buildArgumentsFromRules(N, Tn, Rules, T, y), !.
-buildArgumentsFromRules(N, Tn, Rules, [_|T], X) :-
-    buildArgumentsFromRules(N, Tn, Rules, T, X).
 
-buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
-	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, RuleBody, [[], [], [], []], Argument),
-    context_assert(newConc(Tn, RuleHead)).
-
-checkStrict(Id, []) :- parser::check_strict(Id), !.
-checkStrict(Id, [Id]).
-
-% New Argument Info
+% Argument Info
 
 defRules(Id, Def, Def) :- parser::check_strict(Id), !.
 defRules(Id, Def, [Id|Def]).
@@ -118,11 +119,7 @@ ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], 
     argumentInfo(RuleID, LDef, Def, Prem, Info),
     utils::sort([RuleID|All], Rules),
     Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
-    \+ context_check(clause(conc(RuleHead), argument(Argument))),
-    context_assert(conc(RuleHead) :- argument(Argument)),
-    context_assert(argument(Argument)),
-    utils::hash(argument(Argument), Id),
-    context_assert(arg(Id) :- argument(Argument)).
+    \+ context_check(clause(conc(RuleHead), argument(Argument))).
 ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [~(_)|Others], Info, Argument) :-
 	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, Others, Info, Argument).
 ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [prolog(Check)|Others], Info, Argument) :-
@@ -132,6 +129,12 @@ ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, 
     context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]]))),
 	ruleBodyIsSupported(RuleId, RuleHead, RuleBody, Others, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
 	context_assert(support([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument)).
+
+
+
+
+
+
 
 % Attacks
 
