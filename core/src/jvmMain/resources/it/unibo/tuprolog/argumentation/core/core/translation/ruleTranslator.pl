@@ -290,5 +290,6 @@ ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
 ff(X, X).
 
+classic_rule(X, [applicable(X)|Y], Z) :- nestedRules, !, rule(X, Y, Z).
 classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
