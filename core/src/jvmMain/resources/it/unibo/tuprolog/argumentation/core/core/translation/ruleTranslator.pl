@@ -296,9 +296,9 @@ classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
 
 classic_conflict([A], [B], C) :- metaConflicts,
-    context_check(clause(conc(conflict(A, B, C)), _)).
+    context_check(clause(conc([conflict(A, B, C)]), _)).
 classic_conflict([A], [B]) :- metaConflicts,
-    context_check(clause(conc(conflict(A, B)), _)).
+    context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B, C) :-
     \+ metaConflicts,
     member(conflict(A, B, C), [
@@ -311,4 +311,4 @@ classic_conflict(A, B, C) :-
         conflict([p(-Atom)], [o(Atom)], true),
         conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),
         conflict([sup(X, Y)], [sup(Y, X)], true)
-    ].
+    ]).

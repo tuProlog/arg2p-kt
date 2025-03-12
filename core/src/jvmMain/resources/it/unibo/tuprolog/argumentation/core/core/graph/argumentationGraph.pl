@@ -165,21 +165,27 @@ buildDirectAttacks :-
 buildDirectAttack :-
     context_check(argument(A)),
     findPossibleAttackers(A, BB),
+    %write(BB),nl,
 	context_check(clause(conc(BB), argument(B))),
+	%write(B),nl,
 	filter_meta(B),
+	%write(after_filter),nl,
 	A \== B,
     attacks(T, B, A),
+    %write(T),nl,
 	\+ context_check(attack(T, B, A, A)),
 	context_assert(attack(T, B, A, A)),
 	utils::hash(argument(A), IdA),
 	utils::hash(argument(B), IdB),
 	context_assert(att(IdB, IdA) :- attack(T, B, A, A)),
+	%write(attack(T, B, A, A)),nl,
 	fail.
 buildDirectAttack.
 
 
 buildTransitiveAttacks :-
 	context_check(attack(T, A, B, D)),
+	write(attack(T, A, B, D)), nl,
 	context_check(support(B, C)),
 	\+ context_check(attack(T, A, C, D)), !,
 	context_assert(attack(T, A, C, D)),
