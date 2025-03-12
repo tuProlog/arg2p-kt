@@ -178,7 +178,7 @@ mostGroundedArgument([A|_], A).
     Get a conclusion complement
 */
 complement([_, _, Conclusion, _, _], A) :-
-    standard_af::conflict(Conclusion, A).
+    standard_af::expanded_conflict(Conclusion, A).
 
 notEvaluatedSubArgument(Arguments, A, Resolving, B) :-
     context_check(support(B, A)),
