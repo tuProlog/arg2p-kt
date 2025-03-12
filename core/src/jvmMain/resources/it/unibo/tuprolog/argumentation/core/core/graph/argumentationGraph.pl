@@ -135,30 +135,38 @@ ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, 
 
 
 
+buildAttacks :-
+	buildDirectAttacks,
+	buildTransitiveAttacks.
+
 
 % Attacks
 
 findPossibleAttackers([_, _, Head, _, _], Conf) :-
-    conflict(Conf, Head, Guard).
+    parser::classic_conflict(Conf, Head, Guard).
 findPossibleAttackers([_, _, Head, _, _], Conf) :-
-    conflict(Conf, Head).
+    parser::classic_conflict(Conf, Head).
 findPossibleAttackers([_, _, _, Prem, _], [Conf]) :-
     member(~(Conf), Prem).
 findPossibleAttackers([_, RuleID, _, _, _], [undercut(RuleID)]).
+findPossibleAttackers([_, RuleID, _, _, _], [Conf]) :-
+    parser::classic_conflict(Conf, RuleID, Guard).
+findPossibleAttackers([_, RuleID, _, _, _], [Conf]) :-
+    parser::classic_conflict(Conf, RuleID).
 
-buildAttacks :-
-%    findall(X, context_check(argument(X)), Args),
-	buildDirectAttacks,
-	buildTransitiveAttacks.
+
+filter_meta([_, mc, _, _, _]) :- metaConflicts.
+filter_meta(_) :- \+ metaConflicts.
+
 
 buildDirectAttacks :-
     findall(_, buildDirectAttack, _).
-
 
 buildDirectAttack :-
     context_check(argument(A)),
     findPossibleAttackers(A, BB),
 	context_check(clause(conc(BB), argument(B))),
+	filter_meta(B),
 	A \== B,
     attacks(T, B, A),
 	\+ context_check(attack(T, B, A, A)),
@@ -168,6 +176,7 @@ buildDirectAttack :-
 	context_assert(att(IdB, IdA) :- attack(T, B, A, A)),
 	fail.
 buildDirectAttack.
+
 
 buildTransitiveAttacks :-
 	context_check(attack(T, A, B, D)),
@@ -180,7 +189,11 @@ buildTransitiveAttacks :-
     buildTransitiveAttacks.
 buildTransitiveAttacks.
 
+
+%------------------------------------------------------------------------
 % Attack definition
+%------------------------------------------------------------------------
+
 attacks(rebut, A, B) :- rebuts(A, B), !.
 attacks(contrary_rebut, A, B) :- contraryRebuts(A, B), !.
 attacks(undermine, A, B) :- undermines(A, B), !.
@@ -188,9 +201,9 @@ attacks(contrary_undermine, A, B) :- contraryUndermines(A, B), !.
 attacks(undercut, A, B) :- undercuts(A, B), !.
 
 expanded_conflict(HeadA, HeadB) :-
-    conflict(HeadA, HeadB).
+    parser::classic_conflict(HeadA, HeadB).
 expanded_conflict(HeadA, HeadB) :-
-    conflict(HeadA, HeadB, Guard),
+    parser::classic_conflict(HeadA, HeadB, Guard),
     (callable(Guard) -> call(Guard); Guard).
 
 %------------------------------------------------------------------------
@@ -231,27 +244,36 @@ contraryUndermines([IDPremisesA, none, [RuleHeadA], _, _], [IDPremisesB, RuleB, 
 %------------------------------------------------------------------------
 undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 
+%------------------------------------------------------------------------
+% Raw Undercutting definition: attacks on defeasible inference rule
+%------------------------------------------------------------------------
+undercuts([_, _, [NegRuleB], _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
+    expanded_conflict(NegRuleB, RuleB).
 
 %========================================================================
 % CONFLICT DEFINITION
 %========================================================================
 
-check(-Atom).
+% check(-Atom).
 
-conflict([Atom], [-Atom]) :- \+ check(Atom).
+% conflict([Atom], [-Atom]) :- \+ check(Atom).
+conflict([Atom], [-Atom], (Atom \= -_)).
 conflict([-Atom], [Atom]).
 
-conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
+% conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
+conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).
 conflict([o(-Atom)], [o(Atom)]).
 
 % conflict([o(Lit)], [-o(Lit)]).
 % conflict([-o(Lit)], [o(Lit)]).
 
-conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
+% conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
+conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).
 conflict([o(-Atom)], [p(Atom)]).
 
 conflict([p(-Atom)], [o(Atom)]).
-conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
+% conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
+conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).
 
 % BP CONFLICT
 

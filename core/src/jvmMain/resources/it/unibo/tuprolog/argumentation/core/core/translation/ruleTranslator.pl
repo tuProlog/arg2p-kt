@@ -290,6 +290,25 @@ ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
 ff(X, X).
 
-classic_rule(X, [applicable(X)|Y], Z) :- nestedRules, !, rule(X, Y, Z).
+classic_rule(mc, [conflict(A, B), A], [A]) :- metaConflicts.
+classic_rule(X, [applicable(X)|Y], Z) :- metaRules, !, rule(X, Y, Z).
 classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
+
+classic_conflict([A], [B], C) :- metaConflicts,
+    context_check(clause(conc(conflict(A, B, C)), _)).
+classic_conflict([A], [B]) :- metaConflicts,
+    context_check(clause(conc(conflict(A, B)), _)).
+classic_conflict(A, B, C) :-
+    \+ metaConflicts,
+    member(conflict(A, B, C), [
+        conflict([Atom], [-Atom], (Atom \= -_)),
+        conflict([-Atom], [Atom], true),
+        conflict([o(Atom)], [o(-Atom)], (Atom \= -_)),
+        conflict([o(-Atom)], [o(Atom)], true),
+        conflict([p(Atom)], [o(-Atom)], (Atom \= -_)),
+        conflict([o(-Atom)], [p(Atom)], true),
+        conflict([p(-Atom)], [o(Atom)], true),
+        conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),
+        conflict([sup(X, Y)], [sup(Y, X)], true)
+    ].
