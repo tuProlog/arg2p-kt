@@ -56,7 +56,7 @@ defend(Argument, QueryChain, Res) :-
     bufferResult(Argument, Res), !.
 
 complementary([_, _, ConclusionA, _, _], [_, _, ConclusionB, _, _]) :-
-    standard_af::conflict(ConclusionA, ConclusionB).
+    standard_af::expanded_conflict(ConclusionA, ConclusionB).
 
 ambiguityCheck(A, B, no) :- ambiguityBlocking,
     \+ complementary(A, B),
@@ -123,7 +123,7 @@ attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], At
         );
         true
     ),
-    standard_af::conflict(Term, [X]),
+    standard_af::expanded_conflict(Term, [X]),
     buildArgument(X, Attacker),
     (graphExtension(standardPref) ->
         (
