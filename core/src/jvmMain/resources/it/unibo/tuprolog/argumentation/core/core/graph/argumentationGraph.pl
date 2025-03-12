@@ -4,7 +4,31 @@
 
 buildArgumentationGraph :-
     buildArguments,
+    findall(_, buildAdditionalArguments, _),
     buildAttacks.
+
+
+buildAdditionalArguments :-
+    metaConflicts,
+    conf_arg(A, CArg),
+    context_check(clause(conc(A), argument([R, T, C, B, I]))),
+    saveArgument(a, A, [[mc|R], T, C, B, I]),
+    context_assert(support(CArg, [[mc|R], T, C, B, I])),
+    cloneSupport([R, T, C, B, I], [[mc|R], T, C, B, I]),
+    fail.
+buildAdditionalArguments.
+
+cloneSupport(Original, New) :-
+    findall(_, (
+        context_check(support(S, Original)),
+        context_assert(support(S, New))
+    ), _).
+
+conf_arg([A], Arg) :-
+    context_check(clause(conc([conflict(A, _, _)]), argument(Arg))).
+conf_arg([A], Arg) :-
+    context_check(clause(conc([conflict(A, _)]), argument(Arg))).
+
 
 buildArguments :-
 	buildArgumentsFromPremises,
@@ -15,6 +39,7 @@ buildArguments :-
     ), Rules),
     findall(X, context_check(newConc(a, [X])), N),
 	buildArgumentsFromRules(N, b, Rules, Rules, n).
+
 
 saveArgument(T, Conclusion, Argument) :-
     ground(Conclusion),
@@ -149,13 +174,13 @@ findPossibleAttackers([_, _, Head, _, _], Conf) :-
 findPossibleAttackers([_, _, _, Prem, _], [Conf]) :-
     member(~(Conf), Prem).
 findPossibleAttackers([_, RuleID, _, _, _], [undercut(RuleID)]).
-findPossibleAttackers([_, RuleID, _, _, _], [Conf]) :-
-    parser::classic_conflict(Conf, RuleID, Guard).
-findPossibleAttackers([_, RuleID, _, _, _], [Conf]) :-
-    parser::classic_conflict(Conf, RuleID).
+findPossibleAttackers([_, RuleID, _, _, _], Conf) :-
+    parser::classic_conflict(Conf, [RuleID], Guard).
+findPossibleAttackers([_, RuleID, _, _, _], Conf) :-
+    parser::classic_conflict(Conf, [RuleID]).
 
 
-filter_meta([_, mc, _, _, _]) :- metaConflicts.
+filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
 filter_meta(_) :- \+ metaConflicts.
 
 
@@ -185,7 +210,6 @@ buildDirectAttack.
 
 buildTransitiveAttacks :-
 	context_check(attack(T, A, B, D)),
-	write(attack(T, A, B, D)), nl,
 	context_check(support(B, C)),
 	\+ context_check(attack(T, A, C, D)), !,
 	context_assert(attack(T, A, C, D)),
@@ -253,8 +277,8 @@ undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 %------------------------------------------------------------------------
 % Raw Undercutting definition: attacks on defeasible inference rule
 %------------------------------------------------------------------------
-undercuts([_, _, [NegRuleB], _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
-    expanded_conflict(NegRuleB, RuleB).
+undercuts([_, _, NegRuleB, _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
+    expanded_conflict(NegRuleB, [RuleB]).
 
 %========================================================================
 % CONFLICT DEFINITION

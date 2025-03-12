@@ -290,7 +290,7 @@ ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
 ff(X, X).
 
-classic_rule(mc, [conflict(A, B), A], [A]) :- metaConflicts.
+% classic_rule(mc, [conflict(A, B), A], [A]) :- metaConflicts.
 classic_rule(X, [applicable(X)|Y], Z) :- metaRules, !, rule(X, Y, Z).
 classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
