@@ -6,6 +6,7 @@ import io.github.gciatto.kt.mpp.helpers.ProjectType
 plugins {
     alias(libs.plugins.ktMpp.helper)
     alias(libs.plugins.ktMpp.mavenPublish)
+    alias(libs.plugins.ktMpp.npmPublish)
     alias(libs.plugins.ktMpp.multiplatform)
     alias(libs.plugins.gitSemVer)
 }
@@ -66,10 +67,21 @@ multiProjectHelper {
 }
 
 kotlin {
+
+    js {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
+            }
+        }
+        binaries.library()
+    }
+
     sourceSets {
         commonMain {
             dependencies {
                 api(project(":core"))
+                api(project(":causality-solver"))
             }
         }
     }

@@ -26,9 +26,9 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.tuprolog.dsl.solve)
-                implementation(libs.tuprolog.solve.classic)
-                implementation(libs.tuprolog.parser.theory)
+                api(libs.tuprolog.dsl.solve)
+                api(libs.tuprolog.solve.classic)
+                api(libs.tuprolog.parser.theory)
             }
         }
 

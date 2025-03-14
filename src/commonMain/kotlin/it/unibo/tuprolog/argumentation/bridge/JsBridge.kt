@@ -1,14 +1,19 @@
-package it.unibo.tuprolog.argumentation.core.bridge
+package it.unibo.tuprolog.argumentation.bridge
 
+import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
 
@@ -113,13 +118,18 @@ object JsBridge {
         outputConsumer: (String) -> Unit,
         flagsText: String,
     ): MutableSolver {
-        val flags = it.unibo.tuprolog.theory.Theory.parse(flagsText)
-        val libFlags = it.unibo.tuprolog.solve.library.Library.of(alias = "argumentation.flags", clauses = flags)
+        val flags = Theory.parse(flagsText)
+        val libFlags = Library.of(alias = "argumentation.flags", clauses = flags)
 
         return ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries = ClassicSolverFactory.defaultRuntime.plus(Arg2pSolver.default().to2pLibraries().plus(libFlags)),
+            otherLibraries =
+                ClassicSolverFactory.defaultRuntime.plus(
+                    Arg2pSolver.default(
+                        dynamicLibs = listOf(CausalitySolver()),
+                    ).to2pLibraries().plus(libFlags),
+                ),
             flags = ClassicSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-            staticKb = it.unibo.tuprolog.theory.Theory.empty(),
+            staticKb = Theory.empty(),
             stdOut = OutputChannel.of(outputConsumer),
             stdErr = OutputChannel.of { _ -> },
             warnings = OutputChannel.of { _ -> },
@@ -133,9 +143,9 @@ object JsBridge {
         outputConsumer: (String) -> Unit,
     ): BridgedResult {
         val solver = solverOf(outputConsumer, flagsText)
-        val query = it.unibo.tuprolog.core.Struct.parse(queryText, solver.operators)
-        val theory = it.unibo.tuprolog.theory.Theory.parse(theoryText, solver.operators)
-        val formatter = it.unibo.tuprolog.core.TermFormatter.prettyExpressions()
+        val query = Struct.parse(queryText, solver.operators)
+        val theory = Theory.parse(theoryText, solver.operators)
+        val formatter = TermFormatter.prettyExpressions()
         solver.loadStaticKb(theory)
 
         val solutions =
