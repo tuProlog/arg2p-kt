@@ -4,11 +4,13 @@
 
 buildArgumentationGraph :-
     buildArguments,
-    findall(_, buildAdditionalArguments, _),
+    findall(_, buildAdditionalArgument, _),
     buildAttacks.
 
-
-buildAdditionalArguments :-
+%--------------------------------------------------------------------------
+% Build Conflict Arguments
+%--------------------------------------------------------------------------
+buildAdditionalArgument :-
     metaConflicts,
     conf_arg(A, CArg),
     context_check(clause(conc(A), argument([R, T, C, B, I]))),
@@ -16,7 +18,7 @@ buildAdditionalArguments :-
     context_assert(support(CArg, [[mc|R], T, C, B, I])),
     cloneSupport([R, T, C, B, I], [[mc|R], T, C, B, I]),
     fail.
-buildAdditionalArguments.
+buildAdditionalArgument.
 
 cloneSupport(Original, New) :-
     findall(_, (
@@ -29,7 +31,9 @@ conf_arg([A], Arg) :-
 conf_arg([A], Arg) :-
     context_check(clause(conc([conflict(A, _)]), argument(Arg))).
 
-
+%--------------------------------------------------------------------------
+% Build Standard Arguments
+%--------------------------------------------------------------------------
 buildArguments :-
 	buildArgumentsFromPremises,
 	buildArgumentsFromEmptyRules,
@@ -39,17 +43,6 @@ buildArguments :-
     ), Rules),
     findall(X, context_check(newConc(a, [X])), N),
 	buildArgumentsFromRules(N, b, Rules, Rules, n).
-
-
-saveArgument(T, Conclusion, Argument) :-
-    ground(Conclusion),
-    \+ context_check(clause(conc(Conclusion), argument(Argument))),
-    context_assert(newConc(T, Conclusion)),
-    utils::hash(argument(Argument), Id),
-    context_assert(argument(Argument)),
-    context_assert(conc(Conclusion) :- argument(Argument)),
-    context_assert(arg(Id) :- argument(Argument)).
-
 
 buildArgumentsFromPremises :-
     findall(
@@ -73,19 +66,10 @@ buildArgumentsFromEmptyRules :-
         _
     ).
 
-% Check Rule
 emptyRule([RuleID, Body, RuleHead]) :-
     parser::classic_rule(RuleID, Body, RuleHead),
     \+ (member(X, Body), X \= ~(_), X \= prolog(_)),
     ruleBodyIsSupported(RuleID, RuleHead, Body, Body, [[], [], [], []], _).
-%    checkPrologClauses(Body).
-
-checkPrologClauses([]) :- !.
-checkPrologClauses([~(_)|T]) :- checkPrologClauses(T), !.
-checkPrologClauses([prolog(Check)|T]) :-
-    (callable(Check) -> call(Check); Check),
-    checkPrologClauses(T).
-
 
 checkStrict(Id, []) :- parser::check_strict(Id), !.
 checkStrict(Id, [Id]).
@@ -156,160 +140,51 @@ ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, 
 	context_assert(support([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument)).
 
 
-
-
-
+%--------------------------------------------------------------------------
+% Build attacks
+%--------------------------------------------------------------------------
 
 buildAttacks :-
-	buildDirectAttacks,
+	findall(_, buildDirectAttack, _),
 	buildTransitiveAttacks.
-
-
-% Attacks
-
-findPossibleAttackers([_, _, Head, _, _], Conf) :-
-    parser::classic_conflict(Conf, Head, Guard).
-findPossibleAttackers([_, _, Head, _, _], Conf) :-
-    parser::classic_conflict(Conf, Head).
-findPossibleAttackers([_, _, _, Prem, _], [Conf]) :-
-    member(~(Conf), Prem).
-findPossibleAttackers([_, RuleID, _, _, _], [undercut(RuleID)]).
-findPossibleAttackers([_, RuleID, _, _, _], Conf) :-
-    parser::classic_conflict(Conf, [RuleID], Guard).
-findPossibleAttackers([_, RuleID, _, _, _], Conf) :-
-    parser::classic_conflict(Conf, [RuleID]).
-
-
-filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
-filter_meta(_) :- \+ metaConflicts.
-
-
-buildDirectAttacks :-
-    findall(_, buildDirectAttack, _).
 
 buildDirectAttack :-
     context_check(argument(A)),
-    findPossibleAttackers(A, BB),
-    %write(BB),nl,
+    attack::findPossibleAttackers(A, BB),
 	context_check(clause(conc(BB), argument(B))),
-	%write(B),nl,
 	filter_meta(B),
-	%write(after_filter),nl,
 	A \== B,
-    attacks(T, B, A),
-    %write(T),nl,
-	\+ context_check(attack(T, B, A, A)),
-	context_assert(attack(T, B, A, A)),
-	utils::hash(argument(A), IdA),
-	utils::hash(argument(B), IdB),
-	context_assert(att(IdB, IdA) :- attack(T, B, A, A)),
-	%write(attack(T, B, A, A)),nl,
+    attack::attacks(T, B, A),
+    saveAttack(T, B, A, A),
 	fail.
 buildDirectAttack.
-
 
 buildTransitiveAttacks :-
 	context_check(attack(T, A, B, D)),
 	context_check(support(B, C)),
-	\+ context_check(attack(T, A, C, D)), !,
-	context_assert(attack(T, A, C, D)),
-    utils::hash(argument(A), IdA),
-    utils::hash(argument(C), IdC),
-    context_assert(att(IdA, IdC) :- attack(T, B, C, D)),
+	saveAttack(T, A, C, D),!,
     buildTransitiveAttacks.
 buildTransitiveAttacks.
 
+filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
+filter_meta(_) :- \+ metaConflicts.
 
-%------------------------------------------------------------------------
-% Attack definition
-%------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+% Save stuff
+%--------------------------------------------------------------------------
+saveArgument(T, Conclusion, Argument) :-
+    ground(Conclusion),
+    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    context_assert(newConc(T, Conclusion)),
+    utils::hash(argument(Argument), Id),
+    context_assert(argument(Argument)),
+    context_assert(conc(Conclusion) :- argument(Argument)),
+    context_assert(arg(Id) :- argument(Argument)).
 
-attacks(rebut, A, B) :- rebuts(A, B), !.
-attacks(contrary_rebut, A, B) :- contraryRebuts(A, B), !.
-attacks(undermine, A, B) :- undermines(A, B), !.
-attacks(contrary_undermine, A, B) :- contraryUndermines(A, B), !.
-attacks(undercut, A, B) :- undercuts(A, B), !.
 
-expanded_conflict(HeadA, HeadB) :-
-    parser::classic_conflict(HeadA, HeadB).
-expanded_conflict(HeadA, HeadB) :-
-    parser::classic_conflict(HeadA, HeadB, Guard),
-    (callable(Guard) -> call(Guard); Guard).
-
-%------------------------------------------------------------------------
-% Rebutting definition: clash of incompatible conclusions
-% we assume a preference relation over arguments determining whether two
-% rebutting arguments mutually attack each other or only one of them
-% (being preferred) attacks the other
-%------------------------------------------------------------------------
-rebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, _, Info]) :-
-	RuleB \== none,
-    Info \== [[], [], []],
-	expanded_conflict(RuleHeadA, RuleHeadB).
-
-%------------------------------------------------------------------------
-% Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
-%------------------------------------------------------------------------
-contraryRebuts([IDPremisesA, RuleA, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
-	RuleA \== none,
-	RuleB \== none,
-	utils::contains(~(RuleHeadA), Body).
-
-%------------------------------------------------------------------------
-% Undermining definition: clash of incompatible premises
-%------------------------------------------------------------------------
-undermines([IDPremisesA, RuleA, RuleHeadA, _, _], [[IDPremiseB], none, RuleHeadB, _, Info]) :-
-	Info \== [[], [], []],
-	expanded_conflict(RuleHeadA, RuleHeadB).
-
-%------------------------------------------------------------------------
-% Contrary Undermining definition
-%------------------------------------------------------------------------
-contraryUndermines([IDPremisesA, none, [RuleHeadA], _, _], [IDPremisesB, RuleB, RuleHeadB, Body, Info]) :-
-	RuleB \== none,
-	utils::contains(~(RuleHeadA), Body).
-
-%------------------------------------------------------------------------
-% Undercutting definition: attacks on defeasible inference rule
-%------------------------------------------------------------------------
-undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
-
-%------------------------------------------------------------------------
-% Raw Undercutting definition: attacks on defeasible inference rule
-%------------------------------------------------------------------------
-undercuts([_, _, NegRuleB, _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
-    expanded_conflict(NegRuleB, [RuleB]).
-
-%========================================================================
-% CONFLICT DEFINITION
-%========================================================================
-
-% check(-Atom).
-
-% conflict([Atom], [-Atom]) :- \+ check(Atom).
-conflict([Atom], [-Atom], (Atom \= -_)).
-conflict([-Atom], [Atom]).
-
-% conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
-conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).
-conflict([o(-Atom)], [o(Atom)]).
-
-% conflict([o(Lit)], [-o(Lit)]).
-% conflict([-o(Lit)], [o(Lit)]).
-
-% conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
-conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).
-conflict([o(-Atom)], [p(Atom)]).
-
-conflict([p(-Atom)], [o(Atom)]).
-% conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
-conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).
-
-% BP CONFLICT
-
-% conflict([bp(Atom)], [-bp(Atom)]).
-% conflict([-bp(Atom)], [bp(Atom)]).
-
-% SUP CONFLICT
-
-conflict([sup(X, Y)], [sup(Y, X)]).
+saveAttack(T, A, C, D) :-
+    \+ context_check(attack(T, A, C, D)),
+    context_assert(attack(T, A, C, D)),
+    utils::hash(argument(A), IdA),
+    utils::hash(argument(C), IdC),
+    context_assert(att(IdA, IdC) :- attack(T, A, C, D)).

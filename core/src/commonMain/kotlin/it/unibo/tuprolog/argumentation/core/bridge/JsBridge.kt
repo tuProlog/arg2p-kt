@@ -158,7 +158,7 @@ object JsBridge {
 
         val i = solutions.iterator()
         val jsIt =
-            JsIterator(
+            JsIterator<BridgedSolution>(
                 nextFunction = { if (i.hasNext()) i.next() else null },
                 hasNextFunction = { i.hasNext() },
             )

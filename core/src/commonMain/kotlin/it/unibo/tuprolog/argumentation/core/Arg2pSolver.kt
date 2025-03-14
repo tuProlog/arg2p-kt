@@ -27,6 +27,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStat
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
+import it.unibo.tuprolog.argumentation.core.libs.utils.AttackRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
 import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
@@ -83,6 +84,7 @@ interface Arg2pSolver {
                 StatementLabeller,
                 AbstractMode,
                 StructuredMode,
+                AttackRelation,
                 SuperiorityRelation,
                 BpPartialLabeller,
                 BpCompleteLabeller,

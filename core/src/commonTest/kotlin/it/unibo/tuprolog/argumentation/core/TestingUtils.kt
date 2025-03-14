@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.core.Struct
@@ -12,10 +13,6 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.Theory
@@ -28,16 +25,13 @@ object TestingUtils {
 
     fun withArgOperators(theory: String) = Theory.parse(theory, Arg2pSolver.default().operators())
 
-    fun solver(
-        theory: Theory = Theory.empty(),
-        flags: FlagStore = FlagStore.DEFAULT,
-    ) = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-        otherLibraries = Arg2pSolver.default().to2pLibraries(),
-        staticKb = theory,
-        flags = flags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-    )
+    fun solver(theory: Theory = Theory.empty()) =
+        Arg2pSolverFactory.default(
+            theory = if (theory.isEmpty) "" else theory.toString(true),
+            settings = FlagsBuilder().empty(true).create(),
+        )
 
-    fun solverWithTheory(theory: String) = solver(withArgOperators(theory))
+    fun solverWithTheory(theory: String) = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().empty(true).create())
 
     fun testGoal(
         goal: Struct,

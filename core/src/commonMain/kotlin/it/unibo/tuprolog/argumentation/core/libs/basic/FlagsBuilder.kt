@@ -21,6 +21,7 @@ import it.unibo.tuprolog.unify.Unificator
 import kotlin.jvm.JvmStatic
 
 data class FlagsBuilder(
+    var emptyBuilder: Boolean = false,
     var queryMode: Boolean = QueryMode.default(),
     var autoTransposition: Boolean = AutoTransposition.default(),
     var prologStrictCompatibility: Boolean = PrologStrictCompatibility.default(),
@@ -36,6 +37,7 @@ data class FlagsBuilder(
         @JvmStatic
         fun setupSolver(target: FlagsBuilder) =
             MutableTheory.empty(Unificator.default).also { kb ->
+                if (target.emptyBuilder) return@also
                 target.graphExtensions.forEach { kb.assertA(Clause.parse("${GraphExtension.predicate()}(X) :- X = $it")) }
                 if (target.queryMode) kb.assertA(Struct.parse(QueryMode.predicate()))
                 if (target.autoTransposition) kb.assertA(Struct.parse(AutoTransposition.predicate()))
@@ -48,6 +50,8 @@ data class FlagsBuilder(
                 kb.assertA(Struct.parse("${ModulesPath.predicate()}(${target.modulesPath})"))
             }
     }
+
+    fun empty(emptyBuilder: Boolean) = apply { this.emptyBuilder = emptyBuilder }
 
     fun queryMode(queryMode: Boolean) = apply { this.queryMode = queryMode }
 
