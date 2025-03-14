@@ -14,8 +14,9 @@ buildAdditionalArgument :-
     metaConflicts,
     conf_arg(A, CArg),
     context_check(clause(conc(A), argument([R, T, C, B, I]))),
+    \+ filter_meta([R, T, C, B, I]),
     saveArgument(a, A, [[mc|R], T, C, B, I]),
-    context_assert(support(CArg, [[mc|R], T, C, B, I])),
+    saveSupport(CArg, [[mc|R], T, C, B, I]),
     cloneSupport([R, T, C, B, I], [[mc|R], T, C, B, I]),
     fail.
 buildAdditionalArgument.
@@ -23,13 +24,16 @@ buildAdditionalArgument.
 cloneSupport(Original, New) :-
     findall(_, (
         context_check(support(S, Original)),
-        context_assert(support(S, New))
+        saveSupport(S, New)
     ), _).
 
 conf_arg([A], Arg) :-
     context_check(clause(conc([conflict(A, _, _)]), argument(Arg))).
 conf_arg([A], Arg) :-
     context_check(clause(conc([conflict(A, _)]), argument(Arg))).
+
+filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
+filter_meta(_) :- \+ metaConflicts.
 
 %--------------------------------------------------------------------------
 % Build Standard Arguments
@@ -119,7 +123,7 @@ argumentInfo(RuleId, LDef, Def, Prem, [FLDef, FDef, FPrem]) :-
 % Argument Support
 
 ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], Argument) :-
-    ground(RuleHead),
+    % ground(RuleHead),
     utils::appendLists(TAll, All),
     \+ utils::contains(RuleID, All),
     utils::appendLists(TLDef, LDef),
@@ -137,7 +141,7 @@ ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [prolog(Check)|Others], Info, Ar
 ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, Def, Prem], Argument) :-
     context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]]))),
 	ruleBodyIsSupported(RuleId, RuleHead, RuleBody, Others, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
-	context_assert(support([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument)).
+	saveSupport([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument).
 
 
 %--------------------------------------------------------------------------
@@ -166,14 +170,12 @@ buildTransitiveAttacks :-
     buildTransitiveAttacks.
 buildTransitiveAttacks.
 
-filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
-filter_meta(_) :- \+ metaConflicts.
-
 %--------------------------------------------------------------------------
 % Save stuff
 %--------------------------------------------------------------------------
+
 saveArgument(T, Conclusion, Argument) :-
-    ground(Conclusion),
+    % ground(Conclusion),
     \+ context_check(clause(conc(Conclusion), argument(Argument))),
     context_assert(newConc(T, Conclusion)),
     utils::hash(argument(Argument), Id),
@@ -181,10 +183,19 @@ saveArgument(T, Conclusion, Argument) :-
     context_assert(conc(Conclusion) :- argument(Argument)),
     context_assert(arg(Id) :- argument(Argument)).
 
-
 saveAttack(T, A, C, D) :-
     \+ context_check(attack(T, A, C, D)),
     context_assert(attack(T, A, C, D)),
     utils::hash(argument(A), IdA),
     utils::hash(argument(C), IdC),
     context_assert(att(IdA, IdC) :- attack(T, A, C, D)).
+
+saveSupport(A, B) :-
+    \+ context_check(support(A, B)),
+    context_assert(support(A, B)).
+
+removeAttack(T, A, B, C) :-
+    context_retract(attack(T, A, B, C)),
+    utils::hash(argument(A), IdA),
+    utils::hash(argument(B), IdB),
+    context_retract(att(IdA, IdB) :- attack(T, A, B, C)).

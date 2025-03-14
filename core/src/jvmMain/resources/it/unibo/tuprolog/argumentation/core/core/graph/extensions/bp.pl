@@ -18,15 +18,15 @@ checkBpArguments(TemplateBpPairs) :-
 createBpArguments([], []).
 createBpArguments([(Original, [Z, P, Y, B, I])|Others], [(Conflict, [Z, P, Y, B, I])|BpPairs]) :-
     Conflict = [[artificial|Z], artificial, [-burdmet(Y)], [], [[artificial], [artificial], []]],
-    context_assert(argument(Conflict)),
-    context_assert(support(Original, Conflict)),
+    standard_af::saveArgument(a, [-burdmet(Y)], Conflict),
+    standard_af::saveSupport(Original, Conflict),
     liftBpAttacks(Original, Conflict),
     createBpArguments(Others, BpPairs).
 
 liftBpAttacks(Template, BpArg) :-
     findall(_, (
         context_check(attack(T, A, Template, O)),
-        context_assert(attack(T, A, BpArg, O))
+        standard_af::saveAttack(T, A, BpArg, O)
     ), _).
 
 
@@ -58,9 +58,9 @@ evaluateBurdenedArgs([]).
 evaluateBurdenedArgs([(Bp, Burdened)|Others]) :-
     context_active(X),
     grounded:::argumentLabelling,
-    statusToAttack((Bp, Burdened), Attack),
+    statusToAttack((Bp, Burdened), attack(T, A, B, C)),
     context_checkout(X),
-    context_assert(Attack),
+    standard_af::saveAttack(T, A, B, C),
     evaluateBurdenedArgs(Others).
 
 statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-

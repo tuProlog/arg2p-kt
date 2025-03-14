@@ -55,17 +55,15 @@ conversion(_).
 
 generateTransitiveAttackArgument(T, A, B, C) :-
     context_check(argument([Id, attack, [attack(T, A, C, C)], G, I])),
-    context_assert(attack(T, [Id, attack, [attack(T, A, C, C)], G, I], B, C)),
-    context_retract(attack(T, A, B, C)).
+    standard_af::saveAttack(T, [Id, attack, [attack(T, A, C, C)], G, I], B, C),
+    standard_af::removeAttack(T, A, B, C).
 
 generateDirectAttackArgument(T, A, B, B) :-
     RArgument = [[attack], attack, [attack(T, A, B, B)], [], [[attack], [attack], []]],
-    \+ context_check(argument(RArgument)),
-    context_assert(argument(RArgument)),
-    context_assert(support(A, RArgument)),
-    context_assert(attack(T, RArgument, B, B)),
-    context_retract(attack(T, A, B, B)).
-
+    standard_af::saveArgument(a, [attack(T, A, B, B)], RArgument),
+    standard_af::saveSupport(A, RArgument),
+    standard_af::saveAttack(T, RArgument, B, B),
+    standard_af::removeAttack(T, A, B, B).
 
 /*
 *   Computes the pref attack. If an Argument A has a conclusion in the form sup(a, b), we verify if
@@ -78,8 +76,6 @@ buildPrefAttacks :-
     invalid(T, A, B, C, SupSet),
     member(X, SupSet),
     context_check(argument([IdA, TRA, [X], GG, II])),
-    Attack = attack(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
-    \+ context_check(Attack),
-    context_assert(Attack),
+    standard_af::saveAttack(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
     fail.
 buildPrefAttacks.

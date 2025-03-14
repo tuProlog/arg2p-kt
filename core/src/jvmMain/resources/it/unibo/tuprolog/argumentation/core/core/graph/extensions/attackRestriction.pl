@@ -6,7 +6,7 @@ modifyArgumentationGraph :-
 
 checkRebutRestriction(T, A, B, C) :-
     \+ rebutRestriction(T, A, B, C),
-    context_retract(attack(T, A, B, C)).
+    standard_af::removeAttack(T, A, B, C).
 
 rebutRestriction(rebut, _, _, C) :- restrict(C).
 rebutRestriction(undermine, _, _, C).
