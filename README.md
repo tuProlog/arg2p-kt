@@ -4,8 +4,8 @@ Quick links:
 
 - [GitHub Repository](https://github.com/tuProlog/arg2p-kt)
 - [Maven Repository](https://search.maven.org/search?q=g:it.unibo.tuprolog.argumentation)
-- [NPM Package](https://www.npmjs.com/package/@tuprolog/arg2p-core)
-- [Documentation](https://pika-lab.gitlab.io/argumentation/arg2p-kt)
+- [NPM Package](https://www.npmjs.com/package/@tuprolog/arg2p)
+- [Documentation](https://pika-lab.gitlab.io/argumentation/arg2p-kt/)
 
 Arg2Prolog is a lightweight implementation of the ASPIC<sup>+</sup>-like framework for structured argumentation.
 Built on top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-kt/) engine, it supports both JVM and JavaScript environments.
@@ -34,7 +34,7 @@ repositories {
 }
 ``` 
 
-To run ([complete example](https://github.com/Gilbocc/arg2p-kt-demo)):
+#### Usage Example
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
@@ -52,10 +52,13 @@ fun main() {
 }
 ``` 
 
+For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
+
 #### NPM Library
 
 The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
 To import the Arg2p library into your `package.json`, it is sufficient to declare your dependency as follows:
+
 ```json
 {
   "dependencies": {
