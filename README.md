@@ -2,26 +2,78 @@
 
 Quick links:
 
-- [GitLab Repository](https://gitlab.com/pika-lab/argumentation/arg2p-kt)
 - [GitHub Repository](https://github.com/tuProlog/arg2p-kt)
 - [Maven Repository](https://search.maven.org/search?q=g:it.unibo.tuprolog.argumentation)
 - [NPM Package](https://www.npmjs.com/package/@tuprolog/arg2p-core)
 - [Documentation](https://pika-lab.gitlab.io/argumentation/arg2p-kt)
 
+Arg2Prolog is a lightweight implementation of the ASPIC<sup>+</sup>-like framework for structured argumentation.
+Built on top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-kt/) engine, it supports both JVM and JavaScript environments.
+More details are available on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
 
-Arg2Prolog is a lightweight implementation of the ASPIC<sup>+</sup>-like framework for structured argumentation. 
-It is built on the top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/) engine.
+---
 
-More information about the project can be found on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
+## Getting Started
 
-### Get Started
+The Arg2p library is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-kt/) library.
 
-The Arg2p library is available in two different forms: as a standalone application (Arg2p Java IDE), and as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/) library.
+#### JVM Library - Gradle
 
-#### Graphical User Interface
+To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based project leveraging on Gradle,
+you simply need to declare the corresponding dependency in your `build.gradle(.kts)` file:
+ ```kotlin
+dependencies {
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:ARG2P_VERSION")
+}
+ ``` 
+
+Don't forget to tell Gradle to use Maven Central as a source for dependency lookup. You can do it as follows:
+```kotlin
+repositories {
+    mavenCentral()
+}
+``` 
+
+To run ([complete example](https://github.com/Gilbocc/arg2p-kt-demo)):
+
+```kotlin
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+
+fun main() {
+    val graph = Arg2pSolverFactory.evaluate("""
+        f1 :=> d.
+        f2 :=> -d.
+    """.trimIndent(), FlagsBuilder()).first()
+
+    graph.labellings.forEach {
+        println("${it.label} : ${it.argument.conclusion}")
+    }
+}
+``` 
+
+#### NPM Library
+
+The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
+To import the Arg2p library into your `package.json`, it is sufficient to declare your dependency as follows:
+```json
+{
+  "dependencies": {
+    "@tuprolog/arg2p": "^ARG2P_VERSION"
+  }
+}
+```
+
+For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
+
+---
+
+## Arg2p IDE
 
 If you need a GUI for your Prolog interpreter, you can rely on the Arg2p IDE which is available on the [Releases section of the
 GitHub repository](https://github.com/tuProlog/arg2p-kt/releases).
+
+![Java IDE](./imgs/javaide.png)
 
 The page of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) of Arg2P exposes a number of _Assets_.
 There, the one named:
@@ -35,86 +87,160 @@ After you download the `arg2p-ide-VERSION-redist.jar`, you can simply launch it 
 ```bash
 java -jar arg2p-ide-VERSION-redist.jar
 ```
-However, if you have properly configured the JVM on your system, it may be sufficient to just double-click on the JAR to start the IDE.
+If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
 
-There, one may query the Arg2p Prolog interpreter against the currently opened theory file, which can of course be
-loaded from the user's file system by pressing <kbd>File</kbd> and then <kbd>Open...</kbd>.
+### Features
 
-To issue a query, the user must write it in the query text field, at the center of the application.
-By either pressing <kbd>Enter</kbd> while the cursor is on the query text field, or by clicking on the <kbd>&gt;</kbd> button, the user can start a new resolution process, aimed at solving the provided query.
-Further solutions can be explored by clicking on the <kbd>&gt;</kbd> over and over again.
-One may also compute all the unexplored solutions at once by clicking on the <kbd>&gt;&gt;</kbd> button.
+- **Query Execution:** Write your query in the text field and hit <kbd>Enter</kbd> or click <kbd>&gt;</kbd>.
+- **Solution Exploration:** Click <kbd>&gt;</kbd> for the next solution or <kbd>&gt;&gt;</kbd> to compute all solutions.
+- **New Query:** Click <kbd>X</kbd> to stop the current query, then enter a new one.
 
-To perform a novel query, the user may either:
-- write the new query in the query text field, and then press <kbd>Enter</kbd>, or
-- click on the <kbd>X</kbd> (Stop) button, write the new query in the query text field, and then press <kbd>&gt;</kbd>.
+### Additional Tabs
 
-For a deeper introduction on the Arg2p IDE you can refer to the original [2P-Kt](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin) page.
-The Arg2p version of the IDE introduces two additional tabs:
-- the _Graph_ tab, containing the graphical representation of the abstract argumentation graph (available only if leveraging the abstract query mode -- `buildLabelSet` predicate);
-- the _Arg Flag_ tab, allowing the user to see/modify the values of the Arg2p flags. A comprehensive description of these values can be found on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/wiki/predicate).
+- **Graph Tab:** Displays a graphical representation of the abstract argumentation graph.
+- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/wiki/predicate).
 
-#### Gradle users
+---
 
-To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based project leveraging on Gradle,
-you simply need to declare the corresponding dependency in your `build.gradle(.kts)` file:
- ```kotlin
-dependencies {
-    implementation("it.unibo.tuprolog.argumentation", "arg2p", "ARG2P_VERSION")
-}
- ``` 
+## Arg2p Playground
 
-Don't forget to tell Gradle to use Maven Central as a source for dependency lookup. You can do it as follows:
+Try Arg2P directly in your browser using the [Web Playground](https://legalmachinelab.unibo.it/arg2p).
+
+![Web Playground](./imgs/playground.png)
+
+It functions the same as the Java IDE, offering an interactive experience without installation.
+
+---
+
+## Issue tracking
+
+If you encounter any issues, please report them on the [GitHub Issues](https://github.com/tuProlog/arg2p-kt/issues) page.  
+Your feedback helps improve the project!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Here’s an improved version of the Arg2P documentation. I focused on making it clearer, more concise, and easier to follow. Let me know if you’d like more changes!
+
+---
+
+# Arg2P
+
+Quick links:
+
+- [GitHub Repository](https://github.com/tuProlog/arg2p-kt)
+- [Maven Repository](https://search.maven.org/search?q=g:it.unibo.tuprolog.argumentation)
+- [NPM Package](https://www.npmjs.com/package/@tuprolog/arg2p-core)
+- [Documentation](https://pika-lab.gitlab.io/argumentation/arg2p-kt)
+
+Arg2P is a lightweight implementation of the ASPIC<sup>+</sup>-like framework for structured argumentation.  
+Built on top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/) engine, it supports both JVM and JavaScript environments.  
+More details are available on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
+
+---
+
+## Get Started
+
+Arg2P is available in two forms:
+1. Standalone application (Arg2P Java IDE).
+2. [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-in-kotlin/) library.
+
+---
+
+### JVM Library (Gradle)
+
+Add the Arg2P dependency to your Kotlin project by updating your `build.gradle(.kts)` file:
+
 ```kotlin
+dependencies {
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:ARG2P_VERSION")
+}
+
 repositories {
     mavenCentral()
 }
-``` 
+```
 
-##### JVM-only projects with Gradle
+**Usage Example:**
+```kotlin
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 
-In the case your project only targets the JVM platform, remember to add the `-jvm` suffix to the module name:
- ```kotlin
-dependencies {
-    implementation("it.unibo.tuprolog.argumentation", "arg2p-jvm", "ARG2P_VERSION")
+fun main() {
+    val graph = Arg2pSolverFactory.evaluate("""
+        f1 :=> d.
+        f2 :=> -d.
+    """.trimIndent(), FlagsBuilder()).first()
+
+    graph.labellings.forEach {
+        println("${it.label} : ${it.argument.conclusion}")
+    }
 }
- ``` 
+```
 
-#### Maven users
+For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
 
-To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based project leveraging on Maven,
-you simply need to declare the corresponding dependency in your `pom.xml` file:
- ```xml
-<dependency>
-    <groupId>it.unibo.tuprolog.argumentation</groupId>
-    <artifactId>arg2p</artifactId>
-    <version>ARG2P_VERSION</version>
-</dependency>
- ``` 
+---
 
-##### JVM-only projects with Maven
+### NPM Library
 
-In the case your project only targets the JVM platform, remember to add the `-jvm` suffix to the module name:
- ```xml
-<dependency>
-    <groupId>it.unibo.tuprolog.argumentation</groupId>
-    <artifactId>arg2p-jvm</artifactId>
-    <version>ARG2P_VERSION</version>
-</dependency>
- ``` 
+To use Arg2P with Node.js, add the library to your `package.json`:
 
-#### NPM users
-
-The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
-To import the Arg2p library into your `package.json`, it is sufficient to declare your dependency as follows:
 ```json
 {
   "dependencies": {
-    "@tuprolog/arg2p-core": "^ARG2P_MODULE_VERSION"
+    "@tuprolog/arg2p": "^ARG2P_MODULE_VERSION"
   }
 }
 ```
 
-### Issue tracking
+For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
 
-If you meet some problem in using Arg2p, you are encouraged to signal it through the project ["Issues" section](https://gitlab.com/pika-lab/argumentation/arg2p-kt/-/issues) on GitLab.
+---
+
+## Arg2P IDE
+
+The Arg2P IDE is a GUI for the Prolog interpreter. Download the latest release from the [GitHub Releases](https://github.com/tuProlog/arg2p-kt/releases).
+
+After downloading `arg2p-ide-VERSION-redist.jar`, run it via:
+
+```bash
+java -jar arg2p-ide-VERSION-redist.jar
+```
+
+If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
+
+### Features
+
+- **Query Execution:** Write your query in the text field and hit <kbd>Enter</kbd> or click <kbd>&gt;</kbd>.
+- **Solution Exploration:** Click <kbd>&gt;</kbd> for the next solution or <kbd>&gt;&gt;</kbd> to compute all solutions.
+- **New Query:** Click <kbd>X</kbd> to stop the current query, then enter a new one.
+
+### Additional Tabs
+
+- **Graph Tab:** Displays a graphical representation of the abstract argumentation graph (available in abstract query mode).
+- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/wiki/predicate).
+
+---
+
+## Arg2P Playground
+
+Try Arg2P directly in your browser using the [Web Playground](https://legalmachinelab.unibo.it/arg2p).  
+It functions the same as the Java IDE, offering an interactive experience without installation.
+
+---
+
+## Issue Tracking
+
+If you encounter any issues, please report them on the [GitHub Issues](https://github.com/tuProlog/arg2p-kt/issues) page.  
+Your feedback helps improve the project!
