@@ -57,6 +57,27 @@ To use the library, add the dependency to your `package.json`:
 }
 ```
 
+#### Usage Example
+
+```js
+const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
+
+const graph = arg2p.solve('buildLabelSets', `
+    f1 :=> d.
+    f2 :=> -d.`, `
+    graphBuildMode(standard_af).
+    statementLabellingMode(statement).
+    argumentLabellingMode(grounded_hash).
+    orderingPrinciple(last).
+    orderingComparator(elitist).
+    graphExtension(standardPref).
+    queryMode.`, _ => { }).i.next().graph
+
+graph.arguments.forEach(arg => {
+    console.log(`${arg.label} : ${arg.descriptor}`)
+})
+```
+
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
 
 ---
