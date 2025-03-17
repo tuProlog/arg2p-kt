@@ -55,7 +55,7 @@ class CausalitySolver : ArgLibrary, Loadable {
             .filter { x.identifier == it.argument.identifier } +
             attackers(x, graph).flatMap {
                     att ->
-                attackers(att.argument, graph).flatMap { supporters(it.argument, graph) }
+                attackers(att.argument, graph).filter { it.argument.identifier != x.identifier }.flatMap { supporters(it.argument, graph) }
             }
 
     private fun solveFresh(kb: Theory) =
