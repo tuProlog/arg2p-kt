@@ -1,3 +1,14 @@
+## [0.10.1](https://github.com/tuProlog/arg2p-kt/compare/0.10.0...0.10.1) (2025-03-17)
+
+### Bug Fixes
+
+* causality evaluation loops ([7690239](https://github.com/tuProlog/arg2p-kt/commit/7690239122ffd9d7abd3fe3604e927696fd4ddd7))
+
+### Documentation
+
+* Update README.md ([04d479c](https://github.com/tuProlog/arg2p-kt/commit/04d479c74d398c375a34738ec2514711b0fa77df))
+* Update README.md ([263a263](https://github.com/tuProlog/arg2p-kt/commit/263a2633e1df52cdd59fc6ca389015c1b6f89858))
+
 ## [0.10.0](https://github.com/tuProlog/arg2p-kt/compare/0.9.0...0.10.0) (2025-03-14)
 
 ### Features
