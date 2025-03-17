@@ -1,7 +1,7 @@
 # Arg2P
 
-Arg2P is a lightweight implementation of the ASPIC<sup>+</sup>-like framework for structured argumentation.
-Built on top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-kt/) engine, it supports both JVM and JavaScript environments.
+Arg2P is a lightweight implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
+Built on top of the [tuProlog](http://pika-lab.gitlab.io/tuprolog/2p-kt/) engine, it supports both JVM and Node environments.
 
 More details are available on the [official wiki](https://pika-lab.gitlab.io/argumentation/arg2p-kt/).
 
@@ -9,7 +9,7 @@ More details are available on the [official wiki](https://pika-lab.gitlab.io/arg
 
 ## Getting Started
 
-The Arg2p library is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-kt/) library.
+Arg2p is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-kt/) library.
 
 #### JVM Library - Gradle
 
@@ -57,23 +57,43 @@ To use the library, add the dependency to your `package.json`:
 }
 ```
 
+#### Usage Example
+
+```js
+const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
+
+const graph = arg2p.solve('buildLabelSets', `
+    f1 :=> d.
+    f2 :=> -d.`, `
+    graphBuildMode(standard_af).
+    statementLabellingMode(statement).
+    argumentLabellingMode(grounded_hash).
+    orderingPrinciple(last).
+    orderingComparator(elitist).
+    graphExtension(standardPref).
+    queryMode.`, _ => { }).i.next().graph
+
+graph.arguments.forEach(arg => {
+    console.log(`${arg.label} : ${arg.descriptor}`)
+})
+```
+
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
 
 ---
 
 ## Arg2p IDE
 
-If you need a GUI for your Prolog interpreter, you can rely on the Arg2p IDE which is available on the [Releases section of the
-GitHub repository](https://github.com/tuProlog/arg2p-kt/releases).
+The Arg2p IDE is available on the [Releases section of the
+GitHub repository](https://github.com/tuProlog/arg2p-kt/releases/latest).
 
 ![Java IDE](./imgs/javaide.png)
 
-The page of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) of Arg2P exposes a number of _Assets_.
-There, the one named:
+In the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) page, download the _Asset_ named:
 ```
 arg2p-ide-ARG2P_VERSION-redist.jar
 ```
-is the self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`ARG2P_VERSION` may vary depending on the
+a self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`ARG2P_VERSION` will vary depending on the
 actual release version).
 
 After you download the `arg2p-ide-ARG2P_VERSION-redist.jar`, you can simply launch it by running:
