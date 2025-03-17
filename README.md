@@ -13,20 +13,16 @@ The Arg2p library is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2
 
 #### JVM Library - Gradle
 
-To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based project leveraging on Gradle,
-you simply need to declare the corresponding dependency in your `build.gradle(.kts)` file:
+To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file:
  ```kotlin
-dependencies {
-    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:ARG2P_VERSION")
-}
- ``` 
-
-Don't forget to tell Gradle to use Maven Central as a source for dependency lookup. You can do it as follows:
-```kotlin
 repositories {
     mavenCentral()
 }
-``` 
+
+dependencies {
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:ARG2P_VERSION")
+}
+ ```
 
 #### Usage Example
 
@@ -51,12 +47,12 @@ For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/a
 #### NPM Library
 
 The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
-To import the Arg2p library into your `package.json`, it is sufficient to declare your dependency as follows:
+To use the library, add the dependency to your `package.json`:
 
 ```json
 {
   "dependencies": {
-    "@tuprolog/arg2p": "^ARG2P_VERSION"
+    "@tuprolog/arg2p": "ARG2P_VERSION"
   }
 }
 ```
@@ -75,14 +71,14 @@ GitHub repository](https://github.com/tuProlog/arg2p-kt/releases).
 The page of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) of Arg2P exposes a number of _Assets_.
 There, the one named:
 ```
-arg2p-ide-VERSION-redist.jar
+arg2p-ide-ARG2P_VERSION-redist.jar
 ```
-is the self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`VERSION` may vary depending on the
+is the self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`ARG2P_VERSION` may vary depending on the
 actual release version).
 
-After you download the `arg2p-ide-VERSION-redist.jar`, you can simply launch it by running:
+After you download the `arg2p-ide-ARG2P_VERSION-redist.jar`, you can simply launch it by running:
 ```bash
-java -jar arg2p-ide-VERSION-redist.jar
+java -jar arg2p-ide-ARG2P_VERSION-redist.jar
 ```
 If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
 
