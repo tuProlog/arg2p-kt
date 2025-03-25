@@ -1,3 +1,15 @@
+## [0.10.2](https://github.com/tuProlog/arg2p-kt/compare/0.10.1...0.10.2) (2025-03-25)
+
+### Bug Fixes
+
+* custom conflicts ([4d92bb6](https://github.com/tuProlog/arg2p-kt/commit/4d92bb60a68f1b79ea576d91eb06deefb1b1ad58))
+* **deps:** update logback monorepo to v1.5.18 ([a58f177](https://github.com/tuProlog/arg2p-kt/commit/a58f177b71167cba4c1d2da9b4694b7acb17dbca))
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-node action to v4.3.0 ([091ca10](https://github.com/tuProlog/arg2p-kt/commit/091ca10310c000de85ab6da6d65d1bef41229b3a))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.13 ([c99bd1a](https://github.com/tuProlog/arg2p-kt/commit/c99bd1a518574146d6efc1a4037969e91a3711a8))
+
 ## [0.10.1](https://github.com/tuProlog/arg2p-kt/compare/0.10.0...0.10.1) (2025-03-17)
 
 ### Bug Fixes
