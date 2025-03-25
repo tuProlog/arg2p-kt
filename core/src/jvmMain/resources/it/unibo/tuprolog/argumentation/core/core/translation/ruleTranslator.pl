@@ -312,3 +312,9 @@ classic_conflict(A, B, C) :-
         conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),
         conflict([sup(X, Y)], [sup(Y, X)], true)
     ]).
+classic_conflict(A, B, C) :-
+    \+ metaConflicts,
+    conflict(A, B, C).
+classic_conflict(A, B) :-
+    \+ metaConflicts,
+    conflict(A, B).
