@@ -80,32 +80,32 @@ findPossibleAttackers([_, RuleID, _, _, _], Conf) :-
 % CONFLICT DEFINITION (NOT USED)
 %========================================================================
 
-% check(-Atom).
+%% check(-Atom).
 
-% conflict([Atom], [-Atom]) :- \+ check(Atom).
-conflict([Atom], [-Atom], (Atom \= -_)).
-conflict([-Atom], [Atom]).
+%% conflict([Atom], [-Atom]) :- \+ check(Atom).
+%conflict([Atom], [-Atom], (Atom \= -_)).
+%conflict([-Atom], [Atom]).
 
-% conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
-conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).
-conflict([o(-Atom)], [o(Atom)]).
+%% conflict([o(Atom)], [o(-Atom)]) :- \+ check(Atom).
+%conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).
+%conflict([o(-Atom)], [o(Atom)]).
 
-% conflict([o(Lit)], [-o(Lit)]).
-% conflict([-o(Lit)], [o(Lit)]).
+%% conflict([o(Lit)], [-o(Lit)]).
+%% conflict([-o(Lit)], [o(Lit)]).
 
-% conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
-conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).
-conflict([o(-Atom)], [p(Atom)]).
+%% conflict([p(Atom)], [o(-Atom)]) :- \+ check(Atom).
+%conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).
+%conflict([o(-Atom)], [p(Atom)]).
 
-conflict([p(-Atom)], [o(Atom)]).
-% conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
-conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).
+%conflict([p(-Atom)], [o(Atom)]).
+%% conflict([o(Atom)], [p(-Atom)]) :- \+ check(Atom).
+%conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).
 
-% BP CONFLICT
+%% BP CONFLICT
 
-% conflict([bp(Atom)], [-bp(Atom)]).
-% conflict([-bp(Atom)], [bp(Atom)]).
+%% conflict([bp(Atom)], [-bp(Atom)]).
+%% conflict([-bp(Atom)], [bp(Atom)]).
 
-% SUP CONFLICT
+%% SUP CONFLICT
 
-conflict([sup(X, Y)], [sup(Y, X)]).
+%conflict([sup(X, Y)], [sup(Y, X)]).
