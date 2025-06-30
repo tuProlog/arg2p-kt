@@ -117,7 +117,7 @@ If your JVM is properly configured, you can also start the IDE by double-clickin
 
 ## Arg2p Playground
 
-Try Arg2P directly in your browser using the [Web Playground](https://legalmachinelab.unibo.it/arg2p).
+Try Arg2P directly in your browser using the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/).
 
 ![Web Playground](./imgs/playground.png)
 
