@@ -20,5 +20,6 @@
     }
   ],
   "prConcurrentLimit": 30,
-  "prHourlyLimit": 30
+  "prHourlyLimit": 30,
+  "ignoreDeps": ["gradle"]
 }
