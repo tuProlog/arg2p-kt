@@ -114,7 +114,7 @@ jobs:
       GRADLE_OPTS: -Dorg.gradle.daemon=false
     steps:
       - name: Checkout
-        uses: DanySK/action-checkout@0.2.22
+        uses: DanySK/action-checkout@0.2.23
       - uses: DanySK/build-check-deploy-gradle-action@4.0.3
         timeout-minutes: 120
         with:
