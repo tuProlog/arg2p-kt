@@ -37,7 +37,7 @@ jobs:
       will-release: ${{ steps.compute-next-version.outputs.will-release }}
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4.3.0
         with:
           fetch-depth: 0
       - name: Compute next release version
@@ -147,7 +147,7 @@ jobs:
       needs.build.result == 'success'
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4.3.0
       - uses: DanySK/build-check-deploy-gradle-action@4.0.3
         with:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
@@ -180,7 +180,7 @@ jobs:
       needs.close-staging-repos.result == 'success'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4.3.0
         with:
           token: ${{ secrets.ARG2P_CI_GITHUB_TOKEN }}
       - name: Find the version of Node from package.json
