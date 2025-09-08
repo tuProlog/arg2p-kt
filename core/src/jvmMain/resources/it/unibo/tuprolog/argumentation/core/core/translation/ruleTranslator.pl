@@ -295,6 +295,9 @@ classic_rule(X, [applicable(X)|Y], Z) :- metaRules, !, rule(X, Y, Z).
 classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
 
+% -P(x) <=> O(-x)
+% -O(x) <=> P(-x)  % this is already included
+
 classic_conflict([A], [B], C) :- metaConflicts,
     context_check(clause(conc([conflict(A, B, C)]), _)).
 classic_conflict([A], [B]) :- metaConflicts,
@@ -304,12 +307,14 @@ classic_conflict(A, B, C) :-
     member(conflict(A, B, C), [
         conflict([Atom], [-Atom], (Atom \= -_)),
         conflict([-Atom], [Atom], true),
-        conflict([o(Atom)], [o(-Atom)], (Atom \= -_)),
+        conflict([o(Atom)], [o(-Atom)], (Atom \= -_)),                   % O(x) <-> O(-x)
         conflict([o(-Atom)], [o(Atom)], true),
-        conflict([p(Atom)], [o(-Atom)], (Atom \= -_)),
+        conflict([p(Atom)], [o(-Atom)], (Atom \= -_)),                   % P(x) <-> O(-x)
         conflict([o(-Atom)], [p(Atom)], true),
+        conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),                   % O(x) <-> P(-x)
         conflict([p(-Atom)], [o(Atom)], true),
-        conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),
+        conflict([o(Atom)], [-p(Atom)], true),                           % O(x) <-> O(-x) (-P(x))
+        conflict([-p(Atom)], [o(Atom)], true),
         conflict([sup(X, Y)], [sup(Y, X)], true)
     ]).
 classic_conflict(A, B, C) :-

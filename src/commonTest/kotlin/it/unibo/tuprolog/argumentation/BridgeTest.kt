@@ -15,8 +15,11 @@ class BridgeTest {
             "buildLabelSets",
             """
             r1 :=> a.
-            r2 :=> -a.
-            r3 :=> b.
+            r2 :=> b.
+            r3 :=> c.
+            
+            conflict([a], [b]).
+            conflict([b], [a]).
             """.trimIndent(),
             """
             graphBuildMode(standard_af).

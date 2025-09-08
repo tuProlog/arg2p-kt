@@ -113,6 +113,8 @@ class BasicTest {
             """.trimIndent(),
         ).let { solver ->
             isIntervention(solver, "[-sm_to]", "lu_ca", false)
+            isIntervention(solver, "[-ge_di]", "lu_ca")
+            isCause(solver, "ge_di", "lu_ca")
         }
 
     @Test
