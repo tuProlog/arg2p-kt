@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class SuperiorityRelationBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class SuperiorityRelationBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.superiority"
 
     override val baseContent: Library
@@ -23,11 +26,14 @@ abstract class SuperiorityRelationBase : ArgLibrary, LazyRawPrologContent(), Loa
     override fun identifier(): String = "superiority"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object SuperiorityRelation : SuperiorityRelationBase
+expect object SuperiorityRelation : SuperiorityRelationBase {
+    override val prologRawTheory: String
+}
 
 object OrderingPrinciple : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "orderingPrinciple"

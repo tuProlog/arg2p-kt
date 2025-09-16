@@ -18,16 +18,29 @@ import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
 
 @JsExport
-data class BridgedArgument(val id: String, val descriptor: String, val label: String)
+data class BridgedArgument(
+    val id: String,
+    val descriptor: String,
+    val label: String,
+)
 
 @JsExport
-data class BridgedAttack(val from: String, val to: String)
+data class BridgedAttack(
+    val from: String,
+    val to: String,
+)
 
 @JsExport
-data class JsPair<A, B>(val first: A, val second: B)
+data class JsPair<A, B>(
+    val first: A,
+    val second: B,
+)
 
 @JsExport
-class JsIterator<T>(private val nextFunction: () -> T?, private val hasNextFunction: () -> Boolean) {
+class JsIterator<T>(
+    private val nextFunction: () -> T?,
+    private val hasNextFunction: () -> Boolean,
+) {
     fun hasNext(): Boolean = hasNextFunction()
 
     fun next(): T? {
@@ -37,10 +50,16 @@ class JsIterator<T>(private val nextFunction: () -> T?, private val hasNextFunct
 }
 
 @JsExport
-data class BridgedResult(val i: JsIterator<BridgedSolution>, val query: String)
+data class BridgedResult(
+    val i: JsIterator<BridgedSolution>,
+    val query: String,
+)
 
 @JsExport
-data class BridgedGraph(val arguments: Array<BridgedArgument>, val attacks: Array<BridgedAttack>) {
+data class BridgedGraph(
+    val arguments: Array<BridgedArgument>,
+    val attacks: Array<BridgedAttack>,
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -97,7 +116,8 @@ object JsBridge {
         val graph =
             solver.graph(
                 arg2pScope {
-                    solver.solve("context_active"(X))
+                    solver
+                        .solve("context_active"(X))
                         .filter { it.isYes }
                         .map { it.substitution[X].toString().toInt() }
                         .first()
@@ -107,10 +127,12 @@ object JsBridge {
         return BridgedGraph(
             arguments =
                 graph.labellings
-                    .map { BridgedArgument(it.argument.identifier, it.argument.descriptor, it.label) }.toTypedArray(),
+                    .map { BridgedArgument(it.argument.identifier, it.argument.descriptor, it.label) }
+                    .toTypedArray(),
             attacks =
                 graph.attacks
-                    .map { BridgedAttack(it.attacker.identifier, it.target.identifier) }.toTypedArray(),
+                    .map { BridgedAttack(it.attacker.identifier, it.target.identifier) }
+                    .toTypedArray(),
         )
     }
 
@@ -124,9 +146,11 @@ object JsBridge {
         return ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries =
                 ClassicSolverFactory.defaultRuntime.plus(
-                    Arg2pSolver.default(
-                        dynamicLibs = listOf(CausalitySolver()),
-                    ).to2pLibraries().plus(libFlags),
+                    Arg2pSolver
+                        .default(
+                            dynamicLibs = listOf(CausalitySolver()),
+                        ).to2pLibraries()
+                        .plus(libFlags),
                 ),
             flags = ClassicSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.empty(),
@@ -155,7 +179,8 @@ object JsBridge {
                         "yes",
                         formatter.format(sol.solvedQuery!!),
                         sol.substitution
-                            .map { JsPair(formatter.format(it.key), formatter.format(it.value)) }.toTypedArray(),
+                            .map { JsPair(formatter.format(it.key), formatter.format(it.value)) }
+                            .toTypedArray(),
                         "",
                         graphOf(solver),
                     )

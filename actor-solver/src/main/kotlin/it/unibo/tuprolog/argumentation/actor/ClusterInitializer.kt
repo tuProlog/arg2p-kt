@@ -18,8 +18,9 @@ import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 object ClusterInitializer {
     private fun createConfiguration(port: String) =
         ConfigFactory.load(
-            ConfigFactory.parseString(
-                """
+            ConfigFactory
+                .parseString(
+                    """
          akka {
             actor {
                 provider = "cluster"
@@ -45,7 +46,7 @@ object ClusterInitializer {
             }
         }
         """,
-            ).withFallback(ConfigFactory.load()),
+                ).withFallback(ConfigFactory.load()),
         )
 
     fun joinCluster(
@@ -58,12 +59,12 @@ object ClusterInitializer {
         Cluster.get(actorSystem).join(AddressFromURIString.parse("akka://actor_solver@${seedAddress.replace("'", "")}"))
 
         val masterActor =
-            ClusterSingleton.get(actorSystem)
+            ClusterSingleton
+                .get(actorSystem)
                 .init(SingletonActor.of(KbDistributor.create(), "distributor"))
 
         ClusterSharding.get(actorSystem).init(
-            Entity.of(EntityTypeKey.create(KbMessage::class.java, "evaluator")) {
-                    ctx ->
+            Entity.of(EntityTypeKey.create(KbMessage::class.java, "evaluator")) { ctx ->
                 Evaluator.create(masterActor, ctx.entityId)
             },
         )

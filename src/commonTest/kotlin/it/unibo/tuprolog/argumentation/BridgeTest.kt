@@ -11,57 +11,73 @@ import kotlin.test.assertEquals
 class BridgeTest {
     @Test
     fun testResolution() {
-        JsBridge.solve(
-            "buildLabelSets",
-            """
-            r1 :=> a.
-            r2 :=> b.
-            r3 :=> c.
-            
-            conflict([a], [b]).
-            conflict([b], [a]).
-            """.trimIndent(),
-            """
-            graphBuildMode(standard_af).
-            statementLabellingMode(statement).
-            argumentLabellingMode(grounded_hash).
-            orderingPrinciple(last).
-            orderingComparator(elitist).
-            graphExtension(standardPref).
-            queryMode.
-            """.trimIndent(),
-            { println(it) },
-        ).let { res ->
-            if (res.i.hasNext()) {
-                assertEquals(3, res.i.next()?.graph?.arguments?.size ?: 0)
-                assertEquals(2, res.i.next()?.graph?.attacks?.size ?: 0)
+        JsBridge
+            .solve(
+                "buildLabelSets",
+                """
+                r1 :=> a.
+                r2 :=> b.
+                r3 :=> c.
+                
+                conflict([a], [b]).
+                conflict([b], [a]).
+                """.trimIndent(),
+                """
+                graphBuildMode(standard_af).
+                statementLabellingMode(statement).
+                argumentLabellingMode(grounded_hash).
+                orderingPrinciple(last).
+                orderingComparator(elitist).
+                graphExtension(standardPref).
+                queryMode.
+                """.trimIndent(),
+                { println(it) },
+            ).let { res ->
+                if (res.i.hasNext()) {
+                    assertEquals(
+                        3,
+                        res.i
+                            .next()
+                            ?.graph
+                            ?.arguments
+                            ?.size ?: 0,
+                    )
+                    assertEquals(
+                        2,
+                        res.i
+                            .next()
+                            ?.graph
+                            ?.attacks
+                            ?.size ?: 0,
+                    )
+                }
             }
-        }
     }
 
     @Test
     fun testCausalResolution() {
-        JsBridge.solve(
-            "causality::evaluate(X, a, b)",
-            """
-            r1 :=> a.
-            r2 : a => b.
-            """.trimIndent(),
-            """
-            graphBuildMode(standard_af).
-            statementLabellingMode(statement).
-            argumentLabellingMode(grounded_hash).
-            orderingPrinciple(last).
-            orderingComparator(elitist).
-            graphExtension(standardPref).
-            queryMode.
-            """.trimIndent(),
-            { println(it) },
-        ).let { res ->
-            if (res.i.hasNext()) {
-                assertEquals("yes", res.i.next()?.res ?: "error")
+        JsBridge
+            .solve(
+                "causality::evaluate(X, a, b)",
+                """
+                r1 :=> a.
+                r2 : a => b.
+                """.trimIndent(),
+                """
+                graphBuildMode(standard_af).
+                statementLabellingMode(statement).
+                argumentLabellingMode(grounded_hash).
+                orderingPrinciple(last).
+                orderingComparator(elitist).
+                graphExtension(standardPref).
+                queryMode.
+                """.trimIndent(),
+                { println(it) },
+            ).let { res ->
+                if (res.i.hasNext()) {
+                    assertEquals("yes", res.i.next()?.res ?: "error")
+                }
             }
-        }
     }
 
     @Test

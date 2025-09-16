@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class GroundedLabellerOptimizedBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class GroundedLabellerOptimizedBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.graph.labelling.grounded.optimized"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class GroundedLabellerOptimizedBase : ArgLibrary, LazyRawPrologContent(
     override fun identifier(): String = "grounded_hash"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase
+expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase {
+    override val prologRawTheory: String
+}

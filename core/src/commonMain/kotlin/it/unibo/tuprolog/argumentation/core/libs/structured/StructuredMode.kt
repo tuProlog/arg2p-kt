@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class StructuredModeBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class StructuredModeBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.structured"
 
     override val baseContent: Library
@@ -23,11 +26,14 @@ abstract class StructuredModeBase : ArgLibrary, LazyRawPrologContent(), Loadable
     override fun identifier(): String = "structured"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object StructuredMode : StructuredModeBase
+expect object StructuredMode : StructuredModeBase {
+    override val prologRawTheory: String
+}
 
 object QueryMode : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "queryMode"

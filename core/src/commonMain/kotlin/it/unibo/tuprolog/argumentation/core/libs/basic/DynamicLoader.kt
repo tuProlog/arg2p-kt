@@ -24,7 +24,10 @@ import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
+class DynamicLoader(
+    private val solver: Arg2pSolver,
+) : ArgLibrary,
+    ArgLoader {
     abstract inner class AbstractWithLib : Primitive {
         abstract val signature: Signature
 
@@ -68,13 +71,16 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
                 ).let { library ->
                     request.context.createMutableSolver(
                         libraries =
-                            Runtime.of(
-                                request.context.libraries.libraries.filterNot { lib ->
-                                    this@DynamicLoader.solver.dynamicLibraries()
-                                        .map { it.alias }
-                                        .contains(lib.alias)
-                                },
-                            ).plus(library.content()),
+                            Runtime
+                                .of(
+                                    request.context.libraries.libraries.filterNot { lib ->
+                                        this@DynamicLoader
+                                            .solver
+                                            .dynamicLibraries()
+                                            .map { it.alias }
+                                            .contains(lib.alias)
+                                    },
+                                ).plus(library.content()),
                         staticKb = request.context.staticKb,
                     )
                 }
@@ -107,7 +113,8 @@ class DynamicLoader(private val solver: Arg2pSolver) : ArgLibrary, ArgLoader {
             module: String,
             solver: MutableSolver,
         ) = logicProgramming {
-            solver.solve("context_active"(X))
+            solver
+                .solve("context_active"(X))
                 .filter { it.isYes }
                 .forEach {
                     solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()

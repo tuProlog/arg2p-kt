@@ -31,7 +31,9 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 import it.unibo.tuprolog.core.List as PlList
 
-class CausalitySolver : ArgLibrary, Loadable {
+class CausalitySolver :
+    ArgLibrary,
+    Loadable {
     fun clean(string: String) = string.replace(" ", "").replace("'", "")
 
     private fun equalTerms(
@@ -53,23 +55,25 @@ class CausalitySolver : ArgLibrary, Loadable {
     ): List<LabelledArgument> =
         graph.labellings
             .filter { x.identifier == it.argument.identifier } +
-            attackers(x, graph).flatMap {
-                    att ->
+            attackers(x, graph).flatMap { att ->
                 attackers(att.argument, graph).filter { it.argument.identifier != x.identifier }.flatMap { supporters(it.argument, graph) }
             }
 
     private fun solveFresh(kb: Theory) =
-        Arg2pSolverFactory.evaluate(
-            kb.toString(asPrologText = true),
-            FlagsBuilder(graphExtensions = emptyList()),
-        ).firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+        Arg2pSolverFactory
+            .evaluate(
+                kb.toString(asPrologText = true),
+                FlagsBuilder(graphExtensions = emptyList()),
+            ).firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
 
     // get support set (union of all explanations)
     private fun getSupports(
         graph: Graph,
         effect: String,
     ): Sequence<Argument> =
-        graph.labellings.asSequence().filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
+        graph.labellings
+            .asSequence()
+            .filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
             .flatMap { supporters(it.argument, graph) }
             .filter { it.label == "in" }
             .map { it.argument }
@@ -98,9 +102,12 @@ class CausalitySolver : ArgLibrary, Loadable {
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
     ) = arg2pScope {
-        request.solve("proper_subsets"(intervention, X)).filter {
-            it.isYes
-        }.map { it.substitution[X]!!.castToList() }.toList()
+        request
+            .solve("proper_subsets"(intervention, X))
+            .filter {
+                it.isYes
+            }.map { it.substitution[X]!!.castToList() }
+            .toList()
     }
 
     // if exists an explanation that is refuted trough intervention (we need minimal sets of literals from L)
@@ -153,15 +160,22 @@ class CausalitySolver : ArgLibrary, Loadable {
 
             val rules =
                 Term.parse(
-                    solveFresh(request.context.staticKb).arguments.map { it.topRule }.filter { it != "none" }.toList().toString(),
+                    solveFresh(request.context.staticKb)
+                        .arguments
+                        .map { it.topRule }
+                        .filter { it != "none" }
+                        .toList()
+                        .toString(),
                 )
 
             return sequenceOf(
                 request.replyWith(
                     arg2pScope {
-                        request.solve("generate_interventions"(rules, cause, X)).filter {
-                            it.isYes
-                        }.map { it.substitution[X]!!.castToList() }
+                        request
+                            .solve("generate_interventions"(rules, cause, X))
+                            .filter {
+                                it.isYes
+                            }.map { it.substitution[X]!!.castToList() }
                             .filter { checkCausality(request, it, effect) }
                             .map { Substitution.of(intervention, it) }
                             .firstOrNull() ?: Substitution.failed()
@@ -222,7 +236,8 @@ class CausalitySolver : ArgLibrary, Loadable {
     override fun identifier(): String = "causality"
 
     override var theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(RuleParserBase.operators())
             .plus(OperatorSet.DEFAULT)
 }

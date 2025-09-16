@@ -12,16 +12,12 @@ data class Attack(
     val on: Argument? = null,
 ) {
     override fun toString(): String {
-        fun <T> parse(x: T?): Any {
-            return x ?: "none"
-        }
+        fun <T> parse(x: T?): Any = x ?: "none"
 
         return "attack(${parse(
             type,
         )}, ${attacker.termRepresentation()}, ${target.termRepresentation()}, ${parse(on?.termRepresentation())})"
     }
 
-    fun toTerm(): Term {
-        return Struct.parse(this.toString())
-    }
+    fun toTerm(): Term = Struct.parse(this.toString())
 }

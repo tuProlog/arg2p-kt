@@ -203,25 +203,31 @@ class RationalityTest {
     fun caminadaExample7completeSemantic() {
         assertEquals(
             11,
-            TestingUtils.solverWithTheory(
-                example7theory +
-                    """
-                    argumentLabellingMode(complete).
-                    autoTransposition.
-                    """.trimIndent(),
-            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count(),
+            TestingUtils
+                .solverWithTheory(
+                    example7theory +
+                        """
+                        argumentLabellingMode(complete).
+                        autoTransposition.
+                        """.trimIndent(),
+                ).solve(Struct.parse("buildLabelSets"))
+                .filter { it.isYes }
+                .count(),
         )
 
         assertEquals(
             4,
-            TestingUtils.solverWithTheory(
-                example7theory +
-                    """
-                    argumentLabellingMode(complete).
-                    autoTransposition.
-                    graphExtension(rebutRestriction).
-                    """.trimIndent(),
-            ).solve(Struct.parse("buildLabelSets")).filter { it.isYes }.count(),
+            TestingUtils
+                .solverWithTheory(
+                    example7theory +
+                        """
+                        argumentLabellingMode(complete).
+                        autoTransposition.
+                        graphExtension(rebutRestriction).
+                        """.trimIndent(),
+                ).solve(Struct.parse("buildLabelSets"))
+                .filter { it.isYes }
+                .count(),
         )
     }
 }

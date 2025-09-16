@@ -34,14 +34,15 @@ internal class FlagManagerFrame private constructor() {
     private var preferences: String = "standard"
     private var modulesPath: String = "none"
 
-    private var prefPrinciple: ChoiceBox<*>? = null
-    private var prefComparator: ChoiceBox<*>? = null
+    private var prefPrinciple: ChoiceBox<String>? = null
+    private var prefComparator: ChoiceBox<String>? = null
     private var restrictedRebut: CheckBox? = null
 
     companion object {
         private var ideModel: TuPrologIDEModel? = null
 
         @JvmStatic
+        @Suppress("UNCHECKED_CAST")
         fun customTab(customLibraries: List<Library>): CustomTab {
             val flagManager = FlagManagerFrame()
             val items: ObservableList<HBox> =
@@ -77,13 +78,13 @@ internal class FlagManagerFrame private constructor() {
                         OrderingPrinciple.values(),
                     ) {
                         flagManager.orderingPrinciple = it
-                    }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<*> },
+                    }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<String> },
                     setupChoiceBox(
                         "Ordering Comparator",
                         OrderingComparator.values(),
                     ) {
                         flagManager.orderingComparator = it
-                    }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<*> },
+                    }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<String> },
                     setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                     setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
                     setupCheckBox(
@@ -138,8 +139,8 @@ internal class FlagManagerFrame private constructor() {
             values: Iterable<String>,
             default: String = values.first(),
             onChange: (String) -> Unit,
-        ): HBox {
-            return HBox(
+        ): HBox =
+            HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 ChoiceBox<String>().also {
                     it.prefWidth = 400.0
@@ -154,15 +155,14 @@ internal class FlagManagerFrame private constructor() {
                 it.prefHeight = 20.0
                 it.alignment = Pos.CENTER_LEFT
             }
-        }
 
         @JvmStatic
         fun setupCheckBox(
             label: String,
             isSelected: Boolean,
             onChange: (Boolean) -> Unit,
-        ): HBox {
-            return HBox(
+        ): HBox =
+            HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 CheckBox().also {
                     it.isSelected = isSelected
@@ -172,15 +172,14 @@ internal class FlagManagerFrame private constructor() {
                     }
                 },
             )
-        }
 
         @JvmStatic
         fun setupTextBox(
             label: String,
             default: String,
             onChange: (String) -> Unit,
-        ): HBox {
-            return HBox(
+        ): HBox =
+            HBox(
                 Label(label).also { it.prefWidth = 400.0 },
                 TextField().also {
                     it.text = default
@@ -191,6 +190,5 @@ internal class FlagManagerFrame private constructor() {
                     }
                 },
             )
-        }
     }
 }

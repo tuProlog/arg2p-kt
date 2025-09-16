@@ -28,7 +28,8 @@ object PassThroughStatementLabeller : ArgLibrary, Loadable {
     override fun identifier(): String = "statement_pass_through"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 

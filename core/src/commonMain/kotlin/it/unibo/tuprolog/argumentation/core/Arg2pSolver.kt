@@ -45,8 +45,10 @@ interface Arg2pSolver {
     fun to2pLibraries() = Runtime.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
 
     fun operators() =
-        listOf(loader, context).plus(staticLibraries())
-            .map { it.theoryOperators }.reduce(OperatorSet::plus)
+        listOf(loader, context)
+            .plus(staticLibraries())
+            .map { it.theoryOperators }
+            .reduce(OperatorSet::plus)
 
     companion object {
         fun of(

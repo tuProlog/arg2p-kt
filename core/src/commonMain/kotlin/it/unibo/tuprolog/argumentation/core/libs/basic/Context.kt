@@ -19,16 +19,19 @@ import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
-class Context : ArgLibrary, ArgContext {
+class Context :
+    ArgLibrary,
+    ArgContext {
     private var nextSolver: Int = 1
     private var selectedSolver: Int = 0
     private val dynamicSolver: MutableMap<Int, MutableSolver> =
         mutableMapOf(
             0 to
-                ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                    staticKb = Theory.empty(),
-                    dynamicKb = MutableTheory.empty(Unificator.default),
-                ).also { it.setFlag(Unknown.name, Unknown.FAIL) },
+                ClassicSolverFactory
+                    .mutableSolverWithDefaultBuiltins(
+                        staticKb = Theory.empty(),
+                        dynamicKb = MutableTheory.empty(Unificator.default),
+                    ).also { it.setFlag(Unknown.name, Unknown.FAIL) },
         )
 
     inner class DynamicCacheReset : PrimitiveWithSignature {
@@ -39,11 +42,11 @@ class Context : ArgLibrary, ArgContext {
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                    staticKb = Theory.empty(),
-                    dynamicKb = MutableTheory.empty(Unificator.default),
-                )
-                    .also { it.setFlag(Unknown.name, Unknown.FAIL) }
+                ClassicSolverFactory
+                    .mutableSolverWithDefaultBuiltins(
+                        staticKb = Theory.empty(),
+                        dynamicKb = MutableTheory.empty(Unificator.default),
+                    ).also { it.setFlag(Unknown.name, Unknown.FAIL) }
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -61,7 +64,11 @@ class Context : ArgLibrary, ArgContext {
         override val signature = Signature("context_checkout", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val target: Int = request.arguments[0].castToInteger().intValue.toInt()
+            val target: Int =
+                request.arguments[0]
+                    .castToInteger()
+                    .intValue
+                    .toInt()
             val result = dynamicSolver.keys.contains(target)
             this@Context.selectedSolver = target
             return sequenceOf(request.replyWith(result))
@@ -72,18 +79,22 @@ class Context : ArgLibrary, ArgContext {
         override val signature = Signature("context_branch", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val target: Int = request.arguments[0].castToInteger().intValue.toInt()
+            val target: Int =
+                request.arguments[0]
+                    .castToInteger()
+                    .intValue
+                    .toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                    staticKb = Theory.empty(),
-                    dynamicKb =
-                        MutableTheory.of(
-                            Unificator.default,
-                            this@Context.dynamicSolver[target]!!.dynamicKb,
-                        ),
-                )
-                    .also { it.setFlag(Unknown.name, Unknown.FAIL) }
+                ClassicSolverFactory
+                    .mutableSolverWithDefaultBuiltins(
+                        staticKb = Theory.empty(),
+                        dynamicKb =
+                            MutableTheory.of(
+                                Unificator.default,
+                                this@Context.dynamicSolver[target]!!.dynamicKb,
+                            ),
+                    ).also { it.setFlag(Unknown.name, Unknown.FAIL) }
             this@Context.selectedSolver = this@Context.nextSolver++
             return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))
         }
@@ -129,7 +140,11 @@ class Context : ArgLibrary, ArgContext {
         override val signature = Signature("context_check", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val index: Int = request.arguments[0].asNumeric()!!.intValue.toInt()
+            val index: Int =
+                request.arguments[0]
+                    .asNumeric()!!
+                    .intValue
+                    .toInt()
             val term: Term = request.arguments[1]
 
             return sequence {

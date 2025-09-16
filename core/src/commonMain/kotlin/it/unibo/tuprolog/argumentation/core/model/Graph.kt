@@ -1,6 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-data class Graph(val arguments: List<Argument>, val attacks: List<Attack>, val supports: List<Support>) {
+data class Graph(
+    val arguments: List<Argument>,
+    val attacks: List<Attack>,
+    val supports: List<Support>,
+) {
     var labellings: List<LabelledArgument> = emptyList()
 
     companion object {

@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class DebugBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class DebugBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.debug"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class DebugBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     override fun identifier() = "debug"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object Debug : DebugBase
+expect object Debug : DebugBase {
+    override val prologRawTheory: String
+}

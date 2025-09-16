@@ -50,7 +50,8 @@ object Arg2pSolverFactory {
                 theory = kb,
                 settings = flags.create(),
             ).let { solver ->
-                solver.solve(Struct.parse("buildLabelSetsSilent"))
+                solver
+                    .solve(Struct.parse("buildLabelSetsSilent"))
                     .filter { it.isYes }
                     .map { solver.graph() }
             }

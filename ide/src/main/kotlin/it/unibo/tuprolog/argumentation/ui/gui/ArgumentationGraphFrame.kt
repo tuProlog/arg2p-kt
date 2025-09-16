@@ -156,9 +156,14 @@ internal class ArgumentationGraphFrame {
                         )
                     frame.selectedContext =
                         logicProgramming {
-                            frame.mutableSolver!!.solve("context_active"(X))
-                                .map { it.substitution[X]!!.asNumeric()!!.intValue.toInt() }
-                                .first()
+                            frame.mutableSolver!!
+                                .solve("context_active"(X))
+                                .map {
+                                    it.substitution[X]!!
+                                        .asNumeric()!!
+                                        .intValue
+                                        .toInt()
+                                }.first()
                         }
                     frame.maxContext = frame.selectedContext
                     frame.update()
@@ -172,7 +177,8 @@ internal class ArgumentationGraphFrame {
             attacks: List<Attack>,
         ): Graph<String, String> {
             val graph: Graph<String, String> = SparseMultigraph()
-            arguments.map { it.argument.identifier }
+            arguments
+                .map { it.argument.identifier }
                 .forEach(graph::addVertex)
             attacks.forEach { x ->
                 graph.addEdge(
@@ -220,8 +226,12 @@ internal class ArgumentationGraphFrame {
         ) {
             val textArea = JTextArea()
             textArea.isEditable = false
-            arguments.sortedBy { it.argument.identifier.drop(1).toInt() }
-                .forEach { x -> textArea.append(x.argument.descriptor + "\n") }
+            arguments
+                .sortedBy {
+                    it.argument.identifier
+                        .drop(1)
+                        .toInt()
+                }.forEach { x -> textArea.append(x.argument.descriptor + "\n") }
             classicTheoryPane.viewport.view = textArea
 
             val textAreaTree = JTextPane()
@@ -238,17 +248,21 @@ internal class ArgumentationGraphFrame {
                 arguments: List<LabelledArgument>,
             ): String =
                 "<li>${arg.argument.descriptor} <b>[${arg.label.uppercase()}]</b></li>" +
-                    arg.argument.supports.joinToString(separator = "") { sub ->
-                        tree(
-                            arguments.first { it.argument.identifier == sub.identifier },
-                            arguments,
-                        )
-                    }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
+                    arg.argument.supports
+                        .joinToString(separator = "") { sub ->
+                            tree(
+                                arguments.first { it.argument.identifier == sub.identifier },
+                                arguments,
+                            )
+                        }.let { if (it.isNotEmpty()) "<ul>$it</ul>" else it }
 
             return "<html><ul>" +
                 arguments
-                    .sortedBy { it.argument.identifier.drop(1).toInt() }
-                    .joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
+                    .sortedBy {
+                        it.argument.identifier
+                            .drop(1)
+                            .toInt()
+                    }.joinToString(separator = "") { tree(it, arguments) } + "</ul></html>"
         }
     }
 }

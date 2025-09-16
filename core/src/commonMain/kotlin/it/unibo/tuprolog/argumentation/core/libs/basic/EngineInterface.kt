@@ -7,7 +7,9 @@ import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
+abstract class EngineInterfaceBase :
+    LazyRawPrologContent(),
+    ArgLibrary {
     override val alias = "prolog.argumentation.interface"
 
     override val baseContent: Library
@@ -21,9 +23,12 @@ abstract class EngineInterfaceBase : ArgLibrary, LazyRawPrologContent() {
         get() = emptyList()
 
     override val theoryOperators =
-        RuleParserBase.operators()
+        RuleParserBase
+            .operators()
             .plus(DynamicLoader.operators())
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object EngineInterface : EngineInterfaceBase
+expect object EngineInterface : EngineInterfaceBase {
+    override val prologRawTheory: String
+}

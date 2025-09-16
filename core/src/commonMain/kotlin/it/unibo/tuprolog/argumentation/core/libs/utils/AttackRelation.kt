@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class AttackRelationBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class AttackRelationBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.attack"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class AttackRelationBase : ArgLibrary, LazyRawPrologContent(), Loadable
     override fun identifier(): String = "attack"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object AttackRelation : AttackRelationBase
+expect object AttackRelation : AttackRelationBase {
+    override val prologRawTheory: String
+}

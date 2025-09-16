@@ -22,7 +22,9 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 
-class ActorSolver : ArgLibrary, Loadable {
+class ActorSolver :
+    ArgLibrary,
+    Loadable {
     private lateinit var actorSystem: ActorSystem<KbMessage>
     private lateinit var masterActor: ActorRef<KbMessage>
 
@@ -78,13 +80,14 @@ class ActorSolver : ArgLibrary, Loadable {
         override val signature = Signature("join", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            ClusterInitializer.joinCluster(
-                request.arguments[1].toString(),
-                request.arguments[0].toString(),
-            ).let {
-                this@ActorSolver.actorSystem = it.first
-                this@ActorSolver.masterActor = it.second
-            }
+            ClusterInitializer
+                .joinCluster(
+                    request.arguments[1].toString(),
+                    request.arguments[0].toString(),
+                ).let {
+                    this@ActorSolver.actorSystem = it.first
+                    this@ActorSolver.masterActor = it.second
+                }
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -133,6 +136,7 @@ class ActorSolver : ArgLibrary, Loadable {
     override fun identifier(): String = "parallel"
 
     override var theoryOperators =
-        RuleParserBase.operators()
+        RuleParserBase
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }

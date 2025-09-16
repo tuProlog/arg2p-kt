@@ -29,13 +29,18 @@ object SupportSplit : SplittingPrinciple {
         val helperSolver = solver()
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
-            helperSolver.solve("parser" call "convertAllRules"(X))
+            helperSolver
+                .solve("parser" call "convertAllRules"(X))
                 .filter { it.isYes }
                 .map { it.substitution[X]!! }
-                .first().also { rules ->
+                .first()
+                .also { rules ->
                     val selected =
                         kb.workers.filter { elem ->
-                            elem.theory.solve("chainer" call "chainable"(rules)).filter { it.isYes }.any()
+                            elem.theory
+                                .solve("chainer" call "chainable"(rules))
+                                .filter { it.isYes }
+                                .any()
                         }
                     when (selected.count()) {
                         0 -> createSolver(rule, kb.workers, context)
@@ -53,7 +58,8 @@ object SupportSplit : SplittingPrinciple {
         solver().let { solver ->
             val id = "solver_${Random.nextInt()}"
             val ref =
-                ClusterSharding.get(context.system)
+                ClusterSharding
+                    .get(context.system)
                     .entityRefFor(EntityTypeKey.create(KbMessage::class.java, "evaluator"), id)
             val worker = HelpWorker(id, ref, solver, rules)
             rules.forEach {
@@ -109,7 +115,8 @@ object SupportSplit : SplittingPrinciple {
     private fun solver() =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries =
-                Arg2pSolver.default(listOf(FlagsBuilder().create()), listOf(TheoryChainer))
+                Arg2pSolver
+                    .default(listOf(FlagsBuilder().create()), listOf(TheoryChainer))
                     .to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
         )

@@ -40,15 +40,16 @@ class Evaluator private constructor(
                 solver.assertA(Struct.parse(command.elem, solver.operators))
                 arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
                 this
-            }
-            .onMessage(Eval::class.java) { command ->
+            }.onMessage(Eval::class.java) { command ->
                 val result =
                     arg2pScope {
-                        solver.solve("structured" call "buildArgument"(Struct.parse(command.elem), X)).filter {
-                            it.isYes
-                        }.map {
-                            it.substitution[X]!!
-                        }
+                        solver
+                            .solve("structured" call "buildArgument"(Struct.parse(command.elem), X))
+                            .filter {
+                                it.isYes
+                            }.map {
+                                it.substitution[X]!!
+                            }
                     }.toList()
                 if (result.isEmpty()) {
                     master.tell(EvalResponse(command.id, command.elem, Label.NOT_FOUND, listOf()))
@@ -68,31 +69,30 @@ class Evaluator private constructor(
                     master.tell(FindAttacker(query.id, it.toString(), listOf(it.toString()), context.self))
                 }
                 this
-            }
-            .onMessage(ExpectedResponses::class.java) { command ->
+            }.onMessage(ExpectedResponses::class.java) { command ->
                 activeQueries.first { it.id == command.id }.expectedResponses = command.number
                 this
-            }
-            .onMessage(FindAttacker::class.java) { command ->
+            }.onMessage(FindAttacker::class.java) { command ->
                 val result =
                     arg2pScope {
-                        solver.solve(
-                            "structured" call
-                                "findAttacker"(
-                                    Struct.parse(command.argument),
-                                    logicListOf(
-                                        command.queryChain.map(
-                                            Struct::parse,
+                        solver
+                            .solve(
+                                "structured" call
+                                    "findAttacker"(
+                                        Struct.parse(command.argument),
+                                        logicListOf(
+                                            command.queryChain.map(
+                                                Struct::parse,
+                                            ),
                                         ),
+                                        X,
+                                        Y,
                                     ),
-                                    X,
-                                    Y,
-                                ),
-                        ).filter {
-                            it.isYes
-                        }.map {
-                            Pair(it.substitution[X]!!.toString(), it.substitution[Y]!!.toString())
-                        }
+                            ).filter {
+                                it.isYes
+                            }.map {
+                                Pair(it.substitution[X]!!.toString(), it.substitution[Y]!!.toString())
+                            }
                     }.toList()
                 if (result.isEmpty()) {
                     command.replyTo.tell(AttackerResponse(command.id, "", command.queryChain, Label.OUT))
@@ -116,8 +116,7 @@ class Evaluator private constructor(
                     }
                 }
                 this
-            }
-            .onMessage(AttackerResponse::class.java) { command ->
+            }.onMessage(AttackerResponse::class.java) { command ->
                 val active = activeQueries.first { it.id == command.id }
                 if (active.completed) return@onMessage this
                 val reply = { label: Label ->
@@ -144,13 +143,13 @@ class Evaluator private constructor(
                     reply(Label.IN)
                 }
                 this
-            }
-            .build()
+            }.build()
 
     private val solver =
         ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries =
-                Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
+                Arg2pSolver
+                    .default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
                     .to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
         )
