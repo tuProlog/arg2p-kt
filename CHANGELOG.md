@@ -1,3 +1,86 @@
+## [0.11.0](https://github.com/tuProlog/arg2p-kt/compare/0.10.2...0.11.0) (2025-09-18)
+
+### Features
+
+* **deps:** move main deps up ([00f8dea](https://github.com/tuProlog/arg2p-kt/commit/00f8dea18033926c7067547c1d5877aaa4991c24))
+* update dependencies ([3f29153](https://github.com/tuProlog/arg2p-kt/commit/3f291533fa0e56ccd1c8e21173a0ebad7d498e00))
+
+### Dependency updates
+
+* **deps:** downgrade dependency gradle to v8.8 ([e818f98](https://github.com/tuProlog/arg2p-kt/commit/e818f988e346560f4c4a5fc58dbcbdd5555b99d9))
+* **deps:** update dependency gradle to v8.14 ([#122](https://github.com/tuProlog/arg2p-kt/issues/122)) ([8eee6b8](https://github.com/tuProlog/arg2p-kt/commit/8eee6b8a143da5ee0c2b3e2ef59a98f1b634c452))
+* **deps:** update dependency gradle to v8.14.1 ([16ceaf8](https://github.com/tuProlog/arg2p-kt/commit/16ceaf8b33d66b242d1d3b4d0e710a58aff46e0b))
+* **deps:** update dependency gradle to v8.14.2 ([003ed53](https://github.com/tuProlog/arg2p-kt/commit/003ed53079e59d51cc914f82305f560ced0ebb1a))
+* **deps:** update dependency gradle to v8.14.3 ([6563cce](https://github.com/tuProlog/arg2p-kt/commit/6563cce8c1d329a4e42f1abde2f83c77655539bc))
+* **deps:** update dependency org.danilopianini.git-sensitive-semantic-versioning to v5 ([472e2fe](https://github.com/tuProlog/arg2p-kt/commit/472e2fe730b64c9f9ed8678055ca4dc2ac88e68f))
+* **deps:** update dependency org.danilopianini.git-sensitive-semantic-versioning to v5.1.8 ([57ab910](https://github.com/tuProlog/arg2p-kt/commit/57ab910a6e1b5f18379f4af1acf36a4cb241076c))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.126 ([5ddac57](https://github.com/tuProlog/arg2p-kt/commit/5ddac57053f6dd785a121658b305739e826c152c))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.127 ([76dc532](https://github.com/tuProlog/arg2p-kt/commit/76dc532de6e8fbea561077618a42d7312a6c8ebd))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.128 ([b1130f4](https://github.com/tuProlog/arg2p-kt/commit/b1130f40025cd8e0cd34415bfe4c23d106d698cf))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.129 ([5d6221e](https://github.com/tuProlog/arg2p-kt/commit/5d6221ee2cb555880f26fef8d5cc74a26af7b99c))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.131 ([bf7375c](https://github.com/tuProlog/arg2p-kt/commit/bf7375cb0f720d28d9b5b132bcb68cad1f0be6d9))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.132 ([7cfbfae](https://github.com/tuProlog/arg2p-kt/commit/7cfbfaeb977bcd0ae9553919dab9bc03b9c4db15))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.133 ([5b4a5f3](https://github.com/tuProlog/arg2p-kt/commit/5b4a5f30a18f9f1dd492353dafaeba0b5a456a99))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.134 ([e9a3fa9](https://github.com/tuProlog/arg2p-kt/commit/e9a3fa9d0418a4cfd191a8a062be21b4078bfd6b))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.135 ([4975d8f](https://github.com/tuProlog/arg2p-kt/commit/4975d8fad484c1be9dd7aae2edb2a4dc3f767b31))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.136 ([9fb4df0](https://github.com/tuProlog/arg2p-kt/commit/9fb4df01a2337d5272fccb77f2a76643c740621d))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.137 ([f6db1ad](https://github.com/tuProlog/arg2p-kt/commit/f6db1ad6dd0a05cc9a90cf81b753778790f6450b))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.138 ([b8e55f8](https://github.com/tuProlog/arg2p-kt/commit/b8e55f88bd3258767dc3ef2a27695750eea52824))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.139 ([c6fe2f4](https://github.com/tuProlog/arg2p-kt/commit/c6fe2f4b93b50799420f572b3aa89f52d064cdd3))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.140 ([58c35cb](https://github.com/tuProlog/arg2p-kt/commit/58c35cb150a12bc828d5fe829648ef74e32e5000))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.141 ([7b9ee7a](https://github.com/tuProlog/arg2p-kt/commit/7b9ee7aa95a575c2f5e413d54a79152e2d44448c))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.142 ([a991c08](https://github.com/tuProlog/arg2p-kt/commit/a991c08f5e5b18ed1b4ed8e3d6ce5a91ce60cc93))
+* **deps:** update node.js to 22.15 ([ec3f9ef](https://github.com/tuProlog/arg2p-kt/commit/ec3f9ef7adee443a2d5151472cda58efbd72d795))
+* **deps:** update node.js to 22.16 ([3bc5871](https://github.com/tuProlog/arg2p-kt/commit/3bc58719e7c6c7faded7bd05ad4ddff090975b69))
+* **deps:** update node.js to 22.17 ([7b9e4fb](https://github.com/tuProlog/arg2p-kt/commit/7b9e4fb834ab876d8c9550bf5eff2b705cbf80cf))
+* **deps:** update node.js to 22.18 ([ca9eaff](https://github.com/tuProlog/arg2p-kt/commit/ca9eaffcedc765d778fa65a07a6b508201e8bf8c))
+* **deps:** update node.js to 22.19 ([9c4d76c](https://github.com/tuProlog/arg2p-kt/commit/9c4d76cff2c1b4a937525468476858eb3bf92dd1))
+
+### Bug Fixes
+
+* **ci:** release env ([4e2e2b1](https://github.com/tuProlog/arg2p-kt/commit/4e2e2b1f2595c2380736f687cbbbb6ceac5e9e1f))
+* **ci:** release.config.mjs ([569a1b8](https://github.com/tuProlog/arg2p-kt/commit/569a1b8e35d79d11b419f4f2901f4efd737cf48f))
+* **ci:** update release.yml ([318e009](https://github.com/tuProlog/arg2p-kt/commit/318e009f6210978a81ce9be8a246c1a621d61f6b))
+* **ci:** Update release.yml ([40c9784](https://github.com/tuProlog/arg2p-kt/commit/40c9784398bdfb8d2dd2bc987cccb67bf94b60ea))
+* deontic conflicts ([93e1e4b](https://github.com/tuProlog/arg2p-kt/commit/93e1e4b72b90e4f6fa8d8530effa5f02d800649b))
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.19.0 ([#124](https://github.com/tuProlog/arg2p-kt/issues/124)) ([7b315b9](https://github.com/tuProlog/arg2p-kt/commit/7b315b9f01ddefbfa5e6de014918d1aed10d30ad))
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.19.1 ([#126](https://github.com/tuProlog/arg2p-kt/issues/126)) ([baece31](https://github.com/tuProlog/arg2p-kt/commit/baece31857f47043dccaca71cb54828387896be3))
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.19.2 ([#127](https://github.com/tuProlog/arg2p-kt/issues/127)) ([d56599f](https://github.com/tuProlog/arg2p-kt/commit/d56599f57ba3bd7346a4d8c5fafee038f928a4e2))
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.20.0 ([f9d9a3e](https://github.com/tuProlog/arg2p-kt/commit/f9d9a3eb1253c6f5d4f3f4b876e211f031a64f64))
+* **deps:** update dependency org.fxmisc.richtext:richtextfx to v0.11.5 ([a1c9e8e](https://github.com/tuProlog/arg2p-kt/commit/a1c9e8e91b2c7d015116497753ba9fad4b3caa2a))
+* **deps:** update dependency org.fxmisc.richtext:richtextfx to v0.11.6 ([45ee9ba](https://github.com/tuProlog/arg2p-kt/commit/45ee9ba7037c74926479fde95553cf640c36c265))
+
+### Tests
+
+* add temporal shooting ([8369320](https://github.com/tuProlog/arg2p-kt/commit/8369320d62f0d303638a691a804d106bf470459b))
+
+### Build and continuous integration
+
+* **deps:** update actions/checkout action to v4.3.0 ([0d4c23a](https://github.com/tuProlog/arg2p-kt/commit/0d4c23a30aaa6e80fc6347395b920b3a14fdaa91))
+* **deps:** update actions/setup-node action to v4.4.0 ([9c33f2b](https://github.com/tuProlog/arg2p-kt/commit/9c33f2b576554ca7261ff40745f0e10932a994ce))
+* **deps:** update danysk/action-checkout action to v0.2.23 ([95c41ac](https://github.com/tuProlog/arg2p-kt/commit/95c41acc346c9f25dc260b922234860d20b5f493))
+* **deps:** update danysk/action-checkout action to v0.2.24 ([7b5db7e](https://github.com/tuProlog/arg2p-kt/commit/7b5db7e3698d7b72dc8ddc541d31e013ac656a79))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.14 ([a13410c](https://github.com/tuProlog/arg2p-kt/commit/a13410c763d6625c587e9c2db6f1ba59cd914279))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.15 ([2c79679](https://github.com/tuProlog/arg2p-kt/commit/2c79679bc3611b8f896edfd3138ae10e2765ccd0))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.16 ([62d9d61](https://github.com/tuProlog/arg2p-kt/commit/62d9d6109cc9bffd61fb140e1e20b401e5c47a9f))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.17 ([2ab5472](https://github.com/tuProlog/arg2p-kt/commit/2ab547203bcda249618c440bbcb60038ef8007f0))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.18 ([0a18fa2](https://github.com/tuProlog/arg2p-kt/commit/0a18fa2d5be19b5d3f29fb5e1a02cf71f9753688))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.19 ([da37e98](https://github.com/tuProlog/arg2p-kt/commit/da37e98b70ee167015f668a0162b611460985150))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.7.20 ([f5d9432](https://github.com/tuProlog/arg2p-kt/commit/f5d94329afd2a177de0a0c3522cf1ffc83e44e91))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4 ([50fd35a](https://github.com/tuProlog/arg2p-kt/commit/50fd35ad19e22e48f587d89b2f869d261b461472))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.2 ([0e54e8c](https://github.com/tuProlog/arg2p-kt/commit/0e54e8ccc90396642e15f6528db2e6912ebc27be))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.3 ([41d8099](https://github.com/tuProlog/arg2p-kt/commit/41d809933582d66244980d45eae22e734f009174))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.4 ([48f3eb9](https://github.com/tuProlog/arg2p-kt/commit/48f3eb9e44363719f54fdbb9f8d903dbcd6667ef))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.5 ([262a3e3](https://github.com/tuProlog/arg2p-kt/commit/262a3e3e939a6545e5a4d1298c500301d55f2b97))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.6 ([148d4a8](https://github.com/tuProlog/arg2p-kt/commit/148d4a894995ec3b8bfe7cd89aac202851b0ebd5))
+
+### General maintenance
+
+* **ci:** move to central publishing ([9dac646](https://github.com/tuProlog/arg2p-kt/commit/9dac646bb11215eb37a678076d8fef9a1625619b))
+* renovate config ([76a8664](https://github.com/tuProlog/arg2p-kt/commit/76a8664a1df92b210125143b8e12e17654a31430))
+* renovate config ([654be64](https://github.com/tuProlog/arg2p-kt/commit/654be646ed0da32d549f01c9159ee1336a0a66b5))
+* update gitignore ([5371818](https://github.com/tuProlog/arg2p-kt/commit/5371818fbcf7ee8c89e640902ffaf1a898ae72a4))
+
 ## [0.10.2](https://github.com/tuProlog/arg2p-kt/compare/0.10.1...0.10.2) (2025-03-25)
 
 ### Bug Fixes
