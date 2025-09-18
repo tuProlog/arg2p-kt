@@ -1,3 +1,10 @@
+## [0.11.2](https://github.com/tuProlog/arg2p-kt/compare/0.11.1...0.11.2) (2025-09-18)
+
+### Bug Fixes
+
+* Merge branch 'master' of https://github.com/tuProlog/arg2p-kt ([21b5e5d](https://github.com/tuProlog/arg2p-kt/commit/21b5e5d39ebc21be6bb9bdcc099df63819e604d5))
+* remove javadoc upload ([9372258](https://github.com/tuProlog/arg2p-kt/commit/9372258db2e5c9aee675b294fa8759f699c267e6))
+
 ## [0.11.1](https://github.com/tuProlog/arg2p-kt/compare/0.11.0...0.11.1) (2025-09-18)
 
 ### Bug Fixes
