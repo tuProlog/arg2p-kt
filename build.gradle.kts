@@ -19,8 +19,7 @@ allprojects {
 }
 
 gitSemVer {
-    excludeLightweightTags()
-    assignGitSemanticVersion()
+    buildMetadataSeparator.set("-")
 }
 
 multiProjectHelper {
