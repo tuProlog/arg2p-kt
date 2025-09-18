@@ -1,3 +1,9 @@
+## [0.11.1](https://github.com/tuProlog/arg2p-kt/compare/0.11.0...0.11.1) (2025-09-18)
+
+### Bug Fixes
+
+* semantic versioning ([023c2b7](https://github.com/tuProlog/arg2p-kt/commit/023c2b784ea3f776003b1a3e50e6c3809ccf3f32))
+
 ## [0.11.0](https://github.com/tuProlog/arg2p-kt/compare/0.10.2...0.11.0) (2025-09-18)
 
 ### Features
