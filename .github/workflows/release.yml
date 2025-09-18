@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    environment: release_env
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -29,6 +30,7 @@ jobs:
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
           java-version: '21'
   release:
+    environment: release_env
     permissions:
       contents: write
       packages: write
@@ -62,6 +64,7 @@ jobs:
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
           java-version: '21'
   success:
+    environment: release_env
     runs-on: ubuntu-24.04
     needs:
       - release
