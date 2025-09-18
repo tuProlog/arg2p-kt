@@ -1,7 +1,6 @@
 var publishCmd = `
 ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication || exit 1
-./gradlew publishJsPackageToNpmjsRegistry || exit 4
-./gradlew -PotherMavenPassword=$GITHUB_TOKEN publishAllPublicationsToGithubRepository || true
+./gradlew publishJsPackageToNpmjsRegistry || true
 `
 
 import config from 'semantic-release-preconfigured-conventional-commits'  with { type: "json" };
