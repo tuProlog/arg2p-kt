@@ -1,4 +1,6 @@
 import org.gradle.api.file.DuplicatesStrategy.INCLUDE
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 import java.io.File
 import kotlin.streams.asSequence
