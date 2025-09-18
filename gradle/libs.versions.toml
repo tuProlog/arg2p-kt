@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.2.20"
-jvm = "17"
+jvm = "21"
 node = "22-latest"
 ktMpp = "5.1.4"
 semVer = "5.1.8"

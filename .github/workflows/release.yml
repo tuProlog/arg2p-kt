@@ -27,6 +27,7 @@ jobs:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
+          java-version: '21'
   release:
     permissions:
       contents: write
@@ -59,6 +60,7 @@ jobs:
           npm-token: ${{ secrets.NPM_TOKEN }}
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
+          java-version: '21'
   success:
     runs-on: ubuntu-24.04
     needs:
