@@ -1,40 +1,22 @@
 {
   "extends": [
-    "config:base",
+    "config:recommended",
     ":rebaseStalePrs",
     ":semanticCommits"
   ],
-  "assignees": [
-    "Gilbocc"
-  ],
-  "automerge": true,
-  "dependencyDashboard": true,
-  "git-submodules": {
-    "enabled": true
-  },
-  "includeForks": true,
   "packageRules": [
     {
       "description": "Updates to GitHub Actions should be tagged as 'ci'",
-      "matchPaths": [
+      "matchFileNames": [
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml"
       ],
       "semanticCommitType": "ci"
-    },
-    {
-      "matchPackageNames": ["net.sourceforge.plantuml:plantuml"],
-      "allowedVersions": "/^1\\./"
-    },
-    {
-      "matchPackagePatterns": ["^org\\.openjfx:javafx-"],
-      "allowedVersions": "/^1\\./"
     }
   ],
-  "prConcurrentLimit": 25,
-  "prHourlyLimit": 0,
-  "separateMajorMinor": true,
-  "separateMinorPatch": true,
-  "separateMultipleMajor": true,
-  "ignoreDeps": ["javafx"]
+  "automerge": true,
+  "automergeType": "branch",
+  "prConcurrentLimit": 30,
+  "prHourlyLimit": 30,
+  "ignoreDeps": ["javaFx"]
 }

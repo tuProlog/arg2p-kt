@@ -12,8 +12,6 @@ plugins {
             .get()
             .pluginId,
     )
-    // alias(libs.plugins.shadowJar)
-    // alias(libs.plugins.javaFx)
 }
 
 multiPlatformHelper {
