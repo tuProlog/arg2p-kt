@@ -8,6 +8,6 @@ hugo {
     version = "0.150.0"
 }
 
-tasks.hugoServer {
-    baseURL = baseUrl
+tasks.hugoBuild {
+    args = "--baseURL \"$baseUrl/\""
 }
