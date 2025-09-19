@@ -18,5 +18,5 @@
   "automergeType": "branch",
   "prConcurrentLimit": 30,
   "prHourlyLimit": 30,
-  "ignoreDeps": ["javaFx"]
+  "ignoreDeps": ["javafx"]
 }
