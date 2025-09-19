@@ -1,3 +1,16 @@
+## [0.11.3](https://github.com/tuProlog/arg2p-kt/compare/0.11.2...0.11.3) (2025-09-19)
+
+### Dependency updates
+
+* **deps:** update gradle to v9.1.0 ([#134](https://github.com/tuProlog/arg2p-kt/issues/134)) ([c6f58a6](https://github.com/tuProlog/arg2p-kt/commit/c6f58a619206e366bbd0d3587f1ddcbc1cd51a5c))
+
+### Bug Fixes
+
+* ci ([23d0cf0](https://github.com/tuProlog/arg2p-kt/commit/23d0cf02bdd2a9ee9170a98f8fd28ff68e013d5a))
+* ci name ([a96dd70](https://github.com/tuProlog/arg2p-kt/commit/a96dd70e83fa7267391f274d88bad820a88e1c35))
+* **deps:** update javafx to v26 ([#103](https://github.com/tuProlog/arg2p-kt/issues/103)) ([9f053c0](https://github.com/tuProlog/arg2p-kt/commit/9f053c019443268a2ea1355909290c2cbca482f8))
+* javafx version ([726eb4c](https://github.com/tuProlog/arg2p-kt/commit/726eb4c076868876ab4d53091df397778e05ae72))
+
 ## [0.11.2](https://github.com/tuProlog/arg2p-kt/compare/0.11.1...0.11.2) (2025-09-18)
 
 ### Bug Fixes
