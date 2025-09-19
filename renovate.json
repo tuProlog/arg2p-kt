@@ -15,8 +15,10 @@
     }
   ],
   "automerge": true,
-  "automergeType": "branch",
   "prConcurrentLimit": 30,
   "prHourlyLimit": 30,
-  "ignoreDeps": ["javafx"]
+  "ignoreDeps": ["javafx"],
+  "git-submodules": {
+    "enabled": true
+  }
 }
