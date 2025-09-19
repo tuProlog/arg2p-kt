@@ -9,5 +9,5 @@ hugo {
 }
 
 tasks.hugoBuild {
-    args = "--gc --minify --baseURL \"$baseUrl/\""
+    args = "--gc --minify --baseURL $baseUrl"
 }
