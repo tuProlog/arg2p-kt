@@ -1,10 +1,7 @@
-name: release
+name: CI/CD Process
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - master
 
 jobs:
   build:
