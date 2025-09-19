@@ -1,4 +1,6 @@
 ---
+title: Language
+weight: 20
 ---
 
 ## Rules

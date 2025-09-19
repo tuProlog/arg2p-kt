@@ -1,0 +1,15 @@
+baseURL = '/'
+languageCode = 'en-us'
+title = 'Arg2p Wiki'
+theme = "hugo-book"
+
+[menu]
+[[menu.home]]
+name = "Documentation"
+url = "/docs/"
+weight = 1
+
+[markup]
+    [markup.goldmark]
+        [markup.goldmark.renderer]
+            unsafe = true
