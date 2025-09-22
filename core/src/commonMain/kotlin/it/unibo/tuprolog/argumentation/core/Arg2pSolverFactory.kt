@@ -52,7 +52,6 @@ object Arg2pSolverFactory {
             ).let { solver ->
                 solver
                     .solve(Struct.parse("buildLabelSetsSilent"))
-                    .filter { it.isYes }
                     .map { solver.graph() }
             }
         }

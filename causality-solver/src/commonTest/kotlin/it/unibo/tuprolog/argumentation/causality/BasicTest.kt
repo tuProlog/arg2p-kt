@@ -231,4 +231,37 @@ class BasicTest {
                 isIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
                 isIntervention(solver, "[-happens(sh(bu, ge), 3)]", "holdsAt(dead(ge), 5)", false)
             }
+
+    @Test
+    fun poisoningTemporal() {
+        Arg2pSolverFactory
+            .causality(
+                """
+                r1(X, Y, T) : happens(X, T), causesF(X, Y, T)  => holdsAt(Y, T).
+                r2(X, Y, T) : happens(X, T), causesE(X, Y, T), prolog((T1 is T + 1, T1 =< 5)) => happens(Y, T1).
+                r3(Y, T) : holdsAt(Y, T), prolog((T1 is T + 1, T1 =< 5)) => -r1(_, Y, T1).
+                r4(Y, T) : holdsAt(Y, T), prolog((T1 is T + 1, T1 =< 5)) => holdsAt(Y, T1).
+                r5(Y, T) : happens(X, T), causesF(X, Y, T), prolog((complement(Y, CY), T1 is T - 1)) => -r4(CY, T1).
+                s1(Y, T) : holdsAt(Y, T), prolog(complement(Y, CY))  -> -holdsAt(CY, T).
+
+                complement(-X, X).
+                complement(X, -X) :- X \= -_.
+
+                c1 :=> causesF(empties, empty, T).
+                c2 :=> causesF(poisons, poisoned, T).
+                c3(T) : holdsAt(-empty, T), holdsAt(poisoned, T) => causesE(thirst, drinksPoison, T).
+                c4(T) : holdsAt(empty, T) => causesE(thirst, dehydration, T).
+                c5 :=> causesF(drinksPoison, dead, T).
+                c6 :=> causesF(dehydration, dead, T).
+
+                f_1 :=> holdsAt(-empty, 0).
+                f_2 :=> happens(poisons, 1).
+                f_3 :=> happens(empties, 2).
+                f_4 :=> happens(thirst, 4).
+                """.trimIndent(),
+            ).let { solver ->
+                isIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 5)", false)
+                isIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
+            }
+    }
 }

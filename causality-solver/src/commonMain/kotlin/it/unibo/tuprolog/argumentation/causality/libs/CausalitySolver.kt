@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.causality.libs
 
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
@@ -9,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
+import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
@@ -36,6 +38,13 @@ class CausalitySolver :
     Loadable {
     fun clean(string: String) = string.replace(" ", "").replace("'", "")
 
+    val solver =
+        Arg2pSolverFactory.default(
+            settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded_hash").create(),
+        )
+
+    val operators = Arg2pSolver.default().operators()
+
     private fun equalTerms(
         a: String,
         b: String,
@@ -52,19 +61,28 @@ class CausalitySolver :
     private fun supporters(
         x: Argument,
         graph: Graph,
+        chain: List<String>,
     ): List<LabelledArgument> =
-        graph.labellings
-            .filter { x.identifier == it.argument.identifier } +
-            attackers(x, graph).flatMap { att ->
-                attackers(att.argument, graph).filter { it.argument.identifier != x.identifier }.flatMap { supporters(it.argument, graph) }
-            }
+        if (x.identifier in chain) {
+            emptyList()
+        } else {
+            graph.labellings
+                .filter { x.identifier == it.argument.identifier && it.label == "in" } +
+                attackers(x, graph).flatMap { att ->
+                    attackers(att.argument, graph)
+                        .filter { it.argument.identifier != x.identifier }
+                        .flatMap { supporters(it.argument, graph, chain + x.identifier) }
+                }
+        }
 
-    private fun solveFresh(kb: Theory) =
-        Arg2pSolverFactory
-            .evaluate(
-                kb.toString(asPrologText = true),
-                FlagsBuilder(graphExtensions = emptyList()),
-            ).firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+    private fun solveFresh(kb: Theory): Graph {
+        this.solver.resetStaticKb()
+        this.solver.loadStaticKb(Theory.parse(kb.toString(asPrologText = true), operators))
+        return this.solver
+            .solve(Struct.parse("buildLabelSetsSilent"))
+            .map { solver.graph() }
+            .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+    }
 
     // get support set (union of all explanations)
     private fun getSupports(
@@ -73,9 +91,8 @@ class CausalitySolver :
     ): Sequence<Argument> =
         graph.labellings
             .asSequence()
-            .filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
-            .flatMap { supporters(it.argument, graph) }
-            .filter { it.label == "in" }
+            .filter { equalTerms(it.argument.conclusion, effect) }
+            .flatMap { supporters(it.argument, graph, emptyList()) }
             .map { it.argument }
 
     private fun checkBaseTheory(
@@ -120,7 +137,6 @@ class CausalitySolver :
     ): Boolean {
         val supports = checkBaseTheory(request, effect)
         if (supports.isEmpty()) return false
-
         return checkIntervention(request, intervention, supports) &&
             (
                 intervention.estimatedLength <= 1 ||
