@@ -1,3 +1,35 @@
+## [0.11.4](https://github.com/tuProlog/arg2p-kt/compare/0.11.3...0.11.4) (2025-09-22)
+
+### Dependency updates
+
+* **deps:** update dependency org.danilopianini.git-sensitive-semantic-versioning to v7.0.4 ([#140](https://github.com/tuProlog/arg2p-kt/issues/140)) ([254f662](https://github.com/tuProlog/arg2p-kt/commit/254f662b47d154d91cbe85dc06bb475295dbcdda))
+* **deps:** update doc/site/themes/hugo-book digest to 69fb321 ([#148](https://github.com/tuProlog/arg2p-kt/issues/148)) ([d70dec8](https://github.com/tuProlog/arg2p-kt/commit/d70dec82aa7b23ecdd0ca612214c11a3ae48e657))
+* **deps:** update doc/site/themes/hugo-book digest to c8238fd ([#147](https://github.com/tuProlog/arg2p-kt/issues/147)) ([2b9ea2d](https://github.com/tuProlog/arg2p-kt/commit/2b9ea2d591be92df0d5f8a2c82273bf597ab848b))
+* **deps:** update ktmpp to v5.1.5 ([#141](https://github.com/tuProlog/arg2p-kt/issues/141)) ([36b4e9b](https://github.com/tuProlog/arg2p-kt/commit/36b4e9b0bd09522dab6a50fff2817f5ad9f3b301))
+* **deps:** update plugin org.danilopianini.gradle-pre-commit-git-hooks to v2.1.2 ([#142](https://github.com/tuProlog/arg2p-kt/issues/142)) ([5dfc1ae](https://github.com/tuProlog/arg2p-kt/commit/5dfc1ae46fbde1c7ff427ba77a62ee92a2525e34))
+
+### Bug Fixes
+
+* **deps:** update javafx to v21.0.9-ea+1 ([#144](https://github.com/tuProlog/arg2p-kt/issues/144)) ([3e08efd](https://github.com/tuProlog/arg2p-kt/commit/3e08efdef0de46f03c19229b9f35d686d30a8547))
+* **deps:** update tuprolog to v1.1.3 ([#145](https://github.com/tuProlog/arg2p-kt/issues/145)) ([c7f6696](https://github.com/tuProlog/arg2p-kt/commit/c7f66964c769b17f75cff1f84597c044118d7492))
+* **deps:** update tuprolog to v1.1.4 ([#149](https://github.com/tuProlog/arg2p-kt/issues/149)) ([160567c](https://github.com/tuProlog/arg2p-kt/commit/160567cdc229e15115987ad9be33d68ee4bc0f3f))
+* loops in causality check ([428945d](https://github.com/tuProlog/arg2p-kt/commit/428945d8aae52b06cef26e36ca2ff3e6a357d27b))
+
+### Documentation
+
+* add / to baseUrl ([7feaf3e](https://github.com/tuProlog/arg2p-kt/commit/7feaf3e951e01cc0f2b608a34fcd8d51915a4136))
+* baseUrl ([2cffbbe](https://github.com/tuProlog/arg2p-kt/commit/2cffbbeba9d400edcf6997d7a74d917416ba3ef0))
+* baseUrl ([a19a20b](https://github.com/tuProlog/arg2p-kt/commit/a19a20b66aa258996088806518c37e82a1793cc6))
+* baseUrl ([6f95364](https://github.com/tuProlog/arg2p-kt/commit/6f95364f3a6c9a60888fb21793b7b117459535d6))
+* move to hugo ([7cef5c7](https://github.com/tuProlog/arg2p-kt/commit/7cef5c7c679f2084e1ad7293f75a9bd7ea77dfd8))
+
+### Build and continuous integration
+
+* **deps:** update actions/upload-pages-artifact action to v4 ([#146](https://github.com/tuProlog/arg2p-kt/issues/146)) ([c63be7d](https://github.com/tuProlog/arg2p-kt/commit/c63be7d382c1958fbe961aad2ee3b34ae17c224c))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.7 ([#143](https://github.com/tuProlog/arg2p-kt/issues/143)) ([6d36ad2](https://github.com/tuProlog/arg2p-kt/commit/6d36ad2c42b10b426a754af127cc20ab5c955aca))
+* **deps:** update dependency ubuntu to v24 ([8be2fdb](https://github.com/tuProlog/arg2p-kt/commit/8be2fdb457c510f3a3a700480202724a140bbfa6))
+* update renovate.json ([5ffdd6c](https://github.com/tuProlog/arg2p-kt/commit/5ffdd6cba3c86cabe698c8fd95e8e1dc938b97f3))
+
 ## [0.11.3](https://github.com/tuProlog/arg2p-kt/compare/0.11.2...0.11.3) (2025-09-19)
 
 ### Dependency updates
