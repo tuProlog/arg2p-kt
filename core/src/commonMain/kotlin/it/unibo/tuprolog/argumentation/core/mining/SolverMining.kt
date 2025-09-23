@@ -99,10 +99,14 @@ fun Solver.labels(
             this@labels
                 .solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
-                .map { res ->
-                    LabelledArgument(arguments.first { Unificator.default.match(it.termRepresentation(), res.substitution[X]!!) }, functor)
-                }.toList()
+                .map { it.substitution[X]!! to functor }
+                .toList()
         }
 
-    return checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
+    val labels = checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
+    return arguments.map { res ->
+            LabelledArgument(res,
+                labels.firstOrNull { Unificator.default.match(res.termRepresentation(), it.first) }?.second ?: "na"
+            )
+    }
 }

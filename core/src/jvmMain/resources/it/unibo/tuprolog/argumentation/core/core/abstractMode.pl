@@ -1,11 +1,7 @@
 computeGlobalAcceptance :-
-%    write(a),nl,
     buildGraph,
-%    write(b),nl,
     modifyGraph,
-%    write(c),nl,
     buildArgumentLabelling,
-%    write(d),nl,
     buildStatementLabelling.
 
 computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
