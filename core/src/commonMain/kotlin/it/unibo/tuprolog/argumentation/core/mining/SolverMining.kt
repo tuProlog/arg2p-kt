@@ -105,8 +105,9 @@ fun Solver.labels(
 
     val labels = checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
     return arguments.map { res ->
-            LabelledArgument(res,
-                labels.firstOrNull { Unificator.default.match(res.termRepresentation(), it.first) }?.second ?: "na"
-            )
+        LabelledArgument(
+            res,
+            labels.firstOrNull { Unificator.default.match(res.termRepresentation(), it.first) }?.second ?: "na",
+        )
     }
 }
