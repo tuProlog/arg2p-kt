@@ -75,11 +75,14 @@ class CausalitySolver :
                 }
         }
 
-    private fun solveFresh(kb: Theory): Graph {
+    private fun solveFresh(
+        effect: String,
+        kb: Theory,
+    ): Graph {
         this.solver.resetStaticKb()
         this.solver.loadStaticKb(Theory.parse(kb.toString(asPrologText = true), operators))
         return this.solver
-            .solve(Struct.parse("buildLabelSetsSilent"))
+            .solve(Struct.parse("answerQuery($effect)"))
             .map { solver.graph() }
             .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
     }
@@ -98,7 +101,7 @@ class CausalitySolver :
     private fun checkBaseTheory(
         request: Solve.Request<ExecutionContext>,
         effect: String,
-    ) = solveFresh(request.context.staticKb).let {
+    ) = solveFresh(effect, request.context.staticKb).let {
         getSupports(it, effect).map { a -> a.termRepresentation() }.toList()
     }
 
@@ -106,8 +109,9 @@ class CausalitySolver :
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
         support: List<Term>,
+        effect: String,
     ) = intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, $int)")) }.let {
-        solveFresh(request.context.staticKb.plus(Theory.of(it))).let { naf ->
+        solveFresh(effect, request.context.staticKb.plus(Theory.of(it))).let { naf ->
             naf.labellings
                 .filter { a -> a.label == "out" || a.label == "und" }
                 .map { a -> a.argument.termRepresentation() }
@@ -137,10 +141,10 @@ class CausalitySolver :
     ): Boolean {
         val supports = checkBaseTheory(request, effect)
         if (supports.isEmpty()) return false
-        return checkIntervention(request, intervention, supports) &&
+        return checkIntervention(request, intervention, supports, effect) &&
             (
                 intervention.estimatedLength <= 1 ||
-                    getSubsets(request, intervention).all { !checkIntervention(request, it, supports) }
+                    getSubsets(request, intervention).all { !checkIntervention(request, it, supports, effect) }
             )
     }
 
@@ -176,7 +180,7 @@ class CausalitySolver :
 
             val rules =
                 Term.parse(
-                    solveFresh(request.context.staticKb)
+                    solveFresh(effect, request.context.staticKb)
                         .arguments
                         .map { it.topRule }
                         .filter { it != "none" }

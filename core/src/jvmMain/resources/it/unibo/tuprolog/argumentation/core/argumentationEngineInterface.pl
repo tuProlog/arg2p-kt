@@ -1,5 +1,9 @@
 argTuProlog.
 
+solve :- buildLabelSetsSilent.
+solve(Query) :- answerQuery(Query).
+solve(Query, Res) :- answerQuery(Query, Res).
+
 buildLabelSets([StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
     context_reset,
     parser:::convertAllRules(_),
@@ -24,8 +28,12 @@ answerQuery(Goal, Yes, No, Und) :-
 answerQuery(Goal, Res) :-
     context_reset,
     parser:::convertAllRules(_),
-    structured:::query(Goal, Res).
+    structured:::computeStatementAcceptance(Goal, Res).
 
+answerQuery(Goal) :-
+    context_reset,
+    parser:::convertAllRules(_),
+    structured:::computeStatementAcceptance(Goal).
 
 buildLabelSetsSilent :-
     context_reset,

@@ -206,7 +206,8 @@ internal class ArgumentationGraphFrame {
                 when (arguments.first { x -> x.argument.identifier == i }.label) {
                     "in" -> Color.GREEN
                     "out" -> Color.RED
-                    else -> Color.GRAY
+                    "und" -> Color.GRAY
+                    else -> Color.YELLOW
                 }
             }
             vv.renderContext.vertexLabelTransformer = ToStringLabeller()
