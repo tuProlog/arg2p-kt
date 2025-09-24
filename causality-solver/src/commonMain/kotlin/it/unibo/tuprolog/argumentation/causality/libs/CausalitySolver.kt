@@ -82,7 +82,7 @@ class CausalitySolver :
         this.solver.resetStaticKb()
         this.solver.loadStaticKb(Theory.parse(kb.toString(asPrologText = true), operators))
         return this.solver
-            .solve(Struct.parse("answerQuery($effect, _, _, _)"))
+            .solve(Struct.parse("answerQuery($effect)"))
             .map { solver.graph() }
             .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
     }

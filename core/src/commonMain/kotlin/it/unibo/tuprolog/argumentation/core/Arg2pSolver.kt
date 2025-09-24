@@ -69,6 +69,7 @@ interface Arg2pSolver {
         ) = of(
             listOf(EngineInterface, Cache()) + staticLibs,
             listOf(
+                EngineInterface,
                 Utils,
                 Debug,
                 RuleParser,
