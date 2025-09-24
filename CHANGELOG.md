@@ -1,3 +1,30 @@
+## [0.12.0](https://github.com/tuProlog/arg2p-kt/compare/0.11.4...0.12.0) (2025-09-24)
+
+### Features
+
+* Merge remote-tracking branch 'origin/feature/structured-refactor' into feature/structured-refactor ([13b3752](https://github.com/tuProlog/arg2p-kt/commit/13b37522f9b352430ccd0c94a3594d9de86be274))
+* new solve interface ([004c3b1](https://github.com/tuProlog/arg2p-kt/commit/004c3b1b745df8aea67d02711d0183589db15221))
+* new solve interface ([b50ebea](https://github.com/tuProlog/arg2p-kt/commit/b50ebea10aa2e1d1eca8f803a86cf4e26bca896d))
+* new structured resolution ([783dc2a](https://github.com/tuProlog/arg2p-kt/commit/783dc2a7067f5450615ef5631cd90dc8fa2cad58))
+* new structured resolution ([17f3900](https://github.com/tuProlog/arg2p-kt/commit/17f3900f2e8e717e363668a80fd46ad47b3fcbd3))
+* new structured resolution ([4bb0ae3](https://github.com/tuProlog/arg2p-kt/commit/4bb0ae361f358ea0c421027b84d202bd9ade64ed))
+* solver caching in dynamic loader ([f15e308](https://github.com/tuProlog/arg2p-kt/commit/f15e30804f6ce0e6f52c848ceadaf7b514cb6c08))
+* solver caching in dynamic loader ([e250812](https://github.com/tuProlog/arg2p-kt/commit/e25081247811e39811e88ec4002dcc628ada4349))
+* structured resolution in causality ([b7b1e9a](https://github.com/tuProlog/arg2p-kt/commit/b7b1e9a5575adb427bc42130defd19a396408527))
+* structured resolution in causality ([118e182](https://github.com/tuProlog/arg2p-kt/commit/118e182fa05806c4a68878279b38f79168426bfc))
+
+### Dependency updates
+
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.146 ([#151](https://github.com/tuProlog/arg2p-kt/issues/151)) ([f6bd1e0](https://github.com/tuProlog/arg2p-kt/commit/f6bd1e094bd7978ee3b869cf1a78a2af0d859fb8))
+* **deps:** update doc/site/themes/hugo-book digest to 80c9fb8 ([#152](https://github.com/tuProlog/arg2p-kt/issues/152)) ([f15b3a0](https://github.com/tuProlog/arg2p-kt/commit/f15b3a027b186bff05c0c85264bbf403a85398b1))
+* **deps:** update doc/site/themes/hugo-book digest to 95cee40 ([#150](https://github.com/tuProlog/arg2p-kt/issues/150)) ([f839c8d](https://github.com/tuProlog/arg2p-kt/commit/f839c8dbffdc4845371fe8340028f67dd317b118))
+* **deps:** update doc/site/themes/hugo-book digest to 9d6ad30 ([#153](https://github.com/tuProlog/arg2p-kt/issues/153)) ([a9e869e](https://github.com/tuProlog/arg2p-kt/commit/a9e869ea23ffd1fd4ae49f109596fb518814fb68))
+
+### Bug Fixes
+
+* **ci:** dependencies ([9ecb969](https://github.com/tuProlog/arg2p-kt/commit/9ecb96917d4e86e4cf79fbc1afda89ea228d073c))
+* **ci:** dependencies ([141e58c](https://github.com/tuProlog/arg2p-kt/commit/141e58cef6dbd6ea22ef3e7b06613300ffba8a70))
+
 ## [0.11.4](https://github.com/tuProlog/arg2p-kt/compare/0.11.3...0.11.4) (2025-09-22)
 
 ### Dependency updates
