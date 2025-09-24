@@ -46,7 +46,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       - release
-      - build
     if: >-
       always() && (
         contains(join(needs.*.result, ','), 'failure')
