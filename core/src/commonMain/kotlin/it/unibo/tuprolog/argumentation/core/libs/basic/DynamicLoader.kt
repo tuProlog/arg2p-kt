@@ -28,6 +28,41 @@ class DynamicLoader(
     private val solver: Arg2pSolver,
 ) : ArgLibrary,
     ArgLoader {
+    private val solverCache = mutableMapOf<String, MutableSolver>()
+
+    fun loadWithMemo(
+        request: Solve.Request<ExecutionContext>,
+        library: Term,
+    ): MutableSolver =
+        solverCache
+            .getOrPut(library.toString()) {
+                (
+                    this.solver.dynamicLibraries().firstOrNull {
+                        (it as Loadable).identifier() == library.toString()
+                    } ?: throw DomainError.forGoal(
+                        request.context,
+                        request.signature,
+                        DomainError.Expected.of("Loadable Lib"),
+                        library,
+                    )
+                ).let { x ->
+                    request.context.createMutableSolver(
+                        libraries =
+                            Runtime
+                                .of(
+                                    request.context.libraries.libraries.filterNot { lib ->
+                                        this.solver
+                                            .dynamicLibraries()
+                                            .map { it.alias }
+                                            .contains(lib.alias)
+                                    },
+                                ).plus(x.content()),
+                    )
+                }
+            }.also {
+                it.loadStaticKb(request.context.staticKb)
+            }
+
     abstract inner class AbstractWithLib : Primitive {
         abstract val signature: Signature
 
@@ -58,32 +93,7 @@ class DynamicLoader(
                 )
             }
 
-            val solver =
-                (
-                    this@DynamicLoader.solver.dynamicLibraries().firstOrNull {
-                        (it as Loadable).identifier() == lib.toString()
-                    } ?: throw DomainError.forGoal(
-                        request.context,
-                        request.signature,
-                        DomainError.Expected.of("Loadable Lib"),
-                        lib,
-                    )
-                ).let { library ->
-                    request.context.createMutableSolver(
-                        libraries =
-                            Runtime
-                                .of(
-                                    request.context.libraries.libraries.filterNot { lib ->
-                                        this@DynamicLoader
-                                            .solver
-                                            .dynamicLibraries()
-                                            .map { it.alias }
-                                            .contains(lib.alias)
-                                    },
-                                ).plus(library.content()),
-                        staticKb = request.context.staticKb,
-                    )
-                }
+            val solver = loadWithMemo(request, lib)
 
             execute(lib.toString(), solver)
 
