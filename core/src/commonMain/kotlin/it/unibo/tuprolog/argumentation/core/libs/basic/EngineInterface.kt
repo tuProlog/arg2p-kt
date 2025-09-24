@@ -3,13 +3,15 @@ package it.unibo.tuprolog.argumentation.core.libs.basic
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
+import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
 abstract class EngineInterfaceBase :
     LazyRawPrologContent(),
-    ArgLibrary {
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.interface"
 
     override val baseContent: Library
@@ -27,6 +29,8 @@ abstract class EngineInterfaceBase :
             .operators()
             .plus(DynamicLoader.operators())
             .plus(OperatorSet.DEFAULT)
+
+    override fun identifier(): String = "arg2p"
 }
 
 expect object EngineInterface : EngineInterfaceBase {
