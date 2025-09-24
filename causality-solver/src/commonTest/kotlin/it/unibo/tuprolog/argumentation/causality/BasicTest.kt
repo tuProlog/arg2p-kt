@@ -5,7 +5,6 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -14,7 +13,10 @@ class BasicTest {
         """
         next(N, M) :- integer(N), !, M is N + 1, N >= 0, M =< $t.
         next(N, M) :- integer(M), !, N is M - 1, N >= 0, M =< $t.
-        prev(N, M) :- next(M, N).
+        
+        nextD(N, M) :- next(N, M).
+        nextD(N, M) :- integer(N), !, next(N, M1), nextD(M1, M).
+        nextD(N, M) :- integer(M), !, next(N1, M), nextD(N, N1).
         """.trimIndent()
     }
 
@@ -202,14 +204,13 @@ class BasicTest {
         }
 
     @Test
-    @Ignore
     fun doubleShootingTemporal(): Unit =
         Arg2pSolverFactory
             .causality(
                 """
                 r_1(X, Y, T) : sh(X, Y, T), prolog(next(T, T1)) => hit(X, Y, T1).
                 r_2(X, Y, T) : hit(X, Y, T) => di(Y, T).
-                r_3(X, Z, Y, T1, T2) : hit(X, Y, T1), hit(Z, Y, T2), prolog((X \= Z, T1 < T2)) => -r_2(Z, Y, T2).
+                r_3(X, Z, Y, T1, T2) : hit(X, Y, T1), hit(Z, Y, T2), prolog(nextD(T1, T2)) => -r_2(Z, Y, T2).
                 
                 f_1 :=> sh(bu, ge, 1).
                 f_2 :=> sh(dl, ge, 3).
@@ -253,7 +254,7 @@ class BasicTest {
                 r2(X, Y, T) : happens(X, T), causesE(X, Y, T), prolog(next(T, T1)) => happens(Y, T1).
                 r3(Y, T) : holdsAt(Y, T), prolog(next(T, T1)) => -r1(_, Y, T1).
                 r4(Y, T) : holdsAt(Y, T), prolog(next(T, T1)) => holdsAt(Y, T1).
-                r5(Y, T) : happens(X, T), causesF(X, Y, T), prolog((complement(Y, CY), prev(T, T1))) => -r4(CY, T1).
+                r5(Y, T) : happens(X, T), causesF(X, Y, T), prolog((complement(Y, CY), next(T1, T))) => -r4(CY, T1).
                 s1(Y, T) : holdsAt(Y, T), prolog(complement(Y, CY))  -> -holdsAt(CY, T).
 
                 complement(-X, X).
