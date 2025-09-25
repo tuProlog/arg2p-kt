@@ -1,3 +1,19 @@
+## [0.12.1](https://github.com/tuProlog/arg2p-kt/compare/0.12.0...0.12.1) (2025-09-25)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 933206f ([#157](https://github.com/tuProlog/arg2p-kt/issues/157)) ([76b0e4c](https://github.com/tuProlog/arg2p-kt/commit/76b0e4cf68fdac260548f17ae9c912ccab05a89c))
+* **deps:** update node.js to 22.20 ([#155](https://github.com/tuProlog/arg2p-kt/issues/155)) ([abbd2d7](https://github.com/tuProlog/arg2p-kt/commit/abbd2d7451d26581c8ec7f902aea3c110fa68b94))
+
+### Documentation
+
+* updated doc ([407b7e2](https://github.com/tuProlog/arg2p-kt/commit/407b7e2857cfb08e1f5e88014a4dbdb4604c4252))
+* updated doc ([327a68b](https://github.com/tuProlog/arg2p-kt/commit/327a68ba4e9e555e955c07f41c3356f5cb82ab06))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.8 ([#156](https://github.com/tuProlog/arg2p-kt/issues/156)) ([36b0ac4](https://github.com/tuProlog/arg2p-kt/commit/36b0ac4bc46de6804aa74010620cf6f3d9562be3))
+
 ## [0.12.0](https://github.com/tuProlog/arg2p-kt/compare/0.11.4...0.12.0) (2025-09-24)
 
 ### Features
