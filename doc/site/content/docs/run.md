@@ -5,7 +5,7 @@ weight: 10
 
 ## JVM Library - Gradle
 
-Arg2p is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-kt/) library.
+Arg2p is available as a [2P-Kt](https://github.com/tuProlog/2p-kt/) library.
 
 To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file:
  ```kotlin
