@@ -3,7 +3,7 @@
 Arg2P is a lightweight implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
 Built on top of the [tuProlog](https://github.com/tuProlog/2p-kt/) engine, it supports both JVM and Node environments.
 
-More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/docs/run/).
+More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
 
 ---
 
