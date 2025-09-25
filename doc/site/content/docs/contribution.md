@@ -4,7 +4,7 @@ weight: 40
 ---
 
 ## Team
-- Giuseppe Pisano
+- Giuseppe Pisano (g.pisano@unibo.it)
 
 ## Contributors
 - Roberta Calegari

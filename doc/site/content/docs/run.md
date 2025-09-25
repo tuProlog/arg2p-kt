@@ -1,91 +1,75 @@
 ---
-title: Run
+title: Execution
 weight: 10 
 ---
 
-## Standalone Application
+## JVM Library - Gradle
 
-Follow the __[GETTING STARTED]({{% ref "/" %}})__ instructions to install and run the Arg2p Java IDE.
+Arg2p is available as a [2P-Kt](http://pika-lab.gitlab.io/tuprolog/2p-kt/) library.
 
-The Arg2P IDE should appear as depicted below:
+To import the Arg2p module (version `ARG2P_VERSION`) into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file:
+ ```kotlin
+repositories {
+    mavenCentral()
+}
 
-{{< resize src="run1.png" size="500x" alt="Run" >}}
+dependencies {
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:ARG2P_VERSION")
+}
+ ```
 
-Copy the following example theory in the IDE editor (or create your own following the [base instructions]({{% ref "/docs/syntax" %}})):
-
-```prolog
-d1 : bird(X) => flies(X).
-d2 : penguin(X) => bird(X).
-s1 : penguin(X) -> -flies(X).
-a1 :-> penguin(tweety).
-```
-
-Run the goal `buildLabelSets` to build and evaluate the entire framework:
-
-{{< resize src="run3.png" size="460x" alt="Run" >}}
-
-Labellings are printed textually in the _Output_ tab and graphically in the _Graph_ tab:
-
-{{< resize src="run4.png" size="460x" alt="Run" >}}
-
-Alternatively you can require the evaluation of a single statement with the `answerQuery/4` predicate. For example, run the goal
-`answerQuery(flies(tweety), In, Out, Und)` to check the admissibility of the `flies(tweety)` statement. The result is printed in the _Solution_ tab:
-
-{{< resize src="run5.png" size="460x" alt="Run" >}}
-
-More information on the Arg2p usage can be found on the [API & Flags page]({{% ref "/docs/predicate" %}}).
-
-#### Kotlin library
-
-Follow the __[Get Started]({{% ref "/" %}})__ instructions to add the Arg2p dependency to your Kotlin project.
-
-First include the library with:
-  
-```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-```
-
-You can create a new Prolog solver including the Arg2p library with the following notation (for more info on 2P-Kt refer to the [official page](https://gitlab.com/pika-lab/tuprolog/2p-in-kotlin)):
+### Usage Example
 
 ```kotlin
-val arg2p = Arg2pSolver.default()
-val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = arg2p.to2pLibraries()
-)
-```
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 
-Set the solver theory:
+fun main() {
+    val graph = Arg2pSolverFactory.evaluate("""
+        f1 :=> d.
+        f2 :=> -d.
+    """.trimIndent(), FlagsBuilder()).first()
 
-```kotlin
-solver.loadStaticKb(Theory.parse("""
-            graphBuildMode(standard_af).
-            argumentLabellingMode(grounded).
-            statementLabellingMode(statement).
-            
-            d1 : bird(X) => flies(X).
-            d2 : penguin(X) => bird(X).
-            s1 : penguin(X) -> -flies(X).
-            a1 :-> penguin(tweety).
+    graph.labellings.forEach {
+        println("${it.label} : ${it.argument.conclusion}")
+    }
+}
+``` 
 
-        """.trimIndent(), arg2p.operators()))
-```
+For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
 
-Require the evaluation of the theory. For example:
+## NPM Library
 
-```kotlin
-prolog {
-    solver.solve("buildLabelSets"(X, Y, Z))
-        .map { 
-            when(it) {
-                Solution.Yes -> "In statements: ${it.substitution[X].toString()}"
-                Solution.No -> "No available solution"
-                Solution.Halt -> "Error in resolution process"
-            } 
-        }
+The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
+To use the library, add the dependency to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@tuprolog/arg2p": "ARG2P_VERSION"
+  }
 }
 ```
 
+### Usage Example
 
+```js
+const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
 
+const graph = arg2p.solve('buildLabelSets', `
+    f1 :=> d.
+    f2 :=> -d.`, `
+    graphBuildMode(standard_af).
+    statementLabellingMode(statement).
+    argumentLabellingMode(grounded_hash).
+    orderingPrinciple(last).
+    orderingComparator(elitist).
+    graphExtension(standardPref).
+    queryMode.`, _ => { }).i.next().graph
 
+graph.arguments.forEach(arg => {
+    console.log(`${arg.label} : ${arg.descriptor}`)
+})
+```
 
+For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
