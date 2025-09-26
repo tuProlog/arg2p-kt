@@ -22,8 +22,9 @@ finalize(I, O) :- I \= [], !, groundedLabelling.
 finalize(I, O) :- O \= [], !, groundedLabelling.
 
 finalize([], []) :-
-    argument_to_evaluate(A, _),
+    argument_to_evaluate(A, IdA),
     context_assert(und(A)),
+    context_assert(undId(IdA)),
     fail.
 finalize(_, _).
 

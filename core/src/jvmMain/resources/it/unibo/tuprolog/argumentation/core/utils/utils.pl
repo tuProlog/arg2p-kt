@@ -89,3 +89,11 @@ recoverStatementLabelling(In, Out, Und) :-
         utils::sort(TempIn, In),
         utils::sort(TempOut, Out),
         utils::sort(TempUnd, Und).
+
+recoverArgumentLabellingId(ArgsIn, ArgsOut, ArgsUnd) :-
+        findall(X, context_check(inId(X)), TempArgsIn),
+        findall(X, context_check(outId(X)), TempArgsOut),
+        findall(X, context_check(undId(X)), TempArgsUnd),
+        utils::sort(TempArgsIn, ArgsIn),
+        utils::sort(TempArgsOut, ArgsOut),
+        utils::sort(TempArgsUnd, ArgsUnd).

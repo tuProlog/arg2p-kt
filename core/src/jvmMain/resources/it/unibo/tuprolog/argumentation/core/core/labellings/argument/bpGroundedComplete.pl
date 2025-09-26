@@ -11,7 +11,7 @@ completeBpLabelling(stop, _).
 completeBpLabelling(go, Arguments) :-
     bp_grounded_partial::partialBpLabelling(Arguments), !,
     findall(X, (context_check(und(X)), context_retract(und(X))), NewArgs),
-    grounded::groundedLabelling(NewArgs),
+    grounded_old::groundedLabelling(NewArgs),
     findall(X, context_check(und(X)), LeftArguments),
     stopCondition(Stop, Arguments, LeftArguments),
     completeBpLabelling(Stop, LeftArguments).
