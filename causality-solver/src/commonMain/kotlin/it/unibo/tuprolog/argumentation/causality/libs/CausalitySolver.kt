@@ -40,7 +40,7 @@ class CausalitySolver :
 
     val solver =
         Arg2pSolverFactory.default(
-            settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded_hash").create(),
+            settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create(),
         )
 
     val operators = Arg2pSolver.default().operators()

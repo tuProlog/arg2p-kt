@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
@@ -143,13 +144,22 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            solver.solve("context_assert"(it.toTerm())).first()
+            solver.solve("standard_af" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
         }
         graph.attacks.forEach {
-            solver.solve("context_assert"(it.toTerm())).first()
+            solver
+                .solve(
+                    "standard_af" call
+                        "saveAttack"(
+                            it.type ?: "none",
+                            it.attacker.termRepresentation(),
+                            it.target.termRepresentation(),
+                            it.on?.termRepresentation() ?: "none",
+                        ),
+                ).first()
         }
         graph.supports.forEach {
-            solver.solve("context_assert"(it.toTerm())).first()
+            solver.solve("standard_af" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
         }
     }
 

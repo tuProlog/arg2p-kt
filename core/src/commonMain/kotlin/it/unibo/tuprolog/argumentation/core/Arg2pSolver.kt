@@ -24,6 +24,9 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabelle
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabellerOptimized
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PreferredLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SemistableLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StableLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
@@ -84,6 +87,9 @@ interface Arg2pSolver {
                 BpLabeller,
                 CompleteLabeller,
                 GroundedLabeller,
+                PreferredLabeller,
+                SemistableLabeller,
+                StableLabeller,
                 StatementLabeller,
                 AbstractMode,
                 StructuredMode,

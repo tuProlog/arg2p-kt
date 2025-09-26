@@ -25,7 +25,7 @@ class BridgeTest {
                 """
                 graphBuildMode(standard_af).
                 statementLabellingMode(statement).
-                argumentLabellingMode(grounded_hash).
+                argumentLabellingMode(grounded).
                 orderingPrinciple(last).
                 orderingComparator(elitist).
                 graphExtension(standardPref).
@@ -66,7 +66,7 @@ class BridgeTest {
                 """
                 graphBuildMode(standard_af).
                 statementLabellingMode(statement).
-                argumentLabellingMode(grounded_hash).
+                argumentLabellingMode(grounded).
                 orderingPrinciple(last).
                 orderingComparator(elitist).
                 graphExtension(standardPref).
@@ -94,7 +94,7 @@ class BridgeTest {
             """
             graphBuildMode(standard_af).
             statementLabellingMode(statement).
-            argumentLabellingMode(grounded_hash).
+            argumentLabellingMode(grounded).
             orderingPrinciple(last).
             orderingComparator(elitist).
             graphExtension(standardPref).

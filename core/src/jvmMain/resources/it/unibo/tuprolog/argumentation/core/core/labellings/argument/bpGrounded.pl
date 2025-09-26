@@ -10,14 +10,14 @@ argumentLabelling :-
 
 bpLabelling(Arguments) :-
     member(A, Arguments),
-    grounded::allAttacksOUT(A), !,
+    grounded_old::allAttacksOUT(A), !,
     context_assert(in(A)),
     utils::subtract(Arguments, [A], NewArguments),
     bpLabelling(NewArguments).
 bpLabelling(Arguments) :-
     member(A, Arguments),
     \+ isArgumentInBurdenOfProof(A),
-    grounded::oneAttackIN(A), !,
+    grounded_old::oneAttackIN(A), !,
     context_assert(out(A)),
     utils::subtract(Arguments, [A], NewArguments),
     bpLabelling(NewArguments).
