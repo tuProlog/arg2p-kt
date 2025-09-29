@@ -2,7 +2,6 @@ argumentLabelling :-
     cache_retract(complete(_,_,_,_)),
     grounded:::argumentLabelling,
     context_active(Branch),
-    write("merda"),nl,
     completeLabelling(Branch).
 
 completeLabelling(Branch) :-
@@ -30,6 +29,7 @@ admissible(H) :-
         context_check(clause(att(Attacker, H), _)),
         \+ (
             context_check(clause(att(Defendant, Attacker), _)),
-            context_check(inId(Defendant))
+            context_check(inId(Defendant)),
+            Defendant \= Attacker
         )
     ).
