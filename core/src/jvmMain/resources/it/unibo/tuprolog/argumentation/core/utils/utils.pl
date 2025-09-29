@@ -108,3 +108,11 @@ recoverArgumentLabellingId(ArgsIn, ArgsOut, ArgsUnd) :-
         utils::sort(TempArgsIn, ArgsIn),
         utils::sort(TempArgsOut, ArgsOut),
         utils::sort(TempArgsUnd, ArgsUnd).
+
+recoverArgumentLabellingAbstract(ArgsIn, ArgsOut, ArgsUnd) :-
+        findall(X, context_check(in([_, _, [X], _, _])), TempArgsIn),
+        findall(X, context_check(out([_, _, [X], _, _])), TempArgsOut),
+        findall(X, context_check(und([_, _, [X], _, _])), TempArgsUnd),
+        utils::sort(TempArgsIn, ArgsIn),
+        utils::sort(TempArgsOut, ArgsOut),
+        utils::sort(TempArgsUnd, ArgsUnd).
