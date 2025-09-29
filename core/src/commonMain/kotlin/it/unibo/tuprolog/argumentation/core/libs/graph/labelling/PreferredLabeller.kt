@@ -34,17 +34,11 @@ object PreferredLabeller :
         """
         argumentLabelling :-
             findall(_, complete:::argumentLabelling, _),
-            write(ciao),nl,
             findall((In, Out, Und, Branch), (
                 cache_check(complete(In, Out, Und, Branch))
             ), Results),
-            write(ciao2),nl,
-            write(Results),nl,
             filter(Results, Results, Filtered),
-            write(ciao3),nl,
-            write(Filtered),nl,
             member(X, Filtered),
-            write(X),nl,
             context_checkout(X).
         
         filter([], _, []).

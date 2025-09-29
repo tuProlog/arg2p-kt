@@ -5,6 +5,8 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.ui.gui.CustomTab
@@ -87,10 +89,10 @@ internal class FlagManagerFrame private constructor() {
                     }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<String> },
                     setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                     setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-                    setupCheckBox(
-                        "Prolog Rules Compatibility",
-                        flagManager.prologStrictCompatibility,
-                    ) { flagManager.prologStrictCompatibility = it },
+//                    setupCheckBox(
+//                        "Prolog Rules Compatibility",
+//                        flagManager.prologStrictCompatibility,
+//                    ) { flagManager.prologStrictCompatibility = it },
                     setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
                         .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
                     setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
@@ -126,6 +128,7 @@ internal class FlagManagerFrame private constructor() {
                                     ).create().content()
                             ).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
+                            solver.solve(Struct.parse("loader_reset")).first()
                         }
                     }
                 }
