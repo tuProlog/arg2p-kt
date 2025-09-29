@@ -10,12 +10,14 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
+import it.unibo.tuprolog.core.Tuple
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ArgumentLabellingTest {
-    private fun prepareGraph(): Graph {
+
+    private fun prepareGrounded(): List<Graph> {
         val arg1 = Argument(listOf("r5"), "r5", "-s('Pippo')")
         val arg2 = Argument(listOf("r4", "r3", "r1"), "r4", "s('Pippo')")
         val arg3 = Argument(listOf("r3", "r1"), "r3", "r('Pippo')")
@@ -23,30 +25,27 @@ class ArgumentLabellingTest {
         val arg5 = Argument(listOf("r1"), "r1", "q('Pippo')")
         val arg6 = Argument(listOf("r0"), "r0", "a('Pippo')")
 
-        return Graph.of(
-            listOf(
-                LabelledArgument(arg1, "in"),
-                LabelledArgument(arg2, "out"),
-                LabelledArgument(arg3, "out"),
-                LabelledArgument(arg4, "in"),
-                LabelledArgument(arg5, "in"),
-                LabelledArgument(arg6, "in"),
-            ),
-            listOf(
-                Attack(arg4, arg3),
-                Attack(arg4, arg2),
-                Attack(arg2, arg1),
-                Attack(arg1, arg2),
-            ),
-            listOf(
-                Support(arg3, arg2),
-                Support(arg5, arg3),
-                Support(arg6, arg4),
-            ),
-        )
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "out", arg4 to "in", arg5 to "in", arg6 to "in"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg4, arg3),
+                    Attack(arg4, arg2),
+                    Attack(arg2, arg1),
+                    Attack(arg1, arg2),
+                ),
+                listOf(
+                    Support(arg3, arg2),
+                    Support(arg5, arg3),
+                    Support(arg6, arg4),
+                )
+            )
+        }
     }
 
-    private fun prepareCompleteGraph(): List<Graph> {
+    private fun prepareComplete(): List<Graph> {
         val arg1 = Argument(listOf("r1"), "r1", "x")
         val arg2 = Argument(listOf("r2"), "r2", "-x")
         val arg3 = Argument(listOf("r3"), "r3", "y")
@@ -76,7 +75,7 @@ class ArgumentLabellingTest {
         }
     }
 
-    private fun preparePreferredGraph(): List<Graph> {
+    private fun preparePreferred(): List<Graph> {
         val arg1 = Argument(listOf("r1"), "r1", "x")
         val arg2 = Argument(listOf("r2"), "r2", "-x")
         val arg3 = Argument(listOf("r3"), "r3", "y")
@@ -111,9 +110,9 @@ class ArgumentLabellingTest {
         return listOf(
             listOf(
                 arg1 to "out",
-                arg2 to "in",
-                arg3 to "out",
-                arg4 to "out",
+                arg2 to "out",
+                arg3 to "in",
+                arg4 to "in",
                 arg5 to "out",
             ),
             listOf(
@@ -184,8 +183,10 @@ class ArgumentLabellingTest {
         val arg5 = Argument(listOf("r5"), "r5", "e")
 
         return listOf(
+            emptyList<Pair<Argument, String>>()
+        ).map { res ->
             Graph.of(
-                emptyList(),
+                res.map { LabelledArgument(it.first, it.second) },
                 listOf(
                     Attack(arg1, arg4), // a → d
                     Attack(arg1, arg5), // a → e
@@ -198,22 +199,63 @@ class ArgumentLabellingTest {
                     Attack(arg5, arg4), // e → d
                 ),
                 emptyList(),
-            ),
-        )
-    }
-
-    @Test
-    fun labelArgumentsGrounded() {
-        prepareGraph().also { graph ->
-            arg2pScope {
-                solver().also {
-                    prepareContext(it, graph)
-                    it.solve("grounded" call "argumentLabelling").first()
-                    checkResults(it, graph.labellings)
-                }
-            }
+            )
         }
     }
+
+    private fun prepareIdeal(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out")
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg1),
+                    Attack(arg2, arg2),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareIdeal2(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+        val arg4 = Argument(listOf("r4"), "r4", "d")
+        val arg5 = Argument(listOf("r5"), "r5", "e")
+
+        return listOf(
+            listOf(
+                arg1 to "und",
+                arg2 to "und",
+                arg3 to "und",
+                arg4 to "und",
+                arg5 to "und",
+            ),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg4), // a → d
+                    Attack(arg1, arg5), // a → e
+                    Attack(arg2, arg4), // b → d
+                    Attack(arg3, arg1), // c → a
+                    Attack(arg4, arg1), // d → a
+                    Attack(arg4, arg2), // d → b
+                    Attack(arg4, arg5), // d → e
+                    Attack(arg5, arg3), // e → c
+                    Attack(arg5, arg4), // e → d
+                ),
+                emptyList(),
+            )
+        }
+    }
+
 
     private fun checkSolutions(
         graph: List<Graph>,
@@ -229,7 +271,6 @@ class ArgumentLabellingTest {
                         .solve(labeller call "argumentLabelling")
                         .filter { res -> res.isYes }
                         .map { _ ->
-                            println("ciao")
                             println(expected)
                             println(mapper(solver.graph().labellings))
                             assertTrue(expected.any { it == mapper(solver.graph().labellings) })
@@ -243,20 +284,54 @@ class ArgumentLabellingTest {
     }
 
     @Test
-    fun labelArgumentsComplete() = checkSolutions(prepareCompleteGraph(), "complete")
+    fun labelArgumentsGrounded() = checkSolutions(prepareGrounded(), "complete")
 
     @Test
-    fun labelArgumentsPreferred() = checkSolutions(preparePreferredGraph(), "preferred")
+    fun labelArgumentsComplete() = checkSolutions(prepareComplete(), "complete")
 
     @Test
-    fun labelArgumentsPreferredAgain() = checkSolutions(preparePreferred2(), "preferred")
+    fun labelArgumentsComplete2() = checkSolutions(prepareGrounded(), "complete")
+
+    @Test
+    fun labelArgumentsPreferred() = checkSolutions(preparePreferred(), "preferred")
+
+    @Test
+    fun labelArgumentsPreferred2() = checkSolutions(preparePreferred2(), "preferred")
+
+    @Test
+    fun labelArgumentsPreferred3() = checkSolutions(prepareIdeal(), "preferred")
+
+    @Test
+    fun labelArgumentsPreferred4() = checkSolutions(prepareGrounded(), "preferred")
 
     @Test
     fun labelArgumentsSemistable() = checkSolutions(prepareSemiStable(), "semistable")
 
     @Test
+    fun labelArgumentsSemistable2() = checkSolutions(prepareGrounded(), "semistable")
+
+    @Test
     fun labelArgumentsStable() = checkSolutions(prepareStable(), "stable")
 
     @Test
-    fun labelArgumentsStableAgain() = checkSolutions(preparePreferredGraph(), "stable")
+    fun labelArgumentsStable2() = checkSolutions(preparePreferred(), "stable")
+
+    @Test
+    fun labelArgumentsStable3() = checkSolutions(prepareGrounded(), "stable")
+
+    @Test
+    fun labelArgumentsIdeal() = checkSolutions(prepareIdeal(), "ideal")
+
+    @Test
+    fun labelArgumentsIdeal2() = checkSolutions(prepareIdeal2(), "ideal")
+
+    @Test
+    fun labelArgumentsIdeal3() = checkSolutions(prepareGrounded(), "ideal")
+
+    @Test
+    fun labelArgumentsEager() = checkSolutions(prepareSemiStable(), "eager")
+
+    @Test
+    fun labelArgumentsEager2() = checkSolutions(prepareGrounded(), "eager")
+
 }

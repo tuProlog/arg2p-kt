@@ -11,6 +11,17 @@ writeListNl([X|Others]) :-
 	writeListNl(Others).
 
 
+intersection(Sets, Intersection) :-
+    once(member(X, Sets)),
+    findall(Y, (
+        member(Y, X),
+        \+ (
+            member(Set, Sets),
+            \+ member(Y, Set)
+        )
+    ), Intersection).
+
+
 sortDistinct(List, Sorted) :-
     deduplicate(List, Deduplicated),
     sort(Deduplicated, Sorted).
