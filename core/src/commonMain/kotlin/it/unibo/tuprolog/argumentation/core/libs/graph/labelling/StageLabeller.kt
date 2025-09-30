@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-object SemistableLabeller :
+object StageLabeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.semistable"
+    override val alias = "prolog.argumentation.graph.labelling.stage"
 
     override val baseContent: Library
         get() =
@@ -23,7 +23,7 @@ object SemistableLabeller :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "semistable"
+    override fun identifier(): String = "stage"
 
     override val theoryOperators =
         DynamicLoader
@@ -33,9 +33,9 @@ object SemistableLabeller :
     override val prologRawTheory: String =
         """
         argumentLabelling :-
-            findall(_, complete:::argumentLabelling, _),
+            findall(_, naive:::argumentLabelling, _),
             findall((In, Out, Und, Branch), (
-                cache_check(complete(In, Out, Und, Branch))
+                cache_check(naive(In, Out, Und, Branch))
             ), Results),
             filter(Results, Results, Filtered),
             member(X, Filtered),
