@@ -51,16 +51,18 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
     override fun values(): Iterable<String> =
         listOf(
             "grounded",
-            "grounded_old",
             "complete",
             "preferred",
             "semistable",
             "stable",
             "ideal",
             "eager",
+            "naive",
+            "stage",
             "bp_grounded",
             "bp_grounded_partial",
             "bp_grounded_complete",
+            "grounded_old",
         )
 }
 
