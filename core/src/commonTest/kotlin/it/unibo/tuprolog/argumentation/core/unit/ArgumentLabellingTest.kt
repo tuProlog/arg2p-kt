@@ -385,6 +385,133 @@ class ArgumentLabellingTest {
         }
     }
 
+    private fun prepareConflictFree(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in"),
+            listOf(arg1 to "in", arg2 to "out", arg3 to "und"),
+            listOf(arg1 to "und", arg2 to "in", arg3 to "out"),
+            listOf(arg1 to "und", arg2 to "und", arg3 to "in"),
+            listOf(arg1 to "und", arg2 to "und", arg3 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareAdmissible(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in"),
+            listOf(arg1 to "in", arg2 to "out", arg3 to "und"),
+            listOf(arg1 to "und", arg2 to "und", arg3 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareAdmissible2(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in"),
+            listOf(arg1 to "in", arg2 to "out", arg3 to "und"),
+            listOf(arg1 to "und", arg2 to "out", arg3 to "in"),
+            listOf(arg1 to "und", arg2 to "und", arg3 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                    Attack(arg3, arg2),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareAdmissible3(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out"),
+            listOf(arg1 to "out", arg2 to "in"),
+            listOf(arg1 to "und", arg2 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg1),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareStronglyAdmissible(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in"),
+            listOf(arg1 to "in", arg2 to "out", arg3 to "und"),
+            listOf(arg1 to "und", arg2 to "und", arg3 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                    Attack(arg3, arg2),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareStronglyAdmissible2(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+
+        return listOf(
+            listOf(arg1 to "und", arg2 to "und"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg1),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
     private fun checkSolutions(
         graph: List<Graph>,
         labeller: String,
@@ -509,4 +636,25 @@ class ArgumentLabellingTest {
 
     @Test
     fun labelArgumentsStage24() = checkSolutions(prepareStage(), "stage2")
+
+    @Test
+    fun labelArgumentsConflictFree() = checkSolutions(prepareConflictFree(), "conflictfree")
+
+    @Test
+    fun labelArgumentsAdmissible() = checkSolutions(prepareAdmissible(), "admissible")
+
+    @Test
+    fun labelArgumentsAdmissible2() = checkSolutions(prepareAdmissible2(), "admissible")
+
+    @Test
+    fun labelArgumentsAdmissible3() = checkSolutions(prepareAdmissible3(), "admissible")
+
+    @Test
+    fun labelArgumentsStronglyAdmissible() = checkSolutions(prepareAdmissible(), "stronglyadmissible")
+
+    @Test
+    fun labelArgumentsStronglyAdmissible2() = checkSolutions(prepareStronglyAdmissible(), "stronglyadmissible")
+
+    @Test
+    fun labelArgumentsStronglyAdmissible3() = checkSolutions(prepareStronglyAdmissible2(), "stronglyadmissible")
 }
