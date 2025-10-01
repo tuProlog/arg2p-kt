@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class GroundedLabellerOptimizedBase :
+object IdealLabeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.grounded"
+    override val alias = "prolog.argumentation.graph.labelling.ideal"
 
     override val baseContent: Library
         get() =
@@ -23,14 +23,24 @@ abstract class GroundedLabellerOptimizedBase :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "grounded"
+    override fun identifier(): String = "ideal"
 
     override val theoryOperators =
         DynamicLoader
             .operators()
             .plus(OperatorSet.DEFAULT)
-}
 
-expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase {
-    override val prologRawTheory: String
+    override val prologRawTheory: String =
+        """
+        argumentLabelling :-
+            findall(In, (
+                preferred:::argumentLabelling,
+                context_active(Branch),
+                cache_check(complete(In, _, _, Branch))
+            ), Results),
+            utils::intersection(Results, Int),
+            utils::sort(Int, SortedInt),
+            cache_check(complete(SortedInt, _, _, Branch)),
+            context_checkout(Branch).
+        """.trimIndent()
 }

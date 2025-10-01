@@ -5,6 +5,8 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.ui.gui.CustomTab
@@ -53,12 +55,14 @@ internal class FlagManagerFrame private constructor() {
                     setupChoiceBox(
                         "Argument Labelling Mode",
                         ArgumentLabellingMode.values(),
+                        ArgumentLabellingMode.default(),
                     ) {
                         flagManager.argumentLabellingMode = it
                     },
                     setupChoiceBox(
                         "Statement Labelling Mode",
                         StatementLabellingMode.values(),
+                        StatementLabellingMode.default(),
                     ) {
                         flagManager.statementLabellingMode = it
                     },
@@ -76,21 +80,23 @@ internal class FlagManagerFrame private constructor() {
                     setupChoiceBox(
                         "Ordering Principle",
                         OrderingPrinciple.values(),
+                        OrderingPrinciple.default(),
                     ) {
                         flagManager.orderingPrinciple = it
                     }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<String> },
                     setupChoiceBox(
                         "Ordering Comparator",
                         OrderingComparator.values(),
+                        OrderingComparator.default(),
                     ) {
                         flagManager.orderingComparator = it
                     }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<String> },
                     setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
                     setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-                    setupCheckBox(
-                        "Prolog Rules Compatibility",
-                        flagManager.prologStrictCompatibility,
-                    ) { flagManager.prologStrictCompatibility = it },
+//                    setupCheckBox(
+//                        "Prolog Rules Compatibility",
+//                        flagManager.prologStrictCompatibility,
+//                    ) { flagManager.prologStrictCompatibility = it },
                     setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
                         .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
                     setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
@@ -126,6 +132,7 @@ internal class FlagManagerFrame private constructor() {
                                     ).create().content()
                             ).forEach { solver.loadLibrary(it) }
                             solver.setFlag(Unknown.name, Unknown.FAIL)
+                            solver.solve(Struct.parse("loader_reset")).first()
                         }
                     }
                 }

@@ -12,7 +12,7 @@ abstract class GroundedLabellerBase :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.grounded"
+    override val alias = "prolog.argumentation.graph.labelling.grounded.old"
 
     override val baseContent: Library
         get() =
@@ -23,7 +23,7 @@ abstract class GroundedLabellerBase :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "grounded"
+    override fun identifier(): String = "grounded_old"
 
     override val theoryOperators =
         DynamicLoader

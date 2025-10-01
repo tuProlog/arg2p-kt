@@ -20,10 +20,10 @@ evaluateOut :-
 
 finalize(I, O) :- I \= [], !, groundedLabelling.
 finalize(I, O) :- O \= [], !, groundedLabelling.
-
 finalize([], []) :-
-    argument_to_evaluate(A, _),
+    argument_to_evaluate(A, IdA),
     context_assert(und(A)),
+    context_assert(undId(IdA)),
     fail.
 finalize(_, _).
 
@@ -44,7 +44,6 @@ oneAttackIN(A) :-
     context_check(inId(B)), !.
 
 % If A attacks an IN argument, then A is OUT
-
-oneAttackIN(A) :-
-    context_check(clause(att(A, B), _)),
-    context_check(inId(B)), !.
+% oneAttackIN(A) :-
+%    context_check(clause(att(A, B), _)),
+%    context_check(inId(B)), !.

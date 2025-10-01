@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class GroundedLabellerOptimizedBase :
+object AdmissibleLabeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.grounded"
+    override val alias = "prolog.argumentation.graph.labelling.admissible"
 
     override val baseContent: Library
         get() =
@@ -23,14 +23,29 @@ abstract class GroundedLabellerOptimizedBase :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "grounded"
+    override fun identifier(): String = "admissible"
 
     override val theoryOperators =
         DynamicLoader
             .operators()
             .plus(OperatorSet.DEFAULT)
-}
 
-expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase {
-    override val prologRawTheory: String
+    override val prologRawTheory: String =
+        """
+        argumentLabelling :-
+            conflictfree::argumentLabelling,
+            admissibleSet.
+        
+        admissibleSet :-
+            \+ (context_check(inId(H)), \+ admissible(H)).
+        admissible(H) :-
+            \+ (
+                context_check(clause(att(Attacker, H), _)),
+                \+ (
+                    context_check(clause(att(Defendant, Attacker), _)),
+                    context_check(inId(Defendant)),
+                    Defendant \= Attacker
+                )
+            ).
+        """.trimIndent()
 }

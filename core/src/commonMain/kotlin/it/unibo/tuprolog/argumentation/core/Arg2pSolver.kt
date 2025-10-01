@@ -16,15 +16,27 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHand
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.AdmissibleLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Cf2Labeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.ConflictFreeLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.EagerLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabellerOptimized
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.IdealLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.NaiveLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PreferredLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SemistableLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StableLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Stage2Labeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StageLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StronglyAdmissibleLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.AttackRelation
@@ -84,6 +96,18 @@ interface Arg2pSolver {
                 BpLabeller,
                 CompleteLabeller,
                 GroundedLabeller,
+                PreferredLabeller,
+                SemistableLabeller,
+                StableLabeller,
+                IdealLabeller,
+                EagerLabeller,
+                NaiveLabeller,
+                StageLabeller,
+                Cf2Labeller,
+                Stage2Labeller,
+                ConflictFreeLabeller,
+                AdmissibleLabeller,
+                StronglyAdmissibleLabeller,
                 StatementLabeller,
                 AbstractMode,
                 StructuredMode,

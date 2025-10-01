@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -21,7 +22,6 @@ import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 class DynamicLoader(
@@ -63,8 +63,8 @@ class DynamicLoader(
                 it.loadStaticKb(request.context.staticKb)
             }
 
-    abstract inner class AbstractWithLib : Primitive {
-        abstract val signature: Signature
+    abstract inner class AbstractWithLib : PrimitiveWithSignature {
+        abstract override val signature: Signature
 
         abstract fun execute(
             module: String,
@@ -132,11 +132,20 @@ class DynamicLoader(
         }
     }
 
+    inner class ResetLoader : PrimitiveWithSignature {
+        override val signature = Signature("loader_reset", 0)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            this@DynamicLoader.solverCache.clear()
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
     override val alias = "prolog.argumentation.loader"
 
     override val baseContent: Library
         get() =
-            listOf(WithLib(), WithLibInNewContext()).let {
+            listOf(WithLib(), WithLibInNewContext(), ResetLoader()).let {
                 Library.of(
                     alias = this.alias,
                     primitives = it.associateBy { prim -> prim.signature },

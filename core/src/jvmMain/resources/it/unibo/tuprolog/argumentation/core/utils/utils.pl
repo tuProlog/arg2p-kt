@@ -11,6 +11,17 @@ writeListNl([X|Others]) :-
 	writeListNl(Others).
 
 
+intersection(Sets, Intersection) :-
+    once(member(X, Sets)),
+    findall(Y, (
+        member(Y, X),
+        \+ (
+            member(Set, Sets),
+            \+ member(Y, Set)
+        )
+    ), Intersection).
+
+
 sortDistinct(List, Sorted) :-
     deduplicate(List, Deduplicated),
     sort(Deduplicated, Sorted).
@@ -89,3 +100,19 @@ recoverStatementLabelling(In, Out, Und) :-
         utils::sort(TempIn, In),
         utils::sort(TempOut, Out),
         utils::sort(TempUnd, Und).
+
+recoverArgumentLabellingId(ArgsIn, ArgsOut, ArgsUnd) :-
+        findall(X, context_check(inId(X)), TempArgsIn),
+        findall(X, context_check(outId(X)), TempArgsOut),
+        findall(X, context_check(undId(X)), TempArgsUnd),
+        utils::sort(TempArgsIn, ArgsIn),
+        utils::sort(TempArgsOut, ArgsOut),
+        utils::sort(TempArgsUnd, ArgsUnd).
+
+recoverArgumentLabellingAbstract(ArgsIn, ArgsOut, ArgsUnd) :-
+        findall(X, context_check(in([_, _, [X], _, _])), TempArgsIn),
+        findall(X, context_check(out([_, _, [X], _, _])), TempArgsOut),
+        findall(X, context_check(und([_, _, [X], _, _])), TempArgsUnd),
+        utils::sort(TempArgsIn, ArgsIn),
+        utils::sort(TempArgsOut, ArgsOut),
+        utils::sort(TempArgsUnd, ArgsUnd).

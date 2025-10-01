@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class GroundedLabellerOptimizedBase :
+object Stage2Labeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.grounded"
+    override val alias = "prolog.argumentation.graph.labelling.stage2"
 
     override val baseContent: Library
         get() =
@@ -23,14 +23,17 @@ abstract class GroundedLabellerOptimizedBase :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "grounded"
+    override fun identifier(): String = "stage2"
 
     override val theoryOperators =
         DynamicLoader
             .operators()
             .plus(OperatorSet.DEFAULT)
-}
 
-expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase {
-    override val prologRawTheory: String
+    override val prologRawTheory: String =
+        """
+        argumentLabelling :-
+            cf2::compute(stage).
+        
+        """.trimIndent()
 }
