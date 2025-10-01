@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-object NaiveLabeller :
+object StronglyAdmissibleLabeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.naive"
+    override val alias = "prolog.argumentation.graph.labelling.stronglyadmissible"
 
     override val baseContent: Library
         get() =
@@ -23,7 +23,7 @@ object NaiveLabeller :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "naive"
+    override fun identifier(): String = "stronglyadmissible"
 
     override val theoryOperators =
         DynamicLoader
@@ -33,23 +33,16 @@ object NaiveLabeller :
     override val prologRawTheory: String =
         """
         argumentLabelling :-
-            cache_retract(naive(_, _, _, _)),
-            conflictfree::argumentLabelling,
-            maximalConflictFreeSet,
-            utils::recoverArgumentLabellingId(In, Out, Und),
-            \+ cache_check(naive(In, Out, Und, _)),
+            admissible::argumentLabelling,
+            stronglyAdmissibleSet.
+        
+        stronglyAdmissibleSet :-
             context_active(Branch),
-            cache_assert(naive(In, Out, Und, Branch)).
-            
-            
-        maximalConflictFreeSet :-
-            \+ (
-                context_check(clause(arg(IdX), _)),
-                \+ context_check(inId(IdX)),
-                \+ (
-                    (context_check(clause(att(IdX, IdY), _));context_check(clause(att(IdY, IdX), _))),
-                    context_check(inId(IdY))
-                )
-            ).
+            \+ (context_check(inId(H)), \+ stronglyAdmissible(Branch, H)),
+            context_checkout(Branch).
+        stronglyAdmissible(Branch, H) :-
+            context_branch(Branch, _),
+            context_retract(inId(H)),
+            admissible::admissible(H).
         """.trimIndent()
 }

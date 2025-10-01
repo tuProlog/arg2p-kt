@@ -8,11 +8,11 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-object NaiveLabeller :
+object AdmissibleLabeller :
     LazyRawPrologContent(),
     ArgLibrary,
     Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.naive"
+    override val alias = "prolog.argumentation.graph.labelling.admissible"
 
     override val baseContent: Library
         get() =
@@ -23,7 +23,7 @@ object NaiveLabeller :
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override fun identifier(): String = "naive"
+    override fun identifier(): String = "admissible"
 
     override val theoryOperators =
         DynamicLoader
@@ -33,22 +33,18 @@ object NaiveLabeller :
     override val prologRawTheory: String =
         """
         argumentLabelling :-
-            cache_retract(naive(_, _, _, _)),
             conflictfree::argumentLabelling,
-            maximalConflictFreeSet,
-            utils::recoverArgumentLabellingId(In, Out, Und),
-            \+ cache_check(naive(In, Out, Und, _)),
-            context_active(Branch),
-            cache_assert(naive(In, Out, Und, Branch)).
-            
-            
-        maximalConflictFreeSet :-
+            admissibleSet.
+        
+        admissibleSet :-
+            \+ (context_check(inId(H)), \+ admissible(H)).
+        admissible(H) :-
             \+ (
-                context_check(clause(arg(IdX), _)),
-                \+ context_check(inId(IdX)),
+                context_check(clause(att(Attacker, H), _)),
                 \+ (
-                    (context_check(clause(att(IdX, IdY), _));context_check(clause(att(IdY, IdX), _))),
-                    context_check(inId(IdY))
+                    context_check(clause(att(Defendant, Attacker), _)),
+                    context_check(inId(Defendant)),
+                    Defendant \= Attacker
                 )
             ).
         """.trimIndent()
