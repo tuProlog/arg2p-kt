@@ -305,6 +305,86 @@ class ArgumentLabellingTest {
         }
     }
 
+    private fun prepareCf2(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+        val arg4 = Argument(listOf("r4"), "r4", "e")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "out", arg4 to "in"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                    Attack(arg3, arg3),
+                    Attack(arg3, arg4),
+                    Attack(arg4, arg3),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareNaive3(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+        val arg4 = Argument(listOf("r4"), "r4", "e")
+        val arg5 = Argument(listOf("r5"), "r5", "f")
+        val arg6 = Argument(listOf("r6"), "r6", "g")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in", arg4 to "out", arg5 to "in", arg6 to "out"),
+            listOf(arg1 to "out", arg2 to "in", arg3 to "out", arg4 to "in", arg5 to "out", arg6 to "in"),
+            listOf(arg1 to "in", arg2 to "out", arg3 to "und", arg4 to "in", arg5 to "out", arg6 to "und"),
+            listOf(arg1 to "und", arg2 to "in", arg3 to "out", arg4 to "und", arg5 to "in", arg6 to "out"),
+            listOf(arg1 to "out", arg2 to "und", arg3 to "in", arg4 to "out", arg5 to "und", arg6 to "in"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                    Attack(arg3, arg4),
+                    Attack(arg4, arg5),
+                    Attack(arg5, arg6),
+                    Attack(arg6, arg1),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
+    private fun prepareStage(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+        val arg4 = Argument(listOf("r4"), "r4", "e")
+        val arg5 = Argument(listOf("r5"), "r5", "f")
+        val arg6 = Argument(listOf("r6"), "r6", "g")
+
+        return listOf(
+            listOf(arg1 to "in", arg2 to "out", arg3 to "in", arg4 to "out", arg5 to "in", arg6 to "out"),
+            listOf(arg1 to "out", arg2 to "in", arg3 to "out", arg4 to "in", arg5 to "out", arg6 to "in"),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2),
+                    Attack(arg2, arg3),
+                    Attack(arg3, arg4),
+                    Attack(arg4, arg5),
+                    Attack(arg5, arg6),
+                    Attack(arg6, arg1),
+                ),
+                emptyList(),
+            )
+        }
+    }
+
     private fun checkSolutions(
         graph: List<Graph>,
         labeller: String,
@@ -332,7 +412,7 @@ class ArgumentLabellingTest {
     }
 
     @Test
-    fun labelArgumentsGrounded() = checkSolutions(prepareGrounded(), "complete")
+    fun labelArgumentsGrounded() = checkSolutions(prepareGrounded(), "grounded")
 
     @Test
     fun labelArgumentsComplete() = checkSolutions(prepareComplete(), "complete")
@@ -392,6 +472,9 @@ class ArgumentLabellingTest {
     fun labelArgumentsNaive3() = checkSolutions(prepareNaive2(), "naive")
 
     @Test
+    fun labelArgumentsNaive4() = checkSolutions(prepareNaive3(), "naive")
+
+    @Test
     fun labelArgumentsStage() = checkSolutions(prepareNaive(), "stage")
 
     @Test
@@ -399,4 +482,31 @@ class ArgumentLabellingTest {
 
     @Test
     fun labelArgumentsStage3() = checkSolutions(prepareGrounded(), "stage")
+
+    @Test
+    fun labelArgumentsStage4() = checkSolutions(prepareStage(), "stage")
+
+    @Test
+    fun labelArgumentsCf2() = checkSolutions(prepareCf2(), "cf2")
+
+    @Test
+    fun labelArgumentsCf22() = checkSolutions(prepareGrounded(), "cf2")
+
+    @Test
+    fun labelArgumentsCf23() = checkSolutions(prepareNaive(), "cf2")
+
+    @Test
+    fun labelArgumentsCf24() = checkSolutions(prepareNaive3(), "cf2")
+
+    @Test
+    fun labelArgumentsStage21() = checkSolutions(prepareCf2(), "stage2")
+
+    @Test
+    fun labelArgumentsStage22() = checkSolutions(prepareGrounded(), "stage2")
+
+    @Test
+    fun labelArgumentsStage23() = checkSolutions(prepareNaive(), "stage2")
+
+    @Test
+    fun labelArgumentsStage24() = checkSolutions(prepareStage(), "stage2")
 }

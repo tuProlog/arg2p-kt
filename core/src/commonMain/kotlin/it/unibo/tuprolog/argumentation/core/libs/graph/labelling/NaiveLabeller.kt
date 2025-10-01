@@ -40,7 +40,7 @@ object NaiveLabeller :
             
         naiveLabellingInMemory(Branch) :-
             findall(A, context_check(clause(arg(A), _)), Args),
-            combinations(Args, TentativeSet),
+            combinations(Branch, Args, TentativeSet),
             maximalConflictFreeSetInMemory(TentativeSet),
             context_branch(Branch, NewBranch),
             findall(_, (
@@ -54,9 +54,9 @@ object NaiveLabeller :
             \+ cache_check(naive(In, Out, Und, _)),
             cache_assert(naive(In, Out, Und, NewBranch)).
         
-        combinations([], []).
-        combinations([H|T], [H|RT]) :- combinations(T, RT).
-        combinations([_|T], RT) :- combinations(T, RT).
+        combinations(_, [], []).
+        combinations(Branch, [H|T], [H|RT]) :- combinations(Branch, T, RT).
+        combinations(Branch, [H|T], RT) :- \+ context_check(Branch, inId(H)), combinations(Branch, T, RT).
             
         conflictFreeSetInMemory(TentativeSet) :-
             \+ (

@@ -20,6 +20,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatement
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Cf2Labeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.EagerLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
@@ -30,6 +31,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStat
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PreferredLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SemistableLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StableLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Stage2Labeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StageLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
@@ -98,6 +100,8 @@ interface Arg2pSolver {
                 EagerLabeller,
                 NaiveLabeller,
                 StageLabeller,
+                Cf2Labeller,
+                Stage2Labeller,
                 StatementLabeller,
                 AbstractMode,
                 StructuredMode,
