@@ -55,12 +55,14 @@ internal class FlagManagerFrame private constructor() {
                     setupChoiceBox(
                         "Argument Labelling Mode",
                         ArgumentLabellingMode.values(),
+                        ArgumentLabellingMode.default(),
                     ) {
                         flagManager.argumentLabellingMode = it
                     },
                     setupChoiceBox(
                         "Statement Labelling Mode",
                         StatementLabellingMode.values(),
+                        StatementLabellingMode.default(),
                     ) {
                         flagManager.statementLabellingMode = it
                     },
@@ -78,12 +80,14 @@ internal class FlagManagerFrame private constructor() {
                     setupChoiceBox(
                         "Ordering Principle",
                         OrderingPrinciple.values(),
+                        OrderingPrinciple.default(),
                     ) {
                         flagManager.orderingPrinciple = it
                     }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<String> },
                     setupChoiceBox(
                         "Ordering Comparator",
                         OrderingComparator.values(),
+                        OrderingComparator.default(),
                     ) {
                         flagManager.orderingComparator = it
                     }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<String> },
