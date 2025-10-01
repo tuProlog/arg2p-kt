@@ -1,3 +1,49 @@
+## [0.13.0](https://github.com/tuProlog/arg2p-kt/compare/0.12.1...0.13.0) (2025-10-01)
+
+### Features
+
+* abstract solve (arg2p::solveAbstract) ([943ed52](https://github.com/tuProlog/arg2p-kt/commit/943ed5281eff73004a850c86b6d446a26f8f7055))
+* abstract solve (arg2p::solveAbstract) ([6f42fe5](https://github.com/tuProlog/arg2p-kt/commit/6f42fe5262e98d5f0800480bc8338a1e34f0f9a8))
+* cf2 & stage2 semantics ([6da4ad7](https://github.com/tuProlog/arg2p-kt/commit/6da4ad73ab6e7488dee040d50b6f3ed9bc792c1a))
+* cf2 & stage2 semantics ([e697b31](https://github.com/tuProlog/arg2p-kt/commit/e697b3135f7a427fd3da8300b98edd7f577d1562))
+* conflict free, admissible & strongly admissible semantics ([08f1b16](https://github.com/tuProlog/arg2p-kt/commit/08f1b1666651fa5afe5652b94bc58aceb49a3285))
+* conflict free, admissible & strongly admissible semantics ([b534464](https://github.com/tuProlog/arg2p-kt/commit/b5344648532e7a5eec9a42facdbf72effa8d9dcc))
+* naive & stage semantics ([d861a10](https://github.com/tuProlog/arg2p-kt/commit/d861a10b77f24b306175f568e685e29bd55f9035))
+* naive & stage semantics ([057c90b](https://github.com/tuProlog/arg2p-kt/commit/057c90bb8b74b8e650d1169f4a955053f3aa6d10))
+* new semantics ([e6698f3](https://github.com/tuProlog/arg2p-kt/commit/e6698f3c37f71ef477bf4adfb272de7099e28ffe))
+* new semantics ([928e333](https://github.com/tuProlog/arg2p-kt/commit/928e333d91f63163a27b7d4bb5fc8e651ed5c3ce))
+* new semantics ([a2cfb23](https://github.com/tuProlog/arg2p-kt/commit/a2cfb2386f0eaaebe7b1ba2b6148fef463eb85bb))
+* new semantics ([f84c817](https://github.com/tuProlog/arg2p-kt/commit/f84c817a47d1f7813956c44064050987e3f25b1a))
+* semantics ([1768bcf](https://github.com/tuProlog/arg2p-kt/commit/1768bcfa796e162c60e5e9f7f69a5a51873225d1))
+
+### Dependency updates
+
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.147 ([#164](https://github.com/tuProlog/arg2p-kt/issues/164)) ([0fae857](https://github.com/tuProlog/arg2p-kt/commit/0fae857679c3be08bbdc6093cf3007ab48989edf))
+* **deps:** update doc/site/themes/hugo-book digest to 1dd926a ([#168](https://github.com/tuProlog/arg2p-kt/issues/168)) ([e3a6e62](https://github.com/tuProlog/arg2p-kt/commit/e3a6e62c90bd9ac8a4eb0668c31941732f615a13))
+* **deps:** update doc/site/themes/hugo-book digest to 45139e1 ([#165](https://github.com/tuProlog/arg2p-kt/issues/165)) ([6d99ed7](https://github.com/tuProlog/arg2p-kt/commit/6d99ed7560f80e74712598dd7d2bce095629dc85))
+* **deps:** update doc/site/themes/hugo-book digest to 48157b1 ([#159](https://github.com/tuProlog/arg2p-kt/issues/159)) ([6100fe7](https://github.com/tuProlog/arg2p-kt/commit/6100fe784179a37b9c42bf36737d37cfd01a6f6c))
+* **deps:** update doc/site/themes/hugo-book digest to 5ffdf5b ([#160](https://github.com/tuProlog/arg2p-kt/issues/160)) ([5fb7b0f](https://github.com/tuProlog/arg2p-kt/commit/5fb7b0f0c1009fc0c57f42c2f53f4ef21117d9ae))
+* **deps:** update doc/site/themes/hugo-book digest to 6a134d4 ([#163](https://github.com/tuProlog/arg2p-kt/issues/163)) ([9669fee](https://github.com/tuProlog/arg2p-kt/commit/9669fee939c33baa6a2f3d0aab77c3b4c7779d00))
+* **deps:** update doc/site/themes/hugo-book digest to 88a7b84 ([#162](https://github.com/tuProlog/arg2p-kt/issues/162)) ([2b37090](https://github.com/tuProlog/arg2p-kt/commit/2b37090474d5b9f3e3db7c1c19c4b0513fa61e4f))
+* **deps:** update doc/site/themes/hugo-book digest to 8db9aeb ([#167](https://github.com/tuProlog/arg2p-kt/issues/167)) ([807c33a](https://github.com/tuProlog/arg2p-kt/commit/807c33a60438e8badfcbb3a2f8ce000e0b2d1eca))
+* **deps:** update doc/site/themes/hugo-book digest to 915477e ([#161](https://github.com/tuProlog/arg2p-kt/issues/161)) ([6d22903](https://github.com/tuProlog/arg2p-kt/commit/6d229031e7b2312a88c89996ded28c4a167d92b1))
+* **deps:** update doc/site/themes/hugo-book digest to 9a9f492 ([#169](https://github.com/tuProlog/arg2p-kt/issues/169)) ([9657c2b](https://github.com/tuProlog/arg2p-kt/commit/9657c2b9c8171bcd3301f5889672d68f31bb842b))
+* **deps:** update doc/site/themes/hugo-book digest to c58c73a ([#166](https://github.com/tuProlog/arg2p-kt/issues/166)) ([f7b4a8d](https://github.com/tuProlog/arg2p-kt/commit/f7b4a8dc6896cb5a5e75e022e9d4a58331c98880))
+* **deps:** update doc/site/themes/hugo-book digest to fe67dfe ([#158](https://github.com/tuProlog/arg2p-kt/issues/158)) ([45ce60e](https://github.com/tuProlog/arg2p-kt/commit/45ce60ee9cbb0762b0afefbd46a27c5fbe48c1c3))
+
+### Bug Fixes
+
+* **deps:** update logback monorepo to v1.5.19 ([#171](https://github.com/tuProlog/arg2p-kt/issues/171)) ([eaebbe6](https://github.com/tuProlog/arg2p-kt/commit/eaebbe6b7a7ec4ea07ebdbadfe706519068be8c0))
+
+### Documentation
+
+* abstract mode ([868ddc5](https://github.com/tuProlog/arg2p-kt/commit/868ddc51746182622904b1abe7c409d193808d87))
+* abstract mode ([2c35952](https://github.com/tuProlog/arg2p-kt/commit/2c359529b91cf58ac541e7d05a52af02e771b6b1))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.9 ([#170](https://github.com/tuProlog/arg2p-kt/issues/170)) ([4181aef](https://github.com/tuProlog/arg2p-kt/commit/4181aef7a6d1010f3153264ec656f818a1b100ef))
+
 ## [0.12.1](https://github.com/tuProlog/arg2p-kt/compare/0.12.0...0.12.1) (2025-09-25)
 
 ### Dependency updates
