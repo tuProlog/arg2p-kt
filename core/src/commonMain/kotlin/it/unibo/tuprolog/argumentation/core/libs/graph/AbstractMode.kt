@@ -50,7 +50,7 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
 
     override fun values(): Iterable<String> =
         listOf(
-            "conflicfree",
+            "conflictfree",
             "admissible",
             "stronglyadmissible",
             "grounded",
