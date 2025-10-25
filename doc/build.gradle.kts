@@ -1,7 +1,7 @@
 val baseUrl: String? by project
 
 plugins {
-    id("io.github.fstaudt.hugo") version "0.10.0"
+    id("io.github.fstaudt.hugo") version "0.11.0"
 }
 
 hugo {
