@@ -23,7 +23,6 @@
   "automerge": true,
   "prConcurrentLimit": 30,
   "prHourlyLimit": 30,
-  "ignoreDeps": ["javafx"],
   "git-submodules": {
     "enabled": true
   }
