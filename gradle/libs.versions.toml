@@ -2,7 +2,7 @@
 kotlin = "2.2.21"
 jvm = "21"
 node = "22-latest"
-ktMpp = "5.1.6"
+ktMpp = "5.1.7"
 semVer = "7.0.6"
 javaFx = "21.0.9"
 akka = "2.8.8"
