@@ -39,8 +39,7 @@ invalid(undermine, A, B, C, SupSet) :- superiority::superiorArgument(C, A, SupSe
 */
 
 convertAttacks(Attacks) :-
-    conversion(Attacks),
-    standard_af::buildTransitiveAttacks.
+    conversion(Attacks).
 
 conversion(List) :-
     member((T, A, B, B), List),
@@ -62,6 +61,10 @@ generateDirectAttackArgument(T, A, B, B) :-
     RArgument = [[attack], attack, [attack(T, A, B, B)], [], [[attack], [attack], []]],
     standard_af::saveArgument(a, [attack(T, A, B, B)], RArgument),
     standard_af::saveSupport(A, RArgument),
+    findall(_, (
+        context_check(attack(X, Y, A, Z)),
+        standard_af::saveAttack(X, Y, RArgument, Z)
+    ), _),
     standard_af::saveAttack(T, RArgument, B, B),
     standard_af::removeAttack(T, A, B, B).
 
@@ -77,5 +80,6 @@ buildPrefAttacks :-
     member(X, SupSet),
     context_check(argument([IdA, TRA, [X], GG, II])),
     standard_af::saveAttack(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
+    standard_af::buildTransitiveAttacks(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I]),
     fail.
 buildPrefAttacks.

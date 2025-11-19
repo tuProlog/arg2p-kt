@@ -3,8 +3,7 @@ modifyArgumentationGraph :-
     findall((T, A, B, C), context_check(attack(T, A, B, C)), Attacks),
     defeasiblePref::filterSupRelatedAttacks(Attacks, InvalidAttacks),
     defeasiblePref::convertAttacks(InvalidAttacks),
-    buildPrefAttacks,
-    standard_af::buildTransitiveAttacks.
+    buildPrefAttacks.
 
 
 buildPrefAttacks :-
@@ -16,6 +15,7 @@ buildPrefAttacks :-
     % \+ context_check(Attack),
     % context_assert(Attack),
     standard_af::saveAttack(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
+    standard_af::buildTransitiveAttacks(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I]),
     fail.
 buildPrefAttacks.
 
@@ -32,7 +32,11 @@ createSuperiorityArgument(SupSet, Argument) :-
     standard_af::saveArgument(a, [preference(SupSet)], Argument),
     findall(_, (
         member(A, SupportArguments),
-        standard_af::saveSupport(A, Argument)
+        standard_af::saveSupport(A, Argument),
+        findall(_, (
+            context_check(attack(X, Y, A, Z)),
+            standard_af::saveAttack(X, Y, Argument, Z)
+        ), _)
     ), _).
 
 mergeIds([], [pref]).
