@@ -159,7 +159,7 @@ buildDirectAttack :-
 	A \== B,
     attack::attacks(T, B, A),
     saveAttack(T, B, A, A),
-    buildTransitiveAttack(T, B, A),
+    buildTransitiveAttacks(T, B, A),
 	fail.
 buildDirectAttack.
 
