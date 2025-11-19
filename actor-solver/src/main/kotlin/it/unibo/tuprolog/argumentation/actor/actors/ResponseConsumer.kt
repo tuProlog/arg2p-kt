@@ -25,8 +25,7 @@ class ResponseConsumer private constructor(
             .onMessage(EvaluationResponse::class.java) { command ->
                 consumer.complete(command)
                 Behaviors.stopped()
-            }
-            .build()
+            }.build()
 
     companion object {
         private fun create(consumer: CompletableFuture<EvaluationResponse>): Behavior<KbMessage> =

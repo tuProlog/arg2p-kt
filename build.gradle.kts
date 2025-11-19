@@ -1,8 +1,6 @@
 import io.github.gciatto.kt.mpp.Plugins
 import io.github.gciatto.kt.mpp.helpers.ProjectType
-// import io.github.gciatto.kt.mpp.nodeVersion
 
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     alias(libs.plugins.ktMpp.helper)
     alias(libs.plugins.ktMpp.mavenPublish)
@@ -21,8 +19,7 @@ allprojects {
 }
 
 gitSemVer {
-    excludeLightweightTags()
-    assignGitSemanticVersion()
+    buildMetadataSeparator.set("-")
 }
 
 multiProjectHelper {

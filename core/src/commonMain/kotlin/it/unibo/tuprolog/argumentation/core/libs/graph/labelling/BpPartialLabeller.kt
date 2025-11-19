@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class BpPartialLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class BpPartialLabellerBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.graph.labelling.bpgroundedpartial"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class BpPartialLabellerBase : ArgLibrary, LazyRawPrologContent(), Loada
     override fun identifier(): String = "bp_grounded_partial"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object BpPartialLabeller : BpPartialLabellerBase
+expect object BpPartialLabeller : BpPartialLabellerBase {
+    override val prologRawTheory: String
+}

@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class ArgumentationGraphBuilderBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class ArgumentationGraphBuilderBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.graph"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class ArgumentationGraphBuilderBase : ArgLibrary, LazyRawPrologContent(
     override fun identifier(): String = "standard_af"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object ArgumentationGraphBuilder : ArgumentationGraphBuilderBase
+expect object ArgumentationGraphBuilder : ArgumentationGraphBuilderBase {
+    override val prologRawTheory: String
+}

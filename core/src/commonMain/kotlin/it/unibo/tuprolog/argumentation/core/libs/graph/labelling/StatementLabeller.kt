@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class StatementLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class StatementLabellerBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.graph.labelling.statement"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class StatementLabellerBase : ArgLibrary, LazyRawPrologContent(), Loada
     override fun identifier(): String = "statement"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object StatementLabeller : StatementLabellerBase
+expect object StatementLabeller : StatementLabellerBase {
+    override val prologRawTheory: String
+}

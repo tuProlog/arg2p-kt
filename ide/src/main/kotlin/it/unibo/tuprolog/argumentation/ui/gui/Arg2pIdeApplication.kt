@@ -20,8 +20,7 @@ class Arg2pIdeApplication : Application() {
                         ArgumentationGraphFrame.customTab().also { it.tab.id = "arg-graph" },
                         FlagManagerFrame.customTab(arg2p.to2pLibraries().libraries.toList()).also { it.tab.id = "arg-flags" },
                     ),
-                )
-                .show()
+                ).show()
         } catch (e: Throwable) {
             e.printStackTrace()
             throw Error(e)

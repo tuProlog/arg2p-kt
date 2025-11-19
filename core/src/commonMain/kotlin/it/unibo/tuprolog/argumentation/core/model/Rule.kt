@@ -7,9 +7,7 @@ interface ArgItem {
     val identifier: RuleIdentifier
     val conclusion: Term
 
-    fun toTerm(): it.unibo.tuprolog.core.Term {
-        return Struct.parse(this.toString())
-    }
+    fun toTerm(): it.unibo.tuprolog.core.Term = Struct.parse(this.toString())
 }
 
 data class Premise(
@@ -17,9 +15,7 @@ data class Premise(
     override val conclusion: Term,
     val strict: Boolean = false,
 ) : ArgItem {
-    override fun toString(): String {
-        return "rl($conclusion) :- ([$identifier, $conclusion])"
-    }
+    override fun toString(): String = "rl($conclusion) :- ([$identifier, $conclusion])"
 }
 
 data class Rule(
@@ -28,7 +24,5 @@ data class Rule(
     override val conclusion: Term,
     val strict: Boolean = false,
 ) : ArgItem {
-    override fun toString(): String {
-        return "rl($conclusion) :- [$identifier, $premises, $conclusion]"
-    }
+    override fun toString(): String = "rl($conclusion) :- [$identifier, $premises, $conclusion]"
 }

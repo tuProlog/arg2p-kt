@@ -20,7 +20,9 @@ import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.message.Response
 import kotlin.random.Random
 
-class KbDistributor private constructor(context: ActorContext<KbMessage>) : AbstractBehavior<KbMessage>(context) {
+class KbDistributor private constructor(
+    context: ActorContext<KbMessage>,
+) : AbstractBehavior<KbMessage>(context) {
     private val kb: SplitKnowledgeBase = SplitKnowledgeBase()
     private val evaluationCache: MutableList<EvaluationCache> = mutableListOf()
 
@@ -31,20 +33,17 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 kb.reset()
                 evaluationCache.clear()
                 this
-            }
-            .onMessage(Add::class.java) { command ->
+            }.onMessage(Add::class.java) { command ->
                 context.log.info("Adding ${command.elem}")
                 SupportSplit.updateWorkers(command.elem, kb, context)
                 this
-            }
-            .onMessage(RequireEvaluation::class.java) { command ->
+            }.onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
                 val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, kb.splitsNumber(), command.replyTo)
                 evaluationCache.add(cache)
                 kb.broadcast(Eval(cache.id, command.elem))
                 this
-            }
-            .onMessage(EvalResponse::class.java) { command ->
+            }.onMessage(EvalResponse::class.java) { command ->
                 evaluationCache.firstOrNull { it.id == command.id }?.let {
                     it.responses.add(command)
                     evaluateResponses(it)
@@ -54,8 +53,7 @@ class KbDistributor private constructor(context: ActorContext<KbMessage>) : Abst
                 command.replyTo.tell(ExpectedResponses(command.id, kb.splitsNumber()))
                 kb.broadcast(command)
                 this
-            }
-            .build()
+            }.build()
 
     private fun evaluateResponses(cache: EvaluationCache) {
         if (cache.responses.size < cache.responseNumber) return

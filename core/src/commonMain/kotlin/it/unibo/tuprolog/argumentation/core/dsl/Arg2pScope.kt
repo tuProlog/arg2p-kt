@@ -8,6 +8,7 @@ interface PrologWithArgumentation : LogicProgrammingScope {
 }
 
 internal class PrologWithArgumentationImpl :
-    PrologWithArgumentation, LogicProgrammingScope by LogicProgrammingScope.of(ClassicSolverFactory)
+    PrologWithArgumentation,
+    LogicProgrammingScope by LogicProgrammingScope.of(ClassicSolverFactory)
 
 fun <R> arg2pScope(function: PrologWithArgumentation.() -> R): R = PrologWithArgumentationImpl().function()

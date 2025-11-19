@@ -1,4 +1,6 @@
 import org.gradle.api.file.DuplicatesStrategy.INCLUDE
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 import java.io.File
 import kotlin.streams.asSequence
@@ -8,16 +10,24 @@ val jvmStackSize: String by project
 val jvmMaxHeapSize: String by project
 
 plugins {
-    id(libs.plugins.ktMpp.mavenPublish.get().pluginId)
-    id(libs.plugins.ktMpp.npmPublish.get().pluginId)
+    id(
+        libs.plugins.ktMpp.mavenPublish
+            .get()
+            .pluginId,
+    )
+    id(
+        libs.plugins.ktMpp.npmPublish
+            .get()
+            .pluginId,
+    )
 }
 
 kotlin {
-
     js {
         compilations.all {
             compileTaskProvider.configure {
-                compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
+                compilerOptions.freeCompilerArgs
+                    .add("-Xir-minimized-member-names=false")
             }
         }
         binaries.library()
@@ -85,34 +95,50 @@ fun File.convertIntoKotlinSource(
     }
 }
 
-tasks.create("generateJsSourcesFromJvmResources", DefaultTask::class) {
-    val jvmResourcesDir = kotlin.jvm().compilations["main"].kotlinSourceSets.single().resources.sourceDirectories.single()
-    val jsMainDir = kotlin.js().compilations["main"].kotlinSourceSets.single().kotlin.sourceDirectories.first()
-    val plFiles =
-        fileTree(jvmResourcesDir).also {
-            it.include("**/*.pl")
-        }.files
-    val packageName = "it.unibo.tuprolog.argumentation.core.libs.sources"
-    val destDir = jsMainDir.resolve(packageName.replace('.', '/'))
+val generate =
+    tasks.register("generateJsSourcesFromJvmResources", DefaultTask::class) {
+        val jvmResourcesDir =
+            kotlin
+                .jvm()
+                .compilations["main"]
+                .kotlinSourceSets
+                .single()
+                .resources.sourceDirectories
+                .single()
+        val jsMainDir =
+            kotlin
+                .js()
+                .compilations["main"]
+                .kotlinSourceSets
+                .single()
+                .kotlin.sourceDirectories
+                .first()
+        val plFiles =
+            fileTree(jvmResourcesDir)
+                .also {
+                    it.include("**/*.pl")
+                }.files
+        val packageName = "it.unibo.tuprolog.argumentation.core.libs.sources"
+        val destDir = jsMainDir.resolve(packageName.replace('.', '/'))
 
-    for (file in plFiles) {
-        inputs.file(file)
-        outputs.file(file.resolveDest(destDir))
-    }
-
-    tasks.compileKotlinJs.get().dependsOn(this)
-    tasks.sourcesJar.get().dependsOn(this)
-    tasks.jsSourcesJar.get().dependsOn(this)
-    tasks.dokkaHtml.get().dependsOn(this)
-    tasks.dokkaHtmlPartial.get().dependsOn(this)
-    tasks.runKtlintCheckOverJsMainSourceSet.get().dependsOn(this)
-
-    doLast {
         for (file in plFiles) {
-            file.convertIntoKotlinSource(destDir, packageName)
+            inputs.file(file)
+            outputs.file(file.resolveDest(destDir))
+        }
+
+        doLast {
+            for (file in plFiles) {
+                file.convertIntoKotlinSource(destDir, packageName)
+            }
         }
     }
-}
+
+tasks.named("compileKotlinJs") { dependsOn(generate) }
+tasks.named("sourcesJar") { dependsOn(generate) }
+tasks.named("jsSourcesJar") { dependsOn(generate) }
+tasks.named("dokkaHtml") { dependsOn(generate) }
+tasks.named("dokkaHtmlPartial") { dependsOn(generate) }
+tasks.named("runKtlintCheckOverJsMainSourceSet") { dependsOn(generate) }
 
 tasks.getByName<Copy>("jvmProcessResources") {
     duplicatesStrategy = INCLUDE

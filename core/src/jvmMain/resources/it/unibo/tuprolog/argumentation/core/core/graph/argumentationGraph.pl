@@ -149,8 +149,7 @@ ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, 
 %--------------------------------------------------------------------------
 
 buildAttacks :-
-	findall(_, buildDirectAttack, _),
-	buildTransitiveAttacks.
+	findall(_, buildDirectAttack, _).
 
 buildDirectAttack :-
     context_check(argument(A)),
@@ -160,15 +159,18 @@ buildDirectAttack :-
 	A \== B,
     attack::attacks(T, B, A),
     saveAttack(T, B, A, A),
+    findall(_, (
+        expanded_support(A, C),
+        saveAttack(T, B, C, A)
+    ),_),
 	fail.
 buildDirectAttack.
 
-buildTransitiveAttacks :-
-	context_check(attack(T, A, B, D)),
-	context_check(support(B, C)),
-	saveAttack(T, A, C, D),!,
-    buildTransitiveAttacks.
-buildTransitiveAttacks.
+expanded_support(A, B) :-
+    context_check(support(A, B)).
+expanded_support(A, C) :-
+    context_check(support(A, B)),
+    expanded_support(B, C).
 
 %--------------------------------------------------------------------------
 % Save stuff

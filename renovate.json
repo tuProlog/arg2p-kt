@@ -1,25 +1,24 @@
 {
   "extends": [
-    "config:base",
+    "config:recommended",
     ":rebaseStalePrs",
     ":semanticCommits"
   ],
   "packageRules": [
     {
       "description": "Updates to GitHub Actions should be tagged as 'ci'",
-      "matchPaths": [
+      "matchFileNames": [
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml"
       ],
       "semanticCommitType": "ci"
-    },
-    {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true,
-      "automergeType": "branch"
     }
   ],
+  "automerge": true,
   "prConcurrentLimit": 30,
   "prHourlyLimit": 30,
-  "ignoreDeps": ["gradle"]
+  "ignoreDeps": ["javafx"],
+  "git-submodules": {
+    "enabled": true
+  }
 }

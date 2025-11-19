@@ -28,7 +28,8 @@ object BinaryStatementLabeller : ArgLibrary, Loadable {
     override fun identifier(): String = "statement_binary"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 

@@ -127,16 +127,17 @@ class BasicTest {
             }
 
         arg2pScope {
-            ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-            ).also {
-                it.loadStaticKb(Theory.parse(rules, it.operators))
-                it.solve("join"(2551) and "load").first()
-                val a = it.solve("solve"("d9", X, Y, Z)).first()
-                assertEquals(a.substitution[X].toString(), "[d9]")
-                it.solve(Struct.parse("leave")).first()
-            }
+            ClassicSolverFactory
+                .mutableSolverWithDefaultBuiltins(
+                    otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+                ).also {
+                    it.loadStaticKb(Theory.parse(rules, it.operators))
+                    it.solve("join"(2551) and "load").first()
+                    val a = it.solve("solve"("d9", X, Y, Z)).first()
+                    assertEquals(a.substitution[X].toString(), "[d9]")
+                    it.solve(Struct.parse("leave")).first()
+                }
         }
     }
 
@@ -154,17 +155,19 @@ class BasicTest {
             }
 
         arg2pScope {
-            ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                otherLibraries =
-                    Arg2pSolver.default(
-                        kotlin.collections.listOf(FlagsBuilder().create()),
-                    ).to2pLibraries(),
-                flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-            ).also {
-                it.loadStaticKb(Theory.parse(rules, it.operators))
-                val a = it.solve("answerQuery"("d99", X, Y, Z)).first()
-                assertEquals(a.isYes, true)
-            }
+            ClassicSolverFactory
+                .mutableSolverWithDefaultBuiltins(
+                    otherLibraries =
+                        Arg2pSolver
+                            .default(
+                                kotlin.collections.listOf(FlagsBuilder().create()),
+                            ).to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+                ).also {
+                    it.loadStaticKb(Theory.parse(rules, it.operators))
+                    val a = it.solve("answerQuery"("d99", X, Y, Z)).first()
+                    assertEquals(a.isYes, true)
+                }
         }
     }
 }

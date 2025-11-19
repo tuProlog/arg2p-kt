@@ -1,0 +1,8 @@
+{{ $src := .Get "src" }}
+{{ $size := .Get "size" | default "600x" }}
+{{ $alt := .Get "alt" | default "" }}
+
+{{ with resources.Get $src }}
+{{ $img := .Resize $size }}
+<img src="{{ $img.RelPermalink }}" width="{{ $img.Width }}" height="{{ $img.Height }}" alt="{{ $alt }}" style="display: block;margin-left: auto;margin-right: auto;">
+{{ end }}

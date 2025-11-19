@@ -1,18 +1,23 @@
-computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
-    \+ queryMode,
-    abstract:::computeGlobalAcceptance,
-    mineResults(Goal, YesResult, NoResult, UndResult).
+computeStatementAcceptance(Goal, Res) :-
+    computeStatementAcceptance(Goal),
+    mineResults(Goal, Res).
 
 computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
-    queryMode,
-    argumentLabellingMode(grounded),
-    findall(_, query(Goal, _), _),
-    (ambiguityBlocking ->
-        statement_binary:::statementLabelling;
-        statementLabellingMode(Y),
-        Y:::statementLabelling
-    ),
+    computeStatementAcceptance(Goal),
     mineResults(Goal, YesResult, NoResult, UndResult).
+
+computeStatementAcceptance(Goal) :-
+    \+ queryMode,
+    abstract:::computeGlobalAcceptance.
+
+computeStatementAcceptance(Goal) :-
+    queryMode,
+    findall(_, buildSubGraph(Goal, _), _),
+    graphBuildMode(X),
+    X:::buildAttacks,
+    abstract:::modifyGraph,
+    abstract:::buildArgumentLabelling,
+    abstract:::buildStatementLabelling.
 
 mineResults(Goal, YesResult, NoResult, UndResult) :-
     findall(Goal, context_check(statIn([Goal])), In),
@@ -22,6 +27,137 @@ mineResults(Goal, YesResult, NoResult, UndResult) :-
     utils::sort(Out, NoResult),
     utils::sort(Und, UndResult).
 
+mineResults(Goal, Result) :-
+    findall(in(Goal), context_check(statIn([Goal])), In),
+    findall(out(Goal), context_check(statOut([Goal])), Out),
+    findall(und(Goal), context_check(statUnd([Goal])), Und),
+    utils::appendLists([In, Out, Und], Result).
+
+%==============================================================================
+% ARGUMENT CONSTRUCTION
+%==============================================================================
+
+ground_vars(Term, Grounded) :-
+    copy_term(Term, Copy),
+    ground_vars(Copy, Grounded, 0, _).
+
+ground_vars(Var, var, N0, N) :-
+    var(Var), !,
+    N is N0 + 1.
+
+ground_vars(Term, Grounded, N0, N) :-
+    compound(Term), !,
+    Term =.. [F|Args],
+    ground_vars_list(Args, GArgs, N0, N),
+    Grounded =.. [F|GArgs].
+
+ground_vars(Term, Term, N, N) :-
+    atomic(Term).
+
+ground_vars_list([], [], N, N).
+ground_vars_list([X|Xs], [GX|GXs], N0, N) :-
+    ground_vars(X, GX, N0, N1),
+    ground_vars_list(Xs, GXs, N1, N).
+
+buildSubGraph(Query, Argument) :-
+    % write("Calling on "),write(Query),nl,
+    ground_vars(Query, Normalized),
+    \+ context_check(explored(Normalized)),
+    findall(_, (
+        findSingleArgument([Query], Argument, Support),
+        saveArgument(query, [Query], Argument),
+        saveSupports(Argument, Support),
+        attack::findPossibleAttackers(Argument, [Conflict]),
+        buildSubGraph(Conflict, _)
+    ), _),
+    context_assert(explored(Query)),
+    fail.
+buildSubGraph(Query, Argument) :- context_check(clause(conc([Query]), argument(Argument))).
+
+
+findSingleArgument(Query, Argument, Support) :-
+    findArgument(Query, [], Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises], Support),
+    utils::deduplicate(DefRules, CDefRules),
+    utils::deduplicate(DefPremises, CDefPremises),
+    utils::deduplicate(Groundings, CGroundings),
+    Argument = [AllRules, TopRule, Query, CGroundings, [LastDefRules, CDefRules, CDefPremises]].
+
+% Premise
+
+findArgument(Conclusion, _, [], [AllRules, TopRule, LastDefRules, DefRules, DefPremises], []) :-
+    parser::premise(Id, Conclusion),
+    premiseRules(Id, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]).
+
+% Rule
+
+findArgument(Conclusion, Ids, Conclusions, [AllRules, TopRule, LastDefRules, DefRules, DefPremises], Support) :-
+    parser::rule(Id, Premises, Conclusion),
+    %\+ member(Id, Ids),
+    findPremises(Premises, [Id|Ids], Conclusions, ResRules, Support),
+    % write("premises ok"),nl,
+    ruleRules(Id, ResRules, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]).
+
+findPremises([], _, [], [[], [], [], []], []).
+findPremises([H|T], Ids, TConclusions, TRules, TSupport) :-
+    % write("Prolog: "),write(H),nl,
+    parser::prolog([H], Term), !,
+    % write("It was prolog!"),nl,
+    findPremises(T, Ids, TConclusions, TRules, TSupport),
+    (callable(Term) -> call(Term); Term).
+findPremises([H|T], Ids, [H|TConclusions], TRules, TSupport) :-
+    parser::contrary([H], _), !,
+    findPremises(T, Ids, TConclusions, TRules, TSupport).
+findPremises([H|T], Ids, [PP|TConclusions], Rules, [[AllRules, P, [PP], HConclusions, [LastDefRules, DefRules, DefPremises]]|TSupport]) :-
+    findPremises(T, Ids, TConclusions, TRules, TSupport),
+    buildSubGraph(H, [AllRules, P, [PP], HConclusions, [LastDefRules, DefRules, DefPremises]]),
+    % write("Premise ok"),nl,
+    % utils::appendLists([HConclusions, TConclusions], Conclusions),
+    mergeRules([AllRules, [], LastDefRules, DefRules, DefPremises], TRules, Rules).
+
+premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ parser::check_strict(Id), !.
+premiseRules(Id, [[Id], none, [], [], []]) :- parser::check_strict(Id).
+
+ruleRules(Id, [AllRules, _, DefRules, DefPremises],
+    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ parser::check_strict(Id), !.
+ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises],
+    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- parser::check_strict(Id).
+
+mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]) :- !.
+mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
+   utils::appendLists([HAR, TAR], AR),
+   utils::appendLists([HLDR, TLDR], LDR),
+   utils::appendLists([HDR, TDR], DR),
+   utils::appendLists([HDP, TDP], DP).
+
+%--------------------------------------------------------------------------
+% Save stuff
+%--------------------------------------------------------------------------
+
+saveArgument(T, Conclusion, Argument) :-
+    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    % write("Saving Argument: "),
+    % write(Argument),nl,
+    context_assert(newConc(T, Conclusion)),
+    utils::hash(argument(Argument), Id),
+    context_assert(argument(Argument)),
+    context_assert(conc(Conclusion) :- argument(Argument)),
+    context_assert(arg(Id) :- argument(Argument)).
+
+saveSupports(_, []).
+saveSupports(A, [B|T]) :-
+    saveSupport(B, A),
+    saveSupports(A, T).
+
+saveSupport(A, B) :-
+    \+ context_check(support(A, B)),
+    % write("Saving Support: "),
+    % write(A),write(" -> "),write(B),nl,
+    context_assert(support(A, B)).
+
+
+%==============================================================================
+% OLD STUFF (USED IN ACTOR SOLVER)
+%==============================================================================
 
 %==============================================================================
 % QUERY ALGORITHM
@@ -215,18 +351,3 @@ buildPremises([H|T], Ids, Conclusions, Rules) :-
     buildPremises(T, Ids, TConclusions, TRules),
     utils::appendLists([HConclusions, TConclusions], Conclusions),
     mergeRules(HRules, TRules, Rules).
-
-premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ parser::check_strict(Id), !.
-premiseRules(Id, [[Id], none, [], [], []]) :- parser::check_strict(Id).
-
-ruleRules(Id, [AllRules, _, DefRules, DefPremises],
-    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ parser::check_strict(Id), !.
-ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises],
-    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- parser::check_strict(Id).
-
-mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]) :- !.
-mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
-   utils::appendLists([HAR, TAR], AR),
-   utils::appendLists([HLDR, TLDR], LDR),
-   utils::appendLists([HDR, TDR], DR),
-   utils::appendLists([HDP, TDP], DP).

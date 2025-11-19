@@ -17,7 +17,8 @@ import it.unibo.tuprolog.unify.Unificator
 
 class Cache : ArgLibrary {
     private val solver: MutableSolver =
-        ClassicSolverFactory.mutableSolverOf(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
+        ClassicSolverFactory
+            .mutableSolverOf(staticKb = Theory.empty(), dynamicKb = MutableTheory.empty(Unificator.default))
             .also { it.setFlag(Unknown.name, Unknown.FAIL) }
 
     inner class CacheAssert : PrimitiveWithSignature {

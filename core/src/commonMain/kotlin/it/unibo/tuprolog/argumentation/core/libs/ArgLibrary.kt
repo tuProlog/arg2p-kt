@@ -48,7 +48,9 @@ interface RawPrologContent {
     val prologTheory: Theory
 }
 
-abstract class LazyRawPrologContent : ArgLibrary, RawPrologContent {
+abstract class LazyRawPrologContent :
+    ArgLibrary,
+    RawPrologContent {
     abstract val prologRawTheory: String
     override val prologTheory: Theory by lazy {
         Theory.parse(prologRawTheory, theoryOperators)

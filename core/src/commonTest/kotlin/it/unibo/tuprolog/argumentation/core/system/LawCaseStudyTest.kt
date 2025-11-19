@@ -1791,16 +1791,18 @@ class LawCaseStudyTest {
         val prepare = { theory: String ->
             arg2pScope {
                 Arg2pSolver.default().let { arg2pSolver ->
-                    ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
-                        otherLibraries = arg2pSolver.to2pLibraries().plus(FlagsBuilder().create().content()),
-                        staticKb = Theory.parse(theory, arg2pSolver.operators()),
-                    ).let { solver ->
-                        solver.solve(
-                            "parser" call "convertAllRules"(`_`),
-                            SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
-                        ).first()
-                        solver
-                    }
+                    ClassicSolverFactory
+                        .mutableSolverWithDefaultBuiltins(
+                            otherLibraries = arg2pSolver.to2pLibraries().plus(FlagsBuilder().create().content()),
+                            staticKb = Theory.parse(theory, arg2pSolver.operators()),
+                        ).let { solver ->
+                            solver
+                                .solve(
+                                    "parser" call "convertAllRules"(`_`),
+                                    SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
+                                ).first()
+                            solver
+                        }
                 }
             }
         }
@@ -1809,42 +1811,46 @@ class LawCaseStudyTest {
             arg2pScope {
                 queryList.map { query ->
                     println("Evaluating $query")
-                    solver.solve(
-                        "structured" call
-                            "query"(
-                                Struct.parse(query, Arg2pSolver.default().operators()),
-                                X,
-                            ),
-                        SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
-                    ).first().let {
-                        Pair(query, it.substitution[X]!!.toString() == "yes")
-                    }
+                    solver
+                        .solve(
+                            "structured" call
+                                "query"(
+                                    Struct.parse(query, Arg2pSolver.default().operators()),
+                                    X,
+                                ),
+                            SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
+                        ).first()
+                        .let {
+                            Pair(query, it.substitution[X]!!.toString() == "yes")
+                        }
                 }
             }
         }
 
         val totalTime =
             measureTime {
-                IntRange(0, 49).map { i ->
-                    listOf(
-                        "violation(viol(epr_$i))",
-                        "violation(viol(ca(epr_$i, x_$i, r_$i)))",
-                        "o(-publish(epc_$i))",
-                        "o(-publish(epr_$i))",
-                        "o(publish(epr_$i))",
-                        "o(remove(ca(epr_$i, x_$i, r_$i)))",
-                    )
-                }.flatten().also { queries ->
-                    prepare(structuredTheory).also {
-                        val time =
-                            measureTime {
-                                run(queries, it)
-                                    .forEach { s -> println(s.component1() + ":" + s.component2()) }
-                            }
+                IntRange(0, 49)
+                    .map { i ->
+                        listOf(
+                            "violation(viol(epr_$i))",
+                            "violation(viol(ca(epr_$i, x_$i, r_$i)))",
+                            "o(-publish(epc_$i))",
+                            "o(-publish(epr_$i))",
+                            "o(publish(epr_$i))",
+                            "o(remove(ca(epr_$i, x_$i, r_$i)))",
+                        )
+                    }.flatten()
+                    .also { queries ->
+                        prepare(structuredTheory).also {
+                            val time =
+                                measureTime {
+                                    run(queries, it)
+                                        .forEach { s -> println(s.component1() + ":" + s.component2()) }
+                                }
 
-                        println(time.toDouble(DurationUnit.MILLISECONDS))
+                            println(time.toDouble(DurationUnit.MILLISECONDS))
+                        }
                     }
-                }
             }
 
         println(totalTime.toDouble(DurationUnit.MILLISECONDS))

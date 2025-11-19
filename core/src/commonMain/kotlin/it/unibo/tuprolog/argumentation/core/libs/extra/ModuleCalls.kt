@@ -81,14 +81,14 @@ object ModuleCall : Primitive {
         }
     }
 
-    private fun mineModulesPath(context: ExecutionContext): String {
-        return logicProgramming {
-            ClassicSolverFactory.solverOf(libraries = context.libraries)
+    private fun mineModulesPath(context: ExecutionContext): String =
+        logicProgramming {
+            ClassicSolverFactory
+                .solverOf(libraries = context.libraries)
                 .solve("modulesPath"(X))
                 .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
                 .first()
         }
-    }
 
     private fun getCleanSolver(
         context: ExecutionContext,
@@ -97,9 +97,10 @@ object ModuleCall : Primitive {
     ): Solver {
         val module = { mod: String -> if (mod.contains(".pl")) mod else "${modulesPath.removeSurrounding("'")}/$mod.pl" }
         return logicProgramming {
-            ClassicSolverFactory.solverOf(
-                libraries = context.libraries,
-            ).also { solver: Solver -> modules.forEach { solver.solve("consult"(module(it))).toList() } }
+            ClassicSolverFactory
+                .solverOf(
+                    libraries = context.libraries,
+                ).also { solver: Solver -> modules.forEach { solver.solve("consult"(module(it))).toList() } }
         }
     }
 }

@@ -8,7 +8,10 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Library
 
-abstract class CompleteLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class CompleteLabellerBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.graph.labelling.complete"
 
     override val baseContent: Library
@@ -23,8 +26,11 @@ abstract class CompleteLabellerBase : ArgLibrary, LazyRawPrologContent(), Loadab
     override fun identifier(): String = "complete"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object CompleteLabeller : CompleteLabellerBase
+expect object CompleteLabeller : CompleteLabellerBase {
+    override val prologRawTheory: String
+}

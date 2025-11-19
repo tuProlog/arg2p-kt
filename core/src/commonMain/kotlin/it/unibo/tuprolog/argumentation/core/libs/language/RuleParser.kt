@@ -26,7 +26,10 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.random.Random
 
-abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class RuleParserBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.parser"
 
     override val baseContent: Library
@@ -53,7 +56,8 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     override fun identifier() = "parser"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(operators())
             .plus(OperatorSet.DEFAULT)
 
@@ -70,7 +74,9 @@ abstract class RuleParserBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     }
 }
 
-expect object RuleParser : RuleParserBase
+expect object RuleParser : RuleParserBase {
+    override val prologRawTheory: String
+}
 
 object AutoTransposition : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "autoTransposition"
@@ -94,15 +100,16 @@ object ConversionUtils {
         context: Solve.Request<ExecutionContext>,
     ): Term =
         prolog {
-            target.bodyItems.map { term ->
-                if (term.isStruct && term.asStruct()?.functor == "\\+") {
-                    "~"(term.asStruct()!!.args[0])
-                } else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) {
-                    "prolog"(term)
-                } else {
-                    term
-                }
-            }.let { if (it.count() > 1) tupleOf(it) else it.first() }
+            target.bodyItems
+                .map { term ->
+                    if (term.isStruct && term.asStruct()?.functor == "\\+") {
+                        "~"(term.asStruct()!!.args[0])
+                    } else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) {
+                        "prolog"(term)
+                    } else {
+                        term
+                    }
+                }.let { if (it.count() > 1) tupleOf(it) else it.first() }
         }
 
     fun commonMap(
@@ -130,7 +137,8 @@ object ConversionUtils {
 object StrictRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologStrictRules") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
-            clauses.filter { !it.isFact }
+            clauses
+                .filter { !it.isFact }
                 .map {
                     prologScope.logicListOf(
                         "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
@@ -174,19 +182,28 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
                 .filter {
-                    it.isFact && (
-                        it.head!!.functor == ":=" ||
-                            (it.head!!.functor == "," && it.head!!.args[0].asStruct()?.functor == ":=")
-                    ) &&
+                    it.isFact &&
+                        (
+                            it.head!!.functor == ":=" ||
+                                (
+                                    it.head!!.functor == "," &&
+                                        it.head!!
+                                            .args[0]
+                                            .asStruct()
+                                            ?.functor == ":="
+                                )
+                        ) &&
                         it.head!!.arity == 2
-                }
-                .map { clause ->
+                }.map { clause ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
                         val term =
                             (
                                 listOf(head!![1]) + (
-                                    clause.head!!.args[1].asTuple()?.args
+                                    clause.head!!
+                                        .args[1]
+                                        .asTuple()
+                                        ?.args
                                         ?: listOf(clause.head!!.args[1])
                                 )
                             ).toTypedArray()
@@ -241,7 +258,9 @@ object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_
             Substitution.of(
                 second.asVar()!!,
                 List.of(
-                    first.asList()!!.toList()
+                    first
+                        .asList()!!
+                        .toList()
                         .map { original ->
                             original.asList()!!.toList().let {
                                 when (it.size) {

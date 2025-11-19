@@ -21,7 +21,10 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.unify.Unificator
 
-abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
+abstract class UtilsBase :
+    LazyRawPrologContent(),
+    ArgLibrary,
+    Loadable {
     override val alias = "prolog.argumentation.utils"
 
     override val baseContent: Library
@@ -44,11 +47,14 @@ abstract class UtilsBase : ArgLibrary, LazyRawPrologContent(), Loadable {
     override fun identifier(): String = "utils"
 
     override val theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(OperatorSet.DEFAULT)
 }
 
-expect object Utils : UtilsBase
+expect object Utils : UtilsBase {
+    override val prologRawTheory: String
+}
 
 object AppendOptimized : Primitive {
     val signature: Signature = Signature("append_fast", 3)

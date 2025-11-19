@@ -90,8 +90,8 @@ object TestingUtils {
         argsIn: String,
         argsOut: String,
         argsUnd: String,
-    ): Solver {
-        return logicProgramming {
+    ): Solver =
+        logicProgramming {
             solverWithTheory(theory).also { solver ->
                 testGoalNoBacktracking(
                     "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
@@ -105,7 +105,6 @@ object TestingUtils {
                 }
             }
         }
-    }
 
     fun answerQuery(
         theory: String,

@@ -8,10 +8,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04 ]
-        java-version: [17]
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
+        java-version: [21]
         jdk-dist:
           - adopt-hotspot
+          - temurin
     runs-on: ${{ matrix.os }}
     concurrency:
       group: build-${{ github.workflow }}-${{ matrix.os }}-${{ matrix.java-version }}-${{ matrix.jdk-dist }}-${{ github.event.number || github.ref }}
@@ -19,7 +20,7 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.24
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.7
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.9
         with:
           java-distribution: ${{ matrix.jdk-dist }}
           java-version: ${{ matrix.java-version }}
@@ -33,9 +34,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04 ]
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
         node-version:
-          - '20.18.1'
+          - 'latest-22'
+          - 'latest-24'
     runs-on: ${{ matrix.os }}
     env:
       ORG_GRADLE_PROJECT_nodeVersion: ${{ matrix.node-version }}
@@ -45,7 +47,7 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.24
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.7
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.9
         with:
           build-command: |
             ./gradlew jsMainClasses jsTestClasses --parallel || ./gradlew jsMainClasses jsTestClasses --parallel

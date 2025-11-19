@@ -13,7 +13,8 @@ import kotlin.js.JsName
 @JsName("mineActiveGraph")
 fun Solver.graph() =
     logicProgramming {
-        this@graph.solve("context_active"(X))
+        this@graph
+            .solve("context_active"(X))
             .filter { it.isYes }
             .map { it.substitution[X]!!.toString().toInt() }
             .map { context -> this@graph.graph(context) }
@@ -33,13 +34,13 @@ fun Solver.graph(context: Int) =
 @JsName("mineArguments")
 fun Solver.arguments(context: Int): List<Argument> =
     logicProgramming {
-        this@arguments.solve("context_check"(context, "argument"(X)))
+        this@arguments
+            .solve("context_check"(context, "argument"(X)))
             .filter { it.isYes }
             .map { it.substitution[X]!! }
             .map { solution ->
                 Argument.of(solution)
-            }
-            .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
+            }.sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
             .mapIndexed { index, arg ->
                 arg.identifier = "A$index"
                 arg
@@ -53,7 +54,8 @@ fun Solver.attacks(
 ): List<Attack> {
     if (arguments.isEmpty()) return emptyList()
     return logicProgramming {
-        this@attacks.solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
+        this@attacks
+            .solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
@@ -71,7 +73,8 @@ fun Solver.supports(
     arguments: List<Argument>,
 ): List<Support> =
     logicProgramming {
-        this@supports.solve("context_check"(context, "support"(X, Y)))
+        this@supports
+            .solve("context_check"(context, "support"(X, Y)))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
@@ -93,14 +96,18 @@ fun Solver.labels(
 ): List<LabelledArgument> {
     fun checkFunctor(functor: String) =
         logicProgramming {
-            this@labels.solve("context_check"(context, functor(X)))
+            this@labels
+                .solve("context_check"(context, functor(X)))
                 .filter { it.isYes }
-                .map {
-                        res ->
-                    LabelledArgument(arguments.first { Unificator.default.match(it.termRepresentation(), res.substitution[X]!!) }, functor)
-                }
+                .map { it.substitution[X]!! to functor }
                 .toList()
         }
 
-    return checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
+    val labels = checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
+    return arguments.map { res ->
+        LabelledArgument(
+            res,
+            labels.firstOrNull { Unificator.default.match(res.termRepresentation(), it.first) }?.second ?: "na",
+        )
+    }
 }
