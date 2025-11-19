@@ -159,12 +159,15 @@ buildDirectAttack :-
 	A \== B,
     attack::attacks(T, B, A),
     saveAttack(T, B, A, A),
+    buildTransitiveAttack(T, B, A),
+	fail.
+buildDirectAttack.
+
+buildTransitiveAttacks(T, B, A) :-
     findall(_, (
         expanded_support(A, C),
         saveAttack(T, B, C, A)
-    ),_),
-	fail.
-buildDirectAttack.
+    ),_).
 
 expanded_support(A, B) :-
     context_check(support(A, B)).
