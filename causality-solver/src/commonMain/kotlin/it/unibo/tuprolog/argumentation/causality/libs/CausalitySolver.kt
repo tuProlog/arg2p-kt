@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.causality.libs
 
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
@@ -9,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
+import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
@@ -31,8 +33,17 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 import it.unibo.tuprolog.core.List as PlList
 
-class CausalitySolver : ArgLibrary, Loadable {
+class CausalitySolver :
+    ArgLibrary,
+    Loadable {
     fun clean(string: String) = string.replace(" ", "").replace("'", "")
+
+    val solver =
+        Arg2pSolverFactory.default(
+            settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded_hash").create(),
+        )
+
+    val operators = Arg2pSolver.default().operators()
 
     private fun equalTerms(
         a: String,
@@ -50,34 +61,47 @@ class CausalitySolver : ArgLibrary, Loadable {
     private fun supporters(
         x: Argument,
         graph: Graph,
+        chain: List<String>,
     ): List<LabelledArgument> =
-        graph.labellings
-            .filter { x.identifier == it.argument.identifier } +
-            attackers(x, graph).flatMap {
-                    att ->
-                attackers(att.argument, graph).filter { it.argument.identifier != x.identifier }.flatMap { supporters(it.argument, graph) }
-            }
+        if (x.identifier in chain) {
+            emptyList()
+        } else {
+            graph.labellings
+                .filter { x.identifier == it.argument.identifier && it.label == "in" } +
+                attackers(x, graph).flatMap { att ->
+                    attackers(att.argument, graph)
+                        .filter { it.argument.identifier != x.identifier }
+                        .flatMap { supporters(it.argument, graph, chain + x.identifier) }
+                }
+        }
 
-    private fun solveFresh(kb: Theory) =
-        Arg2pSolverFactory.evaluate(
-            kb.toString(asPrologText = true),
-            FlagsBuilder(graphExtensions = emptyList()),
-        ).firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+    private fun solveFresh(
+        effect: String,
+        kb: Theory,
+    ): Graph {
+        this.solver.resetStaticKb()
+        this.solver.loadStaticKb(Theory.parse(kb.toString(asPrologText = true), operators))
+        return this.solver
+            .solve(Struct.parse("answerQuery($effect)"))
+            .map { solver.graph() }
+            .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+    }
 
     // get support set (union of all explanations)
     private fun getSupports(
         graph: Graph,
         effect: String,
     ): Sequence<Argument> =
-        graph.labellings.asSequence().filter { it.label == "in" && equalTerms(it.argument.conclusion, effect) }
-            .flatMap { supporters(it.argument, graph) }
-            .filter { it.label == "in" }
+        graph.labellings
+            .asSequence()
+            .filter { equalTerms(it.argument.conclusion, effect) }
+            .flatMap { supporters(it.argument, graph, emptyList()) }
             .map { it.argument }
 
     private fun checkBaseTheory(
         request: Solve.Request<ExecutionContext>,
         effect: String,
-    ) = solveFresh(request.context.staticKb).let {
+    ) = solveFresh(effect, request.context.staticKb).let {
         getSupports(it, effect).map { a -> a.termRepresentation() }.toList()
     }
 
@@ -85,8 +109,9 @@ class CausalitySolver : ArgLibrary, Loadable {
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
         support: List<Term>,
+        effect: String,
     ) = intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, $int)")) }.let {
-        solveFresh(request.context.staticKb.plus(Theory.of(it))).let { naf ->
+        solveFresh(effect, request.context.staticKb.plus(Theory.of(it))).let { naf ->
             naf.labellings
                 .filter { a -> a.label == "out" || a.label == "und" }
                 .map { a -> a.argument.termRepresentation() }
@@ -98,9 +123,12 @@ class CausalitySolver : ArgLibrary, Loadable {
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
     ) = arg2pScope {
-        request.solve("proper_subsets"(intervention, X)).filter {
-            it.isYes
-        }.map { it.substitution[X]!!.castToList() }.toList()
+        request
+            .solve("proper_subsets"(intervention, X))
+            .filter {
+                it.isYes
+            }.map { it.substitution[X]!!.castToList() }
+            .toList()
     }
 
     // if exists an explanation that is refuted trough intervention (we need minimal sets of literals from L)
@@ -113,11 +141,10 @@ class CausalitySolver : ArgLibrary, Loadable {
     ): Boolean {
         val supports = checkBaseTheory(request, effect)
         if (supports.isEmpty()) return false
-
-        return checkIntervention(request, intervention, supports) &&
+        return checkIntervention(request, intervention, supports, effect) &&
             (
                 intervention.estimatedLength <= 1 ||
-                    getSubsets(request, intervention).all { !checkIntervention(request, it, supports) }
+                    getSubsets(request, intervention).all { !checkIntervention(request, it, supports, effect) }
             )
     }
 
@@ -153,15 +180,22 @@ class CausalitySolver : ArgLibrary, Loadable {
 
             val rules =
                 Term.parse(
-                    solveFresh(request.context.staticKb).arguments.map { it.topRule }.filter { it != "none" }.toList().toString(),
+                    solveFresh(effect, request.context.staticKb)
+                        .arguments
+                        .map { it.topRule }
+                        .filter { it != "none" }
+                        .toList()
+                        .toString(),
                 )
 
             return sequenceOf(
                 request.replyWith(
                     arg2pScope {
-                        request.solve("generate_interventions"(rules, cause, X)).filter {
-                            it.isYes
-                        }.map { it.substitution[X]!!.castToList() }
+                        request
+                            .solve("generate_interventions"(rules, cause, X))
+                            .filter {
+                                it.isYes
+                            }.map { it.substitution[X]!!.castToList() }
                             .filter { checkCausality(request, it, effect) }
                             .map { Substitution.of(intervention, it) }
                             .firstOrNull() ?: Substitution.failed()
@@ -222,7 +256,8 @@ class CausalitySolver : ArgLibrary, Loadable {
     override fun identifier(): String = "causality"
 
     override var theoryOperators =
-        DynamicLoader.operators()
+        DynamicLoader
+            .operators()
             .plus(RuleParserBase.operators())
             .plus(OperatorSet.DEFAULT)
 }
