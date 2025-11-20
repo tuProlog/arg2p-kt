@@ -6,7 +6,7 @@ ktMpp = "5.1.8"
 semVer = "7.0.7"
 javaFx = "21.0.10-ea+1"
 akka = "2.8.8"
-tuprolog = "1.1.4"
+tuprolog = "1.1.5"
 jung = "2.1.1"
 
 [plugins]
