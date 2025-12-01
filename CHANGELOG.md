@@ -1,3 +1,18 @@
+## [0.13.2](https://github.com/tuProlog/arg2p-kt/compare/0.13.1...0.13.2) (2025-12-01)
+
+### Bug Fixes
+
+* **deps:** update dependency org.fxmisc.richtext:richtextfx to v0.11.7 ([#223](https://github.com/tuProlog/arg2p-kt/issues/223)) ([30ea121](https://github.com/tuProlog/arg2p-kt/commit/30ea12111f5cbe2036d12210670631d358d2be6e))
+* **deps:** update javafx monorepo to v21.0.10-ea+1 ([#224](https://github.com/tuProlog/arg2p-kt/issues/224)) ([f36ebeb](https://github.com/tuProlog/arg2p-kt/commit/f36ebeb3a60ac05af7f34eb50fd4e471057cf15c))
+* **deps:** update tuprolog to v1.1.5 ([#226](https://github.com/tuProlog/arg2p-kt/issues/226)) ([9bde8df](https://github.com/tuProlog/arg2p-kt/commit/9bde8df1b403ad0d5b627d365236055be9ac5d7c))
+* require grounded rules for generated interventions ([4196e7c](https://github.com/tuProlog/arg2p-kt/commit/4196e7c3770018f4387fb2ecaf36f3deb0f7e063))
+
+### Build and continuous integration
+
+* **deps:** update actions/checkout action to v6 ([#227](https://github.com/tuProlog/arg2p-kt/issues/227)) ([38aaea8](https://github.com/tuProlog/arg2p-kt/commit/38aaea8f955760c768fd1f0f6d223ae87d3afebf))
+* **deps:** update danysk/action-checkout action to v0.2.25 ([#219](https://github.com/tuProlog/arg2p-kt/issues/219)) ([147bc01](https://github.com/tuProlog/arg2p-kt/commit/147bc0177d4e860576a978761657cd2ab1e5fe47))
+* **deps:** update danysk/action-checkout action to v0.2.26 ([#225](https://github.com/tuProlog/arg2p-kt/issues/225)) ([91bc5b3](https://github.com/tuProlog/arg2p-kt/commit/91bc5b38aaf5a505f2be4eccca7d5709731e350c))
+
 ## [0.13.1](https://github.com/tuProlog/arg2p-kt/compare/0.13.0...0.13.1) (2025-11-19)
 
 ### Dependency updates
