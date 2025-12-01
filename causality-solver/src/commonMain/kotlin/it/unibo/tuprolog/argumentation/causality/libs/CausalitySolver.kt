@@ -241,7 +241,7 @@ class CausalitySolver :
                             compl(X, -X).
                             
                             unused_premises(R, UP) :-
-                                findall(P, (parser::rule(Id, P, _), \+ member(Id, R)), RR),
+                                findall(P, (parser::rule(Id, P, _), \+ member(Id, R), ground(Id)), RR),
                                 utils::appendLists(RR, UP).
                             
                             """.trimIndent(),

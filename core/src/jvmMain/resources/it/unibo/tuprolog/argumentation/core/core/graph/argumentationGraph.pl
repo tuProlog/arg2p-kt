@@ -64,6 +64,7 @@ buildArgumentsFromEmptyRules :-
         _,
         (
             emptyRule([RuleID, RulePrem, RuleHead]),
+            ruleBodyIsSupported(RuleID, RuleHead, RulePrem, RulePrem, [[], [], [], []], _),
             checkStrict(RuleID, DefRule),
             saveArgument(a, RuleHead, [[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])
         ),
@@ -72,8 +73,7 @@ buildArgumentsFromEmptyRules :-
 
 emptyRule([RuleID, Body, RuleHead]) :-
     parser::classic_rule(RuleID, Body, RuleHead),
-    \+ (member(X, Body), X \= ~(_), X \= prolog(_)),
-    ruleBodyIsSupported(RuleID, RuleHead, Body, Body, [[], [], [], []], _).
+    \+ (member(X, Body), X \= ~(_), X \= prolog(_)).
 
 checkStrict(Id, []) :- parser::check_strict(Id), !.
 checkStrict(Id, [Id]).
