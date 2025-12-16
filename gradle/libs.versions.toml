@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 jvm = "21"
 node = "22-latest"
 ktMpp = "5.1.8"
