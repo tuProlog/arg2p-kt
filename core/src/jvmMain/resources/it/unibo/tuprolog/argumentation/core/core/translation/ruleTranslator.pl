@@ -11,19 +11,34 @@ convertAllRules(ArgRules) :-
     ordinaryPremises(Premises),
     axiomPremises(Axioms, AxiomsIds),
     specialRules(SpecialRules),
+    utils::appendLists([AxiomsIds, RulesIds], StrictIds),
     utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
-%    convertAllRules(L, Rules),
-    naturalRules(Rules, Clauses),
+    naturalRules(Rules, Clauses, StrictIds, MappedIds),
     findall(sup(X, Y), sup(X, Y), Sup),
-    utils::appendLists([Clauses, AxiomsIds, RulesIds, Sup, SpecialRules], ArgRules),
+    utils::appendLists([Clauses, MappedIds, Sup, SpecialRules], ArgRules),
     utils::assert_all(ArgRules), !.
 
-naturalRules(Rules, Clauses) :-
+naturalRules(Rules, Clauses, StrictIds, MappedIds) :-
     naturalTerms,
-    rule_to_clause_natural(Rules, Clauses).
-naturalRules(Rules, Clauses) :-
+    rule_to_clause_natural(Rules, Clauses),
+    mapIds(Rules, Clauses, StrictIds, MappedIds).
+naturalRules(Rules, Clauses, StrictIds, StrictIds) :-
     \+ naturalTerms,
     rule_to_clause(Rules, Clauses).
+
+recoverId(rl(_) :- [Y, _, _], Y).
+recoverId(rl(_) :- [Y, _], Y).
+recoverId([Y, _, _], Y).
+recoverId([Y, _], Y).
+
+mapIds([], [], _, []).
+mapIds([W|T], [Z|TT], Ids, [strict(Y)|RR]) :-
+    once(recoverId(W, X)),
+    member(strict(X), Ids), !,
+    once(recoverId(Z, Y)),
+    mapIds(T, TT, Ids, RR).
+mapIds([_|T], [_|TT], Ids, RR) :-
+    mapIds(T, TT, Ids, RR).
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
