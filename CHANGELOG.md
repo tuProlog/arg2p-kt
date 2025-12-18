@@ -1,3 +1,9 @@
+## [0.14.1](https://github.com/tuProlog/arg2p-kt/compare/0.14.0...0.14.1) (2025-12-18)
+
+### Bug Fixes
+
+* whitespace ([d837015](https://github.com/tuProlog/arg2p-kt/commit/d8370156ea67f380021f9fd4f784b8200d23cef8))
+
 ## [0.14.0](https://github.com/tuProlog/arg2p-kt/compare/0.13.2...0.14.0) (2025-12-18)
 
 ### Features
