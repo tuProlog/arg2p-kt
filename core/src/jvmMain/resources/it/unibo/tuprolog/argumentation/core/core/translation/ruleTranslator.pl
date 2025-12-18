@@ -13,10 +13,17 @@ convertAllRules(ArgRules) :-
     specialRules(SpecialRules),
     utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
 %    convertAllRules(L, Rules),
-    rule_to_clause(Rules, Clauses),
+    naturalRules(Rules, Clauses),
     findall(sup(X, Y), sup(X, Y), Sup),
     utils::appendLists([Clauses, AxiomsIds, RulesIds, Sup, SpecialRules], ArgRules),
     utils::assert_all(ArgRules), !.
+
+naturalRules(Rules, Clauses) :-
+    naturalTerms,
+    rule_to_clause_natural(Rules, Clauses).
+naturalRules(Rules, Clauses) :-
+    \+ naturalTerms,
+    rule_to_clause(Rules, Clauses).
 
 defeasibleRules(DefeasibleRules) :-
     findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
@@ -268,8 +275,12 @@ admissible_terms_complete([H|T]) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%% REFACTOR %%%%%%%%%%%%%%%%%%%%%%%
 
+
+
 rule(Id, PP, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
 premise(Id, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Conclusion])).
+
+
 check_strict(Id) :- context_check(strict(Id)).
 
 prolog([prolog(Term)], Term).
