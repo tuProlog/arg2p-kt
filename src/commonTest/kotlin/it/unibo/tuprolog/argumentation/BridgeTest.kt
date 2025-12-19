@@ -10,6 +10,56 @@ import kotlin.test.assertEquals
 
 class BridgeTest {
     @Test
+    fun testNaturalResolution() {
+        JsBridge
+            .solve(
+                "buildLabelSets",
+                """
+                "rule on X" : "X is a cat", ~("X is well trained") => "X is annoying". 
+
+                f :=> "fuffi is a cat".
+                f1 : [] => -"fuffi is annoying".
+                f2 :=> "fuffi is well trained".
+                f2 : standard_fact => -"rule on fuffi".
+                f3 :=> standard_fact. 
+                f4 :=> -"[pippo] is a dog".
+                f5 :=> "pino is a whale".
+                
+                """.trimIndent(),
+                """
+                graphBuildMode(standard_af).
+                statementLabellingMode(statement).
+                argumentLabellingMode(grounded).
+                orderingPrinciple(last).
+                orderingComparator(elitist).
+                graphExtension(standardPref).
+                queryMode.
+                naturalTerms.
+                """.trimIndent(),
+                { println(it) },
+            ).let { res ->
+                if (res.i.hasNext()) {
+                    assertEquals(
+                        8,
+                        res.i
+                            .next()
+                            ?.graph
+                            ?.arguments
+                            ?.size ?: 0,
+                    )
+                    assertEquals(
+                        4,
+                        res.i
+                            .next()
+                            ?.graph
+                            ?.attacks
+                            ?.size ?: 0,
+                    )
+                }
+            }
+    }
+
+    @Test
     fun testResolution() {
         JsBridge
             .solve(

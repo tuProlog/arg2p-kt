@@ -254,7 +254,7 @@ object ExtractStrictIds : BinaryRelation.WithoutSideEffects<ExecutionContext>("e
 object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_to_clause_natural") {
     class TemplateExtractor {
         private val upperRegex = Regex("""\b[A-Z][a-zA-Z]*\b""")
-        private val bracketRegex = Regex("""\[([^\]]+)]""")
+        private val bracketRegex = Regex("""\[([^\]]+)\]""")
 
         // template -> number of extracted slots
         private val knownTemplates = mutableMapOf<String, Int>()
