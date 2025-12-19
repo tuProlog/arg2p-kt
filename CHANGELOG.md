@@ -1,3 +1,9 @@
+## [0.14.2](https://github.com/tuProlog/arg2p-kt/compare/0.14.1...0.14.2) (2025-12-19)
+
+### Bug Fixes
+
+* regex error ([f9561b6](https://github.com/tuProlog/arg2p-kt/commit/f9561b6a8516ff2106c06f9f7ef40218c41978ae))
+
 ## [0.14.1](https://github.com/tuProlog/arg2p-kt/compare/0.14.0...0.14.1) (2025-12-18)
 
 ### Bug Fixes
