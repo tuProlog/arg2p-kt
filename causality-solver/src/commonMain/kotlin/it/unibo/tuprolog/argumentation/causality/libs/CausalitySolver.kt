@@ -105,17 +105,20 @@ class CausalitySolver :
         getSupports(it, effect).map { a -> a.termRepresentation() }.toList()
     }
 
+    // now returns IN attacker (should always be a singleton but not sure)
     private fun checkIntervention(
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
         support: List<Term>,
         effect: String,
-    ) = intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, $int)")) }.let {
+    ) = intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${int.hashCode() and Int.MAX_VALUE}, $int)")) }.let {
         solveFresh(effect, request.context.staticKb.plus(Theory.of(it))).let { naf ->
             naf.labellings
                 .filter { a -> a.label == "out" || a.label == "und" }
-                .map { a -> a.argument.termRepresentation() }
-                .any { a -> support.any { b -> Unificator.default.match(a, b) } }
+                .filter { a -> support.any { b -> Unificator.default.match(a.argument.termRepresentation(), b) } }
+                .flatMap { a -> attackers(a.argument, naf).filter { b -> b.label == "in" } }
+                .map { a -> a.argument }
+                .distinct()
         }
     }
 
@@ -131,38 +134,122 @@ class CausalitySolver :
             .toList()
     }
 
+    private fun getInterventions(
+        request: Solve.Request<ExecutionContext>,
+        cause: Term,
+        effect: String,
+    ): Sequence<PlList> {
+        val rules =
+            Term.parse(
+                solveFresh(effect, request.context.staticKb)
+                    .arguments
+                    .map { it.topRule }
+                    .filter { it != "none" }
+                    .toList()
+                    .toString(),
+            )
+
+        return arg2pScope {
+            request
+                .solve("generate_interventions"(rules, cause, X))
+                .filter {
+                    it.isYes
+                }.map { it.substitution[X]!!.castToList() }
+        }
+    }
+
     // if exists an explanation that is refuted trough intervention (we need minimal sets of literals from L)
     // explanations are grounded chains (grounded games are equivalent to strongly admissible sets)
 
-    private fun checkCausality(
+    private fun checkCausalityICAIL24(
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
         effect: String,
     ): Boolean {
         val supports = checkBaseTheory(request, effect)
         if (supports.isEmpty()) return false
-        return checkIntervention(request, intervention, supports, effect) &&
+        val attackers = checkIntervention(request, intervention, supports, effect)
+        return attackers.isNotEmpty() &&
             (
                 intervention.estimatedLength <= 1 ||
-                    getSubsets(request, intervention).all { !checkIntervention(request, it, supports, effect) }
+                    getSubsets(request, intervention).none { checkIntervention(request, it, supports, effect).isNotEmpty() }
             )
     }
 
-    inner class CausalityCheckIntervention : PrimitiveWithSignature {
-        override val signature = Signature("evaluate_intervention", 2)
+    // if exists an explanation that is refuted trough intervention (now there must exist an IN attacker) (we need minimal sets of literals from L)
+    // explanations are grounded chains (grounded games are equivalent to strongly admissible sets)
+
+    private fun checkCausalityICAIL25(
+        request: Solve.Request<ExecutionContext>,
+        intervention: PlList,
+        effect: String,
+    ): Boolean {
+        val supports = checkBaseTheory(request, effect)
+        if (supports.isEmpty()) return false
+        val attackers = checkIntervention(request, intervention, supports, effect).map { a -> a.termRepresentation() }
+        return attackers.isNotEmpty() &&
+            (
+                intervention.estimatedLength <= 1 ||
+                    getSubsets(request, intervention).none { x ->
+                        val n = checkIntervention(request, x, supports, effect).map { a -> a.termRepresentation() }
+                        attackers.all { a -> n.any { b -> Unificator.default.match(a, b) } }
+                    }
+            )
+    }
+
+    // must exist an IN argument for the effect and after intervention there must not exist such arguments
+
+    private fun checkButFor(
+        request: Solve.Request<ExecutionContext>,
+        intervention: PlList,
+        effect: String,
+    ): Boolean =
+        solveFresh(effect, request.context.staticKb).let {
+            it.labellings.any { arg -> arg.label == "in" && equalTerms(arg.argument.conclusion, effect) }
+        } &&
+            intervention.toList().map { int -> Clause.of(Struct.parse(":->(fk${Random.nextUInt()}, $int)")) }.let {
+                solveFresh(effect, request.context.staticKb.plus(Theory.of(it))).let { naf ->
+                    naf.labellings.none { arg -> arg.label == "in" && equalTerms(arg.argument.conclusion, effect) }
+                }
+            }
+
+    inner class CausalityCheckCauseButFor : PrimitiveWithSignature {
+        override val signature = Signature("but_for", 2)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val cause: Term = request.arguments[0]
+            val effect: String = clean(request.arguments[1].toString())
+
+            return sequenceOf(
+                request.replyWith(
+                    arg2pScope {
+                        request
+                            .solve("compl"(cause, X))
+                            .filter { it.isYes }
+                            .map { PlList.of(it.substitution[X]!!) }
+                            .map { checkButFor(request, it, effect) }
+                            .firstOrNull() ?: false
+                    },
+                ),
+            )
+        }
+    }
+
+    inner class CausalityCheckInterventionICAIL24 : PrimitiveWithSignature {
+        override val signature = Signature("ness_original_intervention", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val intervention: PlList = request.arguments[0].castToList()
             val effect: String = clean(request.arguments[1].toString())
 
             return sequenceOf(
-                request.replyWith(checkCausality(request, intervention, effect)),
+                request.replyWith(checkCausalityICAIL24(request, intervention, effect)),
             )
         }
     }
 
-    inner class CausalityCheckCause : PrimitiveWithSignature {
-        override val signature = Signature("evaluate", 3)
+    inner class CausalityCheckCauseICAIL24 : PrimitiveWithSignature {
+        override val signature = Signature("ness_original", 3)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val intervention: Term = request.arguments[0]
@@ -178,28 +265,53 @@ class CausalitySolver :
                 )
             }
 
-            val rules =
-                Term.parse(
-                    solveFresh(effect, request.context.staticKb)
-                        .arguments
-                        .map { it.topRule }
-                        .filter { it != "none" }
-                        .toList()
-                        .toString(),
+            return sequenceOf(
+                request.replyWith(
+                    getInterventions(request, cause, effect)
+                        .filter { checkCausalityICAIL24(request, it, effect) }
+                        .map { Substitution.of(intervention, it) }
+                        .firstOrNull() ?: Substitution.failed(),
+                ),
+            )
+        }
+    }
+
+    inner class CausalityCheckInterventionICAIL25 : PrimitiveWithSignature {
+        override val signature = Signature("ness_intervention", 2)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val intervention: PlList = request.arguments[0].castToList()
+            val effect: String = clean(request.arguments[1].toString())
+
+            return sequenceOf(
+                request.replyWith(checkCausalityICAIL25(request, intervention, effect)),
+            )
+        }
+    }
+
+    inner class CausalityCheckCauseICAIL25 : PrimitiveWithSignature {
+        override val signature = Signature("ness", 3)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val intervention: Term = request.arguments[0]
+            val cause: Term = request.arguments[1]
+            val effect: String = clean(request.arguments[2].toString())
+
+            if (intervention !is Var) {
+                throw TypeError.forGoal(
+                    request.context,
+                    request.signature,
+                    TypeError.Expected.VARIABLE,
+                    intervention,
                 )
+            }
 
             return sequenceOf(
                 request.replyWith(
-                    arg2pScope {
-                        request
-                            .solve("generate_interventions"(rules, cause, X))
-                            .filter {
-                                it.isYes
-                            }.map { it.substitution[X]!!.castToList() }
-                            .filter { checkCausality(request, it, effect) }
-                            .map { Substitution.of(intervention, it) }
-                            .firstOrNull() ?: Substitution.failed()
-                    },
+                    getInterventions(request, cause, effect)
+                        .filter { checkCausalityICAIL25(request, it, effect) }
+                        .map { Substitution.of(intervention, it) }
+                        .firstOrNull() ?: Substitution.failed(),
                 ),
             )
         }
@@ -209,7 +321,13 @@ class CausalitySolver :
 
     override val baseContent: Library
         get() =
-            listOf(CausalityCheckIntervention(), CausalityCheckCause()).let { primitives ->
+            listOf(
+                CausalityCheckInterventionICAIL24(),
+                CausalityCheckCauseICAIL24(),
+                CausalityCheckInterventionICAIL25(),
+                CausalityCheckCauseICAIL25(),
+                CausalityCheckCauseButFor(),
+            ).let { primitives ->
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },

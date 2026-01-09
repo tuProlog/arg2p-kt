@@ -20,24 +20,59 @@ class BasicTest {
         """.trimIndent()
     }
 
-    private fun isIntervention(
+    private fun isNessOldIntervention(
         solver: MutableSolver,
         cause: String,
         effect: String,
         outcome: Boolean = true,
     ) = arg2pScope {
-        solver.solve("context_reset" and "evaluate_intervention"(Term.parse(cause), effect)).first().also {
+        solver.solve("context_reset" and "ness_original_intervention"(Term.parse(cause), effect)).first().also {
             assertEquals(it.isYes, outcome)
         }
     }
 
-    private fun isCause(
+    private fun isNessOldCause(
         solver: MutableSolver,
         cause: String,
         effect: String,
         outcome: Boolean = true,
     ) = arg2pScope {
-        solver.solve("context_reset" and "evaluate"(X, Term.parse(cause), effect)).first().also {
+        solver.solve("context_reset" and "ness_original"(X, Term.parse(cause), effect)).first().also {
+            assertEquals(it.isYes, outcome)
+            println(it.substitution[X])
+        }
+    }
+
+    private fun isNessIntervention(
+        solver: MutableSolver,
+        cause: String,
+        effect: String,
+        outcome: Boolean = true,
+    ) = arg2pScope {
+        solver.solve("context_reset" and "ness_intervention"(Term.parse(cause), effect)).first().also {
+            assertEquals(it.isYes, outcome)
+        }
+    }
+
+    private fun isNessCause(
+        solver: MutableSolver,
+        cause: String,
+        effect: String,
+        outcome: Boolean = true,
+    ) = arg2pScope {
+        solver.solve("context_reset" and "ness"(X, Term.parse(cause), effect)).first().also {
+            assertEquals(it.isYes, outcome)
+            println(it.substitution[X])
+        }
+    }
+
+    private fun isButForCause(
+        solver: MutableSolver,
+        cause: String,
+        effect: String,
+        outcome: Boolean = true,
+    ) = arg2pScope {
+        solver.solve("context_reset" and "but_for"(Term.parse(cause), effect)).first().also {
             assertEquals(it.isYes, outcome)
             println(it.substitution[X])
         }
@@ -54,6 +89,48 @@ class BasicTest {
         }
 
     @Test
+    fun causalityTestRefinedTheory1(): Unit =
+        Arg2pSolverFactory
+            .causality(
+                """
+                f1 :=> a.
+                f1 :=> b.
+
+                r1 : a => c.
+                r2 : a, b => c.
+                """.trimIndent(),
+            ).let { solver ->
+                isNessOldCause(solver, "a", "c", true)
+                isNessOldCause(solver, "b", "c", true)
+
+                isNessCause(solver, "a", "c", true)
+                isNessCause(solver, "b", "c", true)
+
+                isButForCause(solver, "a", "c")
+                isButForCause(solver, "b", "c", false)
+            }
+
+    @Test
+    fun causalityTestRefinedTheory2(): Unit =
+        Arg2pSolverFactory
+            .causality(
+                """
+                f1 :=> a.
+                f2 :=> b.
+                
+                r0 : [] => c.
+                r1 : -a => -r0.
+                r2 : -a, -b => -r0.
+                """.trimIndent(),
+            ).let { solver ->
+                isNessOldCause(solver, "a", "c", true)
+                isNessOldCause(solver, "b", "c", false)
+
+                isNessCause(solver, "a", "c", true)
+                isNessCause(solver, "b", "c", true)
+            }
+
+    @Test
     fun causalityTestComplex(): Unit =
         Arg2pSolverFactory
             .causality(
@@ -64,15 +141,25 @@ class BasicTest {
                 r2 : a => -b.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[d]", "-b", false)
-                isIntervention(solver, "[d,e]", "-b", true)
-                isIntervention(solver, "[d,e,c]", "-b", false)
-                isCause(solver, "-d", "-b", true)
-                isCause(solver, "b", "a", false)
-                isCause(solver, "d", "-b", false)
-                isCause(solver, "-e", "-b", true)
-                isCause(solver, "a", "-b", true)
-                isCause(solver, "r2", "-b", true)
+                isNessOldIntervention(solver, "[d]", "-b", false)
+                isNessOldIntervention(solver, "[d,e]", "-b", true)
+                isNessOldIntervention(solver, "[d,e,c]", "-b", false)
+                isNessOldCause(solver, "-d", "-b", true)
+                isNessOldCause(solver, "b", "a", false)
+                isNessOldCause(solver, "d", "-b", false)
+                isNessOldCause(solver, "-e", "-b", true)
+                isNessOldCause(solver, "a", "-b", true)
+                isNessOldCause(solver, "r2", "-b", true)
+
+                isNessIntervention(solver, "[d]", "-b", false)
+                isNessIntervention(solver, "[d,e]", "-b", true)
+                isNessIntervention(solver, "[d,e,c]", "-b", false)
+                isNessCause(solver, "-d", "-b", true)
+                isNessCause(solver, "b", "a", false)
+                isNessCause(solver, "d", "-b", false)
+                isNessCause(solver, "-e", "-b", true)
+                isNessCause(solver, "a", "-b", true)
+                isNessCause(solver, "r2", "-b", true)
             }
 
     @Test
@@ -86,14 +173,23 @@ class BasicTest {
                 r2 : a => -b.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[-a]", "-b", true)
-                isIntervention(solver, "[-b]", "a", false)
-                isIntervention(solver, "[-d]", "-b", false)
-                isIntervention(solver, "[d]", "-b", true)
-                isCause(solver, "a", "-b", true)
-                isCause(solver, "b", "a", false)
-                isCause(solver, "d", "-b", false)
-                isCause(solver, "-d", "-b", true)
+                isNessOldIntervention(solver, "[-a]", "-b", true)
+                isNessOldIntervention(solver, "[-b]", "a", false)
+                isNessOldIntervention(solver, "[-d]", "-b", false)
+                isNessOldIntervention(solver, "[d]", "-b", true)
+                isNessOldCause(solver, "a", "-b", true)
+                isNessOldCause(solver, "b", "a", false)
+                isNessOldCause(solver, "d", "-b", false)
+                isNessOldCause(solver, "-d", "-b", true)
+
+                isNessIntervention(solver, "[-a]", "-b", true)
+                isNessIntervention(solver, "[-b]", "a", false)
+                isNessIntervention(solver, "[-d]", "-b", false)
+                isNessIntervention(solver, "[d]", "-b", true)
+                isNessCause(solver, "a", "-b", true)
+                isNessCause(solver, "b", "a", false)
+                isNessCause(solver, "d", "-b", false)
+                isNessCause(solver, "-d", "-b", true)
             }
 
     @Test
@@ -111,9 +207,21 @@ class BasicTest {
                 f_3 :=> ex_3.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[-ex_1]", "di")
-                isIntervention(solver, "[-ex_2]", "di")
-                isIntervention(solver, "[-ex_3]", "di")
+                isNessOldIntervention(solver, "[-ex_1]", "di")
+                isNessOldIntervention(solver, "[-ex_2]", "di")
+                isNessOldIntervention(solver, "[-ex_3]", "di")
+
+                isNessIntervention(solver, "[-ex_1]", "di")
+                isNessIntervention(solver, "[-ex_2]", "di")
+                isNessIntervention(solver, "[-ex_3]", "di")
+
+                isNessCause(solver, "ex_1", "di")
+                isNessCause(solver, "ex_2", "di")
+                isNessCause(solver, "ex_3", "di")
+
+                isButForCause(solver, "ex_1", "di", false)
+                isButForCause(solver, "ex_2", "di", false)
+                isButForCause(solver, "ex_3", "di", false)
             }
 
     @Test
@@ -127,9 +235,13 @@ class BasicTest {
                 f_1 :=> ge_di.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[-sm_to]", "lu_ca", false)
-                isIntervention(solver, "[-ge_di]", "lu_ca")
-                isCause(solver, "ge_di", "lu_ca")
+                isNessOldIntervention(solver, "[-sm_to]", "lu_ca", false)
+                isNessOldIntervention(solver, "[-ge_di]", "lu_ca")
+                isNessOldCause(solver, "ge_di", "lu_ca")
+
+                isNessIntervention(solver, "[-sm_to]", "lu_ca", false)
+                isNessIntervention(solver, "[-ge_di]", "lu_ca")
+                isNessCause(solver, "ge_di", "lu_ca")
             }
 
     @Test
@@ -147,8 +259,11 @@ class BasicTest {
                 f_1 :=> dl_sh.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[-bu_sh]", "ge_di")
-                isIntervention(solver, "[-dl_sh]", "ge_di", false)
+                isNessOldIntervention(solver, "[-bu_sh]", "ge_di")
+                isNessOldIntervention(solver, "[-dl_sh]", "ge_di", false)
+
+                isNessIntervention(solver, "[-bu_sh]", "ge_di")
+                isNessIntervention(solver, "[-dl_sh]", "ge_di", false)
             }
 
     @Test
@@ -164,8 +279,11 @@ class BasicTest {
                 f_2 :=> -pa_co.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[-ch_le]", "ch_di")
-                isIntervention(solver, "[pa_co]", "ch_di")
+                isNessOldIntervention(solver, "[-ch_le]", "ch_di")
+                isNessOldIntervention(solver, "[pa_co]", "ch_di")
+
+                isNessIntervention(solver, "[-ch_le]", "ch_di")
+                isNessIntervention(solver, "[pa_co]", "ch_di")
             }
 
     @Test
@@ -182,8 +300,11 @@ class BasicTest {
                 f_2 :=> -dr_pu.
                 """.trimIndent(),
             ).let { solver ->
-                isIntervention(solver, "[dr_pu]", "ac_ha")
-                isIntervention(solver, "[-br_ma]", "ac_ha", false)
+                isNessOldIntervention(solver, "[dr_pu]", "ac_ha")
+                isNessOldIntervention(solver, "[-br_ma]", "ac_ha", false)
+
+                isNessIntervention(solver, "[dr_pu]", "ac_ha")
+                isNessIntervention(solver, "[-br_ma]", "ac_ha", false)
             }
 
     @Test
@@ -194,12 +315,18 @@ class BasicTest {
         r_2 : -so_sh => se_sh.
         """.trimIndent().let { theory ->
             Arg2pSolverFactory.causality("$theory\nf1 :=> so_sh.\n").let {
-                isIntervention(it, "[-so_sh]", "pr_di")
-                isIntervention(it, "[-se_sh]", "pr_di", false)
+                isNessOldIntervention(it, "[-so_sh]", "pr_di")
+                isNessOldIntervention(it, "[-se_sh]", "pr_di", false)
+
+                isNessIntervention(it, "[-so_sh]", "pr_di")
+                isNessIntervention(it, "[-se_sh]", "pr_di", false)
             }
             Arg2pSolverFactory.causality("$theory\nf1 :=> -so_sh.\n").let {
-                isIntervention(it, "[so_sh]", "pr_di")
-                isIntervention(it, "[-se_sh]", "pr_di")
+                isNessOldIntervention(it, "[so_sh]", "pr_di")
+                isNessOldIntervention(it, "[-se_sh]", "pr_di")
+
+                isNessIntervention(it, "[so_sh]", "pr_di")
+                isNessIntervention(it, "[-se_sh]", "pr_di")
             }
         }
 
@@ -217,9 +344,13 @@ class BasicTest {
                 
                 """.trimIndent() + temporalDomain(5),
             ).let { solver ->
-                isIntervention(solver, "[-sh(bu, ge, 1)]", "di(ge, 2)")
-                isIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 2)", false)
-                isIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 4)", false)
+                isNessOldIntervention(solver, "[-sh(bu, ge, 1)]", "di(ge, 2)")
+                isNessOldIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 2)", false)
+                isNessOldIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 4)", false)
+
+                isNessIntervention(solver, "[-sh(bu, ge, 1)]", "di(ge, 2)")
+                isNessIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 2)", false)
+                isNessIntervention(solver, "[-sh(dl, ge, 3)]", "di(ge, 4)", false)
             }
 
     @Test
@@ -241,8 +372,11 @@ class BasicTest {
                 
                 """.trimIndent() + temporalDomain(5),
             ).let { solver ->
-                isIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
-                isIntervention(solver, "[-happens(sh(bu, ge), 3)]", "holdsAt(dead(ge), 5)", false)
+                isNessOldIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
+                isNessOldIntervention(solver, "[-happens(sh(bu, ge), 3)]", "holdsAt(dead(ge), 5)", false)
+
+                isNessIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
+                isNessIntervention(solver, "[-happens(sh(bu, ge), 3)]", "holdsAt(dead(ge), 5)", false)
             }
 
     @Test
@@ -274,8 +408,11 @@ class BasicTest {
                 
                 """.trimIndent() + temporalDomain(5),
             ).let { solver ->
-                isIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 5)", false)
-                isIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
+                isNessOldIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 5)", false)
+                isNessOldIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
+
+                isNessIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 5)", false)
+                isNessIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
             }
     }
 }
