@@ -1,3 +1,23 @@
+## [0.15.0](https://github.com/tuProlog/arg2p-kt/compare/0.14.2...0.15.0) (2026-01-12)
+
+### Features
+
+* but for cause and new ness def ([d48700d](https://github.com/tuProlog/arg2p-kt/commit/d48700dce54ae245c504615596033f6e9d975e1f))
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 81a841c ([#246](https://github.com/tuProlog/arg2p-kt/issues/246)) ([ddc0c6a](https://github.com/tuProlog/arg2p-kt/commit/ddc0c6a76315e8267dfce7f8fcefdf3ff29574f6))
+
+### Bug Fixes
+
+* bridge test ([1bf55e3](https://github.com/tuProlog/arg2p-kt/commit/1bf55e38524b8cf9e39973de8714ff56743ee762))
+* **deps:** update logback monorepo to v1.5.23 ([#244](https://github.com/tuProlog/arg2p-kt/issues/244)) ([54a5704](https://github.com/tuProlog/arg2p-kt/commit/54a5704366e6bc6ee71d5a28e2aec19de3e9773c))
+* **deps:** update logback monorepo to v1.5.24 ([#245](https://github.com/tuProlog/arg2p-kt/issues/245)) ([3b04bd2](https://github.com/tuProlog/arg2p-kt/commit/3b04bd2ff3cf4dcd71c47026042305daed3e80a0))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.18 ([#247](https://github.com/tuProlog/arg2p-kt/issues/247)) ([90b1390](https://github.com/tuProlog/arg2p-kt/commit/90b13905b84d913093a4c2939649e9cb5e61cd5b))
+
 ## [0.14.2](https://github.com/tuProlog/arg2p-kt/compare/0.14.1...0.14.2) (2025-12-19)
 
 ### Bug Fixes
