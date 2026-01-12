@@ -108,7 +108,7 @@ class BridgeTest {
     fun testCausalResolution() {
         JsBridge
             .solve(
-                "causality::evaluate(X, a, b)",
+                "causality::ness(X, a, b)",
                 """
                 r1 :=> a.
                 r2 : a => b.
