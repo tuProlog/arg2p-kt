@@ -56,4 +56,4 @@ akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-type
 
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.21.0"
 logback-classic = "ch.qos.logback:logback-classic:1.5.25"
-logback-core = "ch.qos.logback:logback-core:1.5.25"
+logback-core = "ch.qos.logback:logback-core:1.5.26"
