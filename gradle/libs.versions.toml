@@ -55,5 +55,5 @@ akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-ja
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
 
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.21.0"
-logback-classic = "ch.qos.logback:logback-classic:1.5.26"
-logback-core = "ch.qos.logback:logback-core:1.5.26"
+logback-classic = "ch.qos.logback:logback-classic:1.5.27"
+logback-core = "ch.qos.logback:logback-core:1.5.27"
