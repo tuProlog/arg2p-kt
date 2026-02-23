@@ -54,6 +54,6 @@ akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-shardin
 akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
 
-jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.21.0"
+jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.21.1"
 logback-classic = "ch.qos.logback:logback-classic:1.5.32"
 logback-core = "ch.qos.logback:logback-core:1.5.32"
