@@ -5,7 +5,7 @@ plugins {
 }
 
 hugo {
-    version = "0.150.0"
+    version = "0.161.1"
 }
 
 tasks.hugoBuild {
