@@ -29,12 +29,12 @@ jobs:
           java-version: '21'
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@v5
       - name: Build the site
         run: |
           ./gradlew -PbaseUrl="${{ steps.pages.outputs.base_url }}/" hugoBuild
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./doc/build/hugo/publish
   deploy:
@@ -46,4 +46,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4
