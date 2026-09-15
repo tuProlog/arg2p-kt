@@ -134,8 +134,7 @@ val generate =
 tasks.named("compileKotlinJs") { dependsOn(generate) }
 tasks.named("sourcesJar") { dependsOn(generate) }
 tasks.named("jsSourcesJar") { dependsOn(generate) }
-tasks.named("dokkaHtml") { dependsOn(generate) }
-tasks.named("dokkaHtmlPartial") { dependsOn(generate) }
+tasks.matching { it.name.startsWith("dokka") }.configureEach { dependsOn(generate) }
 tasks.named("runKtlintCheckOverJsMainSourceSet") { dependsOn(generate) }
 
 tasks.getByName<Copy>("jvmProcessResources") {
