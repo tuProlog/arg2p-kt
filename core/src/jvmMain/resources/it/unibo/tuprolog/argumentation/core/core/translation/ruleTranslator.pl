@@ -330,22 +330,22 @@ classic_conflict([A], [B]) :- metaConflicts,
     context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B, C) :-
     \+ metaConflicts,
-    member(conflict(A, B, C), [
-        conflict([Atom], [-Atom], (Atom \= -_)),
-        conflict([-Atom], [Atom], true),
-        conflict([o(Atom)], [o(-Atom)], (Atom \= -_)),                   % O(x) <-> O(-x)
-        conflict([o(-Atom)], [o(Atom)], true),
-        conflict([p(Atom)], [o(-Atom)], (Atom \= -_)),                   % P(x) <-> O(-x)
-        conflict([o(-Atom)], [p(Atom)], true),
-        conflict([o(Atom)], [p(-Atom)], (Atom \= -_)),                   % O(x) <-> P(-x)
-        conflict([p(-Atom)], [o(Atom)], true),
-        conflict([o(Atom)], [-p(Atom)], true),                           % O(x) <-> O(-x) (-P(x))
-        conflict([-p(Atom)], [o(Atom)], true),
-        conflict([sup(X, Y)], [sup(Y, X)], true)
-    ]).
+    builtin_conflict(A, B, C).
 classic_conflict(A, B, C) :-
     \+ metaConflicts,
     conflict(A, B, C).
+
+builtin_conflict([Atom], [-Atom], (Atom \= -_)).
+builtin_conflict([-Atom], [Atom], true).
+builtin_conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).                   % O(x) <-> O(-x)
+builtin_conflict([o(-Atom)], [o(Atom)], true).
+builtin_conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).                   % P(x) <-> O(-x)
+builtin_conflict([o(-Atom)], [p(Atom)], true).
+builtin_conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).                   % O(x) <-> P(-x)
+builtin_conflict([p(-Atom)], [o(Atom)], true).
+builtin_conflict([o(Atom)], [-p(Atom)], true).                           % O(x) <-> O(-x) (-P(x))
+builtin_conflict([-p(Atom)], [o(Atom)], true).
+builtin_conflict([sup(X, Y)], [sup(Y, X)], true).
 classic_conflict(A, B) :-
     \+ metaConflicts,
     conflict(A, B).
