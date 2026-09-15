@@ -1,5 +1,7 @@
 import io.github.gciatto.kt.mpp.Plugins
 import io.github.gciatto.kt.mpp.helpers.ProjectType
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 
 plugins {
     alias(libs.plugins.ktMpp.helper)
@@ -11,10 +13,25 @@ plugins {
 
 group = "it.unibo.tuprolog.argumentation"
 
+val jvmVersion: String = libs.versions.jvm.get()
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+
+    // Gradle itself runs on the JDK set in gradle/gradle-daemon-jvm.properties,
+    // while artifacts target (and tests run on) the JVM version from the catalog, unless -PtestJvm is provided
+    tasks.withType<Test>().configureEach {
+        javaLauncher.set(
+            project.extensions.getByType<JavaToolchainService>().launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(project.findProperty("testJvm")?.toString() ?: jvmVersion))
+            },
+        )
+    }
+    tasks.withType<JavaCompile>().configureEach {
+        options.release.set(jvmVersion.toInt())
     }
 }
 

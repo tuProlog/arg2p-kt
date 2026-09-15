@@ -1,11 +1,11 @@
 val baseUrl: String? by project
 
 plugins {
-    id("io.github.fstaudt.hugo") version "0.12.0"
+    id("io.github.fstaudt.hugo") version "0.13.0"
 }
 
 hugo {
-    version = "0.161.1"
+    version = "0.166.0"
 }
 
 tasks.hugoBuild {

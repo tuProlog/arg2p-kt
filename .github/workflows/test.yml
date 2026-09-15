@@ -27,7 +27,7 @@ jobs:
           build-command: |
             ./gradlew jsMainClasses jsTestClasses --parallel || ./gradlew jsMainClasses jsTestClasses --parallel
           check-command: |
-            ./gradlew jvmTest --parallel --continue || ./gradlew jvmTest --parallel --continue
+            ./gradlew jvmTest -PtestJvm=${{ matrix.java-version }} --parallel --continue || ./gradlew jvmTest -PtestJvm=${{ matrix.java-version }} --parallel --continue
           should-run-codecov: false
 
   test-js:
