@@ -4,9 +4,8 @@ jvm = "21"
 node = "24-latest"
 ktMpp = "5.4.0"
 semVer = "7.0.24"
-javaFx = "21.0.12"
 akka = "2.8.8"
-tuprolog = "1.5.1"
+tuprolog = "2.0.3"
 jung = "2.1.1"
 
 [plugins]
@@ -29,20 +28,13 @@ ktMpp-fatJar = { id = "io.github.gciatto.kt-mpp.fat-jar", version.ref = "ktMpp" 
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ktNpmPublish = "io.github.gciatto:kt-npm-publish:0.3.9"
 
-javafx-base = { module = "org.openjfx:javafx-base", version.ref = "javaFx" }
-javafx-fxml = { module = "org.openjfx:javafx-fxml", version.ref = "javaFx" }
-javafx-controls = { module = "org.openjfx:javafx-controls", version.ref = "javaFx" }
-javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javaFx" }
-javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javaFx" }
-richtextFx = "org.fxmisc.richtext:richtextfx:0.11.7"
-
 jung-api = { module = "net.sf.jung:jung-api", version.ref = "jung" }
 jung-visualization = { module = "net.sf.jung:jung-visualization", version.ref = "jung" }
 jung-graphimpl = { module = "net.sf.jung:jung-graph-impl", version.ref = "jung" }
 jung-algorithms = { module = "net.sf.jung:jung-algorithms", version.ref = "jung" }
 jung-io = { module = "net.sf.jung:jung-io", version.ref = "jung" }
 
-tuprolog-ide = { module = "it.unibo.tuprolog:ide", version.ref = "tuprolog" }
+tuprolog-ide-swing = { module = "it.unibo.tuprolog:ide-swing", version.ref = "tuprolog" }
 tuprolog-dsl-solve = { module = "it.unibo.tuprolog:dsl-solve", version.ref = "tuprolog" }
 tuprolog-solve-classic = { module = "it.unibo.tuprolog:solve-classic", version.ref = "tuprolog" }
 tuprolog-parser-theory = { module = "it.unibo.tuprolog:parser-theory", version.ref = "tuprolog" }

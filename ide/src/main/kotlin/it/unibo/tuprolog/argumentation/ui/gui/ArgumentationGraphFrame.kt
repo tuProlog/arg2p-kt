@@ -16,12 +16,11 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
-import it.unibo.tuprolog.ui.gui.CustomTab
-import javafx.embed.swing.SwingNode
-import javafx.scene.control.Tab
+import it.unibo.tuprolog.ui.gui.identity.PageId
+import it.unibo.tuprolog.ui.gui.model.PageFeatureState
+import it.unibo.tuprolog.ui.gui.model.PageState
+import it.unibo.tuprolog.ui.swing.feature.SwingFeatureContext
+import it.unibo.tuprolog.ui.swing.feature.SwingFeatureRenderer
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
@@ -29,6 +28,7 @@ import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import javax.swing.BoxLayout
 import javax.swing.JButton
+import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
@@ -38,18 +38,20 @@ import javax.swing.JTextArea
 import javax.swing.JTextPane
 import javax.swing.SwingUtilities
 
-internal class ArgumentationGraphFrame {
+internal class ArgumentationGraphFrame private constructor(
+    private val libraries: Arg2pLibraries,
+) : JPanel(BorderLayout()) {
     private val graphPane: JPanel = JPanel(BorderLayout())
     private val classicTheoryPane: JScrollPane = JScrollPane()
     private val treeTheoryPane: JScrollPane = JScrollPane()
-    val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
+    private val splitPane: JSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
 
     private val next: JButton =
         JButton("Next").also { button ->
             button.addActionListener {
                 this.selectedContext =
                     if (this.selectedContext + 1 >= this.maxContext) this.maxContext else this.selectedContext + 1
-                this.update()
+                this.refresh()
             }
         }
     private val back: JButton =
@@ -57,16 +59,23 @@ internal class ArgumentationGraphFrame {
             button.addActionListener {
                 this.selectedContext =
                     if (this.selectedContext - 1 <= this.minContext) this.minContext else this.selectedContext - 1
-                this.update()
+                this.refresh()
             }
         }
     private val context: JLabel = JLabel()
 
     private val minContext: Int = 0
+
+    @Volatile
     private var maxContext: Int = 0
+
+    @Volatile
     private var selectedContext: Int = 0
 
+    @Volatile
     private var mutableSolver: MutableSolver? = null
+
+    private var shown: Pair<PageId, Long>? = null
 
     init {
 
@@ -91,9 +100,55 @@ internal class ArgumentationGraphFrame {
 
         splitPane.isOneTouchExpandable = true
         splitPane.dividerLocation = 150
+        splitPane.addComponentListener(
+            object : ComponentAdapter() {
+                override fun componentResized(e: ComponentEvent) {
+                    repaintGraph()
+                }
+            },
+        )
+
+        add(splitPane, BorderLayout.CENTER)
+        refresh()
     }
 
-    private fun update() {
+    private fun show(
+        page: PageId,
+        state: PageFeatureState,
+    ) {
+        if (shown == page to state.revision) return
+        shown = page to state.revision
+        if (state.values.isEmpty()) {
+            mutableSolver = null
+            refresh()
+            return
+        }
+        Thread {
+            try {
+                val solver = libraries.newSolver()
+                val active =
+                    logicProgramming {
+                        solver
+                            .solve("context_active"(X))
+                            .map {
+                                it.substitution[X]!!
+                                    .asNumeric()!!
+                                    .intValue
+                                    .toInt()
+                            }.first()
+                    }
+                this.mutableSolver = solver
+                this.selectedContext = active
+                this.maxContext = active
+                this.refresh()
+            } catch (e: Exception) {
+                this.mutableSolver = null
+                this.clear()
+            }
+        }.start()
+    }
+
+    private fun refresh() {
         SwingUtilities.invokeLater {
             back.isEnabled = this.selectedContext > this.minContext
             next.isEnabled = this.selectedContext < this.maxContext
@@ -123,54 +178,34 @@ internal class ArgumentationGraphFrame {
             this.graphPane.removeAll()
             this.classicTheoryPane.viewport.removeAll()
             this.treeTheoryPane.viewport.removeAll()
-            revalidate()
+            repaintGraph()
         }
     }
 
-    private fun revalidate() {
+    private fun repaintGraph() {
         SwingUtilities.invokeLater {
             this.splitPane.repaint()
         }
     }
 
-    companion object {
-        @JvmStatic
-        fun customTab(): CustomTab {
-            val frame = ArgumentationGraphFrame()
-            val swingNode = SwingNode()
-            frame.splitPane.addComponentListener(
-                object : ComponentAdapter() {
-                    override fun componentResized(e: ComponentEvent) {
-                        frame.revalidate()
-                    }
-                },
-            )
-            swingNode.content = frame.splitPane
-            frame.update()
-            return CustomTab(Tab("Graph", swingNode)) { model ->
-                model.solveOptions = SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)
-                model.onNewSolution.subscribe { event ->
-                    frame.mutableSolver =
-                        ClassicSolverFactory.mutableSolverOf(
-                            libraries = event.libraries,
-                        )
-                    frame.selectedContext =
-                        logicProgramming {
-                            frame.mutableSolver!!
-                                .solve("context_active"(X))
-                                .map {
-                                    it.substitution[X]!!
-                                        .asNumeric()!!
-                                        .intValue
-                                        .toInt()
-                                }.first()
-                        }
-                    frame.maxContext = frame.selectedContext
-                    frame.update()
-                }
-            }
-        }
+    class SwingRenderer internal constructor(
+        private val libraries: Arg2pLibraries,
+    ) : SwingFeatureRenderer {
+        override val featureId = Arg2pGuiIds.GRAPH
+        override val displayName: String = "Graph"
 
+        override fun createComponent(context: SwingFeatureContext): JComponent = ArgumentationGraphFrame(libraries)
+
+        override fun render(
+            component: JComponent,
+            page: PageState,
+            state: PageFeatureState,
+        ) {
+            (component as ArgumentationGraphFrame).show(page.id, state)
+        }
+    }
+
+    companion object {
         @JvmStatic
         private fun buildGraph(
             arguments: List<LabelledArgument>,

@@ -1,201 +1,173 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
 import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.ui.gui.CustomTab
-import it.unibo.tuprolog.ui.gui.TuPrologIDEModel
-import javafx.collections.FXCollections
-import javafx.collections.ObservableList
-import javafx.geometry.Pos
-import javafx.scene.control.CheckBox
-import javafx.scene.control.ChoiceBox
-import javafx.scene.control.Label
-import javafx.scene.control.ListView
-import javafx.scene.control.Tab
-import javafx.scene.control.TextField
-import javafx.scene.layout.HBox
+import it.unibo.tuprolog.ui.gui.controller.PageAction
+import it.unibo.tuprolog.ui.gui.identity.PageId
+import it.unibo.tuprolog.ui.gui.model.PageFeatureState
+import it.unibo.tuprolog.ui.gui.model.PageState
+import it.unibo.tuprolog.ui.swing.feature.SwingFeatureContext
+import it.unibo.tuprolog.ui.swing.feature.SwingFeatureRenderer
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.GridLayout
+import javax.swing.BoxLayout
+import javax.swing.JCheckBox
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextField
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
-internal class FlagManagerFrame private constructor() {
-    private var queryMode: Boolean = true
-    private var autoTransposition: Boolean = false
-    private var prologStrictCompatibility: Boolean = false
-    private var unrestrictedRebut: Boolean = true
-    private var bpGraph: Boolean = false
-    private var graphBuildMode: String = "standard_af"
-    private var argumentLabellingMode: String = "grounded"
-    private var statementLabellingMode: String = "statement"
-    private var orderingPrinciple: String = "last"
-    private var orderingComparator: String = "elitist"
-    private var preferences: String = "standard"
-    private var modulesPath: String = "none"
+internal class FlagManagerFrame private constructor(
+    private val libraries: Arg2pLibraries,
+    private val context: SwingFeatureContext,
+) : JPanel(BorderLayout()) {
+    private var pageId: PageId? = null
+    private var updating: Boolean = false
 
-    private var prefPrinciple: ChoiceBox<String>? = null
-    private var prefComparator: ChoiceBox<String>? = null
-    private var restrictedRebut: CheckBox? = null
+    private val flags: Arg2pFlags
+        get() = libraries.flags
 
-    companion object {
-        private var ideModel: TuPrologIDEModel? = null
+    private val prefPrinciple = choiceBox(OrderingPrinciple.values(), flags.orderingPrinciple)
+    private val prefComparator = choiceBox(OrderingComparator.values(), flags.orderingComparator)
+    private val unrestrictedRebut = JCheckBox().also { it.isSelected = flags.unrestrictedRebut }
 
-        @JvmStatic
-        @Suppress("UNCHECKED_CAST")
-        fun customTab(customLibraries: List<Library>): CustomTab {
-            val flagManager = FlagManagerFrame()
-            val items: ObservableList<HBox> =
-                FXCollections.observableArrayList(
-                    setupChoiceBox("Graph Build Mode", listOf("standard_af")) {
-                        flagManager.graphBuildMode = it
-                    },
-                    setupChoiceBox(
-                        "Argument Labelling Mode",
-                        ArgumentLabellingMode.values(),
-                        ArgumentLabellingMode.default(),
-                    ) {
-                        flagManager.argumentLabellingMode = it
-                    },
-                    setupChoiceBox(
-                        "Statement Labelling Mode",
-                        StatementLabellingMode.values(),
-                        StatementLabellingMode.default(),
-                    ) {
-                        flagManager.statementLabellingMode = it
-                    },
-                    setupChoiceBox("Preferences", listOf("none", "standard", "defeasible", "defeasibleAll"), "standard") {
-                        flagManager.preferences = it
-                        if (it == "defeasible") {
-                            flagManager.prefPrinciple?.value = "last"
-                            flagManager.prefComparator?.value = "normal"
-                            flagManager.restrictedRebut?.isSelected = false
-                        }
-                        flagManager.prefPrinciple?.isDisable = it == "defeasible" || it == "none"
-                        flagManager.prefComparator?.isDisable = it == "defeasible" || it == "none"
-                        flagManager.restrictedRebut?.isDisable = it == "defeasible"
-                    },
-                    setupChoiceBox(
-                        "Ordering Principle",
-                        OrderingPrinciple.values(),
-                        OrderingPrinciple.default(),
-                    ) {
-                        flagManager.orderingPrinciple = it
-                    }.also { flagManager.prefPrinciple = it.children[1] as? ChoiceBox<String> },
-                    setupChoiceBox(
-                        "Ordering Comparator",
-                        OrderingComparator.values(),
-                        OrderingComparator.default(),
-                    ) {
-                        flagManager.orderingComparator = it
-                    }.also { flagManager.prefComparator = it.children[1] as? ChoiceBox<String> },
-                    setupCheckBox("Query Mode", flagManager.queryMode) { flagManager.queryMode = it },
-                    setupCheckBox("Auto Transposition", flagManager.autoTransposition) { flagManager.autoTransposition = it },
-//                    setupCheckBox(
-//                        "Prolog Rules Compatibility",
-//                        flagManager.prologStrictCompatibility,
-//                    ) { flagManager.prologStrictCompatibility = it },
-                    setupCheckBox("Unrestricted Rebut", flagManager.unrestrictedRebut) { flagManager.unrestrictedRebut = it }
-                        .also { flagManager.restrictedRebut = it.children[1] as? CheckBox },
-                    setupCheckBox("Meta Bp", flagManager.bpGraph) { flagManager.bpGraph = it },
-                    setupTextBox("Modules Path", flagManager.modulesPath) { flagManager.modulesPath = it },
-                )
-            return CustomTab(Tab("Arg Flags", ListView(items))) { model ->
-                ideModel = model
-                model.onReset.subscribe {
-                    model.customizeSolver { solver ->
-                        solver.also {
-                            (
-                                customLibraries +
-                                    FlagsBuilder(
-                                        queryMode = flagManager.queryMode,
-                                        autoTransposition = flagManager.autoTransposition,
-                                        prologStrictCompatibility = flagManager.prologStrictCompatibility,
-                                        graphBuildMode = flagManager.graphBuildMode,
-                                        argumentLabellingMode = flagManager.argumentLabellingMode,
-                                        statementLabellingMode = flagManager.statementLabellingMode,
-                                        orderingPrinciple = flagManager.orderingPrinciple,
-                                        orderingComparator = flagManager.orderingComparator,
-                                        modulesPath = flagManager.modulesPath,
-                                        graphExtensions =
-                                            listOf(
-                                                if (!flagManager.unrestrictedRebut) listOf("rebutRestriction") else emptyList(),
-                                                if (flagManager.bpGraph) listOf("bp") else emptyList(),
-                                                if (flagManager.preferences != "none") {
-                                                    listOf("${flagManager.preferences}Pref")
-                                                } else {
-                                                    emptyList()
-                                                },
-                                            ).flatten(),
-                                    ).create().content()
-                            ).forEach { solver.loadLibrary(it) }
-                            solver.setFlag(Unknown.name, Unknown.FAIL)
-                            solver.solve(Struct.parse("loader_reset")).first()
-                        }
+    init {
+        val rows = JPanel()
+        rows.layout = BoxLayout(rows, BoxLayout.Y_AXIS)
+
+        rows.addRow("Graph Build Mode", choiceBox(listOf("standard_af"), flags.graphBuildMode) { copy(graphBuildMode = it) })
+        rows.addRow(
+            "Argument Labelling Mode",
+            choiceBox(ArgumentLabellingMode.values(), flags.argumentLabellingMode) { copy(argumentLabellingMode = it) },
+        )
+        rows.addRow(
+            "Statement Labelling Mode",
+            choiceBox(StatementLabellingMode.values(), flags.statementLabellingMode) { copy(statementLabellingMode = it) },
+        )
+        rows.addRow(
+            "Preferences",
+            choiceBox(listOf("none", "standard", "defeasible", "defeasibleAll"), flags.preferences) {
+                onPreferencesChanged(it)
+                copy(preferences = it).let { updated ->
+                    if (it == "defeasible") {
+                        updated.copy(orderingPrinciple = "last", orderingComparator = "normal", unrestrictedRebut = false)
+                    } else {
+                        updated
                     }
                 }
-                model.reset()
+            },
+        )
+        rows.addRow("Ordering Principle", prefPrinciple.onChange { copy(orderingPrinciple = it) })
+        rows.addRow("Ordering Comparator", prefComparator.onChange { copy(orderingComparator = it) })
+        rows.addRow("Query Mode", checkBox(flags.queryMode) { copy(queryMode = it) })
+        rows.addRow("Auto Transposition", checkBox(flags.autoTransposition) { copy(autoTransposition = it) })
+        rows.addRow("Unrestricted Rebut", unrestrictedRebut.onChange { copy(unrestrictedRebut = it) })
+        rows.addRow("Meta Bp", checkBox(flags.bpGraph) { copy(bpGraph = it) })
+        rows.addRow("Modules Path", textBox(flags.modulesPath) { copy(modulesPath = it) })
+
+        add(JScrollPane(rows), BorderLayout.CENTER)
+        onPreferencesChanged(flags.preferences)
+    }
+
+    private fun onPreferencesChanged(preferences: String) {
+        updating = true
+        try {
+            if (preferences == "defeasible") {
+                prefPrinciple.selectedItem = "last"
+                prefComparator.selectedItem = "normal"
+                unrestrictedRebut.isSelected = false
+            }
+            prefPrinciple.isEnabled = preferences != "defeasible" && preferences != "none"
+            prefComparator.isEnabled = preferences != "defeasible" && preferences != "none"
+            unrestrictedRebut.isEnabled = preferences != "defeasible"
+        } finally {
+            updating = false
+        }
+    }
+
+    private fun change(transform: Arg2pFlags.() -> Arg2pFlags) {
+        if (updating) return
+        libraries.flags = libraries.flags.transform()
+        pageId?.let { context.dispatch(PageAction.Reset(it)) }
+    }
+
+    private fun choiceBox(
+        values: Iterable<String>,
+        default: String,
+        onChange: (Arg2pFlags.(String) -> Arg2pFlags)? = null,
+    ): JComboBox<String> =
+        JComboBox(values.toList().toTypedArray()).also { box ->
+            box.selectedItem = default
+            onChange?.let { box.onChange(it) }
+        }
+
+    private fun JComboBox<String>.onChange(onChange: Arg2pFlags.(String) -> Arg2pFlags): JComboBox<String> =
+        also { box ->
+            box.addActionListener { _ ->
+                (box.selectedItem as? String)?.let { value -> change { onChange(value) } }
             }
         }
 
-        @JvmStatic
-        fun setupChoiceBox(
-            label: String,
-            values: Iterable<String>,
-            default: String = values.first(),
-            onChange: (String) -> Unit,
-        ): HBox =
-            HBox(
-                Label(label).also { it.prefWidth = 400.0 },
-                ChoiceBox<String>().also {
-                    it.prefWidth = 400.0
-                    it.value = default
-                    it.items.addAll(values)
-                    it.setOnAction { _ ->
-                        onChange(it.value)
-                        ideModel?.reset()
-                    }
-                },
-            ).also {
-                it.prefHeight = 20.0
-                it.alignment = Pos.CENTER_LEFT
-            }
+    private fun checkBox(
+        isSelected: Boolean,
+        onChange: Arg2pFlags.(Boolean) -> Arg2pFlags,
+    ): JCheckBox = JCheckBox().also { it.isSelected = isSelected }.onChange(onChange)
 
-        @JvmStatic
-        fun setupCheckBox(
-            label: String,
-            isSelected: Boolean,
-            onChange: (Boolean) -> Unit,
-        ): HBox =
-            HBox(
-                Label(label).also { it.prefWidth = 400.0 },
-                CheckBox().also {
-                    it.isSelected = isSelected
-                    it.setOnAction { _ ->
-                        onChange(it.isSelected)
-                        ideModel?.reset()
-                    }
+    private fun JCheckBox.onChange(onChange: Arg2pFlags.(Boolean) -> Arg2pFlags): JCheckBox =
+        also { box ->
+            box.addActionListener { _ -> change { onChange(box.isSelected) } }
+        }
+
+    private fun textBox(
+        default: String,
+        onChange: Arg2pFlags.(String) -> Arg2pFlags,
+    ): JTextField =
+        JTextField(default).also { field ->
+            field.document.addDocumentListener(
+                object : DocumentListener {
+                    override fun insertUpdate(e: DocumentEvent) = changed()
+
+                    override fun removeUpdate(e: DocumentEvent) = changed()
+
+                    override fun changedUpdate(e: DocumentEvent) = changed()
+
+                    private fun changed() = change { onChange(field.text) }
                 },
             )
+        }
 
-        @JvmStatic
-        fun setupTextBox(
-            label: String,
-            default: String,
-            onChange: (String) -> Unit,
-        ): HBox =
-            HBox(
-                Label(label).also { it.prefWidth = 400.0 },
-                TextField().also {
-                    it.text = default
-                    it.prefWidth = 400.0
-                    it.textProperty().addListener { _, _, newText ->
-                        onChange(newText)
-                        ideModel?.reset()
-                    }
-                },
-            )
+    private fun JPanel.addRow(
+        label: String,
+        component: JComponent,
+    ) {
+        val row = JPanel(GridLayout(1, 2))
+        row.add(JLabel(label))
+        row.add(component)
+        row.maximumSize = Dimension(Int.MAX_VALUE, row.preferredSize.height)
+        add(row)
+    }
+
+    class SwingRenderer internal constructor(
+        private val libraries: Arg2pLibraries,
+    ) : SwingFeatureRenderer {
+        override val featureId = Arg2pGuiIds.FLAGS
+        override val displayName: String = "Arg Flags"
+
+        override fun createComponent(context: SwingFeatureContext): JComponent = FlagManagerFrame(libraries, context)
+
+        override fun render(
+            component: JComponent,
+            page: PageState,
+            state: PageFeatureState,
+        ) {
+            (component as FlagManagerFrame).pageId = page.id
+        }
     }
 }
