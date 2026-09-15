@@ -9,13 +9,13 @@ import it.unibo.tuprolog.theory.Theory
 import kotlin.test.Test
 
 class UtilsTest {
+    // sort/2 is deterministic: no choice point is left after the solution
     @Test
     fun sort() {
         arg2pScope {
             testGoal("utils" call "sort"(listOf("b", "a", "c", "d"), "X")) {
                 listOf(
                     it.yes("X" to listOf("d", "c", "b", "a")),
-                    it.no(),
                 )
             }
         }

@@ -23,31 +23,7 @@ intersection(Sets, Intersection) :-
     ), Intersection).
 
 
-sortDistinct(List, Sorted) :-
-    deduplicate(List, Deduplicated),
-    sort(Deduplicated, Sorted).
-
-deduplicate([], []).
-deduplicate(List, Output) :-
-    List \== [],
-    setof(X, member(X, List), Output).
-
-sort(List,Sorted) :- q_sort(List, [], Sorted).
-
-q_sort([], Acc, Acc).
-q_sort([H|T], Acc, Sorted) :-
-	pivoting(H, T, L1, L2),
-	q_sort(L1, Acc, Sorted1),
-	q_sort(L2, [H|Sorted1], Sorted).
-
-pivoting(H,[],[],[]).
-pivoting(H, [X|T], [X|L], G) :-
-    H @>= X,
-    pivoting(H, T, L, G).
-pivoting(H, [X|T], L, [X|G]) :-
-    X @> H,
-    pivoting(H, T, L, G).
-
+% sortDistinct/2, deduplicate/2 and sort/2 are native primitives (see Utils.kt)
 
 subtract([], _, []).
 subtract([Head|Tail], L2, L3) :-
