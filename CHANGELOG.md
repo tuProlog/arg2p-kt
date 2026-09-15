@@ -1,3 +1,9 @@
+## [0.16.2](https://github.com/tuProlog/arg2p-kt/compare/0.16.1...0.16.2) (2026-09-15)
+
+### Bug Fixes
+
+* **release:** publish every npm package even when one of them fails ([395e713](https://github.com/tuProlog/arg2p-kt/commit/395e713491170d8fc260836b0b63c4220c9af5a7))
+
 ## [0.16.1](https://github.com/tuProlog/arg2p-kt/compare/0.16.0...0.16.1) (2026-09-15)
 
 ### Bug Fixes
