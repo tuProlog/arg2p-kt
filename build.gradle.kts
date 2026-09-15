@@ -2,6 +2,7 @@ import io.github.gciatto.kt.mpp.Plugins
 import io.github.gciatto.kt.mpp.helpers.ProjectType
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
 
 plugins {
     alias(libs.plugins.ktMpp.helper)
@@ -14,6 +15,9 @@ plugins {
 group = "it.unibo.tuprolog.argumentation"
 
 val jvmVersion: String = libs.versions.jvm.get()
+
+// A property reference built as a standalone statement, whose value is never used
+val deadPropertyReference = Regex("""(?m)^([ \t]*)getPropertyCallableRef\([^;\n]*\);[ \t]*$""")
 
 allprojects {
     repositories {
@@ -32,6 +36,22 @@ allprojects {
     }
     tasks.withType<JavaCompile>().configureEach {
         options.release.set(jvmVersion.toInt())
+    }
+
+    // Kotlin/JS re-creates (and then discards) a property reference on every access to a delegated property,
+    // e.g. `by lazy` (see KT-78124): in 2p-kt terms this dominates JS execution time, so dead references are removed
+    tasks.withType<KotlinJsIrLink>().configureEach {
+        doLast {
+            destinationDirectory
+                .get()
+                .asFileTree
+                .matching { include("**/*.js", "**/*.mjs") }
+                .forEach { file ->
+                    val original = file.readText()
+                    val patched = deadPropertyReference.replace(original) { "${it.groupValues[1]}/* dead property reference removed */" }
+                    if (patched != original) file.writeText(patched)
+                }
+        }
     }
 }
 
