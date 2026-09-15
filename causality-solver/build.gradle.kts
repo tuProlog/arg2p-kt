@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
-val jvmStackSize: String by project
-val jvmMaxHeapSize: String by project
+val jvmStackSize: String = property("jvmStackSize").toString()
+val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 
 plugins {
     id(

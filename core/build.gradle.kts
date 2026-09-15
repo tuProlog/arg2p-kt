@@ -6,8 +6,8 @@ import java.io.File
 import kotlin.streams.asSequence
 import kotlin.text.replaceFirstChar
 
-val jvmStackSize: String by project
-val jvmMaxHeapSize: String by project
+val jvmStackSize: String = property("jvmStackSize").toString()
+val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 
 plugins {
     id(
@@ -47,8 +47,6 @@ kotlin {
                 implementation(libs.tuprolog.test.solve)
             }
         }
-
-        val jsMain by getting
     }
 }
 

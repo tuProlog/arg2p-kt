@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
+import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.unify.Unificator
@@ -53,6 +54,7 @@ fun Solver.attacks(
     arguments: List<Argument>,
 ): List<Attack> {
     if (arguments.isEmpty()) return emptyList()
+    val lookup = arguments.lookup()
     return logicProgramming {
         this@attacks
             .solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
@@ -60,8 +62,8 @@ fun Solver.attacks(
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
                 Attack(
-                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.first) },
-                    arguments.first { Unificator.default.match(it.termRepresentation(), solution.second) },
+                    lookup.find(solution.first),
+                    lookup.find(solution.second),
                 )
             }
     }.toList()
@@ -71,16 +73,17 @@ fun Solver.attacks(
 fun Solver.supports(
     context: Int,
     arguments: List<Argument>,
-): List<Support> =
-    logicProgramming {
+): List<Support> {
+    val lookup = arguments.lookup()
+    return logicProgramming {
         this@supports
             .solve("context_check"(context, "support"(X, Y)))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
-                arguments.first { Unificator.default.match(it.termRepresentation(), solution.second) }.let { argument ->
+                lookup.find(solution.second).let { argument ->
                     Support(
-                        arguments.first { Unificator.default.match(it.termRepresentation(), solution.first) },
+                        lookup.find(solution.first),
                         argument,
                     ).also {
                         argument.supports.add(it.supporter)
@@ -88,6 +91,7 @@ fun Solver.supports(
                 }
             }.toList()
     }
+}
 
 @JsName("mineLabels")
 fun Solver.labels(
@@ -103,11 +107,38 @@ fun Solver.labels(
                 .toList()
         }
 
-    val labels = checkFunctor("in") + checkFunctor("out") + checkFunctor("und")
+    val labels = TermLookup(checkFunctor("in") + checkFunctor("out") + checkFunctor("und")) { it.first }
     return arguments.map { res ->
         LabelledArgument(
             res,
-            labels.firstOrNull { Unificator.default.match(res.termRepresentation(), it.first) }?.second ?: "na",
+            labels.firstOrNull(res.termRepresentation())?.second ?: "na",
         )
     }
 }
+
+// Mined terms are matched through unification, which amounts to structural equality when both sides are ground:
+// in that case a hash lookup replaces the scan of all the candidates for every attack, support and label
+private class TermLookup<T>(
+    items: List<T>,
+    key: (T) -> Term,
+) {
+    private val entries = items.map { key(it) to it }
+
+    private val index: Map<Term, T>? =
+        if (entries.all { it.first.isGround }) {
+            mutableMapOf<Term, T>().also { map -> entries.forEach { (term, item) -> map.getOrPut(term) { item } } }
+        } else {
+            null
+        }
+
+    fun firstOrNull(term: Term): T? =
+        if (index != null && term.isGround) {
+            index[term]
+        } else {
+            entries.firstOrNull { Unificator.default.match(it.first, term) }?.second
+        }
+}
+
+private fun List<Argument>.lookup() = TermLookup(this) { it.termRepresentation() }
+
+private fun TermLookup<Argument>.find(term: Term) = firstOrNull(term) ?: throw NoSuchElementException("No argument matches $term")

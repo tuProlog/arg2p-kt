@@ -38,24 +38,9 @@ class BridgeTest {
                 """.trimIndent(),
                 { println(it) },
             ).let { res ->
-                if (res.i.hasNext()) {
-                    assertEquals(
-                        8,
-                        res.i
-                            .next()
-                            ?.graph
-                            ?.arguments
-                            ?.size ?: 0,
-                    )
-                    assertEquals(
-                        4,
-                        res.i
-                            .next()
-                            ?.graph
-                            ?.attacks
-                            ?.size ?: 0,
-                    )
-                }
+                val graph = res.i.next()?.graph
+                assertEquals(8, graph?.arguments?.size ?: 0)
+                assertEquals(4, graph?.attacks?.size ?: 0)
             }
     }
 
@@ -83,24 +68,9 @@ class BridgeTest {
                 """.trimIndent(),
                 { println(it) },
             ).let { res ->
-                if (res.i.hasNext()) {
-                    assertEquals(
-                        3,
-                        res.i
-                            .next()
-                            ?.graph
-                            ?.arguments
-                            ?.size ?: 0,
-                    )
-                    assertEquals(
-                        2,
-                        res.i
-                            .next()
-                            ?.graph
-                            ?.attacks
-                            ?.size ?: 0,
-                    )
-                }
+                val graph = res.i.next()?.graph
+                assertEquals(3, graph?.arguments?.size ?: 0)
+                assertEquals(2, graph?.attacks?.size ?: 0)
             }
     }
 

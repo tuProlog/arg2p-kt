@@ -4,15 +4,32 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: DanySK/action-checkout@0.2.31
+      - name: Check style (ktlint)
+        uses: DanySK/build-check-deploy-gradle-action@4.0.45
+        with:
+          retries-on-failure: '2'
+          build-command: true
+          check-command: ./gradlew ktlintCheck --parallel --continue
+          should-run-codecov: false
   test:
+    # Renovate merges on master were already tested on their (up-to-date) PR branch
     if: github.ref_name != 'master' || github.event.commits[0].author.name != 'renovate[bot]'
     uses: ./.github/workflows/test.yml
   release:
+    # Run even when tests were skipped (see above), but never after a failure
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
     environment: release_env
     permissions:
       contents: write
       packages: write
+      id-token: write  # Required for OIDC (trusted publishing) on npmjs
     needs:
+      - lint
       - test
     runs-on: ubuntu-24.04
     steps:
@@ -29,6 +46,7 @@ jobs:
           retries-on-failure: '1'
           build-command: true
           check-command: true
+          # No npm-token: publication on npmjs relies on trusted publishing (OIDC)
           deploy-command: |
             npm install
             npx semantic-release
@@ -37,14 +55,14 @@ jobs:
           github-token: ${{ github.token }}
           maven-central-username: ${{ secrets.MAVEN_USERNAME }}
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
-          npm-token: ${{ secrets.NPM_TOKEN }}
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
-          java-version: '21'
+          java-version: '25'
   success:
-    environment: release_env
     runs-on: ubuntu-24.04
     needs:
+      - lint
+      - test
       - release
     if: >-
       always() && (

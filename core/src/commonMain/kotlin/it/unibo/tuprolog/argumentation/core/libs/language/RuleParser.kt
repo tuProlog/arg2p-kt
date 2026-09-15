@@ -284,7 +284,7 @@ object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>
 
         fun process(text: String): String =
             processLiteralRestricted(text) {
-                processInternal(it.toString()).normalized
+                processInternal(it).normalized
             }
 
         fun processInternal(text: String): Result {
