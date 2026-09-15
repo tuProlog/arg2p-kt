@@ -25,5 +25,9 @@ jobs:
   ci-cd:
     needs:
       - dispatcher
+    permissions:
+      contents: write
+      packages: write
+      id-token: write  # Required for OIDC (trusted publishing) on npmjs, in both caller and called workflows
     uses: ./.github/workflows/release.yml
     secrets: inherit

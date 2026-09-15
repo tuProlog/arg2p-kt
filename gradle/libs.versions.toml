@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.4.20"
 jvm = "21"
-node = "22-latest"
+node = "24-latest"
 ktMpp = "5.3.1"
 semVer = "7.0.24"
 javaFx = "21.0.12"
