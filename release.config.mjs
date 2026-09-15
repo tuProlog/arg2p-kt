@@ -1,6 +1,6 @@
 var publishCmd = `
 ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication || exit 1
-./gradlew publishJsPackageToNpmjsRegistry || true
+./gradlew publishJsPackageToNpmjsRegistry --continue || echo "::error title=npm publication failed::Some packages were not published on npmjs, see the publishJsPackageToNpmjsRegistry tasks output"
 `
 
 import config from 'semantic-release-preconfigured-conventional-commits'  with { type: "json" };
