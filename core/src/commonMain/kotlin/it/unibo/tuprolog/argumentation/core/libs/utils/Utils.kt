@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Numeric
 import it.unibo.tuprolog.core.Substitution
@@ -134,9 +135,17 @@ object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash"
         sequenceOf(
             Substitution.of(
                 second.asVar()!!,
-                Numeric.of(first.toString().hashCode()),
+                Numeric.of(canonical(first).toString().hashCode()),
             ),
         )
+
+    // Variables get renamed whenever a term is read back from the KB, so they are replaced by
+    // positional placeholders: copies of the same term which only differ in variable names share the hash
+    private fun canonical(term: Term): Term {
+        val variables = term.variables.distinct().toList()
+        if (variables.isEmpty()) return term
+        return term.apply(Substitution.of(variables.mapIndexed { i, v -> v to Atom.of("_V$i") }.toMap()))
+    }
 }
 
 object Contains : Primitive {

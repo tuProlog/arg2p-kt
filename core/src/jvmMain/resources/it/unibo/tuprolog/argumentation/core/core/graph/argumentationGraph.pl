@@ -154,14 +154,26 @@ buildAttacks :-
 buildDirectAttack :-
     context_check(argument(A)),
     attack::findPossibleAttackers(A, BB),
-	context_check(clause(conc(BB), argument(B))),
+    findAttacker(BB, B),
 	filter_meta(B),
 	A \== B,
-    attack::attacks(T, B, A),
+	% Attacks are checked on copies, so that A and B are saved exactly as they are stored:
+	% binding their variables would change their identifiers (see utils::hash)
+	copy_term(B-A, CB-CA),
+    attack::attacks(T, CB, CA),
     saveAttack(T, B, A, A),
     buildTransitiveAttacks(T, B, A),
 	fail.
 buildDirectAttack.
+
+% Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
+findAttacker([Head], B) :- !,
+    functor(Head, Name, Arity),
+    functor(Skeleton, Name, Arity),
+    context_check(clause(conc([Skeleton]), argument(B))),
+    \+ \+ Skeleton = Head.
+findAttacker(Conclusion, B) :-
+    context_check(clause(conc(Conclusion), argument(B))).
 
 buildTransitiveAttacks(T, B, A) :-
     findall(_, (
