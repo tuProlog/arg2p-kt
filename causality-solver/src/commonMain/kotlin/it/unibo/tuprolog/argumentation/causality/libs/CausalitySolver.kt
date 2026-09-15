@@ -33,6 +33,8 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 import it.unibo.tuprolog.core.List as PlList
 
+private const val GRAPH_CACHE_SIZE = 256
+
 class CausalitySolver :
     ArgLibrary,
     Loadable {
@@ -75,16 +77,25 @@ class CausalitySolver :
                 }
         }
 
+    // The same theory is solved over and over (e.g. the base theory, or the same intervention in different checks):
+    // graphs are only read afterwards, hence they can be shared
+    private val graphCache = mutableMapOf<Pair<String, String>, Graph>()
+
     private fun solveFresh(
         effect: String,
         kb: Theory,
     ): Graph {
+        val theory = kb.toString(asPrologText = true)
+        graphCache[theory to effect]?.let { return it }
+        if (graphCache.size >= GRAPH_CACHE_SIZE) graphCache.clear()
         this.solver.resetStaticKb()
-        this.solver.loadStaticKb(Theory.parse(kb.toString(asPrologText = true), operators))
-        return this.solver
-            .solve(Struct.parse("answerQuery($effect)"))
-            .map { solver.graph() }
-            .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+        this.solver.loadStaticKb(Theory.parse(theory, operators))
+        return (
+            this.solver
+                .solve(Struct.parse("answerQuery($effect)"))
+                .map { solver.graph() }
+                .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
+        ).also { graphCache[theory to effect] = it }
     }
 
     // get support set (union of all explanations)
