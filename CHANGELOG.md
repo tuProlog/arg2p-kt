@@ -1,3 +1,9 @@
+## [0.16.1](https://github.com/tuProlog/arg2p-kt/compare/0.16.0...0.16.1) (2026-09-15)
+
+### Bug Fixes
+
+* **build:** make dokka 2 tasks depend on generated js sources ([b28adec](https://github.com/tuProlog/arg2p-kt/commit/b28adec17f131df58b799b4b6fa771501e1ed833))
+
 ## [0.16.0](https://github.com/tuProlog/arg2p-kt/compare/0.15.1...0.16.0) (2026-09-15)
 
 ### Features
