@@ -3,3 +3,4 @@ site/public/
 .DS_Store
 .hugo_build.lock
 resources/
+site/data/
