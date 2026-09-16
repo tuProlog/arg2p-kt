@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoalNoBacktracking
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.logicProgramming
+import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
 
@@ -110,6 +111,18 @@ class EngineInterfaceTest {
                     "U" to listOf("c"),
                 )
             }
+        }
+    }
+
+    @Test
+    fun answerQuerySucceedsOnlyForAcceptedGoals() {
+        logicProgramming {
+            // `a` is IN, `-a` is OUT and `c` is UND under this theory, see buildLabelSets above.
+            testGoalNoBacktracking("answerQuery"("a"), solverWithTheory()) { it.yes() }
+            testGoalNoBacktracking("answerQuery"(Struct.parse("-a")), solverWithTheory()) { it.no() }
+            testGoalNoBacktracking("answerQuery"("c"), solverWithTheory()) { it.no() }
+            // A goal the theory never mentions is not accepted either.
+            testGoalNoBacktracking("answerQuery"("unrelated"), solverWithTheory()) { it.no() }
         }
     }
 }
