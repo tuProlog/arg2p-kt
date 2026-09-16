@@ -38,6 +38,7 @@ tuprolog-ide-swing = { module = "it.unibo.tuprolog:ide-swing", version.ref = "tu
 tuprolog-dsl-solve = { module = "it.unibo.tuprolog:dsl-solve", version.ref = "tuprolog" }
 tuprolog-solve-classic = { module = "it.unibo.tuprolog:solve-classic", version.ref = "tuprolog" }
 tuprolog-parser-theory = { module = "it.unibo.tuprolog:parser-theory", version.ref = "tuprolog" }
+tuprolog-io-lib = { module = "it.unibo.tuprolog:io-lib", version.ref = "tuprolog" }
 tuprolog-test-solve = { module = "it.unibo.tuprolog:test-solve", version.ref = "tuprolog" }
 
 akka-bom = { module = "com.typesafe.akka:akka-bom_2.13", version.ref = "akka" }
