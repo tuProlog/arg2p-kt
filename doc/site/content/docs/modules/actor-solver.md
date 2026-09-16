@@ -1,6 +1,6 @@
 ---
 title: Distributed Solver
-weight: 27
+weight: 28
 ---
 
 ## Distributed Solver

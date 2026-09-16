@@ -48,8 +48,8 @@ projects need. The individual modules can also be depended upon directly, all un
 | --- | --- |
 | `arg2p`, `arg2p-jvm`, `arg2p-js` | Aggregate: core engine + causality solver |
 | `core`, `core-jvm`, `core-js` | The argumentation engine alone |
-| `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/causality" %}}) |
-| `actor-solver` | [Distributed evaluation]({{% ref "/docs/actor-solver" %}}) (JVM only) |
+| `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
+| `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
 | `ide` | The desktop IDE as a library |
 
 Artifacts without a suffix are the Kotlin Multiplatform ones; use `-jvm` or `-js` to depend on a single

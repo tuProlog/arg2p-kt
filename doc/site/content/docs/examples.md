@@ -71,6 +71,8 @@ r3 : penguin(X) => -flies(X).
 `animal(tweety)` follows strictly, so no argument can attack it. `flies(tweety)`, derived defeasibly, remains
 open to attack.
 
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=a1%20%3A-%3E%20bird%28tweety%29.%0Ar1%20%3A%20bird%28X%29%20-%3E%20animal%28X%29.%0Ar2%20%3A%20bird%28X%29%20%3D%3E%20flies%28X%29.%0Ar3%20%3A%20penguin%28X%29%20%3D%3E%20-flies%28X%29.&query=arg2p%3A%3Asolve%28animal%28tweety%29%2C%20Res%29)
+
 ---
 
 ## Exceptions with weak negation
@@ -140,6 +142,8 @@ f2 :=> -d.
 Only the part of the graph relevant to `d` is built, which matters on large theories. When the three separate
 sets are not needed, `arg2p::solve(d, Res)` returns the same information as a single list.
 
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.&query=arg2p%3A%3AanswerQuery%28d%2C%20In%2C%20Out%2C%20Und%29)
+
 ---
 
 ## Choosing a different semantics
@@ -174,7 +178,7 @@ O = [b],
 U = [].
 ```
 
-See [Abstract Evaluation]({{% ref "/docs/abstract" %}}).
+See [Abstract Evaluation]({{% ref "/docs/modules/abstract" %}}).
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=abstract&arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c) — this
 one opens the playground in **Abstract** mode with the framework already drawn.
@@ -183,28 +187,36 @@ one opens the playground in **Abstract** mode with the framework already drawn.
 
 ## Burden of persuasion
 
-With the `bp` extension, the burden of persuasion is expressed inside the rules and evaluated by a dedicated
-semantics:
+A statement carrying the burden of persuasion has to be *established*: when the arguments for and against it
+cancel out, it fails instead of staying undecided. The burden is declared with `bp/1` and evaluated by the
+`bp_grounded` family of semantics:
 
 ```prolog
-graphExtension(bp).
 argumentLabellingMode(bp_grounded).
 
-r0 : [] => bp(guilty).
+bp(guilty).
 r1 : evidence => guilty.
 r2 : alibi => -guilty.
 f1 :=> evidence.
 f2 :=> alibi.
 ```
 
-The burden rests on `guilty`: where the evidence and the alibi cancel out, the statement carrying the burden
-is the one that fails.
+```prolog
+?- arg2p::solve(guilty, Res).
+
+Res = [out(guilty)]
+```
+
+The evidence and the alibi defeat each other, so without a burden `guilty` would be **UND**. The burden
+resolves the deadlock against the party carrying it, and `guilty` comes out **OUT**.
+
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=bp%28guilty%29.%0Ar1%20%3A%20evidence%20%3D%3E%20guilty.%0Ar2%20%3A%20alibi%20%3D%3E%20-guilty.%0Af1%20%3A%3D%3E%20evidence.%0Af2%20%3A%3D%3E%20alibi.&query=arg2p%3A%3Asolve%28guilty%2C%20Res%29&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28bp_grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
 
 ---
 
 ## Causal questions
 
-With the [causality module]({{% ref "/docs/causality" %}}), you can ask whether something caused something
+With the [causality module]({{% ref "/docs/modules/causality" %}}), you can ask whether something caused something
 else:
 
 ```prolog
@@ -215,8 +227,10 @@ r_2 : fire_b => house_burns.
 ```
 
 ```prolog
-?- context_reset, ness(X, fire_a, house_burns).
+?- context_reset, causality::ness(X, fire_a, house_burns).
 ```
+
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=context_reset%2C%20causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
 
 The but-for test fails here — the house burns either way — while the NESS test succeeds, binding `X` to the
 intervention under which `fire_a` really is necessary.

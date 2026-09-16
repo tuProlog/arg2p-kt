@@ -22,7 +22,7 @@ const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.
 ```
 
 The package `@tuprolog/arg2p-causality-solver` is published as well, but the causality predicates are already
-reachable through the bridge — see [Causality]({{% ref "/docs/causality" %}}).
+reachable through the bridge — see [Causality]({{% ref "/docs/modules/causality" %}}).
 
 ---
 

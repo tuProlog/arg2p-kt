@@ -56,7 +56,7 @@ No installation required. The playground runs in either of two modes, selected f
 - **Structured** — write an [Arg2P theory]({{% ref "/docs/syntax" %}}) and run any query against it, as in the
   desktop IDE.
 - **Abstract** — draw an argumentation framework instead of writing rules. The query is generated for you as
-  [`abstract::solve/5`]({{% ref "/docs/abstract" %}}), and the drawing is recoloured with the labelling of the
+  [`abstract::solve/5`]({{% ref "/docs/modules/abstract" %}}), and the drawing is recoloured with the labelling of the
   solution being shown. A _Semantics_ selector next to the query sets the
   [`argumentLabellingMode`]({{% ref "/docs/flags" %}}) flag, covering every semantics the engine implements.
 

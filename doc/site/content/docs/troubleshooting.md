@@ -89,7 +89,7 @@ first Prolog solution, discards the rest. Iterate over all solutions instead.
 
 ## A causality query fails or raises a type error
 
-Two rules apply to the [causality module]({{% ref "/docs/causality" %}}):
+Two rules apply to the [causality module]({{% ref "/docs/modules/causality" %}}):
 
 - every query must be preceded by `context_reset`, otherwise it runs against a stale context;
 - `ness/3` and `ness_original/3` require their **first argument to be unbound**. Passing a concrete
@@ -99,7 +99,7 @@ Two rules apply to the [causality module]({{% ref "/docs/causality" %}}):
 
 ## A program using the distributed solver does not terminate
 
-The [actor solver]({{% ref "/docs/actor-solver" %}}) runs non-daemon threads for the cluster. Call `leave`
+The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) runs non-daemon threads for the cluster. Call `leave`
 when the work is done, or the JVM will stay alive.
 
 ---

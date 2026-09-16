@@ -1,6 +1,6 @@
 ---
 title: Causality
-weight: 26
+weight: 27
 ---
 
 ## Causality
@@ -100,9 +100,13 @@ r_1 : fire_a => house_burns.
 r_2 : fire_b => house_burns.
 ```
 
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=context_reset%2C%20causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
+— the playground bundles the causality module, so the query runs there as it does on the JVM.
+
 `but_for(fire_a, house_burns)` fails: removing `fire_a` leaves `fire_b`, and the house burns anyway.
-`ness(X, fire_a, house_burns)` succeeds, binding `X` to the intervention in which `fire_b` is absent, where
-`fire_a` *is* necessary for the outcome.
+`ness(X, fire_a, house_burns)` succeeds and binds `X` to the intervention it applied, here `[- fire_a]`: the
+intervention negates the candidate cause, and the test reports the set under which that cause turns out to be
+necessary for the effect.
 
 ---
 

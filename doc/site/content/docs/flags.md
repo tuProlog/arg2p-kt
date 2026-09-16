@@ -49,10 +49,10 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 | Value | Effect |
 | --- | --- |
 | `standardPref` | ASPIC<sup>+</sup> static preferences. Attacks that do not succeed as defeats are removed according to the argument ordering. |
-| `defeasiblePref` | Dung's model for defeasible preferences, where preferences are themselves defeasible conclusions. |
-| `defeasibleAllPref` | The enhanced defeasible model, enabling all ASPIC<sup>+</sup> comparators. |
+| `defeasiblePref` | Defeasible preferences, where a `sup/2` concluded by a rule counts as a preference. Supports comparisons that rest on a single superiority. |
+| `defeasibleAllPref` | The richer model, which also supports comparators that need several superiorities at once. |
 | `rebutRestriction` | Applies the *restricted rebut* constraint: an argument cannot rebut a conclusion drawn by a strict rule. |
-| `bp` | Meta-evaluation for burden of persuasion. With this extension the `bp` indications are written inside rules, e.g. `r : [] => bp(something).` |
+| `bp` | Makes the burden of persuasion arguable: the burden is concluded by a rule, e.g. `r : [] => bp(something).`, instead of being declared as a fact. See [Meta-argumentation]({{% ref "/docs/modules/meta" %}}). |
 
 The defeasible preference models and the meta-argumentation treatment of the burden of persuasion are
 described in the papers listed under [References]({{% ref "/docs/references" %}}).
@@ -73,6 +73,7 @@ To disable preference handling altogether, pass an empty list of extensions
 | Value | Semantics |
 | --- | --- |
 | `grounded` | Grounded semantics. The default, and the only one that always yields exactly one labelling. |
+| `grounded_old` | The previous grounded implementation. Kept for comparison and regression testing; prefer `grounded`. |
 | `complete` | Dung's complete semantics. |
 | `conflictfree` | Conflict-free labellings. |
 | `admissible` | Admissible labellings. |
@@ -177,8 +178,11 @@ in your theory:
 | Flag | Meaning |
 | --- | --- |
 | `naturalTerms` | Enables normalisation of natural-language-like terms while parsing rules. |
-| `metaConflicts` | Enables conflict detection between meta-level statements. |
-| `metaRules` | Enables meta-level rules in the translation phase. |
+| `metaConflicts` | Conflicts are taken from arguments concluding `conflict/2`, instead of from the built-in table and `conflict/2` facts. |
+| `metaRules` | Adds an implicit `applicable(RuleName)` premise to every rule, so that rule application becomes arguable. |
+
+`metaRules` and `metaConflicts` belong to the [meta-argumentation]({{% ref "/docs/modules/meta" %}}) features, which
+are applied while the graph is built — they have no effect when `queryMode` is enabled.
 
 ---
 

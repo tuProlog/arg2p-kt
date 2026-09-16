@@ -1,6 +1,7 @@
 ---
 title: Modules
 weight: 25
+bookCollapseSection: true
 ---
 
 ## Modules
@@ -71,7 +72,7 @@ used when `queryMode` is enabled.
 
 | Module | Purpose |
 | --- | --- |
-| `abstract` | Orchestrates the evaluation; also exposes the [abstract AF entry points]({{% ref "/docs/abstract" %}}). |
+| `abstract` | Orchestrates the evaluation; also exposes the [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `structured` | Goal-directed evaluation used by `answerQuery`. |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
 | `standard_af` | Builds the argumentation graph. |
@@ -207,4 +208,4 @@ val solver = Arg2pSolverFactory.default(
 ```
 
 Static libraries are materialised immediately; dynamic ones are resolved the first time a `::` or `:::` call
-mentions them. The [causality]({{% ref "/docs/causality" %}}) and actor solvers are built exactly this way.
+mentions them. The [causality]({{% ref "/docs/modules/causality" %}}) and actor solvers are built exactly this way.

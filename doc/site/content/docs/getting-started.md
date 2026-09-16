@@ -163,7 +163,7 @@ See [JavaScript API]({{% ref "/docs/javascript" %}}) for the full bridge.
 | Learn the theory language | [Language]({{% ref "/docs/syntax" %}}) |
 | Know which queries you can ask | [API & Flags]({{% ref "/docs/predicate" %}}) |
 | Change semantics or preferences | [Flags Reference]({{% ref "/docs/flags" %}}) |
-| Evaluate a plain abstract framework | [Abstract Evaluation]({{% ref "/docs/abstract" %}}) |
+| Evaluate a plain abstract framework | [Abstract Evaluation]({{% ref "/docs/modules/abstract" %}}) |
 | See complete, runnable theories | [Examples]({{% ref "/docs/examples" %}}) |
 | Understand the engine's structure | [Modules]({{% ref "/docs/modules" %}}) |
 | Fix something that went wrong | [Troubleshooting]({{% ref "/docs/troubleshooting" %}}) |

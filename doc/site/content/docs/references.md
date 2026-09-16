@@ -108,7 +108,7 @@ The treatment of conflicts that the parser and the `metaConflicts` flag build on
 ## Causality
 
 The model implemented by `ness_original/3` and `ness_original_intervention/2` in the
-[causality module]({{% ref "/docs/causality" %}}):
+[causality module]({{% ref "/docs/modules/causality" %}}):
 
 > Giuseppe Pisano, Henry Prakken, Giovanni Sartor, Ruta Liepina.
 > **Modelling cause-in-fact in legal cases through defeasible argumentation.**
@@ -129,7 +129,7 @@ Related work on causal reasoning in law from the same group:
 ## Distributed reasoning
 
 The cooperative, multi-agent evaluation behind the
-[distributed solver]({{% ref "/docs/actor-solver" %}}):
+[distributed solver]({{% ref "/docs/modules/actor-solver" %}}):
 
 > Giuseppe Pisano, Roberta Calegari, Andrea Omicini.
 > **Multi-agent cooperative argumentation in Arg2P.**
