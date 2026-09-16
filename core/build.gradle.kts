@@ -39,6 +39,8 @@ kotlin {
                 api(libs.tuprolog.dsl.solve)
                 api(libs.tuprolog.solve.classic)
                 api(libs.tuprolog.parser.theory)
+                // Provides consult/1, used by module::call_module/2 to load external theories.
+                implementation(libs.tuprolog.io.lib)
             }
         }
 

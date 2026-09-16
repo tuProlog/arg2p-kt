@@ -33,7 +33,8 @@ answerQuery(Goal, Res) :-
 answerQuery(Goal) :-
     context_reset,
     parser:::convertAllRules(_),
-    structured:::computeStatementAcceptance(Goal).
+    structured:::computeStatementAcceptance(Goal),
+    context_check(statIn([Goal])).
 
 buildLabelSetsSilent :-
     context_reset,

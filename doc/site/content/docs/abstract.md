@@ -63,4 +63,14 @@ Instead, the **argumentation graph** can be inspected programmatically or using:
 
 ## Semantics Support
 
-All standard semantics are supported. The evaluation mode can be configured via the `argumentLabellingMode\1` flag. See the [API page]({{% ref "/docs/predicate" %}}) for details.
+All standard semantics are supported. The evaluation mode can be configured via the `argumentLabellingMode\1` flag. See the [Flags Reference]({{% ref "/docs/flags" %}}) for the full list of accepted values.
+
+## Drawing a framework instead of writing one
+
+The [Web Playground](https://tuprolog.github.io/arg2p-kt-web/) has an **Abstract** mode that builds these
+queries for you: add arguments and attacks on the canvas, pick a semantics, and it runs
+`abstract::solve(Arguments, Attacks, In, Out, Und)` and recolours the drawing with the resulting labelling.
+Frameworks can be shared as a link:
+[try the framework above](https://tuprolog.github.io/arg2p-kt-web/?mode=abstract&arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c),
+built from `?mode=abstract&arguments=a,b,c&attacks=a-b,b-c`. Both `,` and `;` separate items, and an attack
+may be written `a-b` or `a>b`; arguments mentioned only in `attacks` are added to the graph automatically.

@@ -1,7 +1,12 @@
 baseURL = '/'
-languageCode = 'en-us'
+locale = 'en-us'
 title = 'Arg2p Wiki'
 theme = "hugo-book"
+
+[params]
+# Fallback used when the site is built without Gradle (e.g. plain `hugo server`).
+# The actual build injects the released version into data/arg2p.json, see doc/build.gradle.kts.
+arg2pVersion = '0.16.2'
 
 [menu]
 [[menu.home]]
