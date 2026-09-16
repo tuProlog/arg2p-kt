@@ -1,3 +1,13 @@
+## [0.16.4](https://github.com/tuProlog/arg2p-kt/compare/0.16.3...0.16.4) (2026-09-16)
+
+### Bug Fixes
+
+* **core:** stop graph extensions from deleting each other attacks ([f330c85](https://github.com/tuProlog/arg2p-kt/commit/f330c85255be745c30cb36798d13892c93c9de26))
+
+### Documentation
+
+* document the meta features and make the examples runnable ([04bf46e](https://github.com/tuProlog/arg2p-kt/commit/04bf46e71b4ef4d22bed333e5cf3c53449757857))
+
 ## [0.16.3](https://github.com/tuProlog/arg2p-kt/compare/0.16.2...0.16.3) (2026-09-16)
 
 ### Dependency updates
