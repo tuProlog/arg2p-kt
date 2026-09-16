@@ -1,3 +1,27 @@
+## [0.16.3](https://github.com/tuProlog/arg2p-kt/compare/0.16.2...0.16.3) (2026-09-16)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 63af7ec ([#454](https://github.com/tuProlog/arg2p-kt/issues/454)) ([cc49389](https://github.com/tuProlog/arg2p-kt/commit/cc49389ff3dd4124806450572af5b70163791069))
+* **deps:** update doc/site/themes/hugo-book digest to a846c8b ([#453](https://github.com/tuProlog/arg2p-kt/issues/453)) ([b0ff720](https://github.com/tuProlog/arg2p-kt/commit/b0ff720164680f09054c721c1399db04298b28f3))
+
+### Bug Fixes
+
+* **core:** make module::call_module load external modules ([eb395ed](https://github.com/tuProlog/arg2p-kt/commit/eb395ed17750deaea8b549f0374af3fd1692c897))
+* **core:** make solve/1 succeed only for accepted goals ([3d478e0](https://github.com/tuProlog/arg2p-kt/commit/3d478e0f734a8c9669f45415940dfd6cf4a47c5b))
+
+### Documentation
+
+* document the framework and cite the papers ([1378082](https://github.com/tuProlog/arg2p-kt/commit/1378082cbbb33b7f18bdcad92a6f3f01efb80a3c))
+
+### Tests
+
+* **core:** cover the engine interface and call_module ([57aa364](https://github.com/tuProlog/arg2p-kt/commit/57aa36466e015287172b05482991ea8442275c30))
+
+### Build and continuous integration
+
+* **deps:** update dependency java-jdk to v25.0.4+101.0.lts ([#451](https://github.com/tuProlog/arg2p-kt/issues/451)) ([fc204a3](https://github.com/tuProlog/arg2p-kt/commit/fc204a3c22f5bffb1d68b3bd4bba20aad11aef53))
+
 ## [0.16.2](https://github.com/tuProlog/arg2p-kt/compare/0.16.1...0.16.2) (2026-09-15)
 
 ### Bug Fixes
