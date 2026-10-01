@@ -4,6 +4,10 @@
     ":rebaseStalePrs",
     ":semanticCommits"
   ],
+  "baseBranches": [
+    "develop",
+    "master"
+  ],
   "packageRules": [
     {
       "description": "Updates to GitHub Actions should be tagged as 'ci'",
@@ -12,12 +16,6 @@
         ".github/workflows/*.yaml"
       ],
       "semanticCommitType": "ci"
-    },
-    {
-      "allowedVersions": "/^21\\./",
-      "matchPackageNames": [
-        "/^org\\.openjfx:javafx-/"
-      ]
     }
   ],
   "automerge": true,
