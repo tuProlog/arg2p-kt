@@ -5,7 +5,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
@@ -31,7 +31,7 @@ jobs:
     needs:
       - lint
       - test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -59,7 +59,7 @@ jobs:
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
           java-version: '25'
   success:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - lint
       - test
