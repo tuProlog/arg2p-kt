@@ -1,11 +1,11 @@
 [versions]
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 jvm = "21"
 node = "24-latest"
-ktMpp = "5.4.0"
+ktMpp = "6.0.4"
 semVer = "7.0.24"
 akka = "2.8.8"
-tuprolog = "2.0.3"
+tuprolog = "2.0.9"
 jung = "2.1.1"
 
 [plugins]
@@ -47,6 +47,6 @@ akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-shardin
 akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
 
-jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.2"
-logback-classic = "ch.qos.logback:logback-classic:1.6.3"
-logback-core = "ch.qos.logback:logback-core:1.6.3"
+jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.3"
+logback-classic = "ch.qos.logback:logback-classic:1.6.5"
+logback-core = "ch.qos.logback:logback-core:1.6.5"
