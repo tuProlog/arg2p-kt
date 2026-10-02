@@ -61,15 +61,22 @@ jobs:
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
           java-version: '25'
       - name: Back-merge the release into develop
-        # .released-version is written by semantic-release's successCmd, so it
-        # exists only when a release was actually published.
-        if: github.ref_name == 'master' && hashFiles('.released-version') != ''
+        if: github.ref_name == 'master'
         # A back-merge problem must never fail an otherwise successful release.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.CI_TOKEN }}
         run: |
           set -euo pipefail
+          # .released-version is written by semantic-release's successCmd, so it
+          # exists only when a release was actually published. Checked here in
+          # the shell rather than in an `if:` expression, because hashFiles() is
+          # not reliable in that position and an invalid expression makes the
+          # whole reusable workflow unloadable.
+          if [ ! -f .released-version ]; then
+            echo "::notice::nothing was released, so there is nothing to back-merge"
+            exit 0
+          fi
           version="$(cat .released-version)"
           branch="sync/master-to-develop-${version}"
           git config user.name 'github-actions[bot]'
