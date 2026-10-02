@@ -1,3 +1,25 @@
+## [0.16.6](https://github.com/tuProlog/arg2p-kt/compare/0.16.5...0.16.6) (2026-10-02)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 4074906 ([#479](https://github.com/tuProlog/arg2p-kt/issues/479)) ([990a2fc](https://github.com/tuProlog/arg2p-kt/commit/990a2fc5621c3c819893e4c07d6668eee1ad72d2))
+
+### Bug Fixes
+
+* **core:** let errors raised inside a module call reach the caller ([fcc14d1](https://github.com/tuProlog/arg2p-kt/commit/fcc14d18679ddf806eeb8051352822692cabc728))
+
+### Build and continuous integration
+
+* gate the back-merge in the shell instead of an if expression ([f87e3d9](https://github.com/tuProlog/arg2p-kt/commit/f87e3d9f244dff6cfb9a69bafc84d549639d1499))
+* open an auto-mergeable back-merge PR into develop after a release ([34bd70f](https://github.com/tuProlog/arg2p-kt/commit/34bd70f255cb657a49adc5e15525f461f49e79b2))
+* run CI when a push only touches CHANGELOG.md or renovate.json ([aeeba92](https://github.com/tuProlog/arg2p-kt/commit/aeeba92ab75095d95eceafad8877493956604b9e)), closes [#467](https://github.com/tuProlog/arg2p-kt/issues/467) [#481](https://github.com/tuProlog/arg2p-kt/issues/481)
+
+### General maintenance
+
+* **config:** migrate Renovate config ([1234117](https://github.com/tuProlog/arg2p-kt/commit/12341172c78a1320523b1df6f93391b68faeb349)), closes [#481](https://github.com/tuProlog/arg2p-kt/issues/481)
+* **config:** run Renovate against master only ([d5a2ad2](https://github.com/tuProlog/arg2p-kt/commit/d5a2ad2a08b28907cb307599e34d90780242d5e1))
+* merge master into develop ([60983cc](https://github.com/tuProlog/arg2p-kt/commit/60983cc37ea12ac4092705e585287105bc226aa8))
+
 ## [0.16.5](https://github.com/tuProlog/arg2p-kt/compare/0.16.4...0.16.5) (2026-10-01)
 
 ### Dependency updates

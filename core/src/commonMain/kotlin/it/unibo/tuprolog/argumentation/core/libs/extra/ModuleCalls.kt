@@ -82,6 +82,9 @@ object ModuleCall : Primitive {
                 solver.solve(goal).map {
                     when (it) {
                         is Solution.Yes -> request.replySuccess(it.substitution)
+                        // An error inside the module must surface: collapsing it into a failure
+                        // turns a broken call into a silently empty result.
+                        is Solution.Halt -> throw it.exception
                         else -> request.replyFail()
                     }
                 },
