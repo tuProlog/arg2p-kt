@@ -37,6 +37,8 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           token: ${{ secrets.CI_TOKEN }}
+          # Full history: the back-merge step below needs a real merge base.
+          fetch-depth: 0
       - name: Install Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -58,6 +60,36 @@ jobs:
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
           java-version: '25'
+      - name: Back-merge the release into develop
+        # .released-version is written by semantic-release's successCmd, so it
+        # exists only when a release was actually published.
+        if: github.ref_name == 'master' && hashFiles('.released-version') != ''
+        # A back-merge problem must never fail an otherwise successful release.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.CI_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(cat .released-version)"
+          branch="sync/master-to-develop-${version}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --tags origin develop master
+          git switch -C "$branch" origin/develop
+          if git merge-base --is-ancestor origin/master HEAD; then
+            echo "::notice::develop already contains master, nothing to back-merge"
+            exit 0
+          fi
+          # --no-ff guarantees a commit that is not tagged [skip ci]. The release
+          # commit itself is, so on its own it would never produce the checks
+          # develop requires and the PR could never auto-merge.
+          git merge --no-ff origin/master -m "chore: merge master into develop after ${version}"
+          git push --force origin "$branch"
+          gh pr create --base develop --head "$branch" \
+            --title "chore: back-merge release ${version} into develop" \
+            --body "Automated back-merge of the ${version} release commit from master into develop. Auto-merge is enabled; this lands as soon as the required checks pass." \
+            || echo "::notice::a PR already exists for ${branch}"
+          gh pr merge "$branch" --auto --merge
   success:
     runs-on: ubuntu-26.04
     needs:
