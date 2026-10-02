@@ -16,6 +16,7 @@ import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.exception.error.DomainError
@@ -79,7 +80,7 @@ class DynamicLoader(
                 throw TypeError.forGoal(
                     request.context,
                     request.signature,
-                    TypeError.Expected.LIST,
+                    TypeError.Expected.ATOM,
                     lib,
                 )
             }
@@ -100,7 +101,13 @@ class DynamicLoader(
             return sequence {
                 yieldAll(
                     solver.solve(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
-                        request.replyWith(it.substitution)
+                        when (it) {
+                            // Halt carries a failed substitution, so replying with it would turn an
+                            // error inside the module into an ordinary failure: indistinguishable
+                            // from a goal that simply does not hold.
+                            is Solution.Halt -> throw it.exception
+                            else -> request.replyWith(it.substitution)
+                        }
                     },
                 )
             }

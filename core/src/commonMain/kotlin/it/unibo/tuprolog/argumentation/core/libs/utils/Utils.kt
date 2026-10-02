@@ -237,7 +237,7 @@ object ContainsAny : Primitive {
                 request.context,
                 request.signature,
                 TypeError.Expected.LIST,
-                list,
+                elemList,
             )
         }
 
