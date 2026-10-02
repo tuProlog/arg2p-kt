@@ -4,7 +4,7 @@
     ":rebaseStalePrs",
     ":semanticCommits"
   ],
-  "baseBranches": [
+  "baseBranchPatterns": [
     "develop",
     "master"
   ],
