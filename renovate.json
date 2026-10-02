@@ -5,7 +5,6 @@
     ":semanticCommits"
   ],
   "baseBranchPatterns": [
-    "develop",
     "master"
   ],
   "packageRules": [
