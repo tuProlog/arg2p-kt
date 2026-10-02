@@ -1,3 +1,31 @@
+## [0.16.5](https://github.com/tuProlog/arg2p-kt/compare/0.16.4...0.16.5) (2026-10-01)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 4074906 ([#456](https://github.com/tuProlog/arg2p-kt/issues/456)) ([779fcad](https://github.com/tuProlog/arg2p-kt/commit/779fcadd2f390ad6bf03442b2cc8732b6b5e8287))
+* **deps:** update gradle to v9.8.0 ([d8db417](https://github.com/tuProlog/arg2p-kt/commit/d8db417dd440ac9777e526a44542cca13c4b090b))
+* **deps:** update ktmpp to v6 ([c02f88b](https://github.com/tuProlog/arg2p-kt/commit/c02f88b8875d247fcfad77fc7e333b72317bba5e))
+* **deps:** update plugin com.gradle.develocity to v4.6.0 ([39f45e8](https://github.com/tuProlog/arg2p-kt/commit/39f45e80bd2678a78c3a7f00883498fb881c8353))
+* **deps:** update plugin com.gradle.develocity to v4.6.0 ([#475](https://github.com/tuProlog/arg2p-kt/issues/475)) ([e9ced7c](https://github.com/tuProlog/arg2p-kt/commit/e9ced7c9058760df168af2de7bf47476c9bdcd93))
+* **deps:** update plugin org.danilopianini.gradle-pre-commit-git-hooks to v2.1.25 ([df89976](https://github.com/tuProlog/arg2p-kt/commit/df89976f959e23e2890a82893e82a7b0497788fd))
+
+### Bug Fixes
+
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.22.3 ([7cf6b76](https://github.com/tuProlog/arg2p-kt/commit/7cf6b765787a9ff60b39ee467fd601e4d7c27e82))
+* **deps:** update dependency it.unibo.tuprolog:solve-classic to v2.0.9 ([ed2ea23](https://github.com/tuProlog/arg2p-kt/commit/ed2ea239d3740f4dbc28d4a4022f557b9bf9bcd4))
+* **deps:** update kotlin monorepo to v2.4.20 ([f1d4db8](https://github.com/tuProlog/arg2p-kt/commit/f1d4db8724b462a0f1c9e9909257c5d99523ebb0))
+* **deps:** update logback monorepo to v1.6.5 ([00cb7f0](https://github.com/tuProlog/arg2p-kt/commit/00cb7f04cb5ee9217738dcd80d52e7cf48b70b67))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.48 ([fc977e0](https://github.com/tuProlog/arg2p-kt/commit/fc977e070df4857b27e95791d0b55dc372ca91cb))
+* **deps:** update dependency ubuntu to v26 ([bc23daa](https://github.com/tuProlog/arg2p-kt/commit/bc23daa69c3bd5b1c192417f6b52c94920f17b80))
+
+### General maintenance
+
+* merge master into develop ([3c72654](https://github.com/tuProlog/arg2p-kt/commit/3c726547bd4faa408ac01042e775bb95380846a1)), closes [#475](https://github.com/tuProlog/arg2p-kt/issues/475)
+* **renovate:** target both develop and master ([eff5a03](https://github.com/tuProlog/arg2p-kt/commit/eff5a031c87378f6590d72b40098c26a05a85976))
+
 ## [0.16.4](https://github.com/tuProlog/arg2p-kt/compare/0.16.3...0.16.4) (2026-09-16)
 
 ### Bug Fixes
