@@ -6,10 +6,8 @@ on:
     paths-ignore:
       - '.gitignore'
       - '.mergify.yml'
-      - 'CHANGELOG.md'
       - 'LICENSE'
       - 'README.md'
-      - 'renovate.json'
   pull_request:
   workflow_dispatch:
 
