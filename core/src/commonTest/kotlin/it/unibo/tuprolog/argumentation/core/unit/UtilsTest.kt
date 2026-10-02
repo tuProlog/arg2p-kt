@@ -98,4 +98,22 @@ class UtilsTest {
             }
         }
     }
+
+    // An error raised inside a module call must reach the caller: it used to be collapsed into a
+    // plain failure, which made a broken call indistinguishable from one that simply did not hold.
+    // The culprit is the offending argument, i.e. the first one, not the well-formed list.
+    @Test
+    fun errorsRaisedInsideAModuleCallReachTheCaller() {
+        arg2pScope {
+            testGoal(
+                "catch"(
+                    "utils" call "contains_any"("notAList", listOf("a")),
+                    "error"("type_error"("list", "Culprit"), "_"),
+                    "true",
+                ),
+            ) {
+                listOf(it.yes("Culprit" to "notAList"))
+            }
+        }
+    }
 }
