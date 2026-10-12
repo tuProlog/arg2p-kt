@@ -9,7 +9,7 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Ignore
@@ -1791,7 +1791,7 @@ class LawCaseStudyTest {
         val prepare = { theory: String ->
             arg2pScope {
                 Arg2pSolver.default().let { arg2pSolver ->
-                    ClassicSolverFactory
+                    PrologSolverFactory
                         .mutableSolverWithDefaultBuiltins(
                             otherLibraries = arg2pSolver.to2pLibraries().plus(FlagsBuilder().create().content()),
                             staticKb = Theory.parse(theory, arg2pSolver.operators()),

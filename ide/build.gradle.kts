@@ -36,7 +36,7 @@ dependencies {
 
     implementation(libs.tuprolog.ide.swing)
     implementation(libs.tuprolog.dsl.solve)
-    implementation(libs.tuprolog.solve.classic)
+    implementation(libs.tuprolog.solve.prolog)
 
     implementation(project(":core"))
     implementation(project(":actor-solver"))

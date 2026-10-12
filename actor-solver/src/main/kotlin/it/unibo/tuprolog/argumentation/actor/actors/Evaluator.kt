@@ -19,10 +19,10 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import kotlin.random.Random
 
 class Evaluator private constructor(
@@ -146,7 +146,7 @@ class Evaluator private constructor(
             }.build()
 
     private val solver =
-        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries =
                 Arg2pSolver
                     .default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
