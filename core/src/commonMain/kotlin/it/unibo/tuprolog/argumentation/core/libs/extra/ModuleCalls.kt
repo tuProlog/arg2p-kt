@@ -14,7 +14,6 @@ import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
@@ -22,6 +21,7 @@ import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
@@ -94,7 +94,7 @@ object ModuleCall : Primitive {
 
     private fun mineModulesPath(context: ExecutionContext): String =
         logicProgramming {
-            ClassicSolverFactory
+            PrologSolverFactory
                 .solverOf(libraries = context.libraries)
                 .solve("modulesPath"(X))
                 .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
