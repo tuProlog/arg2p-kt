@@ -7,10 +7,10 @@ import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
@@ -21,7 +21,7 @@ object Arg2pSolverFactory {
         staticLibs: Iterable<ArgLibrary>,
         dynamicLibs: Iterable<ArgLibrary>,
     ) = Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs).let {
-        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = it.to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.parse(theory, it.operators()),
@@ -34,7 +34,7 @@ object Arg2pSolverFactory {
         staticLibs: Iterable<ArgLibrary> = emptyList(),
         dynamicLibs: Iterable<ArgLibrary> = emptyList(),
     ) = Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs).let {
-        ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = it.to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.parse(theory, it.operators()),

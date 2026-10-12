@@ -9,10 +9,10 @@ import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.channel.OutputChannel
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
@@ -143,16 +143,16 @@ object JsBridge {
         val flags = Theory.parse(flagsText)
         val libFlags = Library.of(alias = "argumentation.flags", clauses = flags)
 
-        return ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+        return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries =
-                ClassicSolverFactory.defaultRuntime.plus(
+                PrologSolverFactory.defaultRuntime.plus(
                     Arg2pSolver
                         .default(
                             dynamicLibs = listOf(CausalitySolver()),
                         ).to2pLibraries()
                         .plus(libFlags),
                 ),
-            flags = ClassicSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+            flags = PrologSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.empty(),
             stdOut = OutputChannel.of(outputConsumer),
             stdErr = OutputChannel.of { _ -> },

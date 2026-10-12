@@ -5,7 +5,7 @@ node = "24-latest"
 ktMpp = "6.0.4"
 semVer = "7.0.24"
 akka = "2.8.8"
-tuprolog = "2.0.9"
+tuprolog = "3.0.1"
 jung = "2.1.1"
 
 [plugins]
@@ -36,7 +36,7 @@ jung-io = { module = "net.sf.jung:jung-io", version.ref = "jung" }
 
 tuprolog-ide-swing = { module = "it.unibo.tuprolog:ide-swing", version.ref = "tuprolog" }
 tuprolog-dsl-solve = { module = "it.unibo.tuprolog:dsl-solve", version.ref = "tuprolog" }
-tuprolog-solve-classic = { module = "it.unibo.tuprolog:solve-classic", version.ref = "tuprolog" }
+tuprolog-solve-prolog = { module = "it.unibo.tuprolog:solve-prolog", version.ref = "tuprolog" }
 tuprolog-parser-theory = { module = "it.unibo.tuprolog:parser-theory", version.ref = "tuprolog" }
 tuprolog-io-lib = { module = "it.unibo.tuprolog:io-lib", version.ref = "tuprolog" }
 tuprolog-test-solve = { module = "it.unibo.tuprolog:test-solve", version.ref = "tuprolog" }

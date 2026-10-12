@@ -27,7 +27,7 @@ context, so a query such as `arg2p::solve` has to succeed first.
 
 **Symptom.** Queries fail where they should succeed, or variables come back unbound.
 
-A solver assembled directly with `ClassicSolverFactory` needs two flags:
+A solver assembled directly with `PrologSolverFactory` needs two flags:
 
 ```kotlin
 flags = FlagStore.DEFAULT
