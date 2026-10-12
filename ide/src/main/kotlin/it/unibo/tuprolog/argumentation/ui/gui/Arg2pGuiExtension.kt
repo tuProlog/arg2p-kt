@@ -7,10 +7,10 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.ui.gui.extension.GuiContributions
 import it.unibo.tuprolog.ui.gui.extension.GuiExtension
 import it.unibo.tuprolog.ui.gui.identity.ExtensionId
@@ -81,7 +81,7 @@ internal class Arg2pLibraries(
     fun current(): List<Library> = arg2p.to2pLibraries().libraries.toList() + flags.toLibrary()
 
     fun newSolver(): MutableSolver =
-        ClassicSolverFactory.mutableSolverOf(libraries = Runtime.of(current())).also {
+        PrologSolverFactory.mutableSolverOf(libraries = Runtime.of(current())).also {
             it.setFlag(Unknown.name, Unknown.FAIL)
         }
 
@@ -97,7 +97,7 @@ internal class Arg2pGuiExtension(
 
     val profile: SolverProfile =
         solverFactoryProfile(
-            factory = ClassicSolverFactory,
+            factory = PrologSolverFactory,
             id = Arg2pGuiIds.PROFILE,
             displayName = "Arg2p",
             solutionFeatures = ::solutionFeatures,

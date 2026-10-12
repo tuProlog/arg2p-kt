@@ -108,9 +108,9 @@ produces the same names.
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 
-val solver = ClassicSolverFactory.solverWithDefaultBuiltins(
+val solver = PrologSolverFactory.solverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.default().to2pLibraries(),
 )
 ```
@@ -138,7 +138,7 @@ val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
 > `TrackVariables` to `ON`:
 >
 > ```kotlin
-> ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+> PrologSolverFactory.mutableSolverWithDefaultBuiltins(
 >     otherLibraries = Arg2pSolver.default().to2pLibraries(),
 >     flags = FlagStore.DEFAULT
 >         .set(Unknown, Unknown.FAIL)
@@ -155,7 +155,7 @@ A hand-built solver has no flags. Add them as a library:
 
 ```kotlin
 val settings = FlagsBuilder().create()
-val solver = ClassicSolverFactory.mutableSolverWithDefaultBuiltins(
+val solver = PrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.content(),
     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
 )

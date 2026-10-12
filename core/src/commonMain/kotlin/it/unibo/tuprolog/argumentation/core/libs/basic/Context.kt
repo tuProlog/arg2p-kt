@@ -11,10 +11,10 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.classic.ClassicSolverFactory
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -27,7 +27,7 @@ class Context :
     private val dynamicSolver: MutableMap<Int, MutableSolver> =
         mutableMapOf(
             0 to
-                ClassicSolverFactory
+                PrologSolverFactory
                     .mutableSolverWithDefaultBuiltins(
                         staticKb = Theory.empty(),
                         dynamicKb = MutableTheory.empty(Unificator.default),
@@ -42,7 +42,7 @@ class Context :
             this@Context.nextSolver = 1
             this@Context.dynamicSolver.clear()
             this@Context.dynamicSolver[0] =
-                ClassicSolverFactory
+                PrologSolverFactory
                     .mutableSolverWithDefaultBuiltins(
                         staticKb = Theory.empty(),
                         dynamicKb = MutableTheory.empty(Unificator.default),
@@ -86,7 +86,7 @@ class Context :
                     .toInt()
             val result: Term = request.arguments[1]
             this@Context.dynamicSolver[this@Context.nextSolver] =
-                ClassicSolverFactory
+                PrologSolverFactory
                     .mutableSolverWithDefaultBuiltins(
                         staticKb = Theory.empty(),
                         dynamicKb =
