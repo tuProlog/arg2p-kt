@@ -1,3 +1,13 @@
+## [0.17.0](https://github.com/tuProlog/arg2p-kt/compare/0.16.8...0.17.0) (2026-10-13)
+
+### Features
+
+* **bridge:** explore the context stages from JS ([c856a19](https://github.com/tuProlog/arg2p-kt/commit/c856a19d70c910b2c002ab7e7cbfe2440dc94cad))
+
+### Performance improvements
+
+* **bridge:** use the arg2p unificator in the JS bridge ([95eaad3](https://github.com/tuProlog/arg2p-kt/commit/95eaad3ab8e54d18ab1eff47cf140f01599f352f))
+
 ## [0.16.8](https://github.com/tuProlog/arg2p-kt/compare/0.16.7...0.16.8) (2026-10-13)
 
 ### Dependency updates
