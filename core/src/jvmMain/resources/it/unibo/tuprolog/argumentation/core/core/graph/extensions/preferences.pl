@@ -25,8 +25,20 @@ standardPreferences(contrary_rebut, _, _) :- !.
 standardPreferences(contrary_undermine, _, _) :- !.
 standardPreferences(undercut, _, _) :- !.
 standardPreferences(_, IdA, IdC) :-
-    context_check(argInfo(IdA, InfoA)),
-    context_check(argInfo(IdC, InfoC)),
-    superiority::superiorArgument([_, _, _, _, InfoC], [_, _, _, _, InfoA]), !,
+    context_check(argInfo(IdA, InfoIdA, InfoA)),
+    context_check(argInfo(IdC, InfoIdC, InfoC)),
+    superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA), !,
     fail.
 standardPreferences(_, _, _).
+
+% Superiority only depends on the rules and premises of the arguments (Info), shared by many of them: it is
+% buffered by their identifiers, so that each pair is compared once
+superiorInfo(InfoIdC, _, InfoIdA, _) :-
+    context_check(infoSuperior(InfoIdC, InfoIdA, Result)), !,
+    Result == yes.
+superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA) :-
+    superiority::superiorArgument([_, _, _, _, InfoC], [_, _, _, _, InfoA]), !,
+    context_assert(infoSuperior(InfoIdC, InfoIdA, yes)).
+superiorInfo(InfoIdC, _, InfoIdA, _) :-
+    context_assert(infoSuperior(InfoIdC, InfoIdA, no)),
+    fail.

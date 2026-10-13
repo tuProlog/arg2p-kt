@@ -143,7 +143,8 @@ saveArgument(T, Conclusion, Argument) :-
     context_assert(conc(Conclusion) :- argument(Argument)),
     context_assert(arg(Id) :- argument(Argument)),
     Argument = [_, _, _, _, Info],
-    context_assert(argInfo(Id, Info)).
+    context_id(info(Info), InfoId),
+    context_assert(argInfo(Id, InfoId, Info)).
 
 saveSupports(_, []).
 saveSupports(A, [B|T]) :-

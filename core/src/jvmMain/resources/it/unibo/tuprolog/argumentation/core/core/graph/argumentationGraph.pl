@@ -117,18 +117,8 @@ invert(b, a).
 
 % Argument Info
 
-% A strict rule leaves the defeasible rules as they are, a defeasible one is added to them and becomes the
-% only last defeasible rule. The results are bound after the head: repeating a variable in the head would make
-% each call compare the lists structurally.
-defRules(Id, LDef, Def, NLDef, NDef) :- parser::check_strict(Id), !, NLDef = LDef, NDef = Def.
-defRules(Id, _, Def, NLDef, NDef) :- Id \== none, NLDef = [Id], NDef = [Id|Def].
-
-argumentInfo(RuleId, LDef, Def, Prem, Info) :-
-    utils::sortDistinct(Prem, FPrem),
-    defRules(RuleId, LDef, Def, NLDef, NDef),
-    utils::sortDistinct(NDef, FDef),
-    utils::sortDistinct(NLDef, FLDef),
-    Info = [FLDef, FDef, FPrem].
+ruleStrictness(Id, strict) :- parser::check_strict(Id), !.
+ruleStrictness(_, defeasible).
 
 % Argument Support
 
@@ -138,14 +128,8 @@ argumentInfo(RuleId, LDef, Def, Prem, Info) :-
 % against every clause is what makes this predicate expensive.
 ruleBodyIsSupported([], Rule, Acc, Argument) :-
     Rule = rule(RuleID, RuleHead, RuleBody),
-    Acc = [TAll, TLDef, TDef, TPrem],
-    utils::appendLists(TAll, All),
-    \+ utils::contains(RuleID, All),
-    utils::appendLists(TLDef, LDef),
-    utils::appendLists(TDef, Def),
-    utils::appendLists(TPrem, Prem),
-    argumentInfo(RuleID, LDef, Def, Prem, Info),
-    utils::sort([RuleID|All], Rules),
+    ruleStrictness(RuleID, Strict),
+    utils::argument_rules(RuleID, Strict, Acc, Rules, Info),
     Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
     context_absent(clause(conc(RuleHead), argument(Argument))).
 ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
@@ -168,7 +152,8 @@ buildAttacks :-
 	findall(_, buildDirectAttack, _).
 
 % Besides the graph itself (argument/1, support/2, attack/4), the context keeps a compact copy of it, by
-% argument identifier (see context_id): argInfo(Id, Info), supportId(IdA, IdB), attackId(T, IdA, IdB, IdC).
+% argument identifier (see context_id): argInfo(Id, InfoId, Info), supportId(IdA, IdB), attackId(T, IdA, IdB, IdC).
+% InfoId identifies the rules and premises of an argument (Info), which is what preferences depend on.
 % Loops over the graph go through the compact copy, so that resolution steps carry integers rather than
 % whole arguments, which are copied and visited at almost every step.
 
@@ -221,7 +206,8 @@ saveArgument(T, Conclusion, Argument) :-
     context_assert(conc(Conclusion) :- argument(Argument)),
     context_assert(arg(Id) :- argument(Argument)),
     Argument = [_, _, _, _, Info],
-    context_assert(argInfo(Id, Info)).
+    context_id(info(Info), InfoId),
+    context_assert(argInfo(Id, InfoId, Info)).
 
 saveAttack(T, A, C, D) :-
     context_id(argument(A), IdA),

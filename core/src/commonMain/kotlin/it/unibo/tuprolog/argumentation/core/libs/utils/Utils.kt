@@ -6,10 +6,12 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermComparator
+import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -36,6 +38,7 @@ abstract class UtilsBase :
                     mapOf(
                         AppendOptimized.signature to AppendOptimized,
                         AppendLists.signature to AppendLists,
+                        ArgumentRules.signature to ArgumentRules,
                         AssertAll.signature to AssertAll,
                         Contains.signature to Contains,
                         ContainsAny.signature to ContainsAny,
@@ -200,6 +203,69 @@ object SortDistinct : BinaryRelation.WithoutSideEffects<ExecutionContext>("sortD
         first: Term,
         second: Term,
     ): Sequence<Substitution> = if (first is List) unifyWith(second, List.of(first.distinctSortedTerms().asReversed())) else emptySequence()
+}
+
+/**
+ * argument_rules(+RuleId, +Strict, +[Rules, LastDefRules, DefRules, DefPremises], ?SortedRules, ?Info): the rules and
+ * the info of an argument built from RuleId on top of some sub-arguments, given the lists of their rules, last
+ * defeasible rules, defeasible rules and defeasible premises; Strict tells whether RuleId is strict (strict) or not.
+ * Fails if RuleId already occurs among the rules of the sub-arguments, or if it is none and not strict.
+ * SortedRules: RuleId and the rules, as sort/2. Info: [LastDefRules, DefRules, DefPremises], each as sortDistinct/2.
+ */
+object ArgumentRules : Primitive {
+    val signature: Signature = Signature("argument_rules", 5)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val ruleId = request.arguments[0]
+        val strict = request.arguments[1].let { it is Atom && it.value == "strict" }
+        val parts = request.arguments[2].let { it as? List }?.toList()
+        if (parts == null || parts.size != 4) {
+            throw TypeError.forGoal(request.context, request.signature, TypeError.Expected.LIST, request.arguments[2])
+        }
+        val (all, lastDef, def, premises) =
+            parts.map { lists ->
+                (lists as? List ?: throw TypeError.forGoal(request.context, request.signature, TypeError.Expected.LIST, lists))
+                    .toList()
+                    .flatMap {
+                        (
+                            it as? List ?: throw TypeError.forGoal(
+                                request.context,
+                                request.signature,
+                                TypeError.Expected.LIST,
+                                it,
+                            )
+                        ).toList()
+                    }
+            }
+        if (all.any { Unificator.default.match(it, ruleId) }) return emptySequence()
+        val (newLastDef, newDef) =
+            when {
+                strict -> lastDef to def
+                ruleId is Atom && ruleId.value == "none" -> return emptySequence()
+                else -> listOf(ruleId) to listOf(ruleId) + def
+            }
+        val info =
+            List.of(
+                List
+                    .of(newLastDef)
+                    .distinctSortedTerms()
+                    .asReversed()
+                    .let { List.of(it) },
+                List
+                    .of(newDef)
+                    .distinctSortedTerms()
+                    .asReversed()
+                    .let { List.of(it) },
+                List
+                    .of(premises)
+                    .distinctSortedTerms()
+                    .asReversed()
+                    .let { List.of(it) },
+            )
+        val rules = List.of(List.of(listOf(ruleId) + all).sortedTerms().asReversed())
+        val unifier = Unificator.default.mgu(Tuple.of(request.arguments[3], request.arguments[4]), Tuple.of(rules, info))
+        return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
+    }
 }
 
 object Contains : Primitive {
