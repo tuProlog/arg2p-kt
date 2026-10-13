@@ -29,8 +29,8 @@ finalize(_, _).
 
 argument_to_evaluate(X, IdX) :-
     context_check(clause(arg(IdX), argument(X))),
-    \+ context_check(outId(IdX)),
-    \+ context_check(inId(IdX)).
+    context_absent(outId(IdX)),
+    context_absent(inId(IdX)).
 
 % If an attack exists, it should come from an OUT argument
 

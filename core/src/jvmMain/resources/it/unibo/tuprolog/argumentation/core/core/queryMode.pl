@@ -37,32 +37,10 @@ mineResults(Goal, Result) :-
 % ARGUMENT CONSTRUCTION
 %==============================================================================
 
-ground_vars(Term, Grounded) :-
-    copy_term(Term, Copy),
-    ground_vars(Copy, Grounded, 0, _).
-
-ground_vars(Var, var, N0, N) :-
-    var(Var), !,
-    N is N0 + 1.
-
-ground_vars(Term, Grounded, N0, N) :-
-    compound(Term), !,
-    Term =.. [F|Args],
-    ground_vars_list(Args, GArgs, N0, N),
-    Grounded =.. [F|GArgs].
-
-ground_vars(Term, Term, N, N) :-
-    atomic(Term).
-
-ground_vars_list([], [], N, N).
-ground_vars_list([X|Xs], [GX|GXs], N0, N) :-
-    ground_vars(X, GX, N0, N1),
-    ground_vars_list(Xs, GXs, N1, N).
-
 buildSubGraph(Query, Argument) :-
     % write("Calling on "),write(Query),nl,
     ground_vars(Query, Normalized),
-    \+ context_check(explored(Normalized)),
+    context_absent(explored(Normalized)),
     findall(_, (
         findSingleArgument([Query], Argument, Support),
         saveArgument(query, [Query], Argument),
@@ -76,51 +54,58 @@ buildSubGraph(Query, Argument) :- context_check(clause(conc([Query]), argument(A
 
 
 findSingleArgument(Query, Argument, Support) :-
-    findArgument(Query, [], Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises], Support),
+    findArgument(Query, [], found(Groundings, [AllRules, TopRule, LastDefRules, DefRules, DefPremises], Support)),
     utils::deduplicate(DefRules, CDefRules),
     utils::deduplicate(DefPremises, CDefPremises),
     utils::deduplicate(Groundings, CGroundings),
     Argument = [AllRules, TopRule, Query, CGroundings, [LastDefRules, CDefRules, CDefPremises]].
 
+% findArgument(Conclusion, Ids, found(Groundings, Rules, Support)) and
+% findPremises(Premises, Ids, premises(Groundings, Rules, Support)): the results are packed in a single term,
+% built in the clause bodies, so that clause heads only match the conclusion or the premises (matching many
+% arguments against every clause head is what makes resolution expensive)
+
 % Premise
 
-findArgument(Conclusion, _, [], [AllRules, TopRule, LastDefRules, DefRules, DefPremises], []) :-
+findArgument(Conclusion, _, Found) :-
     parser::premise(Id, Conclusion),
-    premiseRules(Id, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]).
+    premiseRules(Id, Rules),
+    Found = found([], Rules, []).
 
 % Rule
 
-findArgument(Conclusion, Ids, Conclusions, [AllRules, TopRule, LastDefRules, DefRules, DefPremises], Support) :-
+findArgument(Conclusion, Ids, Found) :-
     parser::rule(Id, Premises, Conclusion),
     %\+ member(Id, Ids),
-    findPremises(Premises, [Id|Ids], Conclusions, ResRules, Support),
-    % write("premises ok"),nl,
-    ruleRules(Id, ResRules, [AllRules, TopRule, LastDefRules, DefRules, DefPremises]).
+    findPremises(Premises, [Id|Ids], premises(Conclusions, ResRules, Support)),
+    ruleRules(Id, ResRules, Rules),
+    Found = found(Conclusions, Rules, Support).
 
-findPremises([], _, [], [[], [], [], []], []).
-findPremises([H|T], Ids, TConclusions, TRules, TSupport) :-
-    % write("Prolog: "),write(H),nl,
+findPremises([], _, Found) :-
+    Found = premises([], [[], [], [], []], []).
+findPremises([H|T], Ids, Found) :-
     parser::prolog([H], Term), !,
-    % write("It was prolog!"),nl,
-    findPremises(T, Ids, TConclusions, TRules, TSupport),
+    findPremises(T, Ids, Found),
     (callable(Term) -> call(Term); Term).
-findPremises([H|T], Ids, [H|TConclusions], TRules, TSupport) :-
+findPremises([H|T], Ids, Found) :-
     parser::contrary([H], _), !,
-    findPremises(T, Ids, TConclusions, TRules, TSupport).
-findPremises([H|T], Ids, [PP|TConclusions], Rules, [[AllRules, P, [PP], HConclusions, [LastDefRules, DefRules, DefPremises]]|TSupport]) :-
-    findPremises(T, Ids, TConclusions, TRules, TSupport),
-    buildSubGraph(H, [AllRules, P, [PP], HConclusions, [LastDefRules, DefRules, DefPremises]]),
-    % write("Premise ok"),nl,
-    % utils::appendLists([HConclusions, TConclusions], Conclusions),
-    mergeRules([AllRules, [], LastDefRules, DefRules, DefPremises], TRules, Rules).
+    findPremises(T, Ids, premises(TConclusions, TRules, TSupport)),
+    Found = premises([H|TConclusions], TRules, TSupport).
+findPremises([H|T], Ids, Found) :-
+    findPremises(T, Ids, premises(TConclusions, TRules, TSupport)),
+    Sub = [AllRules, _, [PP], _, [LastDefRules, DefRules, DefPremises]],
+    buildSubGraph(H, Sub),
+    mergeRules([AllRules, [], LastDefRules, DefRules, DefPremises], TRules, Rules),
+    Found = premises([PP|TConclusions], Rules, [Sub|TSupport]).
 
-premiseRules(Id, [[Id], none, [], [], [Id]]) :- \+ parser::check_strict(Id), !.
-premiseRules(Id, [[Id], none, [], [], []]) :- parser::check_strict(Id).
+premiseRules(Id, Rules) :- parser::check_strict(Id), !, Rules = [[Id], none, [], [], []].
+premiseRules(Id, [[Id], none, [], [], [Id]]).
 
-ruleRules(Id, [AllRules, _, DefRules, DefPremises],
-    [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]) :- \+ parser::check_strict(Id), !.
-ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises],
-    [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises]) :- parser::check_strict(Id).
+% A single check_strict call: the second clause is only reached for defeasible rules
+ruleRules(Id, [AllRules, LastDefRules, DefRules, DefPremises], Rules) :-
+    parser::check_strict(Id), !,
+    Rules = [[Id|AllRules], Id, LastDefRules, DefRules, DefPremises].
+ruleRules(Id, [AllRules, _, DefRules, DefPremises], [[Id|AllRules], Id, [Id], [Id|DefRules], DefPremises]).
 
 mergeRules([], [AllRules, LastDefRules, DefRules, DefPremises], [AllRules, LastDefRules, DefRules, DefPremises]) :- !.
 mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :-
@@ -134,14 +119,17 @@ mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :
 %--------------------------------------------------------------------------
 
 saveArgument(T, Conclusion, Argument) :-
-    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    context_absent(clause(conc(Conclusion), argument(Argument))),
     % write("Saving Argument: "),
     % write(Argument),nl,
     context_assert(newConc(T, Conclusion)),
-    utils::hash(argument(Argument), Id),
+    context_id(argument(Argument), Id),
     context_assert(argument(Argument)),
     context_assert(conc(Conclusion) :- argument(Argument)),
-    context_assert(arg(Id) :- argument(Argument)).
+    context_assert(arg(Id) :- argument(Argument)),
+    Argument = [_, _, _, _, Info],
+    context_id(info(Info), InfoId),
+    context_assert(argInfo(Id, InfoId, Info)).
 
 saveSupports(_, []).
 saveSupports(A, [B|T]) :-
@@ -149,10 +137,13 @@ saveSupports(A, [B|T]) :-
     saveSupports(A, T).
 
 saveSupport(A, B) :-
-    \+ context_check(support(A, B)),
+    context_absent(support(A, B)),
     % write("Saving Support: "),
     % write(A),write(" -> "),write(B),nl,
-    context_assert(support(A, B)).
+    context_assert(support(A, B)),
+    context_id(argument(A), IdA),
+    context_id(argument(B), IdB),
+    context_assert(supportId(IdA, IdB)).
 
 
 %==============================================================================
@@ -209,9 +200,9 @@ defend(Argument, QueryChain, und) :-
 
 defend(Argument, QueryChain, yes) :- bufferResult(Argument, yes).
 
-bufferResult(Argument, no) :- \+ context_check(out(Argument)), context_assert(out(Argument)), !.
-bufferResult(Argument, yes) :- \+ context_check(in(Argument)), context_assert(in(Argument)), !.
-bufferResult(Argument, und) :- \+ context_check(und(Argument)), context_assert(und(Argument)), !.
+bufferResult(Argument, no) :- context_absent(out(Argument)), context_assert(out(Argument)), !.
+bufferResult(Argument, yes) :- context_absent(in(Argument)), context_assert(in(Argument)), !.
+bufferResult(Argument, und) :- context_absent(und(Argument)), context_assert(und(Argument)), !.
 bufferResult(_, _).
 
 
@@ -225,8 +216,12 @@ findAttacker(Target, QueryChain, Attacker, IsValid) :-
     detectCycle(Attacker, QueryChain, IsValid).
 
 bufferAttacker(Attacker, Target, Type) :-
-    \+ context_check(attack(Type, Attacker, Target, none)),
-    context_assert(attack(Type, Attacker, Target, none)), !.
+    context_absent(attack(Type, Attacker, Target, none)),
+    context_assert(attack(Type, Attacker, Target, none)),
+    context_id(argument(Attacker), IdAttacker),
+    context_id(argument(Target), IdTarget),
+    context_id(argument(none), IdNone),
+    context_assert(attackId(Type, IdAttacker, IdTarget, IdNone)), !.
 bufferAttacker(_, _, _).
 
 detectCycle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).
@@ -306,7 +301,7 @@ contained([H|T], Target) :- member(H, Target), contained(T, Target).
 %==============================================================================
 
 buildArgument(Query, Argument) :-
-    \+ context_check(explored(Query)),
+    context_absent(explored(Query)),
     findall(_, (
         buildSingleArgument([Query], Argument),
         context_assert(argument(Argument))

@@ -36,11 +36,6 @@ subtract([Head|Tail1], L2, [Head|Tail3]) :-
 isEmptyList([]).
 
 
-appendLists([], []).
-appendLists([H|T], R) :-
-    appendLists(T, AT),
-    append_fast(H, AT, R).
-
 % Misc utils
 
 

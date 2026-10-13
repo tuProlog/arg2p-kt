@@ -1,21 +1,22 @@
-superiorArgument(A, B) :- superiorArgumentSupportBuffered(A, B, _).
-superiorArgument(A, B, SupSet) :- superiorArgumentSupportBuffered(A, B, SupSet).
+superiorArgument(A, B) :- superiorArgument(A, B, _).
+superiorArgument([_, _, _, _, InfoA], [_, _, _, _, InfoB], SupSet) :- superiorInfoBuffered(InfoA, InfoB, SupSet).
 
-% Superiority only depends on the defeasible rules and premises of the arguments,
-% so results are buffered by those (much smaller and more often shared than whole arguments)
-superiorArgumentSupportBuffered([_, _, _, _, InfoA], [_, _, _, _, InfoB], _) :-
+% Superiority only depends on the defeasible rules and premises of the arguments, so it is computed (and
+% buffered) on those: they are much smaller and more often shared than whole arguments, and matching whole
+% arguments against the heads of every clause below would be expensive.
+superiorInfoBuffered(InfoA, InfoB, _) :-
     context_check(superior(InfoA, InfoB, _, false)), !,
     fail.
-superiorArgumentSupportBuffered([_, _, _, _, InfoA], [_, _, _, _, InfoB], SupSet) :-
+superiorInfoBuffered(InfoA, InfoB, SupSet) :-
     context_check(superior(InfoA, InfoB, SupSet, true)), !.
-superiorArgumentSupportBuffered([R, T, C, B, InfoA], [RB, TB, CB, BB, InfoB], SupSet) :-
-    superiorArgumentSupport([R, T, C, B, InfoA], [RB, TB, CB, BB, InfoB], SupSet), !,
+superiorInfoBuffered(InfoA, InfoB, SupSet) :-
+    superiorInfo(InfoA, InfoB, SupSet), !,
     context_assert(superior(InfoA, InfoB, SupSet, true)).
-superiorArgumentSupportBuffered([_, _, _, _, InfoA], [_, _, _, _, InfoB], _) :-
+superiorInfoBuffered(InfoA, InfoB, _) :-
     context_assert(superior(InfoA, InfoB, [], false)),
     fail.
 
-superiorArgumentSupport([_, _, _, _, [LastDefRulesA, DefRulesA, DefPremisesA]], [_, _, _, _, [LastDefRulesB, DefRulesB, DefPremisesB]], SupSet) :-
+superiorInfo([LastDefRulesA, DefRulesA, DefPremisesA], [LastDefRulesB, DefRulesB, DefPremisesB], SupSet) :-
 	superiorArgumentSupport(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
 
 superiorArgumentSupport(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-

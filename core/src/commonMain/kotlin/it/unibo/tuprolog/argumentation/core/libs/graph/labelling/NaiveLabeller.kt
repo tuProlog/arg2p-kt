@@ -45,7 +45,8 @@ object NaiveLabeller :
         maximalConflictFreeSet :-
             \+ (
                 context_check(clause(arg(IdX), _)),
-                \+ context_check(inId(IdX)),
+                context_absent(inId(IdX)),
+                context_absent(clause(att(IdX, IdX), _)),
                 \+ (
                     (context_check(clause(att(IdX, IdY), _));context_check(clause(att(IdY, IdX), _))),
                     context_check(inId(IdY))

@@ -37,20 +37,33 @@ object Cf2Labeller :
         
         compute(Base) :-
             findall(A, context_check(clause(arg(A), _)), Args),
-            computeScc(Args, Scc),
             context_active(Branch),
             context_branch(Branch, NewBranch),
             context_retract(arg(_) :- argument(_)),
-            computeIteratively(Base, Branch, Scc).
-        
-        computeIteratively(_, _, []).
-        computeIteratively(Base, OriginBranch, Scc) :-
-            once(getNext(Scc, Next, Others)),
+            computeIteratively(Base, Branch, Args, []).
+
+        % Args still to be evaluated, Suppressed already attacked by the extension (moved with the next step)
+        computeIteratively(_, _, [], []).
+        computeIteratively(Base, OriginBranch, [], [S|Suppressed]) :-
+            evaluate(Base, OriginBranch, [S|Suppressed]).
+        computeIteratively(Base, OriginBranch, [A|Args], Suppressed) :-
+            computeScc([A|Args], Scc),
+            once(getNext(Scc, Next, _)),
+            utils::appendLists([Suppressed, Next], ToEvaluate),
+            evaluate(Base, OriginBranch, ToEvaluate),
+            utils::subtract([A|Args], Next, Others),
+            findall(X, (
+                member(X, Others),
+                once((context_check(clause(att(Y, X), _)), context_check(inId(Y))))
+            ), NewSuppressed),
+            utils::subtract(Others, NewSuppressed, Remaining),
+            computeIteratively(Base, OriginBranch, Remaining, NewSuppressed).
+
+        evaluate(Base, OriginBranch, Args) :-
             context_active(Branch),
             context_branch(Branch, NewBranch),
-            moveArgs(Next, OriginBranch),
-            Base::argumentLabelling,
-            computeIteratively(Base, OriginBranch, Others).
+            moveArgs(Args, OriginBranch),
+            Base::argumentLabelling.
         
         getNext(Scc, X, Others) :-
             member(X, Scc),

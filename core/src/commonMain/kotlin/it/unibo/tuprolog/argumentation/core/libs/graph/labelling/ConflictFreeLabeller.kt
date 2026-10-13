@@ -42,7 +42,8 @@ object ConflictFreeLabeller :
             conflictFreeSet(TentativeSet),
             context_branch(Branch, _),
             findall(_, (
-                member(IdA, TentativeSet),    
+                member(IdA, TentativeSet),
+                context_absent(inId(IdA)),
                 context_check(clause(arg(IdA), argument(A))),
                 context_assert(in(A)),
                 context_assert(inId(IdA))
@@ -51,7 +52,7 @@ object ConflictFreeLabeller :
         
         combinations(_, [], []).
         combinations(Branch, [H|T], [H|RT]) :- combinations(Branch, T, RT).
-        combinations(Branch, [H|T], RT) :- \+ context_check(Branch, inId(H)), combinations(Branch, T, RT).
+        combinations(Branch, [H|T], RT) :- context_absent(Branch, inId(H)), combinations(Branch, T, RT).
         
         conflictFreeSet(TentativeSet) :-
             \+ (
@@ -63,8 +64,10 @@ object ConflictFreeLabeller :
         finalizeLabelling :-
             findall(_, (
                argument_to_evaluate(X, IdX),
-               context_check(clause(att(IdY, IdX), _)),
-               context_check(inId(IdY)),
+               once((
+                   context_check(clause(att(IdY, IdX), _)),
+                   context_check(inId(IdY))
+               )),
                context_assert(out(X)),
                context_assert(outId(IdX))
             ), _),
@@ -76,8 +79,9 @@ object ConflictFreeLabeller :
             
         argument_to_evaluate(X, IdX) :-
             context_check(clause(arg(IdX), argument(X))),
-            \+ context_check(outId(IdX)),
-            \+ context_check(inId(IdX)).
+            context_absent(outId(IdX)),
+            context_absent(inId(IdX)),
+            context_absent(undId(IdX)).
 
         """.trimIndent()
 }

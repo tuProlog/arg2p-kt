@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Graph
@@ -22,6 +23,7 @@ object Arg2pSolverFactory {
         dynamicLibs: Iterable<ArgLibrary>,
     ) = Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs).let {
         PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+            unificator = Arg2pUnificator,
             otherLibraries = it.to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.parse(theory, it.operators()),
@@ -35,6 +37,7 @@ object Arg2pSolverFactory {
         dynamicLibs: Iterable<ArgLibrary> = emptyList(),
     ) = Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs).let {
         PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+            unificator = Arg2pUnificator,
             otherLibraries = it.to2pLibraries(),
             flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.parse(theory, it.operators()),

@@ -36,13 +36,27 @@ object StronglyAdmissibleLabeller :
             admissible::argumentLabelling,
             stronglyAdmissibleSet.
         
+        % Every In argument must be reachable starting from the unattacked ones:
+        % iteratively add the In arguments defended by those added so far
         stronglyAdmissibleSet :-
-            context_active(Branch),
-            \+ (context_check(inId(H)), \+ stronglyAdmissible(Branch, H)),
-            context_checkout(Branch).
-        stronglyAdmissible(Branch, H) :-
-            context_branch(Branch, _),
-            context_retract(inId(H)),
-            admissible::admissible(H).
+            findall(H, context_check(inId(H)), In),
+            rooted([], In).
+
+        rooted(_, []) :- !.
+        rooted(Built, Pending) :-
+            findall(H, (member(H, Pending), defendedBy(H, Built)), New),
+            New \== [],
+            utils::subtract(Pending, New, Rest),
+            utils::appendLists([Built, New], NewBuilt),
+            rooted(NewBuilt, Rest).
+
+        defendedBy(H, Built) :-
+            \+ (
+                context_check(clause(att(Attacker, H), _)),
+                \+ (
+                    member(Defendant, Built),
+                    context_check(clause(att(Defendant, Attacker), _))
+                )
+            ).
         """.trimIndent()
 }

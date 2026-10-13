@@ -45,8 +45,18 @@ buildArguments :-
 	    parser::classic_rule(RuleID, RuleBody, RuleHead),
 	    \+ emptyRule([RuleID, RuleBody, RuleHead])
     ), Rules),
+    context_retract(graphRule(_)),
+    storeRules(Rules),
     findall(X, context_check(newConc(a, [X])), N),
-	buildArgumentsFromRules(N, b, Rules, Rules, n).
+	buildArgumentsFromRules(N, b).
+
+% The rules are kept in the context rather than passed around: they are not ground, so carrying their list
+% in the goals makes every resolution step copy it. Asserted from the last, as context_check returns the
+% newest clauses first.
+storeRules([]).
+storeRules([Rule|Rules]) :-
+    storeRules(Rules),
+    context_assert(graphRule(Rule)).
 
 buildArgumentsFromPremises :-
     findall(
@@ -64,7 +74,7 @@ buildArgumentsFromEmptyRules :-
         _,
         (
             emptyRule([RuleID, RulePrem, RuleHead]),
-            ruleBodyIsSupported(RuleID, RuleHead, RulePrem, RulePrem, [[], [], [], []], _),
+            ruleBodyIsSupported(RulePrem, rule(RuleID, RuleHead, RulePrem), [[], [], [], []], _),
             checkStrict(RuleID, DefRule),
             saveArgument(a, RuleHead, [[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])
         ),
@@ -81,25 +91,25 @@ checkStrict(Id, [Id]).
 
 % Argument Construction
 
-buildArgumentsFromRules(_, _, Rules, [], n) :- !.
-buildArgumentsFromRules(_, Tn, Rules, [], y) :- !, clean(Tn, Rules).
-buildArgumentsFromRules(N, Tn, Rules, [[Id, Body, Conc]|T], _) :-
-    utils::contains_any(Body, N),
-    findall(true, buildArgumentsFromRule(Tn, [Id, Body, Conc]), R),
-    R \== [],
-    buildArgumentsFromRules(N, Tn, Rules, T, y), !.
-buildArgumentsFromRules(N, Tn, Rules, [_|T], X) :-
-    buildArgumentsFromRules(N, Tn, Rules, T, X).
+% A round fires every rule whose body uses a conclusion derived in the previous round (N), tagging the new
+% conclusions with Tn: the rounds go on while they derive something
+buildArgumentsFromRules(N, Tn) :-
+    findall(_, (
+        context_check(graphRule([Id, Body, Conc])),
+        utils::contains_any(Body, N),
+        buildArgumentsFromRule(Tn, [Id, Body, Conc])
+    ), _),
+    (context_check(newConc(Tn, _)) -> clean(Tn) ; true).
 
 buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
-	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, RuleBody, [[], [], [], []], Argument),
+	ruleBodyIsSupported(RuleBody, rule(RuleID, RuleHead, RuleBody), [[], [], [], []], Argument),
 	saveArgument(Tn, RuleHead, Argument).
 
-clean(Tn, Rules) :-
+clean(Tn) :-
     invert(Tn, Tx),
     context_retract(newConc(Tx, _)),
     findall(X, context_check(newConc(Tn, [X])), N),
-    buildArgumentsFromRules(N, Tx, Rules, Rules, n).
+    buildArgumentsFromRules(N, Tx).
 
 invert(a, b).
 invert(b, a).
@@ -107,40 +117,30 @@ invert(b, a).
 
 % Argument Info
 
-defRules(Id, Def, Def) :- parser::check_strict(Id), !.
-defRules(Id, Def, [Id|Def]).
-
-lastDefRules(Id, LDef, LDef) :- parser::check_strict(Id), !.
-lastDefRules(Id, LDef, [Id]) :- Id \== none, \+ parser::check_strict(Id).
-
-argumentInfo(RuleId, LDef, Def, Prem, [FLDef, FDef, FPrem]) :-
-    utils::sortDistinct(Prem, FPrem),
-    defRules(RuleId, Def, NDef),
-    utils::sortDistinct(NDef, FDef),
-    lastDefRules(RuleId, LDef, NLDef),
-    utils::sortDistinct(NLDef, FLDef).
+ruleStrictness(Id, strict) :- parser::check_strict(Id), !.
+ruleStrictness(_, defeasible).
 
 % Argument Support
 
-ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [], [TAll, TLDef, TDef, TPrem], Argument) :-
-    % ground(RuleHead),
-    utils::appendLists(TAll, All),
-    \+ utils::contains(RuleID, All),
-    utils::appendLists(TLDef, LDef),
-    utils::appendLists(TDef, Def),
-    utils::appendLists(TPrem, Prem),
-    argumentInfo(RuleID, LDef, Def, Prem, Info),
-    utils::sort([RuleID|All], Rules),
+% ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), [All, LastDefRules, DefRules, DefPremises], Argument):
+% Argument is built from RuleID by supporting each statement in Body with an existing argument. Only Body is
+% matched in the clause heads, everything else is unpacked in the bodies: matching heads with many arguments
+% against every clause is what makes this predicate expensive.
+ruleBodyIsSupported([], Rule, Acc, Argument) :-
+    Rule = rule(RuleID, RuleHead, RuleBody),
+    ruleStrictness(RuleID, Strict),
+    utils::argument_rules(RuleID, Strict, Acc, Rules, Info),
     Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
-    \+ context_check(clause(conc(RuleHead), argument(Argument))).
-ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [~(_)|Others], Info, Argument) :-
-	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, Others, Info, Argument).
-ruleBodyIsSupported(RuleID, RuleHead, RuleBody, [prolog(Check)|Others], Info, Argument) :-
+    context_absent(clause(conc(RuleHead), argument(Argument))).
+ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
+	ruleBodyIsSupported(Others, Rule, Acc, Argument).
+ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
 	(callable(Check) -> call(Check); Check),
-	ruleBodyIsSupported(RuleID, RuleHead, RuleBody, Others, Info, Argument).
-ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, Def, Prem], Argument) :-
+	ruleBodyIsSupported(Others, Rule, Acc, Argument).
+ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
+    Acc = [All, LDef, Def, Prem],
     context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]]))),
-	ruleBodyIsSupported(RuleId, RuleHead, RuleBody, Others, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
+	ruleBodyIsSupported(Others, Rule, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
 	saveSupport([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument).
 
 
@@ -151,41 +151,41 @@ ruleBodyIsSupported(RuleId, RuleHead, RuleBody, [Statement|Others], [All, LDef, 
 buildAttacks :-
 	findall(_, buildDirectAttack, _).
 
+% Besides the graph itself (argument/1, support/2, attack/4), the context keeps a compact copy of it, by
+% argument identifier (see context_id): argInfo(Id, InfoId, Info), supportId(IdA, IdB), attackId(T, IdA, IdB, IdC).
+% InfoId identifies the rules and premises of an argument (Info), which is what preferences depend on.
+% Loops over the graph go through the compact copy, so that resolution steps carry integers rather than
+% whole arguments, which are copied and visited at almost every step.
+
 buildDirectAttack :-
-    context_check(argument(A)),
+    context_check(clause(arg(IdA), argument(A))),
     attack::findPossibleAttackers(A, BB),
     findAttacker(BB, B),
 	filter_meta(B),
 	A \== B,
 	% Attacks are checked on copies, so that A and B are saved exactly as they are stored:
-	% binding their variables would change their identifiers (see utils::hash)
+	% binding their variables would change their identifiers (see context_id)
 	copy_term(B-A, CB-CA),
     attack::attacks(T, CB, CA),
-    saveAttack(T, B, A, A),
-    buildTransitiveAttacks(T, B, A),
+    context_id(argument(B), IdB),
+    saveAttackById(attackId(T, IdB, IdA, IdA), attack(T, B, A, A)),
+    buildTransitiveAttacks(T, IdB, B, IdA, A),
 	fail.
 buildDirectAttack.
 
 % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
 findAttacker([Head], B) :- !,
-    functor(Head, Name, Arity),
-    functor(Skeleton, Name, Arity),
-    context_check(clause(conc([Skeleton]), argument(B))),
-    \+ \+ Skeleton = Head.
+    context_unifiable(conc([Head]), argument(B)).
 findAttacker(Conclusion, B) :-
     context_check(clause(conc(Conclusion), argument(B))).
 
-buildTransitiveAttacks(T, B, A) :-
+% B attacks every argument that A supports, directly or not
+buildTransitiveAttacks(T, IdB, B, IdA, A) :-
     findall(_, (
-        expanded_support(A, C),
-        saveAttack(T, B, C, A)
+        context_closure(supportId, IdA, IdC),
+        context_check(clause(arg(IdC), argument(C))),
+        saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
     ),_).
-
-expanded_support(A, B) :-
-    context_check(support(A, B)).
-expanded_support(A, C) :-
-    context_check(support(A, B)),
-    expanded_support(B, C).
 
 %--------------------------------------------------------------------------
 % Save stuff
@@ -193,26 +193,41 @@ expanded_support(A, C) :-
 
 saveArgument(T, Conclusion, Argument) :-
     % ground(Conclusion),
-    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    context_absent(clause(conc(Conclusion), argument(Argument))),
     context_assert(newConc(T, Conclusion)),
-    utils::hash(argument(Argument), Id),
+    context_id(argument(Argument), Id),
     context_assert(argument(Argument)),
     context_assert(conc(Conclusion) :- argument(Argument)),
-    context_assert(arg(Id) :- argument(Argument)).
+    context_assert(arg(Id) :- argument(Argument)),
+    Argument = [_, _, _, _, Info],
+    context_id(info(Info), InfoId),
+    context_assert(argInfo(Id, InfoId, Info)).
 
 saveAttack(T, A, C, D) :-
-    \+ context_check(attack(T, A, C, D)),
-    context_assert(attack(T, A, C, D)),
-    utils::hash(argument(A), IdA),
-    utils::hash(argument(C), IdC),
-    context_assert(att(IdA, IdC) :- attack(T, A, C, D)).
+    context_id(argument(A), IdA),
+    context_id(argument(C), IdC),
+    context_id(argument(D), IdD),
+    saveAttackById(attackId(T, IdA, IdC, IdD), attack(T, A, C, D)).
+
+% The same attack, by identifiers and by arguments
+saveAttackById(Key, Attack) :-
+    context_absent(Key),
+    context_assert(Key),
+    context_assert(Attack),
+    Key = attackId(_, IdA, IdC, _),
+    context_assert(att(IdA, IdC) :- Attack).
 
 saveSupport(A, B) :-
-    \+ context_check(support(A, B)),
-    context_assert(support(A, B)).
+    context_absent(support(A, B)),
+    context_assert(support(A, B)),
+    context_id(argument(A), IdA),
+    context_id(argument(B), IdB),
+    context_assert(supportId(IdA, IdB)).
 
 removeAttack(T, A, B, C) :-
     context_retract(attack(T, A, B, C)),
-    utils::hash(argument(A), IdA),
-    utils::hash(argument(B), IdB),
+    context_id(argument(A), IdA),
+    context_id(argument(B), IdB),
+    context_id(argument(C), IdC),
+    context_retract(attackId(T, IdA, IdB, IdC)),
     context_retract(att(IdA, IdB) :- attack(T, A, B, C)).

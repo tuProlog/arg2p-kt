@@ -43,12 +43,12 @@ demonstration(Arguments, A, Resolving, A) :-
 	\+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
 	\+ (
         superiorOrEqualComplementArgument(A, B),
-        \+ context_check(out(B))
+        context_absent(out(B))
     ),
 	\+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
 	\+ (
         context_check(support(X, A)),
-        \+ context_check(in(X))
+        context_absent(in(X))
     ),
 	debug::writeDebug(['Adding argument: ', A, ' to IN* (2.a.ii)']),
     context_assert(in(A)).
@@ -60,7 +60,7 @@ demonstration(Arguments, A, Resolving, A) :-
 	bp_grounded::isArgumentInBurdenOfProof(A),
 	\+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
 	superiorOrEqualComplementArgument(A, B),
-	\+ context_check(out(B)),
+	context_absent(out(B)),
     debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.1)']),
     context_assert(out(A)).
 
@@ -71,7 +71,7 @@ demonstration(Arguments, A, Resolving, A) :-
 	bp_grounded::isArgumentInBurdenOfProof(A),
 	\+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
 	context_check(support(X, A)),
-    \+ context_check(in(X)),
+    context_absent(in(X)),
     debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.2)']),
     context_assert(out(A)).
 
@@ -125,7 +125,7 @@ demonstration(Arguments, A, Resolving, Evaluated) :-
 	\+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
 	\+ (
         superiorOrEqualComplementArgument(A, X),
-        \+ context_check(out(X))
+        context_absent(out(X))
     ),
     notEvaluatedSubArgument(Arguments, A, Resolving, B),
     demonstration(Arguments, B, [B|Resolving], Evaluated).
