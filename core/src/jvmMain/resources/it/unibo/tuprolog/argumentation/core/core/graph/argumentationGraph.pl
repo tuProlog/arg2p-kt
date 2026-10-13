@@ -182,16 +182,10 @@ findAttacker(Conclusion, B) :-
 % B attacks every argument that A supports, directly or not
 buildTransitiveAttacks(T, IdB, B, IdA, A) :-
     findall(_, (
-        expanded_support(IdA, IdC),
+        context_closure(supportId, IdA, IdC),
         context_check(clause(arg(IdC), argument(C))),
         saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
     ),_).
-
-expanded_support(IdA, IdB) :-
-    context_check(supportId(IdA, IdB)).
-expanded_support(IdA, IdC) :-
-    context_check(supportId(IdA, IdB)),
-    expanded_support(IdB, IdC).
 
 %--------------------------------------------------------------------------
 % Save stuff
