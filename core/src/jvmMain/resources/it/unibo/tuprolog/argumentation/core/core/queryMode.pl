@@ -141,7 +141,9 @@ saveArgument(T, Conclusion, Argument) :-
     context_id(argument(Argument), Id),
     context_assert(argument(Argument)),
     context_assert(conc(Conclusion) :- argument(Argument)),
-    context_assert(arg(Id) :- argument(Argument)).
+    context_assert(arg(Id) :- argument(Argument)),
+    Argument = [_, _, _, _, Info],
+    context_assert(argInfo(Id, Info)).
 
 saveSupports(_, []).
 saveSupports(A, [B|T]) :-
@@ -152,7 +154,10 @@ saveSupport(A, B) :-
     context_absent(support(A, B)),
     % write("Saving Support: "),
     % write(A),write(" -> "),write(B),nl,
-    context_assert(support(A, B)).
+    context_assert(support(A, B)),
+    context_id(argument(A), IdA),
+    context_id(argument(B), IdB),
+    context_assert(supportId(IdA, IdB)).
 
 
 %==============================================================================
@@ -226,7 +231,11 @@ findAttacker(Target, QueryChain, Attacker, IsValid) :-
 
 bufferAttacker(Attacker, Target, Type) :-
     context_absent(attack(Type, Attacker, Target, none)),
-    context_assert(attack(Type, Attacker, Target, none)), !.
+    context_assert(attack(Type, Attacker, Target, none)),
+    context_id(argument(Attacker), IdAttacker),
+    context_id(argument(Target), IdTarget),
+    context_id(argument(none), IdNone),
+    context_assert(attackId(Type, IdAttacker, IdTarget, IdNone)), !.
 bufferAttacker(_, _, _).
 
 detectCycle(Attacker, QueryChain, yes) :- \+ member(Attacker, QueryChain).

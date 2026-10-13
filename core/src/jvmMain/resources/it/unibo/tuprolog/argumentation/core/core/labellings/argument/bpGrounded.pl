@@ -64,7 +64,11 @@ filterBpDefeat(T, B, A, C) :-
     (T = rebut; T = undermine),
     isArgumentInBurdenOfProof(B),
     \+ superiority::superiorArgument(B, C),
-    context_retract(attack(T, B, A, C)).
+    context_retract(attack(T, B, A, C)),
+    context_id(argument(B), IdB),
+    context_id(argument(A), IdA),
+    context_id(argument(C), IdC),
+    context_retract(attackId(T, IdB, IdA, IdC)).
 
 mostGroundedBpUnd(Arguments, Arg) :-
     member(Arg, Arguments),

@@ -167,8 +167,13 @@ ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
 buildAttacks :-
 	findall(_, buildDirectAttack, _).
 
+% Besides the graph itself (argument/1, support/2, attack/4), the context keeps a compact copy of it, by
+% argument identifier (see context_id): argInfo(Id, Info), supportId(IdA, IdB), attackId(T, IdA, IdB, IdC).
+% Loops over the graph go through the compact copy, so that resolution steps carry integers rather than
+% whole arguments, which are copied and visited at almost every step.
+
 buildDirectAttack :-
-    context_check(argument(A)),
+    context_check(clause(arg(IdA), argument(A))),
     attack::findPossibleAttackers(A, BB),
     findAttacker(BB, B),
 	filter_meta(B),
@@ -177,8 +182,9 @@ buildDirectAttack :-
 	% binding their variables would change their identifiers (see context_id)
 	copy_term(B-A, CB-CA),
     attack::attacks(T, CB, CA),
-    saveAttack(T, B, A, A),
-    buildTransitiveAttacks(T, B, A),
+    context_id(argument(B), IdB),
+    saveAttackById(attackId(T, IdB, IdA, IdA), attack(T, B, A, A)),
+    buildTransitiveAttacks(T, IdB, B, IdA, A),
 	fail.
 buildDirectAttack.
 
@@ -188,17 +194,19 @@ findAttacker([Head], B) :- !,
 findAttacker(Conclusion, B) :-
     context_check(clause(conc(Conclusion), argument(B))).
 
-buildTransitiveAttacks(T, B, A) :-
+% B attacks every argument that A supports, directly or not
+buildTransitiveAttacks(T, IdB, B, IdA, A) :-
     findall(_, (
-        expanded_support(A, C),
-        saveAttack(T, B, C, A)
+        expanded_support(IdA, IdC),
+        context_check(clause(arg(IdC), argument(C))),
+        saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
     ),_).
 
-expanded_support(A, B) :-
-    context_check(support(A, B)).
-expanded_support(A, C) :-
-    context_check(support(A, B)),
-    expanded_support(B, C).
+expanded_support(IdA, IdB) :-
+    context_check(supportId(IdA, IdB)).
+expanded_support(IdA, IdC) :-
+    context_check(supportId(IdA, IdB)),
+    expanded_support(IdB, IdC).
 
 %--------------------------------------------------------------------------
 % Save stuff
@@ -211,21 +219,35 @@ saveArgument(T, Conclusion, Argument) :-
     context_id(argument(Argument), Id),
     context_assert(argument(Argument)),
     context_assert(conc(Conclusion) :- argument(Argument)),
-    context_assert(arg(Id) :- argument(Argument)).
+    context_assert(arg(Id) :- argument(Argument)),
+    Argument = [_, _, _, _, Info],
+    context_assert(argInfo(Id, Info)).
 
 saveAttack(T, A, C, D) :-
-    context_absent(attack(T, A, C, D)),
-    context_assert(attack(T, A, C, D)),
     context_id(argument(A), IdA),
     context_id(argument(C), IdC),
-    context_assert(att(IdA, IdC) :- attack(T, A, C, D)).
+    context_id(argument(D), IdD),
+    saveAttackById(attackId(T, IdA, IdC, IdD), attack(T, A, C, D)).
+
+% The same attack, by identifiers and by arguments
+saveAttackById(Key, Attack) :-
+    context_absent(Key),
+    context_assert(Key),
+    context_assert(Attack),
+    Key = attackId(_, IdA, IdC, _),
+    context_assert(att(IdA, IdC) :- Attack).
 
 saveSupport(A, B) :-
     context_absent(support(A, B)),
-    context_assert(support(A, B)).
+    context_assert(support(A, B)),
+    context_id(argument(A), IdA),
+    context_id(argument(B), IdB),
+    context_assert(supportId(IdA, IdB)).
 
 removeAttack(T, A, B, C) :-
     context_retract(attack(T, A, B, C)),
     context_id(argument(A), IdA),
     context_id(argument(B), IdB),
+    context_id(argument(C), IdC),
+    context_retract(attackId(T, IdA, IdB, IdC)),
     context_retract(att(IdA, IdB) :- attack(T, A, B, C)).
