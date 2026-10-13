@@ -1,3 +1,17 @@
+## [0.16.8](https://github.com/tuProlog/arg2p-kt/compare/0.16.7...0.16.8) (2026-10-13)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to d8ace5a ([#484](https://github.com/tuProlog/arg2p-kt/issues/484)) ([c1071aa](https://github.com/tuProlog/arg2p-kt/commit/c1071aab435a2fb9e93959e4c665f9483b827327))
+
+### Performance improvements
+
+* faster framework derivation, semantics fixes, dependency updates ([#493](https://github.com/tuProlog/arg2p-kt/issues/493)) ([#495](https://github.com/tuProlog/arg2p-kt/issues/495)) ([8c5db06](https://github.com/tuProlog/arg2p-kt/commit/8c5db0677dbc0f2e62057c0f03a044805573cb1b))
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-node action to v7.1.0 ([#491](https://github.com/tuProlog/arg2p-kt/issues/491)) ([05cce10](https://github.com/tuProlog/arg2p-kt/commit/05cce10e7f1c3605fb08e81e8baac93dc27c65c6))
+
 ## [0.16.7](https://github.com/tuProlog/arg2p-kt/compare/0.16.6...0.16.7) (2026-10-12)
 
 ### Bug Fixes
