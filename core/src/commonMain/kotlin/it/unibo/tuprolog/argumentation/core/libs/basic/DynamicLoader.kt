@@ -24,12 +24,16 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.theory.Theory
 
 class DynamicLoader(
     private val solver: Arg2pSolver,
 ) : ArgLibrary,
     ArgLoader {
     private val solverCache = mutableMapOf<String, MutableSolver>()
+
+    // The static knowledge base each cached solver was last given: loading it again re-indexes all its clauses
+    private val loadedKb = mutableMapOf<String, Theory>()
 
     fun loadWithMemo(
         request: Solve.Request<ExecutionContext>,
@@ -61,7 +65,12 @@ class DynamicLoader(
                     )
                 }
             }.also {
-                it.loadStaticKb(request.context.staticKb)
+                val key = library.toString()
+                val staticKb = request.context.staticKb
+                if (loadedKb[key] !== staticKb) {
+                    it.loadStaticKb(staticKb)
+                    loadedKb[key] = staticKb
+                }
             }
 
     abstract inner class AbstractWithLib : PrimitiveWithSignature {
@@ -144,6 +153,7 @@ class DynamicLoader(
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             this@DynamicLoader.solverCache.clear()
+            this@DynamicLoader.loadedKb.clear()
             return sequenceOf(request.replyWith(true))
         }
     }

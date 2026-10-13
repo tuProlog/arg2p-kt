@@ -12,7 +12,7 @@ assertAllSup :-
     findall(_,
         (
             context_check(argument([_, _, [sup(RuleOne, RuleTwo)], _, _])),
-            \+ context_check(sup(RuleOne, RuleTwo)),
+            context_absent(sup(RuleOne, RuleTwo)),
             context_assert(sup(RuleOne, RuleTwo))
         ),
     _).
