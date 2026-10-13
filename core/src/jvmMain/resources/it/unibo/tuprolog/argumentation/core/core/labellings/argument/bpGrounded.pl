@@ -89,7 +89,7 @@ reifyBurdenOfProofs :-
     findall(_, (
         context_check(abstractBp(AbstractBp)),
         fillTemplate(AbstractBp, R),
-        \+ context_check(reifiedBp(R)),
+        context_absent(reifiedBp(R)),
         context_assert(reifiedBp(R))
     ), _).
 

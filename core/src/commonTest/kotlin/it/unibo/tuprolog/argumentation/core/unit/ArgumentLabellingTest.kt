@@ -253,6 +253,35 @@ class ArgumentLabellingTest {
         }
     }
 
+    private fun prepareIdeal3(): List<Graph> {
+        val arg1 = Argument(listOf("r1"), "r1", "a")
+        val arg2 = Argument(listOf("r2"), "r2", "b")
+        val arg3 = Argument(listOf("r3"), "r3", "c")
+        val arg4 = Argument(listOf("r4"), "r4", "d")
+
+        // Preferred extensions intersect in {d}, which is not admissible
+        return listOf(
+            listOf(
+                arg1 to "und",
+                arg2 to "und",
+                arg3 to "und",
+                arg4 to "und",
+            ),
+        ).map { res ->
+            Graph.of(
+                res.map { LabelledArgument(it.first, it.second) },
+                listOf(
+                    Attack(arg1, arg2), // a → b
+                    Attack(arg2, arg1), // b → a
+                    Attack(arg1, arg3), // a → c
+                    Attack(arg2, arg3), // b → c
+                    Attack(arg3, arg4), // c → d
+                ),
+                emptyList(),
+            )
+        }
+    }
+
     private fun prepareNaive(): List<Graph> {
         val arg1 = Argument(listOf("r1"), "r1", "a")
         val arg2 = Argument(listOf("r2"), "r2", "b")
@@ -587,7 +616,13 @@ class ArgumentLabellingTest {
     fun labelArgumentsEager() = checkSolutions(prepareSemiStable(), "eager")
 
     @Test
+    fun labelArgumentsIdeal4() = checkSolutions(prepareIdeal3(), "ideal")
+
+    @Test
     fun labelArgumentsEager2() = checkSolutions(prepareGrounded(), "eager")
+
+    @Test
+    fun labelArgumentsEager3() = checkSolutions(prepareIdeal3(), "eager")
 
     @Test
     fun labelArgumentsNaive() = checkSolutions(prepareNaive(), "naive")

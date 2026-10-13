@@ -66,4 +66,4 @@ evaluateBurdenedArgs([(Bp, Burdened)|Others]) :-
 statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-
     context_check(in(Burdened)).
 statusToAttack((Bp, Burdened), attack(bprebut, Bp, Burdened, Burdened)) :-
-    \+ context_check(in(Burdened)).
+    context_absent(in(Burdened)).

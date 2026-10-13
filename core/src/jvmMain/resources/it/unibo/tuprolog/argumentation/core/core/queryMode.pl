@@ -62,7 +62,7 @@ ground_vars_list([X|Xs], [GX|GXs], N0, N) :-
 buildSubGraph(Query, Argument) :-
     % write("Calling on "),write(Query),nl,
     ground_vars(Query, Normalized),
-    \+ context_check(explored(Normalized)),
+    context_absent(explored(Normalized)),
     findall(_, (
         findSingleArgument([Query], Argument, Support),
         saveArgument(query, [Query], Argument),
@@ -134,11 +134,11 @@ mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :
 %--------------------------------------------------------------------------
 
 saveArgument(T, Conclusion, Argument) :-
-    \+ context_check(clause(conc(Conclusion), argument(Argument))),
+    context_absent(clause(conc(Conclusion), argument(Argument))),
     % write("Saving Argument: "),
     % write(Argument),nl,
     context_assert(newConc(T, Conclusion)),
-    utils::hash(argument(Argument), Id),
+    context_id(argument(Argument), Id),
     context_assert(argument(Argument)),
     context_assert(conc(Conclusion) :- argument(Argument)),
     context_assert(arg(Id) :- argument(Argument)).
@@ -149,7 +149,7 @@ saveSupports(A, [B|T]) :-
     saveSupports(A, T).
 
 saveSupport(A, B) :-
-    \+ context_check(support(A, B)),
+    context_absent(support(A, B)),
     % write("Saving Support: "),
     % write(A),write(" -> "),write(B),nl,
     context_assert(support(A, B)).
@@ -209,9 +209,9 @@ defend(Argument, QueryChain, und) :-
 
 defend(Argument, QueryChain, yes) :- bufferResult(Argument, yes).
 
-bufferResult(Argument, no) :- \+ context_check(out(Argument)), context_assert(out(Argument)), !.
-bufferResult(Argument, yes) :- \+ context_check(in(Argument)), context_assert(in(Argument)), !.
-bufferResult(Argument, und) :- \+ context_check(und(Argument)), context_assert(und(Argument)), !.
+bufferResult(Argument, no) :- context_absent(out(Argument)), context_assert(out(Argument)), !.
+bufferResult(Argument, yes) :- context_absent(in(Argument)), context_assert(in(Argument)), !.
+bufferResult(Argument, und) :- context_absent(und(Argument)), context_assert(und(Argument)), !.
 bufferResult(_, _).
 
 
@@ -225,7 +225,7 @@ findAttacker(Target, QueryChain, Attacker, IsValid) :-
     detectCycle(Attacker, QueryChain, IsValid).
 
 bufferAttacker(Attacker, Target, Type) :-
-    \+ context_check(attack(Type, Attacker, Target, none)),
+    context_absent(attack(Type, Attacker, Target, none)),
     context_assert(attack(Type, Attacker, Target, none)), !.
 bufferAttacker(_, _, _).
 
@@ -306,7 +306,7 @@ contained([H|T], Target) :- member(H, Target), contained(T, Target).
 %==============================================================================
 
 buildArgument(Query, Argument) :-
-    \+ context_check(explored(Query)),
+    context_absent(explored(Query)),
     findall(_, (
         buildSingleArgument([Query], Argument),
         context_assert(argument(Argument))

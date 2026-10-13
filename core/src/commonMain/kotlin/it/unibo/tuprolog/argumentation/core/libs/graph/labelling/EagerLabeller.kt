@@ -39,8 +39,18 @@ object EagerLabeller :
                 cache_check(complete(In, _, _, Branch))
             ), Results),
             utils::intersection(Results, Int),
-            utils::sort(Int, SortedInt),
-            cache_check(complete(SortedInt, _, _, Branch)),
+            findall((In, Branch), (
+                cache_check(complete(In, _, _, Branch)),
+                contained_in(In, Int)
+            ), Candidates),
+            member((In, Branch), Candidates),
+            \+ (
+                member((Other, _), Candidates),
+                Other \== In,
+                contained_in(In, Other)
+            ), !,
             context_checkout(Branch).
+
+        contained_in(A, B) :- \+ (member(X, A), \+ member(X, B)).
         """.trimIndent()
 }

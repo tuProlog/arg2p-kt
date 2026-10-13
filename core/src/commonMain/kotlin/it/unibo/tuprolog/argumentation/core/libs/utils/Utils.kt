@@ -6,9 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.core.Numeric
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermComparator
@@ -37,8 +35,8 @@ abstract class UtilsBase :
                 primitives =
                     mapOf(
                         AppendOptimized.signature to AppendOptimized,
+                        AppendLists.signature to AppendLists,
                         AssertAll.signature to AssertAll,
-                        ArgumentHash.descriptionPair,
                         Contains.signature to Contains,
                         ContainsAny.signature to ContainsAny,
                         SortTerms.descriptionPair,
@@ -104,6 +102,39 @@ object AppendOptimized : Primitive {
     }
 }
 
+/** appendLists(Lists, Result): Result is the concatenation of the lists in Lists */
+object AppendLists : Primitive {
+    val signature: Signature = Signature("appendLists", 2)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val lists: Term = request.arguments[0]
+
+        if (lists !is List) {
+            throw TypeError.forGoal(
+                request.context,
+                request.signature,
+                TypeError.Expected.LIST,
+                lists,
+            )
+        }
+
+        val items =
+            lists.toList().flatMap { list ->
+                if (list !is List) {
+                    throw TypeError.forGoal(
+                        request.context,
+                        request.signature,
+                        TypeError.Expected.LIST,
+                        list,
+                    )
+                }
+                list.toList()
+            }
+        val unifier = Unificator.default.mgu(request.arguments[1], List.of(items))
+        return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
+    }
+}
+
 object AssertAll : Primitive {
     val signature: Signature = Signature("assert_all", 1)
 
@@ -128,27 +159,6 @@ object AssertAll : Primitive {
                 request.replyWith(true),
             )
         }
-    }
-}
-
-object ArgumentHash : BinaryRelation.WithoutSideEffects<ExecutionContext>("hash") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
-        first: Term,
-        second: Term,
-    ): Sequence<Substitution> =
-        sequenceOf(
-            Substitution.of(
-                second.asVar()!!,
-                Numeric.of(canonical(first).toString().hashCode()),
-            ),
-        )
-
-    // Variables get renamed whenever a term is read back from the KB, so they are replaced by
-    // positional placeholders: copies of the same term which only differ in variable names share the hash
-    private fun canonical(term: Term): Term {
-        val variables = term.variables.distinct().toList()
-        if (variables.isEmpty()) return term
-        return term.apply(Substitution.of(variables.mapIndexed { i, v -> v to Atom.of("_V$i") }.toMap()))
     }
 }
 

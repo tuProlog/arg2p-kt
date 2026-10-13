@@ -306,11 +306,12 @@ superiority(sup(Id1, Id2), Id1, Id2).
 /*
  *   Convert the given tuple to list
  */
-tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
-tuple_to_list((A,B),L) :-
-    tuple_to_list(A, La),
-    tuple_to_list(B, Lb),
-    utils::append_fast(La, Lb,L).
+% The items of a conjunction, as a list (built with an accumulator rather than appending the lists of the two
+% sides, which took a module call at every step)
+tuple_to_list(T, L) :- tuple_to_list(T, L, []).
+tuple_to_list(A, [A|R], R) :- var(A), !.
+tuple_to_list((A, B), L, R) :- !, tuple_to_list(A, L, M), tuple_to_list(B, M, R).
+tuple_to_list(A, [A|R], R).
 
 ff([[]], []) :- !.
 ff([[X]], [X]) :- !.
@@ -324,15 +325,13 @@ classic_rule(X, Y) :- premise(X, Y).
 % -P(x) <=> O(-x)
 % -O(x) <=> P(-x)  % this is already included
 
-classic_conflict([A], [B], C) :- metaConflicts,
+% With metaConflicts the conflicts are only the derived ones, otherwise the builtin and declared ones
+classic_conflict(X, Y, C) :- metaConflicts, !,
+    X = [A], Y = [B],
     context_check(clause(conc([conflict(A, B, C)]), _)).
-classic_conflict([A], [B]) :- metaConflicts,
-    context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B, C) :-
-    \+ metaConflicts,
     builtin_conflict(A, B, C).
 classic_conflict(A, B, C) :-
-    \+ metaConflicts,
     conflict(A, B, C).
 
 builtin_conflict([Atom], [-Atom], (Atom \= -_)).
@@ -346,6 +345,8 @@ builtin_conflict([p(-Atom)], [o(Atom)], true).
 builtin_conflict([o(Atom)], [-p(Atom)], true).                           % O(x) <-> O(-x) (-P(x))
 builtin_conflict([-p(Atom)], [o(Atom)], true).
 builtin_conflict([sup(X, Y)], [sup(Y, X)], true).
+classic_conflict(X, Y) :- metaConflicts, !,
+    X = [A], Y = [B],
+    context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B) :-
-    \+ metaConflicts,
     conflict(A, B).
