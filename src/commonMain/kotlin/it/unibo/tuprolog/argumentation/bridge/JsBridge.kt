@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.bridge
 import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.TermFormatter
@@ -144,6 +145,8 @@ object JsBridge {
         val libFlags = Library.of(alias = "argumentation.flags", clauses = flags)
 
         return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+            // the same unificator as the solvers built by Arg2pSolverFactory: lookups match clause heads only
+            unificator = Arg2pUnificator,
             otherLibraries =
                 PrologSolverFactory.defaultRuntime.plus(
                     Arg2pSolver
