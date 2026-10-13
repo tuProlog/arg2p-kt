@@ -3,7 +3,9 @@ package it.unibo.tuprolog.argumentation.bridge
 import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.parsing.parse
@@ -49,11 +51,43 @@ class JsIterator<T>(
     }
 }
 
+/**
+ * The solutions of a query, and the context of the solver that computed them. The context keeps a branch for every
+ * stage of the computation (each module call made with :::), numbered from 0 to the context of a solution: they can
+ * be inspected while, and after, iterating the solutions.
+ */
 @JsExport
-data class BridgedResult(
+class BridgedResult internal constructor(
     val i: JsIterator<BridgedSolution>,
     val query: String,
-)
+    private val solver: MutableSolver,
+    private val formatter: TermFormatter,
+) {
+    /** The graph stored in the given context branch */
+    fun graphAt(context: Int): BridgedGraph = JsBridge.graphOf(solver, context)
+
+    /**
+     * The solutions of context_check(Context, Goal): the clauses stored in a context branch matching Goal (facts, or
+     * clause(Head, Body) for rules), each as the bindings of the variables of Goal
+     */
+    fun queryContext(
+        context: Int,
+        goal: String,
+    ): Array<Array<JsPair<String, String>>> {
+        val term = Struct.parse(goal, solver.operators)
+        val variables = term.variables.distinct().toList()
+        return solver
+            .solve(Struct.of("context_check", Integer.of(context), term))
+            .filter { it.isYes }
+            .map { sol ->
+                // keyed by the variable names written in the goal
+                variables
+                    .mapNotNull { v -> sol.substitution[v]?.let { JsPair(v.name, formatter.format(it)) } }
+                    .toTypedArray()
+            }.toList()
+            .toTypedArray()
+    }
+}
 
 @JsExport
 data class BridgedGraph(
@@ -86,6 +120,8 @@ data class BridgedSolution(
     val substitutions: Array<JsPair<String, String>>,
     val exception: String,
     val graph: BridgedGraph,
+    // The context branch the graph was mined from: the last stage of the computation
+    val context: Int = 0,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -112,17 +148,20 @@ data class BridgedSolution(
 
 @JsExport
 object JsBridge {
-    private fun graphOf(solver: MutableSolver): BridgedGraph {
-        val graph =
-            solver.graph(
-                arg2pScope {
-                    solver
-                        .solve("context_active"(X))
-                        .filter { it.isYes }
-                        .map { it.substitution[X].toString().toInt() }
-                        .first()
-                },
-            )
+    private fun activeContext(solver: MutableSolver): Int =
+        arg2pScope {
+            solver
+                .solve("context_active"(X))
+                .filter { it.isYes }
+                .map { it.substitution[X].toString().toInt() }
+                .first()
+        }
+
+    internal fun graphOf(
+        solver: MutableSolver,
+        context: Int,
+    ): BridgedGraph {
+        val graph = solver.graph(context)
 
         return BridgedGraph(
             arguments =
@@ -144,6 +183,8 @@ object JsBridge {
         val libFlags = Library.of(alias = "argumentation.flags", clauses = flags)
 
         return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+            // the same unificator as the solvers built by Arg2pSolverFactory: lookups match clause heads only
+            unificator = Arg2pUnificator,
             otherLibraries =
                 PrologSolverFactory.defaultRuntime.plus(
                     Arg2pSolver
@@ -174,6 +215,8 @@ object JsBridge {
 
         val solutions =
             solver.solve(query).map { sol ->
+                val context = activeContext(solver)
+                val graph = graphOf(solver, context)
                 if (sol.isYes) {
                     BridgedSolution(
                         "yes",
@@ -182,12 +225,13 @@ object JsBridge {
                             .map { JsPair(formatter.format(it.key), formatter.format(it.value)) }
                             .toTypedArray(),
                         "",
-                        graphOf(solver),
+                        graph,
+                        context,
                     )
                 } else if (sol.isNo) {
-                    BridgedSolution("no", "", emptyArray(), "", graphOf(solver))
+                    BridgedSolution("no", "", emptyArray(), "", graph, context)
                 } else {
-                    BridgedSolution("halt", "", emptyArray(), sol.exception.toString(), graphOf(solver))
+                    BridgedSolution("halt", "", emptyArray(), sol.exception.toString(), graph, context)
                 }
             }
 
@@ -198,6 +242,6 @@ object JsBridge {
                 hasNextFunction = { i.hasNext() },
             )
 
-        return BridgedResult(jsIt, formatter.format(query))
+        return BridgedResult(jsIt, formatter.format(query), solver, formatter)
     }
 }

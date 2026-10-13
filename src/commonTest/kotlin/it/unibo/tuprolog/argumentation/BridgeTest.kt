@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.bridge.BridgedSolution
 import it.unibo.tuprolog.argumentation.bridge.JsBridge
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class BridgeTest {
     @Test
@@ -142,5 +143,38 @@ class BridgeTest {
                     ),
             ),
         )
+    }
+
+    @Test
+    fun testContextExploration() {
+        val res =
+            JsBridge.solve(
+                "buildLabelSets",
+                """
+                r1 :=> a.
+                r2 : a => b.
+                r3 :=> -b.
+                sup(r3, r2).
+                """.trimIndent(),
+                """
+                graphBuildMode(standard_af).
+                statementLabellingMode(statement).
+                argumentLabellingMode(grounded).
+                orderingPrinciple(last).
+                orderingComparator(elitist).
+                graphExtension(standardPref).
+                """.trimIndent(),
+                { },
+            )
+        val solution = res.i.next()!!
+        // every stage of the computation is kept: the first context is empty, the last one is the mined graph
+        assertTrue(solution.context > 0)
+        assertEquals(0, res.graphAt(0).arguments.size)
+        assertEquals(solution.graph, res.graphAt(solution.context))
+        // the attack from -b to b is in the built graph, and removed by the preference (r3 is superior to r2)
+        assertTrue((0 until solution.context).any { res.graphAt(it).attacks.size > solution.graph.attacks.size })
+        // buffered information can be queried as well, by the names of the goal variables
+        val statements = res.queryContext(solution.context, "statIn(S)").map { row -> row.single { it.first == "S" }.second }
+        assertEquals(setOf("[a]", "[- b]"), statements.toSet())
     }
 }
