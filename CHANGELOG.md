@@ -1,3 +1,9 @@
+## [0.17.3](https://github.com/tuProlog/arg2p-kt/compare/0.17.2...0.17.3) (2026-10-18)
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v3.0.3 ([#506](https://github.com/tuProlog/arg2p-kt/issues/506)) ([f5eec53](https://github.com/tuProlog/arg2p-kt/commit/f5eec538f9d7e79accb636d293148dbc2093b9bc))
+
 ## [0.17.2](https://github.com/tuProlog/arg2p-kt/compare/0.17.1...0.17.2) (2026-10-18)
 
 ### Bug Fixes
