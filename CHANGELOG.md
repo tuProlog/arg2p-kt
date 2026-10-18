@@ -1,3 +1,18 @@
+## [0.17.1](https://github.com/tuProlog/arg2p-kt/compare/0.17.0...0.17.1) (2026-10-18)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to 79af35c ([#499](https://github.com/tuProlog/arg2p-kt/issues/499)) ([98a6eb2](https://github.com/tuProlog/arg2p-kt/commit/98a6eb2dedb4f78a200a15e6cba70bee6cc47169))
+* **deps:** update node.js to 24.22 ([#501](https://github.com/tuProlog/arg2p-kt/issues/501)) ([34cb498](https://github.com/tuProlog/arg2p-kt/commit/34cb49807525fd30e29b48708d1194c0f0eca459))
+
+### Bug Fixes
+
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.22.4 ([#502](https://github.com/tuProlog/arg2p-kt/issues/502)) ([782ac9e](https://github.com/tuProlog/arg2p-kt/commit/782ac9ea6597ddcd91401a5dbf8652bd2da928ac))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.49 ([#500](https://github.com/tuProlog/arg2p-kt/issues/500)) ([7265456](https://github.com/tuProlog/arg2p-kt/commit/7265456afc42b192155e25792d1c8e295ab33094))
+
 ## [0.17.0](https://github.com/tuProlog/arg2p-kt/compare/0.16.8...0.17.0) (2026-10-13)
 
 ### Features
