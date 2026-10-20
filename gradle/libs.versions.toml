@@ -2,7 +2,7 @@
 kotlin = "2.4.21"
 jvm = "21"
 node = "24-latest"
-ktMpp = "6.0.6"
+ktMpp = "6.0.7"
 semVer = "7.1.0"
 akka = "2.8.8"
 tuprolog = "3.0.3"
