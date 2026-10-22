@@ -23,15 +23,12 @@ isEmptyList([]).
 
 % Misc utils
 
-
+% search(+F, +L, -S): S is each term F(...) of arity 1 to L that holds
 search(F, L, S) :-
    between(1, L, N),
    functor(S, F, N),
    call(S).
 
-between(N, M, K) :- N < M, K = N.
-between(N, M, K) :- N == M, !, K = N.
-between(N, M, K) :- N < M, N1 is N+1, between(N1, M, K).
 
 
 recoverGraph(Args, Attacks, Supports) :-
@@ -57,14 +54,6 @@ recoverStatementLabelling(In, Out, Und) :-
         utils::sort(TempIn, In),
         utils::sort(TempOut, Out),
         utils::sort(TempUnd, Und).
-
-recoverArgumentLabellingId(ArgsIn, ArgsOut, ArgsUnd) :-
-        findall(X, context_check(inId(X)), TempArgsIn),
-        findall(X, context_check(outId(X)), TempArgsOut),
-        findall(X, context_check(undId(X)), TempArgsUnd),
-        utils::sort(TempArgsIn, ArgsIn),
-        utils::sort(TempArgsOut, ArgsOut),
-        utils::sort(TempArgsUnd, ArgsUnd).
 
 recoverArgumentLabellingAbstract(ArgsIn, ArgsOut, ArgsUnd) :-
         findall(X, context_check(in([_, _, [X], _, _])), TempArgsIn),

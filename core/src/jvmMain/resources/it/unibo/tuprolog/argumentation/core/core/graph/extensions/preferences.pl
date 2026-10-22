@@ -14,9 +14,7 @@ checkStandardPreference(T, IdA, IdB, IdC) :-
     argById(IdC, C),
     standard_af::removeAttack(T, A, B, C).
 
-argById(Id, A) :- context_check(clause(arg(Id), argument(A))), !.
-% Attacks buffered while answering queries have none in place of the attacked argument
-argById(Id, none) :- context_id(argument(none), Id).
+argById(Id, A) :- context_check(clause(arg(Id), argument(A))).
 
 % The attack types preferences do not apply to. Everything else is weighed against the preference order,
 % including the attack types introduced by other extensions: an unknown attack type is compared rather than

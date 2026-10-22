@@ -1,13 +1,3 @@
-printTheory(Rules) :-
-    write('HERE THE THEORY:'),nl,
-    findall(rule([Id, Body, Head]), member(rule([Id, Body, Head]), Rules), ListRules),
-    utils::writeListNl(ListRules),
-    findall(premise([A, B]), member(premise([A, B]), Rules), ListPremises),
-    utils::writeListNl(ListPremises),
-    findall(sup(A, B), member(sup(A, B), Rules), ListSups),
-    utils::writeListNl(ListSups).
-
-
 printArgumentationGraph(Arguments, Attacks, Supports) :-
 	findall(
 	    [IDPremises, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', RuleHead, '\n', ' BODY ', Body, '\n', ' INFO ', Info, '\n'],
