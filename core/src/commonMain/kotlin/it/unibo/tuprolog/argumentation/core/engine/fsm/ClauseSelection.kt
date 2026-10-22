@@ -11,7 +11,7 @@ import it.unibo.tuprolog.utils.Cursor
 
 /**
  * Clause selection (arg2p): the clauses of an immutable theory are grouped by the signature of their heads once, and
- * those whose heads match a goal are collected in a list, each renamed only when tried. Theories index their
+ * those whose heads match a goal are collected in a list. Theories index their
  * clauses in RETE trees, whose lookups merge lazy sequences (of each index) at every step: for the few clauses of
  * a predicate, the scan is cheaper.
  */
@@ -53,13 +53,16 @@ internal class ClauseIndex private constructor(
     }
 }
 
-/** The clauses selected for a goal, from the one at [index]: each renamed when it becomes the current one */
+/**
+ * The clauses selected for a goal, from the one at [index], as stored: their variables are renamed as they are
+ * resolved (see [ClauseResolution])
+ */
 internal class RuleCursor private constructor(
     private val clauses: List<Clause>,
     private val index: Int,
 ) : Cursor<Rule> {
     override val current: Rule? by lazy(LazyThreadSafetyMode.NONE) {
-        if (index < clauses.size) clauses[index].freshCopy().castToRule() else null
+        if (index < clauses.size) clauses[index].castToRule() else null
     }
 
     override val next: Cursor<out Rule> by lazy(LazyThreadSafetyMode.NONE) {

@@ -2,7 +2,10 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.prepareForExecution
@@ -21,8 +24,9 @@ data class StateRuleExecution(
         get() = StateBacktracking(context.copy(rules = Cursor.empty(), step = nextStep()))
 
     /*
-     * arg2p: the rule is a fresh copy, whose variables are only bound by the unifier with the goal, and only occur in
-     * the head and the body: the body is built with the unifier, and only the bindings of the variables of the goal
+     * arg2p: the variables of the rule are renamed apart from the goal (as the clause is resolved, see ClauseResolution,
+     * with the unificator of arg2p), so they are only bound by the unifier with the goal, and only occur in the head
+     * and the body: the body is built with the unifier, and only the bindings of the variables of the goal
      * are added to the substitution of the resolution (which they would only make larger, and as costly to extend at
      * each step): when there are none, the substitution stays as it is. The head comes first in the unification, so
      * that a variable of the rule meeting one of the goal is bound to it rather than the other way round: a goal
@@ -31,19 +35,19 @@ data class StateRuleExecution(
      */
     override fun computeNext(): State {
         val rule = context.rules.current!!
-        val substitution = with(context) { unificator.mgu(rule.head, currentGoal!!) }
-        return when {
-            substitution.isSuccess -> {
-                val unifier = substitution.castToUnifier()
-                val ruleVariables = HashSet<Var>().also { rule.head.collectVariables(it) }
-                val goalBindings = unifier.filter { (variable, _) -> variable !in ruleVariables }
+        val goal = context.currentGoal!!
+        val resolution =
+            if (context.unificator === Arg2pUnificator) {
+                ClauseResolution.of(rule, goal)
+            } else {
+                resolveRenamed(rule.freshCopy(), goal)
+            }
+        return when (resolution) {
+            null -> failureState
+            else -> {
+                val (goalBindings, subGoals) = resolution
                 val newSubstitution =
                     if (goalBindings.isEmpty()) context.substitution else (context.substitution + goalBindings).castToUnifier()
-                val subGoals =
-                    rule
-                        .prepareForExecution(unifier)
-                        .body[unifier]
-
                 StateGoalSelection(
                     context.copy(
                         goals = subGoals.toGoals(),
@@ -53,8 +57,20 @@ data class StateRuleExecution(
                     ),
                 )
             }
-            else -> failureState
         }
+    }
+
+    // The resolution with a renamed rule, through the unificator of the context
+    private fun resolveRenamed(
+        rule: Rule,
+        goal: Term,
+    ): Pair<Substitution.Unifier, Term>? {
+        val substitution = context.unificator.mgu(rule.head, goal)
+        if (!substitution.isSuccess) return null
+        val unifier = substitution.castToUnifier()
+        val ruleVariables = HashSet<Var>().also { rule.head.collectVariables(it) }
+        val goalBindings = unifier.filter { (variable, _) -> variable !in ruleVariables }.castToUnifier()
+        return goalBindings to rule.prepareForExecution(unifier).body[unifier]
     }
 
     override fun clone(context: PrologExecutionContext): StateRuleExecution = copy(context = context)

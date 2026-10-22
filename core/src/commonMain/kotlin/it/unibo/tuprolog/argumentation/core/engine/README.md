@@ -32,6 +32,10 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   only occur in its head and body). A variable of the rule meeting one of the goal is bound to it, rather than the
   other way round, so a goal passing its variables to a rule adds no binding: enumerating a list with member/2 was
   cubic in its length (2000 elements: 112 s -> 0.44 s).
+- Clause resolution (`ClauseResolution`): the head of a clause as stored is unified with the goal, and the body built
+  from the result, the variables of the clause being renamed on the way (the clause was copied as a whole, then its
+  head unified, then its body prepared for execution and built with the unifier). Graph building and query mode
+  1.22-1.24x faster; `ClauseResolutionTest` compares the two on random clauses and goals.
 - call/1: solved as its clause would (`call(G) :- ensure_executable(G), G`), in a frame of its own opaque to cut,
   without selecting the clause and running `ensure_executable/1` as a goal of its own.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
