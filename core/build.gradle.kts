@@ -56,8 +56,26 @@ tasks.withType<KotlinJvmTest> {
 // Timing benchmarks live with the JVM tests but only run through jvmBenchmark (-Pbenchmark.* options)
 val benchmarkTests = "it.unibo.tuprolog.argumentation.core.benchmark.*"
 
+// The Prolog coverage of the tests only runs through jvmPrologCoverage, which runs the tests itself
+val coverageTests = "it.unibo.tuprolog.argumentation.core.coverage.*"
+
 tasks.named<KotlinJvmTest>("jvmTest") {
     filter.excludeTestsMatching(benchmarkTests)
+    filter.excludeTestsMatching(coverageTests)
+}
+
+tasks.register<Test>("jvmPrologCoverage") {
+    group = "verification"
+    description = "Reports the clauses of the Prolog modules the tests never use (build/reports/prolog-coverage)"
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    dependsOn("jvmTestClasses")
+    testClassesDirs = jvmTest.testClassesDirs
+    classpath = jvmTest.classpath
+    filter.includeTestsMatching(coverageTests)
+    maxHeapSize = jvmMaxHeapSize
+    jvmArgs("-Xss$jvmStackSize")
+    testLogging.showStandardStreams = true
+    outputs.upToDateWhen { false }
 }
 
 tasks.register<Test>("jvmBenchmark") {

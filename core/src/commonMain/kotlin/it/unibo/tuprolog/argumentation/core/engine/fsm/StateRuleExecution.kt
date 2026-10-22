@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
+import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.utils.Cursor
 
@@ -27,10 +28,12 @@ data class StateRuleExecution(
      */
     override fun computeNext(): State {
         // the goal of the frame of a clause is the goal it was selected for, with the substitution already applied
-        val resolution = ClauseResolver.of(context.unificator).resolve(context.rules.current!!, context.goals.current!!)
+        val rule = context.rules.current!!
+        val resolution = ClauseResolver.of(context.unificator).resolve(rule, context.goals.current!!)
         return if (resolution == null) {
             failureState
         } else {
+            ClauseObservers.resolved(rule)
             StateGoalSelection(
                 context.copy(
                     goals = resolution.body.toBodyGoals(),

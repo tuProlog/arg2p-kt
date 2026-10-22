@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
+import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
@@ -25,6 +26,7 @@ internal object FactResolution {
         val resolution =
             ClauseResolver.of(context.unificator).resolve(fact.castToRule(), goal)
                 ?: return StateBacktracking(context.copy(step = step))
+        ClauseObservers.resolved(fact)
         return StateGoalSelection(
             context.copy(goals = context.goals.next, substitution = resolution.extend(context.substitution), step = step),
         )
