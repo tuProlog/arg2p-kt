@@ -9,6 +9,7 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import java.net.InetSocketAddress
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -44,6 +45,20 @@ class ModuleCallsTest {
             solution.substitution.values.any { it.toString() == "world" },
             "expected X to be bound to world, got ${solution.substitution}",
         )
+    }
+
+    @Test
+    fun callModuleLoadsEveryModuleGiven() {
+        val path = temporaryModule()
+        Files.writeString(Path.of(path, "farewells.pl"), "bye(moon).\n")
+        val solver = solverWithModulesIn(path)
+
+        val solution =
+            solver
+                .solve(Struct.parse("module::call_module(['greetings', 'farewells'], (hello(X), bye(Y)))", solver.operators))
+                .first()
+
+        assertTrue(solution.isYes, "call_module should solve a goal using the clauses of all the modules, got $solution")
     }
 
     @Test

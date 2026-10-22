@@ -139,7 +139,8 @@ object ModuleCall : Primitive {
                                     RuleParserBase.operators().plus(OperatorSet.DEFAULT),
                                 )
                             }.getOrNull() ?: throw ExistenceError.forSourceSink(context, target)
-                        solver.loadStaticKb(theory)
+                        // appended: each module adds its clauses to those of the modules before it
+                        solver.appendStaticKb(theory)
                     }
                 }
         }
