@@ -15,12 +15,7 @@ writeListNl([X|Others]) :-
 
 % sortDistinct/2, deduplicate/2 and sort/2 are native primitives (see Utils.kt)
 
-subtract([], _, []).
-subtract([Head|Tail], L2, L3) :-
-        member(Head, L2), !,
-        subtract(Tail, L2, L3).
-subtract([Head|Tail1], L2, [Head|Tail3]) :-
-        subtract(Tail1, L2, Tail3).
+% subtract/3 is a native primitive (see Utils.kt)
 
 
 isEmptyList([]).

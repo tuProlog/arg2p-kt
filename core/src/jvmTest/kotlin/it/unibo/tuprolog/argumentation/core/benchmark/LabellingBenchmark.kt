@@ -16,7 +16,7 @@ import kotlin.test.Test
  * - benchmark.output: CSV report (default build/reports/benchmark/latest.csv)
  * - benchmark.baseline: a previous CSV report to compare against (speedup, and solution counts that differ)
  *
- * Families also include theories ([LabellingBenchmarkWorker.THEORIES]: chain, conflicts, fanin), run through the structured
+ * Families also include theories ([LabellingBenchmarkWorker.THEORIES]: chain, conflicts, fanin, strict), run through the structured
  * pipeline: their solutions are the arguments, and the size of the graph and the time of each phase are written to
  * a second report (the output with a -phases suffix).
  *

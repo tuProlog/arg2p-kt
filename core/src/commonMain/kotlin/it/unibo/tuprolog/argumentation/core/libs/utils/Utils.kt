@@ -26,6 +26,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.solve.primitive.TernaryRelation
 import it.unibo.tuprolog.unify.Unificator
 
 abstract class UtilsBase :
@@ -45,6 +46,7 @@ abstract class UtilsBase :
                         AppendLists.signature to AppendLists,
                         ArgumentRules.signature to ArgumentRules,
                         AssertAll.signature to AssertAll,
+                        ForEach.signature to ForEach,
                         Contains.signature to Contains,
                         ContainsAny.signature to ContainsAny,
                         SortTerms.descriptionPair,
@@ -53,7 +55,9 @@ abstract class UtilsBase :
                         MinimalBySet.descriptionPair,
                         Element.descriptionPair,
                         Reversed.descriptionPair,
+                        UniqueByFirst.descriptionPair,
                         Intersection.descriptionPair,
+                        Subtract.descriptionPair,
                         StronglyConnectedComponents(1).let { it.signature to it },
                         StronglyConnectedComponents(2).let { it.signature to it },
                     ),
@@ -178,6 +182,31 @@ object AssertAll : Primitive {
 
 // Sorting utilities, natively implemented as they are invoked for every argument
 
+/**
+ * for_each(?Element, +List, +Goal): Goal (all its solutions) for each element of List, as
+ * findall(_, (member(Element, List), Goal), _), but without List in the goals of the iterations: with variable
+ * tracking, every resolution step visits the terms of the goal it belongs to, so the list would make every step
+ * as costly as it is long. Goal runs in this module: other modules are called through ::.
+ */
+object ForEach : Primitive {
+    val signature: Signature = Signature("for_each", 3)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val list = request.arguments[1]
+        if (list !is List) {
+            throw TypeError.forGoal(request.context, request.signature, TypeError.Expected.LIST, list)
+        }
+        list.toList().forEach { item ->
+            val iteration = Tuple.of(request.arguments[0], request.arguments[2]).freshCopy()
+            val unifier = Unificator.default.mgu(iteration[0], item)
+            if (unifier.isSuccess) {
+                request.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }
+            }
+        }
+        return sequenceOf(request.replyWith(true))
+    }
+}
+
 private fun unifyWith(
     target: Term,
     result: Term,
@@ -223,6 +252,20 @@ object Intersection : BinaryRelation.WithoutSideEffects<ExecutionContext>("inter
     }
 }
 
+// subtract(+List, +Removed, ?Rest): the elements of List not in Removed, in order (elements compared as ground terms),
+// without the recursion of a Prolog subtract (whose frames would all keep the rest of the list)
+object Subtract : TernaryRelation.WithoutSideEffects<ExecutionContext>("subtract") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+        third: Term,
+    ): Sequence<Substitution> {
+        if (first !is List || second !is List) return emptySequence()
+        val removed = second.toList().toSet()
+        return unifyWith(third, List.of(first.toList().filter { it !in removed }))
+    }
+}
+
 /**
  * sccs(-Sccs): strongly connected components of the attack graph, as lists of argument identifiers,
  * in topological order (a component is only attacked by itself and by the components before it).
@@ -257,6 +300,25 @@ object Reversed : BinaryRelation.WithoutSideEffects<ExecutionContext>("reversed"
         first: Term,
         second: Term,
     ): Sequence<Substitution> = if (first is List) unifyWith(second, List.of(first.toList().asReversed())) else emptySequence()
+}
+
+// unique_by_first(+Lists, ?Unique): Lists keeping, among the lists with the same first element, only the last one
+// (in their order)
+object UniqueByFirst : BinaryRelation.WithoutSideEffects<ExecutionContext>("unique_by_first") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> {
+        if (first !is List) return emptySequence()
+        val seen = HashSet<Term>()
+        val unique =
+            first
+                .toList()
+                .asReversed()
+                .filter { seen.add(it.castToList().toList().first()) }
+                .asReversed()
+        return unifyWith(second, List.of(unique))
+    }
 }
 
 // minimal_by_set(+Pairs, -Values): the values of the Set-Value pairs whose Set has no strict subset among the others

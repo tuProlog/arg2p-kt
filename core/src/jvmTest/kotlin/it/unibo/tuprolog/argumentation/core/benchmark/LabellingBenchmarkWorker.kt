@@ -78,6 +78,11 @@ object LabellingBenchmarkWorker {
             "conflicts" to { n: Int ->
                 (0 until n).joinToString("\n") { "f$it :=> a$it.\nr$it : a$it => b$it.\ns$it : a$it => -b$it.\nt$it : b$it => c$it." }
             },
+            // n strict rules with two premises, transposed (autoTransposition), and a defeasible rebuttal of each
+            "strict" to { n: Int ->
+                (0 until n).joinToString("\n") { "f$it :=> a$it.\ng$it :=> c$it.\ns$it : a$it, c$it -> b$it.\nd$it : a$it => -b$it." } +
+                    "\nautoTransposition."
+            },
             // a rule with n premises, each derivable in two ways (2^n arguments for its conclusion), and a rebuttal
             "fanin" to { n: Int ->
                 (0 until n).joinToString("\n") { "f$it :=> p$it.\ng$it :=> q$it.\nh$it : q$it => p$it." } +

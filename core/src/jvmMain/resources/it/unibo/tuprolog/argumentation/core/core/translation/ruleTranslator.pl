@@ -72,18 +72,18 @@ specialRules(SpecialRules) :-
 %=======================================================================================================================
 
 transpose(_, CtrRules, CtrRules) :- \+ autoTransposition, !.
-transpose([], CtrRules, CtrRules).
-transpose([H|T], TempCtrRules, CtrRules) :-
-    transpose(T, TempCtrRules, CR),
-    findall(TrH, transposition(H, TrH), Tran),
-    mergeCtrRules(CR, Tran, CtrRules).
-
-mergeCtrRules(All, ToMerge, X) :-
-    utils::append_fast(All, ToMerge, XT),
-    deduplicate(XT, X).
-
-deduplicate([], []).
-deduplicate([[RN,A,B]|T], X) :- deduplicate(T, TT), (member([RN,_,_], TT) -> X = TT; X = [[RN,A,B]|TT]). 
+% The rules followed by the transpositions of each one, from the last rule to the first, keeping the last rule
+% with each name: what merging the transpositions of a rule at a time, and deduplicating each time, amounts to,
+% in a single pass rather than in a recursion over the rules (cubic, carrying the lists in every frame).
+% The rules are visited from the context (the newest first, so from the last): with variable tracking, a list
+% of them in the goal of the findall would make every step as costly as the variables of all the rules.
+transpose(Rules, TempCtrRules, CtrRules) :-
+    findall(transposable(Rule), utils::element(Rule, Rules), Transposable),
+    context_assert_all(Transposable),
+    findall(TrH, (context_check(transposable(H)), transposition(H, TrH)), Tran),
+    context_retract(transposable(_)),
+    utils::append_fast(TempCtrRules, Tran, All),
+    utils::unique_by_first(All, CtrRules).
 
 transposition([Id, Prec, Effect], [Id, Prec, Effect]).
 transposition([Id, Prec, Effect], [NewId, NewPrec ,XNegated]) :-
