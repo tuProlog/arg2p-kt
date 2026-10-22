@@ -206,7 +206,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             member(B, Arguments),
             \+ member(B, Resolving).
 
-        superiorComplementArgument(A, [A, B, CA, BB, I]) :-
+        superiorComplementArgument(A, [R, B, CA, BB, I]) :-
             complement(A, CA),
             context_check(argument([R, B, CA, BB, I])),
             superiority::superiorArgument([R, B, CA, BB, I], A).

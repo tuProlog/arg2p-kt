@@ -150,4 +150,26 @@ class BurdenOfPersuasionLabellingTest {
             }
         }
     }
+
+    // (b.ii.1): with no burden on a, its argument is OUT as an argument for -a superior to it is IN
+    @Test
+    fun labelBpGroundedPartialOutBySuperiorComplement() {
+        TestingUtils.buildLabelSets(
+            """
+            r1 : [] => a.
+            r2 : [] => -a.
+            sup(r2, r1).
+            graphBuildMode(standard_af).
+            statementLabellingMode(statement).
+            argumentLabellingMode(bp_grounded_partial).
+            orderingPrinciple(last).
+            orderingComparator(elitist).
+            graphExtension(standardPref).
+            graphExtension(bp).
+            """.trimIndent(),
+            "[[-a]]",
+            "[[a]]",
+            "[]",
+        )
+    }
 }
