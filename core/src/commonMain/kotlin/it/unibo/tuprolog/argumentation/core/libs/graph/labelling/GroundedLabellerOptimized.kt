@@ -12,13 +12,18 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-abstract class GroundedLabellerOptimizedBase : PrologModule("prolog.argumentation.graph.labelling.grounded", "grounded") {
+object GroundedLabellerOptimized : PrologModule("prolog.argumentation.graph.labelling.grounded", "grounded") {
     override val primitives: Map<Signature, Primitive>
         get() = mapOf(GroundedFixpoint.signature to GroundedFixpoint)
-}
 
-expect object GroundedLabellerOptimized : GroundedLabellerOptimizedBase {
-    override val prologRawTheory: String
+    override val prologRawTheory: String =
+        """
+        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        locality(directional).
+
+        argumentLabelling :-
+            grounded_fixpoint.
+        """.trimIndent()
 }
 
 /**

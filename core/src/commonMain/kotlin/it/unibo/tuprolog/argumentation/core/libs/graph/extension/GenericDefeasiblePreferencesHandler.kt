@@ -2,9 +2,61 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.extension
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
-abstract class GenericDefeasiblePreferencesHandlerBase :
-    PrologModule("prolog.argumentation.graph.preferences.defeasible.generic", "defeasibleAllPref")
+object GenericDefeasiblePreferencesHandler : PrologModule(
+    "prolog.argumentation.graph.preferences.defeasible.generic",
+    "defeasibleAllPref",
+) {
+    override val prologRawTheory: String =
+        """
+        modifyArgumentationGraph :-
+            defeasiblePref::assertAllSup,
+            findall((T, A, B, C), context_check(attack(T, A, B, C)), Attacks),
+            defeasiblePref::filterSupRelatedAttacks(Attacks, InvalidAttacks),
+            defeasiblePref::convertAttacks(InvalidAttacks),
+            buildPrefAttacks.
 
-expect object GenericDefeasiblePreferencesHandler : GenericDefeasiblePreferencesHandlerBase {
-    override val prologRawTheory: String
+
+        buildPrefAttacks :-
+            context_check(argument([IdB, attack, [attack(T, A, B, C)], G, I])),
+            defeasiblePref::invalid(T, A, B, C, SupSet),
+            createSuperiorityArgument(SupSet, Arg),
+            % write(Arg), nl,
+            % Attack = attack(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
+            % \+ context_check(Attack),
+            % context_assert(Attack),
+            Attack = [IdB, attack, [attack(T, A, B, C)], G, I],
+            standard_af::saveAttack(pref, Arg, Attack, Attack),
+            defeasiblePref::prefersTransitively(Arg, Attack),
+            fail.
+        buildPrefAttacks.
+
+
+        createSuperiorityArgument(SupSet, Argument) :-
+            findall([Id, TR, [X], G, I], (
+                member(X, SupSet),
+                context_check(argument([Id, TR, [X], G, I]))
+            ), SupportArguments),
+            mergeIds(SupportArguments, MergedId),
+            Argument = [MergedId, pref, [preference(SupSet)], [], [[pref], MergedId, []]],
+            % \+ context_check(argument(Argument)),
+            % context_assert(argument(Argument)),
+            standard_af::saveArgument(a, [preference(SupSet)], Argument),
+            findall(_, (
+                member(A, SupportArguments),
+                standard_af::saveSupport(A, Argument),
+                findall(_, (
+                    context_check(attack(X, Y, A, Z)),
+                    standard_af::saveAttack(X, Y, Argument, Z)
+                ), _)
+            ), _).
+
+        mergeIds([], [pref]).
+        mergeIds(Arguments, [pref|MergedId]) :-
+            findall(Id, member([Id, _, _, _, _], Arguments), Res),
+            utils::appendLists(Res, MergedId).
+
+        % Query mode: the same arguments matter as for defeasiblePref
+        queryDependencies(Argument, S) :- defeasiblePref::queryDependencies(Argument, S).
+        queryDependants(Argument, S) :- defeasiblePref::queryDependants(Argument, S).
+        """.trimIndent()
 }
