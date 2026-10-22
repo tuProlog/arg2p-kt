@@ -93,8 +93,25 @@ object Arg2pUnificator : Unificator by Unificator.default {
         term2: Term,
     ): Term? = mgu(term1, term2).takeIf { it.isSuccess }?.let { term1.apply(it) }
 
+    // Merging with an empty substitution (as the replies of most primitives, which only test) copies nothing
     override fun merge(
         substitution1: Substitution,
         substitution2: Substitution,
-    ): Substitution = Unificator.default.merge(substitution1, substitution2, false)
+    ): Substitution =
+        when {
+            substitution2.isSuccess && substitution2.isEmpty() -> substitution1
+            substitution1.isSuccess && substitution1.isEmpty() -> substitution2
+            else -> Unificator.default.merge(substitution1, substitution2, false)
+        }
+
+    override fun merge(
+        substitution1: Substitution,
+        substitution2: Substitution,
+        occurCheckEnabled: Boolean,
+    ): Substitution =
+        if (occurCheckEnabled) {
+            Unificator.default.merge(substitution1, substitution2, true)
+        } else {
+            merge(substitution1, substitution2)
+        }
 }
