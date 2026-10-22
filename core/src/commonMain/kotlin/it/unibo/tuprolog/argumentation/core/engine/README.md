@@ -23,5 +23,11 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   with other libraries, rather than in a solver of its own. The module calls (`::`, `:::`) are inlined: no solver is
   set up for each call, the bindings get back as for any goal, and the call is subject to the time limit of the
   resolution. Backtracking into a choice point within an inlined call goes on with the libraries of the call.
+- Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
+  synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 
-Together: graph building 2-2.6x faster, query mode 2.5x, resolution 2.3x; module calls 1.3-2x.
+The unification used by the engine is the one of `Arg2pUnificator` (in `libs.basic`): the default one, computed in a
+single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
+
+Together, against the original solver: graph building 2.4-3.4x faster, query mode 3.4x, resolution 3.9x, module
+calls 1.5-3.8x.

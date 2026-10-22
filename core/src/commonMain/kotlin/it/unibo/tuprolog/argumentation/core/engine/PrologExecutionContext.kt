@@ -106,18 +106,15 @@ data class PrologExecutionContext(
     val isActivationRecord: Boolean
         get() = parent == null || depth - parent.depth >= 1
 
-    /** This frame and all its ancestors, from here up to (and including) the root, in that order. */
-    val pathToRoot: Sequence<PrologExecutionContext> =
-        sequence {
-            var current: PrologExecutionContext? = this@PrologExecutionContext
-            while (current != null) {
-                yield(current)
-                current = current.parent
-            }
-        }
+    /**
+     * This frame and all its ancestors, from here up to (and including) the root, in that order (arg2p: built when
+     * needed, rather than for each of the contexts, one or more per resolution step).
+     */
+    val pathToRoot: Sequence<PrologExecutionContext>
+        get() = generateSequence(this) { it.parent }
 
     /** The current [goals] entry with [substitution] already applied, or `null` if there is none left to prove. */
-    val currentGoal: Term? by lazy {
+    val currentGoal: Term? by lazy(LazyThreadSafetyMode.NONE) {
         if (goals.isOver) null else goals.current?.apply(substitution)
     }
 
@@ -126,7 +123,7 @@ data class PrologExecutionContext(
 
     // A set rather than a sequence: membership is checked for every binding of the substitution whenever a frame is
     // left, and a sequence is scanned at each check (arg2p: the scans were quadratic in deep resolutions)
-    private val interestingVariables: KtSet<Var> by lazy {
+    private val interestingVariables: KtSet<Var> by lazy(LazyThreadSafetyMode.NONE) {
         HashSet<Var>().also { variables ->
             query.variables.forEach { variables.add(it) }
             pathToRoot.forEach { context -> context.locallyInterestingVariables.forEach { variables.add(it) } }
@@ -141,7 +138,7 @@ data class PrologExecutionContext(
      */
     fun isVariableInteresting(variable: Var) = variable in interestingVariables
 
-    override val logicStackTrace: KtList<Struct> by lazy {
+    override val logicStackTrace: KtList<Struct> by lazy(LazyThreadSafetyMode.NONE) {
         pathToRoot
             .filter { it.isActivationRecord }
             .map { it.procedure ?: Struct.of("?-", query) }

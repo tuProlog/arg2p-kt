@@ -4,6 +4,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.TimeOutException
@@ -20,14 +21,20 @@ import it.unibo.tuprolog.solve.exception.TimeOutException
 abstract class AbstractState(
     override val context: PrologExecutionContext,
 ) : State {
-    /** The (lazily captured) instant this state is being evaluated at, used for the timeout check in [next]. */
-    protected val executionTime: TimeInstant by lazy {
+    /**
+     * The (lazily captured) instant this state is being evaluated at, used for the timeout check in [next] (arg2p:
+     * states are confined to the thread of their resolution, so the lazy value needs no synchronization).
+     */
+    protected val executionTime: TimeInstant by lazy(LazyThreadSafetyMode.NONE) {
         currentTime()
     }
 
-    /** Whether [executionTime] is past [PrologExecutionContext.startTime] + [PrologExecutionContext.maxDuration]. */
+    /**
+     * Whether [executionTime] is past [PrologExecutionContext.startTime] + [PrologExecutionContext.maxDuration]
+     * (arg2p: without a time limit, the clock is not read at each step).
+     */
     protected open val isTimeout: Boolean
-        get() = executionTime - context.startTime > context.maxDuration
+        get() = context.maxDuration != TimeDuration.MAX_VALUE && executionTime - context.startTime > context.maxDuration
 
     override fun next(): State =
         if (isTimeout) {
