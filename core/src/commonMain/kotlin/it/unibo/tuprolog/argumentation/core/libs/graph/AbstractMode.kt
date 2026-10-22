@@ -46,16 +46,17 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
             solve(Arguments, Attacks),
             utils::recoverArgumentLabellingAbstract(I, O, U).
 
-        % The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them
+        % The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them.
+        % The goals of for_each are solved in the module utils: they name the modules of their predicates.
         solve(Arguments, Attacks) :-
             context_reset,
             utils::for_each(A, Arguments, (
-                abstractArgument(A, Argument),
+                abstract::abstractArgument(A, Argument),
                 graphStore::saveArgument(graph, [A], Argument)
             )),
             utils::for_each((X, Y), Attacks, (
-                abstractArgument(X, XX),
-                abstractArgument(Y, YY),
+                abstract::abstractArgument(X, XX),
+                abstract::abstractArgument(Y, YY),
                 graphStore::saveAttack(abstract, XX, YY, YY)
             )),
             buildArgumentLabelling.

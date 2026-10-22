@@ -243,7 +243,7 @@ class SemanticsPaperExamplesTest {
             ),
         )
 
-    // Figure 5 through abstract::solve: no argument is repeated within a label
+    // Figure 5 through abstract::solve: every argument is labelled, none is repeated within a label
     @Test
     fun abstractSolveHasNoRepeatedArguments() {
         val query = "abstract::solve([a, b, c, d], [(a, b), (b, a), (a, c), (b, c), (c, d)], In, Out, Und)"
@@ -252,6 +252,9 @@ class SemanticsPaperExamplesTest {
                 .mapNotNull { semantics ->
                     val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().argumentLabellingMode(semantics).create())
                     val solutions = solver.solve(Struct.parse(query, solver.operators)).toList()
+                    // every labelling labels the four arguments
+                    val labellings = solutions.filter { it.isYes }.map { it.substitution.values.sumOf { labels -> labels.castToList().toList().size } }
+                    if (labellings.isEmpty() || labellings.any { it != 4 }) return@mapNotNull "$semantics: labellings of $labellings arguments"
                     val duplicates =
                         solutions.filter { it.isYes }.flatMap { it.substitution.values }.any { labels ->
                             (labels as it.unibo.tuprolog.core.List).toList().let { it.size != it.toSet().size }
