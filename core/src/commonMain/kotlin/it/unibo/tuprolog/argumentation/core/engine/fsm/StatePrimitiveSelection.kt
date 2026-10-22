@@ -8,6 +8,7 @@ import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.error.InstantiationError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.extractSignature
+import it.unibo.tuprolog.utils.Cursor
 import it.unibo.tuprolog.utils.cursor
 
 /**
@@ -52,15 +53,17 @@ data class StatePrimitiveSelection(
                                 libraries.primitives[signature]
                                     ?: error("Inconsistent behaviour of Library.contains and Library.get")
                             if (primitive is InlinedCall) {
-                                // Solved in place, in a frame of its own (arg2p: rather than in another solver)
+                                // Solved in place, in a frame of its own (arg2p: rather than in another solver), with a
+                                // choice point of its own: the one a cut in the goal finds, to cut what follows it
                                 val inlining = primitive.inline(request)
                                 StateGoalSelection(
-                                    childContext.copy(
-                                        goals = inlining.goal.toGoals(),
-                                        libraries = inlining.libraries,
-                                        inlined = true,
-                                        scoped = true,
-                                    ),
+                                    childContext
+                                        .copy(
+                                            goals = inlining.goal.toGoals(),
+                                            libraries = inlining.libraries,
+                                            inlined = true,
+                                            scoped = true,
+                                        ).appendRulesAndChoicePoints(Cursor.empty()),
                                 )
                             } else {
                                 val primitiveExecutions = primitive.solve(request).cursor()
