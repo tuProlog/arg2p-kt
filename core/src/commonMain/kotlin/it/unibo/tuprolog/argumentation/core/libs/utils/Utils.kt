@@ -53,8 +53,6 @@ abstract class UtilsBase :
                         Deduplicate.descriptionPair,
                         SortDistinct.descriptionPair,
                         MinimalBySet.descriptionPair,
-                        Element.descriptionPair,
-                        Reversed.descriptionPair,
                         UniqueByFirst.descriptionPair,
                         Intersection.descriptionPair,
                         Subtract.descriptionPair,
@@ -280,24 +278,6 @@ class StronglyConnectedComponents(
         val sccs = stronglyConnectedComponents(nodes) { attacked[it].orEmpty() }
         return sequenceOf(request.replyList(request.arguments.lastIndex, sccs.map { List.of(it) }) ?: request.replyFail())
     }
-}
-
-// element(?Element, +List): Element unified with each element of List in turn, as member/2 does, but from a single
-// choice point: member/2 recurses, keeping an execution context for each element enumerated so far
-object Element : BinaryRelation.WithoutSideEffects<ExecutionContext>("element") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
-        first: Term,
-        second: Term,
-    ): Sequence<Substitution> = if (second is List) second.toSequence().flatMap { unifyWith(first, it) } else emptySequence()
-}
-
-// reversed(+List, ?Reversed): the elements of List in reverse order, without the recursion of a Prolog reverse
-// (whose frames would all keep the rest of the list)
-object Reversed : BinaryRelation.WithoutSideEffects<ExecutionContext>("reversed") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
-        first: Term,
-        second: Term,
-    ): Sequence<Substitution> = if (first is List) unifyWith(second, List.of(first.toList().asReversed())) else emptySequence()
 }
 
 // unique_by_first(+Lists, ?Unique): Lists keeping, among the lists with the same first element, only the last one

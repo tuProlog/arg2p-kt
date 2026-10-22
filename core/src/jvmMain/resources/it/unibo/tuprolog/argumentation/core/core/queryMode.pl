@@ -85,7 +85,7 @@ expand(connected) :-
     findall(Id, (context_check(clause(arg(Id), _)), context_absent(expanded(Id))), Ids),
     Ids \== [], !,
     findall(_, (
-        utils::element(Id, Ids),
+        member(Id, Ids),
         context_assert(expanded(Id)),
         context_check(clause(arg(Id), argument(Argument))),
         dependant(Argument, Statement),

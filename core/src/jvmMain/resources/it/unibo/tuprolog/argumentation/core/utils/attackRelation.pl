@@ -96,11 +96,11 @@ attackDependant([_, _, [Conflict], _, _], S) :-
 % for once: query mode looks for them to build the graph, and again to build the attacks
 possibleAttackers(Id, _, Conflict) :-
     context_check(possibleAttackersOf(Id, Conflicts)), !,
-    utils::element(Conflict, Conflicts).
+    member(Conflict, Conflicts).
 possibleAttackers(Id, Argument, Conflict) :-
     findall(C, findPossibleAttackers(Argument, C), Conflicts),
     context_assert(possibleAttackersOf(Id, Conflicts)),
-    utils::element(Conflict, Conflicts).
+    member(Conflict, Conflicts).
 
 findPossibleAttackers([_, _, Head, _, _], Conf) :-
     parser::classic_conflict(Conf, Head, Guard).

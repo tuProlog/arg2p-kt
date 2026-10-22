@@ -24,11 +24,11 @@ class ModuleCallBindingsTest {
     }
 
     @Test
-    fun anonymousVariableInsideABoundTerm() = assertEquals("f(1, b)", binding("S = f(_, b), utils::element(S, [f(1, b)])", "S"))
+    fun anonymousVariableInsideABoundTerm() = assertEquals("f(1, b)", binding("S = f(_, b), utils::subtract([f(1, b)], [], [S])", "S"))
 
     @Test
-    fun wildcardVariableInsideABoundTerm() = assertEquals("f(1, b)", binding("S = f(_W, b), utils::element(S, [f(1, b)])", "S"))
+    fun wildcardVariableInsideABoundTerm() = assertEquals("f(1, b)", binding("S = f(_W, b), utils::subtract([f(1, b)], [], [S])", "S"))
 
     @Test
-    fun namedVariables() = assertEquals("f(1, b)", binding("utils::element(S, [f(1, b)])", "S"))
+    fun namedVariables() = assertEquals("f(1, b)", binding("utils::subtract([f(1, b)], [], [S])", "S"))
 }

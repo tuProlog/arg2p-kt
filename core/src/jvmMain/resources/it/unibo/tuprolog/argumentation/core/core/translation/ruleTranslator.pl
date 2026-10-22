@@ -74,14 +74,11 @@ specialRules(SpecialRules) :-
 transpose(_, CtrRules, CtrRules) :- \+ autoTransposition, !.
 % The rules followed by the transpositions of each one, from the last rule to the first, keeping the last rule
 % with each name: what merging the transpositions of a rule at a time, and deduplicating each time, amounts to,
-% in a single pass rather than in a recursion over the rules (cubic, carrying the lists in every frame).
-% The rules are visited from the context (the newest first, so from the last): with variable tracking, a list
-% of them in the goal of the findall would make every step as costly as the variables of all the rules.
+% in a single pass rather than merging and deduplicating the lists once for each rule (cubic in the number of
+% rules).
 transpose(Rules, TempCtrRules, CtrRules) :-
-    findall(transposable(Rule), utils::element(Rule, Rules), Transposable),
-    context_assert_all(Transposable),
-    findall(TrH, (context_check(transposable(H)), transposition(H, TrH)), Tran),
-    context_retract(transposable(_)),
+    reverse(Rules, Reversed),
+    findall(TrH, (member(H, Reversed), transposition(H, TrH)), Tran),
     utils::append_fast(TempCtrRules, Tran, All),
     utils::unique_by_first(All, CtrRules).
 

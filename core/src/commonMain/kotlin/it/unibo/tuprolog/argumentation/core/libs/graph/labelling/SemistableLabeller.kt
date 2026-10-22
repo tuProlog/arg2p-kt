@@ -46,7 +46,7 @@ object SemistableLabeller :
                 findall(A, context_check(inId(A)), In)
             ), Preferred),
             utils::minimal_by_set(Preferred, Semistable),
-            utils::element(In, Semistable),
+            member(In, Semistable),
             conflictfree::labelSet(Branch, In).
         """.trimIndent()
 }

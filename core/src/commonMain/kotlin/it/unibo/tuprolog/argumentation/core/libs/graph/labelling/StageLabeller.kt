@@ -45,7 +45,7 @@ object StageLabeller :
                 findall(A, context_check(inId(A)), In)
             ), Naive),
             utils::minimal_by_set(Naive, Stage),
-            utils::element(In, Stage),
+            member(In, Stage),
             conflictfree::labelSet(Branch, In).
         """.trimIndent()
 }
