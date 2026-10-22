@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
+package it.unibo.tuprolog.argumentation.core.libs.graph.labelling.statement
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 

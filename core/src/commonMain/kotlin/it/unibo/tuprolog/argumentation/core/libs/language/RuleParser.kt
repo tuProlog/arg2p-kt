@@ -131,8 +131,6 @@ object RuleParser : RuleParserBase() {
 
         prolog([prolog(Term)], Term).
         contrary([~(Term)], Term).
-        undercut(undercut(Rule), Rule).
-        superiority(sup(Id1, Id2), Id1, Id2).
 
         /*
          *   Convert the given tuple to list

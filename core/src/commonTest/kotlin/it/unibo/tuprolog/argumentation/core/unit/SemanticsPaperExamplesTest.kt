@@ -253,8 +253,13 @@ class SemanticsPaperExamplesTest {
                     val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().argumentLabellingMode(semantics).create())
                     val solutions = solver.solve(Struct.parse(query, solver.operators)).toList()
                     // every labelling labels the four arguments
-                    val labellings = solutions.filter { it.isYes }.map { it.substitution.values.sumOf { labels -> labels.castToList().toList().size } }
-                    if (labellings.isEmpty() || labellings.any { it != 4 }) return@mapNotNull "$semantics: labellings of $labellings arguments"
+                    val labellings =
+                        solutions
+                            .filter { it.isYes }
+                            .map { solution -> solution.substitution.values.sumOf { it.castToList().toList().size } }
+                    if (labellings.isEmpty() || labellings.any { it != 4 }) {
+                        return@mapNotNull "$semantics: labellings of $labellings arguments"
+                    }
                     val duplicates =
                         solutions.filter { it.isYes }.flatMap { it.substitution.values }.any { labels ->
                             (labels as it.unibo.tuprolog.core.List).toList().let { it.size != it.toSet().size }
