@@ -27,11 +27,13 @@ internal class ProgramClauses private constructor(
         /** The clauses of the program of [context] */
         fun of(context: PrologExecutionContext): ProgramClauses =
             with(context) {
-                ProgramClauses(listOf(theory(libraries.asTheory(unificator)), theory(staticKb), theory(dynamicKb)))
+                ProgramClauses(listOf(libraries.asTheory(unificator), staticKb, dynamicKb).map { theory(it, theoryIndexes) })
             }
 
-        private fun theory(theory: Theory): ClauseSource =
-            if (theory.isMutable) MutableTheoryClauses(theory) else IndexedTheoryClauses.of(theory)
+        private fun theory(
+            theory: Theory,
+            indexes: TheoryIndexes,
+        ): ClauseSource = if (theory.isMutable) MutableTheoryClauses(theory) else indexes.of(theory)
     }
 }
 

@@ -15,7 +15,7 @@ import it.unibo.tuprolog.unify.Unificator
  * argument of their heads (see [FirstArgumentIndex]); those matching a goal are collected in a list. Theories index
  * their clauses in RETE trees, whose lookups merge lazy sequences (of each index) at every step.
  */
-internal class IndexedTheoryClauses private constructor(
+internal class IndexedTheoryClauses(
     theory: Theory,
 ) : ClauseSource {
     private val bySignature: Map<Signature, FirstArgumentIndex> =
@@ -32,24 +32,33 @@ internal class IndexedTheoryClauses private constructor(
             ?.candidates(goal)
             ?.filter { unificator.match(goal, it.head!!) }
             ?: emptyList()
+}
 
-    companion object {
-        // The indexes of the last theories met, by identity: the libraries of each module, and the static theory
-        private const val CACHED = 64
-        private val theories = arrayOfNulls<Theory>(CACHED)
-        private val indexes = arrayOfNulls<IndexedTheoryClauses>(CACHED)
-        private var last = 0
+/**
+ * The indexes of the immutable theories a solver resolves with (arg2p): the libraries of each module and the static
+ * theory, the last ones met, by identity. A solver keeps them for all its resolutions, and shares them with the
+ * solvers its resolutions create (for sub-goals, modules), which run in the same thread: the indexes need no
+ * synchronization, and the resolutions of solvers in other threads have indexes of their own.
+ */
+class TheoryIndexes {
+    private val theories = arrayOfNulls<Theory>(CACHED)
+    private val indexes = arrayOfNulls<IndexedTheoryClauses>(CACHED)
+    private var last = 0
 
-        fun of(theory: Theory): IndexedTheoryClauses {
-            for (i in 0 until CACHED) {
-                if (theories[i] === theory) return indexes[i]!!
-            }
-            val index = IndexedTheoryClauses(theory)
-            last = (last + 1) % CACHED
-            theories[last] = theory
-            indexes[last] = index
-            return index
+    /** The index of [theory], built the first time it is met */
+    internal fun of(theory: Theory): IndexedTheoryClauses {
+        for (i in 0 until CACHED) {
+            if (theories[i] === theory) return indexes[i]!!
         }
+        val index = IndexedTheoryClauses(theory)
+        last = (last + 1) % CACHED
+        theories[last] = theory
+        indexes[last] = index
+        return index
+    }
+
+    private companion object {
+        const val CACHED = 64
     }
 }
 

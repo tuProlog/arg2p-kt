@@ -32,6 +32,8 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   a goal collected in a list (lookups merged the lazy sequences of the RETE indexes of the theories at every step:
   looking up one of 2000 facts by its first argument is 10x faster); a mutable theory gives the clauses it has when
   the goal is selected.
+  The indexes are kept by each solver (`TheoryIndexes`, in its execution contexts) and shared with the solvers its
+  resolutions create, which run in its thread: solvers in different threads have indexes of their own.
 - Rule execution: the body of a rule is built with the unifier of its head and the goal, and only the bindings of
   the variables of the goal are added to the substitution of the resolution (those of the fresh copy of the rule
   only occur in its head and body). A variable of the rule meeting one of the goal is bound to it, rather than the

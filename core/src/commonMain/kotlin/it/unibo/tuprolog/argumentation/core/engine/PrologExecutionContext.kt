@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
@@ -57,6 +58,8 @@ import kotlin.collections.Set as KtSet
  *   [isVariableInteresting]); [trimmedSize] is the size of the substitution when it was last trimmed.
  * - [inlined]: whether this frame solves the goal of an [Inlining], against libraries of its own; [scoped]: whether
  *   this frame or one above does (so that its libraries are not the ones of the whole resolution).
+ * - [theoryIndexes]: the indexes of the immutable theories, kept by the solver and shared with the solvers the
+ *   resolution creates (see [TheoryIndexes]).
  *
  * @throws IllegalArgumentException if [depth] and [parent] are inconsistent (`depth == 0` iff `parent == null`),
  * or if [startTime] or [maxDuration] are negative.
@@ -87,6 +90,7 @@ data class PrologExecutionContext(
     val trimmedSize: Int = 0,
     val inlined: Boolean = false,
     val scoped: Boolean = false,
+    val theoryIndexes: TheoryIndexes = TheoryIndexes(),
 ) : ExecutionContext {
     init {
         require((depth == 0 && parent == null) || (depth > 0 && parent != null))
@@ -170,7 +174,7 @@ data class PrologExecutionContext(
             inputChannels,
             outputChannels,
             trustKb = true,
-        )
+        ).also { it.shareTheoryIndexes(theoryIndexes) }
 
     override fun createMutableSolver(
         unificator: Unificator,
@@ -190,7 +194,7 @@ data class PrologExecutionContext(
             inputChannels,
             outputChannels,
             trustKb = true,
-        )
+        ).also { it.shareTheoryIndexes(theoryIndexes) }
 
     override fun update(
         unificator: Unificator,

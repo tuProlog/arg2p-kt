@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.engine.fsm.State
 import it.unibo.tuprolog.argumentation.core.engine.fsm.StateInit
+import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Solution
@@ -134,6 +135,7 @@ abstract class AbstractPrologSolver(
                 inputChannels = inputChannels,
                 outputChannels = outputChannels,
                 customData = currentContext.customData,
+                theoryIndexes = currentContext.theoryIndexes,
                 startTime = currentTimeInstant(),
                 maxDuration = options.timeout,
             )
@@ -159,6 +161,18 @@ abstract class AbstractPrologSolver(
     ) {
         require(destination.context.step == index)
         currentContext = destination.context
+    }
+
+    /** The indexes of the immutable theories this solver resolves with (arg2p, see [TheoryIndexes]) */
+    internal val theoryIndexes: TheoryIndexes
+        get() = currentContext.theoryIndexes
+
+    /**
+     * Resolves with [indexes] (arg2p): those of the resolution creating this solver, which runs in the same thread
+     * (see [TheoryIndexes])
+     */
+    internal fun shareTheoryIndexes(indexes: TheoryIndexes) {
+        currentContext = currentContext.copy(theoryIndexes = indexes)
     }
 
     abstract override fun copy(
