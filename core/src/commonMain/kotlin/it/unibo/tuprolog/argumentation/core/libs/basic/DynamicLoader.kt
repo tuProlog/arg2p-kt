@@ -7,7 +7,6 @@ import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
@@ -22,70 +21,48 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 
 class DynamicLoader(
-    private val solver: Arg2pSolver,
+    solver: Arg2pSolver,
 ) : ArgLibrary,
     ArgLoader {
-    private val solverCache = mutableMapOf<String, MutableSolver>()
+    private val modules = Modules(solver)
 
-    // The static knowledge base each cached solver was last given: loading it again re-indexes all its clauses
+    // The solvers of the modules, for the engines solving module calls through solve (the arg2p one inlines them)
+    private val moduleSolvers = mutableMapOf<String, MutableSolver>()
+
+    // The static knowledge base each module solver was last given: loading it again re-indexes all its clauses
     private val loadedKb = mutableMapOf<String, Theory>()
 
-    fun loadWithMemo(
+    private fun solverOf(
         request: Solve.Request<ExecutionContext>,
-        library: Term,
+        module: Module,
     ): MutableSolver =
-        solverCache
-            .getOrPut(library.toString()) {
-                (
-                    this.solver.dynamicLibraries().firstOrNull {
-                        (it as Loadable).identifier() == library.toString()
-                    } ?: throw DomainError.forGoal(
-                        request.context,
-                        request.signature,
-                        DomainError.Expected.of("Loadable Lib"),
-                        library,
-                    )
-                ).let { x ->
-                    request.context.createMutableSolver(
-                        libraries =
-                            Runtime
-                                .of(
-                                    request.context.libraries.libraries.filterNot { lib ->
-                                        this.solver
-                                            .dynamicLibraries()
-                                            .map { it.alias }
-                                            .contains(lib.alias)
-                                    },
-                                ).plus(x.content()),
-                    )
-                }
-            }.also {
-                val key = library.toString()
+        moduleSolvers
+            .getOrPut(module.name) { request.context.createMutableSolver(libraries = module.libraries) }
+            .also {
                 val staticKb = request.context.staticKb
-                if (loadedKb[key] !== staticKb) {
+                if (loadedKb[module.name] !== staticKb) {
                     it.loadStaticKb(staticKb)
-                    loadedKb[key] = staticKb
+                    loadedKb[module.name] = staticKb
                 }
             }
 
     // Module calls are inlined by the arg2p engine (DelegatedCall): the goal is solved in place, against the libraries
-    // of the module. Other solvers solve it in a solver of their own, cached for each module.
+    // of the module. Other solvers solve it in a solver of the module, cached.
     abstract inner class AbstractWithLib :
         PrimitiveWithSignature,
         DelegatedCall {
         abstract override val signature: Signature
 
-        abstract fun execute(
-            module: String,
-            solver: MutableSolver,
+        /** What the call does before its goal is solved, in [module] */
+        protected abstract fun enter(
+            request: Solve.Request<ExecutionContext>,
+            module: Module,
         )
 
         // The module and the goal of the call, checked
@@ -114,19 +91,17 @@ class DynamicLoader(
         }
 
         override fun delegate(request: Solve.Request<ExecutionContext>): Delegation {
-            val (lib, goal) = call(request)
-            val solver = loadWithMemo(request, lib)
-            execute(lib.toString(), solver)
-            return Inlining(goal, solver.libraries)
+            val (name, goal) = call(request)
+            val module = modules.of(request, name)
+            enter(request, module)
+            return Inlining(goal, module.libraries)
         }
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val (lib, goal) = call(request)
-
-            val solver = loadWithMemo(request, lib)
-
-            execute(lib.toString(), solver)
-
+            val (name, goal) = call(request)
+            val module = modules.of(request, name)
+            enter(request, module)
+            val solver = solverOf(request, module)
             return sequence {
                 yieldAll(
                     solver.solveForCaller(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
@@ -146,25 +121,27 @@ class DynamicLoader(
     inner class WithLib : AbstractWithLib() {
         override val signature = Signature("::", 2)
 
-        override fun execute(
-            module: String,
-            solver: MutableSolver,
+        override fun enter(
+            request: Solve.Request<ExecutionContext>,
+            module: Module,
         ) = Unit
     }
 
     inner class WithLibInNewContext : AbstractWithLib() {
         override val signature = Signature(":::", 2)
 
-        // A new branch of the active one, from the context library if it is reachable (solving goals sets up solvers)
-        override fun execute(
-            module: String,
-            solver: MutableSolver,
+        // A new branch of the active one, through the context library if it is reachable, otherwise solving the goals
+        // of the context in a solver of the module
+        override fun enter(
+            request: Solve.Request<ExecutionContext>,
+            module: Module,
         ) {
-            val context = Context.of(solver.libraries)
+            val context = Context.of(module.libraries)
             if (context != null) {
                 context.branch(context.active)
                 return
             }
+            val solver = request.context.createSolver(libraries = module.libraries)
             logicProgramming {
                 solver
                     .solve("context_active"(X))
@@ -180,7 +157,8 @@ class DynamicLoader(
         override val signature = Signature("loader_reset", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            this@DynamicLoader.solverCache.clear()
+            this@DynamicLoader.modules.clear()
+            this@DynamicLoader.moduleSolvers.clear()
             this@DynamicLoader.loadedKb.clear()
             return sequenceOf(request.replyWith(true))
         }

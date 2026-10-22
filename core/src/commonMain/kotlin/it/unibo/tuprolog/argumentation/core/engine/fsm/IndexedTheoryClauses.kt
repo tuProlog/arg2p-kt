@@ -41,8 +41,9 @@ internal class IndexedTheoryClauses(
  * synchronization, and the resolutions of solvers in other threads have indexes of their own.
  */
 class TheoryIndexes {
-    private val theories = arrayOfNulls<Theory>(CACHED)
-    private val indexes = arrayOfNulls<IndexedTheoryClauses>(CACHED)
+    // Allocated when first needed: the root contexts of sub-solvers get indexes of their own before sharing others
+    private val theories by lazy(LazyThreadSafetyMode.NONE) { arrayOfNulls<Theory>(CACHED) }
+    private val indexes by lazy(LazyThreadSafetyMode.NONE) { arrayOfNulls<IndexedTheoryClauses>(CACHED) }
     private var last = 0
 
     /** The index of [theory], built the first time it is met */

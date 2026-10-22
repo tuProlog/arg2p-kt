@@ -50,6 +50,8 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   solved in a frame of their own opaque to cut, after the check of ensure_executable/1: call/1 as
   `call(G) :- ensure_executable(G), G`, \+/1 as `\+ G :- ensure_executable(G), call(G), '$cut', fail` with
   `\+ G :- true` as the alternative of the frame.
+- Solvers: the operators of the libraries are collected once when a solver is created (they were collected again for
+  its first context), which halves the cost of the solvers created for sub-goals (findall/3, the primitives).
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 

@@ -15,10 +15,8 @@ import it.unibo.tuprolog.solve.channel.OutputStore
 import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.Warning
 import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.getAllOperators
 import it.unibo.tuprolog.solve.impl.AbstractSolver
 import it.unibo.tuprolog.solve.library.Runtime
-import it.unibo.tuprolog.solve.toOperatorSet
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -107,7 +105,8 @@ abstract class AbstractPrologSolver(
         flags = flags,
         staticKb = if (trustKb) staticKb.toImmutableTheory() else Theory.empty(unificator),
         dynamicKb = if (trustKb) dynamicKb.toMutableTheory() else MutableTheory.empty(unificator),
-        operators = getAllOperators(libraries).toOperatorSet(),
+        // arg2p: the operators the solver has just collected from the libraries, rather than collecting them again
+        operators = operators,
         inputChannels = inputChannels,
         outputChannels = outputChannels,
         startTime = 0,

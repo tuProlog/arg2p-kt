@@ -391,6 +391,8 @@ class Context :
         fun of(context: ExecutionContext): Context? = of(context.libraries)
 
         /** The context library among the given libraries, if any (through context_all/2) */
-        fun of(libraries: Runtime): Context? = (libraries.primitives[Signature("context_all", 2)] as? DynamicCacheAll)?.owner
+        fun of(libraries: Runtime): Context? = (libraries.primitives[CONTEXT_ALL] as? DynamicCacheAll)?.owner
+
+        private val CONTEXT_ALL = Signature("context_all", 2)
     }
 }
