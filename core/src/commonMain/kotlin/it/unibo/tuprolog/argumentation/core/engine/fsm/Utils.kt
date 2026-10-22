@@ -6,10 +6,13 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.appendPrimitives
 import it.unibo.tuprolog.argumentation.core.engine.appendRules
+import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -50,6 +53,9 @@ fun Term.toGoals(): Cursor<out Term> =
                 else -> it
             }
         }.cursor()
+
+/** The goals of the body of a clause, as [toGoals]: none for `true`, the body of a fact (arg2p) */
+fun Term.toBodyGoals(): Cursor<out Term> = if (isTrue) Cursor.empty() else toGoals()
 
 /** Pushes a new child frame onto the execution-context stack for the current goal, becoming its own [PrologExecutionContext.goals]. */
 fun PrologExecutionContext.createChild(inferProcedureFromGoals: Boolean = true): PrologExecutionContext {
@@ -98,6 +104,17 @@ fun PrologExecutionContext.appendRulesAndChoicePoints(rules: Cursor<out Rule>): 
     return copy(rules = rules, choicePoints = newChoicePointContext)
 }
 
+/**
+ * Records a [it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext.Rules] onto
+ * [PrologExecutionContext.choicePoints] whose [alternatives] resolve the current goal of this context on backtracking
+ * (arg2p): for the frames whose first alternative is not a clause (see [ControlConstruct])
+ */
+fun PrologExecutionContext.appendChoicePoint(alternatives: Cursor<out Rule>): PrologExecutionContext =
+    copy(choicePoints = choicePoints.appendRules(alternatives, this))
+
+/** The context an error raised in this one is reported in: the nearest one that is not throw/1 */
+fun PrologExecutionContext.skipThrow(): ExecutionContext = pathToRoot.first { it.procedure?.functor != Throw.functor }
+
 /** [Solve.Response] analogue of [appendRulesAndChoicePoints], recording a [it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext.Primitives] instead. */
 fun PrologExecutionContext.appendPrimitivesAndChoicePoints(primitiveExecutions: Cursor<out Solve.Response>): PrologExecutionContext {
     val newChoicePointContext =
@@ -143,3 +160,13 @@ fun PrologExecutionContext.toRequest(
     signature: Signature,
     startTime: TimeInstant,
 ) = Solve.Request(signature, goal.args, this, startTime)
+
+// The variables of a term, collected by a plain recursion (Term.variables nests a lazy sequence for each argument),
+// skipping its ground parts (whose groundness is known: lists build it, other structures compute it once)
+internal fun Term.collectVariables(into: MutableSet<Var>) {
+    when (this) {
+        is Var -> into.add(this)
+        is Struct -> if (!isGround) for (i in 0 until arity) this[i].collectVariables(into)
+        else -> Unit
+    }
+}

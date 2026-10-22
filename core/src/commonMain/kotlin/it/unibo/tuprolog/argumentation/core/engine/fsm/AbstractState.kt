@@ -2,8 +2,6 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.currentTimeInstant
@@ -59,9 +57,4 @@ abstract class AbstractState(
     protected fun nextDepth(): Int = context.depth + 1
 
     protected fun previousDepth(): Int = context.depth - 1
-
-    protected fun PrologExecutionContext.skipThrow(): ExecutionContext =
-        pathToRoot.first {
-            it.procedure?.functor != Throw.functor
-        }
 }

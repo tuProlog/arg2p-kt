@@ -44,6 +44,16 @@ class EngineControlTest {
     fun negation() {
         assertEquals("[2, 3]", solve("findall(X, (p(X), \\+ X = 1), L)"))
         assertEquals("[]", solve("findall(X, (p(X), \\+ p(X)), L)"))
+        // a cut in the negated goal is local to it, and its bindings are undone
+        assertEquals("yes", solve("\\+ (!, fail), L = yes"))
+        assertEquals("[2, 3]", solve("findall(X, (p(X), \\+ (p(Y), !, Y = X)), L)"))
+        assertEquals("yes", solve("\\+ \\+ X = 1, var(X), L = yes"))
+        assertEquals("[2]", solve("findall(X, (p(X), \\+ \\+ X = 2), L)"))
+        assertEquals("no", solve("\\+ (p(X), X > 2)"))
+        assertEquals("yes", solve("utils::(\\+ fail), L = yes"))
+        assertEquals(true, solve("\\+ 1").startsWith("error"))
+        assertEquals(true, solve("\\+ _").startsWith("error"))
+        assertEquals("[]", solve("findall(X, catch(\\+ 1, error(type_error(_, _), _), fail), L)"))
     }
 
     @Test

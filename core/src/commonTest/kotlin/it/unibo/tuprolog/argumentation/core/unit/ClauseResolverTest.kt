@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
-import it.unibo.tuprolog.argumentation.core.engine.fsm.ClauseResolution
+import it.unibo.tuprolog.argumentation.core.engine.fsm.RenamingClauseResolver
+import it.unibo.tuprolog.argumentation.core.engine.fsm.StoredClauseResolver
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
@@ -11,18 +12,17 @@ import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.prepareForExecution
 import it.unibo.tuprolog.unify.Unificator
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * The resolution of goals with clauses as stored ([ClauseResolution]) against renaming the clause, unifying its head
- * with the goal and preparing its body with the unifier, on random clauses and goals: same success, same variables
- * of the goal bound, same goal and body up to the names of the variables.
+ * The resolution of goals with clauses as stored ([StoredClauseResolver]) against renaming them first
+ * ([RenamingClauseResolver]), on random clauses and goals: same success, same variables of the goal bound, same goal
+ * and body up to the names of the variables.
  */
-class ClauseResolutionTest {
+class ClauseResolverTest {
     private fun term(
         random: Random,
         variables: kotlin.collections.List<Var>,
@@ -62,31 +62,28 @@ class ClauseResolutionTest {
     }
 
     @Test
-    fun sameResolutionsAsRenamingTheClause() {
+    fun storedClausesResolveAsRenamedOnes() {
         val random = Random(7)
+        val reference = RenamingClauseResolver(Arg2pUnificator)
         var resolved = 0
         repeat(20000) { i ->
             val clauseVariables = (0 until 3).map { Var.of("C$it") }
             val goalVariables = (0 until 3).map { Var.of("G$it") }
             val rule = Rule.of(head(random, clauseVariables), body(random, clauseVariables + goalVariables, 2))
             val goal = head(random, goalVariables)
-            val renamed = rule.freshCopy()
             // without occurs check, cyclic bindings can make the unification loop: only the resolutions that do not
             // need them are compared
-            if (Unificator.default.mgu(renamed.head, goal, true).isFailed && !goal.isGround) return@repeat
-            val unifier = Arg2pUnificator.mgu(renamed.head, goal)
-            val actual = ClauseResolution.of(rule, goal)
-            val case = "$i: $rule with $goal: $unifier, ${actual?.first} ${actual?.second}"
-            assertEquals(unifier.isSuccess, actual != null, case)
-            if (actual == null) return@repeat
+            if (Unificator.default.mgu(rule.freshCopy().head, goal, true).isFailed && !goal.isGround) return@repeat
+            val expected = reference.resolve(rule, goal)
+            val actual = StoredClauseResolver.resolve(rule, goal)
+            val case = "$i: $rule with $goal"
+            assertEquals(expected != null, actual != null, case)
+            if (expected == null || actual == null) return@repeat
             resolved++
-            val ruleVariables = renamed.head.variables.toSet()
-            val goalBindings = unifier.castToUnifier().filter { (variable, _) -> variable !in ruleVariables }
-            val expectedBody = renamed.prepareForExecution(unifier.castToUnifier()).body[unifier]
-            assertEquals(goalBindings.keys, actual.first.keys, case)
+            assertEquals(expected.goalBindings.keys, actual.goalBindings.keys, case)
             assertEquals(
-                canonical(Struct.of("r", goal[goalBindings], expectedBody)),
-                canonical(Struct.of("r", goal[actual.first], actual.second)),
+                canonical(Struct.of("r", goal[expected.goalBindings], expected.body)),
+                canonical(Struct.of("r", goal[actual.goalBindings], actual.body)),
                 case,
             )
         }
