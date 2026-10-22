@@ -25,7 +25,6 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
-import kotlin.random.Random
 import kotlin.collections.List as KList
 
 abstract class RuleParserBase :
@@ -150,11 +149,14 @@ object ConversionUtils {
         context: ExecutionContext,
     ): Boolean = goal !is Struct || context.libraries.hasProtected(goal.extractSignature())
 
+    /** The identifier of the rule a Prolog clause stands for: from its position in the theory, the same at each conversion */
+    fun ruleId(index: Int): String = "rule_$index"
+
     fun commonMap(
         context: Solve.Request<ExecutionContext>,
         first: Term,
         force: Boolean = false,
-        mapper: (Iterable<Clause>, LogicProgrammingScope) -> Term,
+        mapper: (Iterable<IndexedValue<Clause>>, LogicProgrammingScope) -> Term,
     ): Sequence<Substitution> {
         context.ensuringArgumentIsVariable(0)
         return prolog {
@@ -162,7 +164,11 @@ object ConversionUtils {
                 Substitution.of(
                     first.castToVar(),
                     if (force || Settings.of(context.context)?.isOn(PrologStrictCompatibility, context.context) == true) {
-                        mapper(context.context.staticKb.clauses, this)
+                        mapper(
+                            context.context.staticKb.clauses
+                                .withIndex(),
+                            this,
+                        )
                     } else {
                         emptyLogicList
                     },
@@ -176,12 +182,12 @@ object StrictRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prolog
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
-                .filter { !it.isFact }
-                .map {
+                .filter { !it.value.isFact }
+                .map { (index, clause) ->
                     prologScope.logicListOf(
-                        "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
-                        ConversionUtils.modifiers(it, this@computeAllSubstitutions),
-                        it.head!!,
+                        ConversionUtils.ruleId(index),
+                        ConversionUtils.modifiers(clause, this@computeAllSubstitutions),
+                        clause.head!!,
                     )
                 }.toTerm()
         }
@@ -191,13 +197,9 @@ object Axioms : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologAxiom
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
-                .filter { it.isFact && !listOf(":->", "->", "=>", ":=>", ":", ":=", ",").contains(it.head!!.functor) }
-                .map {
-                    prologScope.logicListOf(
-                        "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
-                        it.head!!,
-                    )
-                }.toTerm()
+                .filter { it.value.isFact && !listOf(":->", "->", "=>", ":=>", ":", ":=", ",").contains(it.value.head!!.functor) }
+                .map { (index, clause) -> prologScope.logicListOf(ConversionUtils.ruleId(index), clause.head!!) }
+                .toTerm()
         }
 }
 
@@ -205,13 +207,9 @@ object Premises : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologPre
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
-                .filter { it.isFact && it.head!!.functor == ":=" && it.head!!.arity == 1 }
-                .map {
-                    prologScope.logicListOf(
-                        "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
-                        it.head!!.args[0],
-                    )
-                }.toTerm()
+                .filter { it.value.isFact && it.value.head!!.functor == ":=" && it.value.head!!.arity == 1 }
+                .map { (index, clause) -> prologScope.logicListOf(ConversionUtils.ruleId(index), clause.head!!.args[0]) }
+                .toTerm()
         }
 }
 
@@ -219,20 +217,20 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
-                .filter {
-                    it.isFact &&
+                .filter { (_, clause) ->
+                    clause.isFact &&
                         (
-                            it.head!!.functor == ":=" ||
+                            clause.head!!.functor == ":=" ||
                                 (
-                                    it.head!!.functor == "," &&
-                                        it.head!!
+                                    clause.head!!.functor == "," &&
+                                        clause.head!!
                                             .args[0]
                                             .asStruct()
                                             ?.functor == ":="
                                 )
                         ) &&
-                        it.head!!.arity == 2
-                }.map { clause ->
+                        clause.head!!.arity == 2
+                }.map { (index, clause) ->
                     if (clause.head!!.functor == ",") {
                         val head = clause.head!!.args[0].asStruct()
                         val term =
@@ -250,7 +248,7 @@ object DefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("pr
                         prologScope.clauseOf(clause.head!!.args[0].asStruct(), clause.head!!.args[1])
                     }.let {
                         prologScope.logicListOf(
-                            "rule_${Random.nextInt(0, Int.MAX_VALUE)}",
+                            ConversionUtils.ruleId(index),
                             ConversionUtils.modifiers(it, this@computeAllSubstitutions),
                             it.head!!,
                         )
@@ -263,10 +261,9 @@ object Bps : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first, true) { clauses, prologScope ->
             clauses
-                .filter { it.isFact && it.head?.functor == "bp" }
-                .map {
-                    Struct.of("abstractBp", prologScope.logicListOf(it.head!!.args))
-                }.toTerm()
+                .filter { it.value.isFact && it.value.head?.functor == "bp" }
+                .map { Struct.of("abstractBp", prologScope.logicListOf(it.value.head!!.args)) }
+                .toTerm()
         }
 }
 
