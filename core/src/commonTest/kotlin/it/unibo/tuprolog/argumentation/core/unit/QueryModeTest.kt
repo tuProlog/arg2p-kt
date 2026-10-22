@@ -2,7 +2,9 @@ package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.SolveOptions
@@ -16,13 +18,20 @@ import kotlin.test.fail
  * (a labelling of the whole graph may differ from another only outside the part the query depends on).
  */
 class QueryModeTest {
+    // Statements compared up to the names of their variables
     private data class Answer(
-        val yes: Set<Term>,
-        val no: Set<Term>,
-        val und: Set<Term>,
+        val yes: Set<String>,
+        val no: Set<String>,
+        val und: Set<String>,
     ) {
         override fun toString() = "in=$yes out=$no und=$und"
     }
+
+    private fun Iterable<Term>.canonical() =
+        map { term ->
+            val variables = term.variables.distinct().toList()
+            term.apply(Substitution.of(variables.mapIndexed { i, v -> v to Atom.of("_V$i") }.toMap())).toString()
+        }.toSet()
 
     private val config =
         """
@@ -60,7 +69,7 @@ class QueryModeTest {
                     .items()
                     .map { it.items().single() }
                     .filter { Unificator.default.mgu(it, goal).isSuccess }
-                    .toSet()
+                    .canonical()
             labellings.map { Answer(project(it.getValue("In")), project(it.getValue("Out")), project(it.getValue("Und"))) }.toSet()
         }
     }
@@ -70,8 +79,10 @@ class QueryModeTest {
         query: String,
     ): Set<Answer> =
         solve("$theory\nqueryMode.", "answerQuery($query, In, Out, Und)")
-            .map { Answer(it.getValue("In").items().toSet(), it.getValue("Out").items().toSet(), it.getValue("Und").items().toSet()) }
+            .map { answer -> Answer(answer.labelled("In"), answer.labelled("Out"), answer.labelled("Und")) }
             .toSet()
+
+    private fun Map<String, Term>.labelled(label: String) = getValue(label).items().canonical()
 
     private fun checkQueries(
         theory: String,
@@ -179,6 +190,74 @@ class QueryModeTest {
             sup(r5, r4).
             """.trimIndent(),
             listOf("x", "-y"),
+        )
+
+    // Rule names with variables, so that undercutters can target the instances of a rule
+    @Test
+    fun parametricUndercuts() =
+        checkQueries(
+            """
+            f1 :=> a(1).
+            f2 :=> a(2).
+            f3 :=> c(2).
+            r(X) : a(X) => b(X).
+            u(X) : c(X) => undercut(r(X)).
+            s(X) : b(X) => d(X).
+            """.trimIndent(),
+            listOf("b(X)", "b(1)", "b(2)", "d(X)", "undercut(r(X))"),
+            someSemantics + "naive",
+        )
+
+    // Prolog checks among the premises, binding and testing the variables of the rules
+    @Test
+    fun prologPremises() =
+        checkQueries(
+            """
+            f1 :=> a(1).
+            f2 :=> a(2).
+            f3 :=> a(3).
+            r(X) : a(X), prolog(X > 1) => big(X).
+            s(X) : a(X), prolog(X < 3) => -big(X).
+            t(X) : big(X), prolog(Y is X + 1) => next(Y).
+            """.trimIndent(),
+            listOf("big(X)", "-big(X)", "next(X)", "big(2)"),
+            someSemantics + "naive",
+        )
+
+    // Weak negation: a contrary premise, attacked by any argument for what it assumes false
+    @Test
+    fun weakNegation() =
+        checkQueries(
+            """
+            f1 :=> a(1).
+            f2 :=> a(2).
+            f3 :=> c(2).
+            r(X) : a(X), ~(abnormal(X)) => ok(X).
+            s(X) : c(X) => abnormal(X).
+            t(X) : ok(X) => -abnormal(X).
+            """.trimIndent(),
+            listOf("ok(X)", "ok(1)", "abnormal(X)", "-abnormal(X)"),
+            someSemantics + "naive",
+        )
+
+    // Variables, Prolog checks, weak negation and parametric undercuts together, in chains
+    @Test
+    fun variablesPrologAndWeakNegation() =
+        checkQueries(
+            """
+            f1 :=> n(1).
+            f2 :=> n(2).
+            f3 :=> n(3).
+            f4 :=> flag(2).
+            r(X) : n(X), prolog(X < 3), ~(excluded(X)) => p(X).
+            s(X) : p(X), prolog(Y is X * 2) => q(X, Y).
+            e(X) : flag(X) => excluded(X).
+            u(X, Y) : q(X, Y), prolog(Y > 2) => undercut(r(X)).
+            v(X) : n(X), ~(p(X)) => -q(X, _).
+            w(X) : q(X, _) => undercut(e(X)).
+            """.trimIndent(),
+            listOf("p(X)", "q(X, Y)", "-q(X, Y)", "excluded(X)", "p(1)"),
+            someSemantics + "naive",
         )
 
     // A directional, a connected and a whole-graph semantics, for the graph extensions

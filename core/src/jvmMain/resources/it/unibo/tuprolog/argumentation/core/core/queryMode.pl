@@ -132,18 +132,20 @@ findArgument(Conclusion, Ids, Found) :-
 
 findPremises([], _, Found) :-
     Found = premises([], [[], [], [], []], []).
+% The premises are supported from the first, as the graph builder does: a Prolog check, or a contrary premise,
+% may need the variables bound by the premises before it
 findPremises([H|T], Ids, Found) :-
     parser::prolog([H], Term), !,
-    findPremises(T, Ids, Found),
-    (callable(Term) -> call(Term); Term).
+    (callable(Term) -> call(Term); Term),
+    findPremises(T, Ids, Found).
 findPremises([H|T], Ids, Found) :-
     parser::contrary([H], _), !,
     findPremises(T, Ids, premises(TConclusions, TRules, TSupport)),
     Found = premises([H|TConclusions], TRules, TSupport).
 findPremises([H|T], Ids, Found) :-
-    findPremises(T, Ids, premises(TConclusions, TRules, TSupport)),
     Sub = [AllRules, _, [PP], _, [LastDefRules, DefRules, DefPremises]],
     buildSubGraph(H, Sub),
+    findPremises(T, Ids, premises(TConclusions, TRules, TSupport)),
     mergeRules([AllRules, [], LastDefRules, DefRules, DefPremises], TRules, Rules),
     Found = premises([PP|TConclusions], Rules, [Sub|TSupport]).
 

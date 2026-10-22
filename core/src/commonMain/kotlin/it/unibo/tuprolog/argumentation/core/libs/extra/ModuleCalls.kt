@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.libs.extra
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.basic.solveForCaller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
@@ -13,6 +14,7 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.exception.error.TypeError
@@ -79,7 +81,7 @@ object ModuleCall : Primitive {
         val solver = getCleanSolver(request.context, mineModulesPath(request.context), modules.toList().map { it.toString() })
         return sequence {
             yieldAll(
-                solver.solve(goal).map {
+                solver.solveForCaller(goal, SolveOptions.allLazily()).map {
                     when (it) {
                         is Solution.Yes -> request.replySuccess(it.substitution)
                         // An error inside the module must surface: collapsing it into a failure

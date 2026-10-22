@@ -47,6 +47,24 @@ class ModuleCallsTest {
     }
 
     @Test
+    fun callModuleBindsTheAnonymousVariablesOfTheGoal() {
+        val path = temporaryModule()
+        val solver = solverWithModulesIn(path)
+
+        val solution =
+            solver
+                .solve(Struct.parse("S = hello(_), module::call_module(['greetings'], S)", solver.operators))
+                .first()
+
+        assertTrue(solution.isYes, "call_module should solve a goal defined by the loaded module")
+        val bound =
+            solution.substitution.entries
+                .first { it.key.name == "S" }
+                .value
+        assertEquals("hello(world)", bound.toString())
+    }
+
+    @Test
     fun callModuleEvaluatesAModuleWrittenInArg2pSyntax() {
         val directory = Files.createTempDirectory("arg2p-modules")
         Files.writeString(directory.resolve("theory.pl"), "f1 :=> d.\nf2 :=> -d.\nsup(f1, f2).\n")

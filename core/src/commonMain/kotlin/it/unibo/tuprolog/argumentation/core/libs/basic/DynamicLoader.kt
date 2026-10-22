@@ -109,7 +109,7 @@ class DynamicLoader(
 
             return sequence {
                 yieldAll(
-                    solver.solve(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
+                    solver.solveForCaller(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
                         when (it) {
                             // Halt carries a failed substitution, so replying with it would turn an
                             // error inside the module into an ordinary failure: indistinguishable

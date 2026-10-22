@@ -89,12 +89,9 @@ buildPrefAttacks.
 %==============================================================================
 
 % The preferences between the rules of an argument are themselves conclusions (sup/2), and an argument for a
-% preference relates the arguments built on its rules. The preferences are looked for among the conclusions,
-% rather than given as sup(Rule, _): a variable left in a statement is not bound when its arguments are built
-% (a binding made by a primitive, inside a term already bound, is lost)
+% preference relates the arguments built on its rules
 queryDependencies([Rules, _, _, _, _], S) :-
     member(Rule, Rules),
-    ruleConclusion(_, S),
     (S = sup(Rule, _) ; S = sup(_, Rule)).
 
 queryDependants([_, _, [sup(X, Y)], _, _], S) :-
