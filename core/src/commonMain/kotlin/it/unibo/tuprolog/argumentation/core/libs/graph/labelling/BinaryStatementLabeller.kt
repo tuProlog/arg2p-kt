@@ -42,7 +42,7 @@ private object BinaryLabelling : RuleWrapper<ExecutionContext>("statementLabelli
                         `_`,
                         tupleOf(
                             "context_check"("in"(listOf(`_`, `_`, X, `_`, `_`))),
-                            not("contextCheck"("statIn"(X))),
+                            "context_absent"("statIn"(X)),
                             "context_assert"("statIn"(X)),
                         ),
                         `_`,
@@ -51,7 +51,7 @@ private object BinaryLabelling : RuleWrapper<ExecutionContext>("statementLabelli
                         `_`,
                         tupleOf(
                             "context_check"("out"(listOf(`_`, `_`, X, `_`, `_`))) or "context_check"("und"(listOf(`_`, `_`, X, `_`, `_`))),
-                            not("context_check"("statOut"(X))),
+                            "context_absent"("statOut"(X)),
                             "context_assert"("statOut"(X)),
                         ),
                         `_`,
