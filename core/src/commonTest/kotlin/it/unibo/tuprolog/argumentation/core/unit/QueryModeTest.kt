@@ -240,6 +240,27 @@ class QueryModeTest {
             someSemantics + "naive",
         )
 
+    // Premises supported most selective first: b(k) only needs the a(X) that c(X, k) selects. Prolog checks run
+    // once the premises before them are supported: one waiting for the variable it tests, one binding the variable
+    // of the premise after it
+    @Test
+    fun selectivePremises() =
+        checkQueries(
+            (1..20).joinToString("\n") { "f$it :=> a($it)." } +
+                """
+
+                g1 :=> c(5, k).
+                g2 :=> c(7, h).
+                g3 :=> -a(7).
+                g4 :=> q(10).
+                r(X, Y) : a(X), c(X, Y) => b(Y).
+                s(X) : a(X), prolog(X > 18) => big(X).
+                t(X) : a(X), prolog(Y is X * 2), q(Y) => double(X).
+                """.trimIndent(),
+            listOf("b(k)", "b(Y)", "big(X)", "big(19)", "double(X)", "double(5)"),
+            listOf("grounded", "preferred"),
+        )
+
     // Variables, Prolog checks, weak negation and parametric undercuts together, in chains
     @Test
     fun variablesPrologAndWeakNegation() =

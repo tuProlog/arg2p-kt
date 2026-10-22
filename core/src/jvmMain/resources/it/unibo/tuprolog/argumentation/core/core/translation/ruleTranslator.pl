@@ -295,6 +295,10 @@ admissible_terms_complete([H|T]) :-
 rule(Id, PP, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
 premise(Id, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Conclusion])).
 
+% candidates(+Statement, +Limit, -Count): the number of rules and premises concluding Statement, counted up to
+% Limit (an integer, or anything else for no limit)
+candidates(Statement, Limit, Count) :- context_count(clause(rl(Statement), _), Limit, Count).
+
 
 check_strict(Id) :- context_check(strict(Id)).
 

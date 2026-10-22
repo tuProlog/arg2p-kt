@@ -205,6 +205,27 @@ class Context :
         }
     }
 
+    /**
+     * context_count(+Goal, +Limit, -Count): the number of solutions of Goal in the active branch, counted up to Limit
+     * (an integer, or anything else for no limit): enough to compare how selective goals are, without visiting all
+     * the solutions of the least selective ones
+     */
+    inner class DynamicCacheCount : PrimitiveWithSignature {
+        override val signature = Signature("context_count", 3)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val limit =
+                request.arguments[1]
+                    .asInteger()
+                    ?.intValue
+                    ?.toInt() ?: Int.MAX_VALUE
+            val store = this@Context.selected
+            val count = store.solve(request.arguments[0]).take(limit).count()
+            val unifier = Unificator.default.mgu(request.arguments[2], Numeric.of(count))
+            return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
+        }
+    }
+
     /** context_absent(Goal): `\+ context_check(Goal)` as a single step */
     inner class DynamicCacheAbsent : PrimitiveWithSignature {
         override val signature = Signature("context_absent", 1)
@@ -307,6 +328,7 @@ class Context :
                 DynamicCacheIdentifier(),
                 DynamicCacheUnifiable(),
                 DynamicCacheAbsent(),
+                DynamicCacheCount(),
                 DynamicCacheAbsentIndexed(),
                 DynamicCacheClosure(),
             ).let { primitives ->
