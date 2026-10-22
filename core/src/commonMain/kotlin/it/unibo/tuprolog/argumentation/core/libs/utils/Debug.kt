@@ -11,8 +11,8 @@ object Debug : PrologModule("prolog.argumentation.debug", "debug") {
         """
         printArgumentationGraph(Arguments, Attacks, Supports) :-
             findall(
-                [IDPremises, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', RuleHead, '\n', ' BODY ', Body, '\n', ' INFO ', Info, '\n'],
-                member([IDPremises, TopRule, RuleHead, Body, Info], Arguments),
+                [Rules, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', Conclusion, '\n', ' BODY ', Body, '\n', ' INFO ', Info, '\n'],
+                (member(Argument, Arguments), argument::new(Rules, TopRule, Conclusion, Body, Info, Argument)),
                 ArgumentsToPrint
             ),
             findall((A1, ' SUPPORTS ', A2), member((A1, A2), Supports), SupportsToPrint),

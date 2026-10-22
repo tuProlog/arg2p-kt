@@ -62,7 +62,8 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
             context_check(reifiedBp(Literals)),
             member(Conclusion, Literals), !.
 
-        isArgumentInBurdenOfProof([_, _, Conclusion, _, _]) :-
+        isArgumentInBurdenOfProof(Argument) :-
+            argument::conclusion(Argument, Conclusion),
             isInBurdenOfProof(Conclusion).
 
         filterBpDefeats :-
@@ -75,11 +76,7 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
             (T = rebut; T = undermine),
             isArgumentInBurdenOfProof(B),
             \+ superiority::superiorArgument(B, C),
-            context_retract(attack(T, B, A, C)),
-            context_id(argument(B), IdB),
-            context_id(argument(A), IdA),
-            context_id(argument(C), IdC),
-            context_retract(attackId(T, IdB, IdA, IdC)).
+            graphStore::removeAttack(T, B, A, C).
 
         mostGroundedBpUnd(Arguments, Arg) :-
             member(Arg, Arguments),
@@ -122,7 +119,8 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
 
         fillTemplate([], []).
         fillTemplate([H|T], [[H]|R]) :-
-            context_check(argument([_ , _, [P], _, _])),
+            argument::claim(Argument, _),
+            context_check(argument(Argument)),
             fillTemplate(T, R).
         """.trimIndent()
 }

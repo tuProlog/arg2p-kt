@@ -49,15 +49,21 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
         % The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them
         solve(Arguments, Attacks) :-
             context_reset,
-            utils::for_each(A, Arguments,
-                standard_af::saveArgument(graph, [A], [[A], A, [A], [], [[], [], []]])
-            ),
+            utils::for_each(A, Arguments, (
+                abstractArgument(A, Argument),
+                graphStore::saveArgument(graph, [A], Argument)
+            )),
             utils::for_each((X, Y), Attacks, (
-                XX = [[X], X, [X], [], [[], [], []]],
-                YY = [[Y], Y, [Y], [], [[], [], []]],
-                standard_af::saveAttack(abstract, XX, YY, YY)
+                abstractArgument(X, XX),
+                abstractArgument(Y, YY),
+                graphStore::saveAttack(abstract, XX, YY, YY)
             )),
             buildArgumentLabelling.
+
+        % The argument for the abstract argument A: the strict rule A alone, concluding A
+        abstractArgument(A, Argument) :-
+            argument::infoParts(Info, [], [], []),
+            argument::new([A], A, [A], [], Info, Argument).
         """.trimIndent()
 }
 

@@ -2,58 +2,61 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.extension
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The burdens of proof as part of the graph (module `bp`, a graphExtension): for an argument for `bp(Statement)` and
+ * an argument for Statement, the burdened one, an argument for `-burdmet(Conclusion)` (top rule `artificial`) is
+ * attacked as the burden of proof is, and rebuts or is rebutted by the burdened argument, depending on whether the
+ * grounded labelling labels it IN.
+ */
 object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
     override val prologRawTheory: String =
         """
+        %! modifyArgumentationGraph
+        %  The arguments for the burdens met, and their attacks with the burdened arguments.
         modifyArgumentationGraph :-
-            findall(([Rules, Top, [bp(Checked)], G, I], [Z, P, [Y], GG, II]), (
-                context_check(argument([Rules, Top, [bp(Checked)], G, I])),
-                member(Y, [Checked]),
-                context_check(argument([Z, P, [Y], GG, II]))
-            ), TemplateBpPairs),
-            checkBpArguments(TemplateBpPairs).
-
+            findall((Bp, Burdened), (
+                argument::claim(Bp, bp(Statement)),
+                context_check(argument(Bp)),
+                argument::claim(Burdened, Statement),
+                context_check(argument(Burdened))
+            ), BurdenedPairs),
+            checkBpArguments(BurdenedPairs).
 
         checkBpArguments([]) :- !.
-        checkBpArguments(TemplateBpPairs) :-
-            createBpArguments(TemplateBpPairs, Pairs),
+        checkBpArguments(BurdenedPairs) :-
+            createBpArguments(BurdenedPairs, Pairs),
             utils::deduplicate(Pairs, BpPairs),
             createBpAttacks(BpPairs).
-
-
-        % Bp Argument Creation
 
         % The conflict argument of a burdened argument is the same for every burden of proof on it: it is saved once, and
         % supported by each of them
         createBpArguments([], []).
-        createBpArguments([(Original, [Z, P, Y, B, I])|Others], [(Conflict, [Z, P, Y, B, I])|BpPairs]) :-
-            Conflict = [[artificial|Z], artificial, [-burdmet(Y)], [], [[artificial], [artificial], []]],
-            ignore(standard_af::saveArgument(a, [-burdmet(Y)], Conflict)),
-            ignore(standard_af::saveSupport(Original, Conflict)),
-            liftBpAttacks(Original, Conflict),
+        createBpArguments([(Bp, Burdened)|Others], [(Conflict, Burdened)|BpPairs]) :-
+            argument::rules(Burdened, Rules),
+            argument::conclusion(Burdened, Conclusion),
+            argument::infoParts(Info, [artificial], [artificial], []),
+            argument::new([artificial|Rules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
+            ignore(graphStore::saveArgument(a, [-burdmet(Conclusion)], Conflict)),
+            ignore(graphStore::saveSupport(Bp, Conflict)),
+            liftBpAttacks(Bp, Conflict),
             createBpArguments(Others, BpPairs).
 
         ignore(Goal) :- call(Goal), !.
         ignore(_).
 
-        liftBpAttacks(Template, BpArg) :-
+        % The attacks on the burden of proof also attack the conflict argument
+        liftBpAttacks(Bp, Conflict) :-
             findall(_, (
-                context_check(attack(T, A, Template, O)),
-                standard_af::saveAttack(T, A, BpArg, O)
+                context_check(attack(T, A, Bp, O)),
+                graphStore::saveAttack(T, A, Conflict, O)
             ), _).
-
-
-        % Bp Arguments Evaluation
 
         createBpAttacks(BpPairs) :-
             generateBpsEvaluationChain(BpPairs, OrderedBpPairs),
             evaluateBurdenedArgs(OrderedBpPairs).
 
-        % The function provide an evaluation order for the bp pairs given in input.
-        % The ordering is based on the attack relation between the nodes
-        %   If it is possible to reach a node A from a node B using attacks, then B should be evaluated before A
-        %   The algorithm does not admit cycles in the graph
-
+        % An evaluation order for the pairs, based on the attacks between them: if a node A is reached from a node B
+        % through attacks, B is evaluated before A. Cycles are not admitted.
         generateBpsEvaluationChain([], []).
         generateBpsEvaluationChain([BpPair|BpPairs], OrderedBpPairs) :-
             generateBpsEvaluationChain(BpPairs, TempOrderedBpPairs),
@@ -65,15 +68,15 @@ object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "
             insertBpPair((Bp, Burdened), Others, Return), !.
         insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]).
 
-        % BpPairs Evaluation
-
+        % Each pair in turn: the burdened argument rebuts the conflict argument if the grounded labelling labels it IN,
+        % otherwise it is rebutted
         evaluateBurdenedArgs([]).
         evaluateBurdenedArgs([(Bp, Burdened)|Others]) :-
             context_active(X),
             grounded:::argumentLabelling,
             statusToAttack((Bp, Burdened), attack(T, A, B, C)),
             context_checkout(X),
-            standard_af::saveAttack(T, A, B, C),
+            graphStore::saveAttack(T, A, B, C),
             evaluateBurdenedArgs(Others).
 
         statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-
@@ -85,8 +88,14 @@ object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "
         % QUERY MODE
         %==============================================================================
 
-        % A burden of proof on a statement is itself a conclusion (bp/1), related to the arguments for the statement
-        queryDependencies([_, _, [C], _, _], bp(C)).
-        queryDependants([_, _, [bp(C)], _, _], C).
+        %! queryDependencies(+Argument, -Statement)
+        %  A burden of proof on a statement is itself a conclusion (bp/1), related to the arguments for the statement.
+        queryDependencies(Argument, bp(Claim)) :-
+            argument::claim(Argument, Claim).
+
+        %! queryDependants(+Argument, -Statement)
+        %  The arguments for a statement depend on the burden of proof on it.
+        queryDependants(Argument, Claim) :-
+            argument::claim(Argument, bp(Claim)).
         """.trimIndent()
 }

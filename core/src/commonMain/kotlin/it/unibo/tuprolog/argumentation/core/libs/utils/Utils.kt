@@ -105,9 +105,9 @@ object Utils : PrologModule("prolog.argumentation.utils", "utils") {
                 utils::sort(TempUnd, Und).
 
         recoverArgumentLabellingAbstract(ArgsIn, ArgsOut, ArgsUnd) :-
-                findall(X, context_check(in([_, _, [X], _, _])), TempArgsIn),
-                findall(X, context_check(out([_, _, [X], _, _])), TempArgsOut),
-                findall(X, context_check(und([_, _, [X], _, _])), TempArgsUnd),
+                findall(X, (argument::claim(A, X), context_check(in(A))), TempArgsIn),
+                findall(X, (argument::claim(A, X), context_check(out(A))), TempArgsOut),
+                findall(X, (argument::claim(A, X), context_check(und(A))), TempArgsUnd),
                 utils::sort(TempArgsIn, ArgsIn),
                 utils::sort(TempArgsOut, ArgsOut),
                 utils::sort(TempArgsUnd, ArgsUnd).

@@ -11,9 +11,6 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.builder.ArgumentationGrap
 import it.unibo.tuprolog.argumentation.core.libs.graph.builder.ConflictArguments
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.AttackRestrictionHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.AdmissibleLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
@@ -36,12 +33,18 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Stage2Labeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StageLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StronglyAdmissibleLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.preference.DefeasiblePreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.preference.GenericDefeasiblePreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.preference.StrictPreferencesHandler
+import it.unibo.tuprolog.argumentation.core.libs.graph.preference.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.graph.store.GraphStore
 import it.unibo.tuprolog.argumentation.core.libs.language.Conflicts
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
+import it.unibo.tuprolog.argumentation.core.libs.language.Transposition
+import it.unibo.tuprolog.argumentation.core.libs.structured.ArgumentSearch
+import it.unibo.tuprolog.argumentation.core.libs.structured.QueryExploration
 import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
 import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
-import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
 import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 
 /** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
@@ -50,7 +53,7 @@ object Arg2pModules {
     val data: List<ArgLibrary> = listOf(ArgumentTerm)
 
     /** The rules of a theory, as the graph builders read them */
-    val language: List<ArgLibrary> = listOf(RuleParser, Conflicts)
+    val language: List<ArgLibrary> = listOf(RuleParser, Transposition, Conflicts)
 
     /** Building the argumentation graph, and changing it with the graph extensions */
     val graph: List<ArgLibrary> =
@@ -97,7 +100,7 @@ object Arg2pModules {
         )
 
     /** Answering a query with the part of the graph it depends on */
-    val query: List<ArgLibrary> = listOf(StructuredMode)
+    val query: List<ArgLibrary> = listOf(StructuredMode, QueryExploration, ArgumentSearch)
 
     /** The entry points, and what they rely on */
     val support: List<ArgLibrary> = listOf(EngineInterface, Utils, Debug, MetaInterpreter, ModuleCalls)

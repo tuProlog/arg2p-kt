@@ -178,18 +178,21 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
 
         mostGroundedArgument([], []).
         mostGroundedArgument([X], X).
-        mostGroundedArgument([[L, _, _, _, _]|T], [L2, Q2, W2, B2, I2]) :-
-            mostGroundedArgument(T, [L2, Q2, W2, B2, I2]),
-            length(L, LN1),
-            length(L2, LN2),
+        mostGroundedArgument([A|T], Best) :-
+            mostGroundedArgument(T, Best),
+            argument::rules(A, RulesA),
+            argument::rules(Best, RulesBest),
+            length(RulesA, LN1),
+            length(RulesBest, LN2),
             LN1 > LN2, !.
         mostGroundedArgument([A|_], A).
 
         /*
             Get a conclusion complement
         */
-        complement([_, _, Conclusion, _, _], A) :-
-            conflict::between(Conclusion, A).
+        complement(Argument, Complement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::between(Conclusion, Complement).
 
         notEvaluatedSubArgument(Arguments, A, Resolving, B) :-
             context_check(support(B, A)),
@@ -206,14 +209,18 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             member(B, Arguments),
             \+ member(B, Resolving).
 
-        superiorComplementArgument(A, [R, B, CA, BB, I]) :-
-            complement(A, CA),
-            context_check(argument([R, B, CA, BB, I])),
-            superiority::superiorArgument([R, B, CA, BB, I], A).
+        superiorComplementArgument(A, B) :-
+            complementArgument(A, B),
+            superiority::superiorArgument(B, A).
 
-        superiorOrEqualComplementArgument(A, [R, B, CA, BB, I]) :-
-            complement(A, CA),
-            context_check(argument([R, B, CA, BB, I])),
-            \+ superiority::superiorArgument(A, [R, B, CA, BB, I]).
+        superiorOrEqualComplementArgument(A, B) :-
+            complementArgument(A, B),
+            \+ superiority::superiorArgument(A, B).
+
+        % B is a saved argument for the complement of the conclusion of A
+        complementArgument(A, B) :-
+            complement(A, Complement),
+            argument::conclusion(B, Complement),
+            context_check(argument(B)).
         """.trimIndent()
 }

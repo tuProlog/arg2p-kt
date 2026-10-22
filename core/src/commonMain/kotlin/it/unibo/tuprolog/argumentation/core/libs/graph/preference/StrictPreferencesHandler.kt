@@ -1,12 +1,17 @@
-package it.unibo.tuprolog.argumentation.core.libs.graph.extension
+package it.unibo.tuprolog.argumentation.core.libs.graph.preference
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The preferences between the rules of the theory, applied to the attacks (module `standardPref`, a graphExtension):
+ * an attack fails when the attacked argument is superior to the attacker (see the module superiority).
+ */
 object StrictPreferencesHandler : PrologModule("prolog.argumentation.graph.preferences.strict", "standardPref") {
     override val prologRawTheory: String =
         """
-        % Attacks are visited by argument identifiers, and arguments are compared by their rules and premises only
-        % (argInfo): the whole arguments are only retrieved to remove an attack
+        %! modifyArgumentationGraph
+        %  The attacks failing for the preferences are removed. Attacks are visited by argument identifiers, and
+        %  arguments are compared by their info only: the whole arguments are only retrieved to remove an attack.
         modifyArgumentationGraph :-
             findall(_, (
                 context_check(attackId(T, IdA, IdB, IdC)),
@@ -16,12 +21,10 @@ object StrictPreferencesHandler : PrologModule("prolog.argumentation.graph.prefe
         % Negation is written as cut and fail: \+ would go through call/1, which visits the whole goal before running it
         checkStandardPreference(T, IdA, _, IdC) :- standardPreferences(T, IdA, IdC), !, fail.
         checkStandardPreference(T, IdA, IdB, IdC) :-
-            argById(IdA, A),
-            argById(IdB, B),
-            argById(IdC, C),
-            standard_af::removeAttack(T, A, B, C).
-
-        argById(Id, A) :- context_check(clause(arg(Id), argument(A))).
+            graphStore::argumentById(IdA, A),
+            graphStore::argumentById(IdB, B),
+            graphStore::argumentById(IdC, C),
+            graphStore::removeAttack(T, A, B, C).
 
         % The attack types preferences do not apply to. Everything else is weighed against the preference order,
         % including the attack types introduced by other extensions: an unknown attack type is compared rather than
@@ -36,13 +39,13 @@ object StrictPreferencesHandler : PrologModule("prolog.argumentation.graph.prefe
             fail.
         standardPreferences(_, _, _).
 
-        % Superiority only depends on the rules and premises of the arguments (Info), shared by many of them: it is
-        % buffered by their identifiers, so that each pair is compared once
+        % Superiority only depends on the info of the arguments, shared by many of them: it is buffered by their
+        % identifiers, so that each pair is compared once
         superiorInfo(InfoIdC, _, InfoIdA, _) :-
             context_check(infoSuperior(InfoIdC, InfoIdA, Result)), !,
             Result == yes.
         superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA) :-
-            superiority::superiorArgument([_, _, _, _, InfoC], [_, _, _, _, InfoA]), !,
+            superiority::superiorInfo(InfoC, InfoA, _), !,
             context_assert(infoSuperior(InfoIdC, InfoIdA, yes)).
         superiorInfo(InfoIdC, _, InfoIdA, _) :-
             context_assert(infoSuperior(InfoIdC, InfoIdA, no)),
