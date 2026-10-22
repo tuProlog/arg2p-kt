@@ -11,18 +11,23 @@ buildArgumentationGraph :-
 % Build Conflict Arguments
 %--------------------------------------------------------------------------
 
-% The arguments derived from the others: with metaConflicts, a copy of each argument supported by a conflict
+% The arguments derived from the others: with metaConflicts, a copy of each argument for each argument making its
+% conclusion conflict with another statement. The copy (mc(ConflictId, Conflict) first among its rules) is supported
+% by that conflict argument, and attacks through its conflict only (see attack::attacks/3): it is defeated with it.
 buildAdditionalArguments :-
     findall(_, buildAdditionalArgument, _).
 
 buildAdditionalArgument :-
     setting(metaConflicts),
     conf_arg(A, CArg),
+    CArg = [_, _, [Conflict], _, _],
+    context_id(argument(CArg), ConflictId),
     context_check(clause(conc(A), argument([R, T, C, B, I]))),
     \+ filter_meta([R, T, C, B, I]),
-    saveArgument(a, A, [[mc|R], T, C, B, I]),
-    saveSupport(CArg, [[mc|R], T, C, B, I]),
-    cloneSupport([R, T, C, B, I], [[mc|R], T, C, B, I]),
+    Copy = [[mc(ConflictId, Conflict)|R], T, C, B, I],
+    saveArgument(a, A, Copy),
+    saveSupport(CArg, Copy),
+    cloneSupport([R, T, C, B, I], Copy),
     fail.
 buildAdditionalArgument.
 
@@ -37,7 +42,7 @@ conf_arg([A], Arg) :-
 conf_arg([A], Arg) :-
     context_check(clause(conc([conflict(A, _)]), argument(Arg))).
 
-filter_meta([Id, _, _, _, _]) :- setting(metaConflicts), member(mc, Id).
+filter_meta([[mc(_, _)|_], _, _, _, _]) :- setting(metaConflicts).
 filter_meta(_) :- \+ setting(metaConflicts).
 
 %--------------------------------------------------------------------------

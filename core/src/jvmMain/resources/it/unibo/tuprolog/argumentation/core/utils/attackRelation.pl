@@ -8,6 +8,17 @@ attacks(undermine, A, B) :- undermines(A, B), !.
 attacks(contrary_undermine, A, B) :- contraryUndermines(A, B), !.
 attacks(undercut, A, B) :- undercuts(A, B), !.
 
+% With metaConflicts the attacking arguments are the copies built on the arguments for conflicts (see
+% standard_af::buildAdditionalArguments): each conflicts through the conflict of its argument only
+expanded_conflict([mc(_, Conflict)|_], HeadA, HeadB) :- !,
+    conflict_of(Conflict, HeadA, HeadB).
+expanded_conflict(_, HeadA, HeadB) :-
+    expanded_conflict(HeadA, HeadB).
+
+conflict_of(conflict(A, B), [A], [B]).
+conflict_of(conflict(A, B, Guard), [A], [B]) :-
+    (callable(Guard) -> call(Guard); Guard).
+
 expanded_conflict(HeadA, HeadB) :-
     parser::classic_conflict(HeadA, HeadB).
 expanded_conflict(HeadA, HeadB) :-
@@ -23,7 +34,7 @@ expanded_conflict(HeadA, HeadB) :-
 rebuts([IDPremisesA, RuleA, RuleHeadA, _, _], [IDPremisesB, RuleB, RuleHeadB, _, Info]) :-
 	RuleB \== none,
     Info \== [[], [], []],
-	expanded_conflict(RuleHeadA, RuleHeadB).
+	expanded_conflict(IDPremisesA, RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Rebutting definition: clash of a conclusion with a failure as premise assumption
@@ -38,7 +49,7 @@ contraryRebuts([IDPremisesA, RuleA, [RuleHeadA], _, _], [IDPremisesB, RuleB, Rul
 %------------------------------------------------------------------------
 undermines([IDPremisesA, RuleA, RuleHeadA, _, _], [[IDPremiseB], none, RuleHeadB, _, Info]) :-
 	Info \== [[], [], []],
-	expanded_conflict(RuleHeadA, RuleHeadB).
+	expanded_conflict(IDPremisesA, RuleHeadA, RuleHeadB).
 
 %------------------------------------------------------------------------
 % Contrary Undermining definition
@@ -55,8 +66,8 @@ undercuts([_, _, [undercut(RuleB)], _, _], [_, RuleB, _, _, [[RuleB], _, _]]).
 %------------------------------------------------------------------------
 % Raw Undercutting definition: attacks on defeasible inference rule
 %------------------------------------------------------------------------
-undercuts([_, _, NegRuleB, _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
-    expanded_conflict(NegRuleB, [RuleB]).
+undercuts([IDPremisesA, _, NegRuleB, _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
+    expanded_conflict(IDPremisesA, NegRuleB, [RuleB]).
 
 
 %------------------------------------------------------------------------

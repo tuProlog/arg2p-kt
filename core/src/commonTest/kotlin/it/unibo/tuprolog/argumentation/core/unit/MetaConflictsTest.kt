@@ -1,0 +1,55 @@
+package it.unibo.tuprolog.argumentation.core.unit
+
+import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/**
+ * With metaConflicts, an argument attacks through each argument for a conflict of its conclusion: through a conflict
+ * whose argument is defeated it attacks no more, through the others it still does, whatever their order.
+ */
+class MetaConflictsTest {
+    private val config =
+        """
+        metaConflicts.
+        graphBuildMode(standard_af).
+        statementLabellingMode(statement).
+        argumentLabellingMode(grounded).
+        orderingPrinciple(last).
+        orderingComparator(elitist).
+        graphExtension(standardPref).
+        """.trimIndent()
+
+    // a conflicts with b and with c, x defeats the argument for conflict(a, b)
+    private val statements = listOf("r1 : [] => a.", "r2 : [] => b.", "r3 : [] => c.", "r6 : [] => x.")
+    private val conflicts = listOf("r4 : [] => conflict(a, b).", "r5 : [] => conflict(a, c).", "r7 : [] => conflict(x, conflict(a, b)).")
+
+    // The statements IN, OUT and UND, each sorted
+    private fun labels(rules: List<String>): List<String> {
+        val solver = solverWithTheory((rules + config).joinToString("\n"))
+        val solution = solver.solve(Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)).first()
+        val labelled = solution.substitution.entries.associate { it.key.name to it.value.castToList().toList() }
+        return listOf("In", "Out", "Und").map { label ->
+            labelled
+                .getValue(label)
+                .map { it.toString() }
+                .sorted()
+                .joinToString(" ")
+        }
+    }
+
+    @Test
+    fun eachConflictArgumentGivesItsOwnAttacks() {
+        assertEquals(
+            listOf("[a] [b] [conflict(a, c)] [conflict(x, conflict(a, b))] [x]", "[c] [conflict(a, b)]", ""),
+            labels(statements + conflicts),
+        )
+    }
+
+    @Test
+    fun theOrderOfTheConflictsDoesNotMatter() {
+        assertEquals(labels(statements + conflicts), labels(statements + conflicts.reversed()))
+    }
+}
