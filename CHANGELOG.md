@@ -1,3 +1,19 @@
+## [0.17.4](https://github.com/tuProlog/arg2p-kt/compare/0.17.3...0.17.4) (2026-10-22)
+
+### Dependency updates
+
+* **deps:** update dependency org.danilopianini.git-sensitive-semantic-versioning to v7.1.0 ([#510](https://github.com/tuProlog/arg2p-kt/issues/510)) ([412afef](https://github.com/tuProlog/arg2p-kt/commit/412afeffd0984afff5300726297102c47981a2fe))
+* **deps:** update dependency org.danilopianini.git-sensitive-semantic-versioning to v7.3.0 ([#512](https://github.com/tuProlog/arg2p-kt/issues/512)) ([a790d95](https://github.com/tuProlog/arg2p-kt/commit/a790d95187f9bf9d512623e17f5b293e6b1c33fd))
+* **deps:** update doc/site/themes/hugo-book digest to 0aacad6 ([#513](https://github.com/tuProlog/arg2p-kt/issues/513)) ([d1928c1](https://github.com/tuProlog/arg2p-kt/commit/d1928c109104ad00849b02ad50a42d79b17df9c2))
+* **deps:** update doc/site/themes/hugo-book digest to afeb559 ([#511](https://github.com/tuProlog/arg2p-kt/issues/511)) ([0acbf3e](https://github.com/tuProlog/arg2p-kt/commit/0acbf3ed73ab3b913fc46111be17a49bdd2619ac))
+* **deps:** update gradle to v9.8.2 ([#507](https://github.com/tuProlog/arg2p-kt/issues/507)) ([0ba504d](https://github.com/tuProlog/arg2p-kt/commit/0ba504dca0ccaf56e92584946d972a37fbd392b3))
+* **deps:** update ktmpp to v6.0.7 ([#508](https://github.com/tuProlog/arg2p-kt/issues/508)) ([cbaba8b](https://github.com/tuProlog/arg2p-kt/commit/cbaba8b8099a921e9e2d65df932dcdebe32cda13))
+* **deps:** update plugin com.gradle.develocity to v4.6.1 ([#509](https://github.com/tuProlog/arg2p-kt/issues/509)) ([da5ff3f](https://github.com/tuProlog/arg2p-kt/commit/da5ff3f99649fa694f0e37c0cbb1253581c78684))
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v3.0.5 ([#514](https://github.com/tuProlog/arg2p-kt/issues/514)) ([8b170f4](https://github.com/tuProlog/arg2p-kt/commit/8b170f49696c6aee406a9bb2cbc56b6eee364754))
+
 ## [0.17.3](https://github.com/tuProlog/arg2p-kt/compare/0.17.2...0.17.3) (2026-10-18)
 
 ### Bug Fixes
