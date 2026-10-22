@@ -18,17 +18,36 @@ internal class ProgramClauses private constructor(
         goal: Struct,
         unificator: Unificator,
     ): List<Clause> {
-        val clauses = ArrayList<Clause>()
-        sources.forEach { clauses.addAll(it.clausesFor(goal, unificator)) }
+        // the clauses of a single source, as it gives them; those of several, merged
+        var clauses: List<Clause> = emptyList()
+        var merged: ArrayList<Clause>? = null
+        for (source in sources) {
+            val found = source.clausesFor(goal, unificator)
+            when {
+                found.isEmpty() -> continue
+                clauses.isEmpty() -> clauses = found
+                merged == null -> merged = ArrayList(clauses).also { it.addAll(found) }.also { clauses = it }
+                else -> merged.addAll(found)
+            }
+        }
         return clauses
     }
 
     companion object {
-        /** The clauses of the program of [context] */
+        /** The clauses of the program of [context], as the indexes of its solver keep them (see [TheoryIndexes.program]) */
         fun of(context: PrologExecutionContext): ProgramClauses =
             with(context) {
-                ProgramClauses(listOf(libraries.asTheory(unificator), staticKb, dynamicKb).map { theory(it, theoryIndexes) })
+                theoryIndexes.program(libraries, staticKb, dynamicKb) {
+                    of(libraries.asTheory(unificator), staticKb, dynamicKb, theoryIndexes)
+                }
             }
+
+        private fun of(
+            libraries: Theory,
+            staticKb: Theory,
+            dynamicKb: Theory,
+            indexes: TheoryIndexes,
+        ): ProgramClauses = ProgramClauses(listOf(libraries, staticKb, dynamicKb).map { theory(it, indexes) })
 
         private fun theory(
             theory: Theory,

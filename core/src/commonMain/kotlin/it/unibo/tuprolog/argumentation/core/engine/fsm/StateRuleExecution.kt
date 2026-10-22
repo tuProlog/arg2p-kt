@@ -26,7 +26,8 @@ data class StateRuleExecution(
      * by one binding for each element, and enumerating the list was cubic in its length).
      */
     override fun computeNext(): State {
-        val resolution = ClauseResolver.of(context.unificator).resolve(context.rules.current!!, context.currentGoal!!)
+        // the goal of the frame of a clause is the goal it was selected for, with the substitution already applied
+        val resolution = ClauseResolver.of(context.unificator).resolve(context.rules.current!!, context.goals.current!!)
         return if (resolution == null) {
             failureState
         } else {

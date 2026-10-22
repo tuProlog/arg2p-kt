@@ -63,7 +63,7 @@ data class StatePrimitiveSelection(
                             exceptionalState(exception.asResolutionException(childContext).updateLastContext(childContext.skipThrow()))
                         }
                     } else {
-                        StateRuleSelection(context.copy(step = nextStep()))
+                        StateRuleSelection(context.copy(step = nextStep()), goal)
                     }
                 }
                 else -> {

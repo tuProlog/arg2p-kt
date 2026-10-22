@@ -59,11 +59,16 @@ fun Term.toGoals(): Cursor<out Term> =
 /** The goals of the body of a clause, as [toGoals]: none for `true`, the body of a fact (arg2p) */
 fun Term.toBodyGoals(): Cursor<out Term> = if (isTrue) Cursor.empty() else toGoals()
 
-/** Pushes a new child frame onto the execution-context stack for the current goal, becoming its own [PrologExecutionContext.goals]. */
-fun PrologExecutionContext.createChild(inferProcedureFromGoals: Boolean = true): PrologExecutionContext {
-    val currentGoal = this.currentGoal!!.castToStruct()
-
-    return copy(
+/**
+ * Pushes a new child frame onto the execution-context stack for the current goal, becoming its own
+ * [PrologExecutionContext.goals] (arg2p: [currentGoal] is the current goal with the substitution applied, when the
+ * caller already has it)
+ */
+fun PrologExecutionContext.createChild(
+    currentGoal: Struct = this.currentGoal!!.castToStruct(),
+    inferProcedureFromGoals: Boolean = true,
+): PrologExecutionContext =
+    copy(
         goals = currentGoal.toGoals(),
         procedure = if (inferProcedureFromGoals) currentGoal else procedure,
         parent = this,
@@ -72,23 +77,26 @@ fun PrologExecutionContext.createChild(inferProcedureFromGoals: Boolean = true):
         relevantGoals = null,
         inlined = false,
     )
-}
 
 /**
  * Last-call-optimization counterpart of [createChild]: reuses the current frame for the current goal (incrementing
  * [PrologExecutionContext.depth] without growing the [PrologExecutionContext.parent] chain), used by
  * `StateRuleSelection` for tail calls to avoid an unbounded execution-context stack.
  */
-fun PrologExecutionContext.replaceWithChild(inferProcedureFromGoals: Boolean = true): PrologExecutionContext {
-    val currentGoal = this.currentGoal!!.castToStruct()
-
-    return copy(
+fun PrologExecutionContext.replaceWithChild(
+    currentGoal: Struct = this.currentGoal!!.castToStruct(),
+    inferProcedureFromGoals: Boolean = true,
+): PrologExecutionContext =
+    copy(
         goals = currentGoal.toGoals(),
         procedure = if (inferProcedureFromGoals) currentGoal else procedure,
         depth = depth + 1,
         step = step + 1,
+        // arg2p: the goals selected in the frame are done, the tail call being the last: the variables of interest
+        // are those of the goals the frame selects next, and of the goals above it (a tail-recursive loop would keep
+        // every goal it selected)
+        relevantGoals = null,
     )
-}
 
 /**
  * Attaches [rules] as this context's [PrologExecutionContext.rules] cursor and records a matching
@@ -159,29 +167,14 @@ fun PrologExecutionContext.appendPrimitivesAndChoicePoints(primitiveExecutions: 
 /** Combines [createChild] and [appendRulesAndChoicePoints]: the usual way `StateRuleSelection` moves into a non-tail rule call. */
 fun PrologExecutionContext.createChildAppendingRulesAndChoicePoints(
     rules: Cursor<out Rule>,
-    inferProcedureFromGoals: Boolean = true,
-): PrologExecutionContext {
-    val tempExecutionContext = createChild(inferProcedureFromGoals)
-    return tempExecutionContext.appendRulesAndChoicePoints(rules)
-}
+    currentGoal: Struct = this.currentGoal!!.castToStruct(),
+): PrologExecutionContext = createChild(currentGoal).appendRulesAndChoicePoints(rules)
 
 /** Combines [replaceWithChild] and [appendRulesAndChoicePoints]: how `StateRuleSelection` moves into a last-call-optimized (tail) rule call. */
 fun PrologExecutionContext.replaceWithChildAppendingRulesAndChoicePoints(
     rules: Cursor<out Rule>,
-    inferProcedureFromGoals: Boolean = true,
-): PrologExecutionContext {
-    val tempExecutionContext = replaceWithChild(inferProcedureFromGoals)
-    return tempExecutionContext.appendRulesAndChoicePoints(rules)
-}
-
-/** Combines [createChild] and [appendPrimitivesAndChoicePoints]: how `StatePrimitiveSelection` moves into a primitive call. */
-fun PrologExecutionContext.createChildAppendingPrimitivesAndChoicePoints(
-    primitiveExecutions: Cursor<out Solve.Response>,
-    inferProcedureFromGoals: Boolean = true,
-): PrologExecutionContext {
-    val tempExecutionContext = createChild(inferProcedureFromGoals)
-    return tempExecutionContext.appendPrimitivesAndChoicePoints(primitiveExecutions)
-}
+    currentGoal: Struct = this.currentGoal!!.castToStruct(),
+): PrologExecutionContext = replaceWithChild(currentGoal).appendRulesAndChoicePoints(rules)
 
 /** Builds the [Solve.Request] passed to a `Primitive`'s `solve` from this context, [goal] and [signature], at [startTime]. */
 fun PrologExecutionContext.toRequest(

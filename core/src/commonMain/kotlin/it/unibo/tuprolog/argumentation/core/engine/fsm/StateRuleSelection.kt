@@ -49,6 +49,8 @@ import it.unibo.tuprolog.utils.Cursor
  */
 data class StateRuleSelection(
     override val context: PrologExecutionContext,
+    // arg2p: the current goal with the substitution applied, as the state selecting it already computed it
+    val goal: Term = context.currentGoal!!,
 ) : AbstractState(context) {
     companion object {
         private val catchSignature = Catch.signature
@@ -89,13 +91,13 @@ data class StateRuleSelection(
         StateException(exception, context.copy(step = nextStep()))
 
     private fun missingProcedure(
-        ruleSources: Sequence<Theory>,
+        ruleSources: () -> Sequence<Theory>,
         missing: Signature,
     ): State =
         when (val unknown = context.flags[Unknown]) {
             Unknown.FAIL -> failureState
             else -> {
-                if (ruleSources.none { missing.toIndicator() in it }) {
+                if (ruleSources().none { missing.toIndicator() in it }) {
                     when (unknown) {
                         Unknown.ERROR ->
                             exceptionalState(
@@ -176,18 +178,13 @@ data class StateRuleSelection(
             }
         }
 
-    private val PrologExecutionContext.isTailRecursive: Boolean
-        get() =
-            goals.next.isOver &&
-                flags[LastCallOptimization] == ON &&
-                currentGoal!!.let { currentGoal ->
-                    currentGoal.asStruct()?.extractSignature()?.let {
-                        it == procedure?.extractSignature() && it != catchSignature
-                    } ?: false
-                }
+    private fun PrologExecutionContext.isTailRecursive(currentGoal: Struct): Boolean =
+        goals.next.isOver &&
+            flags[LastCallOptimization] == ON &&
+            currentGoal.extractSignature().let { it == procedure?.extractSignature() && it != catchSignature }
 
     override fun computeNext(): State {
-        val currentGoal = context.currentGoal!!
+        val currentGoal = goal
         return when {
             currentGoal.isVar -> {
                 exceptionalState(
@@ -201,7 +198,8 @@ data class StateRuleSelection(
             currentGoal.isStruct ->
                 with(context) {
                     val currentGoalStruct = currentGoal.castToStruct()
-                    val ruleSources = sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb)
+                    // only needed to report a missing procedure
+                    val ruleSources = { sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb) }
                     val construct = ControlConstructs.of(currentGoalStruct)
 
                     when {
@@ -234,9 +232,9 @@ data class StateRuleSelection(
                             val rules = selectRules(currentGoalStruct)
                             when {
                                 rules.isOver -> missingProcedure(ruleSources, currentGoalStruct.extractSignature())
-                                context.isTailRecursive ->
-                                    StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules))
-                                else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules))
+                                context.isTailRecursive(currentGoalStruct) ->
+                                    StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, currentGoalStruct))
+                                else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, currentGoalStruct))
                             }
                         }
                     }

@@ -7,6 +7,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.extractSignature
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
@@ -58,8 +59,31 @@ class TheoryIndexes {
         return index
     }
 
+    // The clauses of the programs met last (see [program]): libraries, static and dynamic theory, by identity
+    private val programs = ArrayDeque<Pair<Triple<Any, Any, Any>, ProgramClauses>>()
+
+    /**
+     * The clauses of the program made of [libraries], [staticKb] and [dynamicKb], built by [build] the first time
+     * they are met together (the libraries change with the modules called, the theories with the solvers)
+     */
+    internal fun program(
+        libraries: Runtime,
+        staticKb: Theory,
+        dynamicKb: Theory,
+        build: () -> ProgramClauses,
+    ): ProgramClauses {
+        for ((key, program) in programs) {
+            if (key.first === libraries && key.second === staticKb && key.third === dynamicKb) return program
+        }
+        return build().also {
+            if (programs.size == PROGRAMS) programs.removeLast()
+            programs.addFirst(Triple(libraries, staticKb, dynamicKb) to it)
+        }
+    }
+
     private companion object {
         const val CACHED = 64
+        const val PROGRAMS = 16
     }
 }
 

@@ -35,7 +35,7 @@ internal abstract class MetaCall(
         goal: Struct,
         time: TimeInstant,
     ): State {
-        val frame = context.createChild()
+        val frame = context.createChild(goal)
         val check = frame.copy(goals = Struct.of(EnsureExecutable.functor, goal[0]).toGoals()).createChild()
         return try {
             ensureExecutable(check, time)
