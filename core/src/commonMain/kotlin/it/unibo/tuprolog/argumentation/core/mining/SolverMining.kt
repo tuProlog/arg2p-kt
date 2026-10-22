@@ -32,21 +32,39 @@ fun Solver.graph(context: Int) =
         )
     }
 
+// The arguments, identified as A0, A1, ... in order of their number of sub-arguments (supports), rules, conclusion and
+// top rule
 @JsName("mineArguments")
-fun Solver.arguments(context: Int): List<Argument> =
-    logicProgramming {
-        this@arguments
-            .solve("context_check"(context, "argument"(X)))
+fun Solver.arguments(context: Int): List<Argument> {
+    val arguments =
+        logicProgramming {
+            this@arguments
+                .solve("context_check"(context, "argument"(X)))
+                .filter { it.isYes }
+                .map { Argument.of(it.substitution[X]!!) }
+                .toList()
+        }
+    val supports = supportCounts(context, arguments)
+    return arguments
+        .sortedWith(compareBy({ supports[it] ?: 0 }, { it.rules.size }, { it.conclusion }, { it.topRule }))
+        .onEachIndexed { index, argument -> argument.identifier = "A$index" }
+}
+
+// The number of arguments supporting each argument
+private fun Solver.supportCounts(
+    context: Int,
+    arguments: List<Argument>,
+): Map<Argument, Int> {
+    val lookup = arguments.lookup()
+    return logicProgramming {
+        this@supportCounts
+            .solve("context_check"(context, "support"(`_`, Y)))
             .filter { it.isYes }
-            .map { it.substitution[X]!! }
-            .map { solution ->
-                Argument.of(solution)
-            }.sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
-            .mapIndexed { index, arg ->
-                arg.identifier = "A$index"
-                arg
-            }
-    }.toList()
+            .mapNotNull { lookup.firstOrNull(it.substitution[Y]!!) }
+            .groupingBy { it }
+            .eachCount()
+    }
+}
 
 @JsName("mineAttacks")
 fun Solver.attacks(
