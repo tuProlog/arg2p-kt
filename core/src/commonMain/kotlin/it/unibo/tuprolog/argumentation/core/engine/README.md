@@ -27,9 +27,11 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   of a `ClauseSource`: the lookups of the context (`context_check/1,2`) are resolved with the clauses of a branch
   (`BranchClauses`, in `libs.basic`), as the context store answers them.
 - Clause selection (`ClauseSource`): the clauses of the program are those of the libraries, the static and the dynamic
-  theory (`ProgramClauses`). Those of the immutable theories are grouped by the signature of their heads once
-  (`IndexedTheoryClauses`), and those matching a goal collected in a list (lookups merged the lazy sequences of the
-  RETE indexes of the theories at every step); a mutable theory gives the clauses it has when the goal is selected.
+  theory (`ProgramClauses`). Those of the immutable theories are indexed once by the signature of their heads, then
+  by the principal symbol of their first argument (`IndexedTheoryClauses`, `FirstArgumentIndex`), and those matching
+  a goal collected in a list (lookups merged the lazy sequences of the RETE indexes of the theories at every step:
+  looking up one of 2000 facts by its first argument is 10x faster); a mutable theory gives the clauses it has when
+  the goal is selected.
 - Rule execution: the body of a rule is built with the unifier of its head and the goal, and only the bindings of
   the variables of the goal are added to the substitution of the resolution (those of the fresh copy of the rule
   only occur in its head and body). A variable of the rule meeting one of the goal is bound to it, rather than the

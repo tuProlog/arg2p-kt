@@ -4,8 +4,6 @@ import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
@@ -45,42 +43,4 @@ internal class MutableTheoryClauses(
         goal: Struct,
         unificator: Unificator,
     ): List<Clause> = theory[goal].toList()
-}
-
-/**
- * The clauses of an immutable theory, grouped by the signature of their heads once: those whose heads match a goal
- * are collected in a list. Theories index their clauses in RETE trees, whose lookups merge lazy sequences (of each
- * index) at every step: for the few clauses of a predicate, the scan is cheaper.
- */
-internal class IndexedTheoryClauses private constructor(
-    theory: Theory,
-) : ClauseSource {
-    private val bySignature: Map<Signature, List<Clause>> =
-        theory.clauses
-            .filter { it.head != null }
-            .groupBy { it.head!!.extractSignature() }
-
-    override fun clausesFor(
-        goal: Struct,
-        unificator: Unificator,
-    ): List<Clause> = bySignature[goal.extractSignature()]?.filter { unificator.match(goal, it.head!!) } ?: emptyList()
-
-    companion object {
-        // The indexes of the last theories met, by identity: the libraries of each module, and the static theory
-        private const val CACHED = 64
-        private val theories = arrayOfNulls<Theory>(CACHED)
-        private val indexes = arrayOfNulls<IndexedTheoryClauses>(CACHED)
-        private var last = 0
-
-        fun of(theory: Theory): IndexedTheoryClauses {
-            for (i in 0 until CACHED) {
-                if (theories[i] === theory) return indexes[i]!!
-            }
-            val index = IndexedTheoryClauses(theory)
-            last = (last + 1) % CACHED
-            theories[last] = theory
-            indexes[last] = index
-            return index
-        }
-    }
 }
