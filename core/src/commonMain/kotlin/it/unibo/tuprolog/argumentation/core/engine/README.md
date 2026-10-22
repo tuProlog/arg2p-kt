@@ -19,5 +19,9 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   substitution is trimmed once it has doubled since it was last trimmed, rather than whenever a frame is left.
 - Clause selection: the clauses for a goal are selected once (the procedure was first checked to have a matching
   clause, matching them all twice).
+- Inlined calls (`InlinedCall`): a primitive can have the engine solve a goal in place of it, in a frame of its own
+  with other libraries, rather than in a solver of its own. The module calls (`::`, `:::`) are inlined: no solver is
+  set up for each call, the bindings get back as for any goal, and the call is subject to the time limit of the
+  resolution. Backtracking into a choice point within an inlined call goes on with the libraries of the call.
 
-Together: graph building 2-2.6x faster, query mode 2.5x, resolution 2.3x.
+Together: graph building 2-2.6x faster, query mode 2.5x, resolution 2.3x; module calls 1.3-2x.

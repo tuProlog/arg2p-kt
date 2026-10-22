@@ -53,7 +53,8 @@ data class StateGoalSelection(
                             operators = context.operators,
                             inputChannels = context.inputChannels,
                             outputChannels = context.outputChannels,
-                            libraries = context.libraries,
+                            // The libraries of an inlined call only apply to its goal
+                            libraries = if (context.inlined) it.libraries else context.libraries,
                             customData = context.customData,
                         )
                     },

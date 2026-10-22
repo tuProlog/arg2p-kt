@@ -62,6 +62,7 @@ fun PrologExecutionContext.createChild(inferProcedureFromGoals: Boolean = true):
         depth = depth + 1,
         step = step + 1,
         relevantGoals = null,
+        inlined = false,
     )
 }
 

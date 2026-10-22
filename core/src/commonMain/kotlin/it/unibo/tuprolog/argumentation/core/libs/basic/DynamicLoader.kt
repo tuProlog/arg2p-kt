@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.engine.InlinedCall
+import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
@@ -73,7 +75,11 @@ class DynamicLoader(
                 }
             }
 
-    abstract inner class AbstractWithLib : PrimitiveWithSignature {
+    // Module calls are inlined by the arg2p engine (InlinedCall): the goal is solved in place, against the libraries of
+    // the module. Other solvers solve it in a solver of their own, cached for each module.
+    abstract inner class AbstractWithLib :
+        PrimitiveWithSignature,
+        InlinedCall {
         abstract override val signature: Signature
 
         abstract fun execute(
@@ -81,7 +87,8 @@ class DynamicLoader(
             solver: MutableSolver,
         )
 
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        // The module and the goal of the call, checked
+        private fun call(request: Solve.Request<ExecutionContext>): Pair<Atom, Struct> {
             val lib: Term = request.arguments[0]
             val goal: Term = request.arguments[1]
 
@@ -102,6 +109,18 @@ class DynamicLoader(
                     goal,
                 )
             }
+            return lib to goal
+        }
+
+        override fun inline(request: Solve.Request<ExecutionContext>): Inlining {
+            val (lib, goal) = call(request)
+            val solver = loadWithMemo(request, lib)
+            execute(lib.toString(), solver)
+            return Inlining(goal, solver.libraries)
+        }
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val (lib, goal) = call(request)
 
             val solver = loadWithMemo(request, lib)
 

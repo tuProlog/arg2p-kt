@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
+import it.unibo.tuprolog.argumentation.core.engine.InlinedCall
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.ResolutionException
@@ -50,8 +51,21 @@ data class StatePrimitiveSelection(
                             val primitive =
                                 libraries.primitives[signature]
                                     ?: error("Inconsistent behaviour of Library.contains and Library.get")
-                            val primitiveExecutions = primitive.solve(request).cursor()
-                            StatePrimitiveExecution(childContext.appendPrimitivesAndChoicePoints(primitiveExecutions))
+                            if (primitive is InlinedCall) {
+                                // Solved in place, in a frame of its own (arg2p: rather than in another solver)
+                                val inlining = primitive.inline(request)
+                                StateGoalSelection(
+                                    childContext.copy(
+                                        goals = inlining.goal.toGoals(),
+                                        libraries = inlining.libraries,
+                                        inlined = true,
+                                        scoped = true,
+                                    ),
+                                )
+                            } else {
+                                val primitiveExecutions = primitive.solve(request).cursor()
+                                StatePrimitiveExecution(childContext.appendPrimitivesAndChoicePoints(primitiveExecutions))
+                            }
                         } catch (exception: ResolutionException) {
                             exceptionalState(exception.updateLastContext(childContext.skipThrow()))
                         }
