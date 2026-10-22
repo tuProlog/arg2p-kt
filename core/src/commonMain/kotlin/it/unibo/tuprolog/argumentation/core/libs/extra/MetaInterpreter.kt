@@ -11,11 +11,6 @@ object MetaInterpreter : PrologModule("prolog.argumentation.meta.crossjustice", 
             recover_facts(R, Y),
             length(Y, L).
         
-        % lenght/2
-        
-        length([], 0).
-        length([_|T], X) :- length(T, Y), X is Y + 1.
-        
         % recover_facts/2
         
         recover_facts([], []) :- !.

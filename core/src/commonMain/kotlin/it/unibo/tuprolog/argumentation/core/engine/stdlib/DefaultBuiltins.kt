@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine.stdlib
 
+import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Length
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
@@ -33,6 +34,7 @@ object DefaultBuiltins : ExtensionLibrary(CommonBuiltins) {
         get() =
             listOf(
                 Throw,
+                Length,
             )
 
     override val additionalRules: Iterable<RuleWrapper<*>>
