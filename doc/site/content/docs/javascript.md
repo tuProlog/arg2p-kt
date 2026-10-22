@@ -114,3 +114,34 @@ solution.substitutions.forEach(s => console.log(`${s.first} = ${s.second}`))
 A complete browser application built on this bridge — the Web Playground — is available at
 [tuprolog/arg2p-kt-web](https://github.com/tuProlog/arg2p-kt-web), and runs online
 [here](https://tuprolog.github.io/arg2p-kt-web/).
+
+---
+
+## Without the bridge
+
+tuProlog exports none of its declarations to JavaScript: its objects keep the names of their methods (`solveList`,
+`assertAFact`, `loadStaticKb`, `castToStruct`, ...), but JavaScript cannot reach their factories, read their
+properties or iterate a Kotlin sequence. The `js` package of `arg2p-core` exports what is missing, so that the
+solvers, solutions and terms of tuProlog can be used directly:
+
+- `JsTerms`: parsing and formatting terms, building them (`atom`, `variable`, `integer`, `real`, `struct`, `list`),
+  and reading them (`kind`, `functor`, `arity`, `args`, `items`, `name`, `numberValue`);
+- `JsTheories`: parsing a theory, and its clauses;
+- `JsArg2p`: an arg2p solver for a theory (`solver`, with the default flags, or `solverWithoutDefaults`), and the
+  solutions of a goal one at a time (`solve`, `solveTerm`), each with `isYes`, `isNo`, `isHalt`, `error`,
+  `variables` and `valueOf(name)`.
+
+```js
+const { JsArg2p, JsTerms } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
+
+const solver = JsArg2p.solver('r1 : [] => a. r2 : [] => -a. sup(r1, r2). queryMode.')
+const solution = JsArg2p.solve(solver, 'answerQuery(a, In, Out, Und)').next()
+console.log(JsTerms.format(solution.valueOf('In')))       // [a]
+
+// solutions are computed as they are asked for
+const lengths = JsArg2p.solve(solver, 'length(L, N)')
+for (let i = 0; i < 3; i++) console.log(JsTerms.format(lengths.next().valueOf('N')))   // 0 1 2
+
+// the solver is tuProlog's own
+solver.assertAFact(JsTerms.struct('fact', [JsTerms.atom('x')]))
+```
