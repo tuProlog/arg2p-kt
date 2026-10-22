@@ -4,7 +4,6 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.utils.Cursor
 
 /**
@@ -59,8 +58,8 @@ data class StatePrimitiveExecution(
                 },
                 otherwise = { throw IllegalStateException("This should never happen") },
             ) ?: StateBacktracking(context.copyFromCurrentPrimitive())
-        } catch (exception: ResolutionException) {
-            StateException(exception.updateLastContext(context.skipThrow()), context.copy(step = nextStep()))
+        } catch (exception: Exception) {
+            StateException(exception.asResolutionException(context).updateLastContext(context.skipThrow()), context.copy(step = nextStep()))
         }
 
     override fun clone(context: PrologExecutionContext): StatePrimitiveExecution = copy(context = context)

@@ -56,11 +56,11 @@ data class StatePrimitiveSelection(
                             if (delegation != null) {
                                 DelegationStates.of(delegation, childContext)
                             } else {
-                                val primitiveExecutions = primitive.solve(request).cursor()
+                                val primitiveExecutions = primitive.solve(request).raisingErrorsInTurn(request).cursor()
                                 StatePrimitiveExecution(childContext.appendPrimitivesAndChoicePoints(primitiveExecutions))
                             }
-                        } catch (exception: ResolutionException) {
-                            exceptionalState(exception.updateLastContext(childContext.skipThrow()))
+                        } catch (exception: Exception) {
+                            exceptionalState(exception.asResolutionException(childContext).updateLastContext(childContext.skipThrow()))
                         }
                     } else {
                         StateRuleSelection(context.copy(step = nextStep()))

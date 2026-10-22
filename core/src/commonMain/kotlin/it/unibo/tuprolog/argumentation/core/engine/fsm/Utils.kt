@@ -15,6 +15,8 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.TimeInstant
+import it.unibo.tuprolog.solve.exception.ResolutionException
+import it.unibo.tuprolog.solve.exception.error.SystemError
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.utils.Cursor
 import it.unibo.tuprolog.utils.cursor
@@ -111,6 +113,33 @@ fun PrologExecutionContext.appendRulesAndChoicePoints(rules: Cursor<out Rule>): 
  */
 fun PrologExecutionContext.appendChoicePoint(alternatives: Cursor<out Rule>): PrologExecutionContext =
     copy(choicePoints = choicePoints.appendRules(alternatives, this))
+
+/**
+ * This exception, raised by the code of a primitive, as a resolution exception (arg2p): a Kotlin exception becomes a
+ * system_error, which catch/3 can handle, rather than crashing the resolution
+ */
+fun Exception.asResolutionException(context: ExecutionContext): ResolutionException =
+    this as? ResolutionException ?: SystemError.forUncaughtException(context, this)
+
+/**
+ * The answers of a primitive, an error raised computing one of them becoming an answer raising it (arg2p): the
+ * engine computes an answer ahead (to know whether the call leaves alternatives), but the error is only raised if the
+ * resolution backtracks into it, as an error of that answer
+ */
+fun Sequence<Solve.Response>.raisingErrorsInTurn(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
+    sequence {
+        val answers = iterator()
+        while (true) {
+            val answer =
+                try {
+                    if (answers.hasNext()) answers.next() else null
+                } catch (exception: Exception) {
+                    request.replyException(exception.asResolutionException(request.context))
+                } ?: break
+            yield(answer)
+            if (answer.solution.isHalt) break
+        }
+    }
 
 /** The context an error raised in this one is reported in: the nearest one that is not throw/1 */
 fun PrologExecutionContext.skipThrow(): ExecutionContext = pathToRoot.first { it.procedure?.functor != Throw.functor }

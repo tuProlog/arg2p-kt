@@ -46,7 +46,8 @@ object Throw : UnaryPredicate<ExecutionContext>("throw") {
         error: Term,
     ): ResolutionException =
         when {
-            error is Struct && error.functor == "error" && error.arity in 1..2 -> {
+            // arg2p: an error whose type is not a structure (error(1), error(_, C)) is raised as any other ball
+            error is Struct && error.functor == "error" && error.arity in 1..2 && error[0] is Struct -> {
                 LogicError.of(
                     context = context,
                     type = error[0] as Struct,

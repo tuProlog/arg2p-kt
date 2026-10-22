@@ -23,11 +23,20 @@ data class StateBacktracking(
             )
         } else {
             val choicePointContext = choicePoints!!.pathToRoot.first { it.alternatives.hasNext }
-            val nextContext = choicePointContext.backtrack(context)
-            if (nextContext.primitives.hasNext) {
-                StatePrimitiveExecution(nextContext)
-            } else {
-                StateRuleExecution(nextContext)
+            // arg2p: backtracking into a primitive computes its next answers, which may raise errors
+            try {
+                val nextContext = choicePointContext.backtrack(context)
+                if (nextContext.primitives.hasNext) {
+                    StatePrimitiveExecution(nextContext)
+                } else {
+                    StateRuleExecution(nextContext)
+                }
+            } catch (exception: Exception) {
+                val executionContext = choicePointContext.executionContext ?: context
+                StateException(
+                    exception.asResolutionException(executionContext).updateLastContext(executionContext.skipThrow()),
+                    context.copy(step = nextStep()),
+                )
             }
         }
     }
