@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.Cache
 import it.unibo.tuprolog.argumentation.core.libs.basic.Context
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
+import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
 import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
 import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
 import it.unibo.tuprolog.argumentation.core.libs.graph.AbstractMode
@@ -50,15 +51,16 @@ import it.unibo.tuprolog.solve.library.Runtime
 interface Arg2pSolver {
     val loader: ArgLoader
     val context: ArgContext
+    val settings: Settings
 
     fun staticLibraries(): Iterable<ArgLibrary>
 
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Runtime.of(listOf(loader, context).plus(staticLibraries()).map { it.content() })
+    fun to2pLibraries() = Runtime.of(listOf(loader, context, settings).plus(staticLibraries()).map { it.content() })
 
     fun operators() =
-        listOf(loader, context)
+        listOf(loader, context, settings)
             .plus(staticLibraries())
             .map { it.theoryOperators }
             .reduce(OperatorSet::plus)
@@ -70,6 +72,7 @@ interface Arg2pSolver {
         ) = object : Arg2pSolver {
             override val loader = DynamicLoader(this)
             override val context: ArgContext = Context()
+            override val settings = Settings(this)
 
             override fun staticLibraries() = staticLibs
 

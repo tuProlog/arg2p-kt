@@ -3,12 +3,12 @@ package it.unibo.tuprolog.argumentation.core.libs.extra
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
 import it.unibo.tuprolog.argumentation.core.libs.basic.solveForCaller
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.dsl.theory.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -94,11 +94,10 @@ object ModuleCall : Primitive {
         }
     }
 
-    // The modules path of the settings, a fact of the libraries (empty if there is none)
+    // The modules path of the settings (empty if there is none)
     private fun mineModulesPath(context: ExecutionContext): String {
-        val pattern = Struct.of(ModulesPath.predicate(), Var.of("Path"))
-        val setting = context.libraries.asTheory(context.unificator)[pattern].firstOrNull()
-        return setting?.head?.get(0)?.toString() ?: ""
+        val paths = Settings.of(context)?.valuesOf(ModulesPath, context).orEmpty()
+        return paths.firstOrNull()?.toString() ?: ""
     }
 
     private fun getCleanSolver(

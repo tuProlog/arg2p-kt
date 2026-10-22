@@ -20,24 +20,24 @@ superiorInfo([LastDefRulesA, DefRulesA, DefPremisesA], [LastDefRulesB, DefRulesB
 	superiorArgumentSupport(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, SupSet).
 
 superiorArgumentSupport(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, SupSet) :-
-    orderingPrinciple(last),
+    setting(orderingPrinciple, last),
 	superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB, SupSet).
 
 superiorArgumentSupport(_, DefRulesA, DefPremisesA, _, DefRulesB, DefPremisesB, SupSet) :-
-    orderingPrinciple(weakest),
+    setting(orderingPrinciple, weakest),
 	superior(DefRulesA, DefPremisesA, DefRulesB, DefPremisesB, SupSet).
 
 superior([], PremisesA, [], PremisesB, SupSet) :-
 	weaker(PremisesB, PremisesA, SupSet).
 superior(DefRulesA, _, DefRulesB, _, SupSet) :-
-	orderingPrinciple(last),
+	setting(orderingPrinciple, last),
 	(DefRulesA \== []; DefRulesB \== []),
 	weaker(DefRulesB, DefRulesA, SupSet).
 superior(DefRulesA, [], DefRulesB, [], SupSet) :-
-	orderingPrinciple(weakest),
+	setting(orderingPrinciple, weakest),
 	weaker(DefRulesB, DefRulesA, SupSet).
 superior(DefRulesA, PremisesA, DefRulesB, PremisesB, SupSet) :-
-	orderingPrinciple(weakest),
+	setting(orderingPrinciple, weakest),
 	(DefRulesA \== []; DefRulesB \== []),
 	(PremisesA \== []; PremisesB \== []),
 	weaker(DefRulesB, DefRulesA, SupSetA),
@@ -50,14 +50,14 @@ weaker(RulesA, [], []) :-
 weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
-	orderingComparator(elitist),
+	setting(orderingComparator, elitist),
 	member(Rule, RulesA),
 	allStronger(Rule, RulesB, SupSet), !.
 
 weaker(RulesA, RulesB, SupSet) :-
 	RulesA \== [],
 	RulesB \== [],
-	orderingComparator(democrat),
+	setting(orderingComparator, democrat),
 	weakerDemo(RulesA, RulesB, SupSet).
 
 %(A, B) ∈ attnr(K) iff 1. A undercuts B, or 2. A rebuts B (at B′)
@@ -66,7 +66,7 @@ weaker(RulesA, RulesB, SupSet) :-
 weaker(RulesA, RulesB, [sup(X, W)]) :-
 	RulesA \== [],
 	RulesB \== [],
-	orderingComparator(normal),
+	setting(orderingComparator, normal),
 	member(W, RulesA),
 	member(X, RulesB),
 	context_check(sup(X, W)), !.

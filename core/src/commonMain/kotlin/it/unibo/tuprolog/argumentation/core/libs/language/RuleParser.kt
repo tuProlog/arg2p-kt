@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
@@ -53,7 +54,7 @@ abstract class RuleParserBase :
             )
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(AutoTransposition, PrologStrictCompatibility)
+        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules)
 
     override fun identifier() = "parser"
 
@@ -83,6 +84,8 @@ expect object RuleParser : RuleParserBase {
 object AutoTransposition : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "autoTransposition"
 
+    override val isSwitch: Boolean = true
+
     override fun default(): Boolean = false
 
     override fun values() {}
@@ -90,6 +93,30 @@ object AutoTransposition : ArgsFlag<Boolean, Unit> {
 
 object PrologStrictCompatibility : ArgsFlag<Boolean, Unit> {
     override fun predicate(): String = "prologStrictCompatibility"
+
+    override val isSwitch: Boolean = true
+
+    override fun default(): Boolean = false
+
+    override fun values() {}
+}
+
+// Conflicts derived as statements of the theory (conflict/2,3 arguments), rather than built in
+object MetaConflicts : ArgsFlag<Boolean, Unit> {
+    override fun predicate(): String = "metaConflicts"
+
+    override val isSwitch: Boolean = true
+
+    override fun default(): Boolean = false
+
+    override fun values() {}
+}
+
+// Rules applicable only when an applicable(Rule) statement holds
+object MetaRules : ArgsFlag<Boolean, Unit> {
+    override fun predicate(): String = "metaRules"
+
+    override val isSwitch: Boolean = true
 
     override fun default(): Boolean = false
 
@@ -134,7 +161,7 @@ object ConversionUtils {
             sequenceOf(
                 Substitution.of(
                     first.castToVar(),
-                    if (force || context.solve(Struct.parse("prologStrictCompatibility")).first().isYes) {
+                    if (force || Settings.of(context.context)?.isOn(PrologStrictCompatibility, context.context) == true) {
                         mapper(context.context.staticKb.clauses, this)
                     } else {
                         emptyLogicList

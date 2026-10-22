@@ -11,11 +11,11 @@ computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUn
     utils::recoverStatementLabelling(StatIn, StatOut, StatUnd).
 
 buildGraph :-
-    graphBuildMode(X),
+    setting(graphBuildMode, X),
     X:::buildArgumentationGraph.
 
 modifyGraph :-
-    findall(X, graphExtension(X), Ext),
+    findall(X, setting(graphExtension, X), Ext),
     modifyGraph(Ext).
 
 modifyGraph([]).
@@ -24,11 +24,11 @@ modifyGraph([X|Ext]) :-
     X:::modifyArgumentationGraph.
 
 buildArgumentLabelling :-
-    argumentLabellingMode(X),
+    setting(argumentLabellingMode, X),
     X:::argumentLabelling.
 
 buildStatementLabelling :-
-    statementLabellingMode(X),
+    setting(statementLabellingMode, X),
     X:::statementLabelling.
 
 solve(Arguments, Attacks, I, O, U) :-

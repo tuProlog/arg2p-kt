@@ -71,7 +71,7 @@ specialRules(SpecialRules) :-
 % TRANSPOSITION
 %=======================================================================================================================
 
-transpose(_, CtrRules, CtrRules) :- \+ autoTransposition, !.
+transpose(_, CtrRules, CtrRules) :- \+ setting(autoTransposition), !.
 % The rules followed by the transpositions of each one, from the last rule to the first, keeping the last rule
 % with each name: what merging the transpositions of a rule at a time, and deduplicating each time, amounts to,
 % in a single pass rather than merging and deduplicating the lists once for each rule (cubic in the number of
@@ -319,7 +319,7 @@ ff([[X]], [X]) :- !.
 ff(X, X).
 
 % classic_rule(mc, [conflict(A, B), A], [A]) :- metaConflicts.
-classic_rule(X, [applicable(X)|Y], Z) :- metaRules, !, rule(X, Y, Z).
+classic_rule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, rule(X, Y, Z).
 classic_rule(X, Y, Z) :- rule(X, Y, Z).
 classic_rule(X, Y) :- premise(X, Y).
 
@@ -327,7 +327,7 @@ classic_rule(X, Y) :- premise(X, Y).
 % -O(x) <=> P(-x)  % this is already included
 
 % With metaConflicts the conflicts are only the derived ones, otherwise the builtin and declared ones
-classic_conflict(X, Y, C) :- metaConflicts, !,
+classic_conflict(X, Y, C) :- setting(metaConflicts), !,
     X = [A], Y = [B],
     context_check(clause(conc([conflict(A, B, C)]), _)).
 classic_conflict(A, B, C) :-
@@ -346,12 +346,12 @@ builtin_conflict([p(-Atom)], [o(Atom)], true).
 builtin_conflict([o(Atom)], [-p(Atom)], true).                           % O(x) <-> O(-x) (-P(x))
 builtin_conflict([-p(Atom)], [o(Atom)], true).
 builtin_conflict([sup(X, Y)], [sup(Y, X)], true).
-classic_conflict(X, Y) :- metaConflicts, !,
+classic_conflict(X, Y) :- setting(metaConflicts), !,
     X = [A], Y = [B],
     context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B) :-
     conflict(A, B).
 
 % conflict_statement(?X, ?Y, -Statement): with metaConflicts, the statements whose arguments make X conflict with Y
-conflict_statement([A], [B], conflict(A, B, _)) :- metaConflicts.
-conflict_statement([A], [B], conflict(A, B)) :- metaConflicts.
+conflict_statement([A], [B], conflict(A, B, _)) :- setting(metaConflicts).
+conflict_statement([A], [B], conflict(A, B)) :- setting(metaConflicts).

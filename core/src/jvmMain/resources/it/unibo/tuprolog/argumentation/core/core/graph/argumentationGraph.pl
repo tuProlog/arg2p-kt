@@ -16,7 +16,7 @@ buildAdditionalArguments :-
     findall(_, buildAdditionalArgument, _).
 
 buildAdditionalArgument :-
-    metaConflicts,
+    setting(metaConflicts),
     conf_arg(A, CArg),
     context_check(clause(conc(A), argument([R, T, C, B, I]))),
     \+ filter_meta([R, T, C, B, I]),
@@ -37,8 +37,8 @@ conf_arg([A], Arg) :-
 conf_arg([A], Arg) :-
     context_check(clause(conc([conflict(A, _)]), argument(Arg))).
 
-filter_meta([Id, _, _, _, _]) :- metaConflicts, member(mc, Id).
-filter_meta(_) :- \+ metaConflicts.
+filter_meta([Id, _, _, _, _]) :- setting(metaConflicts), member(mc, Id).
+filter_meta(_) :- \+ setting(metaConflicts).
 
 %--------------------------------------------------------------------------
 % Build Standard Arguments

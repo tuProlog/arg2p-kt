@@ -7,11 +7,11 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
     mineResults(Goal, YesResult, NoResult, UndResult).
 
 computeStatementAcceptance(Goal) :-
-    \+ queryMode,
+    \+ setting(queryMode),
     abstract:::computeGlobalAcceptance.
 
 computeStatementAcceptance(Goal) :-
-    queryMode,
+    setting(queryMode),
     locality(Locality),
     queryAcceptance(Locality, Goal).
 
@@ -19,7 +19,7 @@ computeStatementAcceptance(Goal) :-
 % (locality/1): the arguments they depend on (directional), those connected to them in either direction
 % (connected), or the whole graph (whole_graph, also for a semantics that does not declare it)
 locality(Locality) :-
-    argumentLabellingMode(Semantics),
+    setting(argumentLabellingMode, Semantics),
     Semantics::locality(L), !,
     Locality = L.
 locality(whole_graph).
@@ -29,7 +29,7 @@ queryAcceptance(whole_graph, _) :- !,
 queryAcceptance(Locality, Goal) :-
     findall(_, buildSubGraph(Goal, _), _),
     expand(Locality),
-    graphBuildMode(X),
+    setting(graphBuildMode, X),
     X:::buildAdditionalArguments,
     X:::buildAttacks,
     abstract:::modifyGraph,
@@ -77,7 +77,7 @@ buildSubGraph(Query, Argument) :- context_check(clause(conc([Query]), argument(A
 % graph extensions relate it to. The conflicts come first, as the possible attackers are only looked for once.
 dependency(_, Argument, S) :- attack::attackDependency(Argument, S).
 dependency(Id, Argument, S) :- attack::possibleAttackers(Id, Argument, [S]).
-dependency(_, Argument, S) :- graphExtension(X), X::queryDependencies(Argument, S).
+dependency(_, Argument, S) :- setting(graphExtension, X), X::queryDependencies(Argument, S).
 
 % expand(+Locality): for the connected locality, builds the arguments whose labels may depend on the ones built
 % (see dependant/2), with those they depend on in turn, until none is new
@@ -99,7 +99,7 @@ expand(_).
 dependant(Argument, S) :- attack::possiblyAttacked(Argument, S).
 dependant(Argument, S) :- attack::attackDependant(Argument, S).
 dependant([_, _, [C], _, _], S) :- parser::classic_rule(_, Premises, [S]), member(C, Premises).
-dependant(Argument, S) :- graphExtension(X), X::queryDependants(Argument, S).
+dependant(Argument, S) :- setting(graphExtension, X), X::queryDependants(Argument, S).
 
 
 findSingleArgument(Query, Argument, Support) :-
@@ -310,7 +310,7 @@ defend(Argument, QueryChain, Res) :-
 complementary([_, _, ConclusionA, _, _], [_, _, ConclusionB, _, _]) :-
     attack::expanded_conflict(ConclusionA, ConclusionB).
 
-ambiguityCheck(A, B, no) :- ambiguityBlocking,
+ambiguityCheck(A, B, no) :- setting(ambiguityBlocking),
     \+ complementary(A, B),
     context_check(attack(direct, B, A, _)), !.
 ambiguityCheck(_, _, und).
@@ -372,7 +372,7 @@ attackerOnRule(Rule, _, Argument, undercut) :-
 attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], Attacker, direct) :-
     \+ parser::contrary(Term, _),
     \+ strict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]),
-    (graphExtension(rebutRestriction) ->
+    (setting(graphExtension, rebutRestriction) ->
         (
             getSubArgument(Term, TargetRules, SubArgument),
             rebutRestriction(SubArgument)
@@ -381,7 +381,7 @@ attackerOnTerm(Term, [TargetRules, TopRule, Conclusion, Groundings, ArgInfo], At
     ),
     attack::expanded_conflict(Term, [X]),
     buildArgument(X, Attacker),
-    (graphExtension(standardPref) ->
+    (setting(graphExtension, standardPref) ->
         (
             once(getSubArgument(Term, TargetRules, SubArgument)),
             \+ superiorArgument(SubArgument, Attacker)
@@ -402,12 +402,12 @@ strict([_, _, _, _, [_, [], []]]).
 % Rebut restriction
 
 rebutRestriction([TargetRules, none, Conclusion, Groundings, ArgInfo]) :-
-    graphExtension(rebutRestriction).
+    setting(graphExtension, rebutRestriction).
 rebutRestriction([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]) :-
-    graphExtension(rebutRestriction),
+    setting(graphExtension, rebutRestriction),
     TopRule \= none,
     rebutRestriction::restrict([TargetRules, TopRule, Conclusion, Groundings, ArgInfo]).
-rebutRestriction(_) :- \+ graphExtension(rebutRestriction).
+rebutRestriction(_) :- \+ setting(graphExtension, rebutRestriction).
 
 % Preferences
 
