@@ -10,8 +10,6 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
-import it.unibo.tuprolog.solve.exception.error.InstantiationError
-import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.exception.warning.MissingPredicate
 import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.flags.LastCallOptimization
@@ -49,8 +47,8 @@ import it.unibo.tuprolog.utils.Cursor
  */
 data class StateRuleSelection(
     override val context: PrologExecutionContext,
-    // arg2p: the current goal with the substitution applied, as the state selecting it already computed it
-    val goal: Term = context.currentGoal!!,
+    // arg2p: the current goal (callable) with the substitution applied, as primitive selection computed it
+    val goal: Struct,
 ) : AbstractState(context) {
     companion object {
         private val catchSignature = Catch.signature
@@ -183,78 +181,51 @@ data class StateRuleSelection(
             flags[LastCallOptimization] == ON &&
             currentGoal.extractSignature().let { it == procedure?.extractSignature() && it != catchSignature }
 
-    override fun computeNext(): State {
-        val currentGoal = goal
-        return when {
-            currentGoal.isVar -> {
-                exceptionalState(
-                    InstantiationError.forGoal(
-                        context = context,
-                        procedure = context.procedure!!.extractSignature(),
-                        variable = currentGoal.castToVar(),
-                    ),
-                )
-            }
-            currentGoal.isStruct ->
-                with(context) {
-                    val currentGoalStruct = currentGoal.castToStruct()
-                    // only needed to report a missing procedure
-                    val ruleSources = { sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb) }
-                    val construct = ControlConstructs.of(currentGoalStruct)
+    override fun computeNext(): State =
+        with(context) {
+            // only needed to report a missing procedure
+            val ruleSources = { sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb) }
+            val construct = ControlConstructs.of(goal)
 
-                    when {
-                        currentGoalStruct.isTruth -> {
-                            if (currentGoalStruct.isTrue) {
-                                ignoreState
-                            } else {
-                                failureState
-                            }
-                        }
-
-                        currentGoalStruct.isCut() -> {
-                            val cutLimit = computeCutLimit(currentGoalStruct is MagicCut)
-                            ignoreState.let {
-                                it.copy(
-                                    context =
-                                        it.context.copy(
-                                            choicePoints = it.context.choicePoints.performCut(cutLimit),
-                                        ),
-                                )
-                            }
-                        }
-
-                        // arg2p: the predicates the engine solves natively
-                        construct != null -> construct.select(context, currentGoalStruct, executionTime)
-
-                        // The clauses are selected once: the procedure is missing when none is selected
-                        // (arg2p: checking first whether any clause matches matched them all twice)
-                        else -> {
-                            val rules = selectRules(currentGoalStruct)
-                            when {
-                                rules.isOver -> missingProcedure(ruleSources, currentGoalStruct.extractSignature())
-                                context.isTailRecursive(currentGoalStruct) ->
-                                    StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, currentGoalStruct))
-                                else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, currentGoalStruct))
-                            }
-                        }
+            when {
+                goal.isTruth -> {
+                    if (goal.isTrue) {
+                        ignoreState
+                    } else {
+                        failureState
                     }
                 }
-            else -> {
-                exceptionalState(
-                    TypeError.forGoal(
-                        context = context,
-                        procedure = context.procedure!!.extractSignature(),
-                        expectedType = TypeError.Expected.CALLABLE,
-                        culprit = currentGoal,
-                    ),
-                )
+
+                goal.isCut() -> {
+                    val cutLimit = computeCutLimit(goal is MagicCut)
+                    ignoreState.let {
+                        it.copy(
+                            context =
+                                it.context.copy(
+                                    choicePoints = it.context.choicePoints.performCut(cutLimit),
+                                ),
+                        )
+                    }
+                }
+
+                // arg2p: the predicates the engine solves natively
+                construct != null -> construct.select(context, goal, executionTime)
+
+                // The clauses are selected once: the procedure is missing when none is selected
+                // (arg2p: checking first whether any clause matches matched them all twice)
+                else -> {
+                    val rules = selectRules(goal)
+                    when {
+                        rules.isOver -> missingProcedure(ruleSources, goal.extractSignature())
+                        context.isTailRecursive(goal) ->
+                            StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, goal))
+                        else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, goal))
+                    }
+                }
             }
         }
-    }
 
     // The clauses for the goal, from the program (see ProgramClauses)
     private fun PrologExecutionContext.selectRules(goal: Struct): Cursor<out Rule> =
         RuleCursor.of(ProgramClauses.of(this).clausesFor(goal, unificator))
-
-    override fun clone(context: PrologExecutionContext): StateRuleSelection = copy(context = context)
 }

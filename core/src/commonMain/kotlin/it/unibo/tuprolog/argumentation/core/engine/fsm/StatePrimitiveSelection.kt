@@ -63,7 +63,7 @@ data class StatePrimitiveSelection(
                             exceptionalState(exception.asResolutionException(childContext).updateLastContext(childContext.skipThrow()))
                         }
                     } else {
-                        StateRuleSelection(context.copy(step = nextStep()), goal)
+                        StateRuleSelection(context.copy(step = nextStep()), goalStruct)
                     }
                 }
                 else -> {
@@ -78,6 +78,4 @@ data class StatePrimitiveSelection(
                 }
             }
         }
-
-    override fun clone(context: PrologExecutionContext): StatePrimitiveSelection = copy(context = context)
 }

@@ -46,8 +46,4 @@ interface State {
     /** Computes the state the machine transitions into from here -- a pure function of [context]. */
     @JsName("next")
     fun next(): State
-
-    /** Returns a copy of this state, replacing [context] with the given one (defaulting to the current [context]). */
-    @JsName("clone")
-    fun clone(context: PrologExecutionContext = this.context): State
 }

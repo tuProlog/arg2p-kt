@@ -30,6 +30,4 @@ data class StateInit(
                     relevantGoals = null,
                 ).appendRulesAndChoicePoints(Cursor.empty()),
         )
-
-    override fun clone(context: PrologExecutionContext): StateInit = copy(context = context)
 }

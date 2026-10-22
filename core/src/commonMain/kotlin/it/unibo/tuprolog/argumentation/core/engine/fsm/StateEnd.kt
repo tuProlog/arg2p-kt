@@ -25,6 +25,4 @@ data class StateEnd(
         } else {
             super.computeNext()
         }
-
-    override fun clone(context: PrologExecutionContext): StateEnd = copy(solution = solution, context = context)
 }

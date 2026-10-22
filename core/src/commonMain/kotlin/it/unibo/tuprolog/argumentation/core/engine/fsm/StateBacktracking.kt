@@ -40,6 +40,4 @@ data class StateBacktracking(
             }
         }
     }
-
-    override fun clone(context: PrologExecutionContext): StateBacktracking = copy(context = context)
 }

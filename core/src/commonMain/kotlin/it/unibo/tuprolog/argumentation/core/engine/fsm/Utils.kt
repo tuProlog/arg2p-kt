@@ -7,7 +7,6 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.appendPrimitives
 import it.unibo.tuprolog.argumentation.core.engine.appendRules
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
-import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -21,19 +20,6 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.utils.Cursor
 import it.unibo.tuprolog.utils.cursor
 import kotlin.jvm.JvmName
-
-/** Converts each [Clause] to a [Rule] (see [ensureRules]) and wraps the result in a lazy [Cursor]. */
-fun Sequence<Clause>.toRulesCursor(): Cursor<out Rule> = ensureRules().cursor()
-
-/**
- * Casts every [Clause] in this sequence to a [Rule].
- * @throws IllegalArgumentException if any clause is a fact rather than a proper rule (i.e. `it.isRule` is `false`).
- */
-fun Sequence<Clause>.ensureRules(): Sequence<Rule> =
-    map {
-        require(it.isRule)
-        it.castToRule()
-    }
 
 /** Flattens a (possibly nested) `, `/2 tuple of goals into the sequence of its leaves, depth-first. */
 fun Term.unfoldGoals(): Sequence<Term> =
@@ -64,13 +50,10 @@ fun Term.toBodyGoals(): Cursor<out Term> = if (isTrue) Cursor.empty() else toGoa
  * [PrologExecutionContext.goals] (arg2p: [currentGoal] is the current goal with the substitution applied, when the
  * caller already has it)
  */
-fun PrologExecutionContext.createChild(
-    currentGoal: Struct = this.currentGoal!!.castToStruct(),
-    inferProcedureFromGoals: Boolean = true,
-): PrologExecutionContext =
+fun PrologExecutionContext.createChild(currentGoal: Struct = this.currentGoal!!.castToStruct()): PrologExecutionContext =
     copy(
         goals = currentGoal.toGoals(),
-        procedure = if (inferProcedureFromGoals) currentGoal else procedure,
+        procedure = currentGoal,
         parent = this,
         depth = depth + 1,
         step = step + 1,
@@ -83,13 +66,10 @@ fun PrologExecutionContext.createChild(
  * [PrologExecutionContext.depth] without growing the [PrologExecutionContext.parent] chain), used by
  * `StateRuleSelection` for tail calls to avoid an unbounded execution-context stack.
  */
-fun PrologExecutionContext.replaceWithChild(
-    currentGoal: Struct = this.currentGoal!!.castToStruct(),
-    inferProcedureFromGoals: Boolean = true,
-): PrologExecutionContext =
+fun PrologExecutionContext.replaceWithChild(currentGoal: Struct = this.currentGoal!!.castToStruct()): PrologExecutionContext =
     copy(
         goals = currentGoal.toGoals(),
-        procedure = if (inferProcedureFromGoals) currentGoal else procedure,
+        procedure = currentGoal,
         depth = depth + 1,
         step = step + 1,
         // arg2p: the goals selected in the frame are done, the tail call being the last: the variables of interest

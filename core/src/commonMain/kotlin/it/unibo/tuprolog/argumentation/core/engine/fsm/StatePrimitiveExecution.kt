@@ -61,6 +61,4 @@ data class StatePrimitiveExecution(
         } catch (exception: Exception) {
             StateException(exception.asResolutionException(context).updateLastContext(context.skipThrow()), context.copy(step = nextStep()))
         }
-
-    override fun clone(context: PrologExecutionContext): StatePrimitiveExecution = copy(context = context)
 }

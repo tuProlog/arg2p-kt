@@ -14,6 +14,4 @@ data class StateHalt(
     override val exception: ResolutionException,
     override val context: PrologExecutionContext,
 ) : AbstractEndState(Solution.halt(context.query, exception), context),
-    ExceptionalState {
-    override fun clone(context: PrologExecutionContext): StateHalt = copy(exception = exception, context = context)
-}
+    ExceptionalState

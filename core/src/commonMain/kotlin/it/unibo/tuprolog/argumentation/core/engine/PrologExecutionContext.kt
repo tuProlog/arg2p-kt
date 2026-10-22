@@ -106,11 +106,6 @@ data class PrologExecutionContext(
     val hasOpenAlternatives: Boolean
         get() = choicePoints?.hasOpenAlternatives ?: false
 
-    /** Whether this frame corresponds to an actual procedure call, i.e. should appear in [logicStackTrace]. */
-    @Suppress("MemberVisibilityCanBePrivate")
-    val isActivationRecord: Boolean
-        get() = parent == null || depth - parent.depth >= 1
-
     /**
      * This frame and all its ancestors, from here up to (and including) the root, in that order (arg2p: built when
      * needed, rather than for each of the contexts, one or more per resolution step).
@@ -151,7 +146,6 @@ data class PrologExecutionContext(
 
     override val logicStackTrace: KtList<Struct> by lazy(LazyThreadSafetyMode.NONE) {
         pathToRoot
-            .filter { it.isActivationRecord }
             .map { it.procedure ?: Struct.of("?-", query) }
             .toList()
     }
@@ -250,7 +244,4 @@ data class PrologExecutionContext(
 class RelevantGoals(
     val goal: Term,
     val previous: RelevantGoals?,
-) {
-    val goals: Sequence<Term>
-        get() = generateSequence(this) { it.previous }.map { it.goal }
-}
+)

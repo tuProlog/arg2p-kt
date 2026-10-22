@@ -53,8 +53,4 @@ abstract class AbstractState(
     protected fun currentTime(): TimeInstant = currentTimeInstant()
 
     protected fun nextStep(): Long = context.step + 1
-
-    protected fun nextDepth(): Int = context.depth + 1
-
-    protected fun previousDepth(): Int = context.depth - 1
 }

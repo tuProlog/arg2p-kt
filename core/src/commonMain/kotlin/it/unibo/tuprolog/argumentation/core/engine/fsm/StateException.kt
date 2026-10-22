@@ -109,10 +109,4 @@ data class StateException(
             }
             else -> finalState
         }
-
-    override fun clone(context: PrologExecutionContext): StateException =
-        copy(
-            exception = exception,
-            context = context,
-        )
 }

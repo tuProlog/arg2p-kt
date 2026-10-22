@@ -73,8 +73,6 @@ data class StateGoalSelection(
             )
         }
 
-    override fun clone(context: PrologExecutionContext): StateGoalSelection = copy(context = context)
-
     private companion object {
         const val MIN_TRIMMED_SIZE = 32
     }

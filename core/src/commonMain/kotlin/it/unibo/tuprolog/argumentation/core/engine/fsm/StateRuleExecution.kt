@@ -42,6 +42,4 @@ data class StateRuleExecution(
             )
         }
     }
-
-    override fun clone(context: PrologExecutionContext): StateRuleExecution = copy(context = context)
 }
