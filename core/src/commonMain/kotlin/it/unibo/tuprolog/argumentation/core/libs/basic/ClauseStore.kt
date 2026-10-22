@@ -61,6 +61,9 @@ class ClauseStore private constructor(
         }
     }
 
+    /** The stored clauses whose head may unify with the given one, newest first, as stored */
+    fun clausesFor(head: Term): List<Clause> = head.asStruct()?.let { struct -> data.candidates(struct).map { it.clause } } ?: emptyList()
+
     /** Solutions of a goal (a fact, a single-goal rule, or `clause(Head, Body)`) on a snapshot of the store */
     fun solve(goal: Term): Sequence<Substitution> {
         val struct = goal.asStruct() ?: return emptySequence()

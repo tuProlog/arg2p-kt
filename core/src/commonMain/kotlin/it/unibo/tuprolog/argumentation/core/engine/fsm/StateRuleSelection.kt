@@ -4,7 +4,6 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
-import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -255,20 +254,9 @@ data class StateRuleSelection(
         }
     }
 
-    // The clauses for the goal, from the libraries, the static and the dynamic theory, in this order (arg2p: through
-    // the clause indexes of the immutable theories, see ClauseIndex). Those of a mutable theory are collected at
-    // once, as the clauses it has when the goal is selected (logical update view).
-    private fun PrologExecutionContext.selectRules(goal: Struct): Cursor<out Rule> {
-        val selected = ArrayList<Clause>()
-        for (theory in arrayOf(libraries.asTheory(unificator), staticKb, dynamicKb)) {
-            if (theory.isMutable) {
-                theory[goal].forEach { selected.add(it) }
-            } else {
-                ClauseIndex.of(theory).collect(goal, unificator, selected)
-            }
-        }
-        return RuleCursor.of(selected)
-    }
+    // The clauses for the goal, from the program (see ProgramClauses)
+    private fun PrologExecutionContext.selectRules(goal: Struct): Cursor<out Rule> =
+        RuleCursor.of(ProgramClauses.of(this).clausesFor(goal, unificator))
 
     override fun clone(context: PrologExecutionContext): StateRuleSelection = copy(context = context)
 }

@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
+import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.libs.ArgContext
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
@@ -181,24 +183,39 @@ class Context :
         }
     }
 
-    inner class DynamicCacheGet : PrimitiveWithSignature {
+    // context_check(Goal): the solutions of Goal in the active branch (see ClauseStore.solve); the arg2p engine
+    // resolves Goal with the clauses of the branch itself (see BranchClauses)
+    inner class DynamicCacheGet :
+        PrimitiveWithSignature,
+        DelegatedCall {
         override val signature = Signature("context_check", 1)
+
+        override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? =
+            BranchClauses.delegation(selected, selectedSolver, request.arguments[0], request.context.libraries)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
             this@Context.selected.solve(request.arguments[0]).map { request.replyWith(it) }
     }
 
-    inner class DynamicCacheGetIndexed : PrimitiveWithSignature {
+    // context_check(Branch, Goal): the solutions of Goal in the given branch, as context_check/1
+    inner class DynamicCacheGetIndexed :
+        PrimitiveWithSignature,
+        DelegatedCall {
         override val signature = Signature("context_check", 2)
 
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val index: Int =
-                request.arguments[0]
-                    .asNumeric()!!
-                    .intValue
-                    .toInt()
-            return this@Context.dynamicSolver[index]!!.solve(request.arguments[1]).map { request.replyWith(it) }
+        override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? {
+            val branch = branchOf(request)
+            return BranchClauses.delegation(dynamicSolver[branch]!!, branch, request.arguments[1], request.context.libraries)
         }
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
+            this@Context.dynamicSolver[branchOf(request)]!!.solve(request.arguments[1]).map { request.replyWith(it) }
+
+        private fun branchOf(request: Solve.Request<ExecutionContext>): Int =
+            request.arguments[0]
+                .asNumeric()!!
+                .intValue
+                .toInt()
     }
 
     /**

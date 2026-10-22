@@ -55,7 +55,7 @@ import kotlin.collections.Set as KtSet
  * - [relevantGoals]: the goals selected so far in this frame, whose variables are still of interest, used to trim
  *   [substitution]s of variables local to a finished sub-goal when popping back to [parent] (see
  *   [isVariableInteresting]); [trimmedSize] is the size of the substitution when it was last trimmed.
- * - [inlined]: whether this frame solves the goal of an [InlinedCall], against libraries of its own; [scoped]: whether
+ * - [inlined]: whether this frame solves the goal of an [Inlining], against libraries of its own; [scoped]: whether
  *   this frame or one above does (so that its libraries are not the ones of the whole resolution).
  *
  * @throws IllegalArgumentException if [depth] and [parent] are inconsistent (`depth == 0` iff `parent == null`),

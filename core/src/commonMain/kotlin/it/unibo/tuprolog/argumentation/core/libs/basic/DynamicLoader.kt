@@ -1,7 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.InlinedCall
+import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
+import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
@@ -75,11 +76,11 @@ class DynamicLoader(
                 }
             }
 
-    // Module calls are inlined by the arg2p engine (InlinedCall): the goal is solved in place, against the libraries of
-    // the module. Other solvers solve it in a solver of their own, cached for each module.
+    // Module calls are inlined by the arg2p engine (DelegatedCall): the goal is solved in place, against the libraries
+    // of the module. Other solvers solve it in a solver of their own, cached for each module.
     abstract inner class AbstractWithLib :
         PrimitiveWithSignature,
-        InlinedCall {
+        DelegatedCall {
         abstract override val signature: Signature
 
         abstract fun execute(
@@ -112,7 +113,7 @@ class DynamicLoader(
             return lib to goal
         }
 
-        override fun inline(request: Solve.Request<ExecutionContext>): Inlining {
+        override fun delegate(request: Solve.Request<ExecutionContext>): Delegation {
             val (lib, goal) = call(request)
             val solver = loadWithMemo(request, lib)
             execute(lib.toString(), solver)
