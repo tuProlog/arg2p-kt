@@ -79,10 +79,18 @@ buildPrefAttacks :-
     invalid(T, A, B, C, SupSet),
     member(X, SupSet),
     context_check(argument([IdA, TRA, [X], GG, II])),
-    standard_af::saveAttack(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
-    standard_af::buildTransitiveAttacks(pref, [IdA, TRA, [X], GG, II], [IdB, attack, [attack(T, A, B, C)], G, I]),
+    Preference = [IdA, TRA, [X], GG, II],
+    Attack = [IdB, attack, [attack(T, A, B, C)], G, I],
+    standard_af::saveAttack(pref, Preference, Attack, Attack),
+    prefersTransitively(Preference, Attack),
     fail.
 buildPrefAttacks.
+
+% prefersTransitively(+Preference, +Attack): the preference also attacks the arguments the attack argument supports
+prefersTransitively(Preference, Attack) :-
+    context_id(argument(Preference), IdP),
+    context_id(argument(Attack), IdA),
+    standard_af::buildTransitiveAttacks(pref, IdP, Preference, IdA, Attack).
 
 %==============================================================================
 % QUERY MODE

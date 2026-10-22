@@ -14,8 +14,9 @@ buildPrefAttacks :-
     % Attack = attack(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
     % \+ context_check(Attack),
     % context_assert(Attack),
-    standard_af::saveAttack(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I], [IdB, attack, [attack(T, A, B, C)], G, I]),
-    standard_af::buildTransitiveAttacks(pref, Arg, [IdB, attack, [attack(T, A, B, C)], G, I]),
+    Attack = [IdB, attack, [attack(T, A, B, C)], G, I],
+    standard_af::saveAttack(pref, Arg, Attack, Attack),
+    defeasiblePref::prefersTransitively(Arg, Attack),
     fail.
 buildPrefAttacks.
 
