@@ -16,6 +16,8 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.exception.error.InstantiationError
+import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -38,9 +40,10 @@ class Context :
     val active: Int
         get() = selectedSolver
 
-    /** A new branch of the given one, made active, as context_branch/2 */
-    fun branch(from: Int): Int {
-        dynamicSolver[nextSolver] = dynamicSolver[from]!!.fork()
+    /** A new branch of the given one, made active, as context_branch/2; null if there is no branch [from] */
+    fun branch(from: Int): Int? {
+        val source = dynamicSolver[from] ?: return null
+        dynamicSolver[nextSolver] = source.fork()
         selectedSolver = nextSolver++
         return selectedSolver
     }
@@ -76,38 +79,32 @@ class Context :
     inner class DynamicCacheSelected : PrimitiveWithSignature {
         override val signature = Signature("context_active", 1)
 
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val term: Term = request.arguments[0]
-            return sequenceOf(request.replyWith(Substitution.of(term.castToVar(), Numeric.of(this@Context.selectedSolver))))
-        }
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
+            sequenceOf(request.replyUnifying(0, Integer.of(selectedSolver)))
     }
 
     inner class DynamicCacheCheckout : PrimitiveWithSignature {
         override val signature = Signature("context_checkout", 1)
 
+        // A branch that does not exist (never created, or dropped) is not made active
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val target: Int =
-                request.arguments[0]
-                    .castToInteger()
-                    .intValue
-                    .toInt()
-            val result = dynamicSolver.keys.contains(target)
-            this@Context.selectedSolver = target
-            return sequenceOf(request.replyWith(result))
+            val target = request.branchArgument(0)
+            if (target !in dynamicSolver) return sequenceOf(request.replyFail())
+            selectedSolver = target
+            return sequenceOf(request.replyWith(true))
         }
     }
 
     inner class DynamicCacheBranch : PrimitiveWithSignature {
         override val signature = Signature("context_branch", 2)
 
+        // The new branch is only made if its identifier unifies with the second argument
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val target: Int =
-                request.arguments[0]
-                    .castToInteger()
-                    .intValue
-                    .toInt()
-            val result: Term = request.arguments[1]
-            return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(branch(target)))))
+            val from = request.branchArgument(0)
+            val unifier = Arg2pUnificator.mgu(request.arguments[1], Integer.of(nextSolver))
+            if (from !in dynamicSolver || !unifier.isSuccess) return sequenceOf(request.replyFail())
+            branch(from)
+            return sequenceOf(request.replyWith(unifier))
         }
     }
 
@@ -116,11 +113,7 @@ class Context :
         override val signature = Signature("context_drop", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val target: Int =
-                request.arguments[0]
-                    .castToInteger()
-                    .intValue
-                    .toInt()
+            val target = request.branchArgument(0)
             if (target == this@Context.selectedSolver) return sequenceOf(request.replyFail())
             this@Context.dynamicSolver.remove(target)
             return sequenceOf(request.replyWith(true))
@@ -132,7 +125,7 @@ class Context :
         override val signature = Signature("context_last", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-            sequenceOf(request.replyWith(Substitution.of(request.arguments[0].castToVar(), Numeric.of(this@Context.nextSolver - 1))))
+            sequenceOf(request.replyUnifying(0, Integer.of(nextSolver - 1)))
     }
 
     /** context_drop_after(+Branch, +Keep): drops the branches created after Branch, except those in Keep and the active one */
@@ -140,17 +133,8 @@ class Context :
         override val signature = Signature("context_drop_after", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val after =
-                request.arguments[0]
-                    .castToInteger()
-                    .intValue
-                    .toInt()
-            val keep =
-                request.arguments[1]
-                    .castToList()
-                    .toList()
-                    .map { it.castToInteger().intValue.toInt() }
-                    .toSet()
+            val after = request.branchArgument(0)
+            val keep = request.branchesArgument(1)
             this@Context.dynamicSolver.keys.removeAll { it > after && it !in keep && it != this@Context.selectedSolver }
             return sequenceOf(request.replyWith(true))
         }
@@ -204,19 +188,18 @@ class Context :
         DelegatedCall {
         override val signature = Signature("context_check", 2)
 
+        // A branch that does not exist has no solutions (solved as the primitive does)
         override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? {
-            val branch = branchOf(request)
-            return StoreClauses.delegation(dynamicSolver[branch]!!, branchLookup(branch), request.arguments[1], request.context.libraries)
+            val branch = request.branchArgument(0)
+            val store = dynamicSolver[branch] ?: return null
+            return StoreClauses.delegation(store, branchLookup(branch), request.arguments[1], request.context.libraries)
         }
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-            this@Context.dynamicSolver[branchOf(request)]!!.solve(request.arguments[1]).map { request.replyWith(it) }
-
-        private fun branchOf(request: Solve.Request<ExecutionContext>): Int =
-            request.arguments[0]
-                .asNumeric()!!
-                .intValue
-                .toInt()
+            dynamicSolver[request.branchArgument(0)]
+                ?.solve(request.arguments[1])
+                ?.map { request.replyWith(it) }
+                ?: emptySequence()
     }
 
     /**
@@ -235,14 +218,9 @@ class Context :
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val store =
                 if (request.arguments.size == 2) {
-                    this@Context.selected
+                    selected
                 } else {
-                    this@Context.dynamicSolver[
-                        request.arguments[0]
-                            .castToInteger()
-                            .intValue
-                            .toInt(),
-                    ]!!
+                    dynamicSolver[request.branchArgument(0)] ?: return sequenceOf(request.replyFail())
                 }
             val goal = request.arguments[request.arguments.size - 2]
             val instances = store.solve(goal).map { goal.apply(it) }.toList()
@@ -284,13 +262,10 @@ class Context :
     inner class DynamicCacheAbsentIndexed : PrimitiveWithSignature {
         override val signature = Signature("context_absent", 2)
 
+        // A branch that does not exist has no solutions
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val index: Int =
-                request.arguments[0]
-                    .asNumeric()!!
-                    .intValue
-                    .toInt()
-            return sequenceOf(request.replyWith(this@Context.dynamicSolver[index]!!.solve(request.arguments[1]).none()))
+            val store = dynamicSolver[request.branchArgument(0)]
+            return sequenceOf(request.replyWith(store?.solve(request.arguments[1])?.none() ?: true))
         }
     }
 
@@ -400,3 +375,30 @@ class Context :
         private fun branchLookup(branch: Int) = StoreLookup { Struct.of("context_check", Integer.of(branch), it) }
     }
 }
+
+// The branch an argument of the request names: an integer (an instantiation or a type error otherwise)
+private fun Solve.Request<ExecutionContext>.branchArgument(index: Int): Int =
+    when (val term = arguments[index]) {
+        is Var -> throw InstantiationError.forArgument(context, signature, term, index)
+        is Integer -> term.intValue.toInt()
+        else -> throw TypeError.forArgument(context, signature, TypeError.Expected.INTEGER, term, index)
+    }
+
+// The branches the list in an argument of the request names
+private fun Solve.Request<ExecutionContext>.branchesArgument(index: Int): Set<Int> {
+    fun typeError(
+        expected: TypeError.Expected,
+        culprit: Term,
+    ) = TypeError.forArgument(context, signature, expected, culprit, index)
+    val list = arguments[index] as? List ?: throw typeError(TypeError.Expected.LIST, arguments[index])
+    return list
+        .toList()
+        .map { (it as? Integer)?.intValue?.toInt() ?: throw typeError(TypeError.Expected.INTEGER, it) }
+        .toSet()
+}
+
+// The answer of the request unifying one of its arguments with a term
+private fun Solve.Request<ExecutionContext>.replyUnifying(
+    index: Int,
+    term: Term,
+): Solve.Response = Arg2pUnificator.mgu(arguments[index], term).let { if (it.isSuccess) replyWith(it) else replyFail() }

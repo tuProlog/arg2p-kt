@@ -6,62 +6,35 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.Context
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.core.List as LogicList
 
 // Argumentation graph and labels of the active context, read by native primitives
 
-/**
- * Instances of goal in the given branch (the active one by default): read from the context library behind
- * context_all, or with a single context_all call if it is not reachable (solving a goal sets up a solver)
- */
+// The context library of the solver, every arg2p solver has one (an existence error for context_all/2 otherwise)
+private val Solve.Request<ExecutionContext>.contextLibrary: Context
+    get() = Context.of(context) ?: throw ExistenceError.forProcedure(context, Signature("context_all", 2))
+
+/** Instances of goal in the given branch (the active one by default, none for a branch that does not exist) */
 internal fun Solve.Request<ExecutionContext>.contextInstances(
     goal: Struct,
     branch: Term? = null,
 ): List<Struct> {
-    val owner = Context.of(context)
-    if (owner != null) {
-        val index = branch?.let { it.asInteger()?.intValue?.toInt() ?: return emptyList() }
-        return owner.instances(goal, index).map { it.castToStruct() }
-    }
-    val request = this
-    // request.solve explicitly: inside arg2pScope a bare solve would resolve to the scope's own solver
-    return arg2pScope {
-        val instances = varOf("Instances")
-        request
-            .solve(if (branch == null) "context_all"(goal, instances) else "context_all"(branch, goal, instances))
-            .firstOrNull { it.isYes }
-            ?.substitution
-            ?.get(instances)
-            ?.castToList()
-            ?.toList()
-            ?.map { it.castToStruct() } ?: emptyList()
-    }
+    val index = branch?.let { it.asInteger()?.intValue?.toInt() ?: return emptyList() }
+    return contextLibrary.instances(goal, index).map { it.castToStruct() }
 }
 
-/** A new branch of the given one, made active (context_branch/2) */
-internal fun Solve.Request<ExecutionContext>.contextBranch(from: Term) {
-    val owner = Context.of(context)
-    if (owner != null) {
-        owner.branch(from.castToInteger().intValue.toInt())
-    } else {
-        val request = this
-        arg2pScope { request.solve("context_branch"(from, `_`)).first() }
-    }
+/** A new branch of the given one, made active (context_branch/2): false if there is no such branch */
+internal fun Solve.Request<ExecutionContext>.contextBranch(from: Term): Boolean {
+    val branch = from.asInteger()?.intValue?.toInt() ?: throw TypeError.forGoal(context, signature, TypeError.Expected.INTEGER, from)
+    return contextLibrary.branch(branch) != null
 }
 
 /** The terms asserted in the active branch, in order (context_assert_all/1) */
-internal fun Solve.Request<ExecutionContext>.contextAssertAll(terms: List<Term>) {
-    if (terms.isEmpty()) return
-    val owner = Context.of(context)
-    if (owner != null) {
-        owner.assertAll(terms)
-    } else {
-        val request = this
-        arg2pScope { request.solve("context_assert_all"(LogicList.of(terms))).first() }
-    }
-}
+internal fun Solve.Request<ExecutionContext>.contextAssertAll(terms: List<Term>) = contextLibrary.assertAll(terms)
 
 /** Identifiers of the arguments in the graph */
 internal fun Solve.Request<ExecutionContext>.argumentIds(): List<Term> =

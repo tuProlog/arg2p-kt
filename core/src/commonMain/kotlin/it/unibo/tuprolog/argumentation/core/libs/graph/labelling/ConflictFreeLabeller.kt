@@ -115,7 +115,7 @@ object LabelSet : Primitive {
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
         arg2pScope {
-            request.contextBranch(request.arguments[0])
+            if (!request.contextBranch(request.arguments[0])) return@arg2pScope sequenceOf(request.replyFail())
             val set = request.ids(1).toSet()
             val arguments =
                 request
