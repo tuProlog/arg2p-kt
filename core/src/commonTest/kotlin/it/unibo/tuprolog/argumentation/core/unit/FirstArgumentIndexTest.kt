@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.engine.fsm.FirstArgumentIndex
-import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Fact

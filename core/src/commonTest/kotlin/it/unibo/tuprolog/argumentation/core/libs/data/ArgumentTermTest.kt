@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.data
 
+import it.unibo.tuprolog.argumentation.core.modules.data.ArgumentTerm
+
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

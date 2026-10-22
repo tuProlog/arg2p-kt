@@ -1,5 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.libs.data
 
+import it.unibo.tuprolog.argumentation.core.mining.labels
+import it.unibo.tuprolog.argumentation.core.mining.supports
+
+import it.unibo.tuprolog.argumentation.core.modules.data.AttackTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.LabelTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.RuleTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.StatementTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.SupportTerm
+
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Term

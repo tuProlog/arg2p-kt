@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.mining
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.data.LabelTerm
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
+import it.unibo.tuprolog.argumentation.core.modules.data.LabelTerm
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.unify.Unificator

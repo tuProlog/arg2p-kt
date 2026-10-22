@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libs.data.SupportTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.SupportTerm
 import it.unibo.tuprolog.core.Struct
 
 data class Support(

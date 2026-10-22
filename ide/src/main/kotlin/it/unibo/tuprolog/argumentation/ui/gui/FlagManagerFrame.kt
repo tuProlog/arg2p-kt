@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
-import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
-import it.unibo.tuprolog.argumentation.core.libs.graph.StatementLabellingMode
-import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingComparator
-import it.unibo.tuprolog.argumentation.core.libs.utils.OrderingPrinciple
+import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.OrderingComparator
+import it.unibo.tuprolog.argumentation.core.flags.OrderingPrinciple
 import it.unibo.tuprolog.ui.gui.controller.PageAction
 import it.unibo.tuprolog.ui.gui.identity.PageId
 import it.unibo.tuprolog.ui.gui.model.PageFeatureState

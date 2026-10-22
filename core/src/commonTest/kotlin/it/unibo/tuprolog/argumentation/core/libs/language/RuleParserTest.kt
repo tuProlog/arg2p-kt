@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.language
 
+import it.unibo.tuprolog.argumentation.core.primitives.language.Premises
+
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import kotlin.test.Test
 import kotlin.test.assertEquals

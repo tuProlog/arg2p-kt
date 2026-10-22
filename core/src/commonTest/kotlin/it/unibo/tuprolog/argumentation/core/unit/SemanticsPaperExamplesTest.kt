@@ -1,10 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
+import it.unibo.tuprolog.argumentation.core.mining.arguments
+import it.unibo.tuprolog.argumentation.core.mining.labels
+
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.TestingUtils.prepareContext
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Attack

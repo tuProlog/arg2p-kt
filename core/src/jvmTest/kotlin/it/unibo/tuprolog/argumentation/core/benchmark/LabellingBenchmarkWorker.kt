@@ -1,5 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.benchmark
 
+import it.unibo.tuprolog.argumentation.core.mining.arguments
+import it.unibo.tuprolog.argumentation.core.mining.graph
+
 import it.unibo.tuprolog.argumentation.core.TestingUtils.prepareContext
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory

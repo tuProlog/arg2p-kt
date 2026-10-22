@@ -1,7 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.coverage
 
+import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
+
 import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
-import it.unibo.tuprolog.argumentation.core.libs.Arg2pModules
+import it.unibo.tuprolog.argumentation.core.modules.Arg2pModules
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.core.Clause
 import org.junit.runner.JUnitCore

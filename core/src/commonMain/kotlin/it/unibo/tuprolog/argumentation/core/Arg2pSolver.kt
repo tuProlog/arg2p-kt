@@ -1,14 +1,14 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.core.libs.Arg2pModules
 import it.unibo.tuprolog.argumentation.core.libs.ArgContext
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
-import it.unibo.tuprolog.argumentation.core.libs.basic.Cache
-import it.unibo.tuprolog.argumentation.core.libs.basic.Context
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
-import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
+import it.unibo.tuprolog.argumentation.core.modules.Arg2pModules
+import it.unibo.tuprolog.argumentation.core.modules.entry.EngineInterface
+import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
+import it.unibo.tuprolog.argumentation.core.runtime.context.Context
+import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Runtime
 

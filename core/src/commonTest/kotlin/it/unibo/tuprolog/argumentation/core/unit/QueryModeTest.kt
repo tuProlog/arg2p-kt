@@ -1,7 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
+import it.unibo.tuprolog.argumentation.core.primitives.language.Premises
+
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.argumentation.core.libs.graph.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution

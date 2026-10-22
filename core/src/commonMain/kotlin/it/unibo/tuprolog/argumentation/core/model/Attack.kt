@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libs.data.AttackTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.AttackTerm
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term

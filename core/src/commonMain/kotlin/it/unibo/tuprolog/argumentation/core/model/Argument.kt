@@ -1,7 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
-import it.unibo.tuprolog.argumentation.core.libs.data.StatementTerm
+import it.unibo.tuprolog.argumentation.core.mining.supports
+import it.unibo.tuprolog.argumentation.core.modules.data.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.StatementTerm
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

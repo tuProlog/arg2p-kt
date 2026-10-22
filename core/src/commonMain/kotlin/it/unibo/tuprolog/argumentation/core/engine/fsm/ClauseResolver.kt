@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
-import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term

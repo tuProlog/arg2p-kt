@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive
 
-import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.List

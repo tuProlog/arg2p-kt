@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.benchmark
 
+import it.unibo.tuprolog.argumentation.core.mining.arguments
+
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.concurrent.LinkedBlockingQueue

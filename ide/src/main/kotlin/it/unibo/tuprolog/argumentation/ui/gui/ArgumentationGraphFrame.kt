@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
+import it.unibo.tuprolog.argumentation.core.mining.arguments
+
 import edu.uci.ics.jung.algorithms.layout.FRLayout
 import edu.uci.ics.jung.algorithms.layout.Layout
 import edu.uci.ics.jung.graph.Graph

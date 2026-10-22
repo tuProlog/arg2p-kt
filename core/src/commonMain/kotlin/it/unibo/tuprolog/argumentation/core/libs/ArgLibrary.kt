@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs
 
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library

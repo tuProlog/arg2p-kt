@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libs.data.RuleTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.RuleTerm
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.core.List as LogicList
 import it.unibo.tuprolog.core.Term as LogicTerm

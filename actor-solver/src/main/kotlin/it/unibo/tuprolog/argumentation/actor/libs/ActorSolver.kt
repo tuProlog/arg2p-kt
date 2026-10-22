@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.actor.libs
 
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
+import it.unibo.tuprolog.argumentation.core.modules.language.RuleParserBase
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var

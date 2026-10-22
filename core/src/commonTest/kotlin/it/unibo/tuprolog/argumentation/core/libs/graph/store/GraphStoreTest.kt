@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.store
 
+import it.unibo.tuprolog.argumentation.core.primitives.ids
+
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import kotlin.test.Test
 import kotlin.test.assertEquals

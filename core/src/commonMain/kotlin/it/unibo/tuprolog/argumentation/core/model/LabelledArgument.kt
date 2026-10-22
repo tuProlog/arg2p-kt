@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libs.data.LabelTerm
+import it.unibo.tuprolog.argumentation.core.modules.data.LabelTerm
 import it.unibo.tuprolog.core.Struct
 
 data class LabelledArgument(
