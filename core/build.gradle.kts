@@ -33,7 +33,6 @@ kotlin {
         commonMain {
             dependencies {
                 api(libs.tuprolog.dsl.solve)
-                api(libs.tuprolog.solve.prolog)
                 api(libs.tuprolog.parser.theory)
                 // Provides consult/1, used by module::call_module/2 to load external theories.
                 implementation(libs.tuprolog.io.lib)
@@ -43,6 +42,8 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(libs.tuprolog.test.solve)
+                // tuProlog's own solver, for the tests of the libraries of arg2p on an engine other than its own
+                implementation(libs.tuprolog.solve.prolog)
             }
         }
     }

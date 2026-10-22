@@ -20,6 +20,5 @@ dependencies {
     testImplementation(libs.akka.actor.testkit.typed)
 
     implementation(libs.tuprolog.dsl.solve)
-    implementation(libs.tuprolog.solve.prolog)
     implementation(libs.tuprolog.parser.theory)
 }

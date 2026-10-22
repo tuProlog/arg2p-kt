@@ -10,13 +10,13 @@ import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Ignore
@@ -127,7 +127,7 @@ class BasicTest {
             }
 
         arg2pScope {
-            PrologSolverFactory
+            Arg2pPrologSolverFactory
                 .mutableSolverWithDefaultBuiltins(
                     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
                     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
@@ -155,7 +155,7 @@ class BasicTest {
             }
 
         arg2pScope {
-            PrologSolverFactory
+            Arg2pPrologSolverFactory
                 .mutableSolverWithDefaultBuiltins(
                     otherLibraries =
                         Arg2pSolver
