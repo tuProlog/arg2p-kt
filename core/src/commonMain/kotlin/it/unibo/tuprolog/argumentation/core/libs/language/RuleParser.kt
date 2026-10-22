@@ -234,39 +234,6 @@ object RuleParser : RuleParserBase() {
         classic_rule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, rule(X, Y, Z).
         classic_rule(X, Y, Z) :- rule(X, Y, Z).
         classic_rule(X, Y) :- premise(X, Y).
-
-        % -P(x) <=> O(-x)
-        % -O(x) <=> P(-x)  % this is already included
-
-        % With metaConflicts the conflicts are only the derived ones, otherwise the builtin and declared ones
-        classic_conflict(X, Y, C) :- setting(metaConflicts), !,
-            X = [A], Y = [B],
-            context_check(clause(conc([conflict(A, B, C)]), _)).
-        classic_conflict(A, B, C) :-
-            builtin_conflict(A, B, C).
-        classic_conflict(A, B, C) :-
-            conflict(A, B, C).
-
-        builtin_conflict([Atom], [-Atom], (Atom \= -_)).
-        builtin_conflict([-Atom], [Atom], true).
-        builtin_conflict([o(Atom)], [o(-Atom)], (Atom \= -_)).                   % O(x) <-> O(-x)
-        builtin_conflict([o(-Atom)], [o(Atom)], true).
-        builtin_conflict([p(Atom)], [o(-Atom)], (Atom \= -_)).                   % P(x) <-> O(-x)
-        builtin_conflict([o(-Atom)], [p(Atom)], true).
-        builtin_conflict([o(Atom)], [p(-Atom)], (Atom \= -_)).                   % O(x) <-> P(-x)
-        builtin_conflict([p(-Atom)], [o(Atom)], true).
-        builtin_conflict([o(Atom)], [-p(Atom)], true).                           % O(x) <-> O(-x) (-P(x))
-        builtin_conflict([-p(Atom)], [o(Atom)], true).
-        builtin_conflict([sup(X, Y)], [sup(Y, X)], true).
-        classic_conflict(X, Y) :- setting(metaConflicts), !,
-            X = [A], Y = [B],
-            context_check(clause(conc([conflict(A, B)]), _)).
-        classic_conflict(A, B) :-
-            conflict(A, B).
-
-        % conflict_statement(?X, ?Y, -Statement): with metaConflicts, the statements whose arguments make X conflict with Y
-        conflict_statement([A], [B], conflict(A, B, _)) :- setting(metaConflicts).
-        conflict_statement([A], [B], conflict(A, B)) :- setting(metaConflicts).
         """.trimIndent()
 }
 

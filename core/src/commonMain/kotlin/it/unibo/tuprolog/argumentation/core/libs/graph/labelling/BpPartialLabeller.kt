@@ -189,7 +189,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             Get a conclusion complement
         */
         complement([_, _, Conclusion, _, _], A) :-
-            attack::expanded_conflict(Conclusion, A).
+            conflict::between(Conclusion, A).
 
         notEvaluatedSubArgument(Arguments, A, Resolving, B) :-
             context_check(support(B, A)),

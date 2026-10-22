@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core
 
+import it.unibo.tuprolog.argumentation.core.libs.Arg2pModules
 import it.unibo.tuprolog.argumentation.core.libs.ArgContext
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
@@ -8,43 +9,6 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.Context
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
 import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
-import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
-import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
-import it.unibo.tuprolog.argumentation.core.libs.graph.AbstractMode
-import it.unibo.tuprolog.argumentation.core.libs.graph.builder.ArgumentationGraphBuilder
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.AttackRestrictionHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.BpMetaGraphHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.DefeasiblePreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.GenericDefeasiblePreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.extension.StrictPreferencesHandler
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.AdmissibleLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BinaryStatementLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpCompleteLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.BpPartialLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Cf2Labeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.CompleteLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.ConflictFreeLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.EagerLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.GroundedLabellerOptimized
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.IdealLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.NaiveLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PreferredLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SccLabelling
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SemistableLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StableLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Stage2Labeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StageLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StatementLabeller
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StronglyAdmissibleLabeller
-import it.unibo.tuprolog.argumentation.core.libs.language.RuleParser
-import it.unibo.tuprolog.argumentation.core.libs.structured.StructuredMode
-import it.unibo.tuprolog.argumentation.core.libs.utils.AttackRelation
-import it.unibo.tuprolog.argumentation.core.libs.utils.Debug
-import it.unibo.tuprolog.argumentation.core.libs.utils.SuperiorityRelation
-import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Runtime
 
@@ -89,46 +53,7 @@ interface Arg2pSolver {
             dynamicLibs: Iterable<ArgLibrary> = emptyList(),
         ) = of(
             listOf(EngineInterface) + staticLibs,
-            listOf(
-                EngineInterface,
-                Utils,
-                Debug,
-                RuleParser,
-                MetaInterpreter,
-                ModuleCalls,
-                ArgumentationGraphBuilder,
-                AttackRestrictionHandler,
-                BpMetaGraphHandler,
-                DefeasiblePreferencesHandler,
-                GenericDefeasiblePreferencesHandler,
-                StrictPreferencesHandler,
-                BpLabeller,
-                SccLabelling,
-                CompleteLabeller,
-                GroundedLabeller,
-                PreferredLabeller,
-                SemistableLabeller,
-                StableLabeller,
-                IdealLabeller,
-                EagerLabeller,
-                NaiveLabeller,
-                StageLabeller,
-                Cf2Labeller,
-                Stage2Labeller,
-                ConflictFreeLabeller,
-                AdmissibleLabeller,
-                StronglyAdmissibleLabeller,
-                StatementLabeller,
-                AbstractMode,
-                StructuredMode,
-                AttackRelation,
-                SuperiorityRelation,
-                BpPartialLabeller,
-                BpCompleteLabeller,
-                PassThroughStatementLabeller,
-                BinaryStatementLabeller,
-                GroundedLabellerOptimized,
-            ) + dynamicLibs,
+            Arg2pModules.all + dynamicLibs,
         )
     }
 }

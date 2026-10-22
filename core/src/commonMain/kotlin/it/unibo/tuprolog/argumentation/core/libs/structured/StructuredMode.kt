@@ -124,8 +124,8 @@ object StructuredMode : PrologModule("prolog.argumentation.structured", "structu
         % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
         % it): those that make others conflict with it (metaConflicts), those of its possible attackers, and those the
         % graph extensions relate it to. The conflicts come first, as the possible attackers are only looked for once.
-        dependency(_, Argument, S) :- attack::attackDependency(Argument, S).
-        dependency(Id, Argument, S) :- attack::possibleAttackers(Id, Argument, [S]).
+        dependency(_, Argument, S) :- attackCandidates::attackDependency(Argument, S).
+        dependency(Id, Argument, S) :- attackCandidates::possibleAttackers(Id, Argument, [S]).
         dependency(_, Argument, S) :- setting(graphExtension, X), X::queryDependencies(Argument, S).
 
         % expand(+Locality): for the connected locality, builds the arguments whose labels may depend on the ones built
@@ -145,8 +145,8 @@ object StructuredMode : PrologModule("prolog.argumentation.structured", "structu
 
         % The statements whose arguments may depend on an argument: those it may attack, those its conclusion makes
         % conflict (metaConflicts), those of its super-arguments, and those the graph extensions relate to it
-        dependant(Argument, S) :- attack::possiblyAttacked(Argument, S).
-        dependant(Argument, S) :- attack::attackDependant(Argument, S).
+        dependant(Argument, S) :- attackCandidates::possiblyAttacked(Argument, S).
+        dependant(Argument, S) :- attackCandidates::attackDependant(Argument, S).
         dependant([_, _, [C], _, _], S) :- parser::classic_rule(_, Premises, [S]), member(C, Premises).
         dependant(Argument, S) :- setting(graphExtension, X), X::queryDependants(Argument, S).
 
@@ -297,36 +297,14 @@ object StructuredMode : PrologModule("prolog.argumentation.structured", "structu
         % recordArgument(+Query, +Argument, +Support): Argument saved with its supports, unless it already was (built in a
         % previous round of explore/1, whose dependencies are explored again)
         recordArgument(Query, Argument, Support) :-
-            saveArgument(query, [Query], Argument), !,
+            graphStore::saveArgument(query, [Query], Argument), !,
             saveSupports(Argument, Support).
         recordArgument(_, _, _).
 
-        saveArgument(T, Conclusion, Argument) :-
-            context_absent(clause(conc(Conclusion), argument(Argument))),
-            % write("Saving Argument: "),
-            % write(Argument),nl,
-            context_assert(newConc(T, Conclusion)),
-            context_id(argument(Argument), Id),
-            context_assert(argument(Argument)),
-            context_assert(conc(Conclusion) :- argument(Argument)),
-            context_assert(arg(Id) :- argument(Argument)),
-            Argument = [_, _, _, _, Info],
-            context_id(info(Info), InfoId),
-            context_assert(argInfo(Id, InfoId, Info)).
-
         saveSupports(_, []).
         saveSupports(A, [B|T]) :-
-            saveSupport(B, A),
+            graphStore::saveSupport(B, A),
             saveSupports(A, T).
-
-        saveSupport(A, B) :-
-            context_absent(support(A, B)),
-            % write("Saving Support: "),
-            % write(A),write(" -> "),write(B),nl,
-            context_assert(support(A, B)),
-            context_id(argument(A), IdA),
-            context_id(argument(B), IdB),
-            context_assert(supportId(IdA, IdB)).
         """.trimIndent()
 }
 

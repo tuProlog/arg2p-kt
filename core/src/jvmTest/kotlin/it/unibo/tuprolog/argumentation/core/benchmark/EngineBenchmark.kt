@@ -60,7 +60,7 @@ class EngineBenchmark {
                 Workload(
                     "r0 : p0(X) => p1(X).\nf1 :=> p0(c1).$config",
                     "context_reset, parser:::convertAllRules(_)",
-                    "findall(C, (between(1, 2000, _), attack::findPossibleAttackers($argument, C)), _)",
+                    "findall(C, (between(1, 2000, _), attackCandidates::findPossibleAttackers($argument, C)), _)",
                 ),
             "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "buildLabelSets(_, _, _)"),
             "graph-conflicts" to Workload(theories.getValue("conflicts")(100) + config, null, "buildLabelSets(_, _, _)"),

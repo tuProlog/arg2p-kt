@@ -2,59 +2,32 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.builder
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The whole argumentation graph of a theory (module `standard_af`, the graphBuildMode of the same name): every
+ * argument its rules make, and the attacks between them, saved in the context (see the module graphStore).
+ */
 object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "standard_af") {
     override val prologRawTheory: String =
         """
-        % Arguments: [Rules, TopRule, Conclusion, Body, [LastDefRules, DefRules, DefPremises]]
-        % Support: (Support, Argument)
-        % Attack: (Type, Attacker, Attacked, On)
-
+        %! buildArgumentationGraph
+        %  The arguments of the theory, those derived from them, and the attacks between them.
         buildArgumentationGraph :-
             buildArguments,
             buildAdditionalArguments,
             buildAttacks.
 
-        %--------------------------------------------------------------------------
-        % Build Conflict Arguments
-        %--------------------------------------------------------------------------
-
-        % The arguments derived from the others: with metaConflicts, a copy of each argument for each argument making its
-        % conclusion conflict with another statement. The copy (mc(ConflictId, Conflict) first among its rules) is supported
-        % by that conflict argument, and attacks through its conflict only (see attack::attacks/3): it is defeated with it.
+        %! buildAdditionalArguments
+        %  The arguments derived from the others (see the module conflictArguments).
         buildAdditionalArguments :-
-            findall(_, buildAdditionalArgument, _).
-
-        buildAdditionalArgument :-
-            setting(metaConflicts),
-            conf_arg(A, CArg),
-            CArg = [_, _, [Conflict], _, _],
-            context_id(argument(CArg), ConflictId),
-            context_check(clause(conc(A), argument([R, T, C, B, I]))),
-            \+ filter_meta([R, T, C, B, I]),
-            Copy = [[mc(ConflictId, Conflict)|R], T, C, B, I],
-            saveArgument(a, A, Copy),
-            saveSupport(CArg, Copy),
-            cloneSupport([R, T, C, B, I], Copy),
-            fail.
-        buildAdditionalArgument.
-
-        cloneSupport(Original, New) :-
-            findall(_, (
-                context_check(support(S, Original)),
-                saveSupport(S, New)
-            ), _).
-
-        conf_arg([A], Arg) :-
-            context_check(clause(conc([conflict(A, _, _)]), argument(Arg))).
-        conf_arg([A], Arg) :-
-            context_check(clause(conc([conflict(A, _)]), argument(Arg))).
-
-        filter_meta([[mc(_, _)|_], _, _, _, _]) :- setting(metaConflicts).
-        filter_meta(_) :- \+ setting(metaConflicts).
+            conflictArguments::buildAdditionalArguments.
 
         %--------------------------------------------------------------------------
-        % Build Standard Arguments
+        % Arguments
         %--------------------------------------------------------------------------
+
+        %! buildArguments
+        %  The arguments made of a premise, those of the rules with no premise to support, and then, round after round,
+        %  those of the rules using a conclusion of the previous round.
         buildArguments :-
             buildArgumentsFromPremises,
             buildArgumentsFromEmptyRules,
@@ -76,37 +49,32 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
             context_assert(graphRule(Rule)).
 
         buildArgumentsFromPremises :-
-            findall(
-                _,
-                (
-                    parser::classic_rule(PremiseID, Premise),
-                    checkStrict(PremiseID, DefPrem),
-                    saveArgument(a, Premise, [[PremiseID], none, Premise, [], [[], [], DefPrem]])
-                ),
-                _
-            ).
+            findall(_, (
+                parser::classic_rule(PremiseID, Premise),
+                defeasibleIds(PremiseID, DefeasiblePremises),
+                argument::infoParts(Info, [], [], DefeasiblePremises),
+                argument::new([PremiseID], none, Premise, [], Info, Argument),
+                graphStore::saveArgument(a, Premise, Argument)
+            ), _).
 
         buildArgumentsFromEmptyRules :-
-            findall(
-                _,
-                (
-                    emptyRule([RuleID, RulePrem, RuleHead]),
-                    ruleBodyIsSupported(RulePrem, rule(RuleID, RuleHead, RulePrem), [[], [], [], []], _),
-                    checkStrict(RuleID, DefRule),
-                    saveArgument(a, RuleHead, [[RuleID], RuleID, RuleHead, RulePrem, [DefRule, DefRule, []]])
-                ),
-                _
-            ).
+            findall(_, (
+                emptyRule([RuleID, RulePrem, RuleHead]),
+                ruleBodyIsSupported(RulePrem, rule(RuleID, RuleHead, RulePrem), [[], [], [], []], _),
+                defeasibleIds(RuleID, DefeasibleRules),
+                argument::infoParts(Info, DefeasibleRules, DefeasibleRules, []),
+                argument::new([RuleID], RuleID, RuleHead, RulePrem, Info, Argument),
+                graphStore::saveArgument(a, RuleHead, Argument)
+            ), _).
 
+        % A rule with no premise to support with an argument: only contraries and Prolog checks
         emptyRule([RuleID, Body, RuleHead]) :-
             parser::classic_rule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_)).
 
-        checkStrict(Id, []) :- parser::check_strict(Id), !.
-        checkStrict(Id, [Id]).
-
-
-        % Argument Construction
+        % The defeasible ones among the rule or premise Id: none if strict
+        defeasibleIds(Id, []) :- parser::check_strict(Id), !.
+        defeasibleIds(Id, [Id]).
 
         % A round fires every rule whose body uses a conclusion derived in the previous round (N), tagging the new
         % conclusions with Tn: the rounds go on while they derive something
@@ -116,76 +84,70 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
                 utils::contains_any(Body, N),
                 buildArgumentsFromRule(Tn, [Id, Body, Conc])
             ), _),
-            (context_check(newConc(Tn, _)) -> clean(Tn) ; true).
+            (context_check(newConc(Tn, _)) -> nextRound(Tn) ; true).
 
         buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
             ruleBodyIsSupported(RuleBody, rule(RuleID, RuleHead, RuleBody), [[], [], [], []], Argument),
-            saveArgument(Tn, RuleHead, Argument).
+            graphStore::saveArgument(Tn, RuleHead, Argument).
 
-        clean(Tn) :-
-            invert(Tn, Tx),
+        nextRound(Tn) :-
+            otherTag(Tn, Tx),
             context_retract(newConc(Tx, _)),
             findall(X, context_check(newConc(Tn, [X])), N),
             buildArgumentsFromRules(N, Tx).
 
-        invert(a, b).
-        invert(b, a).
-
-
-        % Argument Info
+        otherTag(a, b).
+        otherTag(b, a).
 
         ruleStrictness(Id, strict) :- parser::check_strict(Id), !.
         ruleStrictness(_, defeasible).
 
-        % Argument Support
-
         % ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), [All, LastDefRules, DefRules, DefPremises], Argument):
-        % Argument is built from RuleID by supporting each statement in Body with an existing argument. Only Body is
-        % matched in the clause heads, everything else is unpacked in the bodies: matching heads with many arguments
-        % against every clause is what makes this predicate expensive.
+        % Argument is built from RuleID by supporting each statement in Body with a saved argument, collecting the rules
+        % and premises of the supports. Only Body is matched in the clause heads, everything else is unpacked in the
+        % bodies: matching heads with many arguments against every clause is what makes this predicate expensive.
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ruleStrictness(RuleID, Strict),
             utils::argument_rules(RuleID, Strict, Acc, Rules, Info),
-            Argument = [Rules, RuleID, RuleHead, RuleBody, Info],
-            context_absent(clause(conc(RuleHead), argument(Argument))).
+            argument::new(Rules, RuleID, RuleHead, RuleBody, Info, Argument),
+            \+ graphStore::argumentFor(RuleHead, Argument).
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
             (callable(Check) -> call(Check); Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
-            Acc = [All, LDef, Def, Prem],
-            context_check(clause(conc([Statement]), argument([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]]))),
-            ruleBodyIsSupported(Others, Rule, [[ArgumentID|All], [NLDef|LDef], [NDef|Def], [NPrem|Prem]], Argument),
-            saveSupport([ArgumentID, RuleID, [Statement], Body, [NLDef, NDef, NPrem]], Argument).
-
+            Acc = [All, LastDef, Def, Prem],
+            graphStore::argumentFor([Statement], Support),
+            argument::rules(Support, Rules),
+            argument::info(Support, Info),
+            argument::infoParts(Info, SupportLastDef, SupportDef, SupportPrem),
+            ruleBodyIsSupported(Others, Rule, [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]], Argument),
+            graphStore::saveSupport(Support, Argument).
 
         %--------------------------------------------------------------------------
-        % Build attacks
+        % Attacks
         %--------------------------------------------------------------------------
 
+        %! buildAttacks
+        %  The attacks between the saved arguments, direct and on their super-arguments. Loops over the graph go
+        %  through its copy by identifiers (see the module graphStore).
         buildAttacks :-
             findall(_, buildDirectAttack, _).
 
-        % Besides the graph itself (argument/1, support/2, attack/4), the context keeps a compact copy of it, by
-        % argument identifier (see context_id): argInfo(Id, InfoId, Info), supportId(IdA, IdB), attackId(T, IdA, IdB, IdC).
-        % InfoId identifies the rules and premises of an argument (Info), which is what preferences depend on.
-        % Loops over the graph go through the compact copy, so that resolution steps carry integers rather than
-        % whole arguments, which are copied and visited at almost every step.
-
         buildDirectAttack :-
             context_check(clause(arg(IdA), argument(A))),
-            attack::possibleAttackers(IdA, A, BB),
-            findAttacker(BB, B),
-            filter_meta(B),
+            attackCandidates::possibleAttackers(IdA, A, Conflict),
+            findAttacker(Conflict, B),
+            conflictArguments::canAttack(B),
             A \== B,
             % Attacks are checked on copies, so that A and B are saved exactly as they are stored:
             % binding their variables would change their identifiers (see context_id)
             copy_term(B-A, CB-CA),
             attack::attacks(T, CB, CA),
             context_id(argument(B), IdB),
-            saveAttackById(attackId(T, IdB, IdA, IdA), attack(T, B, A, A)),
+            graphStore::saveAttackById(attackId(T, IdB, IdA, IdA), attack(T, B, A, A)),
             buildTransitiveAttacks(T, IdB, B, IdA, A),
             fail.
         buildDirectAttack.
@@ -194,59 +156,24 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
         findAttacker([Head], B) :- !,
             context_unifiable(conc([Head]), argument(B)).
         findAttacker(Conclusion, B) :-
-            context_check(clause(conc(Conclusion), argument(B))).
+            graphStore::argumentFor(Conclusion, B).
 
-        % B attacks every argument that A supports, directly or not
+        %! buildTransitiveAttacks(+Type, +IdB, +B, +IdA, +A)
+        %  B, attacking A, attacks every argument that A supports, directly or not.
         buildTransitiveAttacks(T, IdB, B, IdA, A) :-
             findall(_, (
                 context_closure(supportId, IdA, IdC),
-                context_check(clause(arg(IdC), argument(C))),
-                saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
+                graphStore::argumentById(IdC, C),
+                graphStore::saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
             ),_).
 
         %--------------------------------------------------------------------------
-        % Save stuff
+        % Saving, for the users of the module (see the module graphStore)
         %--------------------------------------------------------------------------
 
-        saveArgument(T, Conclusion, Argument) :-
-            % ground(Conclusion),
-            context_absent(clause(conc(Conclusion), argument(Argument))),
-            context_assert(newConc(T, Conclusion)),
-            context_id(argument(Argument), Id),
-            context_assert(argument(Argument)),
-            context_assert(conc(Conclusion) :- argument(Argument)),
-            context_assert(arg(Id) :- argument(Argument)),
-            Argument = [_, _, _, _, Info],
-            context_id(info(Info), InfoId),
-            context_assert(argInfo(Id, InfoId, Info)).
-
-        saveAttack(T, A, C, D) :-
-            context_id(argument(A), IdA),
-            context_id(argument(C), IdC),
-            context_id(argument(D), IdD),
-            saveAttackById(attackId(T, IdA, IdC, IdD), attack(T, A, C, D)).
-
-        % The same attack, by identifiers and by arguments
-        saveAttackById(Key, Attack) :-
-            context_absent(Key),
-            context_assert(Key),
-            context_assert(Attack),
-            Key = attackId(_, IdA, IdC, _),
-            context_assert(att(IdA, IdC) :- Attack).
-
-        saveSupport(A, B) :-
-            context_absent(support(A, B)),
-            context_assert(support(A, B)),
-            context_id(argument(A), IdA),
-            context_id(argument(B), IdB),
-            context_assert(supportId(IdA, IdB)).
-
-        removeAttack(T, A, B, C) :-
-            context_retract(attack(T, A, B, C)),
-            context_id(argument(A), IdA),
-            context_id(argument(B), IdB),
-            context_id(argument(C), IdC),
-            context_retract(attackId(T, IdA, IdB, IdC)),
-            context_retract(att(IdA, IdB) :- attack(T, A, B, C)).
+        saveArgument(Tag, Conclusion, Argument) :- graphStore::saveArgument(Tag, Conclusion, Argument).
+        saveSupport(Support, Argument) :- graphStore::saveSupport(Support, Argument).
+        saveAttack(Type, Attacker, Attacked, On) :- graphStore::saveAttack(Type, Attacker, Attacked, On).
+        removeAttack(Type, Attacker, Attacked, On) :- graphStore::removeAttack(Type, Attacker, Attacked, On).
         """.trimIndent()
 }
