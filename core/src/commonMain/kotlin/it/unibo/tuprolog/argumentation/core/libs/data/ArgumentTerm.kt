@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.data
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
+import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.List as LogicList
 
 /**
  * The term of an argument (module `argument`), read and built through it rather than by the positions of its parts.
@@ -14,7 +16,8 @@ import it.unibo.tuprolog.argumentation.core.libs.PrologModule
  *
  * Each accessor is a fact relating an argument to one of its parts, so it works both ways: given an argument it
  * reads the part, given a part it builds the template of the arguments with it, to look them up in the context
- * (`argument::claim(A, sup(X, Y)), context_check(argument(A))`).
+ * (`argument::claim(A, sup(X, Y)), context_check(argument(A))`). Kotlin reads and builds the terms through [parts] and
+ * [info], written after the same layout.
  */
 object ArgumentTerm : PrologModule("prolog.argumentation.data.argument", "argument") {
     override val prologRawTheory: String =
@@ -75,4 +78,33 @@ object ArgumentTerm : PrologModule("prolog.argumentation.data.argument", "argume
         %  Argument has defeasible rules or premises.
         isDefeasible([_, _, _, _, Info]) :- Info \== [[], [], []].
         """.trimIndent()
+
+    /** The parts of the term of an argument, by name */
+    class Parts(
+        val rules: Term,
+        val topRule: Term,
+        val conclusion: Term,
+        val body: Term,
+        val lastDefeasibleRules: Term,
+        val defeasibleRules: Term,
+        val defeasiblePremises: Term,
+    ) {
+        /** The term the argument concludes, the single item of its conclusion */
+        val claim: Term?
+            get() = (conclusion as? LogicList)?.toList()?.singleOrNull()
+    }
+
+    /** The parts of [argument], the term of an argument; null if it is not one */
+    fun parts(argument: Term): Parts? {
+        val items = (argument as? LogicList)?.toList()?.takeIf { it.size == 5 } ?: return null
+        val info = (items[4] as? LogicList)?.toList()?.takeIf { it.size == 3 } ?: return null
+        return Parts(items[0], items[1], items[2], items[3], info[0], info[1], info[2])
+    }
+
+    /** The info of an argument, made of its parts */
+    fun info(
+        lastDefeasibleRules: Term,
+        defeasibleRules: Term,
+        defeasiblePremises: Term,
+    ): Term = LogicList.of(lastDefeasibleRules, defeasibleRules, defeasiblePremises)
 }

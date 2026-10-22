@@ -1,9 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.core.Cons
+import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.core.List as LogicList
 
 data class Argument(
     val rules: List<RuleIdentifier>,
@@ -43,47 +44,22 @@ data class Argument(
     fun toTerm(): Term = Struct.parse(this.toString())
 
     companion object {
+        /** The argument of [term], the term of an argument (see [ArgumentTerm]) */
         fun of(term: Term): Argument {
-            fun termAsList(t: Term?): List<Term> = (t as Cons).toList()
-
-            fun toStringList(
-                argument: List<Term>,
-                target: Int,
-            ): List<String> =
-                (
-                    if (argument[target].isEmptyList) {
-                        emptyList()
-                    } else {
-                        (argument[target] as Cons).toList()
-                    }
-                ).map { x -> x.toString() }
-
-            fun argRules(argument: List<Term>): List<String> = toStringList(argument, 0)
-
-            fun argTopRule(argument: List<Term>): String = argument[1].toString()
-
-            fun argConclusion(argument: List<Term>): String = argument[2].asList()!![0].toString()
-
-            fun argGroundings(argument: List<Term>): List<String> = toStringList(argument, 3)
-
-            fun argDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 1)
-
-            fun argDefeasiblePremises(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 2)
-
-            fun argLastDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 0)
-
-            return termAsList(term).let {
-                Argument(
-                    argRules(it),
-                    argTopRule(it),
-                    argConclusion(it),
-                    argGroundings(it),
-                    argDefeasibleRules(it),
-                    argDefeasiblePremises(it),
-                    argLastDefeasibleRules(it),
-                    term,
-                )
-            }
+            val parts = ArgumentTerm.parts(term) ?: throw IllegalArgumentException("Not the term of an argument: $term")
+            return Argument(
+                parts.rules.names(),
+                parts.topRule.toString(),
+                parts.claim.toString(),
+                parts.body.names(),
+                parts.defeasibleRules.names(),
+                parts.defeasiblePremises.names(),
+                parts.lastDefeasibleRules.names(),
+                term,
+            )
         }
+
+        // The items of a list, as text
+        private fun Term.names(): List<String> = (this as LogicList).toList().map { it.toString() }
     }
 }

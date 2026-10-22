@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.libs.utils
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
@@ -407,22 +408,10 @@ object ArgumentRules : Primitive {
                 else -> listOf(ruleId) to listOf(ruleId) + def
             }
         val info =
-            List.of(
-                List
-                    .of(newLastDef)
-                    .distinctSortedTerms()
-                    .asReversed()
-                    .let { List.of(it) },
-                List
-                    .of(newDef)
-                    .distinctSortedTerms()
-                    .asReversed()
-                    .let { List.of(it) },
-                List
-                    .of(premises)
-                    .distinctSortedTerms()
-                    .asReversed()
-                    .let { List.of(it) },
+            ArgumentTerm.info(
+                List.of(List.of(newLastDef).distinctSortedTerms().asReversed()),
+                List.of(List.of(newDef).distinctSortedTerms().asReversed()),
+                List.of(List.of(premises).distinctSortedTerms().asReversed()),
             )
         val rules = List.of(List.of(listOf(ruleId) + all).sortedTerms().asReversed())
         val unifier = Arg2pUnificator.mgu(Tuple.of(request.arguments[3], request.arguments[4]), Tuple.of(rules, info))
