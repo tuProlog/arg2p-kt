@@ -97,8 +97,7 @@ object QueryExploration : PrologModule("prolog.argumentation.structured.explorat
         dependant(Argument, S) :- attackCandidates::attackDependant(Argument, S).
         dependant(Argument, S) :-
             argument::claim(Argument, Claim),
-            parser::classic_rule(_, Premises, [S]),
-            member(Claim, Premises).
+            parser::ruleUsing(Claim, S).
         dependant(Argument, S) :- setting(graphExtension, X), X::queryDependants(Argument, S).
 
         % recordArgument(+Query, +Argument, +Supports): Argument saved with its supports, unless it already was (built in

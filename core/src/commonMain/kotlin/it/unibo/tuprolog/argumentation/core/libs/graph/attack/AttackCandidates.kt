@@ -52,8 +52,7 @@ object AttackCandidates : PrologModule("prolog.argumentation.attack.candidates",
             attackedStatement(Conflicting, Statement).
         possiblyAttacked(Argument, Statement) :-
             argument::claim(Argument, Claim),
-            parser::classic_rule(_, Premises, [Statement]),
-            member(~(Claim), Premises).
+            parser::ruleUsing(~(Claim), Statement).
 
         conflicting(Conclusion, Statement) :- conflict::guarded(Conclusion, [Statement], _).
         conflicting(Conclusion, Statement) :- conflict::unguarded(Conclusion, [Statement]).

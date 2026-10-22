@@ -170,5 +170,25 @@ object RuleParser : RuleParserBase() {
         %! classic_rule(?Id, ?Conclusion)
         %  The premise Id concludes Conclusion ([Statement]).
         classic_rule(X, Y) :- premise(X, Y).
+
+        %! ruleUsing(?Premise, ?Conclusion)
+        %  A rule concludes Conclusion (a statement) from Premise, among others: classic_rule/3 and member/2 over its
+        %  premises, through an index of the premises of the rules built once in the active context.
+        ruleUsing(Premise, Conclusion) :-
+            premisesIndexed,
+            context_check(premiseOf(Premise, Conclusion)).
+
+        % The index: premiseOf/2 facts asserted from the last, as context_check returns the newest clauses first, so
+        % that lookups give the rules in the order of classic_rule/3
+        premisesIndexed :- context_check(premisesIndexed), !.
+        premisesIndexed :-
+            findall(premiseOf(P, C), (classic_rule(_, Premises, [C]), member(P, Premises)), Index),
+            assertFromLast(Index),
+            context_assert(premisesIndexed).
+
+        assertFromLast([]).
+        assertFromLast([Fact|Facts]) :-
+            assertFromLast(Facts),
+            context_assert(Fact).
         """.trimIndent()
 }
