@@ -225,16 +225,17 @@ data class StateRuleSelection(
                             }
                         }
 
-                        ruleSources.any { currentGoalStruct in it } -> {
+                        // The clauses are selected once: the procedure is missing when none is selected
+                        // (arg2p: checking first whether any clause matches matched them all twice)
+                        else -> {
                             val rules = ruleSources.flatMap { it.selectClauses(currentGoalStruct) }.cursor()
-                            if (context.isTailRecursive) {
-                                StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules))
-                            } else {
-                                StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules))
+                            when {
+                                rules.isOver -> missingProcedure(ruleSources, currentGoalStruct.extractSignature())
+                                context.isTailRecursive ->
+                                    StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules))
+                                else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules))
                             }
                         }
-
-                        else -> missingProcedure(ruleSources, currentGoalStruct.extractSignature())
                     }
                 }
             else -> {

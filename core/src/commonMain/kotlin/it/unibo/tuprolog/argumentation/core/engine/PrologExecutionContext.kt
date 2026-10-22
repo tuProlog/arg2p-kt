@@ -26,7 +26,6 @@ import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 import it.unibo.tuprolog.utils.Cursor
-import it.unibo.tuprolog.utils.cached
 import kotlin.collections.List as KtList
 import kotlin.collections.Set as KtSet
 
@@ -52,8 +51,9 @@ import kotlin.collections.Set as KtSet
  * - [parent]/[depth]: the enclosing frame and this frame's distance from the root (`depth == 0`, [isRoot]).
  * - [step]: a monotonically increasing counter of state-machine transitions, used to keep [PrologSolver]'s
  *   `currentContext` in sync with resolution progress and to detect [it.unibo.tuprolog.solve.exception.TimeOutException]s.
- * - [relevantVariables]: the [Var]s still of interest to some ancestor frame, used to trim [substitution]s of
- *   variables local to a finished sub-goal when popping back to [parent] (see [isVariableInteresting]).
+ * - [relevantGoals]: the goals selected so far in this frame, whose variables are still of interest, used to trim
+ *   [substitution]s of variables local to a finished sub-goal when popping back to [parent] (see
+ *   [isVariableInteresting]); [trimmedSize] is the size of the substitution when it was last trimmed.
  *
  * @throws IllegalArgumentException if [depth] and [parent] are inconsistent (`depth == 0` iff `parent == null`),
  * or if [startTime] or [maxDuration] are negative.
@@ -80,7 +80,8 @@ data class PrologExecutionContext(
     val parent: PrologExecutionContext? = null,
     val depth: Int = 0,
     val step: Long = 0,
-    val relevantVariables: KtSet<Var> = emptySet(),
+    val relevantGoals: RelevantGoals? = null,
+    val trimmedSize: Int = 0,
 ) : ExecutionContext {
     init {
         require((depth == 0 && parent == null) || (depth > 0 && parent != null))
@@ -117,16 +118,19 @@ data class PrologExecutionContext(
     }
 
     private val locallyInterestingVariables: Sequence<Var>
-        get() = relevantVariables.asSequence() + (goals.current?.variables ?: emptySequence())
+        get() = (relevantGoals?.goals?.flatMap { it.variables } ?: emptySequence()) + (goals.current?.variables ?: emptySequence())
 
-    private val interestingVariables: Sequence<Var> by lazy {
-        (locallyInterestingVariables + query.variables + pathToRoot.flatMap { it.locallyInterestingVariables })
-            .distinct()
-            .cached()
+    // A set rather than a sequence: membership is checked for every binding of the substitution whenever a frame is
+    // left, and a sequence is scanned at each check (arg2p: the scans were quadratic in deep resolutions)
+    private val interestingVariables: KtSet<Var> by lazy {
+        HashSet<Var>().also { variables ->
+            query.variables.forEach { variables.add(it) }
+            pathToRoot.forEach { context -> context.locallyInterestingVariables.forEach { variables.add(it) } }
+        }
     }
 
     /**
-     * Whether [variable] is still relevant to this frame or any of its ancestors (i.e. is in [relevantVariables],
+     * Whether [variable] is still relevant to this frame or any of its ancestors (i.e. occurs in [relevantGoals],
      * or occurs in this frame's [currentGoal] or [query], or in an ancestor's). Used when popping a finished
      * frame back to its [parent] (in [it.unibo.tuprolog.argumentation.core.engine.fsm.StateGoalSelection]) to filter the
      * [substitution] handed up, discarding bindings for variables local to the finished sub-goal.
@@ -224,4 +228,17 @@ data class PrologExecutionContext(
             "unificator=$unificator, " +
             "choicePoints=$choicePoints" +
             ")"
+}
+
+/**
+ * The goals selected so far in a frame, the newest first: a chain extended at each step, rather than the set of their
+ * variables (arg2p: copying the set at each step made long conjunctions quadratic). The variables are only collected
+ * when a substitution is trimmed.
+ */
+class RelevantGoals(
+    val goal: Term,
+    val previous: RelevantGoals?,
+) {
+    val goals: Sequence<Term>
+        get() = generateSequence(this) { it.previous }.map { it.goal }
 }

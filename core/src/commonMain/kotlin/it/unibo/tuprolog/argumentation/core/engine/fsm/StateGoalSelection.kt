@@ -2,6 +2,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.RelevantGoals
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.flags.TrackVariables
 
@@ -26,6 +27,16 @@ data class StateGoalSelection(
                     context.copy(step = nextStep()),
                 )
             } else {
+                // The bindings of the variables of no more interest are dropped once the substitution has doubled
+                // since it was last trimmed (arg2p: trimming it at every frame left made each step cost as much as
+                // all the variables in the frames above): keeping them a little longer does not change anything else
+                val trim = context.substitution.size > maxOf(MIN_TRIMMED_SIZE, 2 * context.trimmedSize)
+                val substitution =
+                    if (trim) {
+                        context.substitution.filter { (it, _) -> context.isVariableInteresting(it) }.castToUnifier()
+                    } else {
+                        context.substitution
+                    }
                 StateGoalSelection(
                     context.parent!!.let {
                         it.copy(
@@ -33,7 +44,8 @@ data class StateGoalSelection(
                             flags = context.flags,
                             dynamicKb = context.dynamicKb,
                             staticKb = context.staticKb,
-                            substitution = context.substitution.filter { (it, _) -> context.isVariableInteresting(it) },
+                            substitution = substitution,
+                            trimmedSize = if (trim) substitution.size else context.trimmedSize,
                             goals = it.goals.next, // go on with parent's goals
                             procedure = it.procedure,
                             step = nextStep(),
@@ -51,11 +63,7 @@ data class StateGoalSelection(
             StatePrimitiveSelection(
                 context.copy(
                     step = nextStep(),
-                    relevantVariables =
-                        context.relevantVariables +
-                            context.goals.current!!
-                                .variables
-                                .toSet(),
+                    relevantGoals = RelevantGoals(context.goals.current!!, context.relevantGoals),
                 ),
             )
         } else {
@@ -65,4 +73,8 @@ data class StateGoalSelection(
         }
 
     override fun clone(context: PrologExecutionContext): StateGoalSelection = copy(context = context)
+
+    private companion object {
+        const val MIN_TRIMMED_SIZE = 32
+    }
 }

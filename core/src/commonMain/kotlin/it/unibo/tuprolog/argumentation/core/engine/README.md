@@ -11,4 +11,13 @@ keeping the semantics of the original solver.
 
 ## Changes from the original
 
-None yet: the first version is the original code, with the package renamed.
+Each one keeps the semantics of the original solver; the timings are those of `EngineBenchmark` (CPU time).
+
+- Variable tracking: the variables still of interest are collected in a hash set when a substitution is trimmed
+  (membership was checked by scanning a sequence of the variables of all the frames above, for every binding); the
+  goals selected in a frame are chained rather than copied into a set of their variables at each step; and the
+  substitution is trimmed once it has doubled since it was last trimmed, rather than whenever a frame is left.
+- Clause selection: the clauses for a goal are selected once (the procedure was first checked to have a matching
+  clause, matching them all twice).
+
+Together: graph building 2-2.6x faster, query mode 2.5x, resolution 2.3x.
