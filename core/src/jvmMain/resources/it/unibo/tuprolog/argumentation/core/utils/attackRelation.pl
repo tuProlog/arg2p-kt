@@ -62,6 +62,46 @@ undercuts([_, _, NegRuleB, _, _], [_, RuleB, _, _, [[RuleB], _, _]]) :-
 %------------------------------------------------------------------------
 % Utility to find candidate attackers on argument
 %------------------------------------------------------------------------
+
+% possiblyAttacked(+Argument, -Statement): the statements whose arguments Argument may attack (the converse of
+% findPossibleAttackers/2): those in conflict with its conclusion, the conclusions of the rules it undercuts and
+% of the rules with its conclusion as a contrary premise
+possiblyAttacked([_, _, Head, _, _], S) :-
+    conflicting(Head, X),
+    attackedStatement(X, S).
+possiblyAttacked([_, _, [C], _, _], S) :-
+    parser::classic_rule(_, Premises, [S]),
+    member(~(C), Premises).
+
+conflicting(Head, X) :- parser::classic_conflict(Head, [X], _).
+conflicting(Head, X) :- parser::classic_conflict(Head, [X]).
+conflicting([undercut(Rule)], Rule).
+
+% A conflict is with a statement, or with a rule (an undercut)
+attackedStatement(X, X).
+attackedStatement(Rule, S) :- parser::classic_rule(Rule, _, [S]).
+
+% attackDependency(+Argument, -Statement) and attackDependant(+Argument, -Statement): with metaConflicts the
+% conflicts are themselves conclusions. Argument depends on the arguments that make others conflict with it; the
+% arguments that make it conflict with others depend on it, and, if it is for a conflict, so do those it makes
+% conflict
+attackDependency([_, _, Head, _, _], S) :- parser::conflict_statement(_, Head, S).
+attackDependency([_, Rule, _, _, _], S) :- Rule \== none, parser::conflict_statement(_, [Rule], S).
+attackDependant([_, _, Head, _, _], S) :- parser::conflict_statement(Head, _, S).
+attackDependant([_, _, [Conflict], _, _], S) :-
+    parser::conflict_statement([A], [B], Conflict),
+    (S = A ; S = B).
+
+% possibleAttackers(+Id, +Argument, -Conflict): findPossibleAttackers/2 for the argument with identifier Id, looked
+% for once: query mode looks for them to build the graph, and again to build the attacks
+possibleAttackers(Id, _, Conflict) :-
+    context_check(possibleAttackersOf(Id, Conflicts)), !,
+    utils::element(Conflict, Conflicts).
+possibleAttackers(Id, Argument, Conflict) :-
+    findall(C, findPossibleAttackers(Argument, C), Conflicts),
+    context_assert(possibleAttackersOf(Id, Conflicts)),
+    utils::element(Conflict, Conflicts).
+
 findPossibleAttackers([_, _, Head, _, _], Conf) :-
     parser::classic_conflict(Conf, Head, Guard).
 findPossibleAttackers([_, _, Head, _, _], Conf) :-

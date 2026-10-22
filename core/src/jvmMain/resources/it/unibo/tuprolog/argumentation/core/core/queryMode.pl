@@ -12,8 +12,25 @@ computeStatementAcceptance(Goal) :-
 
 computeStatementAcceptance(Goal) :-
     queryMode,
+    locality(Locality),
+    queryAcceptance(Locality, Goal).
+
+% The part of the graph the labels of the arguments for the query depend on, as the semantics declares it
+% (locality/1): the arguments they depend on (directional), those connected to them in either direction
+% (connected), or the whole graph (whole_graph, also for a semantics that does not declare it)
+locality(Locality) :-
+    argumentLabellingMode(Semantics),
+    Semantics::locality(L), !,
+    Locality = L.
+locality(whole_graph).
+
+queryAcceptance(whole_graph, _) :- !,
+    abstract:::computeGlobalAcceptance.
+queryAcceptance(Locality, Goal) :-
     findall(_, buildSubGraph(Goal, _), _),
+    expand(Locality),
     graphBuildMode(X),
+    X:::buildAdditionalArguments,
     X:::buildAttacks,
     abstract:::modifyGraph,
     abstract:::buildArgumentLabelling,
@@ -37,6 +54,8 @@ mineResults(Goal, Result) :-
 % ARGUMENT CONSTRUCTION
 %==============================================================================
 
+% buildSubGraph(+Query, ?Argument): builds the arguments for Query, and those their labels may depend on
+% (see dependency/3), recursively; then Argument is each argument for Query
 buildSubGraph(Query, Argument) :-
     % write("Calling on "),write(Query),nl,
     ground_vars(Query, Normalized),
@@ -45,12 +64,42 @@ buildSubGraph(Query, Argument) :-
         findSingleArgument([Query], Argument, Support),
         saveArgument(query, [Query], Argument),
         saveSupports(Argument, Support),
-        attack::findPossibleAttackers(Argument, [Conflict]),
-        buildSubGraph(Conflict, _)
+        context_id(argument(Argument), Id),
+        dependency(Id, Argument, Statement),
+        buildSubGraph(Statement, _)
     ), _),
     context_assert(explored(Query)),
     fail.
 buildSubGraph(Query, Argument) :- context_check(clause(conc([Query]), argument(Argument))).
+
+% The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
+% it): those that make others conflict with it (metaConflicts), those of its possible attackers, and those the
+% graph extensions relate it to. The conflicts come first, as the possible attackers are only looked for once.
+dependency(_, Argument, S) :- attack::attackDependency(Argument, S).
+dependency(Id, Argument, S) :- attack::possibleAttackers(Id, Argument, [S]).
+dependency(_, Argument, S) :- graphExtension(X), X::queryDependencies(Argument, S).
+
+% expand(+Locality): for the connected locality, builds the arguments whose labels may depend on the ones built
+% (see dependant/2), with those they depend on in turn, until none is new
+expand(connected) :-
+    findall(Id, (context_check(clause(arg(Id), _)), context_absent(expanded(Id))), Ids),
+    Ids \== [], !,
+    findall(_, (
+        utils::element(Id, Ids),
+        context_assert(expanded(Id)),
+        context_check(clause(arg(Id), argument(Argument))),
+        dependant(Argument, Statement),
+        findall(_, buildSubGraph(Statement, _), _)
+    ), _),
+    expand(connected).
+expand(_).
+
+% The statements whose arguments may depend on an argument: those it may attack, those its conclusion makes
+% conflict (metaConflicts), those of its super-arguments, and those the graph extensions relate to it
+dependant(Argument, S) :- attack::possiblyAttacked(Argument, S).
+dependant(Argument, S) :- attack::attackDependant(Argument, S).
+dependant([_, _, [C], _, _], S) :- parser::classic_rule(_, Premises, [S]), member(C, Premises).
+dependant(Argument, S) :- graphExtension(X), X::queryDependants(Argument, S).
 
 
 findSingleArgument(Query, Argument, Support) :-
@@ -68,14 +117,14 @@ findSingleArgument(Query, Argument, Support) :-
 % Premise
 
 findArgument(Conclusion, _, Found) :-
-    parser::premise(Id, Conclusion),
+    parser::classic_rule(Id, Conclusion),
     premiseRules(Id, Rules),
     Found = found([], Rules, []).
 
 % Rule
 
 findArgument(Conclusion, Ids, Found) :-
-    parser::rule(Id, Premises, Conclusion),
+    parser::classic_rule(Id, Premises, Conclusion),
     %\+ member(Id, Ids),
     findPremises(Premises, [Id|Ids], premises(Conclusions, ResRules, Support)),
     ruleRules(Id, ResRules, Rules),

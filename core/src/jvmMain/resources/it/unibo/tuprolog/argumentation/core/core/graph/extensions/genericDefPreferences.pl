@@ -43,3 +43,7 @@ mergeIds([], [pref]).
 mergeIds(Arguments, [pref|MergedId]) :-
     findall(Id, member([Id, _, _, _, _], Arguments), Res),
     utils::appendLists(Res, MergedId).
+
+% Query mode: the same arguments matter as for defeasiblePref
+queryDependencies(Argument, S) :- defeasiblePref::queryDependencies(Argument, S).
+queryDependants(Argument, S) :- defeasiblePref::queryDependants(Argument, S).

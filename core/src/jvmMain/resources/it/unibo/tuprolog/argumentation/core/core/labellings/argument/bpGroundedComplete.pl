@@ -2,6 +2,10 @@
 % BP COMPLETE LABELLING [ICLP]
 %==============================================================================
 
+% Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the
+% label of an argument is taken to depend on the arguments connected to it, in either direction
+locality(connected).
+
 argumentLabelling :-
     bp_grounded::reifyBurdenOfProofs,
     findall(X, context_check(argument(X)), Arguments),

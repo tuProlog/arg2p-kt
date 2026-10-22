@@ -1,3 +1,6 @@
+% Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+locality(directional).
+
 argumentLabelling :-
     findall(X, context_check(argument(X)), Arguments),
     groundedLabelling(Arguments).

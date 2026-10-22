@@ -40,6 +40,9 @@ object StronglyAdmissibleLabeller :
 
     override val prologRawTheory: String =
         """
+        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        locality(directional).
+
         argumentLabelling :-
             admissible::argumentLabelling,
             strongly_admissible_set.

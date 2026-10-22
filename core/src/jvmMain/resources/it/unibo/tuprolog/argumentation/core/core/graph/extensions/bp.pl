@@ -67,3 +67,11 @@ statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-
     context_check(in(Burdened)).
 statusToAttack((Bp, Burdened), attack(bprebut, Bp, Burdened, Burdened)) :-
     context_absent(in(Burdened)).
+
+%==============================================================================
+% QUERY MODE
+%==============================================================================
+
+% A burden of proof on a statement is itself a conclusion (bp/1), related to the arguments for the statement
+queryDependencies([_, _, [C], _, _], bp(C)).
+queryDependants([_, _, [bp(C)], _, _], C).

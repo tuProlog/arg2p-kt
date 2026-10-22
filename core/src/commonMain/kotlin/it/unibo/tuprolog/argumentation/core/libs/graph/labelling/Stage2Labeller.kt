@@ -32,6 +32,9 @@ object Stage2Labeller :
 
     override val prologRawTheory: String =
         """
+        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        locality(directional).
+
         argumentLabelling :-
             cf2::compute(stage).
         

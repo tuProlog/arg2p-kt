@@ -350,3 +350,13 @@ classic_conflict(X, Y) :- metaConflicts, !,
     context_check(clause(conc([conflict(A, B)]), _)).
 classic_conflict(A, B) :-
     conflict(A, B).
+
+% conflict_statement(?X, ?Y, -Statement): with metaConflicts, the conclusions of the rules that make X conflict
+% with Y (looked for among the conclusions, so that they are as instantiated as the rules make them)
+conflict_statement([A], [B], S) :-
+    metaConflicts,
+    conclusion(S),
+    (S = conflict(A, B, _) ; S = conflict(A, B)).
+
+conclusion(S) :- rule(_, _, [S]).
+conclusion(S) :- premise(_, [S]).

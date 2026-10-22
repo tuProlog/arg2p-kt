@@ -4,12 +4,17 @@
 
 buildArgumentationGraph :-
     buildArguments,
-    findall(_, buildAdditionalArgument, _),
+    buildAdditionalArguments,
     buildAttacks.
 
 %--------------------------------------------------------------------------
 % Build Conflict Arguments
 %--------------------------------------------------------------------------
+
+% The arguments derived from the others: with metaConflicts, a copy of each argument supported by a conflict
+buildAdditionalArguments :-
+    findall(_, buildAdditionalArgument, _).
+
 buildAdditionalArgument :-
     metaConflicts,
     conf_arg(A, CArg),
@@ -159,7 +164,7 @@ buildAttacks :-
 
 buildDirectAttack :-
     context_check(clause(arg(IdA), argument(A))),
-    attack::findPossibleAttackers(A, BB),
+    attack::possibleAttackers(IdA, A, BB),
     findAttacker(BB, B),
 	filter_meta(B),
 	A \== B,
