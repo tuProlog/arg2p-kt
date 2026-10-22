@@ -38,5 +38,9 @@ Each one keeps the semantics of the original solver; the timings are those of `E
 The unification used by the engine is the one of `Arg2pUnificator` (in `libs.basic`): the default one, computed in a
 single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
 
-Together, against the original solver: graph building 3.5-4.7x faster, query mode 4.2x, resolution 5.2x, module
-calls 1.3-3.8x, labellings 2.2-2.4x.
+Together, against the original solver (`EngineBenchmark`, CPU time): graph building 4.4-5.4x faster, query mode
+4.7x, resolution 5.7x, labellings 3-3.2x, module calls 1.5-3.8x. On whole theories (`LabellingBenchmark`, wall
+clock), the phases of graph building are 2.3-4.9x faster: chain/320 (6080 arguments) went from about 34 s to 8.6 s.
+
+The other arg2p changes that go with the engine: the native primitives unify with `Arg2pUnificator`, reach the
+context library directly (`Context.of`) rather than solving goals, and the scopes of `arg2pScope` share their solver.
