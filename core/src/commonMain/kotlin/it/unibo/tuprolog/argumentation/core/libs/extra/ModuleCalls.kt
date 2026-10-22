@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.libs.extra
 
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
@@ -9,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.dsl.theory.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -94,14 +94,12 @@ object ModuleCall : Primitive {
         }
     }
 
-    private fun mineModulesPath(context: ExecutionContext): String =
-        logicProgramming {
-            Arg2pPrologSolverFactory
-                .solverOf(libraries = context.libraries)
-                .solve("modulesPath"(X))
-                .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
-                .first()
-        }
+    // The modules path of the settings, a fact of the libraries (empty if there is none)
+    private fun mineModulesPath(context: ExecutionContext): String {
+        val pattern = Struct.of(ModulesPath.predicate(), Var.of("Path"))
+        val setting = context.libraries.asTheory(context.unificator)[pattern].firstOrNull()
+        return setting?.head?.get(0)?.toString() ?: ""
+    }
 
     private fun getCleanSolver(
         context: ExecutionContext,

@@ -10,7 +10,6 @@ import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
@@ -19,6 +18,7 @@ import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.dsl.solve.LogicProgrammingScope
 import it.unibo.tuprolog.dsl.solve.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
@@ -106,13 +106,22 @@ object ConversionUtils {
                 .map { term ->
                     if (term.isStruct && term.asStruct()?.functor == "\\+") {
                         "~"(term.asStruct()!!.args[0])
-                    } else if (context.solve("clause"(term, Var.ANONYMOUS_NAME)).first().isHalt) {
+                    } else if (isPrologGoal(term, context.context)) {
                         "prolog"(term)
                     } else {
                         term
                     }
                 }.let { if (it.count() > 1) tupleOf(it) else it.first() }
         }
+
+    /**
+     * Whether a goal of a rule is a Prolog goal: one clause/2 cannot inspect (a variable, a term that is not
+     * callable, or a procedure the libraries protect), rather than a statement of the theory
+     */
+    private fun isPrologGoal(
+        goal: Term,
+        context: ExecutionContext,
+    ): Boolean = goal !is Struct || context.libraries.hasProtected(goal.extractSignature())
 
     fun commonMap(
         context: Solve.Request<ExecutionContext>,
