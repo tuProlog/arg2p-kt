@@ -1,8 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
+import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
+import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
+import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -33,8 +36,15 @@ class Cache : ArgLibrary {
         }
     }
 
-    inner class CacheGet : PrimitiveWithSignature {
+    // cache_check(Goal): the solutions of Goal in the cache (see ClauseStore.solve); the arg2p engine resolves Goal
+    // with the clauses of the cache itself (see StoreClauses)
+    inner class CacheGet :
+        PrimitiveWithSignature,
+        DelegatedCall {
         override val signature = Signature("cache_check", 1)
+
+        override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? =
+            StoreClauses.delegation(store, LOOKUP, request.arguments[0], request.context.libraries)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val term: Term = request.arguments[0]
@@ -59,4 +69,9 @@ class Cache : ArgLibrary {
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
+
+    private companion object {
+        // The lookup of a goal in the cache: cache_check(Goal)
+        val LOOKUP = StoreLookup { Struct.of("cache_check", it) }
+    }
 }

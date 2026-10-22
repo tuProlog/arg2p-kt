@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Numeric
 import it.unibo.tuprolog.core.Struct
@@ -184,14 +185,14 @@ class Context :
     }
 
     // context_check(Goal): the solutions of Goal in the active branch (see ClauseStore.solve); the arg2p engine
-    // resolves Goal with the clauses of the branch itself (see BranchClauses)
+    // resolves Goal with the clauses of the branch itself (see StoreClauses)
     inner class DynamicCacheGet :
         PrimitiveWithSignature,
         DelegatedCall {
         override val signature = Signature("context_check", 1)
 
         override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? =
-            BranchClauses.delegation(selected, selectedSolver, request.arguments[0], request.context.libraries)
+            StoreClauses.delegation(selected, branchLookup(selectedSolver), request.arguments[0], request.context.libraries)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
             this@Context.selected.solve(request.arguments[0]).map { request.replyWith(it) }
@@ -205,7 +206,7 @@ class Context :
 
         override fun delegate(request: Solve.Request<ExecutionContext>): Delegation? {
             val branch = branchOf(request)
-            return BranchClauses.delegation(dynamicSolver[branch]!!, branch, request.arguments[1], request.context.libraries)
+            return StoreClauses.delegation(dynamicSolver[branch]!!, branchLookup(branch), request.arguments[1], request.context.libraries)
         }
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
@@ -394,5 +395,8 @@ class Context :
         fun of(libraries: Runtime): Context? = (libraries.primitives[CONTEXT_ALL] as? DynamicCacheAll)?.owner
 
         private val CONTEXT_ALL = Signature("context_all", 2)
+
+        // The lookup of a goal in a branch: context_check(Branch, Goal)
+        private fun branchLookup(branch: Int) = StoreLookup { Struct.of("context_check", Integer.of(branch), it) }
     }
 }

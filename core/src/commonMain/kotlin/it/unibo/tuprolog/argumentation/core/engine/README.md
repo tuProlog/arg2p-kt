@@ -24,8 +24,8 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   with other libraries: the module calls (`::`, `:::`) are inlined, so no solver is set up for each call, the bindings
   get back as for any goal, and the call is subject to the time limit of the resolution; backtracking into a choice
   point within an inlined call goes on with the libraries of the call. A `Sourcing` resolves a goal with the clauses
-  of a `ClauseSource`: the lookups of the context (`context_check/1,2`) are resolved with the clauses of a branch
-  (`BranchClauses`, in `libs.basic`), as the context store answers them.
+  of a `ClauseSource`: the lookups of the context (`context_check/1,2`) and of the cache (`cache_check/1`) are
+  resolved with the clauses of their store (`StoreClauses`, in `libs.basic`), as the store answers them.
 - Clause selection (`ClauseSource`): the clauses of the program are those of the libraries, the static and the dynamic
   theory (`ProgramClauses`). Those of the immutable theories are indexed once by the signature of their heads, then
   by the principal symbol of their first argument (`IndexedTheoryClauses`, `FirstArgumentIndex`), and those matching
