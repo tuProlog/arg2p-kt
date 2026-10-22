@@ -31,12 +31,11 @@ data class StateRuleExecution(
         return if (resolution == null) {
             failureState
         } else {
-            val bindings = resolution.goalBindings
             StateGoalSelection(
                 context.copy(
                     goals = resolution.body.toBodyGoals(),
                     rules = Cursor.empty(),
-                    substitution = if (bindings.isEmpty()) context.substitution else (context.substitution + bindings).castToUnifier(),
+                    substitution = resolution.extend(context.substitution),
                     step = nextStep(),
                 ),
             )

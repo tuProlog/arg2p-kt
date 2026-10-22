@@ -113,14 +113,29 @@ data class PrologExecutionContext(
     val pathToRoot: Sequence<PrologExecutionContext>
         get() = generateSequence(this) { it.parent }
 
+    // arg2p: the values computed when first needed are kept in fields rather than lazy delegates, which a copy of the
+    // context (made at almost every step) allocated anew, with their initializers, for each of them
+    private var currentGoalValue: Term? = null
+    private var currentGoalComputed = false
+    private var interestingVariablesValue: KtSet<Var>? = null
+    private var logicStackTraceValue: KtList<Struct>? = null
+
     /** The current [goals] entry with [substitution] already applied, or `null` if there is none left to prove. */
-    val currentGoal: Term? by lazy(LazyThreadSafetyMode.NONE) {
-        if (goals.isOver) null else goals.current?.apply(substitution)
-    }
+    val currentGoal: Term?
+        get() {
+            if (!currentGoalComputed) {
+                currentGoalValue = if (goals.isOver) null else goals.current?.apply(substitution)
+                currentGoalComputed = true
+            }
+            return currentGoalValue
+        }
 
     // A set rather than a sequence: membership is checked for every binding of the substitution whenever a frame is
     // left, and a sequence is scanned at each check (arg2p: the scans were quadratic in deep resolutions)
-    private val interestingVariables: KtSet<Var> by lazy(LazyThreadSafetyMode.NONE) {
+    private val interestingVariables: KtSet<Var>
+        get() = interestingVariablesValue ?: collectInterestingVariables().also { interestingVariablesValue = it }
+
+    private fun collectInterestingVariables(): KtSet<Var> =
         HashSet<Var>().also { variables ->
             query.collectVariables(variables)
             var context: PrologExecutionContext? = this
@@ -134,7 +149,6 @@ data class PrologExecutionContext(
                 context = context.parent
             }
         }
-    }
 
     /**
      * Whether [variable] is still relevant to this frame or any of its ancestors (i.e. occurs in [relevantGoals],
@@ -144,11 +158,12 @@ data class PrologExecutionContext(
      */
     fun isVariableInteresting(variable: Var) = variable in interestingVariables
 
-    override val logicStackTrace: KtList<Struct> by lazy(LazyThreadSafetyMode.NONE) {
-        pathToRoot
-            .map { it.procedure ?: Struct.of("?-", query) }
-            .toList()
-    }
+    override val logicStackTrace: KtList<Struct>
+        get() =
+            logicStackTraceValue ?: pathToRoot
+                .map { it.procedure ?: Struct.of("?-", query) }
+                .toList()
+                .also { logicStackTraceValue = it }
 
     override fun createSolver(
         unificator: Unificator,

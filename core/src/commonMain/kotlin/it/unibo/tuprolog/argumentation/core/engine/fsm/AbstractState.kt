@@ -23,9 +23,11 @@ abstract class AbstractState(
      * The (lazily captured) instant this state is being evaluated at, used for the timeout check in [next] (arg2p:
      * states are confined to the thread of their resolution, so the lazy value needs no synchronization).
      */
-    protected val executionTime: TimeInstant by lazy(LazyThreadSafetyMode.NONE) {
-        currentTime()
-    }
+    protected val executionTime: TimeInstant
+        get() = executionTimeValue ?: currentTime().also { executionTimeValue = it }
+
+    // Kept in a field rather than a lazy delegate, which each state allocated with its initializer
+    private var executionTimeValue: TimeInstant? = null
 
     /**
      * Whether [executionTime] is past [PrologExecutionContext.startTime] + [PrologExecutionContext.maxDuration]

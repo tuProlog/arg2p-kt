@@ -54,7 +54,7 @@ data class StatePrimitiveSelection(
                             // arg2p: the calls the engine solves itself, as sub-goals of the same resolution
                             val delegation = (primitive as? DelegatedCall)?.delegate(request)
                             if (delegation != null) {
-                                DelegationStates.of(delegation, childContext)
+                                DelegationStates.of(delegation, context, childContext, nextStep())
                             } else {
                                 val primitiveExecutions = primitive.solve(request).raisingErrorsInTurn(request).cursor()
                                 StatePrimitiveExecution(childContext.appendPrimitivesAndChoicePoints(primitiveExecutions))

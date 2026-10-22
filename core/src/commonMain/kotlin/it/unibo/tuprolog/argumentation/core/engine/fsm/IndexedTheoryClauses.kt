@@ -6,33 +6,36 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
 /**
- * The clauses of an immutable theory, indexed once (arg2p): by the signature of their heads, then by the first
- * argument of their heads (see [FirstArgumentIndex]); those matching a goal are collected in a list. Theories index
- * their clauses in RETE trees, whose lookups merge lazy sequences (of each index) at every step.
+ * The clauses of an immutable theory, indexed once (arg2p): by the functor and the arity of their heads, then by the
+ * first argument of their heads (see [FirstArgumentIndex]); those matching a goal are collected in a list. Theories
+ * index their clauses in RETE trees, whose lookups merge lazy sequences (of each index) at every step.
  */
 internal class IndexedTheoryClauses(
     theory: Theory,
 ) : ClauseSource {
-    private val bySignature: Map<Signature, FirstArgumentIndex> =
+    // By functor, then by arity: looked up without building the signature (or the indicator) of the goal
+    private val byFunctor: Map<String, Map<Int, FirstArgumentIndex>> =
         theory.clauses
             .filter { it.head != null }
-            .groupBy { it.head!!.extractSignature() }
-            .mapValues { (_, clauses) -> FirstArgumentIndex(clauses) }
+            .groupBy { it.head!!.functor }
+            .mapValues { (_, clauses) ->
+                clauses.groupBy { it.head!!.arity }.mapValues { (_, sameArity) -> FirstArgumentIndex(sameArity) }
+            }
 
+    // A single candidate is left to the resolution of the goal with it, which unifies them anyway: matching it first
+    // would unify them twice. Among several, those not matching are left out, so that none is left to backtrack to.
     override fun clausesFor(
         goal: Struct,
         unificator: Unificator,
-    ): List<Clause> =
-        bySignature[goal.extractSignature()]
-            ?.candidates(goal)
-            ?.filter { unificator.match(goal, it.head!!) }
-            ?: emptyList()
+    ): List<Clause> {
+        val candidates = byFunctor[goal.functor]?.get(goal.arity)?.candidates(goal) ?: return emptyList()
+        return if (candidates.size == 1) candidates else candidates.filter { unificator.match(goal, it.head!!) }
+    }
 }
 
 /**

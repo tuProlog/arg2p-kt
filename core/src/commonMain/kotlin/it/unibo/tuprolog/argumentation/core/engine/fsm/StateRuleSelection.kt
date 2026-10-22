@@ -4,6 +4,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -183,8 +184,6 @@ data class StateRuleSelection(
 
     override fun computeNext(): State =
         with(context) {
-            // only needed to report a missing procedure
-            val ruleSources = { sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb) }
             val construct = ControlConstructs.of(goal)
 
             when {
@@ -212,20 +211,25 @@ data class StateRuleSelection(
                 construct != null -> construct.select(context, goal, executionTime)
 
                 // The clauses are selected once: the procedure is missing when none is selected
-                // (arg2p: checking first whether any clause matches matched them all twice)
+                // (arg2p: checking first whether any clause matches matched them all twice). A single fact is
+                // resolved in this frame (see FactResolution).
                 else -> {
-                    val rules = selectRules(goal)
-                    when {
-                        rules.isOver -> missingProcedure(ruleSources, goal.extractSignature())
-                        context.isTailRecursive(goal) ->
-                            StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, goal))
-                        else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, goal))
-                    }
+                    val clauses = ProgramClauses.of(this).clausesFor(goal, unificator)
+                    FactResolution.of(context, goal, clauses, nextStep()) ?: selectRules(clauses)
                 }
             }
         }
 
-    // The clauses for the goal, from the program (see ProgramClauses)
-    private fun PrologExecutionContext.selectRules(goal: Struct): Cursor<out Rule> =
-        RuleCursor.of(ProgramClauses.of(this).clausesFor(goal, unificator))
+    private fun selectRules(clauses: List<Clause>): State {
+        val rules: Cursor<out Rule> = RuleCursor.of(clauses)
+        return when {
+            rules.isOver -> missingProcedure({ context.ruleSources() }, goal.extractSignature())
+            context.isTailRecursive(goal) ->
+                StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, goal))
+            else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, goal))
+        }
+    }
+
+    // The theories of the program, only needed to report a missing procedure
+    private fun PrologExecutionContext.ruleSources(): Sequence<Theory> = sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb)
 }

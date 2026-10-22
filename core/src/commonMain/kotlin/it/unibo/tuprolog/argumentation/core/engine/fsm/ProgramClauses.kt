@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
 
@@ -34,8 +35,14 @@ internal class ProgramClauses private constructor(
     }
 
     companion object {
-        /** The clauses of the program of [context], as the indexes of its solver keep them (see [TheoryIndexes.program]) */
-        fun of(context: PrologExecutionContext): ProgramClauses =
+        /**
+         * The clauses of the program of [context], with the [libraries] given (its own by default), as the indexes of
+         * its solver keep them (see [TheoryIndexes.program])
+         */
+        fun of(
+            context: PrologExecutionContext,
+            libraries: Runtime = context.libraries,
+        ): ProgramClauses =
             with(context) {
                 theoryIndexes.program(libraries, staticKb, dynamicKb) {
                     of(libraries.asTheory(unificator), staticKb, dynamicKb, theoryIndexes)
