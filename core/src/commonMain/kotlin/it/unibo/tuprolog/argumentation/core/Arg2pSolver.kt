@@ -51,16 +51,20 @@ import it.unibo.tuprolog.solve.library.Runtime
 interface Arg2pSolver {
     val loader: ArgLoader
     val context: ArgContext
+    val cache: Cache
     val settings: Settings
+
+    /** The libraries of every arg2p solver: the module loader, the context, the cache and the settings */
+    fun baseLibraries(): List<ArgLibrary> = listOf(loader, context, cache, settings)
 
     fun staticLibraries(): Iterable<ArgLibrary>
 
     fun dynamicLibraries(): Iterable<ArgLibrary>
 
-    fun to2pLibraries() = Runtime.of(listOf(loader, context, settings).plus(staticLibraries()).map { it.content() })
+    fun to2pLibraries() = Runtime.of(baseLibraries().plus(staticLibraries()).map { it.content() })
 
     fun operators() =
-        listOf(loader, context, settings)
+        baseLibraries()
             .plus(staticLibraries())
             .map { it.theoryOperators }
             .reduce(OperatorSet::plus)
@@ -72,6 +76,7 @@ interface Arg2pSolver {
         ) = object : Arg2pSolver {
             override val loader = DynamicLoader(this)
             override val context: ArgContext = Context()
+            override val cache = Cache()
             override val settings = Settings(this)
 
             override fun staticLibraries() = staticLibs
@@ -83,7 +88,7 @@ interface Arg2pSolver {
             staticLibs: Iterable<ArgLibrary> = emptyList(),
             dynamicLibs: Iterable<ArgLibrary> = emptyList(),
         ) = of(
-            listOf(EngineInterface, Cache()) + staticLibs,
+            listOf(EngineInterface) + staticLibs,
             listOf(
                 EngineInterface,
                 Utils,

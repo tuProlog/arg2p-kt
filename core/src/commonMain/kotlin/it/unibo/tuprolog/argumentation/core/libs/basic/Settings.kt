@@ -29,7 +29,7 @@ class Settings(
     private val solver: Arg2pSolver,
 ) : ArgLibrary {
     private val flags: Map<String, ArgsFlag<*, *>> by lazy {
-        (listOf(solver.loader, solver.context) + solver.staticLibraries() + solver.dynamicLibraries())
+        (solver.baseLibraries() + solver.staticLibraries() + solver.dynamicLibraries())
             .flatMap { it.flags() }
             .associateBy { it.predicate() }
     }
