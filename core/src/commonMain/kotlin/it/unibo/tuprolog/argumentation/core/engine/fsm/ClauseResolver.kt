@@ -16,19 +16,8 @@ internal class Resolution(
     val goalBindings: Substitution.Unifier,
     val body: Term,
 ) {
-    /**
-     * [substitution], the one of the resolution, extended with the bindings of the goal. They bind variables it does
-     * not bind (the goal had it applied), so they cannot contradict it, and they are applied to its terms: as
-     * `substitution + goalBindings`, without checking for contradictions and copying the terms one time less.
-     */
-    fun extend(substitution: Substitution.Unifier): Substitution.Unifier {
-        if (goalBindings.isEmpty()) return substitution
-        if (substitution.isEmpty()) return goalBindings
-        val extended = LinkedHashMap<Var, Term>(substitution.size + goalBindings.size)
-        for ((variable, value) in substitution) extended[variable] = value.apply(goalBindings)
-        extended.putAll(goalBindings)
-        return Substitution.unifier(extended)
-    }
+    /** [substitution], the one of the resolution, extended with the bindings of the goal (see [extendedWith]) */
+    fun extend(substitution: Substitution.Unifier): Substitution.Unifier = substitution.extendedWith(goalBindings)
 }
 
 /** How the engine resolves a goal with one of the clauses selected for it (arg2p) */

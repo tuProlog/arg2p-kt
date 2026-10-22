@@ -30,6 +30,18 @@ data class StatePrimitiveExecution(
         )
     }
 
+    // arg2p: the answer of a primitive binds the variables of its goal, which had the substitution applied: it extends
+    // the substitution (see extendedWith) unless it binds a variable the substitution does, merged then
+    private fun merged(answer: Substitution): Substitution {
+        val substitution = context.substitution
+        val unifier = answer.takeIf { it.isSuccess }?.castToUnifier()
+        return if (unifier != null && unifier.keys.none { it in substitution }) {
+            substitution.extendedWith(unifier)
+        } else {
+            context.unificator.merge(substitution, answer, occurCheckEnabled = false)
+        }
+    }
+
     override fun computeNext(): State =
         try {
             context.primitives.current?.solution?.whenIs(
@@ -38,12 +50,7 @@ data class StatePrimitiveExecution(
                         context.copyFromCurrentPrimitive(
                             goals = context.goals.next,
                             procedureFromAncestor = 1,
-                            substitution =
-                                context.unificator.merge(
-                                    context.substitution,
-                                    it.substitution,
-                                    occurCheckEnabled = false,
-                                ),
+                            substitution = merged(it.substitution),
                         ),
                     )
                 },
