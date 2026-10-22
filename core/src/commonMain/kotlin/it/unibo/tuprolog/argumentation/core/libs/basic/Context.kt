@@ -14,6 +14,7 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 
 class Context :
@@ -370,6 +371,9 @@ class Context :
 
     companion object {
         /** The context library of the solver of the given context, if it is reachable (through context_all/2) */
-        fun of(context: ExecutionContext): Context? = (context.libraries.primitives[Signature("context_all", 2)] as? DynamicCacheAll)?.owner
+        fun of(context: ExecutionContext): Context? = of(context.libraries)
+
+        /** The context library among the given libraries, if any (through context_all/2) */
+        fun of(libraries: Runtime): Context? = (libraries.primitives[Signature("context_all", 2)] as? DynamicCacheAll)?.owner
     }
 }

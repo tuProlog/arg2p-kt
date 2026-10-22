@@ -154,16 +154,24 @@ class DynamicLoader(
     inner class WithLibInNewContext : AbstractWithLib() {
         override val signature = Signature(":::", 2)
 
+        // A new branch of the active one, from the context library if it is reachable (solving goals sets up solvers)
         override fun execute(
             module: String,
             solver: MutableSolver,
-        ) = logicProgramming {
-            solver
-                .solve("context_active"(X))
-                .filter { it.isYes }
-                .forEach {
-                    solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()
-                }
+        ) {
+            val context = Context.of(solver.libraries)
+            if (context != null) {
+                context.branch(context.active)
+                return
+            }
+            logicProgramming {
+                solver
+                    .solve("context_active"(X))
+                    .filter { it.isYes }
+                    .forEach {
+                        solver.solve("context_branch"(it.substitution[X]!!, `_`)).first()
+                    }
+            }
         }
     }
 
