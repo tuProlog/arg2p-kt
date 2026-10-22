@@ -52,6 +52,12 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   `\+ G :- true` as the alternative of the frame.
 - Solvers: the operators of the libraries are collected once when a solver is created (they were collected again for
   its first context), which halves the cost of the solvers created for sub-goals (findall/3, the primitives).
+- Errors: an exception a primitive raises that is not a Prolog error becomes a system_error, which catch/3 can
+  handle; an error raised computing a further answer of a primitive (computed ahead, to know whether the call leaves
+  alternatives) is raised only when the resolution backtracks into that answer, also within backtracking.
+- Goals: the current goal is applied to the substitution once per rule step (rule selection gets it from primitive
+  selection, the frame of a clause stores it applied); the clauses of the program are kept by the solver for the
+  programs met last; a tail call drops the goals already done in its frame.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 
