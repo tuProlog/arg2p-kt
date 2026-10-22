@@ -6,6 +6,11 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
+import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.ids
+import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.graph.stronglyConnectedComponents
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Substitution
@@ -45,6 +50,12 @@ abstract class UtilsBase :
                         SortTerms.descriptionPair,
                         Deduplicate.descriptionPair,
                         SortDistinct.descriptionPair,
+                        MinimalBySet.descriptionPair,
+                        Element.descriptionPair,
+                        Reversed.descriptionPair,
+                        Intersection.descriptionPair,
+                        StronglyConnectedComponents(1).let { it.signature to it },
+                        StronglyConnectedComponents(2).let { it.signature to it },
                     ),
             )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
@@ -195,6 +206,76 @@ object Deduplicate : BinaryRelation.WithoutSideEffects<ExecutionContext>("dedupl
         first: Term,
         second: Term,
     ): Sequence<Substitution> = if (first is List) unifyWith(second, List.of(first.distinctSortedTerms())) else emptySequence()
+}
+
+// intersection(+Sets, -Intersection): the elements of the first list in Sets that are in all of them, in its order
+// (elements compared as ground terms); fails if Sets is empty
+object Intersection : BinaryRelation.WithoutSideEffects<ExecutionContext>("intersection") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> {
+        if (first !is List) return emptySequence()
+        val sets = first.toList().map { (it as? List)?.toList() ?: return emptySequence() }
+        if (sets.isEmpty()) return emptySequence()
+        val others = sets.drop(1).map { it.toSet() }
+        return unifyWith(second, List.of(sets.first().filter { y -> others.all { y in it } }))
+    }
+}
+
+/**
+ * sccs(-Sccs): strongly connected components of the attack graph, as lists of argument identifiers,
+ * in topological order (a component is only attacked by itself and by the components before it).
+ * sccs(+Ids, -Sccs): the same, for the subgraph induced by the arguments in Ids.
+ */
+class StronglyConnectedComponents(
+    arity: Int,
+) : Primitive {
+    val signature: Signature = Signature("sccs", arity)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val nodes = if (request.arguments.size == 1) request.argumentIds() else request.ids(0)
+        val attacked = request.attacks().groupBy({ it.first }, { it.second })
+        val sccs = stronglyConnectedComponents(nodes) { attacked[it].orEmpty() }
+        return sequenceOf(request.replyList(request.arguments.lastIndex, sccs.map { List.of(it) }) ?: request.replyFail())
+    }
+}
+
+// element(?Element, +List): Element unified with each element of List in turn, as member/2 does, but from a single
+// choice point: member/2 recurses, keeping an execution context for each element enumerated so far
+object Element : BinaryRelation.WithoutSideEffects<ExecutionContext>("element") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> = if (second is List) second.toSequence().flatMap { unifyWith(first, it) } else emptySequence()
+}
+
+// reversed(+List, ?Reversed): the elements of List in reverse order, without the recursion of a Prolog reverse
+// (whose frames would all keep the rest of the list)
+object Reversed : BinaryRelation.WithoutSideEffects<ExecutionContext>("reversed") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> = if (first is List) unifyWith(second, List.of(first.toList().asReversed())) else emptySequence()
+}
+
+// minimal_by_set(+Pairs, -Values): the values of the Set-Value pairs whose Set has no strict subset among the others
+// (elements compared as ground terms), in order: minimal_set/2 over a whole collection in one step
+object MinimalBySet : BinaryRelation.WithoutSideEffects<ExecutionContext>("minimal_by_set") {
+    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
+        first: Term,
+        second: Term,
+    ): Sequence<Substitution> {
+        if (first !is List) return emptySequence()
+        val pairs =
+            first.toList().map { pair ->
+                val struct = pair.castToStruct()
+                ((struct[0] as? List)?.toList()?.toSet() ?: return emptySequence()) to struct[1]
+            }
+        val sets = pairs.map { it.first }.distinct()
+        val minimal = pairs.filter { (set, _) -> sets.none { other -> other != set && set.containsAll(other) } }
+        return unifyWith(second, List.of(minimal.map { it.second }))
+    }
 }
 
 // sortDistinct(+List, ?Sorted): reverse standard order of terms, duplicates removed (deduplicate/2, then sort/2)

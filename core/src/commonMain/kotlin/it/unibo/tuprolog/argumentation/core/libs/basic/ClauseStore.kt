@@ -18,7 +18,7 @@ import it.unibo.tuprolog.core.Var
  * retracted, and looked up as facts or through clause/2, so a dedicated store suffices.
  * Every argument position of a stored head is indexed by the preorder path of its symbols, up to the
  * first variable: lookups only unify the clauses whose paths are compatible with the query ones.
- * Branches share their data until one of them is modified (copy-on-write).
+ * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they modify.
  */
 class ClauseStore private constructor(
     private var data: Data,
@@ -192,28 +192,33 @@ class ClauseStore private constructor(
 
     /**
      * Index of an argument position: ground arguments are looked up exactly, by the term itself, the others by the
-     * path of their symbols (which is truncated, so that it would not tell apart large terms sharing a prefix)
+     * path of their symbols (which is truncated, so that it would not tell apart large terms sharing a prefix).
+     * The paths of the ground arguments are only needed by partially instantiated lookups: they are indexed on the
+     * first of them, so that positions only looked up by ground terms or variables (as labels) do not pay for them.
      */
     private class Position {
         val ground = HashMap<Term, LinkedHashSet<Long>>()
         val nonGround = Node()
-        val all = Node()
+        private var groundPaths: Node? = null
 
         fun copy(): Position =
             Position().also { position ->
                 ground.forEach { (term, ids) -> position.ground[term] = LinkedHashSet(ids) }
                 position.nonGround.children.putAll(nonGround.copy().children)
                 position.nonGround.here.addAll(nonGround.here)
-                position.all.children.putAll(all.copy().children)
-                position.all.here.addAll(all.here)
+                position.groundPaths = groundPaths?.copy()
             }
 
         fun add(
             arg: Term,
             id: Long,
         ) {
-            if (arg.isGround) ground.getOrPut(arg) { LinkedHashSet() }.add(id) else nonGround.add(arg, id)
-            all.add(arg, id)
+            if (arg.isGround) {
+                ground.getOrPut(arg) { LinkedHashSet() }.add(id)
+                groundPaths?.add(arg, id)
+            } else {
+                nonGround.add(arg, id)
+            }
         }
 
         fun remove(
@@ -225,11 +230,18 @@ class ClauseStore private constructor(
                     it.remove(id)
                     if (it.isEmpty()) ground.remove(arg)
                 }
+                groundPaths?.remove(arg, id)
             } else {
                 nonGround.remove(arg, id)
             }
-            all.remove(arg, id)
         }
+
+        // built from the ground arguments stored so far, then kept up to date: a cache, also on shared data
+        private fun groundPaths(): Node =
+            groundPaths ?: Node().also { node ->
+                ground.forEach { (term, ids) -> ids.forEach { node.add(term, it) } }
+                groundPaths = node
+            }
 
         /** Ids of the stored arguments which may unify with the given one, or null when it does not restrict them */
         fun candidates(arg: Term): Set<Long>? {
@@ -238,10 +250,10 @@ class ClauseStore private constructor(
             val found = LinkedHashSet<Long>()
             if (arg.isGround) {
                 ground[arg]?.let { found.addAll(it) }
-                nonGround.compatible(symbols, complete, found)
             } else {
-                all.compatible(symbols, complete, found)
+                groundPaths().compatible(symbols, complete, found)
             }
+            nonGround.compatible(symbols, complete, found)
             return found
         }
     }
@@ -269,12 +281,26 @@ class ClauseStore private constructor(
         private val predicates: HashMap<String, Predicate> = HashMap(),
         private var nextId: Long = 0,
     ) {
-        fun copy(): Data = Data(HashMap(predicates.mapValues { it.value.copy() }), nextId)
+        // Predicates this data can modify in place, the others are shared with the data it was copied from
+        // (shared data is never modified: a branch copies it before its first change)
+        private val owned = HashSet<String>()
+
+        fun copy(): Data = Data(HashMap(predicates), nextId)
+
+        /** The predicate stored under key, copied the first time this data modifies it */
+        private fun writable(
+            key: String,
+            arity: Int,
+        ): Predicate {
+            val predicate = predicates[key]
+            if (!owned.add(key) && predicate != null) return predicate
+            return (predicate?.copy() ?: Predicate(arity)).also { predicates[key] = it }
+        }
 
         fun add(clause: Clause) {
             val head = clause.head!!
             val stored = Stored(nextId++, clause)
-            val predicate = predicates.getOrPut(key(head)) { Predicate(head.arity) }
+            val predicate = writable(key(head), head.arity)
             predicate.clauses[stored.id] = stored
             head.args.forEachIndexed { i, arg -> predicate.indexes[i].add(arg, stored.id) }
             if (head.isGround) {
@@ -286,8 +312,9 @@ class ClauseStore private constructor(
 
         fun remove(stored: Stored) {
             val head = stored.clause.head!!
-            val predicate = predicates[key(head)] ?: return
-            if (predicate.clauses.remove(stored.id) == null) return
+            if (predicates[key(head)]?.clauses?.containsKey(stored.id) != true) return
+            val predicate = writable(key(head), head.arity)
+            predicate.clauses.remove(stored.id)
             head.args.forEachIndexed { i, arg -> predicate.indexes[i].remove(arg, stored.id) }
             if (head.isGround) {
                 predicate.groundHeads[head]?.let {

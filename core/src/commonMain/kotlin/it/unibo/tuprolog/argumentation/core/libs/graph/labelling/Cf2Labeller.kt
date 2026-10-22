@@ -40,15 +40,22 @@ object Cf2Labeller :
             context_active(Branch),
             context_branch(Branch, NewBranch),
             context_retract(arg(_) :- argument(_)),
-            computeIteratively(Base, Branch, Args, []).
+            (
+                computeIteratively(Base, Branch, Args, [])
+            ;
+                % the branches are released on backtracking, as the labellings built on them
+                context_checkout(Branch),
+                context_drop(NewBranch),
+                fail
+            ).
 
         % Args still to be evaluated, Suppressed already attacked by the extension (moved with the next step)
         computeIteratively(_, _, [], []).
         computeIteratively(Base, OriginBranch, [], [S|Suppressed]) :-
             evaluate(Base, OriginBranch, [S|Suppressed]).
         computeIteratively(Base, OriginBranch, [A|Args], Suppressed) :-
-            computeScc([A|Args], Scc),
-            once(getNext(Scc, Next, _)),
+            % the first component in topological order is not attacked by the other ones
+            utils::sccs([A|Args], [Next|_]),
             utils::appendLists([Suppressed, Next], ToEvaluate),
             evaluate(Base, OriginBranch, ToEvaluate),
             utils::subtract([A|Args], Next, Others),
@@ -62,56 +69,19 @@ object Cf2Labeller :
         evaluate(Base, OriginBranch, Args) :-
             context_active(Branch),
             context_branch(Branch, NewBranch),
-            moveArgs(Args, OriginBranch),
-            Base::argumentLabelling.
-        
-        getNext(Scc, X, Others) :-
-            member(X, Scc),
-            utils::subtract(Scc, [X], Others),   
-            utils::appendLists(Others, FO),
-            \+ (
-                member(Y, X),
-                context_check(clause(att(A, Y), _)),
-                member(A, FO)
+            (
+                moveArgs(Args, OriginBranch),
+                Base::argumentLabelling
+            ;
+                context_checkout(Branch),
+                context_drop(NewBranch),
+                fail
             ).
-          
+        
         moveArgs([], _).
         moveArgs([H|T], Branch) :-
             context_check(Branch, clause(arg(H), argument(HA))),
             context_assert(arg(H) :- argument(HA)),
             moveArgs(T, Branch).
-            
-        computeScc(T, MScc) :-
-            findall(R, scc(T, [], R), Scc),
-            findall(S, (member(S, Scc), check_maximal(S, Scc)), MScc).
-            
-        check_maximal(S, All) :-
-            \+ (
-                member(S1, All),
-                S \== S1,
-                \+ (
-                    member(Y, S), 
-                    \+ member(Y, S1)
-                )
-            ).
-        
-        scc([], L, L) :- stronglyConnected(L).
-        scc([H|Others], T, R) :- scc(Others, [H|T], R). 
-        scc([_|Others], T, R) :- scc(Others, T, R).
-        
-        stronglyConnected(T) :-
-            \+ (
-               member(X, T),
-               member(Y, T),
-               \+ once(reach(X, Y, [X], T))
-            ).
-        
-        reach(X, X, _, _) :- !.
-        reach(X, Y, P, S) :- 
-            context_check(clause(att(X, X1), _)),
-            member(X1, S),
-            \+ member(X1, P),
-            reach(X1, Y, [X1|P], S).
-
         """.trimIndent()
 }

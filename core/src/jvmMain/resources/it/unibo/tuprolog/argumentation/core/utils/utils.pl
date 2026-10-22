@@ -12,16 +12,6 @@ writeListNl([X|Others]) :-
 	writeListNl(Others).
 
 
-intersection(Sets, Intersection) :-
-    once(member(X, Sets)),
-    findall(Y, (
-        member(Y, X),
-        \+ (
-            member(Set, Sets),
-            \+ member(Y, Set)
-        )
-    ), Intersection).
-
 
 % sortDistinct/2, deduplicate/2 and sort/2 are native primitives (see Utils.kt)
 

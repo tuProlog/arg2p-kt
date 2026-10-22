@@ -32,30 +32,16 @@ object StageLabeller :
 
     override val prologRawTheory: String =
         """
+        % Stage labellings are the naive ones with a minimal set of UND arguments
         argumentLabelling :-
-            findall(_, naive:::argumentLabelling, _),
-            findall((In, Out, Und, Branch), (
-                cache_check(naive(In, Out, Und, Branch))
-            ), Results),
-            filter(Results, Results, Filtered),
-            member(X, Filtered),
-            context_checkout(X).
-        
-        filter([], _, []).
-        filter([(_, _, Und, Branch)|T], All, [Branch|RT]) :-
-            check_minimal(Und, All), !,
-            filter(T, All, RT).
-        filter([_|T], All, RT) :-
-            filter(T, All, RT).
-            
-        check_minimal(Und, All) :-
-            \+ (
-                member((_, _, X, _), All),
-                Und \== X,
-                \+ (
-                    member(Z, X),
-                    \+ member(Z, Und)
-                )
-            ).
+            context_active(Branch),
+            findall(Und-In, (
+                naive:::argumentLabelling,
+                findall(A, context_check(undId(A)), Und),
+                findall(A, context_check(inId(A)), In)
+            ), Naive),
+            utils::minimal_by_set(Naive, Stage),
+            utils::element(In, Stage),
+            conflictfree::labelSet(Branch, In).
         """.trimIndent()
 }

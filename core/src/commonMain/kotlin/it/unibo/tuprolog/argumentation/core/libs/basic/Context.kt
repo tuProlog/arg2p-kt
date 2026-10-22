@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Numeric
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -80,11 +81,69 @@ class Context :
         }
     }
 
+    /** context_drop(+Branch): frees a branch no longer needed, fails on the active one */
+    inner class DynamicCacheDrop : PrimitiveWithSignature {
+        override val signature = Signature("context_drop", 1)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val target: Int =
+                request.arguments[0]
+                    .castToInteger()
+                    .intValue
+                    .toInt()
+            if (target == this@Context.selectedSolver) return sequenceOf(request.replyFail())
+            this@Context.dynamicSolver.remove(target)
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
+    /** context_last(-Branch): the most recently created branch */
+    inner class DynamicCacheLast : PrimitiveWithSignature {
+        override val signature = Signature("context_last", 1)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
+            sequenceOf(request.replyWith(Substitution.of(request.arguments[0].castToVar(), Numeric.of(this@Context.nextSolver - 1))))
+    }
+
+    /** context_drop_after(+Branch, +Keep): drops the branches created after Branch, except those in Keep and the active one */
+    inner class DynamicCacheDropAfter : PrimitiveWithSignature {
+        override val signature = Signature("context_drop_after", 2)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val after =
+                request.arguments[0]
+                    .castToInteger()
+                    .intValue
+                    .toInt()
+            val keep =
+                request.arguments[1]
+                    .castToList()
+                    .toList()
+                    .map { it.castToInteger().intValue.toInt() }
+                    .toSet()
+            this@Context.dynamicSolver.keys.removeAll { it > after && it !in keep && it != this@Context.selectedSolver }
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
     inner class DynamicCacheAssert : PrimitiveWithSignature {
         override val signature = Signature("context_assert", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             this@Context.selected.assertA(request.arguments[0])
+            return sequenceOf(request.replyWith(true))
+        }
+    }
+
+    /** context_assert_all(+Terms): context_assert/1 of every term in the list, in order */
+    inner class DynamicCacheAssertAll : PrimitiveWithSignature {
+        override val signature = Signature("context_assert_all", 1)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            request.arguments[0]
+                .castToList()
+                .toList()
+                .forEach { this@Context.selected.assertA(it) }
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -115,6 +174,34 @@ class Context :
                     .intValue
                     .toInt()
             return this@Context.dynamicSolver[index]!!.solve(request.arguments[1]).map { request.replyWith(it) }
+        }
+    }
+
+    /**
+     * context_all(+Goal, -Instances): the instances of Goal in the active branch as one list, `findall` as a single step.
+     * context_all(+Branch, +Goal, -Instances): the same in the given branch.
+     */
+    inner class DynamicCacheAll(
+        arity: Int,
+    ) : PrimitiveWithSignature {
+        override val signature = Signature("context_all", arity)
+
+        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            val store =
+                if (request.arguments.size == 2) {
+                    this@Context.selected
+                } else {
+                    this@Context.dynamicSolver[
+                        request.arguments[0]
+                            .castToInteger()
+                            .intValue
+                            .toInt(),
+                    ]!!
+                }
+            val goal = request.arguments[request.arguments.size - 2]
+            val instances = store.solve(goal).map { goal.apply(it) }.toList()
+            val unifier = Unificator.default.mgu(request.arguments.last(), List.of(instances))
+            return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
         }
     }
 
@@ -207,10 +294,16 @@ class Context :
                 DynamicCacheCheckout(),
                 DynamicCacheSelected(),
                 DynamicCacheBranch(),
+                DynamicCacheDrop(),
+                DynamicCacheDropAfter(),
+                DynamicCacheLast(),
                 DynamicCacheAssert(),
+                DynamicCacheAssertAll(),
                 DynamicCacheRetract(),
                 DynamicCacheGet(),
                 DynamicCacheGetIndexed(),
+                DynamicCacheAll(2),
+                DynamicCacheAll(3),
                 DynamicCacheIdentifier(),
                 DynamicCacheUnifiable(),
                 DynamicCacheAbsent(),

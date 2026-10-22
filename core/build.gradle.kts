@@ -57,6 +57,28 @@ tasks.withType<KotlinJvmTest> {
     jvmArgs("-Xss$jvmStackSize")
 }
 
+// Timing benchmarks live with the JVM tests but only run through jvmBenchmark (-Pbenchmark.* options)
+val benchmarkTests = "it.unibo.tuprolog.argumentation.core.benchmark.*"
+
+tasks.named<KotlinJvmTest>("jvmTest") {
+    filter.excludeTestsMatching(benchmarkTests)
+}
+
+tasks.register<Test>("jvmBenchmark") {
+    group = "verification"
+    description = "Times the argument labelling semantics on growing abstract frameworks"
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    dependsOn("jvmTestClasses")
+    testClassesDirs = jvmTest.testClassesDirs
+    classpath = jvmTest.classpath
+    filter.includeTestsMatching(benchmarkTests)
+    maxHeapSize = jvmMaxHeapSize
+    jvmArgs("-Xss$jvmStackSize")
+    systemProperties(project.properties.filterKeys { it.startsWith("benchmark.") })
+    testLogging.showStandardStreams = true
+    outputs.upToDateWhen { false }
+}
+
 val String.isSkippable: Boolean get() =
     isBlank() || """^\s*%.*""".toRegex().matches(this)
 

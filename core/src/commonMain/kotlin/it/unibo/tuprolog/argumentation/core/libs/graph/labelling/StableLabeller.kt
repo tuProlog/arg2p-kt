@@ -32,20 +32,8 @@ object StableLabeller :
 
     override val prologRawTheory: String =
         """
+        % Stable labellings are SCC-recursive: built component by component, leaving no argument UND
         argumentLabelling :-
-            findall(_, complete:::argumentLabelling, _),
-            findall((In, Out, Und, Branch), (
-                cache_check(complete(In, Out, Und, Branch))
-            ), Results),
-            filter(Results, Results, Filtered),
-            member(X, Filtered),
-            context_checkout(X).
-        
-        filter([], _, []).
-        filter([(_, _, [], Branch)|T], All, [Branch|RT]) :- !,
-            filter(T, All, RT).
-        filter([_|T], All, RT) :-
-            filter(T, All, RT).
-         
+            scc::label(decided, all).
         """.trimIndent()
 }

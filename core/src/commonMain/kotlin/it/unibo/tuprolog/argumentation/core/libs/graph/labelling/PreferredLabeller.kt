@@ -32,30 +32,9 @@ object PreferredLabeller :
 
     override val prologRawTheory: String =
         """
+        % Preferred labellings are SCC-recursive: built component by component, keeping the admissible local
+        % labellings with a maximal set of IN arguments
         argumentLabelling :-
-            findall(_, complete:::argumentLabelling, _),
-            findall((In, Out, Und, Branch), (
-                cache_check(complete(In, Out, Und, Branch))
-            ), Results),
-            filter(Results, Results, Filtered),
-            member(X, Filtered),
-            context_checkout(X).
-        
-        filter([], _, []).
-        filter([(In, _, _, Branch)|T], All, [Branch|RT]) :-
-            check_maximal(In, All), !,
-            filter(T, All, RT).
-        filter([_|T], All, RT) :-
-            filter(T, All, RT).
-            
-        check_maximal(In, All) :-
-            \+ (
-                member((X, _, _, _), All),
-                In \== X,
-                \+ (
-                    member(Y, In), 
-                    \+ member(Y, X)
-                )
-            ).
+            scc::label(admissible, maximal).
         """.trimIndent()
 }

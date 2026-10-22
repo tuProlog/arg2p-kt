@@ -32,30 +32,17 @@ object SemistableLabeller :
 
     override val prologRawTheory: String =
         """
+        % Semi-stable labellings are the preferred ones with a minimal set of UND arguments
+        % (an admissible set with a maximal range is a maximal admissible set)
         argumentLabelling :-
-            findall(_, complete:::argumentLabelling, _),
-            findall((In, Out, Und, Branch), (
-                cache_check(complete(In, Out, Und, Branch))
-            ), Results),
-            filter(Results, Results, Filtered),
-            member(X, Filtered),
-            context_checkout(X).
-        
-        filter([], _, []).
-        filter([(_, _, Und, Branch)|T], All, [Branch|RT]) :-
-            check_minimal(Und, All), !,
-            filter(T, All, RT).
-        filter([_|T], All, RT) :-
-            filter(T, All, RT).
-            
-        check_minimal(Und, All) :-
-            \+ (
-                member((_, _, X, _), All),
-                Und \== X,
-                \+ (
-                    member(Z, X),
-                    \+ member(Z, Und)
-                )
-            ).
+            context_active(Branch),
+            findall(Und-In, (
+                preferred:::argumentLabelling,
+                findall(A, context_check(undId(A)), Und),
+                findall(A, context_check(inId(A)), In)
+            ), Preferred),
+            utils::minimal_by_set(Preferred, Semistable),
+            utils::element(In, Semistable),
+            conflictfree::labelSet(Branch, In).
         """.trimIndent()
 }

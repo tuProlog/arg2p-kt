@@ -31,6 +31,7 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.IdealLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.NaiveLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PassThroughStatementLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.PreferredLabeller
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SccLabelling
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.SemistableLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.StableLabeller
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelling.Stage2Labeller
@@ -94,6 +95,7 @@ interface Arg2pSolver {
                 GenericDefeasiblePreferencesHandler,
                 StrictPreferencesHandler,
                 BpLabeller,
+                SccLabelling,
                 CompleteLabeller,
                 GroundedLabeller,
                 PreferredLabeller,

@@ -41,22 +41,21 @@ filter_meta(_) :- \+ metaConflicts.
 buildArguments :-
 	buildArgumentsFromPremises,
 	buildArgumentsFromEmptyRules,
-	findall([RuleID, RuleBody, RuleHead], (
+	findall(graphRule([RuleID, RuleBody, RuleHead]), (
 	    parser::classic_rule(RuleID, RuleBody, RuleHead),
 	    \+ emptyRule([RuleID, RuleBody, RuleHead])
     ), Rules),
     context_retract(graphRule(_)),
     storeRules(Rules),
-    findall(X, context_check(newConc(a, [X])), N),
-	buildArgumentsFromRules(N, b).
+	buildArgumentsFromRules(b).
 
 % The rules are kept in the context rather than passed around: they are not ground, so carrying their list
 % in the goals makes every resolution step copy it. Asserted from the last, as context_check returns the
-% newest clauses first.
-storeRules([]).
-storeRules([Rule|Rules]) :-
-    storeRules(Rules),
-    context_assert(graphRule(Rule)).
+% newest clauses first, and in a single step: a recursion over the list would keep the rest of it in every
+% frame, which variable tracking visits whenever a frame ends (cubic in the number of rules).
+storeRules(Rules) :-
+    utils::reversed(Rules, Reversed),
+    context_assert_all(Reversed).
 
 buildArgumentsFromPremises :-
     findall(
@@ -91,12 +90,14 @@ checkStrict(Id, [Id]).
 
 % Argument Construction
 
-% A round fires every rule whose body uses a conclusion derived in the previous round (N), tagging the new
-% conclusions with Tn: the rounds go on while they derive something
-buildArgumentsFromRules(N, Tn) :-
+% A round fires every rule whose body uses a conclusion derived in the previous round (tagged with the other
+% tag), tagging the new conclusions with Tn: the rounds go on while they derive something. The conclusions of the
+% previous round are checked in the context rather than passed as a list, which every rule check would copy
+buildArgumentsFromRules(Tn) :-
+    invert(Tn, Previous),
     findall(_, (
         context_check(graphRule([Id, Body, Conc])),
-        utils::contains_any(Body, N),
+        \+ \+ (member(Statement, Body), context_check(newConc(Previous, [Statement]))),
         buildArgumentsFromRule(Tn, [Id, Body, Conc])
     ), _),
     (context_check(newConc(Tn, _)) -> clean(Tn) ; true).
@@ -108,8 +109,7 @@ buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
 clean(Tn) :-
     invert(Tn, Tx),
     context_retract(newConc(Tx, _)),
-    findall(X, context_check(newConc(Tn, [X])), N),
-    buildArgumentsFromRules(N, Tx).
+    buildArgumentsFromRules(Tx).
 
 invert(a, b).
 invert(b, a).

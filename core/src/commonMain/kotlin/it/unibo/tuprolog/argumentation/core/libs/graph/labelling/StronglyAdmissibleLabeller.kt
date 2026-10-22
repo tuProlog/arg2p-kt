@@ -5,8 +5,15 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
+import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.primitive.Primitive
+import it.unibo.tuprolog.solve.primitive.Solve
 
 object StronglyAdmissibleLabeller :
     LazyRawPrologContent(),
@@ -19,6 +26,7 @@ object StronglyAdmissibleLabeller :
             Library.of(
                 alias = this.alias,
                 clauses = this.prologTheory,
+                primitives = mapOf(StronglyAdmissibleSet.signature to StronglyAdmissibleSet),
             )
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
@@ -34,29 +42,30 @@ object StronglyAdmissibleLabeller :
         """
         argumentLabelling :-
             admissible::argumentLabelling,
-            stronglyAdmissibleSet.
-        
-        % Every In argument must be reachable starting from the unattacked ones:
-        % iteratively add the In arguments defended by those added so far
-        stronglyAdmissibleSet :-
-            findall(H, context_check(inId(H)), In),
-            rooted([], In).
-
-        rooted(_, []) :- !.
-        rooted(Built, Pending) :-
-            findall(H, (member(H, Pending), defendedBy(H, Built)), New),
-            New \== [],
-            utils::subtract(Pending, New, Rest),
-            utils::appendLists([Built, New], NewBuilt),
-            rooted(NewBuilt, Rest).
-
-        defendedBy(H, Built) :-
-            \+ (
-                context_check(clause(att(Attacker, H), _)),
-                \+ (
-                    member(Defendant, Built),
-                    context_check(clause(att(Defendant, Attacker), _))
-                )
-            ).
+            strongly_admissible_set.
         """.trimIndent()
+}
+
+/**
+ * strongly_admissible_set: every IN argument is reachable from the unattacked ones, iteratively adding the IN
+ * arguments whose attackers are all attacked by those added so far
+ */
+object StronglyAdmissibleSet : Primitive {
+    val signature: Signature = Signature("strongly_admissible_set", 0)
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val attackers = request.attacks().groupBy({ it.second }, { it.first })
+        val built = mutableSetOf<Term>()
+        var pending = request.labelled("inId")
+        while (pending.isNotEmpty()) {
+            val added =
+                pending.filter { h ->
+                    attackers[h].orEmpty().all { attacker -> attackers[attacker].orEmpty().any { it in built } }
+                }
+            if (added.isEmpty()) return sequenceOf(request.replyFail())
+            built += added
+            pending = pending - added.toSet()
+        }
+        return sequenceOf(request.replyWith(true))
+    }
 }

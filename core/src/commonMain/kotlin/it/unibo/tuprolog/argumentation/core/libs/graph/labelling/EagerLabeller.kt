@@ -32,25 +32,15 @@ object EagerLabeller :
 
     override val prologRawTheory: String =
         """
+        % The eager labelling has IN the maximal admissible subset of the intersection of the semi-stable extensions
         argumentLabelling :-
+            context_active(Branch),
             findall(In, (
                 semistable:::argumentLabelling,
-                context_active(Branch),
-                cache_check(complete(In, _, _, Branch))
-            ), Results),
-            utils::intersection(Results, Int),
-            findall((In, Branch), (
-                cache_check(complete(In, _, _, Branch)),
-                contained_in(In, Int)
-            ), Candidates),
-            member((In, Branch), Candidates),
-            \+ (
-                member((Other, _), Candidates),
-                Other \== In,
-                contained_in(In, Other)
-            ), !,
-            context_checkout(Branch).
-
-        contained_in(A, B) :- \+ (member(X, A), \+ member(X, B)).
+                findall(A, context_check(inId(A)), In)
+            ), Semistable),
+            utils::intersection(Semistable, Common),
+            admissible::maximal_admissible_subset(Common, Eager),
+            conflictfree::labelSet(Branch, Eager).
         """.trimIndent()
 }
