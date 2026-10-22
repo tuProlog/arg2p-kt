@@ -83,11 +83,19 @@ mostGroundedBpUnd(Arguments, Arg) :-
         argumentChain(A, Arg)
     ).
 
-argumentChain(A, A) :- !.
-argumentChain(A, B) :-
-    A \== B,
-    context_check(attack(_, A, C, _)),
-    argumentChain(C, B).
+% argumentChain(+A, ?B): B is A or an argument reached from A through attacks; the arguments are visited breadth
+% first, each once (attack cycles are common: rebuttals are mutual)
+argumentChain(A, B) :- reaches([A], [], B), !.
+
+reaches([B|_], _, B) :- !.
+reaches([A|Frontier], Visited, B) :-
+    findall(C, (
+        context_check(attack(_, A, C, _)),
+        \+ member(C, [A|Visited]),
+        \+ member(C, Frontier)
+    ), Next),
+    utils::append_fast(Frontier, Next, Queue),
+    reaches(Queue, [A|Visited], B).
 
 %==============================================================================
 % BURDEN OF PROOF REIFICATION

@@ -7,21 +7,27 @@ modifyArgumentationGraph :-
     checkBpArguments(TemplateBpPairs).
 
 
-checkBpArguments([]).
+checkBpArguments([]) :- !.
 checkBpArguments(TemplateBpPairs) :-
-    createBpArguments(TemplateBpPairs, BpPairs),
+    createBpArguments(TemplateBpPairs, Pairs),
+    utils::deduplicate(Pairs, BpPairs),
     createBpAttacks(BpPairs).
 
 
 % Bp Argument Creation
 
+% The conflict argument of a burdened argument is the same for every burden of proof on it: it is saved once, and
+% supported by each of them
 createBpArguments([], []).
 createBpArguments([(Original, [Z, P, Y, B, I])|Others], [(Conflict, [Z, P, Y, B, I])|BpPairs]) :-
     Conflict = [[artificial|Z], artificial, [-burdmet(Y)], [], [[artificial], [artificial], []]],
-    standard_af::saveArgument(a, [-burdmet(Y)], Conflict),
-    standard_af::saveSupport(Original, Conflict),
+    ignore(standard_af::saveArgument(a, [-burdmet(Y)], Conflict)),
+    ignore(standard_af::saveSupport(Original, Conflict)),
     liftBpAttacks(Original, Conflict),
     createBpArguments(Others, BpPairs).
+
+ignore(Goal) :- call(Goal), !.
+ignore(_).
 
 liftBpAttacks(Template, BpArg) :-
     findall(_, (

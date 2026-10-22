@@ -39,9 +39,8 @@ printStatementLabelling([In, Ni, Und]) :-
     write('HERE THE STATEMENTS LABELLED UND: '),nl,
     utils::writeListNl(Und).
 
-debug.
-
+% The debug output is written with the debug switch on (setting(debug))
 writeDebug(List) :-
-    debug,
+    setting(debug), !,
     utils::writeList(List).
-writeDebug(_) :- \+ debug.
+writeDebug(_).
