@@ -4,6 +4,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -19,8 +20,7 @@ import it.unibo.tuprolog.solve.flags.LastCallOptimization.ON
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.stdlib.magic.MagicCut
 import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.utils.buffered
-import it.unibo.tuprolog.utils.cursor
+import it.unibo.tuprolog.utils.Cursor
 
 /**
  * "Rule Selection", the clause-resolution counterpart of `StatePrimitiveSelection`, and where several ISO
@@ -228,7 +228,7 @@ data class StateRuleSelection(
                         // The clauses are selected once: the procedure is missing when none is selected
                         // (arg2p: checking first whether any clause matches matched them all twice)
                         else -> {
-                            val rules = ruleSources.flatMap { it.selectClauses(currentGoalStruct) }.cursor()
+                            val rules = selectRules(currentGoalStruct)
                             when {
                                 rules.isOver -> missingProcedure(ruleSources, currentGoalStruct.extractSignature())
                                 context.isTailRecursive ->
@@ -251,14 +251,20 @@ data class StateRuleSelection(
         }
     }
 
-    private fun Theory.selectClauses(term: Struct): Sequence<Rule> =
-        get(term).map { it.freshCopy() }.ensureRules().let {
-            if (isMutable) {
-                it.buffered()
+    // The clauses for the goal, from the libraries, the static and the dynamic theory, in this order (arg2p: through
+    // the clause indexes of the immutable theories, see ClauseIndex). Those of a mutable theory are collected at
+    // once, as the clauses it has when the goal is selected (logical update view).
+    private fun PrologExecutionContext.selectRules(goal: Struct): Cursor<out Rule> {
+        val selected = ArrayList<Clause>()
+        for (theory in arrayOf(libraries.asTheory(unificator), staticKb, dynamicKb)) {
+            if (theory.isMutable) {
+                theory[goal].forEach { selected.add(it) }
             } else {
-                it
+                ClauseIndex.of(theory).collect(goal, unificator, selected)
             }
         }
+        return RuleCursor.of(selected)
+    }
 
     override fun clone(context: PrologExecutionContext): StateRuleSelection = copy(context = context)
 }

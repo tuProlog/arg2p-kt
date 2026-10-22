@@ -23,11 +23,15 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   with other libraries, rather than in a solver of its own. The module calls (`::`, `:::`) are inlined: no solver is
   set up for each call, the bindings get back as for any goal, and the call is subject to the time limit of the
   resolution. Backtracking into a choice point within an inlined call goes on with the libraries of the call.
+- Clause selection (`ClauseIndex`): the clauses of the immutable theories (libraries, static theory) are grouped by
+  the signature of their heads once, and those matching a goal are collected in a list, each renamed only when tried
+  (lookups merged the lazy sequences of the RETE indexes of the theories at every step); a mutable theory gives the
+  clauses it has when the goal is selected.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 
 The unification used by the engine is the one of `Arg2pUnificator` (in `libs.basic`): the default one, computed in a
 single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
 
-Together, against the original solver: graph building 2.4-3.4x faster, query mode 3.4x, resolution 3.9x, module
-calls 1.5-3.8x.
+Together, against the original solver: graph building 2.7-3.9x faster, query mode 3.8x, resolution 5.2x, module
+calls 1.1-3x, labellings 1.8-2.2x.
