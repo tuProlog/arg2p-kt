@@ -10,19 +10,20 @@ object BinaryStatementLabeller : PrologModule("prolog.argumentation.graph.labell
     override val prologRawTheory: String =
         """
         %! statementLabelling
-        %  The labels of the statements (statIn/1 and statOut/1 in the context).
+        %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, OUT those with
+        %  an argument OUT or UND.
         statementLabelling :-
             findall(_, (
                 argument::conclusion(A, Conc),
-                context_check(in(A)),
-                context_absent(statIn(Conc)),
-                context_assert(statIn(Conc))
+                graphStore::argumentLabel(in, A),
+                \+ graphStore::statementLabel(in, Conc),
+                graphStore::labelStatement(in, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
-                (context_check(out(A)) ; context_check(und(A))),
-                context_absent(statOut(Conc)),
-                context_assert(statOut(Conc))
+                (graphStore::argumentLabel(out, A) ; graphStore::argumentLabel(und, A)),
+                \+ graphStore::statementLabel(out, Conc),
+                graphStore::labelStatement(out, Conc)
             ), _).
         """.trimIndent()
 }

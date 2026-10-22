@@ -3,11 +3,11 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.attack
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
 /**
- * When an argument attacks another one directly (module `attack`): rebutting or undermining it through a conflict
+ * When an argument attacks another one directly (module `attackRelation`): rebutting or undermining it through a conflict
  * between their conclusions, rebutting or undermining it through a contrary premise, or undercutting its top rule.
  * Whether the attack succeeds is up to the graph extensions (preferences, restrictions).
  */
-object AttackRelation : PrologModule("prolog.argumentation.attack", "attack") {
+object AttackRelation : PrologModule("prolog.argumentation.attack", "attackRelation") {
     override val prologRawTheory: String =
         """
         %! attacks(?Type, +Attacker, +Attacked)

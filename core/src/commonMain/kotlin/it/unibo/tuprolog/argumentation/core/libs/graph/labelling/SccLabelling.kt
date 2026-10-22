@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.ids
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
-import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelledIds
+import it.unibo.tuprolog.argumentation.core.libs.ids
+import it.unibo.tuprolog.argumentation.core.libs.replyList
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -77,24 +77,22 @@ object SccLabelling : PrologModule("prolog.argumentation.graph.labelling.scc", "
             admissible::admissible_set.
         accepted(decided, Scc) :-
             admissible::admissible_set,
-            \+ (member(A, Scc), context_check(undId(A))).
+            \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
         reachable(_, Branch, Branch).
         reachable(Scc, Branch, State) :-
-            findall(I, context_check(Branch, inId(I)), Ins),
+            findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
             undecided_candidates(Scc, Branch, Candidates),
             member(IdX, Candidates),
             utils::sort([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),
             cache_assert(scc_seen(Scc, Seed)),
-            context_check(Branch, clause(arg(IdX), argument(X))),
+            graphStore::argumentByIdIn(Branch, IdX, X),
             context_branch(Branch, NewBranch),
-            context_retract(und(_)),
-            context_retract(undId(_)),
-            context_assert(in(X)),
-            context_assert(inId(IdX)),
+            graphStore::unlabelArguments(und),
+            graphStore::labelArgument(in, X, IdX),
             grounded::argumentLabelling,
-            findall(R, context_check(inId(R)), Reached),
+            graphStore::labelledIds(in, Reached),
             utils::sort(Reached, Labelled),
             unexplored(Scc, Seed, Labelled),
             reachable(Scc, NewBranch, State).
@@ -122,7 +120,7 @@ private object UndecidedCandidates : SccPrimitive {
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val scc = request.ids(0)
-        val undecided = request.labelled("undId", request.arguments[1])
+        val undecided = request.labelledIds("und", request.arguments[1])
         val attackers = request.attackGraph().attackers
         val candidates =
             scc.filter { id ->
@@ -150,7 +148,7 @@ private object Selection : SccPrimitive {
             when (request.arguments[0].castToAtom().value) {
                 "maximal" -> {
                     val scc = request.ids(1).toSet()
-                    val local = accepted.associateWith { request.labelled("inId", it).intersect(scc) }
+                    val local = accepted.associateWith { request.labelledIds("in", it).intersect(scc) }
                     accepted.filter { state ->
                         local.values.none { other -> other != local[state] && other.containsAll(local.getValue(state)) }
                     }

@@ -1,14 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.model
 
+import it.unibo.tuprolog.argumentation.core.libs.data.LabelTerm
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.parsing.parse
 
 data class LabelledArgument(
     val argument: Argument,
     val label: Label,
 ) {
-    override fun toString(): String = "$label(${argument.termRepresentation()})"
+    override fun toString(): String = toTerm().toString()
 
-    fun toTerm(): Term = Struct.parse(this.toString())
+    /** The fact labelling the argument (see [LabelTerm]) */
+    fun toTerm(): Struct = LabelTerm.argument(label, argument.termRepresentation())
 }

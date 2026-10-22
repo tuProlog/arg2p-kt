@@ -10,10 +10,12 @@ object PassThroughStatementLabeller : PrologModule("prolog.argumentation.graph.l
     override val prologRawTheory: String =
         """
         %! statementLabelling
-        %  The labels of the statements (statIn/1, statOut/1, statUnd/1 in the context), one for each argument.
+        %  The labels of the statements (see graphStore::labelStatement/2), one for each argument.
         statementLabelling :-
-            findall(_, (argument::conclusion(A, Conc), context_check(in(A)), context_assert(statIn(Conc))), _),
-            findall(_, (argument::conclusion(A, Conc), context_check(out(A)), context_assert(statOut(Conc))), _),
-            findall(_, (argument::conclusion(A, Conc), context_check(und(A)), context_assert(statUnd(Conc))), _).
+            findall(_, (
+                argument::conclusion(A, Conc),
+                graphStore::argumentLabel(Label, A),
+                graphStore::labelStatement(Label, Conc)
+            ), _).
         """.trimIndent()
 }

@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.ids
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
-import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelledIds
+import it.unibo.tuprolog.argumentation.core.libs.ids
+import it.unibo.tuprolog.argumentation.core.libs.replyList
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -47,7 +47,7 @@ class AdmissibleSet(
     val signature: Signature = Signature("admissible_set", arity)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val inIds = request.labelled("inId") + if (request.arguments.isEmpty()) emptyList() else request.ids(0)
+        val inIds = request.labelledIds("in") + if (request.arguments.isEmpty()) emptyList() else request.ids(0)
         val attackers = request.attackGraph().attackers
         val admissible =
             inIds.all { h ->

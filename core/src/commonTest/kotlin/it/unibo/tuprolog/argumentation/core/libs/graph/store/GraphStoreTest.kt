@@ -59,4 +59,35 @@ class GraphStoreTest {
         assertFalse(module.holds("context_check(attackId(_, _, _, _))"))
         assertFalse(module.holds("context_check(clause(att(_, _), _))"))
     }
+
+    @Test
+    fun argumentsAreLabelledByThemselvesAndByIdentifiers() {
+        val module = ModuleTesting()
+        module.run("graphStore::saveArgument(t, [a], $a)", "graphStore::argumentId($a, Id), graphStore::labelArgument(und, $a, Id)")
+        assertTrue(module.holds("graphStore::argumentLabel(und, $a)"))
+        assertTrue(module.holds("graphStore::argumentId($a, Id), graphStore::argumentLabelById(und, Id)"))
+        module.run("graphStore::unlabelArguments(und)")
+        assertFalse(module.holds("graphStore::argumentLabel(_, _)"))
+        assertFalse(module.holds("graphStore::argumentLabelById(_, _)"))
+    }
+
+    @Test
+    fun theGraphAndItsLabelsAreReadBack() {
+        val module = ModuleTesting()
+        module.run(
+            "graphStore::saveArgument(t, [a], $a)",
+            "graphStore::saveArgument(t, [b], $b)",
+            "graphStore::saveSupport($a, $b)",
+            "graphStore::saveAttack(rebut, $b, $a, $a)",
+            "graphStore::labelArgument(in, $b)",
+            "graphStore::labelArgument(out, $a)",
+            "graphStore::labelStatement(in, [b])",
+        )
+        assertEquals("[($a, $b)]", module.value("graphStore::graph(_, _, S)", "S"))
+        assertEquals("[(rebut, $b, $a, $a)]", module.value("graphStore::graph(_, A, _)", "A"))
+        assertEquals("[$b]", module.value("graphStore::argumentLabelling(I, _, _)", "I"))
+        assertEquals("[[b]]", module.value("graphStore::statementLabelling(I, _, _)", "I"))
+        assertEquals("[b]", module.value("graphStore::claimLabelling(I, _, _)", "I"))
+        assertTrue(module.holds("context_active(B), graphStore::argumentLabelIn(B, out, $a)"))
+    }
 }

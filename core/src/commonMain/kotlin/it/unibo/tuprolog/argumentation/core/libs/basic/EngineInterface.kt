@@ -74,7 +74,7 @@ object EngineInterface : PrologModule("prolog.argumentation.interface", "arg2p")
             context_reset,
             parser:::convertAllRules(_),
             structured:::computeStatementAcceptance(Goal),
-            context_check(statIn([Goal])).
+            graphStore::statementLabel(in, [Goal]).
 
         %! buildLabelSetsSilent
         %  The labelling of the theory, in the context.

@@ -23,40 +23,40 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
         argumentLabelling :-
             reifyBurdenOfProofs,
             filterBpDefeats,
-            findall(X, context_check(argument(X)), Arguments),
+            graphStore::arguments(Arguments),
             bpLabelling(Arguments).
 
         bpLabelling(Arguments) :-
             member(A, Arguments),
             grounded_old::allAttacksOUT(A), !,
-            context_assert(in(A)),
+            graphStore::labelArgument(in, A),
             utils::subtract(Arguments, [A], NewArguments),
             bpLabelling(NewArguments).
         bpLabelling(Arguments) :-
             member(A, Arguments),
             \+ isArgumentInBurdenOfProof(A),
             grounded_old::oneAttackIN(A), !,
-            context_assert(out(A)),
+            graphStore::labelArgument(out, A),
             utils::subtract(Arguments, [A], NewArguments),
             bpLabelling(NewArguments).
         bpLabelling(Arguments) :-
             context_active(Branch),
             mostGroundedBpUnd(Arguments, A),
             context_branch(Branch, _),
-            context_assert(out(A)),
+            graphStore::labelArgument(out, A),
             utils::subtract(Arguments, [A], NewArguments),
             bpLabelling(NewArguments).
         bpLabelling(Args) :-
             notLabelled(Args),
-            findall(_, (member(A, Args), context_assert(und(A))), _).
+            findall(_, (member(A, Args), graphStore::labelArgument(und, A)), _).
 
         notLabelled(Args) :-
             \+ (
                 member(A, Args),
                 (
-                    context_check(in(A));
-                    context_check(out(A));
-                    context_check(und(A))
+                    graphStore::argumentLabel(in, A);
+                    graphStore::argumentLabel(out, A);
+                    graphStore::argumentLabel(und, A)
                 )
             ).
 
@@ -79,7 +79,7 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
 
         filterBpDefeats :-
             findall(_, (
-                context_check(attack(T, A, B, C)),
+                graphStore::attack(T, A, B, C),
                 filterBpDefeat(T, A, B, C)
             ), _).
 
@@ -106,7 +106,7 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
         reaches([B|_], _, B) :- !.
         reaches([A|Frontier], Visited, B) :-
             findall(C, (
-                context_check(attack(_, A, C, _)),
+                graphStore::attack(_, A, C, _),
                 \+ member(C, [A|Visited]),
                 \+ member(C, Frontier)
             ), Next),
@@ -134,7 +134,7 @@ object BpLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgrounde
         fillTemplate([], []).
         fillTemplate([H|T], [[H]|R]) :-
             argument::claim(Argument, _),
-            context_check(argument(Argument)),
+            graphStore::argument(Argument),
             fillTemplate(T, R).
         """.trimIndent()
 }

@@ -32,7 +32,7 @@ object Conflicts : PrologModule("prolog.argumentation.language.conflict", "confl
         %  Statement conflicts with Other when Guard holds.
         guarded(Statement, Other, Guard) :- setting(metaConflicts), !,
             Statement = [A], Other = [B],
-            context_check(clause(conc([conflict(A, B, Guard)]), _)).
+            graphStore::argumentFor([conflict(A, B, Guard)], _).
         guarded(Statement, Other, Guard) :-
             builtin(Statement, Other, Guard).
         guarded(Statement, Other, Guard) :-
@@ -42,7 +42,7 @@ object Conflicts : PrologModule("prolog.argumentation.language.conflict", "confl
         %  Statement conflicts with Other, whatever holds.
         unguarded(Statement, Other) :- setting(metaConflicts), !,
             Statement = [A], Other = [B],
-            context_check(clause(conc([conflict(A, B)]), _)).
+            graphStore::argumentFor([conflict(A, B)], _).
         unguarded(Statement, Other) :-
             conflict(Statement, Other).
 

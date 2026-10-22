@@ -82,8 +82,8 @@ object RuleParser : RuleParserBase() {
             \+ naturalTerms,
             rule_to_clause(Rules, Clauses).
 
-        recoverId(rl(_) :- [Y, _, _], Y).
-        recoverId(rl(_) :- [Y, _], Y).
+        recoverId(Head :- Body, Id) :- rule::rule(Id, _, _, Head, Body).
+        recoverId(Head :- Body, Id) :- rule::premise(Id, _, Head, Body).
         recoverId([Y, _, _], Y).
         recoverId([Y, _], Y).
 
@@ -127,13 +127,21 @@ object RuleParser : RuleParserBase() {
 
         %! rule(?Id, ?Premises, ?Conclusion)
         %  The rule Id as converted (see convertAllRules/1), concluding Conclusion from Premises.
-        rule(Id, PP, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Premises, Conclusion])), tuple_to_list(Premises, P), ff(P, PP).
-        premise(Id, [Conclusion]) :- context_check(clause(rl(Conclusion), [Id, Conclusion])).
+        rule(Id, PP, [Conclusion]) :-
+            rule::rule(Id, Premises, Conclusion, Head, Body),
+            context_check(clause(Head, Body)),
+            tuple_to_list(Premises, P),
+            ff(P, PP).
+        premise(Id, [Conclusion]) :-
+            rule::premise(Id, Conclusion, Head, Body),
+            context_check(clause(Head, Body)).
 
         %! candidates(+Statement, +Limit, -Count)
         %  The number of rules and premises concluding Statement, counted up to
         %  Limit (an integer, or anything else for no limit)
-        candidates(Statement, Limit, Count) :- context_count(clause(rl(Statement), _), Limit, Count).
+        candidates(Statement, Limit, Count) :-
+            rule::byConclusion(Statement, Head),
+            context_count(clause(Head, _), Limit, Count).
 
 
         %! check_strict(?Id)

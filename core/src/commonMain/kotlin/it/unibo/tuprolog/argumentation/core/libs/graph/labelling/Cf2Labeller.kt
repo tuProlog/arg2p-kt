@@ -21,10 +21,10 @@ object Cf2Labeller : PrologModule("prolog.argumentation.graph.labelling.cf2", "c
         %! compute(+Base)
         %  Each labelling built with the labellings Base (naive or stage) of each component, left as the active context.
         compute(Base) :-
-            findall(A, context_check(clause(arg(A), _)), Args),
+            graphStore::argumentIds(Args),
             context_active(Branch),
             context_branch(Branch, NewBranch),
-            context_retract(arg(_) :- argument(_)),
+            graphStore::excludeArguments,
             (
                 computeIteratively(Base, Branch, Args, [])
             ;
@@ -46,7 +46,7 @@ object Cf2Labeller : PrologModule("prolog.argumentation.graph.labelling.cf2", "c
             utils::subtract([A|Args], Next, Others),
             findall(X, (
                 member(X, Others),
-                once((context_check(clause(att(Y, X), _)), context_check(inId(Y))))
+                once((graphStore::attacksById(Y, X), graphStore::argumentLabelById(in, Y)))
             ), NewSuppressed),
             utils::subtract(Others, NewSuppressed, Remaining),
             computeIteratively(Base, OriginBranch, Remaining, NewSuppressed).
@@ -65,8 +65,8 @@ object Cf2Labeller : PrologModule("prolog.argumentation.graph.labelling.cf2", "c
         
         moveArgs([], _).
         moveArgs([H|T], Branch) :-
-            context_check(Branch, clause(arg(H), argument(HA))),
-            context_assert(arg(H) :- argument(HA)),
+            graphStore::argumentByIdIn(Branch, H, HA),
+            graphStore::includeArgument(H, HA),
             moveArgs(T, Branch).
         """.trimIndent()
 }

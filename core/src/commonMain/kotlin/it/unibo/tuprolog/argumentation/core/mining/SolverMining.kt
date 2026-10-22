@@ -1,19 +1,20 @@
 package it.unibo.tuprolog.argumentation.core.mining
 
+import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.data.LabelTerm
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.unify.Unificator
 import kotlin.js.JsName
 
 @JsName("mineActiveGraph")
 fun Solver.graph() =
-    logicProgramming {
+    arg2pScope {
         this@graph
             .solve("context_active"(X))
             .filter { it.isYes }
@@ -37,9 +38,9 @@ fun Solver.graph(context: Int) =
 @JsName("mineArguments")
 fun Solver.arguments(context: Int): List<Argument> {
     val arguments =
-        logicProgramming {
+        arg2pScope {
             this@arguments
-                .solve("context_check"(context, "argument"(X)))
+                .solve("graphStore" call "argumentIn"(context, X))
                 .filter { it.isYes }
                 .map { Argument.of(it.substitution[X]!!) }
                 .toList()
@@ -56,9 +57,9 @@ private fun Solver.supportCounts(
     arguments: List<Argument>,
 ): Map<Argument, Int> {
     val lookup = arguments.lookup()
-    return logicProgramming {
+    return arg2pScope {
         this@supportCounts
-            .solve("context_check"(context, "support"(`_`, Y)))
+            .solve("graphStore" call "supportIn"(context, `_`, Y))
             .filter { it.isYes }
             .mapNotNull { lookup.firstOrNull(it.substitution[Y]!!) }
             .groupingBy { it }
@@ -73,9 +74,9 @@ fun Solver.attacks(
 ): List<Attack> {
     if (arguments.isEmpty()) return emptyList()
     val lookup = arguments.lookup()
-    return logicProgramming {
+    return arg2pScope {
         this@attacks
-            .solve("context_check"(context, "attack"(`_`, X, Y, `_`)))
+            .solve("graphStore" call "attackIn"(context, `_`, X, Y, `_`))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
@@ -93,9 +94,9 @@ fun Solver.supports(
     arguments: List<Argument>,
 ): List<Support> {
     val lookup = arguments.lookup()
-    return logicProgramming {
+    return arg2pScope {
         this@supports
-            .solve("context_check"(context, "support"(X, Y)))
+            .solve("graphStore" call "supportIn"(context, X, Y))
             .filter { it.isYes }
             .map { Pair(it.substitution[X]!!, it.substitution[Y]!!) }
             .map { solution ->
@@ -116,16 +117,16 @@ fun Solver.labels(
     context: Int,
     arguments: List<Argument>,
 ): List<LabelledArgument> {
-    fun checkFunctor(functor: String) =
-        logicProgramming {
+    fun labelled(label: String) =
+        arg2pScope {
             this@labels
-                .solve("context_check"(context, functor(X)))
+                .solve("graphStore" call "argumentLabelIn"(context, label, X))
                 .filter { it.isYes }
-                .map { it.substitution[X]!! to functor }
+                .map { Pair(it.substitution[X]!!, label) }
                 .toList()
         }
 
-    val labels = TermLookup(checkFunctor("in") + checkFunctor("out") + checkFunctor("und")) { it.first }
+    val labels = TermLookup(LabelTerm.labels.flatMap { labelled(it) }) { it.first }
     return arguments.map { res ->
         LabelledArgument(
             res,

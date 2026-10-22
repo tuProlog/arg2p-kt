@@ -10,28 +10,29 @@ object StatementLabeller : PrologModule("prolog.argumentation.graph.labelling.st
     override val prologRawTheory: String =
         """
         %! statementLabelling
-        %  The labels of the statements (statIn/1, statOut/1, statUnd/1 in the context).
+        %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, then OUT those
+        %  with an argument OUT, then UND those with an argument UND.
         statementLabelling :-
             findall(_, (
                 argument::conclusion(A, Conc),
-                context_check(in(A)),
-                context_absent(statIn(Conc)),
-                context_assert(statIn(Conc))
+                graphStore::argumentLabel(in, A),
+                \+ graphStore::statementLabel(in, Conc),
+                graphStore::labelStatement(in, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
-                context_check(out(A)),
-                context_absent(statIn(Conc)),
-                context_absent(statOut(Conc)),
-                context_assert(statOut(Conc))
+                graphStore::argumentLabel(out, A),
+                \+ graphStore::statementLabel(in, Conc),
+                \+ graphStore::statementLabel(out, Conc),
+                graphStore::labelStatement(out, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
-                context_check(und(A)),
-                context_absent(statIn(Conc)),
-                context_absent(statOut(Conc)),
-                context_absent(statUnd(Conc)),
-                context_assert(statUnd(Conc))
+                graphStore::argumentLabel(und, A),
+                \+ graphStore::statementLabel(in, Conc),
+                \+ graphStore::statementLabel(out, Conc),
+                \+ graphStore::statementLabel(und, Conc),
+                graphStore::labelStatement(und, Conc)
             ), _).
         """.trimIndent()
 }

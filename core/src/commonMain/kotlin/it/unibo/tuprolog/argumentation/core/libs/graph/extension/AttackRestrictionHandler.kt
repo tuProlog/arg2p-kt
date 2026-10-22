@@ -13,7 +13,7 @@ object AttackRestrictionHandler : PrologModule("prolog.argumentation.graph.rebut
         %  The restricted attacks on an argument whose top rule is strict are removed.
         modifyArgumentationGraph :-
             findall(_, (
-                context_check(attack(T, A, B, C)),
+                graphStore::attack(T, A, B, C),
                 checkRebutRestriction(T, A, B, C)
             ), _).
 

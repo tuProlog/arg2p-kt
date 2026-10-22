@@ -20,8 +20,8 @@ object StageLabeller : PrologModule("prolog.argumentation.graph.labelling.stage"
             context_active(Branch),
             findall(Und-In, (
                 naive:::argumentLabelling,
-                findall(A, context_check(undId(A)), Und),
-                findall(A, context_check(inId(A)), In)
+                findall(A, graphStore::argumentLabelById(und, A), Und),
+                findall(A, graphStore::argumentLabelById(in, A), In)
             ), Naive),
             utils::minimal_by_set(Naive, Stage),
             member(In, Stage),

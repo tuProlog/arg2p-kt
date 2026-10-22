@@ -16,7 +16,7 @@ object GroundedLabeller : PrologModule("prolog.argumentation.graph.labelling.gro
         %! argumentLabelling
         %  The grounded labelling of the saved arguments, in the active context.
         argumentLabelling :-
-            findall(X, context_check(argument(X)), Arguments),
+            graphStore::arguments(Arguments),
             groundedLabelling(Arguments).
 
         %! groundedLabelling(+Arguments)
@@ -25,33 +25,33 @@ object GroundedLabeller : PrologModule("prolog.argumentation.graph.labelling.gro
             member(A, UND),
             allAttacksOUT(A), !,
             utils::subtract(UND, [A], NewUND),
-            context_assert(in(A)),
+            graphStore::labelArgument(in, A),
             groundedLabelling(NewUND).
         groundedLabelling(UND) :-
             member(A, UND),
             oneAttackIN(A), !,
             utils::subtract(UND, [A], NewUND),
-            context_assert(out(A)),
+            graphStore::labelArgument(out, A),
             groundedLabelling(NewUND).
-        groundedLabelling(Args) :- findall(_, (member(A, Args), context_assert(und(A))), _).
+        groundedLabelling(Args) :- findall(_, (member(A, Args), graphStore::labelArgument(und, A)), _).
 
         % If an attack exists, it should come from an OUT argument
 
         %! allAttacksOUT(+Argument)
         allAttacksOUT(A) :-
-            \+ ( context_check(attack(_, B, A, _)), \+ (context_check(out(B)))).
+            \+ ( graphStore::attack(_, B, A, _), \+ (graphStore::argumentLabel(out, B))).
 
         % Find an attack, if exists, from an IN argument, then ends
 
         %! oneAttackIN(+Argument)
         oneAttackIN(A) :-
-            context_check(attack(_, B, A, _)),
-            context_check(in(B)), !.
+            graphStore::attack(_, B, A, _),
+            graphStore::argumentLabel(in, B), !.
 
         % If A attacks an IN argument, then A is OUT
 
         oneAttackIN(A) :-
-            context_check(attack(_, A, B, _)),
-            context_check(in(B)), !.
+            graphStore::attack(_, A, B, _),
+            graphStore::argumentLabel(in, B), !.
         """.trimIndent()
 }

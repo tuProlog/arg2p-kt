@@ -29,7 +29,7 @@ class AttackRelationTest {
     private fun attack(
         attacker: String,
         attacked: String,
-    ): String? = module.value("attack::attacks(T, $attacker, $attacked)", "T")
+    ): String? = module.value("attackRelation::attacks(T, $attacker, $attacked)", "T")
 
     @Test
     fun rebutOnConflictingConclusions() {
@@ -67,7 +67,7 @@ class AttackRelationTest {
         assertEquals("rebut", attack(copy, rule("r2", "b")))
         // not through the built-in conflict of a with -a
         assertEquals(null, attack(copy, rule("r2", "-a")))
-        assertTrue(module.holds("attack::conflictsWith($copy, [b])"))
-        assertFalse(module.holds("attack::conflictsWith($copy, [-a])"))
+        assertTrue(module.holds("attackRelation::conflictsWith($copy, [b])"))
+        assertFalse(module.holds("attackRelation::conflictsWith($copy, [-a])"))
     }
 }

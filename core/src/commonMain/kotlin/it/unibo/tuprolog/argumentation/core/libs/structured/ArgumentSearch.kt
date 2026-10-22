@@ -31,7 +31,7 @@ object ArgumentSearch : PrologModule("prolog.argumentation.structured.search", "
             premiseRules(Id, Used),
             Found = found([], none, Used, []).
 
-        % From a rule: an argument uses a rule at most once (as in the whole graph, see standard_af's argument_rules/5)
+        % From a rule: an argument uses a rule at most once (as in the whole graph, see argument::rulesAndInfo/5)
         findArgument(Conclusion, Ids, Found) :-
             parser::classic_rule(Id, Premises, Conclusion),
             findPremises(Premises, [Id|Ids], premises(Conclusions, SubUsed, Supports)),

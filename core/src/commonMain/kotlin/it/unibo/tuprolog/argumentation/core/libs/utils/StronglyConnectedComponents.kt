@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libs.utils
 
-import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.ids
-import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.argumentIds
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.stronglyConnectedComponents
+import it.unibo.tuprolog.argumentation.core.libs.ids
+import it.unibo.tuprolog.argumentation.core.libs.replyList
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature

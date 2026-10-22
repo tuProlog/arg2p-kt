@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.model
 
 import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.StatementTerm
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -34,14 +35,20 @@ data class Argument(
                 }
             ) + " : " + conclusion
 
+    /** The term of the argument (see [ArgumentTerm]) */
     fun termRepresentation(): Term =
-        term ?: Struct.parse(
-            "[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]",
+        term ?: ArgumentTerm.of(
+            rules = rules.asTerms(),
+            topRule = Term.parse(topRule),
+            conclusion = StatementTerm.of(Term.parse(conclusion)),
+            body = groundings.asTerms(),
+            info = ArgumentTerm.info(lastDefeasibleRules.asTerms(), defeasibleRules.asTerms(), defeasiblePremises.asTerms()),
         )
 
-    override fun toString(): String = "argument(${this.termRepresentation()})"
+    override fun toString(): String = toTerm().toString()
 
-    fun toTerm(): Term = Struct.parse(this.toString())
+    /** The argument as the context keeps it, argument(Argument) */
+    fun toTerm(): Term = Struct.of("argument", termRepresentation())
 
     companion object {
         /** The argument of [term], the term of an argument (see [ArgumentTerm]) */
@@ -61,5 +68,8 @@ data class Argument(
 
         // The items of a list, as text
         private fun Term.names(): List<String> = (this as LogicList).toList().map { it.toString() }
+
+        // The list of the terms written in the strings
+        private fun List<String>.asTerms(): Term = LogicList.of(map { Term.parse(it) })
     }
 }

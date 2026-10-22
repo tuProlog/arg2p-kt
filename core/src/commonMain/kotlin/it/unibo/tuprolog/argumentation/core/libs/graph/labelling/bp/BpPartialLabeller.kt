@@ -24,7 +24,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
         %  The labelling, in the active context.
         argumentLabelling :-
             bp_grounded::reifyBurdenOfProofs,
-            findall(X, context_check(argument(X)), Arguments),
+            graphStore::arguments(Arguments),
             partialBpLabelling(Arguments), !.
 
         %! partialBpLabelling(+Arguments)
@@ -45,15 +45,15 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             \+ notEvaluatedSuperiorComplementArgument(Arguments, A, Resolving, _),
             \+ (
                 superiorComplementArgument(A, B),
-                context_check(in(B))
+                graphStore::argumentLabel(in, B)
             ),
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
             \+ (
-                context_check(support(X, A)),
-                context_check(out(X))
+                graphStore::support(X, A),
+                graphStore::argumentLabel(out, X)
             ),
             debug::writeDebug(['Adding argument: ', A, ' to IN* (2.a.i)']),
-            context_assert(in(A)).
+            graphStore::labelArgument(in, A).
 
         /*
             (a.ii) not BP(neg(φ)) and every argument B for neg(φ) such that B(not <)A is OUT*, and every A1,...An is IN*
@@ -63,15 +63,15 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             \+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
             \+ (
                 superiorOrEqualComplementArgument(A, B),
-                context_absent(out(B))
+                \+ graphStore::argumentLabel(out, B)
             ),
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
             \+ (
-                context_check(support(X, A)),
-                context_absent(in(X))
+                graphStore::support(X, A),
+                \+ graphStore::argumentLabel(in, X)
             ),
             debug::writeDebug(['Adding argument: ', A, ' to IN* (2.a.ii)']),
-            context_assert(in(A)).
+            graphStore::labelArgument(in, A).
 
         /*
             (b.i.1) BP(φ) and exists an argument B for neg(φ) such that B(not <)A is not OUT*
@@ -80,9 +80,9 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             bp_grounded::isArgumentInBurdenOfProof(A),
             \+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
             superiorOrEqualComplementArgument(A, B),
-            context_absent(out(B)),
+            \+ graphStore::argumentLabel(out, B),
             debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.1)']),
-            context_assert(out(A)).
+            graphStore::labelArgument(out, A).
 
         /*
             (b.i.2) BP(φ) and exist one of A1,...An is not IN*
@@ -90,10 +90,10 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
         demonstration(Arguments, A, Resolving, A) :-
             bp_grounded::isArgumentInBurdenOfProof(A),
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
-            context_check(support(X, A)),
-            context_absent(in(X)),
+            graphStore::support(X, A),
+            \+ graphStore::argumentLabel(in, X),
             debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.2)']),
-            context_assert(out(A)).
+            graphStore::labelArgument(out, A).
 
         /*
             (b.ii.1) not BP(φ) and an argument B for neg(φ) such A < B is IN*
@@ -102,9 +102,9 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             \+ bp_grounded::isArgumentInBurdenOfProof(A),
             \+ notEvaluatedSuperiorComplementArgument(Arguments, A, Resolving, _),
             superiorComplementArgument(A, B),
-            context_check(in(B)),
+            graphStore::argumentLabel(in, B),
             debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.ii.1)']),
-            context_assert(out(A)).
+            graphStore::labelArgument(out, A).
 
         /*
             (b.ii.2) not BP(φ) and one of A1,...An is OUT*
@@ -112,10 +112,10 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
         demonstration(Arguments, A, Resolving, A) :-
             \+ bp_grounded::isArgumentInBurdenOfProof(A),
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
-            context_check(support(X, A)),
-            context_check(out(X)),
+            graphStore::support(X, A),
+            graphStore::argumentLabel(out, X),
             debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.ii.2)']),
-            context_assert(out(A)).
+            graphStore::labelArgument(out, A).
 
         /*
             If above definitions do not apply try to decide on the arguments on which they depend
@@ -130,7 +130,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             \+ notEvaluatedSuperiorComplementArgument(Arguments, A, Resolving, _),
             \+ (
                 superiorComplementArgument(A, X),
-                context_check(in(X))
+                graphStore::argumentLabel(in, X)
             ),
             notEvaluatedSubArgument(Arguments, A, Resolving, B),
             demonstration(Arguments, B, [B|Resolving], Evaluated).
@@ -145,7 +145,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             \+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
             \+ (
                 superiorOrEqualComplementArgument(A, X),
-                context_absent(out(X))
+                \+ graphStore::argumentLabel(out, X)
             ),
             notEvaluatedSubArgument(Arguments, A, Resolving, B),
             demonstration(Arguments, B, [B|Resolving], Evaluated).
@@ -175,7 +175,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
         */
         demonstration(Arguments, A, Resolving, A) :-
             debug::writeDebug(['Adding argument: ', A, ' to UND* (2.c)']),
-            context_assert(und(A)).
+            graphStore::labelArgument(und, A).
 
         %==============================================================================
         % BP LABELLING UTILITIES
@@ -204,7 +204,7 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
             conflict::between(Conclusion, Complement).
 
         notEvaluatedSubArgument(Arguments, A, Resolving, B) :-
-            context_check(support(B, A)),
+            graphStore::support(B, A),
             member(B, Arguments),
             \+ member(B, Resolving).
 
@@ -230,6 +230,6 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
         complementArgument(A, B) :-
             complement(A, Complement),
             argument::conclusion(B, Complement),
-            context_check(argument(B)).
+            graphStore::argument(B).
         """.trimIndent()
 }

@@ -59,17 +59,17 @@ object StructuredMode : PrologModule("prolog.argumentation.structured", "structu
             abstract:::buildStatementLabelling.
 
         mineResults(Goal, YesResult, NoResult, UndResult) :-
-            findall(Goal, context_check(statIn([Goal])), In),
-            findall(Goal, context_check(statOut([Goal])), Out),
-            findall(Goal, context_check(statUnd([Goal])), Und),
+            findall(Goal, graphStore::statementLabel(in, [Goal]), In),
+            findall(Goal, graphStore::statementLabel(out, [Goal]), Out),
+            findall(Goal, graphStore::statementLabel(und, [Goal]), Und),
             utils::sort(In, YesResult),
             utils::sort(Out, NoResult),
             utils::sort(Und, UndResult).
 
         mineResults(Goal, Result) :-
-            findall(in(Goal), context_check(statIn([Goal])), In),
-            findall(out(Goal), context_check(statOut([Goal])), Out),
-            findall(und(Goal), context_check(statUnd([Goal])), Und),
+            findall(in(Goal), graphStore::statementLabel(in, [Goal]), In),
+            findall(out(Goal), graphStore::statementLabel(out, [Goal]), Out),
+            findall(und(Goal), graphStore::statementLabel(und, [Goal]), Und),
             utils::appendLists([In, Out, Und], Result).
         """.trimIndent()
 }

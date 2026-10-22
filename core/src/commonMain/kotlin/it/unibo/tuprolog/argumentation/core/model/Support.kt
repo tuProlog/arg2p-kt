@@ -1,14 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.model
 
+import it.unibo.tuprolog.argumentation.core.libs.data.SupportTerm
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.parsing.parse
 
 data class Support(
     val supporter: Argument,
     val supported: Argument,
 ) {
-    override fun toString(): String = "support(${supporter.termRepresentation()}, ${supported.termRepresentation()})"
+    override fun toString(): String = toTerm().toString()
 
-    fun toTerm(): Term = Struct.parse(this.toString())
+    /** The term of the support (see [SupportTerm]) */
+    fun toTerm(): Struct = SupportTerm.of(supporter.termRepresentation(), supported.termRepresentation())
 }

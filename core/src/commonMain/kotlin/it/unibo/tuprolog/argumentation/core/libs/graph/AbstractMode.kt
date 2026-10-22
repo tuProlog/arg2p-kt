@@ -26,9 +26,9 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
         %  As computeGlobalAcceptance/0, with the graph ([Arguments, Attacks, Supports]) and the labels ([In, Out, Und]) collected.
         computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
             computeGlobalAcceptance,
-            utils::recoverGraph(Arguments, Attacks, Supports),
-            utils::recoverArgumentLabelling(ArgsIn, ArgsOut, ArgsUnd),
-            utils::recoverStatementLabelling(StatIn, StatOut, StatUnd).
+            graphStore::graph(Arguments, Attacks, Supports),
+            graphStore::argumentLabelling(ArgsIn, ArgsOut, ArgsUnd),
+            graphStore::statementLabelling(StatIn, StatOut, StatUnd).
 
         buildGraph :-
             setting(graphBuildMode, X),
@@ -61,7 +61,7 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
         %  The labelling of the abstract framework of Arguments (atoms) and Attacks ((A, B) pairs), by argumentLabellingMode: the arguments IN, OUT and UND.
         solve(Arguments, Attacks, I, O, U) :-
             solve(Arguments, Attacks),
-            utils::recoverArgumentLabellingAbstract(I, O, U).
+            graphStore::claimLabelling(I, O, U).
 
         %! solve(+Arguments, +Attacks)
         %  The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them.

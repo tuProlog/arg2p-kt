@@ -2,14 +2,14 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.conflictGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextBranch
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
-import it.unibo.tuprolog.argumentation.core.libs.graph.ids
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
-import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.basic.contextBranch
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.conflictGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelArguments
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelledIds
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.storedArguments
+import it.unibo.tuprolog.argumentation.core.libs.ids
+import it.unibo.tuprolog.argumentation.core.libs.replyList
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -42,8 +42,8 @@ object ConflictFreeLabeller : PrologModule("prolog.argumentation.graph.labelling
         %! candidates(-Args, -Forced)
         %  The arguments to label, and those among them already IN (kept IN)
         candidates(Args, Forced) :-
-            findall(A, context_check(clause(arg(A), _)), Args),
-            findall(A, (member(A, Args), context_check(inId(A))), Forced).
+            graphStore::argumentIds(Args),
+            findall(A, (member(A, Args), graphStore::argumentLabelById(in, A)), Forced).
 
         %! labelSet(+Branch, +Set)
         %  In a new branch of Branch, Set IN, the arguments it attacks OUT, the rest UND;
@@ -102,25 +102,16 @@ object LabelSet : Primitive {
         arg2pScope {
             if (!request.contextBranch(request.arguments[0])) return@arg2pScope sequenceOf(request.replyFail())
             val set = request.ids(1).toSet()
-            val arguments =
-                request
-                    .contextInstances("clause"("arg"(`_`), "argument"(`_`)))
-                    .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
-            val labelled = request.labelled("inId") + request.labelled("outId") + request.labelled("undId")
+            val arguments = request.storedArguments()
+            val labelled = request.labelledIds("in") + request.labelledIds("out") + request.labelledIds("und")
             val newIn = arguments.filter { (id, _) -> id in set && id !in labelled }
-            val inIds = request.labelled("inId") + newIn.map { it.first }
+            val inIds = request.labelledIds("in") + newIn.map { it.first }
             val attackers = request.attackGraph().attackers
             val (out, und) =
                 arguments
                     .filter { (id, _) -> id !in labelled && id !in inIds }
                     .partition { (id, _) -> attackers[id].orEmpty().any { it in inIds } }
-
-            fun facts(
-                label: String,
-                args: List<Pair<Term, Term>>,
-            ) = args.flatMap { (id, x) -> listOf(label(x), "${label}Id"(id)) }
-            val all = facts("in", newIn) + facts("out", out) + facts("und", und)
-            request.contextAssertAll(all)
+            request.labelArguments(listOf(Pair("in", newIn), Pair("out", out), Pair("und", und)))
             sequenceOf(request.replyWith(true))
         }
 }

@@ -1,17 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.builder
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
  * The whole argumentation graph of a theory (module `standard_af`, the graphBuildMode of the same name): every
  * argument its rules make, and the attacks between them, saved in the context (see the module graphStore).
  */
 object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "standard_af") {
-    override val primitives: Map<Signature, Primitive>
-        get() = mapOf(ArgumentRules.signature to ArgumentRules)
-
     override val prologRawTheory: String =
         """
         %! buildArgumentationGraph
@@ -42,7 +37,7 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
             ), Rules),
             context_retract(graphRule(_)),
             storeRules(Rules),
-            findall(X, context_check(newConc(a, [X])), N),
+            findall(X, graphStore::newConclusion(a, [X]), N),
             buildArgumentsFromRules(N, b).
 
         % The rules are kept in the context rather than passed around: they are not ground, so carrying their list
@@ -89,7 +84,7 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
                 utils::contains_any(Body, N),
                 buildArgumentsFromRule(Tn, [Id, Body, Conc])
             ), _),
-            (context_check(newConc(Tn, _)) -> nextRound(Tn) ; true).
+            (graphStore::newConclusion(Tn, _) -> nextRound(Tn) ; true).
 
         buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
             ruleBodyIsSupported(RuleBody, rule(RuleID, RuleHead, RuleBody), [[], [], [], []], Argument),
@@ -97,8 +92,8 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
 
         nextRound(Tn) :-
             otherTag(Tn, Tx),
-            context_retract(newConc(Tx, _)),
-            findall(X, context_check(newConc(Tn, [X])), N),
+            graphStore::forgetNewConclusions(Tx),
+            findall(X, graphStore::newConclusion(Tn, [X]), N),
             buildArgumentsFromRules(N, Tx).
 
         otherTag(a, b).
@@ -114,7 +109,7 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ruleStrictness(RuleID, Strict),
-            argument_rules(RuleID, Strict, Acc, Rules, Info),
+            argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             argument::new(Rules, RuleID, RuleHead, RuleBody, Info, Argument),
             \+ graphStore::argumentFor(RuleHead, Argument).
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
@@ -142,7 +137,7 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
             findall(_, buildDirectAttack, _).
 
         buildDirectAttack :-
-            context_check(clause(arg(IdA), argument(A))),
+            graphStore::argumentById(IdA, A),
             attackCandidates::possibleAttackers(IdA, A, Conflict),
             findAttacker(Conflict, B),
             conflictArguments::canAttack(B),
@@ -150,16 +145,16 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
             % Attacks are checked on copies, so that A and B are saved exactly as they are stored:
             % binding their variables would change their identifiers (see context_id)
             copy_term(B-A, CB-CA),
-            attack::attacks(T, CB, CA),
-            context_id(argument(B), IdB),
-            graphStore::saveAttackById(attackId(T, IdB, IdA, IdA), attack(T, B, A, A)),
+            attackRelation::attacks(T, CB, CA),
+            graphStore::argumentId(B, IdB),
+            graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
             buildTransitiveAttacks(T, IdB, B, IdA, A),
             fail.
         buildDirectAttack.
 
         % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
         findAttacker([Head], B) :- !,
-            context_unifiable(conc([Head]), argument(B)).
+            graphStore::argumentUnifiable([Head], B).
         findAttacker(Conclusion, B) :-
             graphStore::argumentFor(Conclusion, B).
 
@@ -167,18 +162,10 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
         %  B, attacking A, attacks every argument that A supports, directly or not.
         buildTransitiveAttacks(T, IdB, B, IdA, A) :-
             findall(_, (
-                context_closure(supportId, IdA, IdC),
+                graphStore::supportedById(IdA, IdC),
                 graphStore::argumentById(IdC, C),
-                graphStore::saveAttackById(attackId(T, IdB, IdC, IdA), attack(T, B, C, A))
+                graphStore::saveAttackById(T, IdB, B, IdC, C, IdA, A)
             ),_).
 
-        %--------------------------------------------------------------------------
-        % Saving, for the users of the module (see the module graphStore)
-        %--------------------------------------------------------------------------
-
-        saveArgument(Tag, Conclusion, Argument) :- graphStore::saveArgument(Tag, Conclusion, Argument).
-        saveSupport(Support, Argument) :- graphStore::saveSupport(Support, Argument).
-        saveAttack(Type, Attacker, Attacked, On) :- graphStore::saveAttack(Type, Attacker, Attacked, On).
-        removeAttack(Type, Attacker, Attacked, On) :- graphStore::removeAttack(Type, Attacker, Attacked, On).
         """.trimIndent()
 }

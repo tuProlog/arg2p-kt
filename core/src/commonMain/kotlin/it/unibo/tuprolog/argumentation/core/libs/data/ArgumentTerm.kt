@@ -2,6 +2,8 @@ package it.unibo.tuprolog.argumentation.core.libs.data
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.core.List as LogicList
 
 /**
@@ -20,6 +22,9 @@ import it.unibo.tuprolog.core.List as LogicList
  * [info], written after the same layout.
  */
 object ArgumentTerm : PrologModule("prolog.argumentation.data.argument", "argument") {
+    override val primitives: Map<Signature, Primitive>
+        get() = mapOf(ArgumentRules.signature to ArgumentRules)
+
     override val prologRawTheory: String =
         """
         %! new(?Rules, ?TopRule, ?Conclusion, ?Body, ?Info, ?Argument)
@@ -74,6 +79,11 @@ object ArgumentTerm : PrologModule("prolog.argumentation.data.argument", "argume
         %  Argument is made of a premise alone.
         isPremise([_, TopRule, _, _, _]) :- TopRule == none.
 
+        %! rulesAndInfo(+RuleId, +Strict, +Supports, -Rules, -Info)
+        %  The rules and the info of the argument built from the rule RuleId (strict if Strict is strict) on sub-arguments
+        %  with the rules, last defeasible rules, defeasible rules and defeasible premises in Supports (see ArgumentRules);
+        %  native.
+
         %! isDefeasible(+Argument)
         %  Argument has defeasible rules or premises.
         isDefeasible([_, _, _, _, Info]) :- Info \== [[], [], []].
@@ -100,6 +110,15 @@ object ArgumentTerm : PrologModule("prolog.argumentation.data.argument", "argume
         val info = (items[4] as? LogicList)?.toList()?.takeIf { it.size == 3 } ?: return null
         return Parts(items[0], items[1], items[2], items[3], info[0], info[1], info[2])
     }
+
+    /** The term of an argument, made of its parts */
+    fun of(
+        rules: Term,
+        topRule: Term,
+        conclusion: Term,
+        body: Term,
+        info: Term,
+    ): Term = LogicList.of(rules, topRule, conclusion, body, info)
 
     /** The info of an argument, made of its parts */
     fun info(

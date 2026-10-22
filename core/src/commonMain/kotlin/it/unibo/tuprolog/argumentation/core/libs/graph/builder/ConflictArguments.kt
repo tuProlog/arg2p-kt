@@ -9,7 +9,7 @@ import it.unibo.tuprolog.argumentation.core.libs.PrologModule
  *
  * For each argument for a conflict on the conclusion of an argument, a copy of that argument is made, with
  * `mc(ConflictId, Conflict)` first among its rules: supported by the conflict argument (and by the supports of the
- * original), it is defeated with it, and it attacks through its conflict only (see the module attack). With
+ * original), it is defeated with it, and it attacks through its conflict only (see the module attackRelation). With
  * metaConflicts only the copies attack.
  */
 object ConflictArguments : PrologModule("prolog.argumentation.graph.conflicts", "conflictArguments") {
@@ -24,7 +24,7 @@ object ConflictArguments : PrologModule("prolog.argumentation.graph.conflicts", 
             setting(metaConflicts),
             conflictArgument(Conclusion, ConflictArgument),
             argument::claim(ConflictArgument, Conflict),
-            context_id(argument(ConflictArgument), ConflictId),
+            graphStore::argumentId(ConflictArgument, ConflictId),
             graphStore::argumentFor(Conclusion, Argument),
             \+ conflictOf(Argument, _),
             argument::rules(Argument, Rules),
@@ -44,7 +44,7 @@ object ConflictArguments : PrologModule("prolog.argumentation.graph.conflicts", 
         % The supports of Original also support Copy
         cloneSupports(Original, Copy) :-
             findall(_, (
-                context_check(support(Support, Original)),
+                graphStore::support(Support, Original),
                 graphStore::saveSupport(Support, Copy)
             ), _).
 

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.utils
 
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
+import it.unibo.tuprolog.argumentation.core.libs.basic.contextAssertAll
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Tuple

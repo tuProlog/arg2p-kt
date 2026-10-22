@@ -16,9 +16,9 @@ object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "
         modifyArgumentationGraph :-
             findall((Bp, Burdened), (
                 argument::claim(Bp, bp(Statement)),
-                context_check(argument(Bp)),
+                graphStore::argument(Bp),
                 argument::claim(Burdened, Statement),
-                context_check(argument(Burdened))
+                graphStore::argument(Burdened)
             ), BurdenedPairs),
             checkBpArguments(BurdenedPairs).
 
@@ -47,7 +47,7 @@ object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "
         % The attacks on the burden of proof also attack the conflict argument
         liftBpAttacks(Bp, Conflict) :-
             findall(_, (
-                context_check(attack(T, A, Bp, O)),
+                graphStore::attack(T, A, Bp, O),
                 graphStore::saveAttack(T, A, Conflict, O)
             ), _).
 
@@ -80,9 +80,9 @@ object BpMetaGraphHandler : PrologModule("prolog.argumentation.graph.meta.bp", "
             evaluateBurdenedArgs(Others).
 
         statusToAttack((Bp, Burdened), attack(bprebut, Burdened, Bp, Bp)) :-
-            context_check(in(Burdened)).
+            graphStore::argumentLabel(in, Burdened).
         statusToAttack((Bp, Burdened), attack(bprebut, Bp, Burdened, Burdened)) :-
-            context_absent(in(Burdened)).
+            \+ graphStore::argumentLabel(in, Burdened).
 
         %==============================================================================
         % QUERY MODE

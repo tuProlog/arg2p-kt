@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.language
 
 import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
+import it.unibo.tuprolog.argumentation.core.libs.data.RuleTerm
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
@@ -16,7 +17,7 @@ import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgu
 import it.unibo.tuprolog.solve.primitive.Solve
 import kotlin.collections.List as KList
 
-// The rules of a theory as clauses (rl(Conclusion) :- [Id, Premises, Conclusion]), for the parser
+// The rules of a theory as clauses (see the module rule), for the parser
 
 object ConversionUtils {
     fun modifiers(
@@ -216,12 +217,7 @@ object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>
                         .toList()
                         .map { original ->
                             original.asList()!!.toList().let {
-                                val parsed = parseTerm(extractor, it)
-                                when (it.size) {
-                                    2 -> Clause.of(Struct.Companion.of("rl", parsed[1]), List.of(parsed))
-                                    3 -> Clause.of(Struct.Companion.of("rl", parsed[2]), List.of(parsed))
-                                    else -> throw IllegalArgumentException()
-                                }
+                                RuleTerm.of(List.of(parseTerm(extractor, it))) ?: throw IllegalArgumentException()
                             }
                         },
                 ),
@@ -243,13 +239,7 @@ object RuleToClause : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_
                         .asList()!!
                         .toList()
                         .map { original ->
-                            original.asList()!!.toList().let {
-                                when (it.size) {
-                                    2 -> Clause.of(Struct.Companion.of("rl", it[1]), original)
-                                    3 -> Clause.of(Struct.Companion.of("rl", it[2]), original)
-                                    else -> throw IllegalArgumentException()
-                                }
-                            }
+                            RuleTerm.of(original.castToList()) ?: throw IllegalArgumentException()
                         },
                 ),
             ),

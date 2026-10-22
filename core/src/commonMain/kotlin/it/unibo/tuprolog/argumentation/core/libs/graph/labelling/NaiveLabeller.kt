@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.conflictGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.ids
-import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.conflictGraph
+import it.unibo.tuprolog.argumentation.core.libs.ids
+import it.unibo.tuprolog.argumentation.core.libs.replyList
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -30,7 +30,7 @@ object NaiveLabeller : PrologModule("prolog.argumentation.graph.labelling.naive"
         argumentLabelling :-
             context_active(Branch),
             conflictfree::candidates(Args, Forced),
-            findall(A, context_check(inId(A)), In),
+            findall(A, graphStore::argumentLabelById(in, A), In),
             naive_subset(Args, Forced, In, Set),
             conflictfree::labelSet(Branch, Set).
         """.trimIndent()

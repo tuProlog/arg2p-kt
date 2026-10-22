@@ -20,7 +20,7 @@ object EagerLabeller : PrologModule("prolog.argumentation.graph.labelling.eager"
             context_active(Branch),
             findall(In, (
                 semistable:::argumentLabelling,
-                findall(A, context_check(inId(A)), In)
+                findall(A, graphStore::argumentLabelById(in, A), In)
             ), Semistable),
             utils::intersection(Semistable, Common),
             admissible::maximal_admissible_subset(Common, Eager),

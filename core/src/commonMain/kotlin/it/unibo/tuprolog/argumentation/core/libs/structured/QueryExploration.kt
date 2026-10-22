@@ -28,10 +28,10 @@ object QueryExploration : PrologModule("prolog.argumentation.structured.explorat
         %  exploration is then repeated, from scratch, until it builds no new argument (the arguments are finitely many,
         %  as none uses a rule twice).
         explore(Query) :-
-            context_retract(newConc(query, _)),
+            graphStore::forgetNewConclusions(query),
             context_retract(cycle),
             exploreStatement(Query, dependency),
-            (context_check(cycle), context_check(newConc(query, _)) ->
+            (context_check(cycle), graphStore::newConclusion(query, _) ->
                 context_retract(explored(_)),
                 explore(Query)
             ;
@@ -57,7 +57,7 @@ object QueryExploration : PrologModule("prolog.argumentation.structured.explorat
             findall(_, (
                 argumentSearch::findSingleArgument([Query], Argument, Supports),
                 recordArgument(Query, Argument, Supports),
-                context_id(argument(Argument), Id),
+                graphStore::argumentId(Argument, Id),
                 dependency(Id, Argument, Statement),
                 exploreStatement(Statement, dependency)
             ), _),

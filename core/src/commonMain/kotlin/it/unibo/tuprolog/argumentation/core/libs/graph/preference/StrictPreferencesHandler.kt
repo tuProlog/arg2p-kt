@@ -14,7 +14,7 @@ object StrictPreferencesHandler : PrologModule("prolog.argumentation.graph.prefe
         %  arguments are compared by their info only: the whole arguments are only retrieved to remove an attack.
         modifyArgumentationGraph :-
             findall(_, (
-                context_check(attackId(T, IdA, IdB, IdC)),
+                graphStore::attackById(T, IdA, IdB, IdC),
                 checkStandardPreference(T, IdA, IdB, IdC)
             ), _).
 
@@ -33,8 +33,8 @@ object StrictPreferencesHandler : PrologModule("prolog.argumentation.graph.prefe
         standardPreferences(contrary_undermine, _, _) :- !.
         standardPreferences(undercut, _, _) :- !.
         standardPreferences(_, IdA, IdC) :-
-            context_check(argInfo(IdA, InfoIdA, InfoA)),
-            context_check(argInfo(IdC, InfoIdC, InfoC)),
+            graphStore::argumentInfo(IdA, InfoIdA, InfoA),
+            graphStore::argumentInfo(IdC, InfoIdC, InfoC),
             superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA), !,
             fail.
         standardPreferences(_, _, _).

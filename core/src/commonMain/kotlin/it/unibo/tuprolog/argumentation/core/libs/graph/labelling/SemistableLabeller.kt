@@ -21,8 +21,8 @@ object SemistableLabeller : PrologModule("prolog.argumentation.graph.labelling.s
             context_active(Branch),
             findall(Und-In, (
                 preferred:::argumentLabelling,
-                findall(A, context_check(undId(A)), Und),
-                findall(A, context_check(inId(A)), In)
+                findall(A, graphStore::argumentLabelById(und, A), Und),
+                findall(A, graphStore::argumentLabelById(in, A), In)
             ), Preferred),
             utils::minimal_by_set(Preferred, Semistable),
             member(In, Semistable),

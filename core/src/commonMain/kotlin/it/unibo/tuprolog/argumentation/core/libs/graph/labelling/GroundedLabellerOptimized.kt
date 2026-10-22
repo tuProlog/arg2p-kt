@@ -2,10 +2,10 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
-import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelArguments
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelledIds
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.storedArguments
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -48,14 +48,11 @@ object GroundedFixpoint : Primitive {
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         arg2pScope {
-            val arguments =
-                request
-                    .contextInstances("clause"("arg"(`_`), "argument"(`_`)))
-                    .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
+            val arguments = request.storedArguments()
             val position = arguments.withIndex().associate { (index, argument) -> argument.first to index }
             val graph = request.attackGraph()
-            val inIds = request.labelled("inId").toMutableSet()
-            val outIds = request.labelled("outId").toMutableSet()
+            val inIds = request.labelledIds("in").toMutableSet()
+            val outIds = request.labelledIds("out").toMutableSet()
 
             // an argument of the graph not labelled yet
             fun unlabelled(id: Term) = id in position && id !in inIds && id !in outIds
@@ -72,8 +69,7 @@ object GroundedFixpoint : Primitive {
             ): List<Term> {
                 val sorted = ids.sortedBy { position.getValue(it) }
                 if (sorted.isEmpty()) return sorted
-                val facts = sorted.flatMap { id -> listOf(name(arguments[position.getValue(id)].second), "${name}Id"(id)) }
-                request.contextAssertAll(facts)
+                request.labelArguments(listOf(Pair(name, sorted.map { id -> arguments[position.getValue(id)] })))
                 return sorted
             }
 

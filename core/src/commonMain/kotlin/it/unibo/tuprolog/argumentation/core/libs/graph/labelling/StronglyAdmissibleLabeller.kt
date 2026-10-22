@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
-import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.store.labelledIds
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -41,7 +41,7 @@ object StronglyAdmissibleSet : Primitive {
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val attackers = request.attackGraph().attackers
         val built = mutableSetOf<Term>()
-        var pending = request.labelled("inId")
+        var pending = request.labelledIds("in")
         while (pending.isNotEmpty()) {
             val added =
                 pending.filter { h ->

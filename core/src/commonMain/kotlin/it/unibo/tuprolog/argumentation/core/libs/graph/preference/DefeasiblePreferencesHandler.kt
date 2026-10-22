@@ -17,7 +17,7 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
         %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.
         modifyArgumentationGraph :-
             assertAllSup,
-            findall((T, A, B, C), context_check(attack(T, A, B, C)), Attacks),
+            graphStore::attacks(Attacks),
             filterSupRelatedAttacks(Attacks, InvalidAttacks),
             convertAttacks(InvalidAttacks),
             buildPrefAttacks.
@@ -28,7 +28,7 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
             context_retract(sup(_, _)),
             findall(_, (
                 argument::claim(Argument, sup(RuleOne, RuleTwo)),
-                context_check(argument(Argument)),
+                graphStore::argument(Argument),
                 context_absent(sup(RuleOne, RuleTwo)),
                 context_assert(sup(RuleOne, RuleTwo))
             ), _).
@@ -76,7 +76,7 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
             graphStore::saveArgument(a, [attack(T, A, B, B)], AttackArgument),
             graphStore::saveSupport(A, AttackArgument),
             findall(_, (
-                context_check(attack(X, Y, A, Z)),
+                graphStore::attack(X, Y, A, Z),
                 graphStore::saveAttack(X, Y, AttackArgument, Z)
             ), _),
             graphStore::saveAttack(T, AttackArgument, B, B),
@@ -87,7 +87,7 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
         attackArgument(AttackArgument, Type, A, B, C) :-
             argument::topRule(AttackArgument, attack),
             argument::claim(AttackArgument, attack(Type, A, B, C)),
-            context_check(argument(AttackArgument)).
+            graphStore::argument(AttackArgument).
 
         %! buildPrefAttacks
         %  The arguments for the preferences invalidating an attack attack its argument, and what it supports.
@@ -96,7 +96,7 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
             invalid(T, A, B, C, Preferences),
             member(X, Preferences),
             argument::claim(Preference, X),
-            context_check(argument(Preference)),
+            graphStore::argument(Preference),
             graphStore::saveAttack(pref, Preference, Attack, Attack),
             prefersTransitively(Preference, Attack),
             fail.
@@ -105,8 +105,8 @@ object DefeasiblePreferencesHandler : PrologModule("prolog.argumentation.graph.p
         %! prefersTransitively(+Preference, +Attack)
         %  The preference also attacks the arguments the attack argument supports.
         prefersTransitively(Preference, Attack) :-
-            context_id(argument(Preference), IdP),
-            context_id(argument(Attack), IdA),
+            graphStore::argumentId(Preference, IdP),
+            graphStore::argumentId(Attack, IdA),
             standard_af::buildTransitiveAttacks(pref, IdP, Preference, IdA, Attack).
 
         %==============================================================================

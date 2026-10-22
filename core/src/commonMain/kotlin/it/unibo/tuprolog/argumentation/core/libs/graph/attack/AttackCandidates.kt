@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
 /**
  * The statements whose arguments may attack an argument, or be attacked by it (module `attackCandidates`): the
- * graph builders only check the attacks (see the module attack) between an argument and the arguments for these
+ * graph builders only check the attacks (see the module attackRelation) between an argument and the arguments for these
  * statements, and query mode explores them.
  */
 object AttackCandidates : PrologModule("prolog.argumentation.attack.candidates", "attackCandidates") {

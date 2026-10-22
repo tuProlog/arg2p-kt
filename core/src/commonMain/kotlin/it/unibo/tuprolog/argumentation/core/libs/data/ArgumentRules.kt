@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.libs.graph.builder
+package it.unibo.tuprolog.argumentation.core.libs.data
 
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
@@ -14,14 +14,14 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * argument_rules(+RuleId, +Strict, +[Rules, LastDefRules, DefRules, DefPremises], ?SortedRules, ?Info): the rules and
+ * argument::rulesAndInfo(+RuleId, +Strict, +[Rules, LastDefRules, DefRules, DefPremises], ?SortedRules, ?Info): the rules and
  * the info of an argument built from RuleId on top of some sub-arguments, given the lists of their rules, last
  * defeasible rules, defeasible rules and defeasible premises; Strict tells whether RuleId is strict (strict) or not.
  * Fails if RuleId already occurs among the rules of the sub-arguments, or if it is none and not strict.
  * SortedRules: RuleId and the rules, as sort/2. Info: [LastDefRules, DefRules, DefPremises], each as sortDistinct/2.
  */
 object ArgumentRules : Primitive {
-    val signature: Signature = Signature("argument_rules", 5)
+    val signature: Signature = Signature("rulesAndInfo", 5)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val ruleId = request.arguments[0]

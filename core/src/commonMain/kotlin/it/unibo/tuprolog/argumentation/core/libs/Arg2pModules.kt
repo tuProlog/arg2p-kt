@@ -2,6 +2,11 @@ package it.unibo.tuprolog.argumentation.core.libs
 
 import it.unibo.tuprolog.argumentation.core.libs.basic.EngineInterface
 import it.unibo.tuprolog.argumentation.core.libs.data.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.AttackTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.LabelTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.RuleTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.StatementTerm
+import it.unibo.tuprolog.argumentation.core.libs.data.SupportTerm
 import it.unibo.tuprolog.argumentation.core.libs.extra.MetaInterpreter
 import it.unibo.tuprolog.argumentation.core.libs.extra.ModuleCalls
 import it.unibo.tuprolog.argumentation.core.libs.graph.AbstractMode
@@ -49,8 +54,8 @@ import it.unibo.tuprolog.argumentation.core.libs.utils.Utils
 
 /** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
 object Arg2pModules {
-    /** The terms arg2p works on */
-    val data: List<ArgLibrary> = listOf(ArgumentTerm)
+    /** The terms arg2p works on: the entities of argumentation graphs and of the rules */
+    val data: List<ArgLibrary> = listOf(ArgumentTerm, AttackTerm, SupportTerm, LabelTerm, StatementTerm, RuleTerm)
 
     /** The rules of a theory, as the graph builders read them */
     val language: List<ArgLibrary> = listOf(RuleParser, Transposition, Conflicts)
@@ -105,6 +110,16 @@ object Arg2pModules {
     /** The entry points, and what they rely on */
     val support: List<ArgLibrary> = listOf(EngineInterface, Utils, Debug, MetaInterpreter, ModuleCalls)
 
-    val all: List<ArgLibrary>
-        get() = support + data + language + graph + labellings + query
+    /** All the modules, each with an identifier of its own: a module is loaded by its identifier */
+    val all: List<ArgLibrary> by lazy {
+        (support + data + language + graph + labellings + query).also { modules ->
+            val repeated =
+                modules
+                    .filterIsInstance<Loadable>()
+                    .groupBy { it.identifier() }
+                    .filterValues { it.size > 1 }
+                    .keys
+            require(repeated.isEmpty()) { "Modules with the same identifier: $repeated" }
+        }
+    }
 }

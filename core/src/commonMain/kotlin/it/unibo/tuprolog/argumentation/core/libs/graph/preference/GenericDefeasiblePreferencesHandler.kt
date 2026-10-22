@@ -17,7 +17,7 @@ object GenericDefeasiblePreferencesHandler : PrologModule(
         %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.
         modifyArgumentationGraph :-
             defeasiblePref::assertAllSup,
-            findall((T, A, B, C), context_check(attack(T, A, B, C)), Attacks),
+            graphStore::attacks(Attacks),
             defeasiblePref::filterSupRelatedAttacks(Attacks, InvalidAttacks),
             defeasiblePref::convertAttacks(InvalidAttacks),
             buildPrefAttacks.
@@ -37,7 +37,7 @@ object GenericDefeasiblePreferencesHandler : PrologModule(
             findall(Support, (
                 member(X, Preferences),
                 argument::claim(Support, X),
-                context_check(argument(Support))
+                graphStore::argument(Support)
             ), Supports),
             mergeIds(Supports, MergedId),
             argument::infoParts(Info, [pref], MergedId, []),
@@ -47,7 +47,7 @@ object GenericDefeasiblePreferencesHandler : PrologModule(
                 member(A, Supports),
                 graphStore::saveSupport(A, Argument),
                 findall(_, (
-                    context_check(attack(X, Y, A, Z)),
+                    graphStore::attack(X, Y, A, Z),
                     graphStore::saveAttack(X, Y, Argument, Z)
                 ), _)
             ), _).

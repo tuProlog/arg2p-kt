@@ -19,7 +19,7 @@ object IdealLabeller : PrologModule("prolog.argumentation.graph.labelling.ideal"
             context_active(Branch),
             findall(In, (
                 preferred:::argumentLabelling,
-                findall(A, context_check(inId(A)), In)
+                findall(A, graphStore::argumentLabelById(in, A), In)
             ), Preferred),
             utils::intersection(Preferred, Common),
             admissible::maximal_admissible_subset(Common, Ideal),

@@ -22,21 +22,22 @@ object BpCompleteLabeller : PrologModule("prolog.argumentation.graph.labelling.b
         %  The labelling, in the active context.
         argumentLabelling :-
             bp_grounded::reifyBurdenOfProofs,
-            findall(X, context_check(argument(X)), Arguments),
+            graphStore::arguments(Arguments),
             completeBpLabelling(go, Arguments).
 
         completeBpLabelling(stop, _).
         completeBpLabelling(go, Arguments) :-
             bp_grounded_partial::partialBpLabelling(Arguments), !,
-            findall(X, (context_check(und(X)), context_retract(und(X))), NewArgs),
+            graphStore::labelledArguments(und, NewArgs),
+            graphStore::unlabelArguments(und),
             grounded_old::groundedLabelling(NewArgs),
-            findall(X, context_check(und(X)), LeftArguments),
+            graphStore::labelledArguments(und, LeftArguments),
             stopCondition(Stop, Arguments, LeftArguments),
             completeBpLabelling(Stop, LeftArguments).
 
         stopCondition(stop, Args, NewArgs) :-
             utils::sort(Args, SortedArgs),
             utils::sort(NewArgs, SortedArgs), !.
-        stopCondition(go, _, _) :- context_retract(und(_)).
+        stopCondition(go, _, _) :- graphStore::unlabelArguments(und).
         """.trimIndent()
 }
