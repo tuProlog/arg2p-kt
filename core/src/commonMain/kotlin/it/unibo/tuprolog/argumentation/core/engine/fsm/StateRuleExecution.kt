@@ -24,11 +24,14 @@ data class StateRuleExecution(
      * arg2p: the rule is a fresh copy, whose variables are only bound by the unifier with the goal, and only occur in
      * the head and the body: the body is built with the unifier, and only the bindings of the variables of the goal
      * are added to the substitution of the resolution (which they would only make larger, and as costly to extend at
-     * each step): when there are none, the substitution stays as it is.
+     * each step): when there are none, the substitution stays as it is. The head comes first in the unification, so
+     * that a variable of the rule meeting one of the goal is bound to it rather than the other way round: a goal
+     * passing its variables to a rule (as most do) adds no binding (with member/2 over a list, the substitution grew
+     * by one binding for each element, and enumerating the list was cubic in its length).
      */
     override fun computeNext(): State {
         val rule = context.rules.current!!
-        val substitution = with(context) { unificator.mgu(currentGoal!!, rule.head) }
+        val substitution = with(context) { unificator.mgu(rule.head, currentGoal!!) }
         return when {
             substitution.isSuccess -> {
                 val unifier = substitution.castToUnifier()
@@ -57,11 +60,12 @@ data class StateRuleExecution(
     override fun clone(context: PrologExecutionContext): StateRuleExecution = copy(context = context)
 }
 
-// The variables of a term, collected by a plain recursion (Term.variables nests a lazy sequence for each argument)
+// The variables of a term, collected by a plain recursion (Term.variables nests a lazy sequence for each argument),
+// skipping its ground parts (whose groundness is known: lists build it, other structures compute it once)
 internal fun Term.collectVariables(into: MutableSet<Var>) {
     when (this) {
         is Var -> into.add(this)
-        is Struct -> for (i in 0 until arity) this[i].collectVariables(into)
+        is Struct -> if (!isGround) for (i in 0 until arity) this[i].collectVariables(into)
         else -> Unit
     }
 }
