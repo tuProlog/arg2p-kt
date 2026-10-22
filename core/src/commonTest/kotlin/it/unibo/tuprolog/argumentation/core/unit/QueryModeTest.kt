@@ -176,6 +176,36 @@ class QueryModeTest {
             listOf("-c", "f", "h", "k"),
         )
 
+    // Rules in a cycle: a statement is met again while its arguments are being built, and no argument uses a rule
+    // twice
+    @Test
+    fun cyclicRules() =
+        checkQueries(
+            """
+            f :=> a.
+            r1 : a => b.
+            r2 : b => c.
+            r3 : c => a.
+            r4 : [] => -c.
+            """.trimIndent(),
+            listOf("a", "b", "c", "-c"),
+        )
+
+    // Strict rules and their transpositions form cycles
+    @Test
+    fun transposedStrictRules() =
+        checkQueries(
+            """
+            f1 :=> a.
+            f2 :=> b.
+            s1 : a, b -> c.
+            s2 : c -> d.
+            r1 : [] => -d.
+            autoTransposition.
+            """.trimIndent(),
+            listOf("c", "d", "-d", "-a"),
+        )
+
     // Strict rules: an argument only rebutted on its defeasible sub-arguments
     @Test
     fun strictTheory() =

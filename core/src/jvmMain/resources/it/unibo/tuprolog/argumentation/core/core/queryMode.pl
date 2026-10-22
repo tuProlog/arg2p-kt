@@ -27,7 +27,7 @@ locality(whole_graph).
 queryAcceptance(whole_graph, _) :- !,
     abstract:::computeGlobalAcceptance.
 queryAcceptance(Locality, Goal) :-
-    findall(_, buildSubGraph(Goal, _), _),
+    explore(Goal),
     expand(Locality),
     setting(graphBuildMode, X),
     X:::buildAdditionalArguments,
@@ -54,21 +54,44 @@ mineResults(Goal, Result) :-
 % ARGUMENT CONSTRUCTION
 %==============================================================================
 
+% explore(+Query): builds the arguments for Query and those their labels may depend on (see buildSubGraph/2).
+% With cycles among the rules, a statement met again while its arguments are being built only gets those built so
+% far: the exploration is then repeated, from scratch, until it builds no new argument (the arguments are finitely
+% many, as none uses a rule twice).
+explore(Query) :-
+    context_retract(newConc(query, _)),
+    context_retract(cycle),
+    findall(_, buildSubGraph(Query, _), _),
+    (context_check(cycle), context_check(newConc(query, _)) ->
+        context_retract(explored(_)),
+        explore(Query)
+    ;
+        true
+    ).
+
 % buildSubGraph(+Query, ?Argument): builds the arguments for Query, and those their labels may depend on
-% (see dependency/3), recursively; then Argument is each argument for Query
-buildSubGraph(Query, Argument) :-
-    % write("Calling on "),write(Query),nl,
+% (see dependency/3), recursively; then Argument is each argument for Query. A statement is explored once (or
+% once more for each round of explore/1): explored(Query) covers the statements Query generalises.
+buildSubGraph(Query, _) :-
     ground_vars(Query, Normalized),
     context_absent(explored(Normalized)),
+    context_assert(explored(Query)),
+    context_assert(exploring(Normalized, Query)),
     findall(_, (
         findSingleArgument([Query], Argument, Support),
-        saveArgument(query, [Query], Argument),
-        saveSupports(Argument, Support),
+        recordArgument(Query, Argument, Support),
         context_id(argument(Argument), Id),
         dependency(Id, Argument, Statement),
         buildSubGraph(Statement, _)
     ), _),
-    context_assert(explored(Query)),
+    context_retract(exploring(Normalized, _)),
+    fail.
+% A statement being explored (by a goal that generalises it): a cycle, as its arguments are not all built yet
+buildSubGraph(Query, _) :-
+    ground_vars(Query, Normalized),
+    context_check(exploring(_, Normalized)),
+    context_absent(cycle),
+    context_assert(cycle),
     fail.
 buildSubGraph(Query, Argument) :- context_check(clause(conc([Query]), argument(Argument))).
 
@@ -89,7 +112,7 @@ expand(connected) :-
         context_assert(expanded(Id)),
         context_check(clause(arg(Id), argument(Argument))),
         dependant(Argument, Statement),
-        findall(_, buildSubGraph(Statement, _), _)
+        explore(Statement)
     ), _),
     expand(connected).
 expand(_).
@@ -123,10 +146,12 @@ findArgument(Conclusion, _, Found) :-
 
 % Rule
 
+% An argument uses a rule at most once (as in the whole graph, see utils::argument_rules)
 findArgument(Conclusion, Ids, Found) :-
     parser::classic_rule(Id, Premises, Conclusion),
-    %\+ member(Id, Ids),
     findPremises(Premises, [Id|Ids], premises(Conclusions, ResRules, Support)),
+    ResRules = [SubRules|_],
+    \+ member(Id, SubRules),
     ruleRules(Id, ResRules, Rules),
     Found = found(Conclusions, Rules, Support).
 
@@ -242,6 +267,13 @@ mergeRules([HAR, _, HLDR, HDR, HDP], [TAR, TLDR, TDR, TDP], [AR, LDR, DR, DP]) :
 %--------------------------------------------------------------------------
 % Save stuff
 %--------------------------------------------------------------------------
+
+% recordArgument(+Query, +Argument, +Support): Argument saved with its supports, unless it already was (built in a
+% previous round of explore/1, whose dependencies are explored again)
+recordArgument(Query, Argument, Support) :-
+    saveArgument(query, [Query], Argument), !,
+    saveSupports(Argument, Support).
+recordArgument(_, _, _).
 
 saveArgument(T, Conclusion, Argument) :-
     context_absent(clause(conc(Conclusion), argument(Argument))),
