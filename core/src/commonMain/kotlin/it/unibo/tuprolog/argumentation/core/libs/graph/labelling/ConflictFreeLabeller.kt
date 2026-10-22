@@ -8,6 +8,8 @@ import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.ConflictGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
+import it.unibo.tuprolog.argumentation.core.libs.graph.contextBranch
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
@@ -19,7 +21,6 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.core.List as LogicList
 
 object ConflictFreeLabeller :
     LazyRawPrologContent(),
@@ -114,7 +115,7 @@ object LabelSet : Primitive {
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
         arg2pScope {
-            request.solve("context_branch"(request.arguments[0], `_`)).first()
+            request.contextBranch(request.arguments[0])
             val set = request.ids(1).toSet()
             val arguments =
                 request
@@ -134,7 +135,7 @@ object LabelSet : Primitive {
                 args: List<Pair<Term, Term>>,
             ) = args.flatMap { (id, x) -> listOf(label(x), "${label}Id"(id)) }
             val all = facts("in", newIn) + facts("out", out) + facts("und", und)
-            if (all.isNotEmpty()) request.solve("context_assert_all"(LogicList.of(all))).first()
+            request.contextAssertAll(all)
             sequenceOf(request.replyWith(true))
         }
 }

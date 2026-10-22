@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.libs.utils
 
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
@@ -9,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
 import it.unibo.tuprolog.argumentation.core.libs.graph.stronglyConnectedComponents
@@ -168,9 +168,7 @@ object AssertAll : Primitive {
             )
         }
 
-        arg2pScope {
-            list.toList().forEach { request.solve("context_assert"(it)).first() }
-        }
+        request.contextAssertAll(list.toList())
 
         return sequence {
             yield(

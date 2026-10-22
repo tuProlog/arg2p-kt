@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.core.Term
@@ -16,7 +17,6 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.core.List as LogicList
 
 abstract class GroundedLabellerOptimizedBase :
     LazyRawPrologContent(),
@@ -72,7 +72,7 @@ object GroundedFixpoint : Primitive {
             ) {
                 if (labelled.isEmpty()) return
                 val facts = labelled.flatMap { (a, x) -> listOf(name(x), "${name}Id"(a)) }
-                request.solve("context_assert_all"(LogicList.of(facts))).first()
+                request.contextAssertAll(facts)
             }
 
             do {

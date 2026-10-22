@@ -27,6 +27,35 @@ class Context :
     private val selected: ClauseStore
         get() = dynamicSolver[selectedSolver]!!
 
+    // Operations of the context for the native primitives of the other libraries, which reach it through [of]
+    // rather than solving goals (a solver is set up to solve a goal)
+
+    /** The active branch, as context_active/1 */
+    val active: Int
+        get() = selectedSolver
+
+    /** A new branch of the given one, made active, as context_branch/2 */
+    fun branch(from: Int): Int {
+        dynamicSolver[nextSolver] = dynamicSolver[from]!!.fork()
+        selectedSolver = nextSolver++
+        return selectedSolver
+    }
+
+    /** The terms asserted in the active branch, in order, as context_assert_all/1 */
+    fun assertAll(terms: Iterable<Term>) = terms.forEach { selected.assertA(it) }
+
+    /**
+     * The instances of goal in the given branch (the active one if null), as context_all: for the native primitives
+     * reading the context, without solving a goal (see [DynamicCacheAll.owner])
+     */
+    fun instances(
+        goal: Term,
+        branch: Int? = null,
+    ): kotlin.collections.List<Term> {
+        val store = if (branch == null) selected else dynamicSolver[branch] ?: return emptyList()
+        return store.solve(goal).map { goal.apply(it) }.toList()
+    }
+
     inner class DynamicCacheReset : PrimitiveWithSignature {
         override val signature = Signature("context_reset", 0)
 
@@ -74,9 +103,7 @@ class Context :
                     .intValue
                     .toInt()
             val result: Term = request.arguments[1]
-            this@Context.dynamicSolver[this@Context.nextSolver] = this@Context.dynamicSolver[target]!!.fork()
-            this@Context.selectedSolver = this@Context.nextSolver++
-            return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(this@Context.selectedSolver))))
+            return sequenceOf(request.replyWith(Substitution.of(result.castToVar(), Numeric.of(branch(target)))))
         }
     }
 
@@ -139,10 +166,7 @@ class Context :
         override val signature = Signature("context_assert_all", 1)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            request.arguments[0]
-                .castToList()
-                .toList()
-                .forEach { this@Context.selected.assertA(it) }
+            assertAll(request.arguments[0].castToList().toList())
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -184,6 +208,10 @@ class Context :
         arity: Int,
     ) : PrimitiveWithSignature {
         override val signature = Signature("context_all", arity)
+
+        // The context this primitive reads, for the native primitives of the other libraries
+        val owner: Context
+            get() = this@Context
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val store =
@@ -339,4 +367,9 @@ class Context :
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
+
+    companion object {
+        /** The context library of the solver of the given context, if it is reachable (through context_all/2) */
+        fun of(context: ExecutionContext): Context? = (context.libraries.primitives[Signature("context_all", 2)] as? DynamicCacheAll)?.owner
+    }
 }

@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.libs.graph
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.libs.basic.Context
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -11,11 +12,19 @@ import it.unibo.tuprolog.core.List as LogicList
 
 // Argumentation graph and labels of the active context, read by native primitives
 
-/** Instances of goal in the given branch (the active one by default), read with a single context_all call */
+/**
+ * Instances of goal in the given branch (the active one by default): read from the context library behind
+ * context_all, or with a single context_all call if it is not reachable (solving a goal sets up a solver)
+ */
 internal fun Solve.Request<ExecutionContext>.contextInstances(
     goal: Struct,
     branch: Term? = null,
 ): List<Struct> {
+    val owner = Context.of(context)
+    if (owner != null) {
+        val index = branch?.let { it.asInteger()?.intValue?.toInt() ?: return emptyList() }
+        return owner.instances(goal, index).map { it.castToStruct() }
+    }
     val request = this
     // request.solve explicitly: inside arg2pScope a bare solve would resolve to the scope's own solver
     return arg2pScope {
@@ -28,6 +37,29 @@ internal fun Solve.Request<ExecutionContext>.contextInstances(
             ?.castToList()
             ?.toList()
             ?.map { it.castToStruct() } ?: emptyList()
+    }
+}
+
+/** A new branch of the given one, made active (context_branch/2) */
+internal fun Solve.Request<ExecutionContext>.contextBranch(from: Term) {
+    val owner = Context.of(context)
+    if (owner != null) {
+        owner.branch(from.castToInteger().intValue.toInt())
+    } else {
+        val request = this
+        arg2pScope { request.solve("context_branch"(from, `_`)).first() }
+    }
+}
+
+/** The terms asserted in the active branch, in order (context_assert_all/1) */
+internal fun Solve.Request<ExecutionContext>.contextAssertAll(terms: List<Term>) {
+    if (terms.isEmpty()) return
+    val owner = Context.of(context)
+    if (owner != null) {
+        owner.assertAll(terms)
+    } else {
+        val request = this
+        arg2pScope { request.solve("context_assert_all"(LogicList.of(terms))).first() }
     }
 }
 
