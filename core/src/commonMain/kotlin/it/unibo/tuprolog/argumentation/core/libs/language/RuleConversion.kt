@@ -7,8 +7,8 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.solve.LogicProgrammingScope
-import it.unibo.tuprolog.dsl.solve.prolog
+import it.unibo.tuprolog.dsl.LogicProgrammingScope
+import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
@@ -23,7 +23,7 @@ object ConversionUtils {
         target: Clause,
         context: Solve.Request<ExecutionContext>,
     ): Term =
-        prolog {
+        logicProgramming {
             target.bodyItems
                 .map { term ->
                     if (term.isStruct && term.asStruct()?.functor == "\\+") {
@@ -55,7 +55,7 @@ object ConversionUtils {
         mapper: (Iterable<IndexedValue<Clause>>, LogicProgrammingScope) -> Term,
     ): Sequence<Substitution> {
         context.ensuringArgumentIsVariable(0)
-        return prolog {
+        return logicProgramming {
             sequenceOf(
                 Substitution.of(
                     first.castToVar(),
