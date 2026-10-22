@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
@@ -147,7 +147,7 @@ private object UndecidedCandidates : SccPrimitive {
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val scc = request.ids(0)
         val undecided = request.labelled("undId", request.arguments[1])
-        val attackers = request.attacks().groupBy({ it.second }, { it.first })
+        val attackers = request.attackGraph().attackers
         val candidates =
             scc.filter { id ->
                 id in undecided && attackers[id].orEmpty().none { it !in scc && it in undecided }

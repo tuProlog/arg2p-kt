@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -57,7 +57,7 @@ object StronglyAdmissibleSet : Primitive {
     val signature: Signature = Signature("strongly_admissible_set", 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val attackers = request.attacks().groupBy({ it.second }, { it.first })
+        val attackers = request.attackGraph().attackers
         val built = mutableSetOf<Term>()
         var pending = request.labelled("inId")
         while (pending.isNotEmpty()) {

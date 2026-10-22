@@ -7,7 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
@@ -192,11 +192,13 @@ object ForEach : Primitive {
         if (list !is List) {
             throw TypeError.forGoal(request.context, request.signature, TypeError.Expected.LIST, list)
         }
+        // the iterations are solved one after the other, by the same solver
+        val solver = request.subSolver()
         list.toList().forEach { item ->
             val iteration = Tuple.of(request.arguments[0], request.arguments[2]).freshCopy()
             val unifier = Arg2pUnificator.mgu(iteration[0], item)
             if (unifier.isSuccess) {
-                request.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }
+                solver.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }
             }
         }
         return sequenceOf(request.replyWith(true))
@@ -274,7 +276,7 @@ class StronglyConnectedComponents(
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val nodes = if (request.arguments.size == 1) request.argumentIds() else request.ids(0)
-        val attacked = request.attacks().groupBy({ it.first }, { it.second })
+        val attacked = request.attackGraph().attacked
         val sccs = stronglyConnectedComponents(nodes) { attacked[it].orEmpty() }
         return sequenceOf(request.replyList(request.arguments.lastIndex, sccs.map { List.of(it) }) ?: request.replyFail())
     }

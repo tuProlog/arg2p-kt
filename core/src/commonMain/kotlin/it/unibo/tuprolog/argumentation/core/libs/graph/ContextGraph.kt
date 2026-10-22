@@ -40,11 +40,30 @@ internal fun Solve.Request<ExecutionContext>.contextAssertAll(terms: List<Term>)
 internal fun Solve.Request<ExecutionContext>.argumentIds(): List<Term> =
     arg2pScope { contextInstances("clause"("arg"(`_`), `_`)).map { it[0].castToStruct()[0] } }
 
-/** Attacks as (attacker, attacked) argument identifiers */
-internal fun Solve.Request<ExecutionContext>.attacks(): List<Pair<Term, Term>> =
-    arg2pScope {
-        contextInstances("clause"("att"(`_`, `_`), `_`)).map { it[0].castToStruct().let { att -> att[0] to att[1] } }
+/** The attacks between the arguments of a branch, by argument identifier, with the attackers and the attacked of each */
+internal class AttackGraph(
+    /** The attacks, as (attacker, attacked) pairs, newest first */
+    val attacks: List<Pair<Term, Term>>,
+) {
+    val attackers: Map<Term, List<Term>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy({ it.second }, { it.first }) }
+    val attacked: Map<Term, List<Term>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy({ it.first }, { it.second }) }
+}
+
+/**
+ * The attack graph of the active branch, from its att/2 clauses: built once until they change (the native
+ * labellings read it at each step of their search)
+ */
+internal fun Solve.Request<ExecutionContext>.attackGraph(): AttackGraph =
+    contextLibrary.derived("att", 2, "attackGraph") { clauses ->
+        AttackGraph(clauses.map { it.head!!.let { att -> att[0] to att[1] } })
     }
+
+/** Attacks as (attacker, attacked) argument identifiers */
+internal fun Solve.Request<ExecutionContext>.attacks(): List<Pair<Term, Term>> = attackGraph().attacks
+
+/** The conflicts between the arguments of the active branch (see [ConflictGraph]), built once until the attacks change */
+internal fun Solve.Request<ExecutionContext>.conflictGraph(): ConflictGraph<Term> =
+    contextLibrary.derived("att", 2, "conflictGraph") { ConflictGraph(attacks()) }
 
 /** Identifiers of the arguments with the given label fact (inId, outId, undId), in the given or active branch */
 internal fun Solve.Request<ExecutionContext>.labelled(

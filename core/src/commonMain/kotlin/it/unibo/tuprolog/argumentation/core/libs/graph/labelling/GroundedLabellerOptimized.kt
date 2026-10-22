@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
@@ -60,7 +60,7 @@ object GroundedFixpoint : Primitive {
                 request
                     .contextInstances("clause"("arg"(`_`), "argument"(`_`)))
                     .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
-            val attackers = request.attacks().groupBy({ it.second }, { it.first })
+            val attackers = request.attackGraph().attackers
             val inIds = request.labelled("inId").toMutableSet()
             val outIds = request.labelled("outId").toMutableSet()
 

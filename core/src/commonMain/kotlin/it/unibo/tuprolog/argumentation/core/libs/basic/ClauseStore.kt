@@ -61,6 +61,17 @@ class ClauseStore private constructor(
         }
     }
 
+    /**
+     * A value derived from the clauses of the predicate [functor]/[arity] (newest first), named [name]: computed once,
+     * until the predicate changes (the branches sharing the predicate share it)
+     */
+    fun <T : Any> derived(
+        functor: String,
+        arity: Int,
+        name: String,
+        compute: (List<Clause>) -> T,
+    ): T = data.derived("$functor/$arity", name, compute)
+
     /** The stored clauses whose head may unify with the given one, newest first, as stored */
     fun clausesFor(head: Term): List<Clause> = head.asStruct()?.let { struct -> data.candidates(struct).map { it.clause } } ?: emptyList()
 
@@ -271,6 +282,9 @@ class ClauseStore private constructor(
         val groundHeads = HashMap<Term, LinkedHashSet<Long>>()
         val nonGroundHeads = LinkedHashSet<Long>()
 
+        // The values derived from the clauses (see ClauseStore.derived), until they change
+        val derived = HashMap<String, Any>()
+
         fun copy(): Predicate =
             Predicate(indexes.size).also { predicate ->
                 predicate.clauses.putAll(clauses)
@@ -304,6 +318,7 @@ class ClauseStore private constructor(
             val head = clause.head!!
             val stored = Stored(nextId++, clause)
             val predicate = writable(key(head), head.arity)
+            predicate.derived.clear()
             predicate.clauses[stored.id] = stored
             head.args.forEachIndexed { i, arg -> predicate.indexes[i].add(arg, stored.id) }
             if (head.isGround) {
@@ -317,6 +332,7 @@ class ClauseStore private constructor(
             val head = stored.clause.head!!
             if (predicates[key(head)]?.clauses?.containsKey(stored.id) != true) return
             val predicate = writable(key(head), head.arity)
+            predicate.derived.clear()
             predicate.clauses.remove(stored.id)
             head.args.forEachIndexed { i, arg -> predicate.indexes[i].remove(arg, stored.id) }
             if (head.isGround) {
@@ -327,6 +343,19 @@ class ClauseStore private constructor(
             } else {
                 predicate.nonGroundHeads.remove(stored.id)
             }
+        }
+
+        fun <T : Any> derived(
+            key: String,
+            name: String,
+            compute: (List<Clause>) -> T,
+        ): T {
+            val predicate = predicates[key] ?: return compute(emptyList())
+            @Suppress("UNCHECKED_CAST")
+            return predicate.derived.getOrPut(name) {
+                val clauses = predicate.clauses.values.map { it.clause }
+                compute(clauses.asReversed())
+            } as T
         }
 
         /** Stored clauses whose head may unify with the given one, newest first */
@@ -341,9 +370,13 @@ class ClauseStore private constructor(
             var best: Set<Long>? = null
             head.args.forEachIndexed { i, arg ->
                 val found = predicate.indexes[i].candidates(arg) ?: return@forEachIndexed
-                if (best == null || found.size < best!!.size) best = found
+                if (best.let { it == null || found.size < it.size }) best = found
             }
-            val ids = best ?: predicate.clauses.keys
+            // all the clauses: in the order of their ids (they are added in that order), the newest first
+            val ids =
+                best ?: return predicate.clauses.values
+                    .toList()
+                    .asReversed()
             return ids.sortedDescending().mapNotNull { predicate.clauses[it] }
         }
 

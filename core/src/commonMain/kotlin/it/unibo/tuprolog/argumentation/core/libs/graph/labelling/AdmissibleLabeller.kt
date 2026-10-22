@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
@@ -66,7 +66,7 @@ class AdmissibleSet(
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val inIds = request.labelled("inId") + if (request.arguments.isEmpty()) emptyList() else request.ids(0)
-        val attackers = request.attacks().groupBy({ it.second }, { it.first })
+        val attackers = request.attackGraph().attackers
         val admissible =
             inIds.all { h ->
                 attackers[h].orEmpty().all { attacker ->
@@ -85,7 +85,7 @@ object MaximalAdmissibleSubset : Primitive {
     val signature: Signature = Signature("maximal_admissible_subset", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val attackers = request.attacks().groupBy({ it.second }, { it.first })
+        val attackers = request.attackGraph().attackers
         var subset = request.ids(0)
         while (true) {
             val defended =

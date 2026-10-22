@@ -6,8 +6,8 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.ConflictGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.libs.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextBranch
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextInstances
@@ -87,7 +87,7 @@ object ConflictFreeSubset : Primitive {
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val args = request.ids(0)
         val forced = request.ids(1).toSet()
-        val graph = ConflictGraph(request.attacks())
+        val graph = request.conflictGraph()
 
         fun subsets(
             i: Int,
@@ -124,7 +124,7 @@ object LabelSet : Primitive {
             val labelled = request.labelled("inId") + request.labelled("outId") + request.labelled("undId")
             val newIn = arguments.filter { (id, _) -> id in set && id !in labelled }
             val inIds = request.labelled("inId") + newIn.map { it.first }
-            val attackers = request.attacks().groupBy({ it.second }, { it.first })
+            val attackers = request.attackGraph().attackers
             val (out, und) =
                 arguments
                     .filter { (id, _) -> id !in labelled && id !in inIds }

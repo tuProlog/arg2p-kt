@@ -5,8 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.libs.graph.ConflictGraph
-import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
+import it.unibo.tuprolog.argumentation.core.libs.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
 import it.unibo.tuprolog.core.Term
@@ -67,7 +66,7 @@ object NaiveSubset : Primitive {
         val args = request.ids(0)
         val forced = request.ids(1).toSet()
         val alreadyIn = request.ids(2)
-        val graph = ConflictGraph(request.attacks())
+        val graph = request.conflictGraph()
 
         // pending: arguments left out that nothing chosen conflicts with yet
         fun subsets(

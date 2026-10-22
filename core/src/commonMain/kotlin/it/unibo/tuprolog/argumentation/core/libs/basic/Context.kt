@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Numeric
@@ -47,6 +48,14 @@ class Context :
         selectedSolver = nextSolver++
         return selectedSolver
     }
+
+    /** A value derived from the clauses of a predicate in the active branch (see [ClauseStore.derived]) */
+    fun <T : Any> derived(
+        functor: String,
+        arity: Int,
+        name: String,
+        compute: (kotlin.collections.List<Clause>) -> T,
+    ): T = selected.derived(functor, arity, name, compute)
 
     /** The terms asserted in the active branch, in order, as context_assert_all/1 */
     fun assertAll(terms: Iterable<Term>) = terms.forEach { selected.assertA(it) }
