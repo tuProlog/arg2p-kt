@@ -38,6 +38,10 @@ object GroundedLabellerOptimized : PrologModule("prolog.argumentation.graph.labe
  * grounded_fixpoint: extends the IN/OUT labelling of the active context to the grounded fixpoint, labelling UND
  * the arguments left. Each round labels IN the arguments whose attackers are all OUT, then OUT the arguments
  * attacked by an IN one; the context is read once and only the new labels are asserted.
+ *
+ * Each argument keeps the number of its attackers not OUT: a round only looks at the arguments the previous one
+ * changed (those attacked by the arguments just labelled), rather than at all the unlabelled ones, which made a
+ * chain of attacks quadratic. The labels of a round are asserted in the order of the arguments.
  */
 object GroundedFixpoint : Primitive {
     val signature: Signature = Signature("grounded_fixpoint", 0)
@@ -48,30 +52,56 @@ object GroundedFixpoint : Primitive {
                 request
                     .contextInstances("clause"("arg"(`_`), "argument"(`_`)))
                     .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
-            val attackers = request.attackGraph().attackers
+            val position = arguments.withIndex().associate { (index, argument) -> argument.first to index }
+            val graph = request.attackGraph()
             val inIds = request.labelled("inId").toMutableSet()
             val outIds = request.labelled("outId").toMutableSet()
 
-            fun unlabelled() = arguments.filter { (a, _) -> a !in inIds && a !in outIds }
+            // an argument of the graph not labelled yet
+            fun unlabelled(id: Term) = id in position && id !in inIds && id !in outIds
 
-            fun label(
-                labelled: List<Pair<Term, Term>>,
-                name: String,
-            ) {
-                if (labelled.isEmpty()) return
-                val facts = labelled.flatMap { (a, x) -> listOf(name(x), "${name}Id"(a)) }
-                request.contextAssertAll(facts)
+            // the attackers not OUT of each unlabelled argument
+            val pending = HashMap<Term, Int>()
+            arguments.forEach { (id, _) ->
+                if (unlabelled(id)) pending[id] = graph.attackers[id].orEmpty().count { it !in outIds }
             }
 
+            fun label(
+                ids: Collection<Term>,
+                name: String,
+            ): List<Term> {
+                val sorted = ids.sortedBy { position.getValue(it) }
+                if (sorted.isEmpty()) return sorted
+                val facts = sorted.flatMap { id -> listOf(name(arguments[position.getValue(id)].second), "${name}Id"(id)) }
+                request.contextAssertAll(facts)
+                return sorted
+            }
+
+            // the arguments to label IN, and those to label OUT, in the next round
+            var candidatesIn: Collection<Term> = pending.filterValues { it == 0 }.keys
+            var candidatesOut: Collection<Term> =
+                arguments.map { it.first }.filter { id ->
+                    unlabelled(id) &&
+                        graph.attackers[id].orEmpty().any { it in inIds }
+                }
             do {
-                val newIn = unlabelled().filter { (a, _) -> attackers[a].orEmpty().all { it in outIds } }
-                label(newIn, "in")
-                inIds += newIn.map { it.first }
-                val newOut = unlabelled().filter { (a, _) -> attackers[a].orEmpty().any { it in inIds } }
-                label(newOut, "out")
-                outIds += newOut.map { it.first }
+                val newIn = label(candidatesIn.filter { unlabelled(it) && pending[it] == 0 }.toSet(), "in")
+                inIds += newIn
+                val attackedByIn = newIn.flatMap { graph.attacked[it].orEmpty() }
+                val newOut = label((candidatesOut + attackedByIn).filter { unlabelled(it) }.toSet(), "out")
+                outIds += newOut
+                val released = LinkedHashSet<Term>()
+                newOut.forEach { out ->
+                    graph.attacked[out].orEmpty().forEach { target ->
+                        val count = pending[target] ?: return@forEach
+                        pending[target] = count - 1
+                        if (count == 1) released += target
+                    }
+                }
+                candidatesIn = released
+                candidatesOut = emptyList()
             } while (newIn.isNotEmpty() || newOut.isNotEmpty())
-            label(unlabelled(), "und")
+            label(arguments.map { it.first }.filter { unlabelled(it) }, "und")
         }
         return sequenceOf(request.replyWith(true))
     }
