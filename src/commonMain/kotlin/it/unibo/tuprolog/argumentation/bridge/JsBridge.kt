@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.bridge
 import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.core.Integer
@@ -14,7 +15,6 @@ import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
@@ -182,18 +182,18 @@ object JsBridge {
         val flags = Theory.parse(flagsText)
         val libFlags = Library.of(alias = "argumentation.flags", clauses = flags)
 
-        return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+        return Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
             // the same unificator as the solvers built by Arg2pSolverFactory: lookups match clause heads only
             unificator = Arg2pUnificator,
             otherLibraries =
-                PrologSolverFactory.defaultRuntime.plus(
+                Arg2pPrologSolverFactory.defaultRuntime.plus(
                     Arg2pSolver
                         .default(
                             dynamicLibs = listOf(CausalitySolver()),
                         ).to2pLibraries()
                         .plus(libFlags),
                 ),
-            flags = PrologSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+            flags = Arg2pPrologSolverFactory.defaultFlags.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             staticKb = Theory.empty(),
             stdOut = OutputChannel.of(outputConsumer),
             stdErr = OutputChannel.of { _ -> },

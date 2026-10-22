@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libs.extra
 
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
@@ -23,7 +24,6 @@ import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
@@ -96,7 +96,7 @@ object ModuleCall : Primitive {
 
     private fun mineModulesPath(context: ExecutionContext): String =
         logicProgramming {
-            PrologSolverFactory
+            Arg2pPrologSolverFactory
                 .solverOf(libraries = context.libraries)
                 .solve("modulesPath"(X))
                 .map { if (it is Solution.Yes) it.substitution[X].toString() else "" }
