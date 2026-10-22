@@ -2,13 +2,19 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The ideal labelling (module `ideal`, an argumentLabellingMode): the maximal admissible subset of the arguments IN
+ * in every preferred labelling.
+ */
 object IdealLabeller : PrologModule("prolog.argumentation.graph.labelling.ideal", "ideal") {
     override val prologRawTheory: String =
         """
-        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        %! locality(-Locality)
+        %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)
         locality(directional).
 
-        % The ideal labelling has IN the maximal admissible subset of the intersection of the preferred extensions
+        %! argumentLabelling
+        %  The ideal labelling has IN the maximal admissible subset of the intersection of the preferred extensions
         argumentLabelling :-
             context_active(Branch),
             findall(In, (

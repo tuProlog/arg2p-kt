@@ -58,8 +58,10 @@ object GenericDefeasiblePreferencesHandler : PrologModule(
             findall(Rules, (member(A, Arguments), argument::rules(A, Rules)), Res),
             utils::appendLists(Res, MergedId).
 
-        % Query mode: the same arguments matter as for defeasiblePref
+        %! queryDependencies(+Argument, -Statement)
+        %  Query mode: the same arguments matter as for defeasiblePref
         queryDependencies(Argument, S) :- defeasiblePref::queryDependencies(Argument, S).
+        %! queryDependants(+Argument, -Statement)
         queryDependants(Argument, S) :- defeasiblePref::queryDependants(Argument, S).
         """.trimIndent()
 }

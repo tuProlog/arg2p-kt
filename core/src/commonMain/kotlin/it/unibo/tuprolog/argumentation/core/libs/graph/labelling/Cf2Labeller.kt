@@ -2,15 +2,24 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The cf2 labellings (module `cf2`, an argumentLabellingMode): the naive labellings of each strongly connected
+ * component, the components taken in turn once the arguments attacked by the previous ones are suppressed.
+ */
 object Cf2Labeller : PrologModule("prolog.argumentation.graph.labelling.cf2", "cf2") {
     override val prologRawTheory: String =
         """
-        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        %! locality(-Locality)
+        %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)
         locality(directional).
 
+        %! argumentLabelling
+        %  Each cf2 labelling in turn, left as the active context.
         argumentLabelling :-
             compute(naive).
         
+        %! compute(+Base)
+        %  Each labelling built with the labellings Base (naive or stage) of each component, left as the active context.
         compute(Base) :-
             findall(A, context_check(clause(arg(A), _)), Args),
             context_active(Branch),

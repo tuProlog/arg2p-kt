@@ -3,18 +3,27 @@ package it.unibo.tuprolog.argumentation.core.libs.graph
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The argumentation graph of a theory and its labellings, as the flags select them (module `abstract`): the graph
+ * builder (graphBuildMode), the graph extensions (graphExtension), the semantics (argumentLabellingMode) and the
+ * statement labelling (statementLabellingMode). It also labels abstract frameworks (solve/2,5).
+ */
 object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode)
 
     override val prologRawTheory: String =
         """
+        %! computeGlobalAcceptance
+        %  The graph of the theory, changed by the extensions, and its argument and statement labellings, in the context.
         computeGlobalAcceptance :-
             buildGraph,
             modifyGraph,
             buildArgumentLabelling,
             buildStatementLabelling.
 
+        %! computeGlobalAcceptance(-Graph, -ArgumentLabels, -StatementLabels)
+        %  As computeGlobalAcceptance/0, with the graph ([Arguments, Attacks, Supports]) and the labels ([In, Out, Und]) collected.
         computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-
             computeGlobalAcceptance,
             utils::recoverGraph(Arguments, Attacks, Supports),
@@ -25,6 +34,8 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
             setting(graphBuildMode, X),
             X:::buildArgumentationGraph.
 
+        %! modifyGraph
+        %  The graph changed by each graph extension, the last stated first.
         modifyGraph :-
             findall(X, setting(graphExtension, X), Ext),
             modifyGraph(Ext).
@@ -34,20 +45,27 @@ object AbstractMode : PrologModule("prolog.argumentation.abstract", "abstract") 
             modifyGraph(Ext),
             X:::modifyArgumentationGraph.
 
+        %! buildArgumentLabelling
+        %  The labelling of the arguments, by the semantics of argumentLabellingMode.
         buildArgumentLabelling :-
             setting(argumentLabellingMode, X),
             X:::argumentLabelling.
 
+        %! buildStatementLabelling
+        %  The labelling of the statements, by statementLabellingMode.
         buildStatementLabelling :-
             setting(statementLabellingMode, X),
             X:::statementLabelling.
 
+        %! solve(+Arguments, +Attacks, -In, -Out, -Und)
+        %  The labelling of the abstract framework of Arguments (atoms) and Attacks ((A, B) pairs), by argumentLabellingMode: the arguments IN, OUT and UND.
         solve(Arguments, Attacks, I, O, U) :-
             solve(Arguments, Attacks),
             utils::recoverArgumentLabellingAbstract(I, O, U).
 
-        % The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them.
-        % The goals of for_each are solved in the module utils: they name the modules of their predicates.
+        %! solve(+Arguments, +Attacks)
+        %  The lists are visited natively (for_each): as the goal of a findall, every step of the saving would visit them.
+        %  The goals of for_each are solved in the module utils: they name the modules of their predicates.
         solve(Arguments, Attacks) :-
             context_reset,
             utils::for_each(A, Arguments, (

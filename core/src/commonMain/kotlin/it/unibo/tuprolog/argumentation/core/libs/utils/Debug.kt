@@ -3,12 +3,17 @@ package it.unibo.tuprolog.argumentation.core.libs.utils
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The output of the labellings (module `debug`): printed by buildLabelSets/0, and written when the debug switch is on.
+ */
 object Debug : PrologModule("prolog.argumentation.debug", "debug") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(DebugOutput)
 
     override val prologRawTheory: String =
         """
+        %! printArgumentationGraph(+Arguments, +Attacks, +Supports)
+        %  The graph printed, its arguments part by part.
         printArgumentationGraph(Arguments, Attacks, Supports) :-
             findall(
                 [Rules, '\n',  ' TOPRULE ',  TopRule, '\n', ' CONCLUSION ', Conclusion, '\n', ' BODY ', Body, '\n', ' INFO ', Info, '\n'],
@@ -23,6 +28,8 @@ object Debug : PrologModule("prolog.argumentation.debug", "debug") {
             utils::writeListNl(AttacksToPrint).
 
 
+        %! printArgumentLabelling(+Labels)
+        %  The arguments of [In, Out, Und] printed by label.
         printArgumentLabelling([IN, OUT, UND]) :-
             write('HERE THE ARGUMENTS LABELLED IN: '),nl,
             utils::writeListNl(IN),
@@ -32,6 +39,8 @@ object Debug : PrologModule("prolog.argumentation.debug", "debug") {
             utils::writeListNl(UND).
 
 
+        %! printStatementLabelling(+Labels)
+        %  The statements of [In, Out, Und] printed by label.
         printStatementLabelling([In, Ni, Und]) :-
             write('HERE THE STATEMENTS LABELLED IN: '),nl,
             utils::writeListNl(In),
@@ -40,7 +49,8 @@ object Debug : PrologModule("prolog.argumentation.debug", "debug") {
             write('HERE THE STATEMENTS LABELLED UND: '),nl,
             utils::writeListNl(Und).
 
-        % The debug output is written with the debug switch on (setting(debug))
+        %! writeDebug(+List)
+        %  The debug output is written with the debug switch on (setting(debug))
         writeDebug(List) :-
             setting(debug), !,
             utils::writeList(List).

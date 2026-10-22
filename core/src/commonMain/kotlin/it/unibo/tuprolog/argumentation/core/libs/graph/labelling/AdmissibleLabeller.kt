@@ -10,6 +10,10 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * The admissible labellings (module `admissible`, an argumentLabellingMode): the conflict-free ones in which
+ * every attacker of an IN argument is attacked by an IN argument.
+ */
 object AdmissibleLabeller : PrologModule("prolog.argumentation.graph.labelling.admissible", "admissible") {
     override val primitives: Map<Signature, Primitive>
         get() =
@@ -18,9 +22,12 @@ object AdmissibleLabeller : PrologModule("prolog.argumentation.graph.labelling.a
 
     override val prologRawTheory: String =
         """
-        % Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+        %! locality(-Locality)
+        %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)
         locality(directional).
 
+        %! argumentLabelling
+        %  Each admissible labelling in turn, left as the active context.
         argumentLabelling :-
             context_active(Branch),
             conflictfree::candidates(Args, Forced),

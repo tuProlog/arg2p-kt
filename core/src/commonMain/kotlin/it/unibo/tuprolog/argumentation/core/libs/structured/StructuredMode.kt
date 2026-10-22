@@ -36,9 +36,10 @@ object StructuredMode : PrologModule("prolog.argumentation.structured", "structu
             locality(Locality),
             queryAcceptance(Locality, Goal).
 
-        % The part of the graph the labels of the arguments for the query depend on, as the semantics declares it
-        % (locality/1): the arguments they depend on (directional), those connected to them in either direction
-        % (connected), or the whole graph (whole_graph, also for a semantics that does not declare it)
+        %! locality(-Locality)
+        %  The part of the graph the labels of the arguments for the query depend on, as the semantics declares it
+        %  (locality/1): the arguments they depend on (directional), those connected to them in either direction
+        %  (connected), or the whole graph (whole_graph, also for a semantics that does not declare it)
         locality(Locality) :-
             setting(argumentLabellingMode, Semantics),
             Semantics::locality(L), !,

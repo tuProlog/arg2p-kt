@@ -10,16 +10,23 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * The naive labellings (module `naive`, an argumentLabellingMode): the conflict-free ones with a maximal set of IN
+ * arguments.
+ */
 object NaiveLabeller : PrologModule("prolog.argumentation.graph.labelling.naive", "naive") {
     override val primitives: Map<Signature, Primitive>
         get() = mapOf(NaiveSubset.signature to NaiveSubset)
 
     override val prologRawTheory: String =
         """
-        % Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label
-        % of an argument depends on the arguments connected to it, in either direction
+        %! locality(-Locality)
+        %  Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label
+        %  of an argument depends on the arguments connected to it, in either direction
         locality(connected).
 
+        %! argumentLabelling
+        %  Each naive labelling in turn, left as the active context.
         argumentLabelling :-
             context_active(Branch),
             conflictfree::candidates(Args, Forced),

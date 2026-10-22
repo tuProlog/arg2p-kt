@@ -2,14 +2,20 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The stage labellings (module `stage`, an argumentLabellingMode): the naive ones with a minimal set of UND
+ * arguments.
+ */
 object StageLabeller : PrologModule("prolog.argumentation.graph.labelling.stage", "stage") {
     override val prologRawTheory: String =
         """
-        % Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label
-        % of an argument depends on the arguments connected to it, in either direction
+        %! locality(-Locality)
+        %  Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label
+        %  of an argument depends on the arguments connected to it, in either direction
         locality(connected).
 
-        % Stage labellings are the naive ones with a minimal set of UND arguments
+        %! argumentLabelling
+        %  Stage labellings are the naive ones with a minimal set of UND arguments
         argumentLabelling :-
             context_active(Branch),
             findall(Und-In, (

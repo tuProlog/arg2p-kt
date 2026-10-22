@@ -2,6 +2,10 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling.bp
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The complete labelling with burdens of persuasion (module `bp_grounded_complete`, an argumentLabellingMode, ICLP):
+ * the partial labelling, then the grounded labelling of its UND arguments, repeated until nothing changes.
+ */
 object BpCompleteLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgroundedcomplete", "bp_grounded_complete") {
     override val prologRawTheory: String =
         """
@@ -9,10 +13,13 @@ object BpCompleteLabeller : PrologModule("prolog.argumentation.graph.labelling.b
         % BP COMPLETE LABELLING [ICLP]
         %==============================================================================
 
-        % Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the
-        % label of an argument is taken to depend on the arguments connected to it, in either direction
+        %! locality(-Locality)
+        %  Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the
+        %  label of an argument is taken to depend on the arguments connected to it, in either direction
         locality(connected).
 
+        %! argumentLabelling
+        %  The labelling, in the active context.
         argumentLabelling :-
             bp_grounded::reifyBurdenOfProofs,
             findall(X, context_check(argument(X)), Arguments),

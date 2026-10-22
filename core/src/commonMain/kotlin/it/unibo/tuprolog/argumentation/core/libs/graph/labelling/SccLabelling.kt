@@ -21,15 +21,16 @@ object SccLabelling : PrologModule("prolog.argumentation.graph.labelling.scc", "
 
     override val prologRawTheory: String =
         """
-        % label(+Accept, +Select): labellings built one strongly connected component at a time, in topological order.
-        % The labels of a component only depend on the components before it, and are final once it is left.
-        % Within a component the search forces IN its undecided arguments (grounded propagation labels the rest),
-        % then keeps the local labellings that pass Accept and Select:
-        %   Accept  admissible - the IN arguments are defended
-        %           decided    - admissible, and no argument of the component left UND
-        %   Select  all        - every accepted local labelling
-        %           maximal    - the accepted ones with a maximal set of IN arguments in the component
-        % Each solution leaves its labelling as the active context, released when the next one is computed.
+        %! label(+Accept, +Select)
+        %  Labellings built one strongly connected component at a time, in topological order.
+        %  The labels of a component only depend on the components before it, and are final once it is left.
+        %  Within a component the search forces IN its undecided arguments (grounded propagation labels the rest),
+        %  then keeps the local labellings that pass Accept and Select:
+        %    Accept  admissible - the IN arguments are defended
+        %            decided    - admissible, and no argument of the component left UND
+        %    Select  all        - every accepted local labelling
+        %            maximal    - the accepted ones with a maximal set of IN arguments in the component
+        %  Each solution leaves its labelling as the active context, released when the next one is computed.
         label(Accept, Select) :-
             cache_retract(scc_seen(_, _)),
             context_active(Start),

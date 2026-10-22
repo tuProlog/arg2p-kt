@@ -2,6 +2,10 @@ package it.unibo.tuprolog.argumentation.core.libs.graph.labelling.bp
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
+/**
+ * The partial labelling with burdens of persuasion (module `bp_grounded_partial`, an argumentLabellingMode, ICLP):
+ * each argument labelled IN*, OUT* or UND* by the conditions of the burdens on its conclusion and its complement.
+ */
 object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bpgroundedpartial", "bp_grounded_partial") {
     override val prologRawTheory: String =
         """
@@ -11,15 +15,20 @@ object BpPartialLabeller : PrologModule("prolog.argumentation.graph.labelling.bp
 
         % TODO: handle branching and cuts (complements also)
 
-        % Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the
-        % label of an argument is taken to depend on the arguments connected to it, in either direction
+        %! locality(-Locality)
+        %  Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the
+        %  label of an argument is taken to depend on the arguments connected to it, in either direction
         locality(connected).
 
+        %! argumentLabelling
+        %  The labelling, in the active context.
         argumentLabelling :-
             bp_grounded::reifyBurdenOfProofs,
             findall(X, context_check(argument(X)), Arguments),
             partialBpLabelling(Arguments), !.
 
+        %! partialBpLabelling(+Arguments)
+        %  The labels of Arguments, the most grounded first, deciding first the arguments the label of each depends on.
         partialBpLabelling([]).
         partialBpLabelling(Arguments) :-
             mostGroundedArgument(Arguments, A),

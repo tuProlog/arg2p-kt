@@ -78,6 +78,16 @@ tasks.register<Test>("jvmPrologCoverage") {
     outputs.upToDateWhen { false }
 }
 
+tasks.register<JavaExec>("prologDocs") {
+    group = "documentation"
+    description = "Writes the documentation of the Prolog modules, from their sources (build/docs/prolog-modules)"
+    dependsOn("jvmTestClasses")
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    classpath = jvmTest.classpath
+    mainClass = "it.unibo.tuprolog.argumentation.core.docs.PrologDocsKt"
+    args(file("src/commonMain/kotlin").absolutePath, layout.buildDirectory.dir("docs/prolog-modules").get().asFile.absolutePath)
+}
+
 tasks.register<Test>("jvmBenchmark") {
     group = "verification"
     description = "Times the argument labelling semantics on growing abstract frameworks"
