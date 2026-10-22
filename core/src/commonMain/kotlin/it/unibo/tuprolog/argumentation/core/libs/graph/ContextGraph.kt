@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.unify.Unificator
 import it.unibo.tuprolog.core.List as LogicList
 
 // Argumentation graph and labels of the active context, read by native primitives
@@ -61,7 +61,7 @@ internal fun Solve.Request<ExecutionContext>.replyList(
     index: Int,
     values: List<Term>,
 ): Solve.Response? =
-    Unificator.default
+    Arg2pUnificator
         .mgu(arguments[index], LogicList.of(values))
         .takeIf { it.isSuccess }
         ?.let { replyWith(it) }

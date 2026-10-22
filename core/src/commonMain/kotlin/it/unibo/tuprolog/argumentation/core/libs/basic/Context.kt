@@ -15,7 +15,6 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.unify.Unificator
 
 class Context :
     ArgLibrary,
@@ -200,7 +199,7 @@ class Context :
                 }
             val goal = request.arguments[request.arguments.size - 2]
             val instances = store.solve(goal).map { goal.apply(it) }.toList()
-            val unifier = Unificator.default.mgu(request.arguments.last(), List.of(instances))
+            val unifier = Arg2pUnificator.mgu(request.arguments.last(), List.of(instances))
             return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
         }
     }
@@ -221,7 +220,7 @@ class Context :
                     ?.toInt() ?: Int.MAX_VALUE
             val store = this@Context.selected
             val count = store.solve(request.arguments[0]).take(limit).count()
-            val unifier = Unificator.default.mgu(request.arguments[2], Numeric.of(count))
+            val unifier = Arg2pUnificator.mgu(request.arguments[2], Numeric.of(count))
             return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
         }
     }
@@ -270,7 +269,7 @@ class Context :
             }
             val target = request.arguments[2]
             return visited.asSequence().mapNotNull { reached ->
-                Unificator.default
+                Arg2pUnificator
                     .mgu(target, reached)
                     .takeIf { it.isSuccess }
                     ?.let { request.replyWith(it) }
@@ -295,7 +294,7 @@ class Context :
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val id = this@Context.identifiers.getOrPut(canonical(request.arguments[0])) { this@Context.identifiers.size }
-            val unifier = Unificator.default.mgu(request.arguments[1], Numeric.of(id))
+            val unifier = Arg2pUnificator.mgu(request.arguments[1], Numeric.of(id))
             return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
         }
 

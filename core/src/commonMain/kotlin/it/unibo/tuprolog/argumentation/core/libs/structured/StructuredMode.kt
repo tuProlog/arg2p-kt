@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution
@@ -13,7 +14,6 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.unify.Unificator
 
 abstract class StructuredModeBase :
     LazyRawPrologContent(),
@@ -67,7 +67,7 @@ object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>("ground_
         first: Term,
         second: Term,
     ): Sequence<Substitution> =
-        Unificator.default
+        Arg2pUnificator
             .mgu(second, first.apply(Substitution.of(first.variables.distinct().associateWith { placeholder })))
             .let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
 }

@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.libs.graph.attacks
@@ -27,7 +28,6 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.TernaryRelation
-import it.unibo.tuprolog.unify.Unificator
 
 abstract class UtilsBase :
     LazyRawPrologContent(),
@@ -148,7 +148,7 @@ object AppendLists : Primitive {
                 }
                 list.toList()
             }
-        val unifier = Unificator.default.mgu(request.arguments[1], List.of(items))
+        val unifier = Arg2pUnificator.mgu(request.arguments[1], List.of(items))
         return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
     }
 }
@@ -198,7 +198,7 @@ object ForEach : Primitive {
         }
         list.toList().forEach { item ->
             val iteration = Tuple.of(request.arguments[0], request.arguments[2]).freshCopy()
-            val unifier = Unificator.default.mgu(iteration[0], item)
+            val unifier = Arg2pUnificator.mgu(iteration[0], item)
             if (unifier.isSuccess) {
                 request.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }
             }
@@ -210,7 +210,7 @@ object ForEach : Primitive {
 private fun unifyWith(
     target: Term,
     result: Term,
-): Sequence<Substitution> = Unificator.default.mgu(target, result).let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
+): Sequence<Substitution> = Arg2pUnificator.mgu(target, result).let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
 
 private fun List.sortedTerms(): kotlin.collections.List<Term> = toList().sortedWith(TermComparator.DefaultComparator)
 
@@ -380,7 +380,7 @@ object ArgumentRules : Primitive {
                         ).toList()
                     }
             }
-        if (all.any { Unificator.default.match(it, ruleId) }) return emptySequence()
+        if (all.any { Arg2pUnificator.match(it, ruleId) }) return emptySequence()
         val (newLastDef, newDef) =
             when {
                 strict -> lastDef to def
@@ -406,7 +406,7 @@ object ArgumentRules : Primitive {
                     .let { List.of(it) },
             )
         val rules = List.of(List.of(listOf(ruleId) + all).sortedTerms().asReversed())
-        val unifier = Unificator.default.mgu(Tuple.of(request.arguments[3], request.arguments[4]), Tuple.of(rules, info))
+        val unifier = Arg2pUnificator.mgu(Tuple.of(request.arguments[3], request.arguments[4]), Tuple.of(rules, info))
         return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
     }
 }
@@ -429,7 +429,7 @@ object Contains : Primitive {
 
         return sequence {
             yield(
-                request.replyWith(list.toList().any { Unificator.default.match(it, elem) }),
+                request.replyWith(list.toList().any { Arg2pUnificator.match(it, elem) }),
             )
         }
     }
@@ -462,7 +462,7 @@ object ContainsAny : Primitive {
 
         return sequence {
             yield(
-                request.replyWith(list.toSequence().any { elemList.toSequence().any { elem -> Unificator.default.match(it, elem) } }),
+                request.replyWith(list.toSequence().any { elemList.toSequence().any { elem -> Arg2pUnificator.match(it, elem) } }),
             )
         }
     }
