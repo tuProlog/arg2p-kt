@@ -27,6 +27,9 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   the signature of their heads once, and those matching a goal are collected in a list, each renamed only when tried
   (lookups merged the lazy sequences of the RETE indexes of the theories at every step); a mutable theory gives the
   clauses it has when the goal is selected.
+- Rule execution: the body of a rule is built with the unifier of its head and the goal, and only the bindings of
+  the variables of the goal are added to the substitution of the resolution (those of the fresh copy of the rule
+  only occur in its head and body).
 - call/1: solved as its clause would (`call(G) :- ensure_executable(G), G`), in a frame of its own opaque to cut,
   without selecting the clause and running `ensure_executable/1` as a goal of its own.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
@@ -35,5 +38,5 @@ Each one keeps the semantics of the original solver; the timings are those of `E
 The unification used by the engine is the one of `Arg2pUnificator` (in `libs.basic`): the default one, computed in a
 single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
 
-Together, against the original solver: graph building 2.7-3.9x faster, query mode 3.8x, resolution 5.2x, module
-calls 1.1-3x, labellings 1.8-2.2x.
+Together, against the original solver: graph building 3.5-4.7x faster, query mode 4.2x, resolution 5.2x, module
+calls 1.3-3.8x, labellings 2.2-2.4x.

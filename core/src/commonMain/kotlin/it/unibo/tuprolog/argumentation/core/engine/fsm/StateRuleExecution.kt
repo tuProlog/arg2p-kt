@@ -17,15 +17,26 @@ data class StateRuleExecution(
     private val failureState: StateBacktracking
         get() = StateBacktracking(context.copy(rules = Cursor.empty(), step = nextStep()))
 
+    /*
+     * arg2p: the rule is a fresh copy, whose variables are only bound by the unifier with the goal, and only occur in
+     * the head and the body: the body is built with the unifier, and only the bindings of the variables of the goal
+     * are added to the substitution of the resolution (which they would only make larger, and as costly to extend at
+     * each step): when there are none, the substitution stays as it is.
+     */
     override fun computeNext(): State {
-        val substitution = with(context) { unificator.mgu(currentGoal!!, rules.current!!.head) }
+        val rule = context.rules.current!!
+        val substitution = with(context) { unificator.mgu(currentGoal!!, rule.head) }
         return when {
             substitution.isSuccess -> {
-                val newSubstitution = (context.substitution + substitution).castToUnifier()
+                val unifier = substitution.castToUnifier()
+                val ruleVariables = rule.head.variables.toSet()
+                val goalBindings = unifier.filter { (variable, _) -> variable !in ruleVariables }
+                val newSubstitution =
+                    if (goalBindings.isEmpty()) context.substitution else (context.substitution + goalBindings).castToUnifier()
                 val subGoals =
-                    context.rules.current!!
-                        .prepareForExecution(newSubstitution)
-                        .body[newSubstitution]
+                    rule
+                        .prepareForExecution(unifier)
+                        .body[unifier]
 
                 StateGoalSelection(
                     context.copy(
