@@ -1,11 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.utils
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.basic.Arg2pUnificator
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libs.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
@@ -19,56 +15,35 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermComparator
 import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.TernaryRelation
 
-abstract class UtilsBase :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.utils"
-
-    override val baseContent: Library
+abstract class UtilsBase : PrologModule("prolog.argumentation.utils", "utils") {
+    override val primitives: Map<Signature, Primitive>
         get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-                primitives =
-                    mapOf(
-                        AppendOptimized.signature to AppendOptimized,
-                        AppendLists.signature to AppendLists,
-                        ArgumentRules.signature to ArgumentRules,
-                        AssertAll.signature to AssertAll,
-                        ForEach.signature to ForEach,
-                        Contains.signature to Contains,
-                        ContainsAny.signature to ContainsAny,
-                        SortTerms.descriptionPair,
-                        Deduplicate.descriptionPair,
-                        SortDistinct.descriptionPair,
-                        MinimalBySet.descriptionPair,
-                        UniqueByFirst.descriptionPair,
-                        Intersection.descriptionPair,
-                        Subtract.descriptionPair,
-                        StronglyConnectedComponents(1).let { it.signature to it },
-                        StronglyConnectedComponents(2).let { it.signature to it },
-                    ),
+            mapOf(
+                AppendOptimized.signature to AppendOptimized,
+                AppendLists.signature to AppendLists,
+                ArgumentRules.signature to ArgumentRules,
+                AssertAll.signature to AssertAll,
+                ForEach.signature to ForEach,
+                Contains.signature to Contains,
+                ContainsAny.signature to ContainsAny,
+                SortTerms.descriptionPair,
+                Deduplicate.descriptionPair,
+                SortDistinct.descriptionPair,
+                MinimalBySet.descriptionPair,
+                UniqueByFirst.descriptionPair,
+                Intersection.descriptionPair,
+                Subtract.descriptionPair,
+                StronglyConnectedComponents(1).let { it.signature to it },
+                StronglyConnectedComponents(2).let { it.signature to it },
             )
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
-    override fun identifier(): String = "utils"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
 }
 
 expect object Utils : UtilsBase {

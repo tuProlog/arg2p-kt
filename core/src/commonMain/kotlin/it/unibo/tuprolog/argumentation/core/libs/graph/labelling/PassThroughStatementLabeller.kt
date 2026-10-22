@@ -16,12 +16,12 @@ import it.unibo.tuprolog.theory.Theory
 object PassThroughStatementLabeller : ArgLibrary, Loadable {
     override val alias = "prolog.argumentation.graph.labelling.statement.pt"
 
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = Theory.of(Labelling.implementation),
-            )
+    override val baseContent: Library by lazy {
+        Library.of(
+            alias = this.alias,
+            clauses = Theory.of(Labelling.implementation),
+        )
+    }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 

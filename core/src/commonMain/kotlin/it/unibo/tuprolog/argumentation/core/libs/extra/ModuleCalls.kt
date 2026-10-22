@@ -30,15 +30,15 @@ import it.unibo.tuprolog.theory.parsing.parse
 object ModuleCalls : ArgLibrary, Loadable {
     override val alias = "prolog.argumentation.modularity"
 
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                primitives =
-                    mapOf(
-                        ModuleCall.signature to ModuleCall,
-                    ),
-            )
+    override val baseContent: Library by lazy {
+        Library.of(
+            alias = this.alias,
+            primitives =
+                mapOf(
+                    ModuleCall.signature to ModuleCall,
+                ),
+        )
+    }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(ModulesPath)
 

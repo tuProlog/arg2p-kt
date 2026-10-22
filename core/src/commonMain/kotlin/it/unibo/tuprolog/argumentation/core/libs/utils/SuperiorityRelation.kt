@@ -1,34 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.libs.utils
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
-abstract class SuperiorityRelationBase :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.superiority"
-
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-            )
+abstract class SuperiorityRelationBase : PrologModule("prolog.argumentation.superiority", "superiority") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(OrderingPrinciple, OrderingComparator)
-
-    override fun identifier(): String = "superiority"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
 }
 
 expect object SuperiorityRelation : SuperiorityRelationBase {

@@ -1,34 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
-abstract class AbstractModeBase :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.abstract"
-
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-            )
+abstract class AbstractModeBase : PrologModule("prolog.argumentation.abstract", "abstract") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode)
-
-    override fun identifier(): String = "abstract"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
 }
 
 expect object AbstractMode : AbstractModeBase {

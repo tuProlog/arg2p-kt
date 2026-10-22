@@ -21,28 +21,25 @@ object Arg2pSolverFactory {
         settings: ArgLibrary,
         staticLibs: Iterable<ArgLibrary>,
         dynamicLibs: Iterable<ArgLibrary>,
-    ) = Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs).let {
-        Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-            unificator = Arg2pUnificator,
-            otherLibraries = it.to2pLibraries(),
-            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-            staticKb = Theory.parse(theory, it.operators()),
-        )
-    }
+    ) = solverOf(Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs), theory)
 
     fun default(
         theory: String = "",
         settings: ArgLibrary = FlagsBuilder().create(),
         staticLibs: Iterable<ArgLibrary> = emptyList(),
         dynamicLibs: Iterable<ArgLibrary> = emptyList(),
-    ) = Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs).let {
-        Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-            unificator = Arg2pUnificator,
-            otherLibraries = it.to2pLibraries(),
-            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-            staticKb = Theory.parse(theory, it.operators()),
-        )
-    }
+    ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
+
+    // A solver of the libraries of [arg2p] for [theory]: unknown predicates fail, variables are tracked
+    private fun solverOf(
+        arg2p: Arg2pSolver,
+        theory: String,
+    ) = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
+        unificator = Arg2pUnificator,
+        otherLibraries = arg2p.to2pLibraries(),
+        flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+        staticKb = Theory.parse(theory, arg2p.operators()),
+    )
 
     fun evaluate(
         kb: String,

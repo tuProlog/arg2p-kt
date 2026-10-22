@@ -1,36 +1,16 @@
 package it.unibo.tuprolog.argumentation.core.libs.basic
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.language.RuleParserBase
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.Library
 
-abstract class EngineInterfaceBase :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.interface"
+abstract class EngineInterfaceBase : PrologModule("prolog.argumentation.interface", "arg2p") {
+    // The operators of the rules of a theory, for the theory of the interface and the solvers using it
+    override val libraryOperators: OperatorSet
+        get() = RuleParserBase.operators()
 
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-                operators = RuleParserBase.operators(),
-            )
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
-    override val theoryOperators =
-        RuleParserBase
-            .operators()
-            .plus(DynamicLoader.operators())
-            .plus(OperatorSet.DEFAULT)
-
-    override fun identifier(): String = "arg2p"
+    override val theoryOperators: OperatorSet
+        get() = super.theoryOperators.plus(RuleParserBase.operators())
 }
 
 expect object EngineInterface : EngineInterfaceBase {

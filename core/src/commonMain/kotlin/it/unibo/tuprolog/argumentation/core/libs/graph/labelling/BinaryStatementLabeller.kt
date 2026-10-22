@@ -16,12 +16,12 @@ import it.unibo.tuprolog.theory.Theory
 object BinaryStatementLabeller : ArgLibrary, Loadable {
     override val alias = "prolog.argumentation.graph.labelling.statement.binary"
 
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = Theory.of(BinaryLabelling.implementation),
-            )
+    override val baseContent: Library by lazy {
+        Library.of(
+            alias = this.alias,
+            clauses = Theory.of(BinaryLabelling.implementation),
+        )
+    }
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 

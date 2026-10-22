@@ -1,35 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 
-object SemistableLabeller :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.semistable"
-
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-            )
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
-    override fun identifier(): String = "semistable"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
-
+object SemistableLabeller : PrologModule("prolog.argumentation.graph.labelling.semistable", "semistable") {
     override val prologRawTheory: String =
         """
         % Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label

@@ -1,11 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.contextAssertAll
@@ -15,35 +11,14 @@ import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object ConflictFreeLabeller :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.conflictfree"
-
-    override val baseContent: Library
-        get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-                primitives = mapOf(ConflictFreeSubset.signature to ConflictFreeSubset, LabelSet.signature to LabelSet),
-            )
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
-    override fun identifier(): String = "conflictfree"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
+object ConflictFreeLabeller : PrologModule("prolog.argumentation.graph.labelling.conflictfree", "conflictfree") {
+    override val primitives: Map<Signature, Primitive>
+        get() = mapOf(ConflictFreeSubset.signature to ConflictFreeSubset, LabelSet.signature to LabelSet)
 
     override val prologRawTheory: String =
         """

@@ -1,45 +1,20 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.labelling
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libs.graph.ids
 import it.unibo.tuprolog.argumentation.core.libs.graph.labelled
 import it.unibo.tuprolog.argumentation.core.libs.graph.replyList
-import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object AdmissibleLabeller :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.graph.labelling.admissible"
-
-    override val baseContent: Library
+object AdmissibleLabeller : PrologModule("prolog.argumentation.graph.labelling.admissible", "admissible") {
+    override val primitives: Map<Signature, Primitive>
         get() =
-            Library.of(
-                alias = this.alias,
-                clauses = this.prologTheory,
-                primitives =
-                    (listOf(AdmissibleSet(0), AdmissibleSet(1)).associateBy { it.signature }) +
-                        (MaximalAdmissibleSubset.signature to MaximalAdmissibleSubset),
-            )
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
-    override fun identifier(): String = "admissible"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(OperatorSet.DEFAULT)
+            (listOf(AdmissibleSet(0), AdmissibleSet(1)).associateBy { it.signature }) +
+                (MaximalAdmissibleSubset.signature to MaximalAdmissibleSubset)
 
     override val prologRawTheory: String =
         """

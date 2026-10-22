@@ -1,10 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libs.language
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.LazyRawPrologContent
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.basic.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libs.PrologModule
 import it.unibo.tuprolog.argumentation.core.libs.basic.Settings
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.List
@@ -19,49 +16,38 @@ import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.dsl.solve.LogicProgrammingScope
 import it.unibo.tuprolog.dsl.solve.prolog
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.extractSignature
-import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
+import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 import kotlin.collections.List as KList
 
-abstract class RuleParserBase :
-    LazyRawPrologContent(),
-    ArgLibrary,
-    Loadable {
-    override val alias = "prolog.argumentation.parser"
-
-    override val baseContent: Library
+abstract class RuleParserBase : PrologModule("prolog.argumentation.parser", "parser") {
+    override val primitives: Map<Signature, Primitive>
         get() =
-            Library.of(
-                alias = this.alias,
-                primitives =
-                    mapOf(
-                        StrictRules::descriptionPair.get(),
-                        Axioms::descriptionPair.get(),
-                        Bps::descriptionPair.get(),
-                        Premises::descriptionPair.get(),
-                        DefeasibleRules::descriptionPair.get(),
-                        ExtractStrictIds::descriptionPair.get(),
-                        RuleToClause::descriptionPair.get(),
-                        RuleToClauseNatural::descriptionPair.get(),
-                    ),
-                clauses = this.prologTheory,
-                operators = operators(),
+            mapOf(
+                StrictRules::descriptionPair.get(),
+                Axioms::descriptionPair.get(),
+                Bps::descriptionPair.get(),
+                Premises::descriptionPair.get(),
+                DefeasibleRules::descriptionPair.get(),
+                ExtractStrictIds::descriptionPair.get(),
+                RuleToClause::descriptionPair.get(),
+                RuleToClauseNatural::descriptionPair.get(),
             )
+
+    // The operators of the rules of a theory, for the theory of the parser and the solvers using it
+    override val libraryOperators: OperatorSet
+        get() = operators()
+
+    override val theoryOperators: OperatorSet
+        get() = super.theoryOperators.plus(operators())
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules)
-
-    override fun identifier() = "parser"
-
-    override val theoryOperators =
-        DynamicLoader
-            .operators()
-            .plus(operators())
-            .plus(OperatorSet.DEFAULT)
 
     companion object {
         fun operators() =
