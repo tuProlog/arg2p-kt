@@ -3,11 +3,13 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.ChoicePointContext
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.prepareForExecution
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
@@ -19,6 +21,7 @@ import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.flags.LastCallOptimization.ON
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.stdlib.magic.MagicCut
+import it.unibo.tuprolog.solve.stdlib.primitive.EnsureExecutable
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.utils.Cursor
 
@@ -225,6 +228,8 @@ data class StateRuleSelection(
                             }
                         }
 
+                        currentGoalStruct.arity == 1 && currentGoalStruct.functor == Call.functor -> callGoal(currentGoalStruct)
+
                         // The clauses are selected once: the procedure is missing when none is selected
                         // (arg2p: checking first whether any clause matches matched them all twice)
                         else -> {
@@ -248,6 +253,28 @@ data class StateRuleSelection(
                     ),
                 )
             }
+        }
+    }
+
+    /**
+     * call/1 (arg2p): solved as the clause of [Call] would, `call(G) :- ensure_executable(G), G`, in a frame of its own
+     * opaque to cut, with a choice point of its own (the one a cut in `G` finds), but without selecting the clause and
+     * running ensure_executable as a goal of its own.
+     */
+    private fun callGoal(goal: Struct): State {
+        val frame = context.createChild()
+        val check = frame.copy(goals = Struct.of(EnsureExecutable.functor, goal[0]).toGoals()).createChild()
+        return try {
+            val request = check.toRequest(check.currentGoal!!.castToStruct(), EnsureExecutable.signature, executionTime)
+            EnsureExecutable.implementation.solve(request).first()
+            val body = Rule.of(goal, goal[0]).prepareForExecution().body
+            StateGoalSelection(
+                frame
+                    .copy(goals = body.toGoals(), step = nextStep())
+                    .appendRulesAndChoicePoints(Cursor.empty()),
+            )
+        } catch (exception: ResolutionException) {
+            exceptionalState(exception.updateLastContext(check.skipThrow()))
         }
     }
 

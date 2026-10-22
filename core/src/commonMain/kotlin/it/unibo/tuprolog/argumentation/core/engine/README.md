@@ -27,6 +27,8 @@ Each one keeps the semantics of the original solver; the timings are those of `E
   the signature of their heads once, and those matching a goal are collected in a list, each renamed only when tried
   (lookups merged the lazy sequences of the RETE indexes of the theories at every step); a mutable theory gives the
   clauses it has when the goal is selected.
+- call/1: solved as its clause would (`call(G) :- ensure_executable(G), G`), in a frame of its own opaque to cut,
+  without selecting the clause and running `ensure_executable/1` as a goal of its own.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 
