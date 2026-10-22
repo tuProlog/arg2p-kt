@@ -2,6 +2,9 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.prepareForExecution
 import it.unibo.tuprolog.utils.Cursor
 
@@ -29,7 +32,7 @@ data class StateRuleExecution(
         return when {
             substitution.isSuccess -> {
                 val unifier = substitution.castToUnifier()
-                val ruleVariables = rule.head.variables.toSet()
+                val ruleVariables = HashSet<Var>().also { rule.head.collectVariables(it) }
                 val goalBindings = unifier.filter { (variable, _) -> variable !in ruleVariables }
                 val newSubstitution =
                     if (goalBindings.isEmpty()) context.substitution else (context.substitution + goalBindings).castToUnifier()
@@ -52,4 +55,13 @@ data class StateRuleExecution(
     }
 
     override fun clone(context: PrologExecutionContext): StateRuleExecution = copy(context = context)
+}
+
+// The variables of a term, collected by a plain recursion (Term.variables nests a lazy sequence for each argument)
+internal fun Term.collectVariables(into: MutableSet<Var>) {
+    when (this) {
+        is Var -> into.add(this)
+        is Struct -> for (i in 0 until arity) this[i].collectVariables(into)
+        else -> Unit
+    }
 }

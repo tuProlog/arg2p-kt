@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -118,15 +119,21 @@ data class PrologExecutionContext(
         if (goals.isOver) null else goals.current?.apply(substitution)
     }
 
-    private val locallyInterestingVariables: Sequence<Var>
-        get() = (relevantGoals?.goals?.flatMap { it.variables } ?: emptySequence()) + (goals.current?.variables ?: emptySequence())
-
     // A set rather than a sequence: membership is checked for every binding of the substitution whenever a frame is
     // left, and a sequence is scanned at each check (arg2p: the scans were quadratic in deep resolutions)
     private val interestingVariables: KtSet<Var> by lazy(LazyThreadSafetyMode.NONE) {
         HashSet<Var>().also { variables ->
-            query.variables.forEach { variables.add(it) }
-            pathToRoot.forEach { context -> context.locallyInterestingVariables.forEach { variables.add(it) } }
+            query.collectVariables(variables)
+            var context: PrologExecutionContext? = this
+            while (context != null) {
+                var relevant = context.relevantGoals
+                while (relevant != null) {
+                    relevant.goal.collectVariables(variables)
+                    relevant = relevant.previous
+                }
+                context.goals.current?.collectVariables(variables)
+                context = context.parent
+            }
         }
     }
 
