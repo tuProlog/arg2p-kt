@@ -1,12 +1,17 @@
 package it.unibo.tuprolog.argumentation.core.libs.graph.builder
 
 import it.unibo.tuprolog.argumentation.core.libs.PrologModule
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
  * The whole argumentation graph of a theory (module `standard_af`, the graphBuildMode of the same name): every
  * argument its rules make, and the attacks between them, saved in the context (see the module graphStore).
  */
 object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "standard_af") {
+    override val primitives: Map<Signature, Primitive>
+        get() = mapOf(ArgumentRules.signature to ArgumentRules)
+
     override val prologRawTheory: String =
         """
         %! buildArgumentationGraph
@@ -109,7 +114,7 @@ object ArgumentationGraphBuilder : PrologModule("prolog.argumentation.graph", "s
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ruleStrictness(RuleID, Strict),
-            utils::argument_rules(RuleID, Strict, Acc, Rules, Info),
+            argument_rules(RuleID, Strict, Acc, Rules, Info),
             argument::new(Rules, RuleID, RuleHead, RuleBody, Info, Argument),
             \+ graphStore::argumentFor(RuleHead, Argument).
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
