@@ -227,7 +227,7 @@ r_2 : fire_b => house_burns.
 ```
 
 ```prolog
-?- context_reset, causality::ness(X, fire_a, house_burns).
+?- causality::ness(X, fire_a, house_burns).
 ```
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=context_reset%2C%20causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)

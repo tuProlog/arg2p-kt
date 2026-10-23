@@ -7,7 +7,7 @@ aliases:
 
 ## JavaScript API
 
-The npm package `@tuprolog/arg2p` exposes arg2p to JavaScript through the `js` packages of `arg2p-core` and of the
+The npm package `@tuprolog/arg2p` exposes arg2p to JavaScript through the `js` packages of the core and of the
 causality solver. The solvers, their solutions and the terms are tuProlog's own; the `js` packages export what
 JavaScript cannot reach by itself: building a solver, reading its solutions one at a time, the argumentation graph
 it computed, and building and reading terms.
@@ -25,6 +25,8 @@ const argumentation = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
 const { JsArg2p, JsSolverBuilder, JsTerms, JsTheories } = argumentation.core.js
 const { JsCausality } = argumentation.causality.js
 ```
+
+`argumentation.Arg2pLibrary.version()` is the version of the package.
 
 ---
 

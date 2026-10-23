@@ -42,7 +42,7 @@ The difference matters when a stage can produce **more than one result**.
 - `::` runs the goal in the current context. Whatever the goal asserts stays in that context.
 - `:::` **branches** the context first, so each solution gets its own private copy of the computed data.
 
-This is how multi-extension semantics work: `preferred`, `stable`, `ideal`, `cf2` and `stage2` enumerate their
+This is how multi-extension semantics work: `preferred`, `stable`, `cf2` and `stage2` enumerate their
 extensions by branching with `:::`, each branch holding one labelling. When you iterate over the solutions of
 such a query, you are iterating over those branches.
 
@@ -78,11 +78,11 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `standard_af` | Builds the argumentation graph: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). |
+| `standard_af` | Builds the argumentation graph: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
-| `utils` | List, sorting and hashing helpers. |
-| `debug` | Pretty-prints theories, graphs and labellings. |
+| `utils` | List and sorting helpers. |
+| `debug` | Prints graphs and labellings. |
 | `interpreter` | Meta-interpreter, used to trace how facts were derived. |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
@@ -168,8 +168,7 @@ module name.
 > fetched over plain `http` can be substituted in transit.
 
 The modules are loaded into a separate solver, so their clauses do not pollute the theory under evaluation.
-A module that cannot be found makes the call fail, so check the path when a goal you expect to hold does not
-succeed.
+A module that cannot be found raises an existence error naming it, as does an error raised within the module.
 
 ### What a module sees
 
@@ -184,8 +183,9 @@ Res = [in(d)]
 
 Inside the call:
 
-- the [flags]({{% ref "/docs/api/flags" %}}) of the calling solver apply, so the module is evaluated under the
-  same semantics, ordering and preferences;
+- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of `FlagsBuilder`, not
+  those written in its theory), so the module is evaluated under the same semantics, ordering and preferences,
+  unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;
 - the resulting graph is written to the usual evaluation context, so it can be
   [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
@@ -199,7 +199,8 @@ Inside the call:
 
 ## Adding your own module
 
-A module is an `ArgLibrary` whose `identifier()` is the name used after `::`. Pass your libraries to the
+A module is an `ArgLibrary` that is also `Loadable`, as every `PrologModule`: its `identifier()` is the name
+used after `::`. Pass your libraries to the
 factory to have them loaded alongside the built-in ones:
 
 ```kotlin

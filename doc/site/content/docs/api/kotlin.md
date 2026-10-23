@@ -88,7 +88,7 @@ Arg2pSolverFactory
 | --- | --- |
 | `Graph` | `labellings: List<LabelledArgument>`, `attacks: List<Attack>`, `supports: List<Support>` |
 | `LabelledArgument` | `argument: Argument` and its `label` (`in`, `out`, `und`, or `na` when unlabelled) |
-| `Argument` | `rules`, `topRule`, `conclusion`, `supports` (the premises) and a readable `descriptor` |
+| `Argument` | `rules`, `topRule`, `conclusion`, `supports` (its sub-arguments) and a readable `descriptor` |
 | `Attack` | `attacker`, `target`, the attack `type` and the attacked element `on` |
 | `Support` | `supporter` and `supported` |
 
@@ -103,19 +103,24 @@ produces the same names.
 
 ---
 
-## Using Arg2P inside a 2P-Kt solver
+## Building a solver by hand
 
-`Arg2pSolver.default()` builds the library set, and `to2pLibraries()` converts it into something a 2P-Kt
-`Solver` accepts:
+Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (`core`, `core-jvm` for the JVM):
+`Arg2pPrologSolverFactory` builds its solvers, with the same methods as the `PrologSolverFactory` of 2P-Kt.
+`Arg2pSolver.default()` builds the library set, and `to2pLibraries()` converts it into libraries for the solver:
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 
-val solver = PrologSolverFactory.solverWithDefaultBuiltins(
+val solver = Arg2pPrologSolverFactory.solverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.default().to2pLibraries(),
 )
 ```
+
+The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality solver, has the same libraries with the
+[causality]({{% ref "/docs/modules/causality" %}}) module as well: `Arg2pLibrary.get()` (package
+`it.unibo.tuprolog.argumentation`), and `Arg2pLibrary.version()` is the version of Arg2P.
 
 You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
@@ -135,33 +140,19 @@ with the Arg2P operator set:
 val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
 ```
 
-> [!WARNING]
-> **Two solver flags are required.** When you assemble a solver by hand, set `Unknown` to `FAIL` and
-> `TrackVariables` to `ON`:
->
-> ```kotlin
-> PrologSolverFactory.mutableSolverWithDefaultBuiltins(
->     otherLibraries = Arg2pSolver.default().to2pLibraries(),
->     flags = FlagStore.DEFAULT
->         .set(Unknown, Unknown.FAIL)
->         .set(TrackVariables, TrackVariables.ON),
-> )
-> ```
->
-> `Arg2pSolverFactory` does this for you; a solver built without these flags fails in ways that are hard to
-> diagnose.
-
 ### Adding the flags library
 
 A hand-built solver has no flags. Add them as a library:
 
 ```kotlin
 val settings = FlagsBuilder().create()
-val solver = PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.content(),
-    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
 )
 ```
+
+The libraries also run on the solver of 2P-Kt (`PrologSolverFactory`, from its `solve-prolog` package, not a
+dependency of Arg2P), where module calls go through a slower path.
 
 ---
 
@@ -177,7 +168,7 @@ solver.solve(Struct.parse("arg2p::solve", solver.operators)).first()
 val graph = solver.graph()
 ```
 
-`graph()` reads the *currently active* evaluation context and throws if no graph has been built yet, so always
+`graph()` reads the *currently active* evaluation context, empty until a query has built a graph, so always
 run a query first. Finer-grained accessors — `arguments()`, `attacks()`, `supports()`, `labels()` — are
 available for a specific context id.
 

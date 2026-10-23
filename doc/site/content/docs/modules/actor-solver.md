@@ -21,26 +21,18 @@ _Multi-agent cooperative argumentation in Arg2P_; see [References]({{% ref "/doc
 
 ## Getting a distributed solver
 
-The entry point is the `parallel` extension on `Arg2pSolver`, which yields libraries to load into a 2P-Kt
-solver:
+The entry point is the `parallel` extension on `Arg2pSolver`, which yields the libraries of a solver, built as
+when [building a solver by hand]({{% ref "/docs/api/kotlin" %}}):
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 
-val solver = PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-    flags = FlagStore.DEFAULT
-        .set(Unknown, Unknown.FAIL)
-        .set(TrackVariables, TrackVariables.ON),
 )
 ```
-
-Both solver flags are required, exactly as when [assembling a solver by hand]({{% ref "/docs/api/kotlin" %}}).
 
 ---
 

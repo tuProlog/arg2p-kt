@@ -226,11 +226,30 @@ f1 :=> age(20).
 
 If the goal fails, no argument is built from that rule at all.
 
-> [!WARNING]
-> A `prolog/1` goal whose variables are still unbound when the rule is considered — like `X` above, which only
-> gets its value from the `age/1` premise — is solved while the whole graph is built, but **not** under
-> `queryMode`, which `FlagsBuilder` enables by default. Ground goals such as `prolog(2 < 3)` work in both
-> modes. Turn `queryMode` off for theories that compute with `prolog/1`.
+A `prolog/1` goal whose variables only get their value from the other premises — like `X` above, from the
+`age/1` premise — is solved once they have one, both on the whole graph and under `queryMode`.
+
+## Theories in plain Prolog
+
+With the [`prologStrictCompatibility`]({{% ref "/docs/api/flags" %}}) flag, the Prolog clauses of a theory are
+argued as well: a fact is an axiom and a clause a strict rule. A comment of a single word after the full stop of a
+clause, on the same line, names it and makes it defeasible: a fact so named is a premise, a clause a defeasible
+rule.
+
+```prolog
+prologStrictCompatibility.
+
+bird(tweety).
+flies(X) :- bird(X).
+-flies(X) :-
+    penguin(X).     % r1
+penguin(tweety).    % f1
+```
+
+Here `bird(tweety)` is an axiom and `flies(X) :- bird(X)` a strict rule, while `r1` is a defeasible rule and `f1` a
+premise. Any other comment, of more words or on a line of its own, leaves its clause as it is. The identifiers
+are read from the text of the theory, by every entry point of Arg2P (the factories in Kotlin and JavaScript, the
+IDE, modules loaded with `call_module/2`); a theory built as terms has none.
 
 ## Burden of proof
 

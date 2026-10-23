@@ -8,13 +8,17 @@ aliases:
 ## Flags Reference
 
 Flags are ordinary Prolog facts. The engine reads them from the knowledge base while it evaluates a theory,
-so a flag can be set in three equivalent ways:
+so a flag can be set in three ways:
 
 - **in the theory itself**, by writing the fact (e.g. `queryMode.`);
 - **from Kotlin**, through [`FlagsBuilder`]({{% ref "/docs/api/kotlin" %}});
 - **from the IDE**, through the _Arg Flags_ tab.
 
-The table below is the complete list. Defaults are the ones applied by `FlagsBuilder()`.
+A flag stated in the theory replaces the value the solver was given for it: a theory stating
+`graphExtension(bp).` has only that extension, not the `standardPref` of `FlagsBuilder()` as well. A switch the
+solver turns on (such as `queryMode`) cannot be turned off from the theory.
+
+The table below lists the flags, with the defaults of `FlagsBuilder()`.
 
 | Flag | Default | Accepted values |
 | --- | --- | --- |
@@ -26,6 +30,10 @@ The table below is the complete list. Defaults are the ones applied by `FlagsBui
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
 | `autoTransposition` | disabled | the fact is present or absent |
+| `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
+| `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
+| `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
+| `debug` | disabled | the fact is present or absent: the graphs and labellings are written as they are computed |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
 
 > [!NOTE]
@@ -74,7 +82,7 @@ To disable preference handling altogether, pass an empty list of extensions
 
 | Value | Semantics |
 | --- | --- |
-| `grounded` | Grounded semantics. The default, and the only one that always yields exactly one labelling. |
+| `grounded` | Grounded semantics. The default. |
 | `complete` | Dung's complete semantics. |
 | `conflictfree` | Conflict-free labellings. |
 | `admissible` | Admissible labellings. |
@@ -96,7 +104,7 @@ The burden-of-persuasion semantics implement the model of Calegari and Sartor; s
 [References]({{% ref "/docs/references" %}}).
 
 > [!NOTE]
-> **One solution per labelling.** Semantics such as `preferred`, `stable`, `ideal`, `cf2` and `stage2` admit
+> **One solution per labelling.** Semantics such as `preferred`, `stable`, `cf2` and `stage2` admit
 > several labellings. The engine returns them as **distinct solutions**: iterate over the solution sequence to
 > see them all, instead of taking only the first one.
 
@@ -108,9 +116,9 @@ The burden-of-persuasion semantics implement the model of Calegari and Sartor; s
 
 | Value | Effect |
 | --- | --- |
-| `statement` | Standard labelling: a statement is IN if some IN argument concludes it, OUT if all arguments concluding it are OUT, UND otherwise. |
+| `statement` | Standard labelling: a statement is IN if some IN argument concludes it, otherwise OUT if some OUT argument concludes it, otherwise UND. |
 | `statement_pass_through` | Propagates argument labels directly, without re-deriving the statement status. |
-| `statement_binary` | Two-valued labelling: everything that is not IN is reported as OUT, merging OUT and UND. |
+| `statement_binary` | Two-valued labelling: a statement is IN if some IN argument concludes it, OUT otherwise (merging OUT and UND). |
 
 ---
 
@@ -130,9 +138,9 @@ Which part of an argument is compared:
 
 How the two sets selected by the ordering principle are compared:
 
-- `elitist` — an argument is weaker if *some* of its rules is weaker than some rule of the other;
+- `elitist` — an argument is weaker if *some* of its rules is weaker than *all* the rules of the other;
 - `democrat` — an argument is weaker if *all* its rules are weaker;
-- `normal` — the plain set comparison, without elitist or democrat relaxation.
+- `normal` — an argument is weaker if some of its rules is weaker than some rule of the other.
 
 ---
 
@@ -173,17 +181,12 @@ network.
 
 ## Flags with no Kotlin equivalent
 
-A few flags are read only from the theory text; `FlagsBuilder` has no field for them. Write the fact directly
+`naturalTerms` is read only from the theory text; `FlagsBuilder` has no field for it. Write the fact directly
 in your theory:
 
 | Flag | Meaning |
 | --- | --- |
 | `naturalTerms` | Enables normalisation of natural-language-like terms while parsing rules. |
-| `metaConflicts` | Conflicts are taken from arguments concluding `conflict/2`, instead of from the built-in table and `conflict/2` facts. |
-| `metaRules` | Adds an implicit `applicable(RuleName)` premise to every rule, so that rule application becomes arguable. |
-
-`metaRules` and `metaConflicts` belong to the [meta-argumentation]({{% ref "/docs/modules/meta" %}}) features, which
-are applied while the graph is built — they have no effect when `queryMode` is enabled.
 
 ---
 

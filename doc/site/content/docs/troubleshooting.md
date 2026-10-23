@@ -11,7 +11,7 @@ Common mistakes, and what they look like when they happen.
 
 ## The evaluation never produces a graph
 
-**Symptom.** A query silently fails, or `graph()` throws *"couldn't find a graph"*.
+**Symptom.** A query silently fails, or `graph()` returns an empty graph.
 
 Most often one of the required flags is missing. `graphBuildMode`, `argumentLabellingMode`,
 `statementLabellingMode`, `orderingPrinciple` and `orderingComparator` must all have a value. `FlagsBuilder()`
@@ -25,19 +25,12 @@ context, so a query such as `arg2p::solve` has to succeed first.
 
 ## A hand-built solver behaves strangely
 
-**Symptom.** Queries fail where they should succeed, or variables come back unbound.
+**Symptom.** Queries fail where they should succeed, or the flags seem ignored.
 
-A solver assembled directly with `PrologSolverFactory` needs two flags:
-
-```kotlin
-flags = FlagStore.DEFAULT
-    .set(Unknown, Unknown.FAIL)
-    .set(TrackVariables, TrackVariables.ON)
-```
-
-Without `Unknown.FAIL`, unknown predicates raise errors instead of failing, which breaks the engine's internal
-negation-as-failure. Without `TrackVariables.ON`, variable names are lost and results cannot be mined.
-`Arg2pSolverFactory` sets both for you.
+A solver assembled by hand has no flags: add the flags library (`FlagsBuilder().create().content()`) to its
+libraries, as in [Building a solver by hand]({{% ref "/docs/api/kotlin" %}}). Build it with
+`Arg2pPrologSolverFactory`, the engine of Arg2P: the solver of 2P-Kt (`PrologSolverFactory`) runs the module calls
+of Arg2P through a slower path. `Arg2pSolverFactory` does all of this for you.
 
 ---
 
@@ -68,11 +61,11 @@ The same applies to `Theory.parse` — see [Kotlin API]({{% ref "/docs/api/kotli
 
 ---
 
-## An invalid flag value is ignored
+## An invalid flag value
 
-**Symptom.** You set a semantics and nothing changes.
+**Symptom.** You set a semantics and the evaluation raises an existence error.
 
-Flag values are module identifiers, and an unknown value simply matches no module. Check the spelling against
+Flag values are module identifiers, and an unknown value names no module: the error names the value. Check the spelling against
 the [Flags Reference]({{% ref "/docs/api/flags" %}}) — for instance the grounded semantics is `grounded`, and
 there is no `grounded_hash` mode.
 
@@ -80,7 +73,7 @@ there is no `grounded_hash` mode.
 
 ## Only one labelling comes back
 
-**Symptom.** Under `preferred`, `stable`, `ideal`, `cf2` or `stage2` you see a single result.
+**Symptom.** Under `preferred`, `stable`, `cf2` or `stage2` you see a single result.
 
 These semantics produce one solution *per* labelling. Taking `first()` on the sequence, or reading only the
 first Prolog solution, discards the rest. Iterate over all solutions instead.
@@ -89,11 +82,9 @@ first Prolog solution, discards the rest. Iterate over all solutions instead.
 
 ## A causality query fails or raises a type error
 
-Two rules apply to the [causality module]({{% ref "/docs/modules/causality" %}}):
-
-- every query must be preceded by `context_reset`, otherwise it runs against a stale context;
-- `ness/3` and `ness_original/3` require their **first argument to be unbound**. Passing a concrete
-  intervention raises a type error; use `ness_intervention/2` for that instead.
+In the [causality module]({{% ref "/docs/modules/causality" %}}), `ness/3` and `ness_original/3` require their
+**first argument to be unbound**. Passing a concrete intervention raises a type error; use
+`ness_intervention/2` for that instead.
 
 ---
 

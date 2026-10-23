@@ -58,8 +58,8 @@ collecting the outcome as a list of `in/1`, `out/1` or `und/1` terms, and
 answerQuery(Goal).
 ```
 
-which runs the evaluation for _Goal_ without reporting its status. Note that this form succeeds even when the
-goal turns out to be undecided or rejected: use `answerQuery/2` or `answerQuery/4` to learn the actual label.
+which runs the evaluation for _Goal_ and succeeds only if _Goal_ is labelled IN: use `answerQuery/2` or
+`answerQuery/4` to learn the label of a goal that is not.
 
 ## Other entry points
 

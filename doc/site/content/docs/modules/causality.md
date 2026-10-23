@@ -38,12 +38,12 @@ It returns a ready-to-use 2P-Kt `MutableSolver` with the causality module loaded
 
 ## Predicates
 
-All predicates live in the `causality` module. As with the rest of the engine, they can be called directly or
-through the `causality::` prefix.
+All predicates live in the `causality` module, and are called through the `causality::` prefix. A solver of
+`Arg2pSolverFactory.causality()` also has them without the prefix: the module is one of its static libraries.
 
 | Predicate | Meaning |
 | --- | --- |
-| `but_for(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. |
+| `but_for(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. |
 | `ness(Intervention, Cause, Effect)` | The NESS test, revised model. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. `Intervention` **must be unbound**: it is bound to the intervention under which the cause is necessary for the effect. |
 | `ness_intervention(Intervention, Effect)` | Checks the revised NESS condition for an intervention you provide. |
 | `ness_original(Intervention, Cause, Effect)` | The published formulation of the NESS test. `Intervention` must be unbound. |
@@ -61,12 +61,13 @@ Liepina (ICAIL 2025); `ness/3` and `ness_intervention/2` implement a revision to
 
 ## Running a query
 
-Every causality query must start from a clean evaluation context, so prefix it with `context_reset`:
+A causality query is an ordinary goal: the module evaluates the theory of the solver by itself, so the query
+needs no reset of the evaluation context first.
 
 ```kotlin
 import it.unibo.tuprolog.core.Struct
 
-val solution = solver.solve(Struct.parse("context_reset, ness(X, exposure, disease)")).first()
+val solution = solver.solve(Struct.parse("ness(X, exposure, disease)")).first()
 println(solution.isYes)
 ```
 
@@ -76,7 +77,7 @@ With the DSL the same query reads:
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 
 arg2pScope {
-    solver.solve("context_reset" and "ness"(X, "exposure", "disease")).first()
+    solver.solve("ness"(X, "exposure", "disease")).first()
 }
 ```
 
@@ -115,7 +116,8 @@ necessary for the effect.
 
 - The causality solver runs its own inner evaluation with grounded semantics and no graph extensions,
   independently of the flags you set for the outer solver.
-- `ness/3` only names accepted causes: a statement no argument concludes (the absence `-d` of a fact `d` never
-  stated, say) or a rule identifier is not a NESS cause, though `ness_original/3` may report it as one.
+- `ness/3` and `but_for/2` only name accepted causes: a statement no argument concludes (the absence `-d` of a
+  fact `d` never stated, say) or a rule identifier is not a cause for them, though `ness_original/3` may report
+  it as one.
 - Graphs computed during a causality query are cached, so repeated queries against the same theory and effect
   are considerably faster than the first one.

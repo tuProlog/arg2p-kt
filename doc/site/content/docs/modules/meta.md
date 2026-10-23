@@ -19,10 +19,6 @@ something a rule can conclude, and therefore something another argument can atta
 | Preferences | `sup/2` facts | `graphExtension(defeasiblePref)` — rules conclude `sup/2` |
 | Burden of persuasion | `bp/1` facts read by the `bp_grounded` semantics | `graphExtension(bp)` — rules conclude `bp/1` |
 
-> [!IMPORTANT]
-> The meta features are applied while the argumentation graph is built, which the goal-directed evaluation
-> skips. Turn **`queryMode` off** when you use them, otherwise they are silently ignored.
-
 ---
 
 ## Arguable rules

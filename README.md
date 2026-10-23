@@ -68,14 +68,14 @@ Arg2p is available as a [2P-Kt](https://github.com/tuProlog/2p-kt/) library.
 #### JVM Library - Gradle
 
 To import the Arg2p module into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file
-(the version below is the latest release, see the [releases page](https://github.com/tuProlog/arg2p-kt/releases/latest)):
+(`<VERSION>` is the latest release, shown by the Maven Central badge above):
  ```kotlin
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:0.16.2")
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:<VERSION>")
 }
  ```
 
@@ -102,12 +102,13 @@ For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/a
 #### NPM Library
 
 The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
-To use the library, add the dependency to your `package.json`:
+To use the library, add the dependency to your `package.json` (`<VERSION>` is the latest release, shown by the npm
+badge above):
 
 ```json
 {
   "dependencies": {
-    "@tuprolog/arg2p": "0.16.2"
+    "@tuprolog/arg2p": "<VERSION>"
   }
 }
 ```
@@ -145,11 +146,11 @@ In the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) pa
 arg2p-ide-<VERSION>-redist.jar
 ```
 a self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`<VERSION>` is the release
-version, `0.16.2` at the time of writing).
+version).
 
 After you download the jar, you can simply launch it by running:
 ```bash
-java -jar arg2p-ide-0.16.2-redist.jar
+java -jar arg2p-ide-<VERSION>-redist.jar
 ```
 If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
 
