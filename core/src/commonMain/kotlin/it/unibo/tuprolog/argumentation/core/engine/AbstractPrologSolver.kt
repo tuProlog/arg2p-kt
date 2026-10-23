@@ -1,6 +1,7 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.EndState
 import it.unibo.tuprolog.argumentation.core.engine.fsm.State
 import it.unibo.tuprolog.argumentation.core.engine.fsm.StateInit
 import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
@@ -159,7 +160,15 @@ abstract class AbstractPrologSolver(
         index: Long,
     ) {
         require(destination.context.step == index)
-        currentContext = destination.context
+        val context = destination.context
+        // arg2p: a resolution ending within an inlined call (failing in it, or halting) ends with the libraries of the
+        // call, which only apply to its goal: the solver keeps those of the whole resolution, the root's
+        currentContext =
+            if (destination is EndState && context.scoped) {
+                context.copy(libraries = context.pathToRoot.last().libraries)
+            } else {
+                context
+            }
     }
 
     /** The indexes of the immutable theories this solver resolves with (arg2p, see [TheoryIndexes]) */
