@@ -2,10 +2,15 @@ package it.unibo.tuprolog.argumentation.core.unit
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
 import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
+import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.logicProgramming
+import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.Solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class PreferencesTest {
     private val baseTheory: String =
@@ -132,18 +137,27 @@ class PreferencesTest {
             4,
         )
 
+    // sup(r3, r2) and sup(r2, r1), closed transitively, prefer r3 (for -a) to r1 (for a), as sup(r3, r1) does
     @Test
-    fun singlePreferenceWeakestNormal() =
+    fun chainedPreferences() =
         check(
-            baseTheory +
-                """
-                sup(r3, r1).
-                orderingPrinciple(weakest).
-                orderingComparator(normal).
-                """.trimIndent(),
+            baseTheory + "\nsup(r3, r2).\nsup(r2, r1).\norderingPrinciple(last).\norderingComparator(elitist).",
             definedResults,
             2,
         )
+
+    // normal is defined on the last rules (Dung and Thang): with the weakest link it raises a domain error
+    private fun weakestNormal(
+        goal: String,
+        flags: String = "",
+    ) {
+        val solver = solverWithTheory(baseTheory + "sup(r3, r1).\norderingPrinciple(weakest).\norderingComparator(normal).\n$flags")
+        val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
+        assertTrue(solution is Solution.Halt && "domain_error(orderingPrinciple(last), weakest)" in solution.exception.toString())
+    }
+
+    @Test
+    fun singlePreferenceWeakestNormal() = weakestNormal("buildLabelSets(I, O, U)")
 
     @Test
     fun multiplePreferencesAWeakestElitist() =
@@ -297,20 +311,7 @@ class PreferencesTest {
         )
 
     @Test
-    fun singlePreferenceWeakestNormalStructured() =
-        answerQuery(
-            baseTheory +
-                """
-                sup(r3, r1).
-                orderingPrinciple(weakest).
-                orderingComparator(normal).
-                queryMode.
-                """.trimIndent(),
-            "e",
-            "[e]",
-            "[]",
-            "[]",
-        )
+    fun singlePreferenceWeakestNormalStructured() = weakestNormal("answerQuery(e, I, O, U)", "queryMode.")
 
     @Test
     fun multiplePreferencesAWeakestElitistStructured() =

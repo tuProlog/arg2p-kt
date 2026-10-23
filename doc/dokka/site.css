@@ -1,0 +1,118 @@
+/*
+ * The Kotlin & JS reference in the style of the documentation site: the font, colours and menu of its hugo-book
+ * theme, light or (Nord) dark, in place of those of Dokka
+ */
+:root {
+  --site-background: #fff;
+  --site-text: #000;
+  --site-text-light: #6c757d;
+  --site-link: #0055bb;
+  --site-gray-100: #f8f9fa;
+  --site-gray-200: #e9ecef;
+
+  --default-font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-default: var(--default-font-family);
+  --default-monospace-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-family-mono: var(--default-monospace-font-family);
+  --sidebar-width: 16rem;
+}
+
+:root.theme-dark {
+  --site-background: #2e3440;
+  --site-text: #eceff4;
+  --site-text-light: #d8dee9;
+  --site-link: #81a1c1;
+  --site-gray-100: #3b4252;
+  --site-gray-200: #434c5e;
+}
+
+:root,
+:root.theme-dark,
+.theme-dark {
+  --background-color: var(--site-background);
+  --color-background: var(--site-background);
+  --color-background-page: var(--site-background);
+  --color-background-page-dt: var(--site-background);
+  --color-background-nav: var(--site-background);
+  --color-background-nav-dt: var(--site-background);
+  --color-background-footer: var(--site-background);
+  --color-background-footer-dt: var(--site-background);
+  --color-background-code-block: var(--site-gray-100);
+  --color-background-inline-code: var(--site-gray-100);
+  --default-font-color: var(--site-text);
+  --header-font-color: var(--site-text);
+  --color-text: var(--site-text);
+  --color-text-dt: var(--site-text);
+  --color-text-light: var(--site-text-light);
+  --color-text-light-dt: var(--site-text-light);
+  --text-color: var(--site-text);
+  --color-key-blue: var(--site-link);
+  --hover-link-color: var(--site-link);
+  --active-section-color: var(--site-link);
+  --sidemenu-section-active-color: var(--site-link);
+  --active-tab-border-color: var(--site-link);
+  --border-color: var(--site-gray-200);
+  --toc-color: var(--site-text);
+}
+
+body {
+  background: var(--site-background);
+  color: var(--site-text);
+  font-family: var(--default-font-family);
+}
+
+/* The header, light as the rest of the page, with the icons in the colour of the text */
+.navigation {
+  border-bottom: 1px solid var(--site-gray-200);
+}
+
+:root:not(.theme-dark) .navigation .navigation-controls--btn,
+:root:not(.theme-dark) .navigation .button_dropdown {
+  filter: invert(1);
+}
+
+/* The menu, as the one of the site */
+.sidebar {
+  border-right: none;
+  font-size: 0.875rem;
+}
+
+/* The titles of the pages, in the weight and size of those of the site */
+.main-content h1,
+.main-content h1.cover {
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.25;
+  margin-top: 1.5rem;
+}
+
+/* The page open in the menu, marked by the colour of its link as in the menu of the site */
+.toc--part[data-active] > .toc--row .toc--button,
+.toc--part[data-active] > .toc--row .toc--link {
+  background: none;
+  color: var(--site-link);
+}
+
+.toc--part[data-active] > .toc--row .toc--button:hover,
+.toc--part[data-active] > .toc--row .toc--link:hover,
+.toc--part[data-active] > .toc--row .toc--button ~ .toc--link:hover {
+  background: var(--site-gray-100);
+}
+
+:root:not(.theme-dark) .toc--part[data-active] > .toc--row .toc--button::after {
+  filter: invert(1);
+}
+
+/* The links, in the colour of those of the site, underlined only on hover */
+.main-content a:not([data-name]),
+.main-content a:not([data-name]):active,
+.main-content a:not([data-name]):focus,
+.main-content a:not([data-name]):hover,
+.footer a {
+  border-bottom: none;
+  color: var(--site-link);
+}
+
+.main-content a:not([data-name]):hover {
+  text-decoration: underline;
+}

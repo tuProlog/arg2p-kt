@@ -3,13 +3,13 @@ package it.unibo.tuprolog.argumentation.core.system
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Ignore
@@ -1791,7 +1791,7 @@ class LawCaseStudyTest {
         val prepare = { theory: String ->
             arg2pScope {
                 Arg2pSolver.default().let { arg2pSolver ->
-                    PrologSolverFactory
+                    Arg2pPrologSolverFactory
                         .mutableSolverWithDefaultBuiltins(
                             otherLibraries = arg2pSolver.to2pLibraries().plus(FlagsBuilder().create().content()),
                             staticKb = Theory.parse(theory, arg2pSolver.operators()),
@@ -1813,7 +1813,7 @@ class LawCaseStudyTest {
                     println("Evaluating $query")
                     solver
                         .solve(
-                            "structured" call
+                            "structuredPartial" call
                                 "query"(
                                     Struct.parse(query, Arg2pSolver.default().operators()),
                                     X,

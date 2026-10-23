@@ -21,26 +21,19 @@ _Multi-agent cooperative argumentation in Arg2P_; see [References]({{% ref "/doc
 
 ## Getting a distributed solver
 
-The entry point is the `parallel` extension on `Arg2pSolver`, which yields libraries to load into a 2P-Kt
-solver:
+The entry point is the `parallel` extension on `Arg2pSolver`, which yields the libraries of a solver, built as
+when [building a solver by hand]({{% ref "/docs/api/kotlin" %}}):
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 
-val solver = PrologSolverFactory.mutableSolverWithDefaultBuiltins(
+val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-    flags = FlagStore.DEFAULT
-        .set(Unknown, Unknown.FAIL)
-        .set(TrackVariables, TrackVariables.ON),
 )
 ```
-
-Both solver flags are required, exactly as when [assembling a solver by hand]({{% ref "/docs/kotlin-api" %}}).
 
 ---
 
@@ -50,12 +43,12 @@ The module is registered under the identifier `parallel` and provides:
 
 | Predicate | Meaning |
 | --- | --- |
-| `join(Port)` | Starts or joins a cluster on the local machine at the given port. |
+| `join(Port)` | Starts or joins a cluster on the local machine at the given port (a cluster joined before is left first). |
 | `join(Port, Seed)` | Joins an existing cluster, where `Seed` is the `host:port` of a seed node. |
 | `load` | Sends every clause of the static knowledge base to the cluster. |
 | `solve(Goal, In, Out, Und)` | Evaluates the goal across the cluster, binding the three lists of labelled claims. |
 | `reset` | Clears the distributed knowledge base. |
-| `leave` | Clears the knowledge base and leaves the cluster. |
+| `leave` | Clears the knowledge base, leaves the cluster and stops the actor system, freeing its port. |
 
 ---
 
@@ -64,7 +57,7 @@ The module is registered under the identifier `parallel` and provides:
 The order matters: join the cluster, load the theory, query it, then leave.
 
 ```kotlin
-solver.loadStaticKb(Theory.parse(rules, solver.operators))
+solver.loadStaticKb(RuleAnnotations.parse(rules, solver.operators))
 
 solver.solve(Struct.parse("join(2551), load")).first()
 

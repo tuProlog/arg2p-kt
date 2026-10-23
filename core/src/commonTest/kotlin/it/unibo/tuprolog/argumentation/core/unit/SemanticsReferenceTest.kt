@@ -3,11 +3,11 @@ package it.unibo.tuprolog.argumentation.core.unit
 import it.unibo.tuprolog.argumentation.core.TestingUtils.prepareContext
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -147,7 +147,7 @@ private class ReferenceSemantics(
             "admissible" -> admissible
             "stronglyadmissible" -> stronglyAdmissibleSets
             "complete" -> complete
-            "grounded", "grounded_old" -> grounded
+            "grounded" -> grounded
             "preferred" -> preferred
             "stable" -> stable
             "semistable" -> semistable
@@ -169,7 +169,6 @@ class SemanticsReferenceTest {
             "stronglyadmissible",
             "complete",
             "grounded",
-            "grounded_old",
             "preferred",
             "stable",
             "semistable",

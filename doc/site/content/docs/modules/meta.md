@@ -19,10 +19,6 @@ something a rule can conclude, and therefore something another argument can atta
 | Preferences | `sup/2` facts | `graphExtension(defeasiblePref)` — rules conclude `sup/2` |
 | Burden of persuasion | `bp/1` facts read by the `bp_grounded` semantics | `graphExtension(bp)` — rules conclude `bp/1` |
 
-> [!IMPORTANT]
-> The meta features are applied while the argumentation graph is built, which the goal-directed evaluation
-> skips. Turn **`queryMode` off** when you use them, otherwise they are silently ignored.
-
 ---
 
 ## Arguable rules
@@ -65,7 +61,8 @@ Because `applicable/1` is an ordinary conclusion, a second rule can attack it �
 
 Without `metaConflicts`, conflicts come from the built-in table (`a` versus `-a`, the deontic pairs) plus any
 [`conflict/2` facts]({{% ref "/docs/syntax" %}}) in the theory. With `metaConflicts`, they come from
-*arguments*: whatever an argument concludes as `conflict/2` becomes a conflict.
+*arguments* alone (the built-in table is off): whatever an argument concludes as `conflict/2` becomes a
+conflict.
 
 ```prolog
 metaConflicts.
@@ -90,8 +87,8 @@ Without `r0`, `a` and `b` coexist happily; the meta conflict is what sets them a
 > The conclusion has to name the two statements directly — `conflict(a, b)`, not `conflict([a], [b])`.
 > A rule concluding the list form parses fine and is simply never matched.
 
-Since the conflict is a conclusion, it can be attacked: an argument for `-conflict(a, b)` removes the clash
-again.
+Since the conflict is a conclusion, it can be attacked — but only by the conflicts the theory argues: with the
+built-in table off, an argument for `-conflict(a, b)` does not attack `conflict(a, b)`, and the clash stays.
 
 ---
 
@@ -101,6 +98,7 @@ again.
 models:
 
 ```prolog
+graphExtension(standardPref).
 graphExtension(defeasiblePref).
 
 r1 : p => q.
@@ -121,13 +119,23 @@ Out = [[- q]]
 `graphExtension(standardPref)` the same theory leaves both conclusions undecided: static preference handling
 reads `sup/2` facts only, and ignores a `sup/2` that is merely concluded.
 
+Concluded preferences are not closed transitively by Arg2P, as the stated `sup/2` facts are: the theory closes
+them with a rule of its own, whose arguments then justify each derived preference by the chain behind it. Name
+the rule after its ends, so that an argument can use it once for each step of a longer chain:
+
+```prolog
+t(X, Z) : sup(X, Y), sup(Y, Z) -> sup(X, Z).
+```
+
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Ars%20%3A%20%5B%5D%20%3D%3E%20sup%28r1%2C%20r2%29.&query=arg2p%3A%3AbuildLabelSets%28In%2C%20Out%2C%20Und%29&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AgraphExtension%28defeasiblePref%29.)
 — switch the extension to `standardPref` alone and the preference stops applying.
 
 `defeasiblePref` covers comparisons that rest on a **single** superiority. When the comparator has to weigh
 several superiorities at once — as the elitist and democrat comparisons do over sets of rules — use
 `graphExtension(defeasibleAllPref)` instead, which also exposes the preference as a `preference/1` statement.
-The two models are described in the CILC paper listed under [References]({{% ref "/docs/references" %}}).
+In both, a superiority with several justifications weighs them all: the attack fails while the preferences of
+any of them stand. A comparison that needs no preference (a strict argument against a defeasible one, say)
+removes the attack, as `standardPref` does. The two models are described in the CILC paper listed under [References]({{% ref "/docs/references" %}}).
 
 ---
 

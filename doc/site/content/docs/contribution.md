@@ -45,6 +45,11 @@ The documentation is a Hugo site under `doc/site`, built through Gradle:
 Both download the required Hugo binary automatically. The version shown in the dependency snippets is injected
 at build time from the latest git tag, so it never has to be updated by hand.
 
+Two parts of the [API]({{% ref "/docs/api" %}}) section are generated before the site is built, and are not kept in
+git: the [Prolog modules]({{% ref "/docs/api/prolog" %}}) pages, from the theories of the modules and their `%!`
+comments (`./gradlew :core:prologDocs`), and the Kotlin & JS reference, by Dokka. To change them, change the
+sources.
+
 ## Reporting issues
 
 Bugs and feature requests are tracked on [GitHub](https://github.com/tuProlog/arg2p-kt/issues).

@@ -32,7 +32,7 @@ The tool Arg2P grew out of:
 
 > Giuseppe Pisano, Roberta Calegari, Andrea Omicini, Giovanni Sartor.
 > **Arg-tuProlog: A tuProlog-based argumentation framework.**
-> CILC 2021, CEUR Workshop Proceedings 2719:51–66, 2020.
+> CILC 2020, CEUR Workshop Proceedings 2719:51–66, 2020.
 
 > Roberta Calegari, Giuseppe Contissa, Giuseppe Pisano, Galileo Sartor, Giovanni Sartor.
 > **Arg-tuProlog: A modular logic argumentation tool for PIL.**
@@ -43,7 +43,7 @@ The tool Arg2P grew out of:
 ## Burden of persuasion
 
 The model implemented by the `bp_grounded`, `bp_grounded_partial` and `bp_grounded_complete`
-[semantics]({{% ref "/docs/flags" %}}):
+[semantics]({{% ref "/docs/api/flags" %}}):
 
 > Roberta Calegari, Giovanni Sartor.
 > **Burden of persuasion in argumentation.**
@@ -73,6 +73,24 @@ inside the rules themselves:
 ---
 
 ## Preferences
+
+The orderings of arguments (`orderingPrinciple` last and weakest, `orderingComparator` elitist and democrat):
+
+> Sanjay Modgil, Henry Prakken.
+> **A general account of argumentation with preferences.**
+> _Artificial Intelligence_, 195:361–397, 2013.
+> [arXiv:1804.06763](https://arxiv.org/abs/1804.06763)
+
+The normal attack relation (`orderingComparator(normal)`), and its extension to preferences concluded by rules:
+
+> Phan Minh Dung, Phan Minh Thang.
+> **Fundamental properties of attack relations in structured argumentation with priorities.**
+> _Artificial Intelligence_, 255:1–42, 2018.
+
+> Phan Minh Dung, Phan Minh Thang, Tran Cao Son.
+> **On structured argumentation with conditional preferences.**
+> AAAI 2019, 33(01):2792–2800, 2019.
+> [10.1609/aaai.v33i01.33012792](https://doi.org/10.1609/aaai.v33i01.33012792)
 
 The mechanism behind `graphExtension(defeasiblePref)` and `graphExtension(defeasibleAllPref)`:
 
