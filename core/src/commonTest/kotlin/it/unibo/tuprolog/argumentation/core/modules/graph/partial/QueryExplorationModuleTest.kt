@@ -45,6 +45,18 @@ class QueryExplorationModuleTest {
         assertEquals(saved, module.solutions("context_check(argument(_))").count { it.isYes })
     }
 
+    // The arguments are the same terms as those of the whole graph: rules and info sorted, the body as written
+    @Test
+    fun theArgumentsAreThoseOfTheWholeGraph() {
+        val theory =
+            "f1 :=> a.\nf2 :=> b.\nr1 : b, a, prolog(true) => c.\nr2 : c, a => d.\nr3 : d -> e.\n" +
+                "graphBuildMode(standard_af).\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).\n"
+        val arguments = "context_check(argument(A))"
+        val whole = ModuleTesting(theory).also { it.run("buildLabelSets(_, _, _)") }
+        val query = ModuleTesting(theory + "queryMode.").also { it.run("answerQuery(e, _, _, _)") }
+        assertEquals(whole.values(arguments, "A").toSet(), query.values(arguments, "A").toSet())
+    }
+
     // p(a, b) is not covered by the exploration of p(V, V) (for q): t(a, b) is found
     @Test
     fun aMoreGeneralStatementIsExploredAgain() {

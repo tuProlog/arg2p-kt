@@ -19,4 +19,15 @@ class AttackBuilderModuleTest {
         assertEquals(setOf("a", "b"), attacked("'-'(a)"))
         assertEquals(setOf("'-'(a)"), attacked("a"))
     }
+
+    // An argument undercutting its own rule attacks itself: under grounded it is undecided
+    @Test
+    fun anArgumentAttackingItself() {
+        val module =
+            ModuleTesting(
+                "f1 :=> a.\nr1 : a => undercut(r1).\ngraphBuildMode(standard_af).\nstatementLabellingMode(statement).\n" +
+                    "argumentLabellingMode(grounded).",
+            )
+        assertEquals("[[undercut(r1)]]", module.value("buildLabelSets(_, _, U)", "U"))
+    }
 }

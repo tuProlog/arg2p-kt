@@ -7,10 +7,11 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * rule whose premises are supported in turn by the arguments for them (explored through the module
  * queryExploration, which saves them).
  *
- * While an argument is searched, what its sub-arguments use is collected in a term
- * `used(Rules, LastDefeasibleRules, DefeasibleRules, DefeasiblePremises)`, and its parts in
- * `found(Body, TopRule, Used, Supports)`: built in the clause bodies, so that clause heads only match the conclusion
- * or the premises (matching many arguments against every clause head is what makes resolution expensive).
+ * An argument is the same term as the graph builder makes (see the module argumentBuilder): its rules and info from
+ * those of its sub-arguments (argument::rulesAndInfo/5), its body the premises of its rule as written. Its parts are
+ * collected in `found(Body, TopRule, Rules, Info, Supports)`, built in the clause bodies, so that clause heads only
+ * match the conclusion or the premises (matching many arguments against every clause head is what makes resolution
+ * expensive).
  */
 object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.search", "argumentSearch") {
     override val prologRawTheory: String =
@@ -19,34 +20,29 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         %! findSingleArgument(+Conclusion, -Argument, -Supports)
         %  Argument is an argument for Conclusion, Supports its sub-arguments, saved.
         findSingleArgument(Conclusion, Argument, Supports) :-
-            findArgument(Conclusion, [], found(Body, TopRule, used(Rules, LastDefRules, DefRules, DefPremises), Supports)),
-            utils::deduplicate(DefRules, CDefRules),
-            utils::deduplicate(DefPremises, CDefPremises),
-            utils::deduplicate(Body, CBody),
-            argument::infoParts(Info, LastDefRules, CDefRules, CDefPremises),
-            argument::new(Rules, TopRule, Conclusion, CBody, Info, Argument).
+            findArgument(Conclusion, found(Body, TopRule, Rules, Info, Supports)),
+            argument::new(Rules, TopRule, Conclusion, Body, Info, Argument).
 
         % From a premise
-        findArgument(Conclusion, _, Found) :-
+        findArgument(Conclusion, Found) :-
             parser::classicRule(Id, Conclusion),
-            premiseRules(Id, Used),
-            Found = found([], none, Used, []).
+            premiseInfo(Id, Info),
+            Found = found([], none, [Id], Info, []).
 
-        % From a rule: an argument uses a rule at most once (as in the whole graph, see argument::rulesAndInfo/5)
-        findArgument(Conclusion, Ids, Found) :-
+        % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise)
+        findArgument(Conclusion, Found) :-
             parser::classicRule(Id, Premises, Conclusion),
-            findPremises(Premises, [Id|Ids], premises(Conclusions, SubUsed, Supports)),
-            SubUsed = used(SubRules, _, _, _),
-            \+ member(Id, SubRules),
-            ruleRules(Id, SubUsed, Used),
-            Found = found(Conclusions, Id, Used, Supports).
+            findPremises(Premises, premises(Parts, Supports)),
+            ruleStrictness(Id, Strict),
+            argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
+            Found = found(Premises, Id, Rules, Info, Supports).
 
         % The premises of a rule are supported one at a time, most selective first (see nextPremise/2): with the
         % bindings of the conclusion and of the premises supported so far, rather than in the order they are written,
         % which could build all the arguments for a premise that the following ones then discard. Each premise has a slot
         % for its result, and the results are collected in the order of the rule: an argument is the same however the
         % premises were supported.
-        findPremises(Premises, _, Found) :-
+        findPremises(Premises, Found) :-
             premiseSlots(Premises, Slots),
             supportPremises(Slots),
             collectPremises(Slots, Found).
@@ -121,40 +117,30 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             queryExploration::buildSubGraph(Premise, Sub),
             Result = argument(Sub).
 
-        % collectPremises(+Slots, -Premises): premises(Conclusions, Used, Supports), the results of the slots, in
-        % their order: the conclusions of the premises (contraries included), what their arguments use, and the
-        % arguments
+        % collectPremises(+Slots, -Premises): premises(Parts, Supports), the results of the slots: the rules, last
+        % defeasible rules, defeasible rules and defeasible premises of the arguments for the premises (a list of lists
+        % each, as argument::rulesAndInfo/5 takes them), and the arguments, in the order of the rule
         collectPremises([], Found) :-
-            Found = premises([], used([], [], [], []), []).
+            Found = premises([[], [], [], []], []).
         collectPremises([slot(_, check)|Slots], Found) :- !,
             collectPremises(Slots, Found).
-        collectPremises([slot(Premise, contrary)|Slots], Found) :- !,
-            collectPremises(Slots, premises(Conclusions, Used, Supports)),
-            Found = premises([Premise|Conclusions], Used, Supports).
+        collectPremises([slot(_, contrary)|Slots], Found) :- !,
+            collectPremises(Slots, Found).
         collectPremises([slot(_, argument(Sub))|Slots], Found) :-
-            collectPremises(Slots, premises(Conclusions, Used, Supports)),
-            argument::claim(Sub, Claim),
-            argument::rules(Sub, Rules),
+            collectPremises(Slots, premises([Rules, LastDefRules, DefRules, DefPremises], Supports)),
+            argument::rules(Sub, SubRules),
             argument::info(Sub, Info),
-            argument::infoParts(Info, LastDefRules, DefRules, DefPremises),
-            mergeUsed(used(Rules, LastDefRules, DefRules, DefPremises), Used, Merged),
-            Found = premises([Claim|Conclusions], Merged, [Sub|Supports]).
+            argument::infoParts(Info, SubLastDefRules, SubDefRules, SubDefPremises),
+            Found = premises(
+                [[SubRules|Rules], [SubLastDefRules|LastDefRules], [SubDefRules|DefRules], [SubDefPremises|DefPremises]],
+                [Sub|Supports]
+            ).
 
-        % What an argument made of the premise Id uses
-        premiseRules(Id, Used) :- parser::checkStrict(Id), !, Used = used([Id], [], [], []).
-        premiseRules(Id, used([Id], [], [], [Id])).
+        % The info of an argument made of the premise Id: none of its premises defeasible if it is strict
+        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, argument::infoParts(Info, [], [], []).
+        premiseInfo(Id, Info) :- argument::infoParts(Info, [], [], [Id]).
 
-        % What an argument made of the rule Id uses, with its sub-arguments using SubUsed (a single checkStrict
-        % call: the second clause is only reached for defeasible rules)
-        ruleRules(Id, used(Rules, LastDefRules, DefRules, DefPremises), Used) :-
-            parser::checkStrict(Id), !,
-            Used = used([Id|Rules], LastDefRules, DefRules, DefPremises).
-        ruleRules(Id, used(Rules, _, DefRules, DefPremises), used([Id|Rules], [Id], [Id|DefRules], DefPremises)).
-
-        mergeUsed(used(R1, L1, D1, P1), used(R2, L2, D2, P2), used(R, L, D, P)) :-
-            utils::appendLists([R1, R2], R),
-            utils::appendLists([L1, L2], L),
-            utils::appendLists([D1, D2], D),
-            utils::appendLists([P1, P2], P).
+        ruleStrictness(Id, strict) :- parser::checkStrict(Id), !.
+        ruleStrictness(_, defeasible).
         """.trimIndent()
 }

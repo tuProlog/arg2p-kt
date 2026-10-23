@@ -63,4 +63,11 @@ class CausalityModuleTest {
             )
         isButForCause(solver, "a", "b")
     }
+
+    // The graph extensions too: with standardPref, the default, sup(r1, r2) makes a prevail over -a
+    @Test
+    fun theGraphExtensionsOfTheSolverApply() {
+        val solver = Arg2pSolverFactory.causality("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).\nr3 : a => b.")
+        isButForCause(solver, "a", "b")
+    }
 }

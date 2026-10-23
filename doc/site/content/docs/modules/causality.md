@@ -114,9 +114,9 @@ necessary for the effect.
 
 ## Notes on behaviour
 
-- The causality solver runs its own inner evaluation with grounded semantics and no graph extensions,
-  whatever `argumentLabellingMode` and `graphExtension` say. The other flags are those of the outer solver, whether
-  its settings or the theory state them (as `prologStrictCompatibility` or `metaConflicts`).
+- The causality solver runs its own inner evaluation with grounded semantics, whatever `argumentLabellingMode`
+  says. The other flags are those of the outer solver, whether its settings or the theory state them (as
+  `graphExtension`, `prologStrictCompatibility` or `metaConflicts`).
 - `ness/3` and `but_for/2` only name accepted causes: a statement no argument concludes (the absence `-d` of a
   fact `d` never stated, say) or a rule identifier is not a cause for them, though `ness_original/3` may report
   it as one.

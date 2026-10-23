@@ -12,8 +12,9 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         // language=Prolog
         """
         %! buildAttacks
-        %  The attacks between the saved arguments, direct and on their super-arguments. Loops over the graph go
-        %  through its copy by identifiers (see the module graphStore).
+        %  The attacks between the saved arguments, direct and on their super-arguments, an argument attacking itself
+        %  included (as r : a => undercut(r) does). Loops over the graph go through its copy by identifiers (see the
+        %  module graphStore).
         buildAttacks :-
             findall(_, buildDirectAttack, _).
 
@@ -22,7 +23,6 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             attackCandidates::possibleAttackers(IdA, A, Conflict),
             findAttacker(Conflict, B),
             conflictArguments::canAttack(B),
-            A \== B,
             % Attacks are checked on copies, so that A and B are saved exactly as they are stored:
             % binding their variables would change their identifiers (see context_id)
             copy_term(B-A, CB-CA),
