@@ -39,7 +39,7 @@ class StatementLabellersTest {
     @Test
     fun theBinaryLabellingTellsInFromTheRest() {
         assertEquals(
-            mapOf("statIn" to setOf("a"), "statOut" to setOf("a", "b", "c"), "statUnd" to emptySet()),
+            mapOf("statIn" to setOf("a"), "statOut" to setOf("b", "c"), "statUnd" to emptySet()),
             labelled("statement_binary"),
         )
     }

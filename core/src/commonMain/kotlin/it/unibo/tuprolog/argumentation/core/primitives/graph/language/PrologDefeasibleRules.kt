@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.toTerm
@@ -8,47 +10,20 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 
 /**
- * prologDefeasibleRules(-Rules): the rules of the theory written `Head := Body` as defeasible rules,
- * `[Id, Body, Head]`, with prologStrictCompatibility on (none otherwise)
+ * prologDefeasibleRules(-Rules): the Prolog clauses of the theory (Head :- Body) with an identifier (see
+ * [RuleAnnotations]) as defeasible rules, `[Id, Body, Head]`, with prologStrictCompatibility on (none otherwise)
  */
 object PrologDefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologDefeasibleRules") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses
-                .filter { (_, clause) ->
-                    clause.isFact &&
-                        (
-                            clause.head!!.functor == ":=" ||
-                                (
-                                    clause.head!!.functor == "," &&
-                                        clause.head!!
-                                            .args[0]
-                                            .asStruct()
-                                            ?.functor == ":="
-                                )
-                        ) &&
-                        clause.head!!.arity == 2
-                }.map { (index, clause) ->
-                    if (clause.head!!.functor == ",") {
-                        val head = clause.head!!.args[0].asStruct()
-                        val term =
-                            (
-                                listOf(head!![1]) + (
-                                    clause.head!!
-                                        .args[1]
-                                        .asTuple()
-                                        ?.args
-                                        ?: listOf(clause.head!!.args[1])
-                                )
-                            ).toTypedArray()
-                        prologScope.clauseOf(head[0].asStruct(), *term)
-                    } else {
-                        prologScope.clauseOf(clause.head!!.args[0].asStruct(), clause.head!!.args[1])
-                    }.let {
+                .filter { (_, clause) -> clause.isRule }
+                .mapNotNull { (_, clause) ->
+                    RuleAnnotations.of(clause)?.let {
                         prologScope.logicListOf(
-                            ConversionUtils.ruleId(index),
-                            ConversionUtils.modifiers(it, this@computeAllSubstitutions),
-                            it.head!!,
+                            Atom.of(it),
+                            ConversionUtils.modifiers(clause, this@computeAllSubstitutions),
+                            clause.head!!,
                         )
                     }
                 }.toTerm()

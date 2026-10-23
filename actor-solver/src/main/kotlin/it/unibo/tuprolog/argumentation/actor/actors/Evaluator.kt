@@ -22,9 +22,6 @@ import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
 import kotlin.random.Random
 
 class Evaluator private constructor(
@@ -167,7 +164,6 @@ class Evaluator private constructor(
                 Arg2pSolver
                     .default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
                     .to2pLibraries(),
-            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
         )
 
     companion object {

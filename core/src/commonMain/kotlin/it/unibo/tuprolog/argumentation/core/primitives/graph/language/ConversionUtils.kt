@@ -43,6 +43,12 @@ object ConversionUtils {
     /** The identifier of the rule a Prolog clause stands for: from its position in the theory, the same at each conversion */
     fun ruleId(index: Int): String = "rule_$index"
 
+    // The functors of the facts written in the language of arg2p (rules, premises, axioms), not Prolog facts
+    private val arg2pFacts = setOf(":->", "->", "=>", ":=>", ":", ",")
+
+    /** Whether [clause] is a Prolog fact, rather than a rule, a premise or an axiom written in the language of arg2p */
+    fun isPrologFact(clause: Clause): Boolean = clause.isFact && clause.head!!.functor !in arg2pFacts
+
     fun commonMap(
         context: Solve.Request<ExecutionContext>,
         first: Term,

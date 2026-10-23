@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
-import it.unibo.tuprolog.argumentation.core.flags.AmbiguityBlocking
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -11,7 +10,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StructuredPartialModule : PrologModule("prolog.argumentation.structured.partial", "structuredPartial") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(QueryMode, AmbiguityBlocking)
+        get() = listOf(QueryMode)
 
     override val prologRawTheory: String =
         // language=Prolog

@@ -4,15 +4,15 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * Two labels for the statements (module `statement_binary`, a statementLabellingMode): IN if an argument for the
- * statement is IN, OUT if one is OUT or UND.
+ * statement is IN, OUT otherwise.
  */
 object StatementBinaryModule : PrologModule("prolog.argumentation.graph.labelling.statement.binary", "statement_binary") {
     override val prologRawTheory: String =
         // language=Prolog
         """
         %! statementLabelling
-        %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, OUT those with
-        %  an argument OUT or UND.
+        %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, OUT the others
+        %  (their arguments are OUT or UND).
         statementLabelling :-
             findall(_, (
                 argument::conclusion(A, Conc),
@@ -23,6 +23,7 @@ object StatementBinaryModule : PrologModule("prolog.argumentation.graph.labellin
             findall(_, (
                 argument::conclusion(A, Conc),
                 (graphStore::argumentLabel(out, A) ; graphStore::argumentLabel(und, A)),
+                \+ graphStore::statementLabel(in, Conc),
                 \+ graphStore::statementLabel(out, Conc),
                 graphStore::labelStatement(out, Conc)
             ), _).

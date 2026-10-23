@@ -49,7 +49,8 @@ internal class CausalityAnalysis {
         graphCache[key]?.let { return it }
         if (graphCache.size >= GRAPH_CACHE_SIZE) graphCache.clear()
         solver.resetStaticKb()
-        solver.loadStaticKb(Theory.parse(text, operators))
+        // the theory as it is, not parsed again from its text: its clauses keep their tags (see RuleAnnotations)
+        solver.loadStaticKb(theory)
         return (
             solver
                 .solve(Struct.of("answerQuery", query))

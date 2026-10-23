@@ -102,9 +102,16 @@ internal class Arg2pGuiExtension(
             id = Arg2pGuiIds.PROFILE,
             displayName = "Arg2p",
             solutionFeatures = ::solutionFeatures,
-            newSession = { factory, request, capabilities, features, runtimeLibraries ->
+            newSession = { _, request, capabilities, features, runtimeLibraries ->
                 libraries.reset()
-                SolverFactorySession(factory, request, capabilities, features, runtimeLibraries + libraries.current())
+                // the factory of the profile, for the theory of the editor with the identifiers of its comments
+                SolverFactorySession(
+                    AnnotatedSolverFactory(request.sourceText),
+                    request,
+                    capabilities,
+                    features,
+                    runtimeLibraries + libraries.current(),
+                )
             },
         ).let { base ->
             base.copy(

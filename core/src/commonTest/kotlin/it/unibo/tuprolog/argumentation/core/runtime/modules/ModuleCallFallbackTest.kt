@@ -22,6 +22,8 @@ class ModuleCallFallbackTest {
             PrologSolverFactory.mutableSolverWithDefaultBuiltins(
                 unificator = Arg2pUnificator,
                 otherLibraries = it.to2pLibraries(),
+                // tuProlog's solver loses bindings a goal left to solve needs, unless every goal selected is tracked
+                // (see SubstitutionTrimmingTest)
                 flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
             )
         }

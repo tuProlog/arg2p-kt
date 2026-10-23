@@ -145,7 +145,14 @@ data class PrologExecutionContext(
                     relevant.goal.collectVariables(variables)
                     relevant = relevant.previous
                 }
-                context.goals.current?.collectVariables(variables)
+                // arg2p: the goals left to solve, not only the current one (as in tuProlog): a variable bound by a
+                // goal before and used by one after would otherwise lose its binding when a sub-goal ends, unless
+                // TrackVariables kept every goal selected
+                var left = context.goals
+                while (!left.isOver) {
+                    left.current?.collectVariables(variables)
+                    left = left.next
+                }
                 context = context.parent
             }
         }

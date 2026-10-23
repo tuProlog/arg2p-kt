@@ -9,8 +9,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.core.List as PlList
 
 /**
- * but_for(+Cause, +Effect): Cause is a but-for cause of Effect: an argument for Effect is IN, and none is once the
- * complement of Cause is added to the theory.
+ * but_for(+Cause, +Effect): Cause is a but-for cause of Effect: an argument for Cause and one for Effect are IN in the
+ * grounded labelling of the theory, and none for Effect is once the complement of Cause is added to the theory.
  */
 internal class ButFor(
     private val analysis: CausalityAnalysis,
@@ -20,13 +20,14 @@ internal class ButFor(
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val (cause, effect) = request.arguments
         val holds =
-            arg2pScope {
-                request
-                    .solve("compl"(cause, X))
-                    .filter { it.isYes }
-                    .map { analysis.butFor(request, PlList.of(it.substitution[X]!!), effect) }
-                    .firstOrNull() ?: false
-            }
+            analysis.isAccepted(request, cause) &&
+                arg2pScope {
+                    request
+                        .solve("compl"(cause, X))
+                        .filter { it.isYes }
+                        .map { analysis.butFor(request, PlList.of(it.substitution[X]!!), effect) }
+                        .firstOrNull() ?: false
+                }
         return sequenceOf(request.replyWith(holds))
     }
 }

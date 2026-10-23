@@ -34,6 +34,8 @@ kotlin {
             dependencies {
                 api(libs.tuprolog.dsl.solve)
                 api(libs.tuprolog.parser.theory)
+                // The lexer of 2P-Kt, keeping the comments of a theory (see RuleAnnotations)
+                implementation(libs.tuprolog.parser.impl)
                 // Provides consult/1, used by module::call_module/2 to load external theories.
                 implementation(libs.tuprolog.io.lib)
             }

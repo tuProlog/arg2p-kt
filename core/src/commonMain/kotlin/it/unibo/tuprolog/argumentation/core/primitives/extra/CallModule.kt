@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -110,7 +111,7 @@ object CallModule : Primitive {
                         // arg2p syntax would fail to load.
                         val theory =
                             runCatching {
-                                Theory.parse(
+                                RuleAnnotations.parse(
                                     Url.of(target).readAsText(),
                                     ParserModule.operators().plus(OperatorSet.DEFAULT),
                                 )

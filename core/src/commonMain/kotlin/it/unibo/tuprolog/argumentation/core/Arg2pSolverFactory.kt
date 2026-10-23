@@ -7,14 +7,11 @@ import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.channel.OutputChannel
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
-import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Runtime
-import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
 object Arg2pSolverFactory {
@@ -33,8 +30,9 @@ object Arg2pSolverFactory {
     ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
     /**
-     * A solver of the libraries of [arg2p], and the [extra] ones, for [theory]: unknown predicates fail, variables are
-     * tracked, what it prints goes to [output] (the standard output by default)
+     * A solver of the libraries of [arg2p], and the [extra] ones, for [theory] (its clauses tagged with the
+     * identifiers of their comments, see RuleAnnotations): what it prints goes to [output] (the standard output by
+     * default)
      */
     internal fun solverOf(
         arg2p: Arg2pSolver,
@@ -44,8 +42,7 @@ object Arg2pSolverFactory {
     ) = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
         unificator = Arg2pUnificator,
         otherLibraries = arg2p.to2pLibraries() + extra,
-        flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
-        staticKb = Theory.parse(theory, arg2p.operators()),
+        staticKb = RuleAnnotations.parse(theory, arg2p.operators()),
         stdOut = output,
     )
 

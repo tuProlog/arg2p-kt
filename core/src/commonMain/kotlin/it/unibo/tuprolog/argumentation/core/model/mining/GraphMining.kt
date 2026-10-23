@@ -54,10 +54,17 @@ fun Solver.attacks(
     val lookup = arguments.lookup()
     return arg2pScope {
         this@attacks
-            .solve("graphStore" call "attackIn"(context, `_`, X, Y, `_`))
+            .solve("graphStore" call "attackIn"(context, T, X, Y, Z))
             .filter { it.isYes }
-            .map { Attack(lookup.find(it.substitution[X]!!), lookup.find(it.substitution[Y]!!)) }
-            .toList()
+            .map {
+                Attack(
+                    lookup.find(it.substitution[X]!!),
+                    lookup.find(it.substitution[Y]!!),
+                    it.substitution[T]!!.toString(),
+                    // none for an attack on no sub-argument in particular
+                    lookup.firstOrNull(it.substitution[Z]!!),
+                )
+            }.toList()
     }
 }
 
