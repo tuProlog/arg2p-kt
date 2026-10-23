@@ -1,17 +1,16 @@
 package it.unibo.tuprolog.argumentation.core.runtime.settings
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingSwitch
+import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingValue
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
@@ -72,8 +71,8 @@ class Settings(
             .toList()
     }
 
-    // The flag named by the first argument of the request, declared of the kind its check expects
-    private fun declared(
+    /** The flag named by the first argument of [request], declared of the kind its check expects (a switch or not) */
+    internal fun declared(
         request: Solve.Request<ExecutionContext>,
         switch: Boolean,
     ): ArgsFlag<*, *> {
@@ -83,38 +82,11 @@ class Settings(
             ?: throw DomainError.forArgument(request.context, request.signature, DomainError.Expected.FLAG, name, 0)
     }
 
-    /** setting(+Name): the switch Name is on */
-    inner class Switch : PrimitiveWithSignature {
-        override val signature = SWITCH
-
-        // The settings this primitive checks, for the native primitives of the other libraries
-        val owner: Settings
-            get() = this@Settings
-
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-            sequenceOf(request.replyWith(isOn(declared(request, switch = true), request.context)))
-    }
-
-    /** setting(+Name, ?Value): Value is a value of the flag Name, in the order they are stated */
-    inner class Value : PrimitiveWithSignature {
-        override val signature = Signature("setting", 2)
-
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            val values = valuesOf(declared(request, switch = false), request.context)
-            return values.asSequence().mapNotNull { value ->
-                Arg2pUnificator
-                    .mgu(request.arguments[1], value)
-                    .takeIf { it.isSuccess }
-                    ?.let { request.replyWith(it) }
-            }
-        }
-    }
-
     override val alias = "prolog.argumentation.settings"
 
     override val baseContent: Library
         get() =
-            listOf(Switch(), Value()).let { primitives ->
+            listOf(SettingSwitch(this), SettingValue(this)).let { primitives ->
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
@@ -125,9 +97,7 @@ class Settings(
         get() = emptyList()
 
     companion object {
-        private val SWITCH = Signature("setting", 1)
-
         /** The settings of the solver of [context], if they are reachable */
-        fun of(context: ExecutionContext): Settings? = (context.libraries.primitives[SWITCH] as? Switch)?.owner
+        fun of(context: ExecutionContext): Settings? = (context.libraries.primitives[SettingSwitch.SIGNATURE] as? SettingSwitch)?.owner
     }
 }

@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgContext
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgLoader
-import it.unibo.tuprolog.argumentation.core.modules.Arg2pModules
-import it.unibo.tuprolog.argumentation.core.modules.entry.EngineInterface
+import it.unibo.tuprolog.argumentation.core.modules.ArgContext
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.ArgLoader
+import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
+import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
@@ -52,8 +52,8 @@ interface Arg2pSolver {
             staticLibs: Iterable<ArgLibrary> = emptyList(),
             dynamicLibs: Iterable<ArgLibrary> = emptyList(),
         ) = of(
-            listOf(EngineInterface) + staticLibs,
-            Arg2pModules.all + dynamicLibs,
+            listOf(Arg2pModule) + staticLibs,
+            ModuleRegistry.all + dynamicLibs,
         )
     }
 }

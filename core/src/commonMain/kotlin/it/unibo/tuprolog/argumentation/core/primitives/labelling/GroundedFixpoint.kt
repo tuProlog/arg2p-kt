@@ -1,8 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.mining.arguments
-import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds

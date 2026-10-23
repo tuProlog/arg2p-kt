@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.mining.supports
-
 data class Graph(
     val arguments: List<Argument>,
     val attacks: List<Attack>,

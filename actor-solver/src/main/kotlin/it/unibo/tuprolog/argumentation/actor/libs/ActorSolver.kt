@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.actor.libs
 
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
@@ -9,11 +8,11 @@ import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.core.modules.language.RuleParserBase
+import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
@@ -127,7 +126,7 @@ class ActorSolver :
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
-                    operators = RuleParserBase.operators(),
+                    operators = ParserModule.operators(),
                 )
             }
 
@@ -137,7 +136,7 @@ class ActorSolver :
     override fun identifier(): String = "parallel"
 
     override var theoryOperators =
-        RuleParserBase
+        ParserModule
             .operators()
             .plus(OperatorSet.DEFAULT)
 }

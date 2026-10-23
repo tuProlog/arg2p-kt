@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
-import it.unibo.tuprolog.argumentation.core.mining.graph
-
 import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.model.Argument

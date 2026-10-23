@@ -1,8 +1,27 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.argumentation.core.libs.ArgContext
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.modules.ArgContext
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsentIn
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextActive
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAll
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssert
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssertAll
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBranch
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheck
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckIn
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckout
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextClosure
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCount
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDrop
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDropAfter
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextId
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextLast
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextReset
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextUnifiable
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -72,7 +91,7 @@ class Context :
                 ContextCheckIn(branches),
                 ContextAll(2, branches, this),
                 ContextAll(3, branches, this),
-                ContextIdentifier(branches),
+                ContextId(branches),
                 ContextUnifiable(branches),
                 ContextAbsent(branches),
                 ContextCount(branches),

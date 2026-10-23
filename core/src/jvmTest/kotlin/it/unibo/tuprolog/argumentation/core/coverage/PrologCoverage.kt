@@ -1,10 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.coverage
 
-import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
-
 import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
-import it.unibo.tuprolog.argumentation.core.modules.Arg2pModules
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
 import it.unibo.tuprolog.core.Clause
 import org.junit.runner.JUnitCore
 import java.io.File
@@ -44,8 +43,8 @@ class PrologCoverage {
 
     // The clauses of the modules, by identity: the engine resolves goals with the clauses of their libraries as they are
     private fun moduleClauses(): List<Owned> =
-        Arg2pModules.all.filterIsInstance<Loadable>().distinctBy { it.identifier() }.flatMap { module ->
-            val clauses = (module as it.unibo.tuprolog.argumentation.core.libs.ArgLibrary).content().clauses
+        ModuleRegistry.all.filterIsInstance<Loadable>().distinctBy { it.identifier() }.flatMap { module ->
+            val clauses = (module as it.unibo.tuprolog.argumentation.core.modules.ArgLibrary).content().clauses
             clauses
                 .groupBy { "${it.head?.functor}/${it.head?.arity}" }
                 .flatMap { (predicate, sameName) ->

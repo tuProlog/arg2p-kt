@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.actor.message
 
-
 import akka.actor.typed.ActorRef
 
 enum class Label {

@@ -1,10 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.mining.arguments
-import it.unibo.tuprolog.argumentation.core.mining.labels
-import it.unibo.tuprolog.argumentation.core.modules.data.LabelTerm
-import it.unibo.tuprolog.argumentation.core.primitives.graph.ConflictGraph
+import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextInstances
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
@@ -25,15 +22,6 @@ internal fun Solve.Request<ExecutionContext>.storedArguments(): List<Pair<Term, 
         contextInstances("clause"("arg"(`_`), "argument"(`_`)))
             .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
     }
-
-/** The attacks between the arguments of a branch, by argument identifier, with the attackers and the attacked of each */
-internal class AttackGraph(
-    /** The attacks, as (attacker, attacked) pairs, newest first */
-    val attacks: List<Pair<Term, Term>>,
-) {
-    val attackers: Map<Term, List<Term>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy({ it.second }, { it.first }) }
-    val attacked: Map<Term, List<Term>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy({ it.first }, { it.second }) }
-}
 
 /**
  * The attack graph of the active branch, from its att/2 clauses: built once until they change (the native

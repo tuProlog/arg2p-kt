@@ -13,11 +13,6 @@ import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.unify.Unificator
 
-/** The goal looking up a goal in a store of clauses (as `context_check(Branch, Goal)` or `cache_check(Goal)`) */
-internal fun interface StoreLookup {
-    fun of(goal: Term): Struct
-}
-
 /**
  * The clauses of a [ClauseStore] (a branch of the context, the cache), as the arg2p engine resolves the lookups of
  * the store with them (see [ClauseStore.solve] for the answers they stand for): the facts as stored, the rules with

@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.argumentation.core.mining.arguments
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.List

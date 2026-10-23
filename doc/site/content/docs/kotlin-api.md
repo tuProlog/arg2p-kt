@@ -21,7 +21,7 @@ There are two ways to use Arg2P from Kotlin or Java:
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 
 fun main() {
     val graph = Arg2pSolverFactory.evaluate(
@@ -169,7 +169,7 @@ After running a query on your own solver, the computed graph can be read back as
 `graph()` extension:
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.mining.graph
 
 solver.solve(Struct.parse("arg2p::solve", solver.operators)).first()
 val graph = solver.graph()

@@ -1,8 +1,5 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.mining.arguments
-import it.unibo.tuprolog.argumentation.core.mining.graph
-
 import it.unibo.tuprolog.argumentation.bridge.BridgedArgument
 import it.unibo.tuprolog.argumentation.bridge.BridgedAttack
 import it.unibo.tuprolog.argumentation.bridge.BridgedGraph

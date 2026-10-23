@@ -1,18 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.runtime.modules
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
-
-/** A module of an arg2p solver: the libraries its goals are solved against, those of the solver and its own */
-class Module(
-    val name: String,
-    val libraries: Runtime,
-)
 
 /**
  * The modules of an arg2p solver (its dynamic libraries), loaded on their first call: each solves its goals against

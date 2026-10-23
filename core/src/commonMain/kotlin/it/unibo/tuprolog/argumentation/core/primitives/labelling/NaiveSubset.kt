@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling
 
-import it.unibo.tuprolog.argumentation.core.mining.graph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.primitives.replyList

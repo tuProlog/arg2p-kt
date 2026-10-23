@@ -1,9 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.docs
 
-import it.unibo.tuprolog.argumentation.core.mining.arguments
-
-import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
-
 import java.io.File
 
 /**

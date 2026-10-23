@@ -1,22 +1,19 @@
 package it.unibo.tuprolog.argumentation.causality.libs
 
-import it.unibo.tuprolog.argumentation.core.mining.supports
-
-
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.libs.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.libs.Loadable
-import it.unibo.tuprolog.argumentation.core.libs.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
-import it.unibo.tuprolog.argumentation.core.modules.language.RuleParserBase
-import it.unibo.tuprolog.argumentation.core.mining.graph
+import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -390,6 +387,6 @@ class CausalitySolver :
     override var theoryOperators =
         DynamicLoader
             .operators()
-            .plus(RuleParserBase.operators())
+            .plus(ParserModule.operators())
             .plus(OperatorSet.DEFAULT)
 }
