@@ -11,7 +11,6 @@ import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
 import it.unibo.tuprolog.core.List as LogicList
@@ -80,15 +79,4 @@ object JsTerms {
 
     /** The term as Prolog would write it, operators included */
     fun format(term: Term): String = TermFormatter.prettyExpressions().format(term)
-}
-
-/** The theories of tuProlog for JS: parsing, and their clauses */
-@JsExport
-object JsTheories {
-    /** The theory written in [text], with the operators of arg2p theories (see [JsArg2p.operators]) */
-    fun parse(text: String): Theory = Theory.parse(text, JsArg2p.operators)
-
-    fun clauses(theory: Theory): Array<Term> = theory.clauses.toList().toTypedArray()
-
-    fun format(theory: Theory): String = theory.toString(asPrologText = true)
 }

@@ -136,23 +136,19 @@ Arg2P in an existing 2P-Kt solver.
 ```
 
 ```js
-const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
+const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
 
-const graph = arg2p.solve('arg2p::solve', `
+const solver = JsArg2p.solver(`
     f1 :=> d.
-    f2 :=> -d.`, `
-    graphBuildMode(standard_af).
-    statementLabellingMode(statement).
-    argumentLabellingMode(grounded).
-    orderingPrinciple(last).
-    orderingComparator(elitist).
-    graphExtension(standardPref).
-    queryMode.`, _ => { }).i.next().graph
+    f2 :=> -d.
+    queryMode.`)
+JsArg2p.solve(solver, 'arg2p::solve').next()
+const graph = JsArg2p.graph(solver)
 
 graph.arguments.forEach(arg => console.log(`${arg.label} : ${arg.descriptor}`))
 ```
 
-See [JavaScript API]({{% ref "/docs/javascript" %}}) for the full bridge.
+See [JavaScript API]({{% ref "/docs/javascript" %}}) for the whole API.
 
 ---
 

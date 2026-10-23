@@ -9,9 +9,11 @@ import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
@@ -30,15 +32,21 @@ object Arg2pSolverFactory {
         dynamicLibs: Iterable<ArgLibrary> = emptyList(),
     ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
-    // A solver of the libraries of [arg2p] for [theory]: unknown predicates fail, variables are tracked
-    private fun solverOf(
+    /**
+     * A solver of the libraries of [arg2p], and the [extra] ones, for [theory]: unknown predicates fail, variables are
+     * tracked, what it prints goes to [output] (the standard output by default)
+     */
+    internal fun solverOf(
         arg2p: Arg2pSolver,
         theory: String,
+        extra: Runtime = Runtime.empty(),
+        output: OutputChannel<String> = OutputChannel.stdOut(),
     ) = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
         unificator = Arg2pUnificator,
-        otherLibraries = arg2p.to2pLibraries(),
+        otherLibraries = arg2p.to2pLibraries() + extra,
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
         staticKb = Theory.parse(theory, arg2p.operators()),
+        stdOut = output,
     )
 
     fun evaluate(

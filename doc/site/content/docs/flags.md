@@ -209,5 +209,5 @@ val solver = Arg2pSolverFactory.default(
 )
 ```
 
-This is the form used by the [JavaScript bridge]({{% ref "/docs/run" %}}), which receives its flags as Prolog
-text rather than as a `FlagsBuilder`.
+This is also what a [JavaScript]({{% ref "/docs/javascript" %}}) solver given its flags (`flags(text)`) has: it
+receives them as Prolog text rather than as a `FlagsBuilder`.

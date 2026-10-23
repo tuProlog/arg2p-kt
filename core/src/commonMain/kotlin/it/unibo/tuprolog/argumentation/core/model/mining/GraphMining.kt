@@ -88,8 +88,8 @@ fun Solver.labels(
     return arguments.map { LabelledArgument(it, labels.firstOrNull(it.termRepresentation())?.second ?: "na") }
 }
 
-// The number of the active context branch
-private fun Solver.activeBranch(): Int =
+/** The number of the active context branch */
+internal fun Solver.activeBranch(): Int =
     arg2pScope {
         this@activeBranch
             .solve("context_active"(X))

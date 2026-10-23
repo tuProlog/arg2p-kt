@@ -15,8 +15,8 @@ Common mistakes, and what they look like when they happen.
 
 Most often one of the required flags is missing. `graphBuildMode`, `argumentLabellingMode`,
 `statementLabellingMode`, `orderingPrinciple` and `orderingComparator` must all have a value. `FlagsBuilder()`
-supplies them, but a theory evaluated with `FlagsBuilder().empty(true)` — or a flags string passed to the
-[JavaScript bridge]({{% ref "/docs/javascript" %}}) — has to declare every one of them itself.
+supplies them, but a theory evaluated with `FlagsBuilder().empty(true)` — or a [JavaScript]({{% ref "/docs/javascript" %}}) solver given its flags as
+text — has to declare every one of them itself.
 
 The other frequent cause is reading the graph before running a query: `graph()` mines the *current* evaluation
 context, so a query such as `arg2p::solve` has to succeed first.

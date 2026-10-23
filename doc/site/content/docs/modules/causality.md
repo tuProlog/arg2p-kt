@@ -11,8 +11,8 @@ implementing counterfactual and NESS causal tests.
 
 It is available as the Maven module `causality-solver` and as the npm package
 `@tuprolog/arg2p-causality-solver`. It is also bundled in the
-[IDE]({{% ref "/docs/getting-started" %}}) and in the JavaScript bridge, so in those two environments it is
-ready to use with no extra setup.
+[IDE]({{% ref "/docs/getting-started" %}}), ready to use with no extra setup, and in the npm package
+`@tuprolog/arg2p`, as a module to give to the solvers that need it.
 
 ---
 
@@ -80,10 +80,11 @@ arg2pScope {
 }
 ```
 
-From the [JavaScript bridge]({{% ref "/docs/run" %}}), pass the query as text:
+From [JavaScript]({{% ref "/docs/javascript" %}}), give the solver the causality module:
 
 ```js
-arg2p.solve('causality::ness(X, a, b)', theory, flags, _ => { })
+const solver = new JsSolverBuilder().theory(theory).module(JsCausality.module()).build()
+JsArg2p.solve(solver, 'causality::ness(X, a, b)').next()
 ```
 
 ---
