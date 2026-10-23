@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.argumentation.actor.libs.ActorSolver
-import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
+import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.ui.swing.app.WorkspacePersistence
@@ -20,7 +20,7 @@ object Arg2pIdeApplication {
     fun main(args: Array<String>) {
         exitWhenAllFramesAreClosed()
         runBlocking {
-            val arg2p = Arg2pSolver.default(staticLibs = emptyList(), dynamicLibs = listOf(ActorSolver(), CausalitySolver()))
+            val arg2p = Arg2pSolver.default(staticLibs = emptyList(), dynamicLibs = listOf(ActorSolver(), CausalityModule()))
             val libraries = Arg2pLibraries(arg2p)
             val extension = Arg2pGuiExtension(libraries)
             launchSwingIde(

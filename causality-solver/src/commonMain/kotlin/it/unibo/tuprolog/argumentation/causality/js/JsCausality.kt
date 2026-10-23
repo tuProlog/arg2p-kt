@@ -2,7 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.causality.js
 
-import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
+import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import kotlin.js.JsExport
 
@@ -13,5 +13,5 @@ import kotlin.js.JsExport
 @JsExport
 object JsCausality {
     /** A new causality module: each solver has its own (it keeps the graphs it computes) */
-    fun module(): ArgLibrary = CausalitySolver()
+    fun module(): ArgLibrary = CausalityModule()
 }

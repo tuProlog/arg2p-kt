@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.causality
 
-import it.unibo.tuprolog.argumentation.causality.libs.CausalitySolver
+import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
 import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
@@ -11,6 +11,6 @@ fun Arg2pSolverFactory.causality(theory: String = "") =
     of(
         theory,
         FlagsBuilder().create(),
-        listOf(CausalitySolver(), Cache()),
+        listOf(CausalityModule(), Cache()),
         ModuleRegistry.all,
     )

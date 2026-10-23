@@ -44,7 +44,7 @@ through the `causality::` prefix.
 | Predicate | Meaning |
 | --- | --- |
 | `but_for(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. |
-| `ness(Intervention, Cause, Effect)` | The NESS test, revised model. `Intervention` **must be unbound**: it is bound to the intervention under which the cause is necessary for the effect. |
+| `ness(Intervention, Cause, Effect)` | The NESS test, revised model. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. `Intervention` **must be unbound**: it is bound to the intervention under which the cause is necessary for the effect. |
 | `ness_intervention(Intervention, Effect)` | Checks the revised NESS condition for an intervention you provide. |
 | `ness_original(Intervention, Cause, Effect)` | The published formulation of the NESS test. `Intervention` must be unbound. |
 | `ness_original_intervention(Intervention, Effect)` | The published formulation, on a given intervention. |
@@ -115,5 +115,7 @@ necessary for the effect.
 
 - The causality solver runs its own inner evaluation with grounded semantics and no graph extensions,
   independently of the flags you set for the outer solver.
+- `ness/3` only names accepted causes: a statement no argument concludes (the absence `-d` of a fact `d` never
+  stated, say) or a rule identifier is not a NESS cause, though `ness_original/3` may report it as one.
 - Graphs computed during a causality query are cached, so repeated queries against the same theory and effect
   are considerably faster than the first one.
