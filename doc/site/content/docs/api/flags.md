@@ -139,8 +139,20 @@ Which part of an argument is compared:
 How the two sets selected by the ordering principle are compared:
 
 - `elitist` — an argument is weaker if *some* of its rules is weaker than *all* the rules of the other;
-- `democrat` — an argument is weaker if *all* its rules are weaker;
-- `normal` — an argument is weaker if some of its rules is weaker than some rule of the other.
+- `democrat` — an argument is weaker if *each* of its rules is weaker than *some* rule of the other;
+- `normal` — an argument is weaker if some of its last rules is weaker than some last rule of the other.
+
+A non-empty set is always weaker than an empty one: an argument with no defeasible rule (or premise) to compare
+is stronger than one with some, whatever the preferences. `elitist` and `democrat` are the set comparisons of
+Modgil and Prakken, combined with either principle; `normal` is the attack relation of Dung and Thang, defined on
+the last rules, so it only goes with `orderingPrinciple(last)`: with `weakest` the evaluation raises a domain
+error. See [References]({{% ref "/docs/references#preferences" %}}).
+
+> [!NOTE]
+> The normal attack relation knows rules only. For `orderingPrinciple(last)` with `orderingComparator(normal)`,
+> write the defeasible facts as rules with an empty body (`r1 : [] => a.`) rather than as premises (`f1 :=> a.`):
+> a premise is not one of the last rules of its arguments, so preferences on it are not weighed as Dung and Thang
+> define them.
 
 ---
 

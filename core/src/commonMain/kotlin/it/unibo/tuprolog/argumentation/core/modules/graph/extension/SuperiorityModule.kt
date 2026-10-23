@@ -65,6 +65,12 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
             argument::infoParts(InfoB, LastDefRulesB, DefRulesB, DefPremisesB),
             superiorArgumentSupport(LastDefRulesA, DefRulesA, DefPremisesA, LastDefRulesB, DefRulesB, DefPremisesB, Preferences).
 
+        % The normal comparator (Dung and Thang) is defined on the last rules of the arguments: last link only
+        superiorArgumentSupport(_, _, _, _, _, _, _) :-
+            setting(orderingComparator, normal),
+            setting(orderingPrinciple, Principle),
+            Principle \== last, !,
+            throw(error(domain_error(orderingPrinciple(last), Principle), normal)).
         superiorArgumentSupport(LastDefRulesA, _, DefPremisesA, LastDefRulesB, _, DefPremisesB, Preferences) :-
             setting(orderingPrinciple, last),
             superior(LastDefRulesA, DefPremisesA, LastDefRulesB, DefPremisesB, Preferences).

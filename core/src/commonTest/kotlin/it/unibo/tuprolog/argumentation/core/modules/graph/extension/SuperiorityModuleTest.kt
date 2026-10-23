@@ -61,6 +61,18 @@ class SuperiorityModuleTest {
         assertTrue(module.holds("context_check(superior([[r2], [r2], []], [[r1], [r1], []], _, false))"))
     }
 
+    // normal is defined on the last rules: it does not go with the weakest link
+    @Test
+    fun theNormalComparatorNeedsTheLastLink() {
+        assertTrue(module(comparator = "normal").holds("superiority::superiorArgument($r1, $r2)"))
+        val weakest = module(principle = "weakest", comparator = "normal")
+        assertTrue(
+            weakest.holds(
+                "catch(superiority::superiorArgument($r1, $r2), error(domain_error(orderingPrinciple(last), weakest), _), true)",
+            ),
+        )
+    }
+
     @Test
     fun everyJustificationIsGiven() {
         val module = module().also { it.run("context_assert(sup(r1, r3))") }
