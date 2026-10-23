@@ -93,8 +93,9 @@ indicates a strong negation, as opposed to the negation as failure implemented w
 ~(Term)
 ```
 
-X indicates a weak negation -- i.e., negation by failure -- as the ability to encode rules exceptions. 
-Weak negations are admitted only inside the body of the rule (premises). Accordingly, the rule:
+`~(Term)` indicates a weak negation -- i.e., negation by failure -- as the ability to encode rules exceptions.
+Weak negations are meant for the body of a rule (premises): in a conclusion, `~(Term)` is just a statement.
+Accordingly, the rule:
 
 ```prolog
 r : ~(Term1), Term2 => Conclusions.
@@ -103,7 +104,7 @@ r : ~(Term1), Term2 => Conclusions.
 should be read as _unless Term1, if Term2 then Conclusions_.
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20bird%28X%29%2C%20%7E%28penguin%28X%29%29%20%3D%3E%20flies%28X%29.%0Af1%20%3A%3D%3E%20bird%28tweety%29.%0Af2%20%3A%3D%3E%20penguin%28tweety%29.&query=arg2p%3A%3Asolve%28flies%28tweety%29%2C%20Res%29)
-— knowing Tweety is a penguin blocks the rule.
+— knowing Tweety is a penguin defeats the assumption: `flies(tweety)` is OUT.
 
 ### Undercut
 
@@ -162,7 +163,7 @@ o(-Term)    % prohibition
 p(Term)     % permission to do something
 p(-Term)    % permission to don't do something
 -p(Term)    % prohibition
--p(-Term)   % prohibition
+-p(-Term)   % obligation (not permitted not to)
 ```
 
 where `Term` is a standard Prolog term.
@@ -180,6 +181,10 @@ This proposition symbolises the greater reliability of the rule with identifier 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Asup%28r1%2C%20r2%29.&query=arg2p%3A%3Asolve%28q%2C%20Res%29)
 — without `sup/2` both conclusions are undecided; with it, `q` wins.
 
+The preferences are transitive: `sup(r1, r2)` and `sup(r2, r3)` also prefer `r1` to `r3`, with no need to state
+it. A cycle (`sup(r1, r2)` and `sup(r2, r1)`) never makes a rule preferred to itself. The preferences concluded
+by rules ([defeasible preferences]({{% ref "/docs/modules/meta" %}})) are closed by a rule of the theory instead.
+
 ## Custom conflicts
 
 Beyond the built-in conflicts — a statement against its strong negation, and the deontic pairs — a theory can
@@ -191,7 +196,8 @@ conflict([a], [b], Guard).          % ... whenever the Prolog goal Guard succeed
 ```
 
 Both arguments are **lists**, mirroring the way conclusions are stored. With the fact above, an argument for
-`a` and one for `b` attack each other, exactly as `a` and `-a` would.
+`a` attacks one for `b`: the conflict goes one way, so state `conflict([b], [a])` too for them to attack each
+other, as `a` and `-a` do.
 
 ```prolog
 conflict([a], [b]).
@@ -226,11 +232,31 @@ f1 :=> age(20).
 
 If the goal fails, no argument is built from that rule at all.
 
-> [!WARNING]
-> A `prolog/1` goal whose variables are still unbound when the rule is considered — like `X` above, which only
-> gets its value from the `age/1` premise — is solved while the whole graph is built, but **not** under
-> `queryMode`, which `FlagsBuilder` enables by default. Ground goals such as `prolog(2 < 3)` work in both
-> modes. Turn `queryMode` off for theories that compute with `prolog/1`.
+A `prolog/1` goal is solved with the bindings of the premises written before it — like `X` above, from the
+`age/1` premise — both on the whole graph and under `queryMode`: write it after the premises binding its
+variables (`prolog(X >= 18), age(X)` raises an instantiation error).
+
+## Theories in plain Prolog
+
+With the [`prologStrictCompatibility`]({{% ref "/docs/api/flags" %}}) flag, the Prolog clauses of a theory are
+argued as well: a fact is an axiom and a clause a strict rule. A comment of a single word after the full stop of a
+clause, on the same line, names it and makes it defeasible: a fact so named is a premise, a clause a defeasible
+rule.
+
+```prolog
+prologStrictCompatibility.
+
+bird(tweety).
+flies(X) :- bird(X).
+-flies(X) :-
+    penguin(X).     % r1
+penguin(tweety).    % f1
+```
+
+Here `bird(tweety)` is an axiom and `flies(X) :- bird(X)` a strict rule, while `r1` is a defeasible rule and `f1` a
+premise. Any other comment, of more words or on a line of its own, leaves its clause as it is. The identifiers
+are read from the text of the theory, by every entry point of Arg2P (the factories in Kotlin and JavaScript, the
+IDE, modules loaded with `call_module/2`); a theory built as terms has none.
 
 ## Burden of proof
 

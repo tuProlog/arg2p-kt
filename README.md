@@ -1,4 +1,14 @@
-# Arg2P
+<p align="center"><img src="doc/site/static/logo.svg" width="200" alt="Arg2P logo"></p>
+
+<h1 align="center">Arg2P</h1>
+
+<p align="center">
+  <a href="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml"><img src="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml/badge.svg?branch=master" alt="CI/CD"></a>
+  <a href="https://central.sonatype.com/artifact/it.unibo.tuprolog.argumentation/arg2p-jvm"><img src="https://img.shields.io/maven-central/v/it.unibo.tuprolog.argumentation/arg2p-jvm?label=Maven%20Central" alt="Maven Central"></a>
+  <a href="https://www.npmjs.com/package/@tuprolog/arg2p"><img src="https://img.shields.io/npm/v/@tuprolog/arg2p?label=npm" alt="npm"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/"><img src="https://img.shields.io/badge/docs-wiki-blue" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/tuProlog/arg2p-kt" alt="License"></a>
+</p>
 
 Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
 Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it supports both JVM and Node environments.
@@ -58,14 +68,14 @@ Arg2p is available as a [2P-Kt](https://github.com/tuProlog/2p-kt/) library.
 #### JVM Library - Gradle
 
 To import the Arg2p module into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file
-(the version below is the latest release, see the [releases page](https://github.com/tuProlog/arg2p-kt/releases/latest)):
+(`<VERSION>` is the latest release, shown by the Maven Central badge above):
  ```kotlin
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:0.16.2")
+    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:<VERSION>")
 }
  ```
 
@@ -73,7 +83,7 @@ dependencies {
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 
 fun main() {
     val graph = Arg2pSolverFactory.evaluate("""
@@ -92,12 +102,13 @@ For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/a
 #### NPM Library
 
 The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
-To use the library, add the dependency to your `package.json`:
+To use the library, add the dependency to your `package.json` (`<VERSION>` is the latest release, shown by the npm
+badge above):
 
 ```json
 {
   "dependencies": {
-    "@tuprolog/arg2p": "0.16.2"
+    "@tuprolog/arg2p": "<VERSION>"
   }
 }
 ```
@@ -105,18 +116,14 @@ To use the library, add the dependency to your `package.json`:
 #### Usage Example
 
 ```js
-const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
+const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
 
-const graph = arg2p.solve('arg2p::solve', `
+const solver = JsArg2p.solver(`
     f1 :=> d.
-    f2 :=> -d.`, `
-    graphBuildMode(standard_af).
-    statementLabellingMode(statement).
-    argumentLabellingMode(grounded).
-    orderingPrinciple(last).
-    orderingComparator(elitist).
-    graphExtension(standardPref).
-    queryMode.`, _ => { }).i.next().graph
+    f2 :=> -d.
+    queryMode.`)
+JsArg2p.solve(solver, 'arg2p::solve').next()
+const graph = JsArg2p.graph(solver)
 
 graph.arguments.forEach(arg => {
     console.log(`${arg.label} : ${arg.descriptor}`)
@@ -139,11 +146,11 @@ In the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) pa
 arg2p-ide-<VERSION>-redist.jar
 ```
 a self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`<VERSION>` is the release
-version, `0.16.2` at the time of writing).
+version).
 
 After you download the jar, you can simply launch it by running:
 ```bash
-java -jar arg2p-ide-0.16.2-redist.jar
+java -jar arg2p-ide-<VERSION>-redist.jar
 ```
 If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
 
@@ -156,7 +163,7 @@ If your JVM is properly configured, you can also start the IDE by double-clickin
 ### Additional Tabs
 
 - **Graph Tab:** Displays a graphical representation of the abstract argumentation graph.
-- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags Reference](https://tuprolog.github.io/arg2p-kt/docs/flags/) page of the wiki.
+- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags](https://tuprolog.github.io/arg2p-kt/docs/api/flags/) page of the wiki.
 
 ---
 

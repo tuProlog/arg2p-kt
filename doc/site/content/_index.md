@@ -41,7 +41,7 @@ If your JVM is properly configured, you can also start the IDE by double-clickin
 ### Additional Tabs
 
 - **Graph Tab:** Displays a graphical representation of the abstract argumentation graph.
-- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags Reference]({{% ref "/docs/flags" %}}) page.
+- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags Reference]({{% ref "/docs/api/flags" %}}) page.
 
 ---
 
@@ -58,7 +58,7 @@ No installation required. The playground runs in either of two modes, selected f
 - **Abstract** — draw an argumentation framework instead of writing rules. The query is generated for you as
   [`abstract::solve/5`]({{% ref "/docs/modules/abstract" %}}), and the drawing is recoloured with the labelling of the
   solution being shown. A _Semantics_ selector next to the query sets the
-  [`argumentLabellingMode`]({{% ref "/docs/flags" %}}) flag, covering every semantics the engine implements.
+  [`argumentLabellingMode`]({{% ref "/docs/api/flags" %}}) flag, covering every semantics the engine implements.
 
 It also ships a handful of ready-made examples, and _Share_ builds a link that restores whatever is currently
 loaded — handy for sending a case to someone else.

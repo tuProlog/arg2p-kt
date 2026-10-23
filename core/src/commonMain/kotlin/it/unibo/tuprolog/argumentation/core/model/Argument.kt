@@ -1,9 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.core.Cons
+import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.model.terms.StatementTerm
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.core.List as LogicList
 
 data class Argument(
     val rules: List<RuleIdentifier>,
@@ -33,57 +35,41 @@ data class Argument(
                 }
             ) + " : " + conclusion
 
+    /** The term of the argument (see [ArgumentTerm]) */
     fun termRepresentation(): Term =
-        term ?: Struct.parse(
-            "[$rules, $topRule, [$conclusion], $groundings, [$lastDefeasibleRules, $defeasibleRules, $defeasiblePremises]]",
+        term ?: ArgumentTerm.of(
+            rules = rules.asTerms(),
+            topRule = Term.parse(topRule),
+            conclusion = StatementTerm.of(Term.parse(conclusion)),
+            body = groundings.asTerms(),
+            info = ArgumentTerm.info(lastDefeasibleRules.asTerms(), defeasibleRules.asTerms(), defeasiblePremises.asTerms()),
         )
 
-    override fun toString(): String = "argument(${this.termRepresentation()})"
+    override fun toString(): String = toTerm().toString()
 
-    fun toTerm(): Term = Struct.parse(this.toString())
+    /** The argument as the context keeps it, argument(Argument) */
+    fun toTerm(): Term = Struct.of("argument", termRepresentation())
 
     companion object {
+        /** The argument of [term], the term of an argument (see [ArgumentTerm]) */
         fun of(term: Term): Argument {
-            fun termAsList(t: Term?): List<Term> = (t as Cons).toList()
-
-            fun toStringList(
-                argument: List<Term>,
-                target: Int,
-            ): List<String> =
-                (
-                    if (argument[target].isEmptyList) {
-                        emptyList()
-                    } else {
-                        (argument[target] as Cons).toList()
-                    }
-                ).map { x -> x.toString() }
-
-            fun argRules(argument: List<Term>): List<String> = toStringList(argument, 0)
-
-            fun argTopRule(argument: List<Term>): String = argument[1].toString()
-
-            fun argConclusion(argument: List<Term>): String = argument[2].asList()!![0].toString()
-
-            fun argGroundings(argument: List<Term>): List<String> = toStringList(argument, 3)
-
-            fun argDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 1)
-
-            fun argDefeasiblePremises(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 2)
-
-            fun argLastDefeasibleRules(argument: List<Term>): List<String> = toStringList(termAsList(argument[4]), 0)
-
-            return termAsList(term).let {
-                Argument(
-                    argRules(it),
-                    argTopRule(it),
-                    argConclusion(it),
-                    argGroundings(it),
-                    argDefeasibleRules(it),
-                    argDefeasiblePremises(it),
-                    argLastDefeasibleRules(it),
-                    term,
-                )
-            }
+            val parts = ArgumentTerm.parts(term) ?: throw IllegalArgumentException("Not the term of an argument: $term")
+            return Argument(
+                parts.rules.names(),
+                parts.topRule.toString(),
+                parts.claim.toString(),
+                parts.body.names(),
+                parts.defeasibleRules.names(),
+                parts.defeasiblePremises.names(),
+                parts.lastDefeasibleRules.names(),
+                term,
+            )
         }
+
+        // The items of a list, as text
+        private fun Term.names(): List<String> = (this as LogicList).toList().map { it.toString() }
+
+        // The list of the terms written in the strings
+        private fun List<String>.asTerms(): Term = LogicList.of(map { Term.parse(it) })
     }
 }

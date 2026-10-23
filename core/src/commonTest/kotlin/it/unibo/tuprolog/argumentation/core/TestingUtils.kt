@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -144,12 +144,12 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            solver.solve("standard_af" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
+            solver.solve("graphStore" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
         }
         graph.attacks.forEach {
             solver
                 .solve(
-                    "standard_af" call
+                    "graphStore" call
                         "saveAttack"(
                             it.type ?: "none",
                             it.attacker.termRepresentation(),
@@ -159,7 +159,7 @@ object TestingUtils {
                 ).first()
         }
         graph.supports.forEach {
-            solver.solve("standard_af" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
+            solver.solve("graphStore" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
         }
     }
 

@@ -7,10 +7,11 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":core"))
+    // the public API exposes the types of the core (Arg2pSolver.parallel(), ActorSolver)
+    api(project(":core"))
     testImplementation(kotlin("test-junit"))
 
-    implementation(libs.akka.bom)
+    implementation(platform(libs.akka.bom))
     implementation(libs.akka.actor.typed)
     implementation(libs.akka.cluster.sharding.typed)
     implementation(libs.akka.serialization.jackson)
@@ -20,6 +21,5 @@ dependencies {
     testImplementation(libs.akka.actor.testkit.typed)
 
     implementation(libs.tuprolog.dsl.solve)
-    implementation(libs.tuprolog.solve.prolog)
     implementation(libs.tuprolog.parser.theory)
 }

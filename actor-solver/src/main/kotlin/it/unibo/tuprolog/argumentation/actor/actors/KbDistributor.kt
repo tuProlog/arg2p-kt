@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor.actors
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -18,6 +19,7 @@ import it.unibo.tuprolog.argumentation.actor.message.Label
 import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
 import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.message.Response
+import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import kotlin.random.Random
 
 class KbDistributor private constructor(
@@ -39,9 +41,26 @@ class KbDistributor private constructor(
                 this
             }.onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
-                val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, kb.splitsNumber(), command.replyTo)
+                // no rule, no worker to answer: nothing is found
+                if (kb.splitsNumber() == 0) {
+                    command.replyTo.tell(EvaluationResponse(emptyList(), emptyList(), emptyList()))
+                    return@onMessage this
+                }
+                val cache =
+                    EvaluationCache(
+                        "eval_${Random.nextInt(0, Int.MAX_VALUE)}",
+                        command.elem,
+                        ExpectedResponseCount(kb.splitsNumber()),
+                        command.replyTo,
+                    )
                 evaluationCache.add(cache)
                 kb.broadcast(Eval(cache.id, command.elem))
+                this
+            }.onMessage(WorkerResponses::class.java) { command ->
+                evaluationCache.firstOrNull { it.id == command.id }?.let {
+                    it.expected.report(command.number)
+                    evaluateResponses(it)
+                }
                 this
             }.onMessage(EvalResponse::class.java) { command ->
                 evaluationCache.firstOrNull { it.id == command.id }?.let {
@@ -56,7 +75,7 @@ class KbDistributor private constructor(
             }.build()
 
     private fun evaluateResponses(cache: EvaluationCache) {
-        if (cache.responses.size < cache.responseNumber) return
+        if (!cache.expected.reached(cache.responses.size)) return
 
         val filter = { label: Label ->
             cache.responses.filter { it.response == label }.map {
@@ -84,6 +103,8 @@ class KbDistributor private constructor(
     }
 
     companion object {
-        fun create(): Behavior<KbMessage> = Behaviors.setup { context -> KbDistributor(context) }
+        // resumed on a failure, rather than stopped for good (a singleton is not restarted)
+        fun create(): Behavior<KbMessage> =
+            Behaviors.supervise(Behaviors.setup { context -> KbDistributor(context) }).onFailure(SupervisorStrategy.resume())
     }
 }

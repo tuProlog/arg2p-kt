@@ -51,7 +51,7 @@ Res = [in(d)]
 ```
 
 `d` is now **IN** and `-d` is **OUT**. Preference handling is active by default through
-`graphExtension(standardPref)`; see [Flags]({{% ref "/docs/flags" %}}) for the other preference models.
+`graphExtension(standardPref)`; see [Flags]({{% ref "/docs/api/flags" %}}) for the other preference models.
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.%0Asup%28f1%2C%20f2%29.&query=arg2p%3A%3Asolve%28d%2C%20Res%29)
 
@@ -85,7 +85,8 @@ f1 :=> bird(tweety).
 f2 :=> penguin(tweety).
 ```
 
-The premise `~(penguin(tweety))` fails, so `r1` never applies to Tweety and `flies(tweety)` is not concluded.
+The argument for `flies(tweety)` is built, assuming `~(penguin(tweety))`, but the argument for `penguin(tweety)`
+attacks that assumption: `flies(tweety)` is OUT (`Res = [out(flies(tweety))]`).
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20bird%28X%29%2C%20%7E%28penguin%28X%29%29%20%3D%3E%20flies%28X%29.%0Af1%20%3A%3D%3E%20bird%28tweety%29.%0Af2%20%3A%3D%3E%20penguin%28tweety%29.&query=arg2p%3A%3Asolve%28flies%28tweety%29%2C%20Res%29)
 
@@ -173,7 +174,7 @@ When you already have arguments and attacks and do not need to build them from r
 ```prolog
 ?- abstract::solve([a, b, c], [(a, b), (b, c)], I, O, U).
 
-I = [a, c],
+I = [c, a],
 O = [b],
 U = [].
 ```
@@ -227,10 +228,10 @@ r_2 : fire_b => house_burns.
 ```
 
 ```prolog
-?- context_reset, causality::ness(X, fire_a, house_burns).
+?- causality::ness(X, fire_a, house_burns).
 ```
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=context_reset%2C%20causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
 
 The but-for test fails here — the house burns either way — while the NESS test succeeds, binding `X` to the
 intervention under which `fire_a` really is necessary.

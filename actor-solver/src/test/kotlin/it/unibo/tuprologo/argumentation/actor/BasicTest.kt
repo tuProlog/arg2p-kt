@@ -10,13 +10,12 @@ import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
-import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Ignore
@@ -25,7 +24,7 @@ import kotlin.test.assertEquals
 
 val cluster = ClusterInitializer.joinCluster("127.0.0.1:2552", "2552")
 
-private fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
+internal fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
     cluster.let {
         it.second.tell(Reset)
         execute(it.first, it.second)
@@ -67,15 +66,16 @@ class BasicTest {
             master.tell(Add("r4 : d => e"))
             master.tell(Add("r5 :=> undercut(r1)"))
 
+            // r1 is a premise: not undercut
             ResponseConsumer.getResponse("c", system, master).also {
-                assertEquals(it.inArgs.size, 0)
-                assertEquals(it.outArgs.size, 1)
+                assertEquals(it.inArgs.size, 1)
+                assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 0)
             }
 
             ResponseConsumer.getResponse("b", system, master).also {
-                assertEquals(it.inArgs.size, 0)
-                assertEquals(it.outArgs.size, 1)
+                assertEquals(it.inArgs.size, 1)
+                assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 0)
             }
 
@@ -127,15 +127,41 @@ class BasicTest {
             }
 
         arg2pScope {
-            PrologSolverFactory
+            Arg2pPrologSolverFactory
                 .mutableSolverWithDefaultBuiltins(
                     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
-                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {
                     it.loadStaticKb(Theory.parse(rules, it.operators))
                     it.solve("join"(2551) and "load").first()
                     val a = it.solve("solve"("d9", X, Y, Z)).first()
                     assertEquals(a.substitution[X].toString(), "[d9]")
+                    it.solve(Struct.parse("leave")).first()
+                }
+        }
+    }
+
+    // Leaving stops the actor system, freeing its port for the cluster joined next
+    @Test
+    fun aClusterLeftCanBeJoinedAgain() {
+        arg2pScope {
+            Arg2pPrologSolverFactory
+                .mutableSolverWithDefaultBuiltins(
+                    otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
+                ).also {
+                    it.loadStaticKb(Theory.parse("r0 :=> a.\nr1 : a => b.", it.operators))
+                    assertEquals(true, it.solve(Struct.parse("leave")).first().isYes)
+                    it.solve("join"(2553) and "leave").first()
+                    it.solve("join"(2553) and "load").first()
+                    assertEquals(
+                        "[b]",
+                        it
+                            .solve("solve"("b", X, Y, Z))
+                            .first()
+                            .substitution[X]
+                            .toString(),
+                    )
                     it.solve(Struct.parse("leave")).first()
                 }
         }
@@ -155,14 +181,14 @@ class BasicTest {
             }
 
         arg2pScope {
-            PrologSolverFactory
+            Arg2pPrologSolverFactory
                 .mutableSolverWithDefaultBuiltins(
                     otherLibraries =
                         Arg2pSolver
                             .default(
                                 kotlin.collections.listOf(FlagsBuilder().create()),
                             ).to2pLibraries(),
-                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {
                     it.loadStaticKb(Theory.parse(rules, it.operators))
                     val a = it.solve("answerQuery"("d99", X, Y, Z)).first()

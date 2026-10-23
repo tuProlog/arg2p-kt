@@ -10,8 +10,8 @@ Arg2P is not a single monolithic theory: it is a set of **modules**, each provid
 argumentation pipeline. Modules are loaded on demand, which keeps memory usage low and makes the behaviour of
 the engine configurable — choosing a semantics, for instance, simply means dispatching to a different module.
 
-You normally never call a module directly: the [engine interface]({{% ref "/docs/predicate" %}}) does it for
-you, guided by the [flags]({{% ref "/docs/flags" %}}). Calling one explicitly is useful when debugging, when
+You normally never call a module directly: the [engine interface]({{% ref "/docs/api/engine" %}}) does it for
+you, guided by the [flags]({{% ref "/docs/api/flags" %}}). Calling one explicitly is useful when debugging, when
 running a single stage of the pipeline, or when extending the framework.
 
 The modular model implemented here — fragmenting a theory into modules that coexist, interact and nest — is
@@ -42,7 +42,7 @@ The difference matters when a stage can produce **more than one result**.
 - `::` runs the goal in the current context. Whatever the goal asserts stays in that context.
 - `:::` **branches** the context first, so each solution gets its own private copy of the computed data.
 
-This is how multi-extension semantics work: `preferred`, `stable`, `ideal`, `cf2` and `stage2` enumerate their
+This is how multi-extension semantics work: `preferred`, `stable`, `cf2` and `stage2` enumerate their
 extensions by branching with `:::`, each branch holding one labelling. When you iterate over the solutions of
 such a query, you are iterating over those branches.
 
@@ -61,7 +61,7 @@ implementation exists.
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
-The `abstract` module orchestrates the whole sequence, and `structured` implements the goal-directed variant
+The `structuredWhole` module runs the sequence on the whole graph, and `structuredPartial` implements the goal-directed variant
 used when `queryMode` is enabled.
 
 ---
@@ -70,16 +70,19 @@ used when `queryMode` is enabled.
 
 ### Pipeline modules
 
+Every module, with all its predicates, is in the [Prolog modules reference]({{% ref "/docs/api/prolog" %}}).
+
 | Module | Purpose |
 | --- | --- |
-| `abstract` | Orchestrates the evaluation; also exposes the [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
-| `structured` | Goal-directed evaluation used by `answerQuery`. |
+| `structuredWhole` | Orchestrates the evaluation of the whole graph. |
+| `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
+| `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `standard_af` | Builds the argumentation graph. |
-| `attack` | Defines attack and conflict relations. |
+| `standard_af` | Builds the argumentation graph: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
+| `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
-| `utils` | List, sorting and hashing helpers. |
-| `debug` | Pretty-prints theories, graphs and labellings. |
+| `utils` | List and sorting helpers. |
+| `debug` | Prints graphs and labellings (`buildLabelSets/0`), and the trace of `bp_grounded_partial` with the `debug` flag. |
 | `interpreter` | Meta-interpreter, used to trace how facts were derived. |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
@@ -111,7 +114,7 @@ Data produced by a stage is stored in the evaluation context and can be read bac
 ?- context_check(in(A)).
 ```
 
-This is how the Kotlin [`graph()`]({{% ref "/docs/kotlin-api" %}}) helper reads results, and it is the most
+This is how the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}}) helper reads results, and it is the most
 direct way to see what a single stage produced.
 
 Useful context predicates:
@@ -136,7 +139,7 @@ module::call_module([Modules], Goal)
 ```
 
 `Modules` is a list of module names, resolved against the
-[`modulesPath`]({{% ref "/docs/flags" %}}) location, and `Goal` is solved against their combined content.
+[`modulesPath`]({{% ref "/docs/api/flags" %}}) location, and `Goal` is solved against their combined content.
 A full location can be given instead of a name, in which case `modulesPath` is ignored:
 
 ```prolog
@@ -165,8 +168,8 @@ module name.
 > fetched over plain `http` can be substituted in transit.
 
 The modules are loaded into a separate solver, so their clauses do not pollute the theory under evaluation.
-A module that cannot be found makes the call fail, so check the path when a goal you expect to hold does not
-succeed.
+A module that cannot be found raises an existence error naming it; an error raised within the module is raised
+as it is.
 
 ### What a module sees
 
@@ -181,11 +184,12 @@ Res = [in(d)]
 
 Inside the call:
 
-- the [flags]({{% ref "/docs/flags" %}}) of the calling solver apply, so the module is evaluated under the
-  same semantics, ordering and preferences;
+- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of `FlagsBuilder`, not
+  those written in its theory), so the module is evaluated under the same semantics, ordering and preferences,
+  unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;
 - the resulting graph is written to the usual evaluation context, so it can be
-  [mined]({{% ref "/docs/kotlin-api" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
+  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
   evaluation.
 
 > [!NOTE]
@@ -196,7 +200,8 @@ Inside the call:
 
 ## Adding your own module
 
-A module is an `ArgLibrary` whose `identifier()` is the name used after `::`. Pass your libraries to the
+A module is an `ArgLibrary` that is also `Loadable`, as every `PrologModule`: its `identifier()` is the name
+used after `::`. Pass your libraries to the
 factory to have them loaded alongside the built-in ones:
 
 ```kotlin

@@ -23,7 +23,7 @@ java -jar arg2p-ide-{{< version >}}-redist.jar
 ```
 
 Both accept a theory, run queries against it, draw the resulting argumentation graph and let you change the
-[flags]({{% ref "/docs/flags" %}}) interactively.
+[flags]({{% ref "/docs/api/flags" %}}) interactively.
 
 ---
 
@@ -94,7 +94,7 @@ Then evaluate a theory and read the labelling:
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libs.basic.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 
 fun main() {
     val graph = Arg2pSolverFactory.evaluate(
@@ -120,7 +120,7 @@ und : d
 
 Both conclusions are undecided, and the negated one is printed in canonical term form, `'-'(d)`.
 
-The [Kotlin API]({{% ref "/docs/kotlin-api" %}}) page covers configuration, the result model and how to embed
+The [Kotlin API]({{% ref "/docs/api/kotlin" %}}) page covers configuration, the result model and how to embed
 Arg2P in an existing 2P-Kt solver.
 
 ---
@@ -136,23 +136,19 @@ Arg2P in an existing 2P-Kt solver.
 ```
 
 ```js
-const arg2p = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.bridge.JsBridge
+const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
 
-const graph = arg2p.solve('arg2p::solve', `
+const solver = JsArg2p.solver(`
     f1 :=> d.
-    f2 :=> -d.`, `
-    graphBuildMode(standard_af).
-    statementLabellingMode(statement).
-    argumentLabellingMode(grounded).
-    orderingPrinciple(last).
-    orderingComparator(elitist).
-    graphExtension(standardPref).
-    queryMode.`, _ => { }).i.next().graph
+    f2 :=> -d.
+    queryMode.`)
+JsArg2p.solve(solver, 'arg2p::solve').next()
+const graph = JsArg2p.graph(solver)
 
 graph.arguments.forEach(arg => console.log(`${arg.label} : ${arg.descriptor}`))
 ```
 
-See [JavaScript API]({{% ref "/docs/javascript" %}}) for the full bridge.
+See [JavaScript API]({{% ref "/docs/api/javascript" %}}) for the whole API.
 
 ---
 
@@ -161,8 +157,8 @@ See [JavaScript API]({{% ref "/docs/javascript" %}}) for the full bridge.
 | If you want to… | Read |
 | --- | --- |
 | Learn the theory language | [Language]({{% ref "/docs/syntax" %}}) |
-| Know which queries you can ask | [API & Flags]({{% ref "/docs/predicate" %}}) |
-| Change semantics or preferences | [Flags Reference]({{% ref "/docs/flags" %}}) |
+| Know which queries you can ask | [API & Flags]({{% ref "/docs/api/engine" %}}) |
+| Change semantics or preferences | [Flags Reference]({{% ref "/docs/api/flags" %}}) |
 | Evaluate a plain abstract framework | [Abstract Evaluation]({{% ref "/docs/modules/abstract" %}}) |
 | See complete, runnable theories | [Examples]({{% ref "/docs/examples" %}}) |
 | Understand the engine's structure | [Modules]({{% ref "/docs/modules" %}}) |

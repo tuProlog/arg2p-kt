@@ -15,6 +15,9 @@ url = "/docs/"
 weight = 1
 
 [markup]
+    # Light code blocks, as those of the Kotlin & JS reference
+    [markup.highlight]
+        style = "tango"
     [markup.goldmark]
         [markup.goldmark.renderer]
             unsafe = true
