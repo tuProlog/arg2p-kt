@@ -18,6 +18,7 @@ import it.unibo.tuprolog.argumentation.actor.message.Label
 import it.unibo.tuprolog.argumentation.actor.message.RequireEvaluation
 import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.message.Response
+import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import kotlin.random.Random
 
 class KbDistributor private constructor(
@@ -39,9 +40,21 @@ class KbDistributor private constructor(
                 this
             }.onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
-                val cache = EvaluationCache("eval_${Random.nextInt(0, Int.MAX_VALUE)}", command.elem, kb.splitsNumber(), command.replyTo)
+                val cache =
+                    EvaluationCache(
+                        "eval_${Random.nextInt(0, Int.MAX_VALUE)}",
+                        command.elem,
+                        ExpectedResponseCount(kb.splitsNumber()),
+                        command.replyTo,
+                    )
                 evaluationCache.add(cache)
                 kb.broadcast(Eval(cache.id, command.elem))
+                this
+            }.onMessage(WorkerResponses::class.java) { command ->
+                evaluationCache.firstOrNull { it.id == command.id }?.let {
+                    it.expected.report(command.number)
+                    evaluateResponses(it)
+                }
                 this
             }.onMessage(EvalResponse::class.java) { command ->
                 evaluationCache.firstOrNull { it.id == command.id }?.let {
@@ -56,7 +69,7 @@ class KbDistributor private constructor(
             }.build()
 
     private fun evaluateResponses(cache: EvaluationCache) {
-        if (cache.responses.size < cache.responseNumber) return
+        if (!cache.expected.reached(cache.responses.size)) return
 
         val filter = { label: Label ->
             cache.responses.filter { it.response == label }.map {

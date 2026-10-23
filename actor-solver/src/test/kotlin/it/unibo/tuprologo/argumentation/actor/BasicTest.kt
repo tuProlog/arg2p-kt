@@ -25,7 +25,7 @@ import kotlin.test.assertEquals
 
 val cluster = ClusterInitializer.joinCluster("127.0.0.1:2552", "2552")
 
-private fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
+internal fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
     cluster.let {
         it.second.tell(Reset)
         execute(it.first, it.second)
@@ -67,15 +67,16 @@ class BasicTest {
             master.tell(Add("r4 : d => e"))
             master.tell(Add("r5 :=> undercut(r1)"))
 
+            // r1 is a premise: not undercut
             ResponseConsumer.getResponse("c", system, master).also {
-                assertEquals(it.inArgs.size, 0)
-                assertEquals(it.outArgs.size, 1)
+                assertEquals(it.inArgs.size, 1)
+                assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 0)
             }
 
             ResponseConsumer.getResponse("b", system, master).also {
-                assertEquals(it.inArgs.size, 0)
-                assertEquals(it.outArgs.size, 1)
+                assertEquals(it.inArgs.size, 1)
+                assertEquals(it.outArgs.size, 0)
                 assertEquals(it.undArgs.size, 0)
             }
 

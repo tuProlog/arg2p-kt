@@ -75,43 +75,35 @@ object StructuredModule : PrologModule("prolog.argumentation.structured", "struc
             utils::appendLists([In, Out, Und], Result).
 
         % The graph explored one argument at a time, for the solvers that label it themselves (the actor solver
-        % distributes the arguments and their attackers among its workers). The graph extensions do not apply.
+        % distributes the rules among its workers, each solver looking for the arguments and the attackers it can build
+        % with its own). The graph extensions do not apply.
 
-        %! buildArgument(+Query, -Argument)
-        %  Argument is each argument for Query, saved with those its label may depend on.
-        buildArgument(Query, Argument) :-
+        %! buildArgument(+Query, -Argument, -SubArguments)
+        %  Argument is each argument for Query, saved with those its label may depend on, and SubArguments are its
+        %  sub-arguments: the solvers that do not know its rules look for their attackers as well.
+        buildArgument(Query, Argument, SubArguments) :-
             queryExploration::explore(Query),
-            graphStore::argumentFor([Query], Argument).
+            graphStore::argumentFor([Query], Argument),
+            subArguments(Argument, SubArguments).
 
-        %! findAttacker(+Target, +QueryChain, -Attacker, -IsValid)
-        %  Attacker attacks Target, directly or on one of its sub-arguments, and the attack is saved; IsValid is no when
-        %  Attacker is in QueryChain (the arguments the evaluation of Target comes from: a cycle), yes otherwise. Target
-        %  may have been built by another solver, with rules this one does not know.
-        findAttacker(Target, QueryChain, Attacker, IsValid) :-
-            attacker(Target, Attacker, Type, On),
-            graphStore::saveAttack(Type, Attacker, Target, On),
+        %! findAttacker(+Target, +SubArguments, +QueryChain, -Attacker, -AttackerSubArguments, -IsValid)
+        %  Attacker attacks Target, directly or on one of its SubArguments, and the attacks are saved; each attacker is
+        %  given once, with its own sub-arguments. IsValid is no when Attacker is in QueryChain (the arguments the
+        %  evaluation of Target comes from: a cycle), yes otherwise. Target may have been built by another solver, with
+        %  rules this one does not know: its sub-arguments come with it.
+        findAttacker(Target, SubArguments, QueryChain, Attacker, AttackerSubArguments, IsValid) :-
+            findall(A, attacker(Target, [Target|SubArguments], A), As),
+            utils::deduplicate(As, Attackers),
+            member(Attacker, Attackers),
+            subArguments(Attacker, AttackerSubArguments),
             (member(Attacker, QueryChain) -> IsValid = no ; IsValid = yes).
 
-        % The undercuts of any rule or premise of Target not known to be strict (as the actor solver always had them:
-        % the attacks of the whole graph only undercut the top rules of the arguments)
-        attacker(Target, Attacker, undercut, Target) :-
-            argument::rules(Target, Rules),
-            utils::deduplicate(Rules, Ids),
-            member(Rule, Ids),
-            \+ parser::check_strict(Rule),
-            queryExploration::explore(undercut(Rule)),
-            graphStore::argumentFor([undercut(Rule)], Attacker).
-        % The other attacks on Target, and on its sub-arguments known to this solver
-        attacker(Target, Attacker, Type, On) :-
-            subArgument(Target, On),
+        % Attacker attacks Target on one of Arguments, Target and its sub-arguments, and the attack is saved (unless it
+        % already is: the same argument is evaluated again in another query chain)
+        attacker(Target, Arguments, Attacker) :-
+            member(On, Arguments),
             attackerOf(On, Attacker, Type),
-            Type \== undercut.
-
-        % On is Argument or one of its sub-arguments
-        subArgument(Argument, Argument).
-        subArgument(Argument, On) :-
-            graphStore::support(Supporter, Argument),
-            subArgument(Supporter, On).
+            (graphStore::saveAttack(Type, Attacker, Target, On) -> true ; true).
 
         % Attacker attacks On directly, with an attack of Type: among the arguments for the statements that may attack
         % it, built as needed
@@ -122,5 +114,14 @@ object StructuredModule : PrologModule("prolog.argumentation.structured", "struc
             queryExploration::explore(Statement),
             graphStore::argumentFor([Statement], Attacker),
             attackRelation::attacks(Type, Attacker, On).
+
+        % The sub-arguments of an argument built by this solver
+        subArguments(Argument, SubArguments) :-
+            findall(S, subArgument(Argument, S), Ss),
+            utils::deduplicate(Ss, SubArguments).
+
+        subArgument(Argument, Sub) :-
+            graphStore::support(Supporter, Argument),
+            (Sub = Supporter ; subArgument(Supporter, Sub)).
         """.trimIndent()
 }

@@ -48,11 +48,18 @@ data class EvalResponse(
 data class FindAttacker(
     val id: String,
     val argument: String,
+    val subArguments: List<String>,
     val queryChain: List<String>,
     val replyTo: ActorRef<KbMessage>,
 ) : KbMessage
 
 data class ExpectedResponses(
+    val id: String,
+    val number: Int,
+) : KbMessage
+
+// The number of responses a worker sends to the request id, told before them
+data class WorkerResponses(
     val id: String,
     val number: Int,
 ) : KbMessage
