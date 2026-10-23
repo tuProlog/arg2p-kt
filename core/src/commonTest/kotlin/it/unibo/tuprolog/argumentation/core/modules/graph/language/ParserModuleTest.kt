@@ -25,4 +25,17 @@ class ParserModuleTest {
         // the conclusion takes the bindings of the premise
         assertEquals(listOf("q(k)"), module.values("parser::ruleUsing(p(k), S)", "S"))
     }
+
+    // The stated preferences are closed transitively, a cycle making no rule preferred to itself
+    @Test
+    fun theStatedPreferencesAreClosedTransitively() {
+        val module =
+            ModuleTesting("sup(r1, r2).\nsup(r2, r3).\nsup(r3, r4).\nsup(s1, s2).\nsup(s2, s1).").also {
+                it.run("context_reset", "parser:::convertAllRules(_)")
+            }
+        assertEquals(
+            setOf("r1, r2", "r2, r3", "r3, r4", "r1, r3", "r2, r4", "r1, r4", "s1, s2", "s2, s1").map { "sup($it)" }.toSet(),
+            module.values("S = sup(_, _), context_check(S)", "S").toSet(),
+        )
+    }
 }

@@ -63,6 +63,16 @@ class DefeasiblePrefModuleTest {
         assertTrue("[a]" in statIn && "[sup(r1, r3)]" in statIn, statIn)
     }
 
+    // The argued preferences are closed by a rule of the theory, used once for each step of the chain r1 > r2 > r3 > r4
+    @Test
+    fun aRuleOfTheTheoryClosesTheArguedPreferences() {
+        val theory =
+            "r1 : [] => a.\nr4 : [] => -a.\np1 : [] => sup(r1, r2).\np2 : [] => sup(r2, r3).\np3 : [] => sup(r3, r4).\n" +
+                "t(X, Z) : sup(X, Y), sup(Y, Z) -> sup(X, Z).\n$flags"
+        val statIn = ModuleTesting(theory).value("buildLabelSets(I, _, _)", "I")!!
+        assertTrue("[a]" in statIn && "[sup(r1, r4)]" in statIn, statIn)
+    }
+
     // d, strict on a premise, is superior to -d (on a defeasible rule) by no preference: -d does not defeat it
     @Test
     fun anAttackInvalidWithoutPreferencesIsRemoved() {

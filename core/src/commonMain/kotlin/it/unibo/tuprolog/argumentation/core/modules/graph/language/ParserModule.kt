@@ -71,9 +71,24 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
-            findall(sup(X, Y), sup(X, Y), Sup),
+            findall(sup(X, Y), sup(X, Y), Stated),
+            supClosure(Stated, Sup),
             utils::appendLists([Clauses, MappedIds, Sup, SpecialRules], ArgRules),
             utils::assertAll(ArgRules), !.
+
+        %! supClosure(+Stated, -Closed)
+        %  The preferences stated, closed transitively: the ordering of rules and premises is a strict partial order
+        %  (no sup(X, X) is added, should the stated ones make a cycle). The preferences concluded by arguments
+        %  (defeasiblePref) are closed by a rule of the theory instead, as sup(X, Y), sup(Y, Z) -> sup(X, Z).
+        supClosure(Sup, Closed) :-
+            findall(sup(X, Z), (
+                member(sup(X, Y), Sup),
+                member(sup(Y, Z), Sup),
+                X \== Z,
+                \+ member(sup(X, Z), Sup)
+            ), New),
+            utils::deduplicate(New, Fresh),
+            (Fresh == [] -> Closed = Sup ; utils::appendFast(Sup, Fresh, Next), supClosure(Next, Closed)).
 
         naturalRules(Rules, Clauses, StrictIds, MappedIds) :-
             naturalTerms,

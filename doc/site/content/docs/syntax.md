@@ -181,6 +181,10 @@ This proposition symbolises the greater reliability of the rule with identifier 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Asup%28r1%2C%20r2%29.&query=arg2p%3A%3Asolve%28q%2C%20Res%29)
 — without `sup/2` both conclusions are undecided; with it, `q` wins.
 
+The preferences are transitive: `sup(r1, r2)` and `sup(r2, r3)` also prefer `r1` to `r3`, with no need to state
+it. A cycle (`sup(r1, r2)` and `sup(r2, r1)`) never makes a rule preferred to itself. The preferences concluded
+by rules ([defeasible preferences]({{% ref "/docs/modules/meta" %}})) are closed by a rule of the theory instead.
+
 ## Custom conflicts
 
 Beyond the built-in conflicts — a statement against its strong negation, and the deontic pairs — a theory can

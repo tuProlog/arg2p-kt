@@ -137,6 +137,15 @@ class PreferencesTest {
             4,
         )
 
+    // sup(r3, r2) and sup(r2, r1), closed transitively, prefer r3 (for -a) to r1 (for a), as sup(r3, r1) does
+    @Test
+    fun chainedPreferences() =
+        check(
+            baseTheory + "\nsup(r3, r2).\nsup(r2, r1).\norderingPrinciple(last).\norderingComparator(elitist).",
+            definedResults,
+            2,
+        )
+
     // normal is defined on the last rules (Dung and Thang): with the weakest link it raises a domain error
     private fun weakestNormal(
         goal: String,

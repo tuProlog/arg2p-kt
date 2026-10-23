@@ -119,6 +119,14 @@ Out = [[- q]]
 `graphExtension(standardPref)` the same theory leaves both conclusions undecided: static preference handling
 reads `sup/2` facts only, and ignores a `sup/2` that is merely concluded.
 
+Concluded preferences are not closed transitively by Arg2P, as the stated `sup/2` facts are: the theory closes
+them with a rule of its own, whose arguments then justify each derived preference by the chain behind it. Name
+the rule after its ends, so that an argument can use it once for each step of a longer chain:
+
+```prolog
+t(X, Z) : sup(X, Y), sup(Y, Z) -> sup(X, Z).
+```
+
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Ars%20%3A%20%5B%5D%20%3D%3E%20sup%28r1%2C%20r2%29.&query=arg2p%3A%3AbuildLabelSets%28In%2C%20Out%2C%20Und%29&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AgraphExtension%28defeasiblePref%29.)
 — switch the extension to `standardPref` alone and the preference stops applying.
 
