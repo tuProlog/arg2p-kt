@@ -1,12 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.modules.data
 
+import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The terms of the labels (module `label`): an argument labelled IN, OUT or UND is `in(Argument)`, `out(Argument)` or
  * `und(Argument)`, by its identifier `inId(Id)`, `outId(Id)` or `undId(Id)` (the native labellings), and a statement
  * `statIn(Statement)`, `statOut(Statement)` or `statUnd(Statement)`. A label is in, out or und. Kotlin builds them
- * through [argument], [identifier] and [statement].
+ * through [LabelTerm.argument], [LabelTerm.identifier] and [LabelTerm.statement].
  */
 object LabelModule : PrologModule("prolog.argumentation.data.label", "label") {
     override val prologRawTheory: String =

@@ -40,7 +40,7 @@ val solver = PrologSolverFactory.mutableSolverWithDefaultBuiltins(
 )
 ```
 
-Both solver flags are required, exactly as when [assembling a solver by hand]({{% ref "/docs/kotlin-api" %}}).
+Both solver flags are required, exactly as when [assembling a solver by hand]({{% ref "/docs/api/kotlin" %}}).
 
 ---
 

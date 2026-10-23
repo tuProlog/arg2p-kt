@@ -152,7 +152,7 @@ If your JVM is properly configured, you can also start the IDE by double-clickin
 ### Additional Tabs
 
 - **Graph Tab:** Displays a graphical representation of the abstract argumentation graph.
-- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags Reference](https://tuprolog.github.io/arg2p-kt/docs/flags/) page of the wiki.
+- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags](https://tuprolog.github.io/arg2p-kt/docs/api/flags/) page of the wiki.
 
 ---
 

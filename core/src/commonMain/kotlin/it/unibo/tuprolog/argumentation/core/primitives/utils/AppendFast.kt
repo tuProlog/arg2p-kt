@@ -10,6 +10,9 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * append_fast(+List1, +List2, -List): List is List1 followed by List2, in one step
+ */
 object AppendFast : Primitive {
     val signature: Signature = Signature("append_fast", 3)
 

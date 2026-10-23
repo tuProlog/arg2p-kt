@@ -10,9 +10,9 @@ import it.unibo.tuprolog.utils.Cursor
 import it.unibo.tuprolog.utils.cursor
 
 /**
- * How the engine solves a [it.unibo.tuprolog.argumentation.core.engine.DelegatedCall] (arg2p), made in [caller]: in
- * [frame], the frame of the call, opaque to cut, with a choice point of its own (the one a cut in the delegated goal
- * finds), or, for a goal resolved with a single fact, in [caller] at [step] (see [FactResolution]).
+ * How the engine solves a [it.unibo.tuprolog.argumentation.core.engine.DelegatedCall] (arg2p), made in `caller`: in
+ * `frame`, the frame of the call, opaque to cut, with a choice point of its own (the one a cut in the delegated goal
+ * finds), or, for a goal resolved with a single fact, in `caller` at `step` (see [FactResolution]).
  */
 internal object DelegationStates {
     fun of(

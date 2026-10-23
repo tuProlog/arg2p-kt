@@ -8,6 +8,9 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 
+/**
+ * bpsNew(-Bps): the burdens of persuasion of the theory, its `bp(...)` facts, as `abstractBp([...])` terms
+ */
 object BpsNew : UnaryPredicate.WithoutSideEffects<ExecutionContext>("bpsNew") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first, true) { clauses, prologScope ->

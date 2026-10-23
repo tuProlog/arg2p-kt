@@ -8,7 +8,9 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
-// ground_vars(+Term, ?Grounded): Term with each of its variables replaced by the atom var
+/**
+ * ground_vars(+Term, ?Grounded): Term with each of its variables replaced by the atom var
+ */
 object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>("ground_vars") {
     private val placeholder = Atom.of("var")
 

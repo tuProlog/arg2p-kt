@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
+import it.unibo.tuprolog.argumentation.core.modules.data.SupportModule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 

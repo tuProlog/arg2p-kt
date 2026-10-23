@@ -9,6 +9,9 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * contains(?Element, +List): an element of List matches Element (without binding it)
+ */
 object Contains : Primitive {
     val signature: Signature = Signature("contains", 2)
 

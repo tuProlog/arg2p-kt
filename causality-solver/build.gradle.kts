@@ -46,3 +46,8 @@ tasks.withType<KotlinJvmTest> {
     maxHeapSize = jvmMaxHeapSize
     jvmArgs("-Xss$jvmStackSize")
 }
+
+// The description of the module in the Kotlin & JS reference of the documentation site
+extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+    dokkaSourceSets.configureEach { includes.from("Module.md") }
+}

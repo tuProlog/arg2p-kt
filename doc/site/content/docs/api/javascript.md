@@ -1,6 +1,8 @@
 ---
-title: JavaScript API
-weight: 17
+title: JavaScript
+weight: 35
+aliases:
+  - /docs/javascript/
 ---
 
 ## JavaScript API
@@ -33,7 +35,7 @@ const { JsCausality } = argumentation.causality.js
 | Method | Meaning |
 | --- | --- |
 | `theory(text)` | The theory, as Prolog text |
-| `flags(text)` | The [flags]({{% ref "/docs/flags" %}}), as Prolog facts: the solver has only these, not the default ones |
+| `flags(text)` | The [flags]({{% ref "/docs/api/flags" %}}), as Prolog facts: the solver has only these, not the default ones |
 | `module(module)` | A module besides those of arg2p, as the causality solver's `JsCausality.module()` |
 | `output(consumer)` | A function receiving whatever the solver prints (the standard output otherwise) |
 

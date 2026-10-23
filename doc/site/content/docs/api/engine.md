@@ -1,6 +1,8 @@
 ---
-title: API & Flags
-weight: 30 
+title: Engine predicates
+weight: 10
+aliases:
+  - /docs/predicate/
 ---
 
 ## Engine Interface
@@ -66,7 +68,7 @@ buildLabelSetsSilent.
 ```
 
 performs a complete evaluation without printing anything. This is the predicate used by the Kotlin
-[`evaluate`]({{% ref "/docs/kotlin-api" %}}) helper, and the one to use when the results are read
+[`evaluate`]({{% ref "/docs/api/kotlin" %}}) helper, and the one to use when the results are read
 programmatically rather than displayed.
 
 ```prolog
@@ -91,4 +93,4 @@ set from Kotlin through `FlagsBuilder`, or edited in the IDE's _Arg Flags_ tab.
 `graphBuildMode`, `argumentLabellingMode`, `statementLabellingMode`, `orderingPrinciple` and
 `orderingComparator` always need a value; everything else is optional. The complete list — accepted values,
 defaults, and the flags that can only be written in a theory — is on the
-[Flags Reference]({{% ref "/docs/flags" %}}) page.
+[Flags Reference]({{% ref "/docs/api/flags" %}}) page.

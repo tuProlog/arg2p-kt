@@ -24,6 +24,11 @@ import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
+/**
+ * call_module(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is the
+ * name of a file in the modules path (flag `modulesPath`), or a location, a URL or a path with `.pl`. An error raised
+ * within the modules is raised by the call.
+ */
 object CallModule : Primitive {
     val signature = Signature("call_module", 2)
 

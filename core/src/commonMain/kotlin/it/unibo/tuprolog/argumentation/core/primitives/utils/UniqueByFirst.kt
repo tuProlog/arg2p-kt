@@ -7,8 +7,10 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
-// unique_by_first(+Lists, ?Unique): Lists keeping, among the lists with the same first element, only the last one
-// (in their order)
+/**
+ * unique_by_first(+Lists, ?Unique): Lists keeping, among the lists with the same first element, only the last one
+ * (in their order)
+ */
 object UniqueByFirst : BinaryRelation.WithoutSideEffects<ExecutionContext>("unique_by_first") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,

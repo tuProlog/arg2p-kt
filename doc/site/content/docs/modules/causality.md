@@ -80,7 +80,7 @@ arg2pScope {
 }
 ```
 
-From [JavaScript]({{% ref "/docs/javascript" %}}), give the solver the causality module:
+From [JavaScript]({{% ref "/docs/api/javascript" %}}), give the solver the causality module:
 
 ```js
 const solver = new JsSolverBuilder().theory(theory).module(JsCausality.module()).build()

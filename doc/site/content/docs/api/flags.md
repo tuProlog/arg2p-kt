@@ -1,6 +1,8 @@
 ---
-title: Flags Reference
-weight: 32
+title: Flags
+weight: 20
+aliases:
+  - /docs/flags/
 ---
 
 ## Flags Reference
@@ -9,7 +11,7 @@ Flags are ordinary Prolog facts. The engine reads them from the knowledge base w
 so a flag can be set in three equivalent ways:
 
 - **in the theory itself**, by writing the fact (e.g. `queryMode.`);
-- **from Kotlin**, through [`FlagsBuilder`]({{% ref "/docs/kotlin-api" %}});
+- **from Kotlin**, through [`FlagsBuilder`]({{% ref "/docs/api/kotlin" %}});
 - **from the IDE**, through the _Arg Flags_ tab.
 
 The table below is the complete list. Defaults are the ones applied by `FlagsBuilder()`.
@@ -139,7 +141,7 @@ How the two sets selected by the ordering principle are compared:
 
 ### `queryMode`
 
-Enables the goal-directed (structured) evaluation used by [`answerQuery/4`]({{% ref "/docs/predicate" %}}).
+Enables the goal-directed (structured) evaluation used by [`answerQuery/4`]({{% ref "/docs/api/engine" %}}).
 Instead of building the whole graph, the engine builds only the sub-graph relevant to the query, which is
 considerably faster on large theories. It is **enabled by default** by `FlagsBuilder`.
 
@@ -209,5 +211,5 @@ val solver = Arg2pSolverFactory.default(
 )
 ```
 
-This is also what a [JavaScript]({{% ref "/docs/javascript" %}}) solver given its flags (`flags(text)`) has: it
+This is also what a [JavaScript]({{% ref "/docs/api/javascript" %}}) solver given its flags (`flags(text)`) has: it
 receives them as Prolog text rather than as a `FlagsBuilder`.

@@ -14,7 +14,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * sccs(-Sccs): strongly connected components of the attack graph, as lists of argument identifiers,
  * in topological order (a component is only attacked by itself and by the components before it).
- * sccs(+Ids, -Sccs): the same, for the subgraph induced by the arguments in Ids.
+ * sccs(+Ids, -Sccs): strongly connected components of the subgraph of the arguments in Ids, as lists of argument
+ * identifiers, in topological order.
  */
 class Sccs(
     arity: Int,

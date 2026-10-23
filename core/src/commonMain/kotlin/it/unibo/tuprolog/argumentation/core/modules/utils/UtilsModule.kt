@@ -19,7 +19,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * Utilities on lists and on the labels of the context (module `utils`), most of them native primitives (see this file).
+ * Utilities on lists and on the labels of the context (module `utils`), most of them native primitives.
  */
 object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
     override val primitives: Map<Signature, Primitive>

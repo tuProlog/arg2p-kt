@@ -11,7 +11,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * context_check(Goal): the solutions of Goal in the active branch (see [ClauseStore.solve]); the arg2p engine
+ * context_check(Goal): the solutions of Goal in the active branch (see [it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore.solve]); the arg2p engine
  * resolves Goal with the clauses of the branch itself (see [StoreClauses])
  */
 internal class ContextCheck(

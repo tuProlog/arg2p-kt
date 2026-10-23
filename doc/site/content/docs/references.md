@@ -43,7 +43,7 @@ The tool Arg2P grew out of:
 ## Burden of persuasion
 
 The model implemented by the `bp_grounded`, `bp_grounded_partial` and `bp_grounded_complete`
-[semantics]({{% ref "/docs/flags" %}}):
+[semantics]({{% ref "/docs/api/flags" %}}):
 
 > Roberta Calegari, Giovanni Sartor.
 > **Burden of persuasion in argumentation.**

@@ -10,7 +10,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * admissible_set: every attacker of an IN argument is attacked by an IN argument other than itself.
- * admissible_set(+Ids): the same, with the arguments in Ids also IN.
+ * admissible_set(+Ids): every attacker of an IN argument, or of an argument in Ids, is attacked by one of them other
+ * than itself (the arguments in Ids taken as IN).
  */
 class AdmissibleSet(
     arity: Int,

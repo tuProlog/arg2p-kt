@@ -81,7 +81,7 @@ tasks.register<Test>("jvmPrologCoverage") {
 
 tasks.register<JavaExec>("prologDocs") {
     group = "documentation"
-    description = "Writes the documentation of the Prolog modules, from their sources (build/docs/prolog-modules)"
+    description = "Writes the pages of the Prolog modules for the documentation site, from their sources (build/docs/prolog-modules)"
     dependsOn("jvmTestClasses")
     val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
     classpath = jvmTest.classpath
@@ -102,4 +102,9 @@ tasks.register<Test>("jvmBenchmark") {
     systemProperties(project.properties.filterKeys { it.startsWith("benchmark.") })
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }
+}
+
+// The description of the module in the Kotlin & JS reference of the documentation site
+extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+    dokkaSourceSets.configureEach { includes.from("Module.md") }
 }

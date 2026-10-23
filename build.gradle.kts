@@ -121,6 +121,12 @@ kotlin {
     }
 }
 
+// The Kotlin & JS reference of the documentation site: the npm package with the libraries it is made of
+dependencies {
+    "dokka"(project(":core"))
+    "dokka"(project(":causality-solver"))
+}
+
 // project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
 //    nodeVersion(it)
 //    log("override NodeJS version: $it", LogLevel.LIFECYCLE)

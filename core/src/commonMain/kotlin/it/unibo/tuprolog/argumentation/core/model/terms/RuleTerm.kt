@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
+import it.unibo.tuprolog.argumentation.core.modules.data.RuleModule
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct

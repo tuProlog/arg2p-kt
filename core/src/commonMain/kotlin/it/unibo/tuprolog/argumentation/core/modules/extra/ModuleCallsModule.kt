@@ -7,6 +7,10 @@ import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.primitives.extra.CallModule
 import it.unibo.tuprolog.solve.library.Library
 
+/**
+ * Goals solved on the theories of external modules (module `module`): Prolog files, found in the modules path (flag
+ * `modulesPath`) by their name, or at a location.
+ */
 object ModuleCallsModule : ArgLibrary, Loadable {
     override val alias = "prolog.argumentation.modularity"
 

@@ -8,6 +8,9 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * extract_id(+Rules, -Ids): `strict(Id)` for the identifier of each of Rules (lists starting with it)
+ */
 object ExtractId : BinaryRelation.WithoutSideEffects<ExecutionContext>("extract_id") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,

@@ -10,8 +10,8 @@ Arg2P is not a single monolithic theory: it is a set of **modules**, each provid
 argumentation pipeline. Modules are loaded on demand, which keeps memory usage low and makes the behaviour of
 the engine configurable — choosing a semantics, for instance, simply means dispatching to a different module.
 
-You normally never call a module directly: the [engine interface]({{% ref "/docs/predicate" %}}) does it for
-you, guided by the [flags]({{% ref "/docs/flags" %}}). Calling one explicitly is useful when debugging, when
+You normally never call a module directly: the [engine interface]({{% ref "/docs/api/engine" %}}) does it for
+you, guided by the [flags]({{% ref "/docs/api/flags" %}}). Calling one explicitly is useful when debugging, when
 running a single stage of the pipeline, or when extending the framework.
 
 The modular model implemented here — fragmenting a theory into modules that coexist, interact and nest — is
@@ -111,7 +111,7 @@ Data produced by a stage is stored in the evaluation context and can be read bac
 ?- context_check(in(A)).
 ```
 
-This is how the Kotlin [`graph()`]({{% ref "/docs/kotlin-api" %}}) helper reads results, and it is the most
+This is how the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}}) helper reads results, and it is the most
 direct way to see what a single stage produced.
 
 Useful context predicates:
@@ -136,7 +136,7 @@ module::call_module([Modules], Goal)
 ```
 
 `Modules` is a list of module names, resolved against the
-[`modulesPath`]({{% ref "/docs/flags" %}}) location, and `Goal` is solved against their combined content.
+[`modulesPath`]({{% ref "/docs/api/flags" %}}) location, and `Goal` is solved against their combined content.
 A full location can be given instead of a name, in which case `modulesPath` is ignored:
 
 ```prolog
@@ -181,11 +181,11 @@ Res = [in(d)]
 
 Inside the call:
 
-- the [flags]({{% ref "/docs/flags" %}}) of the calling solver apply, so the module is evaluated under the
+- the [flags]({{% ref "/docs/api/flags" %}}) of the calling solver apply, so the module is evaluated under the
   same semantics, ordering and preferences;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;
 - the resulting graph is written to the usual evaluation context, so it can be
-  [mined]({{% ref "/docs/kotlin-api" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
+  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
   evaluation.
 
 > [!NOTE]

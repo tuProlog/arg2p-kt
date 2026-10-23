@@ -7,6 +7,10 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.primitive.UnaryPredicate
 
+/**
+ * prologDefeasibleRules(-Rules): the rules of the theory written `Head := Body` as defeasible rules,
+ * `[Id, Body, Head]`, with prologStrictCompatibility on (none otherwise)
+ */
 object PrologDefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologDefeasibleRules") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->

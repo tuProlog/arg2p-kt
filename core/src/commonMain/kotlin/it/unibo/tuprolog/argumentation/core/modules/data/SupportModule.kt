@@ -1,10 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.modules.data
 
+import it.unibo.tuprolog.argumentation.core.model.terms.SupportTerm
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The term of a support (module `support`): `support(Supporter, Supported)`, Supporter being a sub-argument of
- * Supported. Kotlin reads and builds it through [parts] and [of].
+ * Supported. Kotlin reads and builds it through [SupportTerm.parts] and [SupportTerm.of].
  */
 object SupportModule : PrologModule("prolog.argumentation.data.support", "support") {
     override val prologRawTheory: String =

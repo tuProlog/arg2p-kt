@@ -15,7 +15,7 @@ Common mistakes, and what they look like when they happen.
 
 Most often one of the required flags is missing. `graphBuildMode`, `argumentLabellingMode`,
 `statementLabellingMode`, `orderingPrinciple` and `orderingComparator` must all have a value. `FlagsBuilder()`
-supplies them, but a theory evaluated with `FlagsBuilder().empty(true)` — or a [JavaScript]({{% ref "/docs/javascript" %}}) solver given its flags as
+supplies them, but a theory evaluated with `FlagsBuilder().empty(true)` — or a [JavaScript]({{% ref "/docs/api/javascript" %}}) solver given its flags as
 text — has to declare every one of them itself.
 
 The other frequent cause is reading the graph before running a query: `graph()` mines the *current* evaluation
@@ -64,7 +64,7 @@ val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
 Struct.parse("arg2p::solve(d, Res)", solver.operators)
 ```
 
-The same applies to `Theory.parse` — see [Kotlin API]({{% ref "/docs/kotlin-api" %}}).
+The same applies to `Theory.parse` — see [Kotlin API]({{% ref "/docs/api/kotlin" %}}).
 
 ---
 
@@ -73,7 +73,7 @@ The same applies to `Theory.parse` — see [Kotlin API]({{% ref "/docs/kotlin-ap
 **Symptom.** You set a semantics and nothing changes.
 
 Flag values are module identifiers, and an unknown value simply matches no module. Check the spelling against
-the [Flags Reference]({{% ref "/docs/flags" %}}) — for instance the grounded semantics is `grounded`, and
+the [Flags Reference]({{% ref "/docs/api/flags" %}}) — for instance the grounded semantics is `grounded`, and
 there is no `grounded_hash` mode.
 
 ---

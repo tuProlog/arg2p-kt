@@ -7,7 +7,9 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
-// deduplicate(+List, ?Deduplicated): standard order of terms, duplicates removed (as setof/3)
+/**
+ * deduplicate(+List, ?Deduplicated): standard order of terms, duplicates removed (as setof/3)
+ */
 object Deduplicate : BinaryRelation.WithoutSideEffects<ExecutionContext>("deduplicate") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,

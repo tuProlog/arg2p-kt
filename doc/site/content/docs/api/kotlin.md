@@ -1,6 +1,8 @@
 ---
-title: Kotlin API
-weight: 15
+title: Kotlin
+weight: 30
+aliases:
+  - /docs/kotlin-api/
 ---
 
 ## Kotlin API
@@ -40,7 +42,7 @@ fun main() {
 
 ### Configuring the evaluation
 
-Every [flag]({{% ref "/docs/flags" %}}) is a field of `FlagsBuilder`, so it can be set with named arguments:
+Every [flag]({{% ref "/docs/api/flags" %}}) is a field of `FlagsBuilder`, so it can be set with named arguments:
 
 ```kotlin
 val flags = FlagsBuilder(
@@ -115,7 +117,7 @@ val solver = PrologSolverFactory.solverWithDefaultBuiltins(
 )
 ```
 
-You can then use any predicate of the [Prolog interface]({{% ref "/docs/predicate" %}}):
+You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
 ```kotlin
 solver.solve(Struct.parse("arg2p::buildLabelSets(SIn, SOut, SUnd)", solver.operators)).first()

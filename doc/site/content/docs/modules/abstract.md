@@ -63,7 +63,7 @@ Instead, the **argumentation graph** can be inspected programmatically or using:
 
 ## Semantics Support
 
-All standard semantics are supported. The evaluation mode can be configured via the `argumentLabellingMode\1` flag. See the [Flags Reference]({{% ref "/docs/flags" %}}) for the full list of accepted values.
+All standard semantics are supported. The evaluation mode can be configured via the `argumentLabellingMode\1` flag. See the [Flags Reference]({{% ref "/docs/api/flags" %}}) for the full list of accepted values.
 
 ## Drawing a framework instead of writing one
 

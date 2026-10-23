@@ -2,18 +2,24 @@ package it.unibo.tuprolog.argumentation.core.modules.extra
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
+/**
+ * A meta-interpreter tracing the facts a proof relies on (module `interpreter`), written for the CrossJustice project:
+ * the facts of the user, `user_fact(Fact)`, a goal is proved with.
+ */
 object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice", "interpreter") {
     override val prologRawTheory: String =
         // language=Prolog
         """
-        % with_facts_and_length/3
+        %! with_facts_and_length(+Goal, -Facts, -Length)
+        %  Goal is proved, Facts being the facts of the user its proof relies on (user_fact(Fact)), and Length their
+        %  number.
         with_facts_and_length(X, Y, L) :-
             solve(X, R),
             recover_facts(R, Y),
             length(Y, L).
         
-        % recover_facts/2
-        
+        %! recover_facts(+Proof, -Facts)
+        %  Facts are the facts of the user in Proof, as solve/2 gives it.
         recover_facts([], []) :- !.
         recover_facts([H|T], C) :-
             is_list(H), !,
@@ -29,8 +35,8 @@ object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice"
         evaluate(user_fact(X), [X]) :- !.
         evaluate(_, []) :- !.
         
-        % solve/2
-        
+        %! solve(+Goal, -Proof)
+        %  Goal is proved, Proof being the goals its proof goes through, nested as the clauses used.
         solve((A,B), Result) :- !,
             solve(A, ARes),
             solve(B, BRes),
@@ -62,14 +68,15 @@ object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice"
             clause(A, B),
             solve(B, Res).
         
-        % is_list/1
-        
+        %! is_list(?Term)
+        %  Term is a list.
         is_list(X) :- var(X), !, fail.
         is_list([]).
         is_list([_|T]) :- is_list(T).
         
-        % fetch_argument_facts/2
-        
+        %! fetch_argument_facts(+Conclusion, -Facts)
+        %  Facts are the facts of the user supporting the argument for Conclusion, from argument/1 and support/2
+        %  facts on arguments written as [Rules, TopRule, Conclusion].
         fetch_argument_facts(Conclusion, Facts) :-
             argument([R, TR, [Conclusion]]),
             findall(user_fact(Fact), 

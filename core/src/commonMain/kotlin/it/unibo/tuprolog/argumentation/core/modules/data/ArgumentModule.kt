@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.data
 
+import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.data.RulesAndInfo
 import it.unibo.tuprolog.solve.Signature
@@ -17,8 +18,8 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  *
  * Each accessor is a fact relating an argument to one of its parts, so it works both ways: given an argument it
  * reads the part, given a part it builds the template of the arguments with it, to look them up in the context
- * (`argument::claim(A, sup(X, Y)), context_check(argument(A))`). Kotlin reads and builds the terms through [parts] and
- * [info], written after the same layout.
+ * (`argument::claim(A, sup(X, Y)), context_check(argument(A))`). Kotlin reads and builds the terms through [ArgumentTerm.parts] and
+ * [ArgumentTerm.info], written after the same layout.
  */
 object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argument") {
     override val primitives: Map<Signature, Primitive>

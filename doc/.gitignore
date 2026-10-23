@@ -4,3 +4,6 @@ site/public/
 .hugo_build.lock
 resources/
 site/data/
+# Generated before the site is built (see build.gradle.kts)
+site/content/docs/api/prolog/
+site/static/api/

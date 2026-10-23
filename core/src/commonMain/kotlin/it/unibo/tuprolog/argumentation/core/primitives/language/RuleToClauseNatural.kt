@@ -10,6 +10,10 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 import kotlin.collections.List as KList
 
+/**
+ * rule_to_clause_natural(+Rules, -Clauses): as rule_to_clause/2, with naturalTerms: the statements written as text
+ * are turned into terms, the words in upper case and in brackets becoming their arguments
+ */
 object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("rule_to_clause_natural") {
     class TemplateExtractor {
         private val upperRegex = Regex("""\b[A-Z][a-zA-Z]*\b""")

@@ -9,6 +9,9 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
+/**
+ * contains_any(+Elements, +List): an element of List matches one of Elements (without binding them)
+ */
 object ContainsAny : Primitive {
     val signature: Signature = Signature("contains_any", 2)
 

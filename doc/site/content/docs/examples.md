@@ -51,7 +51,7 @@ Res = [in(d)]
 ```
 
 `d` is now **IN** and `-d` is **OUT**. Preference handling is active by default through
-`graphExtension(standardPref)`; see [Flags]({{% ref "/docs/flags" %}}) for the other preference models.
+`graphExtension(standardPref)`; see [Flags]({{% ref "/docs/api/flags" %}}) for the other preference models.
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.%0Asup%28f1%2C%20f2%29.&query=arg2p%3A%3Asolve%28d%2C%20Res%29)
 

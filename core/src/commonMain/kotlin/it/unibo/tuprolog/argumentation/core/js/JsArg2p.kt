@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.core.js
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.core.Integer
@@ -54,7 +55,7 @@ object JsArg2p {
     fun graphAt(
         solver: Solver,
         branch: Int,
-    ): JsGraph = JsGraph.of(solver.graph(branch))
+    ): JsGraph = toJs(solver.graph(branch))
 
     /**
      * The clauses stored in the context branch [branch] of [solver] matching the goal written in [goal] (facts, or
@@ -66,4 +67,10 @@ object JsArg2p {
         branch: Int,
         goal: String,
     ): JsSolutions = solveTerm(solver, Struct.of("context_check", Integer.of(branch), Struct.parse(goal, solver.operators)))
+
+    private fun toJs(graph: Graph) =
+        JsGraph(
+            graph.labellings.map { JsArgument(it.argument.identifier, it.argument.descriptor, it.label) }.toTypedArray(),
+            graph.attacks.map { JsAttack(it.attacker.identifier, it.target.identifier) }.toTypedArray(),
+        )
 }

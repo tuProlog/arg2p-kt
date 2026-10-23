@@ -7,8 +7,10 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
-// minimal_by_set(+Pairs, -Values): the values of the Set-Value pairs whose Set has no strict subset among the others
-// (elements compared as ground terms), in order: minimal_set/2 over a whole collection in one step
+/**
+ * minimal_by_set(+Pairs, -Values): the values of the Set-Value pairs whose Set has no strict subset among the others
+ * (elements compared as ground terms), in order: minimal_set/2 over a whole collection in one step
+ */
 object MinimalBySet : BinaryRelation.WithoutSideEffects<ExecutionContext>("minimal_by_set") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,

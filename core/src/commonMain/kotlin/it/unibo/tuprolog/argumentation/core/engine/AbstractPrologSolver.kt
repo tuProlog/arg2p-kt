@@ -145,8 +145,8 @@ abstract class AbstractPrologSolver(
     /**
      * Hook through which subclasses choose which [SolutionIterator] flavour drives resolution from [initialState]
      * onwards, invoking [onStateTransition] after every step ([PrologSolver] always returns a plain
-     * [SolutionIterator]; nothing in this module currently returns a [MutableSolutionIterator] here, though the
-     * hook is shaped to allow it).
+     * [SolutionIterator]; nothing in this module currently returns another flavour here, as the
+     * `MutableSolutionIterator` of tuProlog's classic solver, though the hook is shaped to allow it).
      */
     protected abstract fun solutionIterator(
         initialState: State,

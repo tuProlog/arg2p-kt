@@ -18,7 +18,8 @@ import kotlin.jvm.JvmStatic
  * be driven incrementally -- one solution, or even one FSM transition, at a time -- without unwinding a call
  * stack, and [onStateTransition] gives a hook to observe (e.g. log, trace, or count) every step as it happens.
  *
- * @see MutableSolutionIterator for a variant that can additionally *hijack* which state comes next.
+ * tuProlog's classic solver also has a `MutableSolutionIterator`, which can additionally *hijack* which state comes
+ * next.
  */
 interface SolutionIterator : Iterator<Solution> {
     /** The state the machine is currently in (before the next call to [next] advances it). */
