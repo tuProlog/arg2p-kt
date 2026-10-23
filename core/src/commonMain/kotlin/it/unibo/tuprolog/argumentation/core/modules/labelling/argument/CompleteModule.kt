@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object CompleteModule : PrologModule("prolog.argumentation.graph.labelling.complete", "complete") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         % Complete labellings are SCC-recursive: built component by component, keeping the admissible local ones
 

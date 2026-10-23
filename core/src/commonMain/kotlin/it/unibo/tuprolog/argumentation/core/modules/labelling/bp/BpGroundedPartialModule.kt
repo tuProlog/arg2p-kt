@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labelling.bpgroundedpartial", "bp_grounded_partial") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %==============================================================================
         % BP PARTIAL LABELLING [ICLP]

@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candidates", "attackCandidates") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! possibleAttackers(+Id, +Argument, -Statement)
         %  findPossibleAttackers/2 for the argument with identifier Id, looked for once: query mode looks for them to

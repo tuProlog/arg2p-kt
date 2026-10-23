@@ -25,6 +25,7 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
         get() = mapOf(RulesAndInfo.signature to RulesAndInfo)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! new(?Rules, ?TopRule, ?Conclusion, ?Body, ?Info, ?Argument)
         %  Argument is made of its parts.

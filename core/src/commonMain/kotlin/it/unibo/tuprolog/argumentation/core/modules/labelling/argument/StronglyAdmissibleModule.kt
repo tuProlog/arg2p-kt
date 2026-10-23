@@ -14,6 +14,7 @@ object StronglyAdmissibleModule : PrologModule("prolog.argumentation.graph.label
         get() = mapOf(StronglyAdmissibleSet.signature to StronglyAdmissibleSet)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)

@@ -17,6 +17,7 @@ object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract"
         get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! computeGlobalAcceptance
         %  The graph of the theory, changed by the extensions, and its argument and statement labellings, in the context.

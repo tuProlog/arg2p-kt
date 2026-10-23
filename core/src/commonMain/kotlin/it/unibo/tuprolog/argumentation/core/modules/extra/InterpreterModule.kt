@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice", "interpreter") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         % with_facts_and_length/3
         with_facts_and_length(X, Y, L) :-

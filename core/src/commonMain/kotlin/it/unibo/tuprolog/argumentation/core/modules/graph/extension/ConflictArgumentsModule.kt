@@ -14,6 +14,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.conflicts", "conflictArguments") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! buildAdditionalArguments
         %  With metaConflicts, the copies of the saved arguments for each argument for a conflict on their conclusion.

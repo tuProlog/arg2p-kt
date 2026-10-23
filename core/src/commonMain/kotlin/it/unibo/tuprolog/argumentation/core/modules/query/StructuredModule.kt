@@ -14,6 +14,7 @@ object StructuredModule : PrologModule("prolog.argumentation.structured", "struc
         get() = listOf(QueryMode, AmbiguityBlocking)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! computeStatementAcceptance(+Goal, -Result)
         %  The labels of the statements for Goal: in(S), out(S) and und(S) terms.

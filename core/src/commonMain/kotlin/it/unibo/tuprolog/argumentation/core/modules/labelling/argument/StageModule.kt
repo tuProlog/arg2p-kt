@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StageModule : PrologModule("prolog.argumentation.graph.labelling.stage", "stage") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label

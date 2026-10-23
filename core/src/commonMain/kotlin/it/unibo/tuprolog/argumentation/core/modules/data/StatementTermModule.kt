@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StatementTermModule : PrologModule("prolog.argumentation.data.statement", "statementTerm") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! new(?Claim, ?Statement)
         %  Statement is the statement of Claim.

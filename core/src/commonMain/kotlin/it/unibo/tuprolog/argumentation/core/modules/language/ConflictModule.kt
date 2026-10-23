@@ -12,6 +12,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "conflict") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! between(?Statement, ?Other)
         %  Statement conflicts with Other, the guard of the conflict holding.

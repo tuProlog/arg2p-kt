@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StatementBinaryModule : PrologModule("prolog.argumentation.graph.labelling.statement.binary", "statement_binary") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, OUT those with

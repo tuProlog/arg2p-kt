@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object SupportModule : PrologModule("prolog.argumentation.data.support", "support") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! new(?Supporter, ?Supported, ?Support)
         %  Support is made of its parts.

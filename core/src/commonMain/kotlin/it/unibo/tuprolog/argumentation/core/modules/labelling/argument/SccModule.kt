@@ -15,6 +15,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         get() = listOf(UndecidedCandidates, Selection).associate { it.signature to it }
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! label(+Accept, +Select)
         %  Labellings built one strongly connected component at a time, in topological order.

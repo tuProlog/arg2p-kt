@@ -14,6 +14,7 @@ object NaiveModule : PrologModule("prolog.argumentation.graph.labelling.naive", 
         get() = mapOf(NaiveSubset.signature to NaiveSubset)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: not directional, but the labellings of unconnected parts of the graph are independent: the label

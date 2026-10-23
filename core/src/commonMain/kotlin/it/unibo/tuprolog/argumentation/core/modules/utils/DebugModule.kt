@@ -12,6 +12,7 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
         get() = listOf(DebugOutput)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! printArgumentationGraph(+Arguments, +Attacks, +Supports)
         %  The graph printed, its arguments part by part.

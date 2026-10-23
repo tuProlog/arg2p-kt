@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object TranspositionModule : PrologModule("prolog.argumentation.language.transposition", "transposition") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! transpose(+Rules, +StrictRules, -Transposed)
         %  Transposed are StrictRules with the transpositions of Rules, with autoTransposition; StrictRules otherwise.

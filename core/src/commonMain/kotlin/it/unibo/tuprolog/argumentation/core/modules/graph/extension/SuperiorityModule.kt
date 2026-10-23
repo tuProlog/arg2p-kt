@@ -16,6 +16,7 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
         get() = listOf(OrderingPrinciple, OrderingComparator)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! superiorArgument(+A, +B)
         %  A is superior to B.

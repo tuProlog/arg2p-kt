@@ -16,6 +16,7 @@ object TheoryChainer : ArgLibrary, Loadable {
                 alias = this.alias,
                 clauses =
                     Theory.parse(
+                        // language=Prolog
                         """            
                         chainable(X) :-
                             member(rl(_) :- [_, Prem, _], X),

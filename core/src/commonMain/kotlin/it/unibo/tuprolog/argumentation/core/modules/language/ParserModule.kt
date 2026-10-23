@@ -59,6 +59,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         )
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         /*
          *  Main directive. Find all the rules in the theory in the format (Name : Preconditions => Conclusion)

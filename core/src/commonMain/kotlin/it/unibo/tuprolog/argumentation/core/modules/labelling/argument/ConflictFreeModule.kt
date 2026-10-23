@@ -16,6 +16,7 @@ object ConflictFreeModule : PrologModule("prolog.argumentation.graph.labelling.c
         get() = mapOf(ConflictFreeSubset.signature to ConflictFreeSubset, LabelSet.signature to LabelSet)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)

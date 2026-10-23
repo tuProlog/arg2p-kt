@@ -15,6 +15,7 @@ object GroundedModule : PrologModule("prolog.argumentation.graph.labelling.groun
         get() = mapOf(GroundedFixpoint.signature to GroundedFixpoint)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)

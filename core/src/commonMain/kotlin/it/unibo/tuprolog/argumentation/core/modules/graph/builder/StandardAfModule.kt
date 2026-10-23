@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StandardAfModule : PrologModule("prolog.argumentation.graph", "standard_af") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! buildArgumentationGraph
         %  The arguments of the theory, those derived from them, and the attacks between them.

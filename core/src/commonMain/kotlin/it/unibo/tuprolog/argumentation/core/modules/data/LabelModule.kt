@@ -10,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object LabelModule : PrologModule("prolog.argumentation.data.label", "label") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! label(?Label)
         %  Label is a label: in, out or und.

@@ -15,6 +15,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         get() = mapOf(GroundVars.descriptionPair)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! explore(+Query)
         %  The arguments for Query and those their labels may depend on (see exploreStatement/2). With cycles among the

@@ -10,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object RuleModule : PrologModule("prolog.argumentation.data.rule", "rule") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! rule(?Id, ?Premises, ?Conclusion, ?Head, ?Body)
         %  Head :- Body is the clause of the rule Id, concluding Conclusion from Premises (a conjunction).

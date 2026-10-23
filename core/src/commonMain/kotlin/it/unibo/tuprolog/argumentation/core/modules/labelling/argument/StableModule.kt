@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StableModule : PrologModule("prolog.argumentation.graph.labelling.stable", "stable") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: stable labellings depend on the whole graph (an odd cycle anywhere leaves none)

@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object BpGroundedCompleteModule : PrologModule("prolog.argumentation.graph.labelling.bpgroundedcomplete", "bp_grounded_complete") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %==============================================================================
         % BP COMPLETE LABELLING [ICLP]

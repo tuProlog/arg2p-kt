@@ -12,6 +12,7 @@ object DefeasibleAllPrefModule : PrologModule(
     "defeasibleAllPref",
 ) {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! modifyArgumentationGraph
         %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.

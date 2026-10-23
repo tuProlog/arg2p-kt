@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object GroundedOldModule : PrologModule("prolog.argumentation.graph.labelling.grounded.old", "grounded_old") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)

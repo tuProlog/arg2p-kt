@@ -17,6 +17,7 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         get() = super.theoryOperators.plus(ParserModule.operators())
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! argTuProlog
         %  The solver is an arg2p one.

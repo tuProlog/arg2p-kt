@@ -43,6 +43,7 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
             )
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         % Lists Utils
 

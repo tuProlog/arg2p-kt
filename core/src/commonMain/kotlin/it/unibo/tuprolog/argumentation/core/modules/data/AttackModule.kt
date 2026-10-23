@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object AttackModule : PrologModule("prolog.argumentation.data.attack", "attack") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! new(?Type, ?Attacker, ?Attacked, ?On, ?Attack)
         %  Attack is made of its parts.

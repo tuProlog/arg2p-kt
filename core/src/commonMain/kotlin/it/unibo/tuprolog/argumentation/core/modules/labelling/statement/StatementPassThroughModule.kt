@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StatementPassThroughModule : PrologModule("prolog.argumentation.graph.labelling.statement.pt", "statement_pass_through") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2), one for each argument.

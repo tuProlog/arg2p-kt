@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StandardPrefModule : PrologModule("prolog.argumentation.graph.preferences.strict", "standardPref") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! modifyArgumentationGraph
         %  The attacks failing for the preferences are removed. Attacks are visited by argument identifiers, and

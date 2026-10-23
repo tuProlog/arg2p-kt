@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutrestriction", "rebutRestriction") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! modifyArgumentationGraph
         %  The restricted attacks on an argument whose top rule is strict are removed.

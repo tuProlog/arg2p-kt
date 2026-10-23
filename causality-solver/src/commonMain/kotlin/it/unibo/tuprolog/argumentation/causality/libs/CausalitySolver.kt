@@ -344,6 +344,7 @@ class CausalitySolver :
                     primitives = primitives.associateBy { it.signature },
                     clauses =
                         Theory.parse(
+                            // language=Prolog
                             """
                             subsets([], []).
                             subsets([H|T], [H|NT]) :- subsets(T, NT).

@@ -19,6 +19,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "graphStore") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %--------------------------------------------------------------------------
         % Arguments

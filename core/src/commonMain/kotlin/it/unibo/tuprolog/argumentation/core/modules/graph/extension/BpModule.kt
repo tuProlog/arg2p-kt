@@ -10,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! modifyArgumentationGraph
         %  The arguments for the burdens met, and their attacks with the burdened arguments.

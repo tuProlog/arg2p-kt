@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StatementModule : PrologModule("prolog.argumentation.graph.labelling.statement", "statement") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, then OUT those

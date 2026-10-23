@@ -17,6 +17,7 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
                 (MaximalAdmissibleSubset.signature to MaximalAdmissibleSubset)
 
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)

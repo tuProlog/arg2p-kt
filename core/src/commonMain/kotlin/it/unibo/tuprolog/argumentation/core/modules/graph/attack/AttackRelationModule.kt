@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attackRelation") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! attacks(?Type, +Attacker, +Attacked)
         %  Attacker attacks Attacked directly, Type being the first kind of attack that applies.

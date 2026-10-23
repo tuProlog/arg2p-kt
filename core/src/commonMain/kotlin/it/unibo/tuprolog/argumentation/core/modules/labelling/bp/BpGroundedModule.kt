@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpgrounded", "bp_grounded") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %==============================================================================
         % BP LABELLING [ICAIL]

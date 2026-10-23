@@ -14,6 +14,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.search", "argumentSearch") {
     override val prologRawTheory: String =
+        // language=Prolog
         """
         %! findSingleArgument(+Conclusion, -Argument, -Supports)
         %  Argument is an argument for Conclusion, Supports its sub-arguments, saved.
