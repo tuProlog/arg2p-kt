@@ -1,4 +1,14 @@
-# Arg2P
+<p align="center"><img src="doc/site/static/logo.svg" width="200" alt="Arg2P logo"></p>
+
+<h1 align="center">Arg2P</h1>
+
+<p align="center">
+  <a href="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml"><img src="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml/badge.svg?branch=master" alt="CI/CD"></a>
+  <a href="https://central.sonatype.com/artifact/it.unibo.tuprolog.argumentation/arg2p-jvm"><img src="https://img.shields.io/maven-central/v/it.unibo.tuprolog.argumentation/arg2p-jvm?label=Maven%20Central" alt="Maven Central"></a>
+  <a href="https://www.npmjs.com/package/@tuprolog/arg2p"><img src="https://img.shields.io/npm/v/@tuprolog/arg2p?label=npm" alt="npm"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/"><img src="https://img.shields.io/badge/docs-wiki-blue" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/tuProlog/arg2p-kt" alt="License"></a>
+</p>
 
 Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
 Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it supports both JVM and Node environments.
