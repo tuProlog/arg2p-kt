@@ -61,7 +61,8 @@ Because `applicable/1` is an ordinary conclusion, a second rule can attack it �
 
 Without `metaConflicts`, conflicts come from the built-in table (`a` versus `-a`, the deontic pairs) plus any
 [`conflict/2` facts]({{% ref "/docs/syntax" %}}) in the theory. With `metaConflicts`, they come from
-*arguments*: whatever an argument concludes as `conflict/2` becomes a conflict.
+*arguments* alone (the built-in table is off): whatever an argument concludes as `conflict/2` becomes a
+conflict.
 
 ```prolog
 metaConflicts.
@@ -86,8 +87,8 @@ Without `r0`, `a` and `b` coexist happily; the meta conflict is what sets them a
 > The conclusion has to name the two statements directly — `conflict(a, b)`, not `conflict([a], [b])`.
 > A rule concluding the list form parses fine and is simply never matched.
 
-Since the conflict is a conclusion, it can be attacked: an argument for `-conflict(a, b)` removes the clash
-again.
+Since the conflict is a conclusion, it can be attacked — but only by the conflicts the theory argues: with the
+built-in table off, an argument for `-conflict(a, b)` does not attack `conflict(a, b)`, and the clash stays.
 
 ---
 
@@ -97,6 +98,7 @@ again.
 models:
 
 ```prolog
+graphExtension(standardPref).
 graphExtension(defeasiblePref).
 
 r1 : p => q.

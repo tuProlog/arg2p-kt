@@ -33,7 +33,7 @@ The table below lists the flags, with the defaults of `FlagsBuilder()`.
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
-| `debug` | disabled | the fact is present or absent: the graphs and labellings are written as they are computed |
+| `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
 
 > [!NOTE]
@@ -181,12 +181,13 @@ network.
 
 ## Flags with no Kotlin equivalent
 
-`naturalTerms` is read only from the theory text; `FlagsBuilder` has no field for it. Write the fact directly
-in your theory:
+`naturalTerms` and `debug` are read only from the theory text; `FlagsBuilder` has no field for them. Write the
+facts directly in your theory:
 
 | Flag | Meaning |
 | --- | --- |
 | `naturalTerms` | Enables normalisation of natural-language-like terms while parsing rules. |
+| `debug` | `bp_grounded_partial` writes the steps of its labelling. |
 
 ---
 

@@ -102,7 +102,7 @@ r_1 : fire_a => house_burns.
 r_2 : fire_b => house_burns.
 ```
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=context_reset%2C%20causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
 — the playground bundles the causality module, so the query runs there as it does on the JVM.
 
 `but_for(fire_a, house_burns)` fails: removing `fire_a` leaves `fire_b`, and the house burns anyway.
@@ -115,7 +115,8 @@ necessary for the effect.
 ## Notes on behaviour
 
 - The causality solver runs its own inner evaluation with grounded semantics and no graph extensions,
-  independently of the flags you set for the outer solver.
+  whatever the flags of the outer solver; the flags the theory states (as `metaConflicts` or `autoTransposition`) apply
+  to it as well, since it evaluates the theory.
 - `ness/3` and `but_for/2` only name accepted causes: a statement no argument concludes (the absence `-d` of a
   fact `d` never stated, say) or a rule identifier is not a cause for them, though `ness_original/3` may report
   it as one.

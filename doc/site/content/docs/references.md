@@ -32,7 +32,7 @@ The tool Arg2P grew out of:
 
 > Giuseppe Pisano, Roberta Calegari, Andrea Omicini, Giovanni Sartor.
 > **Arg-tuProlog: A tuProlog-based argumentation framework.**
-> CILC 2021, CEUR Workshop Proceedings 2719:51–66, 2020.
+> CILC 2020, CEUR Workshop Proceedings 2719:51–66, 2020.
 
 > Roberta Calegari, Giuseppe Contissa, Giuseppe Pisano, Galileo Sartor, Giovanni Sartor.
 > **Arg-tuProlog: A modular logic argumentation tool for PIL.**

@@ -28,6 +28,7 @@ when [building a solver by hand]({{% ref "/docs/api/kotlin" %}}):
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
@@ -56,7 +57,7 @@ The module is registered under the identifier `parallel` and provides:
 The order matters: join the cluster, load the theory, query it, then leave.
 
 ```kotlin
-solver.loadStaticKb(Theory.parse(rules, solver.operators))
+solver.loadStaticKb(RuleAnnotations.parse(rules, solver.operators))
 
 solver.solve(Struct.parse("join(2551), load")).first()
 

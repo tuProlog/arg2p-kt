@@ -41,7 +41,7 @@ const { JsCausality } = argumentation.causality.js
 | `module(module)` | A module besides those of arg2p, as the causality solver's `JsCausality.module()` |
 | `output(consumer)` | A function receiving whatever the solver prints (the standard output otherwise) |
 
-Without `flags`, the solver has the default flags, and the theory states those that differ (as `queryMode.`).
+Without `flags`, the solver has the default flags, and the theory adds those it needs (as `metaConflicts.`).
 With `flags`, the string must declare every required flag.
 
 ```js
@@ -77,7 +77,7 @@ flags, or with only those it states.
 | `query` | The goal, with its variables bound for a yes solution |
 | `error` | The error of a halt solution, as text |
 | `variables` | The names of the variables a yes solution binds |
-| `valueOf(name)`, `formatted(name)` | The value of a variable, as a term or as text |
+| `term(name)`, `formatted(name)` | The value of a variable, as a term or as text |
 
 ```js
 const solution = JsArg2p.solve(solver, 'answerQuery(d, In, Out, Und)').next()
@@ -93,7 +93,7 @@ After a query, the context of the solver holds the graph it computed. `JsArg2p.g
 | Field | Content |
 | --- | --- |
 | `arguments` | Objects with `id`, `descriptor` and `label` (`in`, `out`, `und`) |
-| `attacks` | Objects with `from` and `to`, the ids of the two arguments |
+| `attacks` | Objects with `from` and `to`, the ids of the two arguments, the attack `type` (`rebut`, `undermine`, `undercut`, ...) and `on`, the id of the sub-argument of `to` it hits |
 
 ```js
 JsArg2p.solve(solver, 'buildLabelSets').next()

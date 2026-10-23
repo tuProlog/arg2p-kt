@@ -9,7 +9,7 @@ aliases:
 
 All the predicates below belong to the `arg2p` module, and the recommended way to call them is through the
 module prefix — `arg2p::solve(Goal, Res)`, `arg2p::buildLabelSets(...)` and so on. The unqualified form works
-too, but the qualified one states where the predicate comes from and keeps working if your own theory defines
+too where `arg2p` is a static library, as in the solvers of `Arg2pSolver.default()`, but the qualified one states where the predicate comes from and keeps working if your own theory defines
 a predicate with the same name.
 
 The engine can be queried in two ways:

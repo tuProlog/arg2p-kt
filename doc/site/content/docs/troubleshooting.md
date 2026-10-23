@@ -39,10 +39,11 @@ of Arg2P through a slower path. `Arg2pSolverFactory` does all of this for you.
 **Symptom.** A syntax error on a rule that looks perfectly valid.
 
 Arg2P adds operators (`=>`, `:=>`, `:->`, `:`) that the default parser does not know. Parse with the Arg2P
-operator set:
+operator set, with `RuleAnnotations.parse` (it also tags the clauses with the identifiers of their comments, for
+[plain Prolog theories]({{% ref "/docs/syntax#theories-in-plain-prolog" %}})):
 
 ```kotlin
-val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
+val theory = RuleAnnotations.parse(theoryText, Arg2pSolver.default().operators())
 ```
 
 ---
@@ -57,7 +58,7 @@ val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
 Struct.parse("arg2p::solve(d, Res)", solver.operators)
 ```
 
-The same applies to `Theory.parse` — see [Kotlin API]({{% ref "/docs/api/kotlin" %}}).
+The same applies to parsing a theory — see [Kotlin API]({{% ref "/docs/api/kotlin" %}}).
 
 ---
 
@@ -95,10 +96,11 @@ when the work is done, or the JVM will stay alive.
 
 ---
 
-## Weak negation is rejected in a conclusion
+## Weak negation in a conclusion has no effect
 
-Weak negation `~(Term)` is only allowed in the body of a rule. Strong negation `-Term` is the one that may
-appear in a conclusion, and it cannot be nested.
+Weak negation `~(Term)` is negation by failure in the body of a rule. In a conclusion it is just a statement,
+conflicting with nothing: to conclude the contrary of a statement, use strong negation `-Term` (which cannot be
+nested).
 
 ---
 

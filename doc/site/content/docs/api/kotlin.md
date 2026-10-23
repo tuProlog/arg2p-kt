@@ -42,7 +42,8 @@ fun main() {
 
 ### Configuring the evaluation
 
-Every [flag]({{% ref "/docs/api/flags" %}}) is a field of `FlagsBuilder`, so it can be set with named arguments:
+The [flags]({{% ref "/docs/api/flags" %}}) are fields of `FlagsBuilder` (all but `naturalTerms` and `debug`,
+written in the theory), so they can be set with named arguments:
 
 ```kotlin
 val flags = FlagsBuilder(
@@ -92,7 +93,9 @@ Arg2pSolverFactory
 | `Attack` | `attacker`, `target`, the attack `type` and the attacked element `on` |
 | `Support` | `supporter` and `supported` |
 
-Attack types are `rebut`, `contrary_rebut`, `undermine`, `contrary_undermine` and `undercut`.
+Attack types are `rebut`, `contrary_rebut`, `undermine`, `contrary_undermine` and `undercut`, plus `pref` (an
+attack of a preference, with `defeasiblePref` and `defeasibleAllPref`), `bprebut` (with `bp`) and `abstract` (an
+attack of an abstract framework).
 
 ```kotlin
 graph.attacks.forEach { println("${it.attacker.descriptor} --${it.type}--> ${it.target.descriptor}") }
@@ -112,11 +115,19 @@ Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 
-val solver = Arg2pPrologSolverFactory.solverWithDefaultBuiltins(
-    otherLibraries = Arg2pSolver.default().to2pLibraries(),
+val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
+    otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder().create())).to2pLibraries(),
+    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```
+
+The flags library (see [below](#adding-the-flags-library)) sets the flags of the evaluation; `Unknown.FAIL`
+makes the hooks a theory may leave undefined (`conflict/2`, `sup/2`, ...) fail quietly, rather than with a warning
+each time they are called.
 
 The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality solver, has the same libraries with the
 [causality]({{% ref "/docs/modules/causality" %}}) module as well: `Arg2pLibrary.get()` (package
@@ -134,25 +145,32 @@ it cannot be parsed without them.
 ### Parsing a theory
 
 Arg2P adds operators (`=>`, `:=>`, `:->`, `:`) that a plain parser does not know, so theories must be parsed
-with the Arg2P operator set:
+with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.runtime.theory`)
+does it, and tags the clauses with the identifiers of their comments as well, which
+[plain Prolog theories]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) need:
 
 ```kotlin
-val theory = Theory.parse(theoryText, Arg2pSolver.default().operators())
+val theory = RuleAnnotations.parse(theoryText, Arg2pSolver.default().operators())
+solver.loadStaticKb(theory)
 ```
 
 ### Adding the flags library
 
-A hand-built solver has no flags. Add them as a library:
+A hand-built solver has no flags unless the library set includes them, as above. They can also be added to
+the libraries afterwards:
 
 ```kotlin
 val settings = FlagsBuilder().create()
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.content(),
+    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```
 
 The libraries also run on the solver of 2P-Kt (`PrologSolverFactory`, from its `solve-prolog` package, not a
-dependency of Arg2P), where module calls go through a slower path.
+dependency of Arg2P), where module calls go through a slower path. That solver loses bindings a goal left to
+solve still needs (a bug the engine of Arg2P fixes), unless it tracks every variable: set
+`TrackVariables.ON` in its flags, besides `Unknown.FAIL`.
 
 ---
 

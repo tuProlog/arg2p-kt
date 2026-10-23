@@ -82,7 +82,7 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
-| `debug` | Prints graphs and labellings. |
+| `debug` | Prints graphs and labellings (`buildLabelSets/0`), and the trace of `bp_grounded_partial` with the `debug` flag. |
 | `interpreter` | Meta-interpreter, used to trace how facts were derived. |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
@@ -168,7 +168,8 @@ module name.
 > fetched over plain `http` can be substituted in transit.
 
 The modules are loaded into a separate solver, so their clauses do not pollute the theory under evaluation.
-A module that cannot be found raises an existence error naming it, as does an error raised within the module.
+A module that cannot be found raises an existence error naming it; an error raised within the module is raised
+as it is.
 
 ### What a module sees
 
