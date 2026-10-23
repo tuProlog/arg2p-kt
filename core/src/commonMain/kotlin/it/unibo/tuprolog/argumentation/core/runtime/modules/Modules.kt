@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.exception.error.DomainError
+import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 
@@ -19,7 +19,10 @@ class Modules(
 
     private val moduleAliases: Set<String> by lazy { solver.dynamicLibraries().map { it.alias }.toSet() }
 
-    /** The module named [name], called by [request] (whose libraries the ones of the module are built from) */
+    /**
+     * The module named [name], called by [request] (whose libraries the ones of the module are built from): an
+     * existence error when the solver has no such module
+     */
     fun of(
         request: Solve.Request<ExecutionContext>,
         name: Atom,
@@ -34,7 +37,7 @@ class Modules(
     ): Module {
         val library =
             solver.dynamicLibraries().firstOrNull { (it as? Loadable)?.identifier() == name.value }
-                ?: throw DomainError.forGoal(request.context, request.signature, DomainError.Expected.of("Loadable Lib"), name)
+                ?: throw ExistenceError.forResource(request.context, name.value)
         val callerLibraries = request.context.libraries.libraries
         val shared = Runtime.of(callerLibraries.filterNot { it.alias in moduleAliases })
         return Module(name.value, shared + library.content())
