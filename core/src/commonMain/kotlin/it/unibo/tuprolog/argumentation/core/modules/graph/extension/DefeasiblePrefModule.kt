@@ -24,9 +24,12 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             buildPrefAttacks.
 
         %! assertAllSup
-        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority).
+        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority): the
+        %  superiorities computed with the previous ones are forgotten.
         assertAllSup :-
             context_retract(sup(_, _)),
+            context_retract(superior(_, _, _, _)),
+            context_retract(justified(_, _, _)),
             findall(_, (
                 argument::claim(Argument, sup(RuleOne, RuleTwo)),
                 graphStore::argument(Argument),
@@ -35,18 +38,24 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             ), _).
 
         %! filterSupRelatedAttacks(+Attacks, -Invalid)
-        %  Invalid are the attacks among Attacks that the preferences invalidate.
+        %  Invalid are the attacks among Attacks that the preferences invalidate. Those invalid whatever the
+        %  preferences (C superior to A with none) are removed, as standardPref does: no argument could save them.
         filterSupRelatedAttacks([], []).
+        filterSupRelatedAttacks([(T, A, B, C)|Attacks], Invalid) :-
+            invalid(T, A, B, C, []), !,
+            graphStore::removeAttack(T, A, B, C),
+            filterSupRelatedAttacks(Attacks, Invalid).
         filterSupRelatedAttacks([(T, A, B, C)|Attacks], [(T, A, B, C)|Invalid]) :-
-            invalid(T, A, B, C, _),
-            filterSupRelatedAttacks(Attacks, Invalid), !.
+            invalid(T, A, B, C, _), !,
+            filterSupRelatedAttacks(Attacks, Invalid).
         filterSupRelatedAttacks([_|Attacks], Invalid) :-
             filterSupRelatedAttacks(Attacks, Invalid).
 
         %! invalid(+Type, +A, +B, +C, -Preferences)
-        %  The attack of A on B (on C) is invalidated by the preferences Preferences, C being superior to A.
-        invalid(rebut, A, B, C, Preferences) :- superiority::superiorArgument(C, A, Preferences), !.
-        invalid(undermine, A, B, C, Preferences) :- superiority::superiorArgument(C, A, Preferences), !.
+        %  The attack of A on B (on C) is invalidated by the preferences Preferences, C being superior to A: each
+        %  justification of the superiority in turn (see superiority::superiorArgument/3).
+        invalid(rebut, A, _, C, Preferences) :- superiority::superiorArgument(C, A, Preferences).
+        invalid(undermine, A, _, C, Preferences) :- superiority::superiorArgument(C, A, Preferences).
 
         %! convertAttacks(+Attacks)
         %  Each attack becomes an argument for it: an attack of A on B becomes the argument X for attack(T, A, B, B),
@@ -91,7 +100,8 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             graphStore::argument(AttackArgument).
 
         %! buildPrefAttacks
-        %  The arguments for the preferences invalidating an attack attack its argument, and what it supports.
+        %  The arguments for the preferences invalidating an attack, by any of its justifications, attack its
+        %  argument, and what it supports.
         buildPrefAttacks :-
             attackArgument(Attack, T, A, B, C),
             invalid(T, A, B, C, Preferences),

@@ -1,9 +1,13 @@
 package it.unibo.tuprolog.argumentation.causality.modules
 
 import it.unibo.tuprolog.argumentation.causality.causality
+import it.unibo.tuprolog.argumentation.causality.isButForCause
 import it.unibo.tuprolog.argumentation.causality.isNessCause
 import it.unibo.tuprolog.argumentation.causality.isNessOriginalCause
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
+import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
+import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -45,5 +49,18 @@ class CausalityModuleTest {
         isNessCause(solver, "a", "-b")
         isNessCause(solver, "-d", "-b", false)
         isNessOriginalCause(solver, "-d", "-b")
+    }
+
+    // The flags of the solver asking reach the analysis: a theory in plain Prolog, argued with the flag of the solver
+    @Test
+    fun theFlagsOfTheSolverApply() {
+        val solver =
+            Arg2pSolverFactory.of(
+                "a. % f1\nb :- a. % r1",
+                FlagsBuilder(prologStrictCompatibility = true).create(),
+                listOf(CausalityModule(), Cache()),
+                ModuleRegistry.all,
+            )
+        isButForCause(solver, "a", "b")
     }
 }

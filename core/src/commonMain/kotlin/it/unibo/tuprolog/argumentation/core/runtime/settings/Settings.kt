@@ -6,6 +6,8 @@ import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingSwitch
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingValue
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Fact
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
@@ -49,6 +51,25 @@ class Settings(
         flag: ArgsFlag<*, *>,
         context: ExecutionContext,
     ): List<Term> = viewFor(context)[flag.predicate()].orEmpty()
+
+    /**
+     * The facts stating the flags of [context] with their values (see [valuesOf]), but for the flags named in
+     * [except]: for a theory solved elsewhere with the same flags
+     */
+    fun facts(
+        context: ExecutionContext,
+        except: Set<String> = emptySet(),
+    ): List<Fact> =
+        flags.filterKeys { it !in except }.flatMap { (name, flag) ->
+            valuesOf(flag, context).map { value -> Fact.of(if (flag.isSwitch) Atom.of(name) else Struct.of(name, value)) }
+        }
+
+    /** Whether [clause] is a fact stating a flag */
+    fun states(clause: Clause): Boolean {
+        val head = clause.head ?: return false
+        val flag = flags[head.functor] ?: return false
+        return clause.isFact && head.arity == (if (flag.isSwitch) 0 else 1)
+    }
 
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
         if (viewOf !== context.staticKb) {

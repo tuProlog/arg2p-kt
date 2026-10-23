@@ -20,14 +20,29 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
         """
         %! superiorArgument(+A, +B)
         %  A is superior to B.
-        superiorArgument(A, B) :- superiorArgument(A, B, _).
+        superiorArgument(A, B) :-
+            argument::info(A, InfoA),
+            argument::info(B, InfoB),
+            superiorInfo(InfoA, InfoB, _).
 
         %! superiorArgument(+A, +B, -Preferences)
-        %  A is superior to B, by the preferences between rules Preferences (sup/2 terms).
+        %  A is superior to B, by the preferences between rules Preferences (sup/2 terms, a set): each justification of
+        %  the superiority in turn, [] if it needs no preference.
         superiorArgument(A, B, Preferences) :-
             argument::info(A, InfoA),
             argument::info(B, InfoB),
-            superiorInfo(InfoA, InfoB, Preferences).
+            justifications(InfoA, InfoB, Justifications),
+            member(Preferences, Justifications).
+
+        %! justifications(+InfoA, +InfoB, -Justifications)
+        %  The sets of preferences by which the arguments with info InfoA are superior to those with info InfoB, each
+        %  a set, without duplicates (none if they are not): computed once for each pair (justified/3 in the context).
+        justifications(InfoA, InfoB, Justifications) :-
+            context_check(justified(InfoA, InfoB, Justifications)), !.
+        justifications(InfoA, InfoB, Justifications) :-
+            findall(Sorted, (compareInfo(InfoA, InfoB, Preferences), utils::sortDistinct(Preferences, Sorted)), All),
+            utils::sortDistinct(All, Justifications),
+            context_assert(justified(InfoA, InfoB, Justifications)).
 
         %! superiorInfo(+InfoA, +InfoB, -Preferences)
         %  The arguments with info InfoA are superior to those with info InfoB, by the preferences Preferences.
@@ -76,7 +91,8 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
             weaker(PremisesB, PremisesA, PreferencesOnPremises),
             utils::appendLists([PreferencesOnRules, PreferencesOnPremises], Preferences).
 
-        % weaker(+RulesA, +RulesB, -Preferences): the set RulesA is weaker than RulesB, by orderingComparator
+        % weaker(+RulesA, +RulesB, -Preferences): the set RulesA is weaker than RulesB, by orderingComparator, each
+        % justification in turn
         weaker(RulesA, [], []) :-
             RulesA \== [].
         weaker(RulesA, RulesB, Preferences) :-
@@ -84,7 +100,7 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
             RulesB \== [],
             setting(orderingComparator, elitist),
             member(Rule, RulesA),
-            allStronger(Rule, RulesB, Preferences), !.
+            allStronger(Rule, RulesB, Preferences).
         weaker(RulesA, RulesB, Preferences) :-
             RulesA \== [],
             RulesB \== [],
@@ -98,7 +114,7 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
             setting(orderingComparator, normal),
             member(W, RulesA),
             member(X, RulesB),
-            context_check(sup(X, W)), !.
+            context_check(sup(X, W)).
 
         weakerDemo([], _, []).
         weakerDemo([H|T], Rules, [Sup|Preferences]) :-
@@ -107,7 +123,7 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
 
         singleStronger(Target, Rules, sup(Rule, Target)) :-
             member(Rule, Rules),
-            context_check(sup(Rule, Target)), !.
+            context_check(sup(Rule, Target)).
 
         allStronger(_, [], []).
         allStronger(Target, [Rule|Rules], [sup(Rule, Target)|Preferences]) :-

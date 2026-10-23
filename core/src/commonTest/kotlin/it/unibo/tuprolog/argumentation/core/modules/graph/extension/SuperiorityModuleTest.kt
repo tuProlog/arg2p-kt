@@ -60,4 +60,14 @@ class SuperiorityModuleTest {
         assertFalse(module.holds("superiority::superiorArgument($r2, $r1)"))
         assertTrue(module.holds("context_check(superior([[r2], [r2], []], [[r1], [r1], []], _, false))"))
     }
+
+    @Test
+    fun everyJustificationIsGiven() {
+        val module = module().also { it.run("context_assert(sup(r1, r3))") }
+        val r2r3 = argument("[[r2, r3], [r2, r3], []]")
+        // elitist: r2 and r3 are each inferior to r1, by a preference of its own
+        assertEquals(setOf("[sup(r1, r2)]", "[sup(r1, r3)]"), module.values("superiority::superiorArgument($r1, $r2r3, P)", "P").toSet())
+        // a strict argument needs no preference
+        assertEquals(listOf("[]"), module.values("superiority::superiorArgument(${argument("[[], [], []]")}, $r2, P)", "P"))
+    }
 }

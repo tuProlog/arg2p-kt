@@ -43,12 +43,12 @@ The module is registered under the identifier `parallel` and provides:
 
 | Predicate | Meaning |
 | --- | --- |
-| `join(Port)` | Starts or joins a cluster on the local machine at the given port. |
+| `join(Port)` | Starts or joins a cluster on the local machine at the given port (a cluster joined before is left first). |
 | `join(Port, Seed)` | Joins an existing cluster, where `Seed` is the `host:port` of a seed node. |
 | `load` | Sends every clause of the static knowledge base to the cluster. |
 | `solve(Goal, In, Out, Und)` | Evaluates the goal across the cluster, binding the three lists of labelled claims. |
 | `reset` | Clears the distributed knowledge base. |
-| `leave` | Clears the knowledge base and leaves the cluster. |
+| `leave` | Clears the knowledge base, leaves the cluster and stops the actor system, freeing its port. |
 
 ---
 

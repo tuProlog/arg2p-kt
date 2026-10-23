@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor
 
 import akka.actor.AddressFromURIString
+import akka.actor.CoordinatedShutdown
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.javadsl.Behaviors
@@ -74,9 +75,12 @@ object ClusterInitializer {
         return Pair(actorSystem, masterActor)
     }
 
+    // Leaves the cluster and then terminates the actor system, freeing its threads and its port: returns once done
     fun leaveCluster(actorSystem: ActorSystem<KbMessage>) {
-        Cluster.get(actorSystem).also {
-            it.leave(it.selfAddress())
-        }
+        CoordinatedShutdown
+            .get(actorSystem)
+            .runAll(CoordinatedShutdown.clusterLeavingReason())
+            .toCompletableFuture()
+            .join()
     }
 }

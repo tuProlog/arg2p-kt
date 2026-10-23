@@ -62,20 +62,6 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
             write(X),nl,
             writeListNl(Others).
 
-
-
         % sortDistinct/2, deduplicate/2, sort/2 and subtract/3 are native primitives (see primitives/utils)
-
-
-        isEmptyList([]).
-
-
-        % Misc utils
-
-        % search(+F, +L, -S): S is each term F(...) of arity 1 to L that holds
-        search(F, L, S) :-
-           between(1, L, N),
-           functor(S, F, N),
-           call(S).
         """.trimIndent()
 }

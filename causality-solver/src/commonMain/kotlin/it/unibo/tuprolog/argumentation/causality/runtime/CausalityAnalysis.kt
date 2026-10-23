@@ -3,11 +3,14 @@ package it.unibo.tuprolog.argumentation.causality.runtime
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.GraphExtension
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
@@ -26,8 +29,9 @@ private const val GRAPH_CACHE_SIZE = 256
 
 /**
  * The causal analysis of a theory, for the primitives of the causality module: the graphs of the theory and of its
- * interventions, labelled with grounded semantics and no graph extensions by a solver of its own, and the NESS and
- * but-for checks on them. The theory is the static knowledge base of the solver asking ([Solve.Request]).
+ * interventions, labelled by a solver of its own with grounded semantics and no graph extensions (the other flags those
+ * of the solver asking), and the NESS and but-for checks on them. The theory is the static knowledge base of the solver
+ * asking ([Solve.Request]).
  */
 internal class CausalityAnalysis {
     private val solver =
@@ -101,7 +105,17 @@ internal class CausalityAnalysis {
             .flatMap { supporters(it.argument, graph, emptyList()) }
             .map { it.argument }
 
-    private fun theory(request: Solve.Request<ExecutionContext>) = request.context.staticKb
+    // The theory of the solver asking, with its flags (those of its libraries too) as facts, but the semantics and
+    // the graph extensions, which are those of the analysis: its own flag facts give way to them
+    private fun theory(request: Solve.Request<ExecutionContext>): Theory {
+        val theory = request.context.staticKb
+        val settings = Settings.of(request.context) ?: return theory
+        val except = setOf(ArgumentLabellingMode.predicate(), GraphExtension.predicate())
+        return Theory.of(
+            theory.unificator,
+            theory.clauses.filterNot { settings.states(it) } + settings.facts(request.context, except),
+        )
+    }
 
     // The theory with the statements of intervention as axioms, each named after its statement
     private fun intervened(

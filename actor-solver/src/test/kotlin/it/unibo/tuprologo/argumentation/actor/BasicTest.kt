@@ -141,6 +141,32 @@ class BasicTest {
         }
     }
 
+    // Leaving stops the actor system, freeing its port for the cluster joined next
+    @Test
+    fun aClusterLeftCanBeJoinedAgain() {
+        arg2pScope {
+            Arg2pPrologSolverFactory
+                .mutableSolverWithDefaultBuiltins(
+                    otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
+                ).also {
+                    it.loadStaticKb(Theory.parse("r0 :=> a.\nr1 : a => b.", it.operators))
+                    assertEquals(true, it.solve(Struct.parse("leave")).first().isYes)
+                    it.solve("join"(2553) and "leave").first()
+                    it.solve("join"(2553) and "load").first()
+                    assertEquals(
+                        "[b]",
+                        it
+                            .solve("solve"("b", X, Y, Z))
+                            .first()
+                            .substitution[X]
+                            .toString(),
+                    )
+                    it.solve(Struct.parse("leave")).first()
+                }
+        }
+    }
+
     @Ignore
     @Test
     fun stressTestIterative() {

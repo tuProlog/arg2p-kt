@@ -125,7 +125,9 @@ reads `sup/2` facts only, and ignores a `sup/2` that is merely concluded.
 `defeasiblePref` covers comparisons that rest on a **single** superiority. When the comparator has to weigh
 several superiorities at once — as the elitist and democrat comparisons do over sets of rules — use
 `graphExtension(defeasibleAllPref)` instead, which also exposes the preference as a `preference/1` statement.
-The two models are described in the CILC paper listed under [References]({{% ref "/docs/references" %}}).
+In both, a superiority with several justifications weighs them all: the attack fails while the preferences of
+any of them stand. A comparison that needs no preference (a strict argument against a defeasible one, say)
+removes the attack, as `standardPref` does. The two models are described in the CILC paper listed under [References]({{% ref "/docs/references" %}}).
 
 ---
 

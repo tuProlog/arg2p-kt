@@ -48,4 +48,28 @@ class DefeasiblePrefModuleTest {
             ),
         )
     }
+
+    private val flags =
+        "graphBuildMode(standard_af).\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).\n" +
+            "orderingPrinciple(last).\norderingComparator(elitist).\ngraphExtension(defeasiblePref)."
+
+    // -a, on r2 and r3, rebuts a: sup(r1, r2) or sup(r1, r3) each invalidates the attack, and the first is undercut
+    @Test
+    fun anAttackStaysInvalidWhileAnyOfItsJustificationsStands() {
+        val theory =
+            "r1 : [] => a.\nr2 : [] => b.\nr3 : [] => c.\ns1 : b, c -> -a.\np1 : [] => sup(r1, r2).\n" +
+                "p2 : [] => sup(r1, r3).\nu : [] => undercut(p1).\n$flags"
+        val statIn = ModuleTesting(theory).value("buildLabelSets(I, _, _)", "I")!!
+        assertTrue("[a]" in statIn && "[sup(r1, r3)]" in statIn, statIn)
+    }
+
+    // d, strict on a premise, is superior to -d (on a defeasible rule) by no preference: -d does not defeat it
+    @Test
+    fun anAttackInvalidWithoutPreferencesIsRemoved() {
+        val module = ModuleTesting("f1 :=> b.\ns1 : b -> d.\nr1 : [] => -d.\n$flags")
+        val statIn = module.value("buildLabelSets(I, _, _)", "I")!!
+        val statOut = module.value("buildLabelSets(_, O, _)", "O")!!
+        assertTrue("[d]" in statIn, statIn)
+        assertTrue("['-'(d)]" in statOut, statOut)
+    }
 }

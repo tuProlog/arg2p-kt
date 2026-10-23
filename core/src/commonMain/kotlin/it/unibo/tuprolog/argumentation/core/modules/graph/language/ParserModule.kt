@@ -122,7 +122,6 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
         specialRules(SpecialRules) :-
             bpsNew(SpecialRules).
-        %    findall([bps, X], search('bp', 10, X), SpecialRules).
 
 
 

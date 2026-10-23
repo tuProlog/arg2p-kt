@@ -1,11 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
 import it.unibo.tuprolog.argumentation.core.TestingUtils.testGoal
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
-import it.unibo.tuprolog.theory.Theory
 import kotlin.test.Test
 
 class UtilsModuleTest {
@@ -33,19 +30,6 @@ class UtilsModuleTest {
     }
 
     @Test
-    fun isEmptyList() {
-        arg2pScope {
-            testGoal("utils" call "isEmptyList"(emptyLogicList)) {
-                listOf(it.yes())
-            }
-
-            testGoal("utils" call "isEmptyList"(listOf("a"))) {
-                listOf(it.no())
-            }
-        }
-    }
-
-    @Test
     fun appendaList() {
         arg2pScope {
             testGoal("utils" call "appendLists"(listOf(listOf("a", "b"), listOf("c", "d"), listOf("e", "f")), "X")) {
@@ -62,46 +46,6 @@ class UtilsModuleTest {
         }
     }
 
-    @Test
-    fun search() {
-        arg2pScope {
-            val solver =
-                solver(
-                    Theory.Companion.of(
-                        listOf(
-                            fact { "a"(1) },
-                            fact { "a"(1, 2) },
-                            fact { "a"(1, 2, 3) },
-                            fact { "a"(1, 2, 3, 4) },
-                        ),
-                    ),
-                )
-
-            testGoal("utils" call "search"("a", 4, "X"), solver) {
-                listOf(
-                    it.yes("X" to "a"(1)),
-                    it.yes("X" to "a"(1, 2)),
-                    it.yes("X" to "a"(1, 2, 3)),
-                    it.yes("X" to "a"(1, 2, 3, 4)),
-                )
-            }
-
-            testGoal("utils" call "search"("a", 2, "X"), solver) {
-                listOf(
-                    it.yes("X" to "a"(1)),
-                    it.yes("X" to "a"(1, 2)),
-                )
-            }
-
-            testGoal("utils" call "search"("b", 2, "X"), solver) {
-                listOf(it.no())
-            }
-        }
-    }
-
-    // An error raised inside a module call must reach the caller: it used to be collapsed into a
-    // plain failure, which made a broken call indistinguishable from one that simply did not hold.
-    // The culprit is the offending argument, i.e. the first one, not the well-formed list.
     @Test
     fun errorsRaisedInsideAModuleCallReachTheCaller() {
         arg2pScope {

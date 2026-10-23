@@ -56,8 +56,9 @@ class ActorSolver :
         override val signature = Signature("load", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+            // the facts by their head (the rules of arg2p are facts), the Prolog rules whole
             request.context.staticKb.forEach {
-                masterActor.tell(Add(it.head.toString()))
+                masterActor.tell(Add((if (it.isFact) it.head else it).toString()))
             }
             return sequenceOf(request.replyWith(true))
         }
@@ -68,10 +69,7 @@ class ActorSolver :
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
             val port = request.arguments[0].toString()
-            ClusterInitializer.joinCluster("127.0.0.1:$port", port).let {
-                this@ActorSolver.actorSystem = it.first
-                this@ActorSolver.masterActor = it.second
-            }
+            join("127.0.0.1:$port", port)
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -80,14 +78,7 @@ class ActorSolver :
         override val signature = Signature("join", 2)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            ClusterInitializer
-                .joinCluster(
-                    request.arguments[1].toString(),
-                    request.arguments[0].toString(),
-                ).let {
-                    this@ActorSolver.actorSystem = it.first
-                    this@ActorSolver.masterActor = it.second
-                }
+            join(request.arguments[1].toString(), request.arguments[0].toString())
             return sequenceOf(request.replyWith(true))
         }
     }
@@ -105,10 +96,28 @@ class ActorSolver :
         override val signature = Signature("leave", 0)
 
         override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-            masterActor.tell(Reset)
-            ClusterInitializer.leaveCluster(actorSystem)
+            leave()
             return sequenceOf(request.replyWith(true))
         }
+    }
+
+    // A cluster joined again replaces the previous one, which is left first
+    private fun join(
+        seedAddress: String,
+        localPort: String,
+    ) {
+        leave()
+        ClusterInitializer.joinCluster(seedAddress, localPort).let {
+            actorSystem = it.first
+            masterActor = it.second
+        }
+    }
+
+    // The knowledge base cleared and the cluster left, if one was joined
+    private fun leave() {
+        if (!::actorSystem.isInitialized) return
+        masterActor.tell(Reset)
+        ClusterInitializer.leaveCluster(actorSystem)
     }
 
     override val alias = "prolog.argumentation.actor.solver"
