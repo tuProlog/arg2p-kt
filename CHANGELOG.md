@@ -1,3 +1,28 @@
+## [0.18.0](https://github.com/tuProlog/arg2p-kt/compare/0.17.4...0.18.0) (2026-10-23)
+
+### Features
+
+* arg2p engine, query mode for every semantics, reworked preferences, modules by component ([#517](https://github.com/tuProlog/arg2p-kt/issues/517)) ([7a38ace](https://github.com/tuProlog/arg2p-kt/commit/7a38ace864a2b6de23dcd2eecf978f2e12833e7f))
+
+### Performance improvements
+
+* faster framework derivation, semantics fixes, dependency updates ([#493](https://github.com/tuProlog/arg2p-kt/issues/493)) ([f54fcf4](https://github.com/tuProlog/arg2p-kt/commit/f54fcf44a80ff14bd58e784b2eccee89cfa0f8d4))
+
+### Build and continuous integration
+
+* **deps:** update dependency java-jdk to v25.0.5+8.0.lts ([#516](https://github.com/tuProlog/arg2p-kt/issues/516)) ([22b6080](https://github.com/tuProlog/arg2p-kt/commit/22b6080e6c4095995a7655999d07618d478bc969))
+* **deps:** update dependency java-jdk to v25.0.5+8.0.lts ([#516](https://github.com/tuProlog/arg2p-kt/issues/516)) ([#519](https://github.com/tuProlog/arg2p-kt/issues/519)) ([d605d18](https://github.com/tuProlog/arg2p-kt/commit/d605d18479663ddffd4ef677aa563062cf784d65))
+
+### General maintenance
+
+* merge master into develop after 0.16.6 ([63641f2](https://github.com/tuProlog/arg2p-kt/commit/63641f295a54cb4545d84d42a7597087d8ab46e5))
+* merge master into develop after 0.16.7 ([b935f04](https://github.com/tuProlog/arg2p-kt/commit/b935f047dd0d984662c7d550035c647f69352a67))
+* merge master into develop after 0.16.8 ([650d1cd](https://github.com/tuProlog/arg2p-kt/commit/650d1cd164672fb0676cc87bb77e5b933aba9e80))
+* merge master into develop after 0.17.0 ([38b6a49](https://github.com/tuProlog/arg2p-kt/commit/38b6a493c02ba382b2ff654229ee19ebf5734492))
+* merge master into develop after 0.17.1 ([a8c222e](https://github.com/tuProlog/arg2p-kt/commit/a8c222e59cf24fad7ee2f2499152ea2e5d5060f8))
+* merge master into develop after 0.17.2 ([5dec4ec](https://github.com/tuProlog/arg2p-kt/commit/5dec4ecde833673f84c05d97d3139688137e42d2))
+* merge master into develop after 0.17.4 ([f494a65](https://github.com/tuProlog/arg2p-kt/commit/f494a6516c89e68acf3e05cd1e84533daaf882f8))
+
 ## [0.17.4](https://github.com/tuProlog/arg2p-kt/compare/0.17.3...0.17.4) (2026-10-22)
 
 ### Dependency updates
