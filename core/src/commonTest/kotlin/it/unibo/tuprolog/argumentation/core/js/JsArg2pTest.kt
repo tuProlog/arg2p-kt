@@ -48,7 +48,7 @@ class JsArg2pTest {
                     JsArgument("A2", "A2 : A0,d2 : bird(tweety)", "in"),
                     JsArgument("A3", "A3 : A2,d1 : flies(tweety)", "out"),
                 ),
-                arrayOf(JsAttack("A1", "A3")),
+                arrayOf(JsAttack("A1", "A3", "rebut", "A3")),
             ),
             JsArg2p.graph(solver),
         )

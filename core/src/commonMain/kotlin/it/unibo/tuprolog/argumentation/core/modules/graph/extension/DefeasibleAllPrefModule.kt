@@ -33,7 +33,7 @@ object DefeasibleAllPrefModule : PrologModule(
         buildPrefAttacks.
 
         % The argument for preference(Preferences), supported by the arguments for each of the preferences, and
-        % attacked as they are
+        % attacked as they are: saved once, for the first attack the preferences invalidate
         createSuperiorityArgument(Preferences, Argument) :-
             findall(Support, (
                 member(X, Preferences),
@@ -43,7 +43,9 @@ object DefeasibleAllPrefModule : PrologModule(
             mergeIds(Supports, MergedId),
             argument::infoParts(Info, [pref], MergedId, []),
             argument::new(MergedId, pref, [preference(Preferences)], [], Info, Argument),
-            graphStore::saveArgument(a, [preference(Preferences)], Argument),
+            (graphStore::saveArgument(a, [preference(Preferences)], Argument) -> saveRelations(Supports, Argument) ; true).
+
+        saveRelations(Supports, Argument) :-
             findall(_, (
                 member(A, Supports),
                 graphStore::saveSupport(A, Argument),

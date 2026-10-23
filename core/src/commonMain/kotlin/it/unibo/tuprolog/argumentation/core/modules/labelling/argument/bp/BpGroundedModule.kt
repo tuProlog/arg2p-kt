@@ -130,7 +130,7 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
                 argumentChain(A, Arg)
             ).
 
-        %! argumentChain(+A, ?B)
+        %! argumentChain(+A, +B)
         %  B is A or an argument reached from A through attacks; the arguments are visited breadth
         %  first, each once (attack cycles are common: rebuttals are mutual)
         argumentChain(A, B) :- reaches([A], [], B), !.
@@ -159,14 +159,10 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
                 context_assert(reifiedBp(R))
             ), _).
 
-        /*
-            Fill the template (first parameter) using arguments conclusions
-        */
-
+        % The literals of a burden, each the conclusion of a saved argument (instantiated jointly) unless it is ground
         fillTemplate([], []).
         fillTemplate([H|T], [[H]|R]) :-
-            argument::claim(Argument, _),
-            graphStore::argument(Argument),
+            (ground(H) -> true ; argument::claim(Argument, H), graphStore::argument(Argument)),
             fillTemplate(T, R).
         """.trimIndent()
 }

@@ -45,6 +45,11 @@ class ModuleCallFallbackTest {
     @Test
     fun bindingsInsideATermOfTheCaller() = assertEquals("f(1, b)", binding("S = f(_, b), utils::subtract([f(1, b)], [], [S])", "S"))
 
+    // The module binds an anonymous variable of the caller to another: they stay bound to each other
+    @Test
+    fun anonymousVariablesBoundToEachOther() =
+        assertEquals("f(a, a)", binding("S = f(_X, _Y), utils::subtract([_X], [], [_Y]), _X = a", "S"))
+
     @Test
     fun moduleCallInANewBranch() {
         val goal = "context_reset, context_active(B0), utils:::true, context_active(B1), (B0 \\== B1 -> L = yes ; L = no)"

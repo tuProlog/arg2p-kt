@@ -40,6 +40,8 @@ object ClusterInitializer {
             }
             cluster {
                 downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+                # the workers keep their rules (sent once, with Add) only in memory: they are never passivated
+                sharding.passivation.strategy = none
             }
             serialization.jackson {
               jackson-modules += "com.fasterxml.jackson.module.kotlin.KotlinModule"

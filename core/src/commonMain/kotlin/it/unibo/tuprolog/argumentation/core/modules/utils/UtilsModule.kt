@@ -64,9 +64,7 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
 
 
 
-        % sortDistinct/2, deduplicate/2 and sort/2 are native primitives (see Utils.kt)
-
-        % subtract/3 is a native primitive (see Utils.kt)
+        % sortDistinct/2, deduplicate/2, sort/2 and subtract/3 are native primitives (see primitives/utils)
 
 
         isEmptyList([]).

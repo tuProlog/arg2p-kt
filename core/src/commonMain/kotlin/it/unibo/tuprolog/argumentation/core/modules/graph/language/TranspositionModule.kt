@@ -56,17 +56,12 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
             modifier(Tail, Index1),
             atom_concat(Index1, 'i', Index).
 
-        negate(X, Arg) :-
-            functor(X, '-', _) -> (
-                arg(1, X, Arg));
-            functor(X, 'p', _) -> (
-                arg(1, X, PX),
-                (functor(PX, '-', _) -> (
-                    arg(1, PX, PNX),
-                    Arg = o(PNX)
-                );
-                Arg = o(-(PX))));
-            Arg = -(X).
+        % The negation of a statement: -X of X, X of -X, and the obligations of permissions (o(-X) of p(X), o(X) of
+        % p(-X)); the terms are matched as they are, not unified
+        negate(X, Arg) :- nonvar(X), X = -(A), !, Arg = A.
+        negate(X, Arg) :- nonvar(X), X = p(PX), !,
+            (nonvar(PX), PX = -(PNX) -> Arg = o(PNX) ; Arg = o(-(PX))).
+        negate(X, -(X)).
 
         prologEscape(X) :- \+ functor(X, 'prolog', _), \+ functor(X, '~', _).
 

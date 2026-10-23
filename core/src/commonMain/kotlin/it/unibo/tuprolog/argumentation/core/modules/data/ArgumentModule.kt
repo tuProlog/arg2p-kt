@@ -82,7 +82,7 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
 
         %! rulesAndInfo(+RuleId, +Strict, +Supports, -Rules, -Info)
         %  The rules and the info of the argument built from the rule RuleId (strict if Strict is strict) on sub-arguments
-        %  with the rules, last defeasible rules, defeasible rules and defeasible premises in Supports (see ArgumentRules);
+        %  with the rules, last defeasible rules, defeasible rules and defeasible premises in Supports (see RulesAndInfo);
         %  native.
 
         %! isDefeasible(+Argument)

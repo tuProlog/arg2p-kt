@@ -9,16 +9,24 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * groundVars(+Term, ?Grounded): Term with each of its variables replaced by the atom var
+ * groundVars(+Term, ?Grounded): Term with each of its variables replaced by an atom of its own (`$var_0`, ...):
+ * a term (with none of these atoms) unifies with Grounded if and only if it generalises Term
  */
 object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>("groundVars") {
-    private val placeholder = Atom.of("var")
-
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,
     ): Sequence<Substitution> =
         Arg2pUnificator
-            .mgu(second, first.apply(Substitution.of(first.variables.distinct().associateWith { placeholder })))
-            .let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
+            .mgu(
+                second,
+                first.apply(
+                    Substitution.of(
+                        first.variables.distinct().withIndex().associate { (index, variable) ->
+                            variable to
+                                Atom.of("\$var_$index")
+                        },
+                    ),
+                ),
+            ).let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
 }

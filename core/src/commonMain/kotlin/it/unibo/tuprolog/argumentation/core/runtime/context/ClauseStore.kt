@@ -395,8 +395,19 @@ class ClauseStore private constructor(
 
         private fun Term.isRule() = this is Struct && functor == ":-" && arity == 2
 
+        // The anonymous variables of a term named: a fresh copy of a clause (as lookups make) gives each occurrence of
+        // one a variable of its own, so p(_1, _1) would match p(a, b)
+        private fun named(term: Term): Term {
+            val anonymous =
+                term.variables
+                    .filter { it.isAnonymous }
+                    .distinct()
+                    .toList()
+            return if (anonymous.isEmpty()) term else term.apply(Substitution.of(anonymous.associateWith { Var.of("A") }))
+        }
+
         private fun toClause(term: Term): Clause {
-            val struct = term.castToStruct()
+            val struct = named(term).castToStruct()
             return if (struct.isRule()) Rule.of(struct[0].castToStruct(), struct[1]) else Fact.of(struct)
         }
 

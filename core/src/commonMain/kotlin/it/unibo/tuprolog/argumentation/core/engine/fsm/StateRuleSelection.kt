@@ -25,8 +25,9 @@ import it.unibo.tuprolog.utils.Cursor
  * special cases live: `true`/`!` succeed without touching the knowledge base at all (`!` additionally triggers
  * cut, see below); `fail`/`false`, and goals that don't exist anywhere, move to `StateBacktracking` or
  * `StateException` depending on the `Unknown` flag (`error`/`fail`/`warning`); the general case queries the
- * static/dynamic knowledge bases and the libraries' own theories, `freshCopy()`s the matching clauses to rename
- * variables apart, and moves to `StateRuleExecution` with the fresh rule stream as a new choice point.
+ * static/dynamic knowledge bases and the libraries' own theories, resolves the goal with the matching clauses (see
+ * `ClauseResolver`: renamed apart, or as stored with the unificator of arg2p), and moves to `StateRuleExecution`
+ * with the resolutions as a new choice point.
  *
  * The formal paper describes cut abstractly as "prune the choice-point queue up to the parent goal's choice
  * point"; [computeCutLimit]/[performCut] implement something considerably more careful, because ISO cut

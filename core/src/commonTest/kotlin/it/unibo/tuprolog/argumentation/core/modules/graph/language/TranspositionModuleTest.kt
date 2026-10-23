@@ -30,4 +30,16 @@ class TranspositionModuleTest {
         val module = ModuleTesting()
         assertEquals(Term.parse(rules), Term.parse(module.value("transposition::transpose($rules, $rules, T)", "T")!!))
     }
+
+    // Matched as they are: -X, the permissions p/1 and nothing else
+    @Test
+    fun negations() {
+        val module = ModuleTesting()
+        assertEquals(
+            listOf("a", "-(p)", "o(-(a))", "o(a)", "-(p(a, b))", "-(a - b)").map { Term.parse(it) },
+            listOf("-(a)", "p", "p(a)", "p(-(a))", "p(a, b)", "a - b").map {
+                Term.parse(module.value("transposition::negate($it, N)", "N")!!)
+            },
+        )
+    }
 }

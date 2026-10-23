@@ -159,7 +159,7 @@ data class PrologExecutionContext(
 
     /**
      * Whether [variable] is still relevant to this frame or any of its ancestors (i.e. occurs in [relevantGoals],
-     * or occurs in this frame's [currentGoal] or [query], or in an ancestor's). Used when popping a finished
+     * in the goals left of this frame or of an ancestor, or in the [query]). Used when popping a finished
      * frame back to its [parent] (in [it.unibo.tuprolog.argumentation.core.engine.fsm.StateGoalSelection]) to filter the
      * [substitution] handed up, discarding bindings for variables local to the finished sub-goal.
      */

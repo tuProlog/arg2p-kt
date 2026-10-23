@@ -13,6 +13,8 @@ import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.random.Random
@@ -115,5 +117,6 @@ object SupportSplit : SplittingPrinciple {
                 Arg2pSolver
                     .default(listOf(FlagsBuilder().create()), listOf(TheoryChainer))
                     .to2pLibraries(),
+            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
         )
 }

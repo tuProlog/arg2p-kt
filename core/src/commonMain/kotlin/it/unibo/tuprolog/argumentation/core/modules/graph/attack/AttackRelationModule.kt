@@ -37,10 +37,10 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             utils::contains(~(Claim), Body).
 
         %! undermines(+A, +B)
-        %  The conclusion of A conflicts with B, a defeasible premise.
+        %  The conclusion of A conflicts with B, a defeasible premise (or its copy for a conflict, see the module
+        %  conflictArguments).
         undermines(A, B) :-
             argument::isPremise(B),
-            argument::rules(B, [_]),
             argument::isDefeasible(B),
             argument::conclusion(B, Conclusion),
             conflictsWith(A, Conclusion).

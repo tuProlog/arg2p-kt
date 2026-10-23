@@ -33,12 +33,14 @@ fun Solver.solveForCaller(
     }
 }
 
-// The bindings of the renamed variables, as bindings of the variables they replaced
+// The bindings of the renamed variables, as bindings of the variables they replaced: a renamed variable is the one it
+// replaced wherever it occurs, also in the value of a binding (`same(_X, _Y)` binds `_X` to `_Y`)
 private fun Substitution.Unifier.restoring(renaming: Map<Var, Var>): Substitution.Unifier {
-    val renamed = renaming.values.toSet()
+    val inverse = Substitution.of(renaming.entries.associate { (original, renamedVar) -> renamedVar to original })
     val restored =
         renaming
-            .mapValues { (_, renamedVar) -> renamedVar.apply(this) }
-            .filter { (original, value) -> value != renaming[original] }
-    return Substitution.unifier(filterKeys { it !in renamed } + restored)
+            .mapValues { (_, renamedVar) -> renamedVar.apply(this).apply(inverse) }
+            .filter { (original, value) -> value != original }
+    val others = filterKeys { it !in renaming.values }.mapValues { (_, value) -> value.apply(inverse) }
+    return Substitution.unifier(others + restored)
 }

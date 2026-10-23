@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor.actors
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -40,6 +41,11 @@ class KbDistributor private constructor(
                 this
             }.onMessage(RequireEvaluation::class.java) { command ->
                 context.log.info("Eval for ${command.elem}")
+                // no rule, no worker to answer: nothing is found
+                if (kb.splitsNumber() == 0) {
+                    command.replyTo.tell(EvaluationResponse(emptyList(), emptyList(), emptyList()))
+                    return@onMessage this
+                }
                 val cache =
                     EvaluationCache(
                         "eval_${Random.nextInt(0, Int.MAX_VALUE)}",
@@ -97,6 +103,8 @@ class KbDistributor private constructor(
     }
 
     companion object {
-        fun create(): Behavior<KbMessage> = Behaviors.setup { context -> KbDistributor(context) }
+        // resumed on a failure, rather than stopped for good (a singleton is not restarted)
+        fun create(): Behavior<KbMessage> =
+            Behaviors.supervise(Behaviors.setup { context -> KbDistributor(context) }).onFailure(SupervisorStrategy.resume())
     }
 }

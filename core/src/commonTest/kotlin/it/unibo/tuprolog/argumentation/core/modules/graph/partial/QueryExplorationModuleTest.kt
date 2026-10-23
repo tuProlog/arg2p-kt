@@ -44,4 +44,17 @@ class QueryExplorationModuleTest {
         module.run("queryExploration::explore(b)")
         assertEquals(saved, module.solutions("context_check(argument(_))").count { it.isYes })
     }
+
+    // p(a, b) is not covered by the exploration of p(V, V) (for q): t(a, b) is found
+    @Test
+    fun aMoreGeneralStatementIsExploredAgain() {
+        val module =
+            ModuleTesting(
+                "f1 :=> p(a, a).\nf2 :=> p(a, b).\nr1 : p(X, X) => q(X).\nr2 : p(X, Y) => s(X, Y).\n" +
+                    "r3 : q(_), s(A, B) => t(A, B).\nqueryMode.\ngraphBuildMode(standard_af).\n" +
+                    "statementLabellingMode(statement).\nargumentLabellingMode(grounded).",
+            )
+        val statIn = module.value("answerQuery(t(X, Y), I, _, _)", "I")!!
+        assertTrue("t(a, a)" in statIn && "t(a, b)" in statIn, statIn)
+    }
 }

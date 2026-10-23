@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.actor.actors
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -22,6 +23,8 @@ import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 import kotlin.random.Random
 
 class Evaluator private constructor(
@@ -69,13 +72,13 @@ class Evaluator private constructor(
                 }
                 this
             }.onMessage(ExpectedResponses::class.java) { command ->
-                activeQueries.first { it.id == command.id }.also {
+                activeQueries.firstOrNull { it.id == command.id }?.also {
                     it.expected.workers = command.number
                     conclude(it)
                 }
                 this
             }.onMessage(WorkerResponses::class.java) { command ->
-                activeQueries.first { it.id == command.id }.also {
+                activeQueries.firstOrNull { it.id == command.id }?.also {
                     it.expected.report(command.number)
                     conclude(it)
                 }
@@ -125,7 +128,7 @@ class Evaluator private constructor(
                 }
                 this
             }.onMessage(AttackerResponse::class.java) { command ->
-                val active = activeQueries.first { it.id == command.id }
+                val active = activeQueries.firstOrNull { it.id == command.id } ?: return@onMessage this
                 if (active.completed) return@onMessage this
                 if (command.response == Label.IN) {
                     active.completed = true
@@ -143,7 +146,14 @@ class Evaluator private constructor(
         if (active.completed || !active.expected.reached(active.responses.size)) return
         active.completed = true
         val label = if (active.responses.any { it.response == Label.UND }) Label.UND else Label.IN
-        reply(active, label, active.responses.last().queryChain)
+        reply(
+            active,
+            label,
+            active.responses
+                .lastOrNull()
+                ?.queryChain
+                .orEmpty(),
+        )
     }
 
     private fun reply(
@@ -164,12 +174,17 @@ class Evaluator private constructor(
                 Arg2pSolver
                     .default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
                     .to2pLibraries(),
+            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
         )
 
     companion object {
+        // resumed on a failure, keeping its rules, rather than stopped
         fun create(
             master: ActorRef<KbMessage>,
             entityId: String,
-        ): Behavior<KbMessage> = Behaviors.setup { context -> Evaluator(context, master, entityId) }
+        ): Behavior<KbMessage> =
+            Behaviors
+                .supervise(Behaviors.setup { context -> Evaluator(context, master, entityId) })
+                .onFailure(SupervisorStrategy.resume())
     }
 }

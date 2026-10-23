@@ -7,11 +7,19 @@ from `it.unibo.tuprolog.solve.prolog` and `PrologSolverFactory` to `Arg2pPrologS
 
 The solvers of arg2p are created through `Arg2pPrologSolverFactory`, a `SolverFactory` like any other: the fork lets
 the engine be tuned for the argumentation workloads (deep resolution over large terms, many sub-solves) while
-keeping the semantics of the original solver.
+keeping the semantics of the original solver, but for the bug fixes below.
 
 ## Changes from the original
 
-Each one keeps the semantics of the original solver; the timings are those of `EngineBenchmark` (CPU time).
+Each one keeps the semantics of the original solver, but for the fixes marked as such; the timings are those of
+`EngineBenchmark` (CPU time).
+
+- Fix, bindings of the goals left: a finished sub-goal trims the substitution to the variables still of interest,
+  which tuProlog takes from the current goal of each frame only (and from every goal selected, with TrackVariables):
+  a variable bound by a goal and used by a later one lost its binding whenever a sub-goal ended in between, unless
+  TrackVariables was on. The variables of all the goals left are kept, so the flag is not needed
+  (`SubstitutionTrimmingTest`).
+- Fix, unloading a library: `unloadLibrary` removes it (tuProlog's solver added it again).
 
 - Variable tracking: the variables still of interest are collected in a hash set when a substitution is trimmed
   (membership was checked by scanning a sequence of the variables of all the frames above, for every binding); the

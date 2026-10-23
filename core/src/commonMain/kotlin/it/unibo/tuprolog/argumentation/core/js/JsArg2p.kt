@@ -71,6 +71,6 @@ object JsArg2p {
     private fun toJs(graph: Graph) =
         JsGraph(
             graph.labellings.map { JsArgument(it.argument.identifier, it.argument.descriptor, it.label) }.toTypedArray(),
-            graph.attacks.map { JsAttack(it.attacker.identifier, it.target.identifier) }.toTypedArray(),
+            graph.attacks.map { JsAttack(it.attacker.identifier, it.target.identifier, it.type, it.on?.identifier) }.toTypedArray(),
         )
 }

@@ -40,11 +40,14 @@ class JsSolution internal constructor(
                 emptyArray()
             }
 
-    /** The value of the variable of the goal named [name], if a yes solution binds it */
-    fun valueOf(name: String): Term? = if (solution.isYes) solution.substitution.getByName(name) else null
+    /**
+     * The value of the variable of the goal named [name], if a yes solution binds it (not named valueOf, which would
+     * shadow the one of every JavaScript object, called with no argument on conversions)
+     */
+    fun term(name: String): Term? = if (solution.isYes) solution.substitution.getByName(name) else null
 
     /** The value of the variable of the goal named [name] as text, if a yes solution binds it */
-    fun formatted(name: String): String? = valueOf(name)?.let { JsTerms.format(it) }
+    fun formatted(name: String): String? = term(name)?.let { JsTerms.format(it) }
 
     override fun toString(): String = solution.toString()
 }

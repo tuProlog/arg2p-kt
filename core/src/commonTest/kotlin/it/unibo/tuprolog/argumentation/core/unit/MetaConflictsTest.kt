@@ -52,4 +52,13 @@ class MetaConflictsTest {
     fun theOrderOfTheConflictsDoesNotMatter() {
         assertEquals(labels(statements + conflicts), labels(statements + conflicts.reversed()))
     }
+
+    // The copy of a premise is undermined as the premise is: b falls, and c stands
+    @Test
+    fun theCopiesOfPremisesAreUndermined() {
+        assertEquals(
+            listOf("[a] [c] [conflict(a, b)] [conflict(b, c)]", "[b]", ""),
+            labels(listOf("f1 :=> a.", "f2 :=> b.", "f3 :=> c.", "r4 : [] => conflict(a, b).", "r5 : [] => conflict(b, c).")),
+        )
+    }
 }

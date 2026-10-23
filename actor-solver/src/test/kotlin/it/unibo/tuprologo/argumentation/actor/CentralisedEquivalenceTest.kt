@@ -8,6 +8,8 @@ import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Test
@@ -48,6 +50,7 @@ class CentralisedEquivalenceTest {
                         Arg2pSolver
                             .default(listOf(FlagsBuilder(graphExtensions = emptyList()).create()))
                             .to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).let { solver ->
                     solver.loadStaticKb(Theory.parse(rules.joinToString("\n") { "$it." }, solver.operators))
                     val claim = Struct.parse(statement, solver.operators)

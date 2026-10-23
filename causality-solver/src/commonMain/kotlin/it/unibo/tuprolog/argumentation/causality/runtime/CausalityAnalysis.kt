@@ -8,12 +8,14 @@ import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -44,19 +46,18 @@ internal class CausalityAnalysis {
         theory: Theory,
         query: Term,
     ): Graph {
-        val text = theory.toString(asPrologText = true)
+        // the identifiers of the clauses too: the same text is a different theory with them (see RuleAnnotations)
+        val text = theory.toString(asPrologText = true) + theory.joinToString(",") { RuleAnnotations.of(it).orEmpty() }
         val key = text to query.toString()
         graphCache[key]?.let { return it }
         if (graphCache.size >= GRAPH_CACHE_SIZE) graphCache.clear()
         solver.resetStaticKb()
-        // the theory as it is, not parsed again from its text: its clauses keep their tags (see RuleAnnotations)
+        // the theory as it is, not parsed again from its text: its clauses keep their tags
         solver.loadStaticKb(theory)
-        return (
-            solver
-                .solve(Struct.of("answerQuery", query))
-                .map { solver.graph() }
-                .firstOrNull() ?: Graph(emptyList(), emptyList(), emptyList())
-        ).also { graphCache[key] = it }
+        val solution = solver.solve(Struct.of("answerQuery", query)).first()
+        // an error is not a graph: raised again, and not kept
+        if (solution is Solution.Halt) throw solution.exception
+        return solver.graph().also { graphCache[key] = it }
     }
 
     private fun concludes(

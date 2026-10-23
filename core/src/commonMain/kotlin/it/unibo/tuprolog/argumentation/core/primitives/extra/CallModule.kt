@@ -92,8 +92,7 @@ object CallModule : Primitive {
                 if (isLocation) name else "${modulesPath.removeSurrounding("'")}/$name.pl",
             )
         }
-        // consult/1 comes from IOLib, which is not part of the argumentation runtime: without it every
-        // module load would silently fail, and any goal depending on the module would fail as well.
+        // With IOLib, which is not part of the argumentation runtime, for the modules using its predicates.
         // Built from the calling context so that its flags travel with it: the argumentation theories rely
         // on unknown predicates failing rather than raising, which the default flag set does not provide.
         return logicProgramming {

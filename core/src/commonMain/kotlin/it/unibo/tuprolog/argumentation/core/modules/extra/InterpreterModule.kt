@@ -43,8 +43,7 @@ object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice"
             append(ARes, BRes, Result).
         
         solve((A;B), Result) :- !,
-            solve(A, Result);
-            solve(B, Result).
+            (solve(A, Result) ; solve(B, Result)).
         
         solve(member(A, B), [system_predicate]) :- !,
             call(member(A, B)).

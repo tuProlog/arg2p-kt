@@ -54,20 +54,12 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             Operator(":=>", Specifier.XFX, 1199),
             Operator(":->", Specifier.XFX, 1199),
             Operator(":", Specifier.XFX, 1001),
-            Operator(":=", Specifier.XFX, 1199),
 //            Operator("->", Specifier.XFX, 1050)
         )
 
     override val prologRawTheory: String =
         // language=Prolog
         """
-        /*
-         *  Main directive. Find all the rules in the theory in the format (Name : Preconditions => Conclusion)
-         *  or (Name : Effects) and then if:
-         *  - It is a standard rule, translate it in the standard format (rule([Name, Preconditions, Conclusions]));
-         *  - It is a bp rule, translate it to (abstractBp([Effects]))
-         *  During the process, clean them from the unallowed symbols (-, o, p).
-         */
         %! convertAllRules(-Rules)
         %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1 clauses, strict/1, sup/2, abstractBp/1), asserted; Rules are what was asserted.
         convertAllRules(ArgRules) :-
@@ -181,7 +173,6 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
         %! classicRule(?Id, ?Premises, ?Conclusion)
         %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its first premise.
-        %  classicRule(mc, [conflict(A, B), A], [A]) :- metaConflicts.
         classicRule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, rule(X, Y, Z).
         classicRule(X, Y, Z) :- rule(X, Y, Z).
         %! classicRule(?Id, ?Conclusion)

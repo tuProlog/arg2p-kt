@@ -14,6 +14,8 @@ import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.flags.FlagStore
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Ignore
@@ -128,6 +130,7 @@ class BasicTest {
             Arg2pPrologSolverFactory
                 .mutableSolverWithDefaultBuiltins(
                     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {
                     it.loadStaticKb(Theory.parse(rules, it.operators))
                     it.solve("join"(2551) and "load").first()
@@ -159,6 +162,7 @@ class BasicTest {
                             .default(
                                 kotlin.collections.listOf(FlagsBuilder().create()),
                             ).to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {
                     it.loadStaticKb(Theory.parse(rules, it.operators))
                     val a = it.solve("answerQuery"("d99", X, Y, Z)).first()
