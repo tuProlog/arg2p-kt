@@ -23,7 +23,7 @@ object IdealModule : PrologModule("prolog.argumentation.graph.labelling.ideal", 
                 findall(A, graphStore::argumentLabelById(in, A), In)
             ), Preferred),
             utils::intersection(Preferred, Common),
-            admissible::maximal_admissible_subset(Common, Ideal),
+            admissible::maximalAdmissibleSubset(Common, Ideal),
             conflictfree::labelSet(Branch, Ideal).
         """.trimIndent()
 }

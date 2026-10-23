@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
-import it.unibo.tuprolog.argumentation.core.modules.query.StructuredModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.StructuredPartialModule
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -41,7 +41,7 @@ class ModuleRegistryTest {
 
     @Test
     fun theCallsAreFound() {
-        assertTrue(Triple(StructuredModule.alias, "queryExploration", Signature("explore", 1)) in calls)
+        assertTrue(Triple(StructuredPartialModule.alias, "queryExploration", Signature("explore", 1)) in calls)
     }
 
     @Test
@@ -52,5 +52,25 @@ class ModuleRegistryTest {
                 .map { (caller, name, signature) -> "$caller: $name::${signature.toIndicator()}" }
                 .distinct()
         assertEquals(emptyList(), undefined)
+    }
+
+    // A native primitive shadows the clauses of its name: a module defines each of its predicates one way only
+    @Test
+    fun noPredicateIsBothClausesAndAPrimitive() {
+        val both =
+            ModuleRegistry.all.flatMap { module ->
+                val clauses =
+                    module
+                        .content()
+                        .clauses
+                        .map { it.head!!.extractSignature() }
+                        .toSet()
+                module
+                    .content()
+                    .primitives.keys
+                    .filter { it in clauses }
+                    .map { "${module.alias}: ${it.toIndicator()}" }
+            }
+        assertEquals(emptyList(), both)
     }
 }

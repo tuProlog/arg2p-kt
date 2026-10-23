@@ -24,6 +24,5 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
             "bp_grounded",
             "bp_grounded_partial",
             "bp_grounded_complete",
-            "grounded_old",
         )
 }

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.NaiveSubset
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.NaiveSubset
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -27,7 +27,7 @@ object NaiveModule : PrologModule("prolog.argumentation.graph.labelling.naive", 
             context_active(Branch),
             conflictfree::candidates(Args, Forced),
             findall(A, graphStore::argumentLabelById(in, A), In),
-            naive_subset(Args, Forced, In, Set),
+            naiveSubset(Args, Forced, In, Set),
             conflictfree::labelSet(Branch, Set).
         """.trimIndent()
 }

@@ -61,7 +61,7 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
-        attackedStatement(Rule, Statement) :- parser::classic_rule(Rule, _, [Statement]).
+        attackedStatement(Rule, Statement) :- parser::classicRule(Rule, _, [Statement]).
 
         %! attackDependency(+Argument, -Statement)
         %  With metaConflicts the conflicts are themselves conclusions: Argument depends on the arguments for Statement,

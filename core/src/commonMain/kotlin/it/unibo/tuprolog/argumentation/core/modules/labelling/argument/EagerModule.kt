@@ -24,7 +24,7 @@ object EagerModule : PrologModule("prolog.argumentation.graph.labelling.eager", 
                 findall(A, graphStore::argumentLabelById(in, A), In)
             ), Semistable),
             utils::intersection(Semistable, Common),
-            admissible::maximal_admissible_subset(Common, Eager),
+            admissible::maximalAdmissibleSubset(Common, Eager),
             conflictfree::labelSet(Branch, Eager).
         """.trimIndent()
 }

@@ -107,7 +107,7 @@ class UtilsModuleTest {
         arg2pScope {
             testGoal(
                 "catch"(
-                    "utils" call "contains_any"("notAList", listOf("a")),
+                    "utils" call "containsAny"("notAList", listOf("a")),
                     "error"("type_error"("list", "Culprit"), "_"),
                     "true",
                 ),

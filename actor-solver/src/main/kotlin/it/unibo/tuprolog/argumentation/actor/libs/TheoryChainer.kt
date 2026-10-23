@@ -20,7 +20,7 @@ object TheoryChainer : ArgLibrary, Loadable {
                         """            
                         chainable(X) :-
                             member(rl(_) :- [_, Prem, _], X),
-                            tuple_to_list(Prem, LPrem),
+                            tupleToList(Prem, LPrem),
                             ff(LPrem, LLPrem),
                             member(P, LLPrem),
                             context_check(clause(rl(P), _)).
@@ -28,21 +28,21 @@ object TheoryChainer : ArgLibrary, Loadable {
                         chainable(X) :- 
                             member(rl(Conclusion) :- [_, _, Conclusion], X),
                             context_check(clause(rl(_), [_, Prem, _])),
-                            tuple_to_list(Prem, LPrem),
+                            tupleToList(Prem, LPrem),
                             ff(LPrem, LLPrem),
                             member(Conclusion, LLPrem).
                             
                         chainable(X) :- 
                             member(rl(Conclusion) :- [_, Conclusion], X),
                             context_check(clause(rl(_), [_, Prem, _])),
-                            tuple_to_list(Prem, LPrem),
+                            tupleToList(Prem, LPrem),
                             ff(LPrem, LLPrem),
                             member(Conclusion, LLPrem).
                             
-                        tuple_to_list(A,[A]) :- nonvar(A), A \= (_ , _), !.
-                        tuple_to_list((A,B),L) :-
-                            tuple_to_list(A, La),
-                            tuple_to_list(B, Lb),
+                        tupleToList(A,[A]) :- nonvar(A), A \= (_ , _), !.
+                        tupleToList((A,B),L) :-
+                            tupleToList(A, La),
+                            tupleToList(B, Lb),
                             append(La, Lb,L).
 
                         ff([[]], []) :- !.

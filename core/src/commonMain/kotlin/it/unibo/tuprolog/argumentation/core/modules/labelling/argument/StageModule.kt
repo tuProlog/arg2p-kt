@@ -24,7 +24,7 @@ object StageModule : PrologModule("prolog.argumentation.graph.labelling.stage", 
                 findall(A, graphStore::argumentLabelById(und, A), Und),
                 findall(A, graphStore::argumentLabelById(in, A), In)
             ), Naive),
-            utils::minimal_by_set(Naive, Stage),
+            utils::minimalBySet(Naive, Stage),
             member(In, Stage),
             conflictfree::labelSet(Branch, In).
         """.trimIndent()

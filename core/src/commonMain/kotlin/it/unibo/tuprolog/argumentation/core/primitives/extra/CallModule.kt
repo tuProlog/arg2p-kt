@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.extra
 
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
-import it.unibo.tuprolog.argumentation.core.modules.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.core.List

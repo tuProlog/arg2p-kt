@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.StronglyAdmissibleSet
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.StronglyAdmissibleSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -24,6 +24,6 @@ object StronglyAdmissibleModule : PrologModule("prolog.argumentation.graph.label
         %  Each strongly admissible labelling in turn, left as the active context.
         argumentLabelling :-
             admissible::argumentLabelling,
-            strongly_admissible_set.
+            stronglyAdmissibleSet.
         """.trimIndent()
 }

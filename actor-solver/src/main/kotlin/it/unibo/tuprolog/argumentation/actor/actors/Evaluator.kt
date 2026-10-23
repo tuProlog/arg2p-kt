@@ -46,7 +46,7 @@ class Evaluator private constructor(
                 val result =
                     arg2pScope {
                         solver
-                            .solve("structured" call "buildArgument"(Struct.parse(command.elem), X, Y))
+                            .solve("structuredPartial" call "buildArgument"(Struct.parse(command.elem), X, Y))
                             .filter {
                                 it.isYes
                             }.map {
@@ -88,7 +88,7 @@ class Evaluator private constructor(
                     arg2pScope {
                         solver
                             .solve(
-                                "structured" call
+                                "structuredPartial" call
                                     "findAttacker"(
                                         Struct.parse(command.argument),
                                         logicListOf(command.subArguments.map(Struct::parse)),

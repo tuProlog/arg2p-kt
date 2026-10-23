@@ -10,13 +10,13 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * for_each(?Element, +List, +Goal): Goal (all its solutions) for each element of List, as
+ * forEach(?Element, +List, +Goal): Goal (all its solutions) for each element of List, as
  * findall(_, (member(Element, List), Goal), _), but without List in the goals of the iterations: with variable
  * tracking, every resolution step visits the terms of the goal it belongs to, so the list would make every step
  * as costly as it is long. Goal runs in this module: other modules are called through ::.
  */
 object ForEach : Primitive {
-    val signature: Signature = Signature("for_each", 3)
+    val signature: Signature = Signature("forEach", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val list = request.arguments[1]

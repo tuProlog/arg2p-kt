@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.ConflictFreeSubset
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.LabelSet
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.ConflictFreeSubset
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.NewLabelling
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object ConflictFreeModule : PrologModule("prolog.argumentation.graph.labelling.conflictfree", "conflictfree") {
     override val primitives: Map<Signature, Primitive>
-        get() = mapOf(ConflictFreeSubset.signature to ConflictFreeSubset, LabelSet.signature to LabelSet)
+        get() = mapOf(ConflictFreeSubset.signature to ConflictFreeSubset, NewLabelling.signature to NewLabelling)
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -27,7 +27,7 @@ object ConflictFreeModule : PrologModule("prolog.argumentation.graph.labelling.c
         argumentLabelling :-
             context_active(Branch),
             candidates(Args, Forced),
-            conflict_free_subset(Args, Forced, Set),
+            conflictFreeSubset(Args, Forced, Set),
             labelSet(Branch, Set).
 
         %! candidates(-Args, -Forced)
@@ -40,7 +40,7 @@ object ConflictFreeModule : PrologModule("prolog.argumentation.graph.labelling.c
         %  In a new branch of Branch, Set IN, the arguments it attacks OUT, the rest UND;
         %  the branch is released on backtracking
         labelSet(Branch, Set) :-
-            label_set(Branch, Set),
+            newLabelling(Branch, Set),
             context_active(Labelling),
             (
                 true

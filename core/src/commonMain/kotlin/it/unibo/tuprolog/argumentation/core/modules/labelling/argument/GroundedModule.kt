@@ -1,14 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.GroundedFixpoint
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.GroundedFixpoint
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
  * The grounded labelling (module `grounded`, an argumentLabellingMode, the default one): the least fixpoint of IN
  * the arguments whose attackers are all OUT and OUT those attacked by an IN one, computed natively
- * (grounded_fixpoint).
+ * (groundedFixpoint).
  */
 object GroundedModule : PrologModule("prolog.argumentation.graph.labelling.grounded", "grounded") {
     override val primitives: Map<Signature, Primitive>
@@ -24,6 +24,6 @@ object GroundedModule : PrologModule("prolog.argumentation.graph.labelling.groun
         %! argumentLabelling
         %  The grounded labelling, in the active context.
         argumentLabelling :-
-            grounded_fixpoint.
+            groundedFixpoint.
         """.trimIndent()
 }

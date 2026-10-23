@@ -61,7 +61,7 @@ implementation exists.
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
-The `abstract` module orchestrates the whole sequence, and `structured` implements the goal-directed variant
+The `structuredWhole` module runs the sequence on the whole graph, and `structuredPartial` implements the goal-directed variant
 used when `queryMode` is enabled.
 
 ---
@@ -70,13 +70,16 @@ used when `queryMode` is enabled.
 
 ### Pipeline modules
 
+Every module, with all its predicates, is in the [Prolog modules reference]({{% ref "/docs/api/prolog" %}}).
+
 | Module | Purpose |
 | --- | --- |
-| `abstract` | Orchestrates the evaluation; also exposes the [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
-| `structured` | Goal-directed evaluation used by `answerQuery`. |
+| `structuredWhole` | Orchestrates the evaluation of the whole graph. |
+| `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
+| `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `standard_af` | Builds the argumentation graph. |
-| `attack` | Defines attack and conflict relations. |
+| `standard_af` | Builds the argumentation graph: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). |
+| `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List, sorting and hashing helpers. |
 | `debug` | Pretty-prints theories, graphs and labellings. |

@@ -86,7 +86,13 @@ tasks.register<JavaExec>("prologDocs") {
     val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
     classpath = jvmTest.classpath
     mainClass = "it.unibo.tuprolog.argumentation.core.docs.PrologDocsKt"
-    args(file("src/commonMain/kotlin").absolutePath, layout.buildDirectory.dir("docs/prolog-modules").get().asFile.absolutePath)
+    args(
+        file("src/commonMain/kotlin").absolutePath,
+        layout.buildDirectory
+            .dir("docs/prolog-modules")
+            .get()
+            .asFile.absolutePath,
+    )
 }
 
 tasks.register<Test>("jvmBenchmark") {

@@ -147,7 +147,7 @@ private class ReferenceSemantics(
             "admissible" -> admissible
             "stronglyadmissible" -> stronglyAdmissibleSets
             "complete" -> complete
-            "grounded", "grounded_old" -> grounded
+            "grounded" -> grounded
             "preferred" -> preferred
             "stable" -> stable
             "semistable" -> semistable
@@ -169,7 +169,6 @@ class SemanticsReferenceTest {
             "stronglyadmissible",
             "complete",
             "grounded",
-            "grounded_old",
             "preferred",
             "stable",
             "semistable",

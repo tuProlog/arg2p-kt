@@ -228,9 +228,14 @@ class PrologReference(
             Area("Entry points", "The predicates a theory is queried with, and what they rely on.", ModuleRegistry.support),
             Area("Data", "The terms arg2p works on: the entities of argumentation graphs and of the rules.", ModuleRegistry.data),
             Area("Language", "The rules of a theory, as the graph builders read them.", ModuleRegistry.language),
-            Area("Graph", "Building the argumentation graph, and changing it with the graph extensions.", ModuleRegistry.graph),
+            Area("Graph", "Building the argumentation graph: its arguments and attacks, and where they are kept.", ModuleRegistry.graph),
+            Area("Graph extensions", "Changing the argumentation graph: preferences, restrictions, burdens.", ModuleRegistry.extensions),
+            Area(
+                "Evaluation",
+                "Evaluating the graph: abstract frameworks, the whole graph of a theory, or the part a query depends on.",
+                ModuleRegistry.evaluation,
+            ),
             Area("Labelling", "The semantics labelling the arguments, and the statements from them.", ModuleRegistry.labellings),
-            Area("Query", "Answering a query with the part of the graph it depends on.", ModuleRegistry.query),
         )
 
     val modules: List<ModuleDoc> =

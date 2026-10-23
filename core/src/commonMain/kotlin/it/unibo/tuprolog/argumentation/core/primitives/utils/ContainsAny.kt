@@ -10,10 +10,10 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * contains_any(+Elements, +List): an element of List matches one of Elements (without binding them)
+ * containsAny(+Elements, +List): an element of List matches one of Elements (without binding them)
  */
 object ContainsAny : Primitive {
-    val signature: Signature = Signature("contains_any", 2)
+    val signature: Signature = Signature("containsAny", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val elemList: Term = request.arguments[0]

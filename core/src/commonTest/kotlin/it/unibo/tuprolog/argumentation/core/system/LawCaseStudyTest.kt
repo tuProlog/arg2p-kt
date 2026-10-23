@@ -1813,7 +1813,7 @@ class LawCaseStudyTest {
                     println("Evaluating $query")
                     solver
                         .solve(
-                            "structured" call
+                            "structuredPartial" call
                                 "query"(
                                     Struct.parse(query, Arg2pSolver.default().operators()),
                                     X,

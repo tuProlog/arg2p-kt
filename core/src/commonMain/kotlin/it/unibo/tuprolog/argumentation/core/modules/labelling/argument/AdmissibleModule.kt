@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.AdmissibleSet
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.MaximalAdmissibleSubset
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.AdmissibleSet
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.MaximalAdmissibleSubset
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -28,8 +28,8 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
         argumentLabelling :-
             context_active(Branch),
             conflictfree::candidates(Args, Forced),
-            conflictfree::conflict_free_subset(Args, Forced, Set),
-            admissible_set(Set),
+            conflictfree::conflictFreeSubset(Args, Forced, Set),
+            admissibleSet(Set),
             conflictfree::labelSet(Branch, Set).
         """.trimIndent()
 }

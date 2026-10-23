@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.Selection
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.UndecidedCandidates
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -70,15 +70,15 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             (accepted(Accept, Scc) -> Ok = true ; Ok = false).
 
         accepted(admissible, _) :-
-            admissible::admissible_set.
+            admissible::admissibleSet.
         accepted(decided, Scc) :-
-            admissible::admissible_set,
+            admissible::admissibleSet,
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
         reachable(_, Branch, Branch).
         reachable(Scc, Branch, State) :-
             findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
-            undecided_candidates(Scc, Branch, Candidates),
+            undecidedCandidates(Scc, Branch, Candidates),
             member(IdX, Candidates),
             utils::sort([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),

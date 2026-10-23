@@ -108,7 +108,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         prefersTransitively(Preference, Attack) :-
             graphStore::argumentId(Preference, IdP),
             graphStore::argumentId(Attack, IdA),
-            standard_af::buildTransitiveAttacks(pref, IdP, Preference, IdA, Attack).
+            attackBuilder::buildTransitiveAttacks(pref, IdP, Preference, IdA, Attack).
 
         %==============================================================================
         % QUERY MODE
@@ -128,7 +128,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             (Rule = X ; Rule = Y),
             ruleConclusion(Rule, S).
 
-        ruleConclusion(Rule, S) :- parser::classic_rule(Rule, _, [S]).
-        ruleConclusion(Rule, S) :- parser::classic_rule(Rule, [S]).
+        ruleConclusion(Rule, S) :- parser::classicRule(Rule, _, [S]).
+        ruleConclusion(Rule, S) :- parser::classicRule(Rule, [S]).
         """.trimIndent()
 }

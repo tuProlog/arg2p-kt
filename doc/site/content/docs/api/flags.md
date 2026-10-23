@@ -75,7 +75,6 @@ To disable preference handling altogether, pass an empty list of extensions
 | Value | Semantics |
 | --- | --- |
 | `grounded` | Grounded semantics. The default, and the only one that always yields exactly one labelling. |
-| `grounded_old` | The previous grounded implementation. Kept for comparison and regression testing; prefer `grounded`. |
 | `complete` | Dung's complete semantics. |
 | `conflictfree` | Conflict-free labellings. |
 | `admissible` | Admissible labellings. |

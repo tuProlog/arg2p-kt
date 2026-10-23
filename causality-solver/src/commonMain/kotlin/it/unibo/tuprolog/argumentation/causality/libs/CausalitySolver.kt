@@ -10,7 +10,7 @@ import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.modules.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder

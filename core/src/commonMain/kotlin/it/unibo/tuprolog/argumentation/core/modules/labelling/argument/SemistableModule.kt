@@ -25,7 +25,7 @@ object SemistableModule : PrologModule("prolog.argumentation.graph.labelling.sem
                 findall(A, graphStore::argumentLabelById(und, A), Und),
                 findall(A, graphStore::argumentLabelById(in, A), In)
             ), Preferred),
-            utils::minimal_by_set(Preferred, Semistable),
+            utils::minimalBySet(Preferred, Semistable),
             member(In, Semistable),
             conflictfree::labelSet(Branch, In).
         """.trimIndent()

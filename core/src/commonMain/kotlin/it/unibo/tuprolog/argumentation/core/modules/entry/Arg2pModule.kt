@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.entry
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.modules.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.core.operators.OperatorSet
 
 /**
@@ -38,7 +38,7 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         buildLabelSets([StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
             context_reset,
             parser:::convertAllRules(_),
-            abstract::computeGlobalAcceptance(_, [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]).
+            structuredWhole::computeGlobalAcceptance(_, [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]).
 
         %! buildLabelSets(-StatIn, -StatOut, -StatUnd)
         %  The statements of the theory labelled IN, OUT and UND.
@@ -50,7 +50,7 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         buildLabelSets :-
             context_reset,
             parser:::convertAllRules(ArgRules),
-            abstract::computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
+            structuredWhole::computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
             debug::printArgumentationGraph(Arguments, Attacks, Supports),
             debug::printArgumentLabelling([ArgsIn, ArgsOut, ArgsUnd]),
             debug::printStatementLabelling([StatIn, StatOut, StatUnd]).
@@ -60,21 +60,21 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         answerQuery(Goal, Yes, No, Und) :-
             context_reset,
             parser:::convertAllRules(_),
-            structured:::computeStatementAcceptance(Goal, Yes, No, Und).
+            structuredPartial:::computeStatementAcceptance(Goal, Yes, No, Und).
 
         %! answerQuery(+Goal, -Result)
         %  The labels of the statements unifying with Goal, as in(S), out(S) and und(S) terms.
         answerQuery(Goal, Res) :-
             context_reset,
             parser:::convertAllRules(_),
-            structured:::computeStatementAcceptance(Goal, Res).
+            structuredPartial:::computeStatementAcceptance(Goal, Res).
 
         %! answerQuery(+Goal)
         %  Goal is a statement labelled IN.
         answerQuery(Goal) :-
             context_reset,
             parser:::convertAllRules(_),
-            structured:::computeStatementAcceptance(Goal),
+            structuredPartial:::computeStatementAcceptance(Goal),
             graphStore::statementLabel(in, [Goal]).
 
         %! buildLabelSetsSilent
@@ -82,6 +82,6 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         buildLabelSetsSilent :-
             context_reset,
             parser:::convertAllRules(ArgRules),
-            abstract::computeGlobalAcceptance.
+            structuredWhole::computeGlobalAcceptance.
         """.trimIndent()
 }
