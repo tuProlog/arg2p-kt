@@ -74,5 +74,53 @@ object StructuredModule : PrologModule("prolog.argumentation.structured", "struc
             findall(und(Goal), graphStore::statementLabel(und, [Goal]), Und),
             utils::appendLists([In, Out, Und], Result).
 
+        % The graph explored one argument at a time, for the solvers that label it themselves (the actor solver
+        % distributes the arguments and their attackers among its workers). The graph extensions do not apply.
+
+        %! buildArgument(+Query, -Argument)
+        %  Argument is each argument for Query, saved with those its label may depend on.
+        buildArgument(Query, Argument) :-
+            queryExploration::explore(Query),
+            graphStore::argumentFor([Query], Argument).
+
+        %! findAttacker(+Target, +QueryChain, -Attacker, -IsValid)
+        %  Attacker attacks Target, directly or on one of its sub-arguments, and the attack is saved; IsValid is no when
+        %  Attacker is in QueryChain (the arguments the evaluation of Target comes from: a cycle), yes otherwise. Target
+        %  may have been built by another solver, with rules this one does not know.
+        findAttacker(Target, QueryChain, Attacker, IsValid) :-
+            attacker(Target, Attacker, Type, On),
+            graphStore::saveAttack(Type, Attacker, Target, On),
+            (member(Attacker, QueryChain) -> IsValid = no ; IsValid = yes).
+
+        % The undercuts of any rule or premise of Target not known to be strict (as the actor solver always had them:
+        % the attacks of the whole graph only undercut the top rules of the arguments)
+        attacker(Target, Attacker, undercut, Target) :-
+            argument::rules(Target, Rules),
+            utils::deduplicate(Rules, Ids),
+            member(Rule, Ids),
+            \+ parser::check_strict(Rule),
+            queryExploration::explore(undercut(Rule)),
+            graphStore::argumentFor([undercut(Rule)], Attacker).
+        % The other attacks on Target, and on its sub-arguments known to this solver
+        attacker(Target, Attacker, Type, On) :-
+            subArgument(Target, On),
+            attackerOf(On, Attacker, Type),
+            Type \== undercut.
+
+        % On is Argument or one of its sub-arguments
+        subArgument(Argument, Argument).
+        subArgument(Argument, On) :-
+            graphStore::support(Supporter, Argument),
+            subArgument(Supporter, On).
+
+        % Attacker attacks On directly, with an attack of Type: among the arguments for the statements that may attack
+        % it, built as needed
+        attackerOf(On, Attacker, Type) :-
+            findall(S, attackCandidates::findPossibleAttackers(On, [S]), Statements),
+            utils::deduplicate(Statements, Candidates),
+            member(Statement, Candidates),
+            queryExploration::explore(Statement),
+            graphStore::argumentFor([Statement], Attacker),
+            attackRelation::attacks(Type, Attacker, On).
         """.trimIndent()
 }
