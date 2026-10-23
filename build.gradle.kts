@@ -121,6 +121,18 @@ kotlin {
     }
 }
 
+// The Kotlin & JS reference in the style of the documentation site
+allprojects {
+    plugins.withId("org.jetbrains.dokka") {
+        extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+            pluginsConfiguration.withType<org.jetbrains.dokka.gradle.engine.plugins.DokkaHtmlPluginParameters>().configureEach {
+                customStyleSheets.from(rootProject.file("doc/dokka/site.css"))
+                footerMessage.set("arg2p")
+            }
+        }
+    }
+}
+
 // The Kotlin & JS reference of the documentation site: the npm package with the libraries it is made of
 dependencies {
     "dokka"(project(":core"))
