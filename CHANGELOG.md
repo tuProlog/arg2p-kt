@@ -1,3 +1,9 @@
+## [0.18.1](https://github.com/tuProlog/arg2p-kt/compare/0.18.0...0.18.1) (2026-10-25)
+
+### Bug Fixes
+
+* **deps:** update logback monorepo to v1.6.6 ([#521](https://github.com/tuProlog/arg2p-kt/issues/521)) ([34ce7f2](https://github.com/tuProlog/arg2p-kt/commit/34ce7f24dba6298a5de5d488d2820c3e5056a5ed))
+
 ## [0.18.0](https://github.com/tuProlog/arg2p-kt/compare/0.17.4...0.18.0) (2026-10-23)
 
 ### Features
