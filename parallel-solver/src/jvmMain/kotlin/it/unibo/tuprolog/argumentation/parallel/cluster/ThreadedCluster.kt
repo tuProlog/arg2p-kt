@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.PoolScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
@@ -29,6 +31,8 @@ class ThreadedCluster(
 
     // made when the cluster first listens or connects
     private var links: WebSocketLinks? = null
+    private var port: Int? = null
+    private var discovery: LanDiscovery? = null
 
     private fun links() = links ?: WebSocketLinks(site).also { links = it }
 
@@ -39,7 +43,16 @@ class ThreadedCluster(
     fun listen(
         port: Int = 0,
         host: String = "0.0.0.0",
-    ): Int = links().listen(port, host)
+    ): Int = links().listen(port, host).also { this.port = it }
+
+    /**
+     * Federates the cluster with the clusters of the local network that discover the others as well, as they come
+     * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort]
+     */
+    fun discover(beaconPort: Int = Beacons.PORT) {
+        check(discovery == null) { "Already discovering" }
+        discovery = LanDiscovery(site, links(), port ?: listen(), beaconPort)
+    }
 
     /** Federates the cluster with the site listening at [uri] (ws://host:port) */
     fun connect(uri: String) = links().connect(uri)
@@ -61,6 +74,7 @@ class ThreadedCluster(
 
     /** Closes the links to the other sites, and stops the threads */
     override fun close() {
+        discovery?.close()
         links?.close()
         scheduler.close()
     }

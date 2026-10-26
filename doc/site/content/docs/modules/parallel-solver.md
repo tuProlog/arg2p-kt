@@ -102,6 +102,19 @@ const cluster = new JsWorkerCluster(4)
 await cluster.connect('ws://hub-host:9431')
 ```
 
+On a local network, instances can find each other instead: each one calling `discover()` listens on an ephemeral
+port and announces itself every two seconds over UDP multicast (group `239.255.42.99`, port `9430`, not routed beyond
+the network); the instances of the same version hearing it connect to it, and connect again if it comes back after
+leaving.
+
+```kotlin
+ThreadedCluster(threads = 8).discover()
+```
+
+```javascript
+await new JsWorkerCluster(4).discover()
+```
+
 A Node.js cluster lends the workers of its threads as well: each thread is a site working for its cluster alone,
 reached through it. Only instances of the same version of arg2p federate. If an instance leaves while a graph is
 being built, the graph is built again with the workers left; once built, the graph lives with the instance that

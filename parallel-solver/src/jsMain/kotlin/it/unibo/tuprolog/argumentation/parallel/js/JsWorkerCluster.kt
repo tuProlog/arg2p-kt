@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.js
 
+import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
@@ -26,6 +28,8 @@ class JsWorkerCluster(
     // the catalog here, every worker on a thread
     private val site = Site(SequentialScheduler(), workers = 0, parts = parts)
     private val links = WebSocketLinks(site)
+    private var port: Int? = null
+    private var discovery: LanDiscovery? = null
 
     // the evaluations asked before every thread greeted the site wait for them
     private val waiting = mutableListOf<() -> Unit>()
@@ -38,7 +42,26 @@ class JsWorkerCluster(
     }
 
     /** Accepts the links of other sites (on any platform) over WebSockets, on [port] (an ephemeral port for 0): the port taken */
-    fun listen(port: Int = 0): Promise<Int> = links.listen(port)
+    fun listen(port: Int = 0): Promise<Int> =
+        links.listen(port).then {
+            this.port = it
+            it
+        }
+
+    /**
+     * Federates the cluster with the clusters of the local network that discover the others as well, as they come
+     * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort].
+     * The port it listens on, once its beacons start.
+     */
+    fun discover(beaconPort: Int = Beacons.PORT): Promise<Int> =
+        Promise { resolve, reject ->
+            check(discovery == null) { "Already discovering" }
+            val listening = port?.let { Promise.resolve(it) } ?: listen()
+            listening.then({ wsPort ->
+                val started = LanDiscovery(site, links, wsPort, beaconPort).also { discovery = it }
+                started.start().then({ resolve(wsPort) }, reject)
+            }, reject)
+        }
 
     /** Federates the cluster with the site listening at [url] (ws://host:port) */
     fun connect(url: String): Promise<Unit> = links.connect(url)
@@ -71,6 +94,7 @@ class JsWorkerCluster(
 
     /** Closes the links to the other sites, and stops the threads */
     fun close() {
+        discovery?.close()
         links.close()
         workers.forEach { it.terminate() }
     }
