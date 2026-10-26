@@ -1,10 +1,16 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
+import kotlin.js.Promise
+
 /**
  * The links of [site] over WebRTC data channels, in browsers: to every site opening such links it is introduced to
  * (see [Site.onIntroduced]), what the two need to connect sent through the sites linked to both (see [Site.signal]).
  * Of two sites, the one with the lower identifier offers the link. [iceServers] are those of RTCPeerConnection
  * (none by default: the sites of a local network reach each other without them).
+ *
+ * Two sites with no site in common can be paired by hand instead, with no server: one [invite]s, the other [accept]s
+ * the invitation, and the first [complete]s the pairing with the reply. The codes carry all the two need to connect
+ * (their whole descriptions, the candidates included), compressed if the browser can.
  *
  * The frames are sent in chunks of at most [CHUNK] characters, as data channels bound the size of a message.
  */
@@ -17,6 +23,10 @@ class RtcLinks(
     private val described = mutableSetOf<String>()
     private val candidates = mutableMapOf<String, MutableList<dynamic>>()
 
+    // The connections paired by hand, by invitation, those waiting for their reply apart
+    private val paired = mutableMapOf<String, dynamic>()
+    private val invited = mutableMapOf<String, dynamic>()
+
     init {
         site.onIntroduced = { other -> if (site.id < other && other !in connections) handled { offer(other) } }
         site.onSignal = { from, payload -> handled { signalled(from, payload) } }
@@ -24,21 +34,90 @@ class RtcLinks(
 
     /** Closes every link */
     fun close() {
-        connections.values.toList().forEach { it.close() }
+        (connections.values + paired.values + invited.values).toList().forEach { it.close() }
         connections.clear()
+        paired.clear()
+        invited.clear()
     }
 
-    private fun connection(other: String): dynamic {
+    /** An invitation to pair with this site by hand, for another site to [accept] */
+    fun invite(): Promise<String> {
+        val invitation = "${site.id}#${pairings++}"
+        val connection = peerConnection()
+        invited[invitation] = connection
+        val options: dynamic = js("({})")
+        options.ordered = true
+        attach(connection.createDataChannel("arg2p", options), null) { opening.remove(invitation)?.invoke() }
+        val code: Promise<String> =
+            connection
+                .createOffer()
+                .then { offer: dynamic -> connection.setLocalDescription(offer) }
+                .then { _: dynamic -> gathered(connection) }
+                .then { _: dynamic -> pack(invitation, connection.localDescription) }
+        return code
+    }
+
+    /** The reply to [invitation] (see [invite]), for the inviting site to [complete] the pairing */
+    fun accept(invitation: String): Promise<String> =
+        unpack(invitation)
+            .then { (id, offer) ->
+                val connection = peerConnection()
+                paired[id] = connection
+                connection.ondatachannel = { event: dynamic -> attach(event.channel, null) }
+                val reply: Promise<String> =
+                    connection
+                        .setRemoteDescription(offer)
+                        .then { _: dynamic -> connection.createAnswer() }
+                        .then { answer: dynamic -> connection.setLocalDescription(answer) }
+                        .then { _: dynamic -> gathered(connection) }
+                        .then { _: dynamic -> pack(id, connection.localDescription) }
+                reply
+            }.unsafeCast<Promise<String>>()
+
+    /** The pairing [invite]d completed with the [reply] of the other site: once the link is open */
+    fun complete(reply: String): Promise<Unit> =
+        unpack(reply)
+            .then { (id, answer) ->
+                val connection = invited.remove(id) ?: throw IllegalStateException("No invitation $id")
+                paired[id] = connection
+                Promise<Unit> { resolve, reject ->
+                    opening[id] = { resolve(Unit) }
+                    connection.setRemoteDescription(answer).catch { error: dynamic -> reject(error as Throwable) }
+                }
+            }.unsafeCast<Promise<Unit>>()
+
+    // The pairings invited so far, and those whose opening someone waits for
+    private var pairings = 0
+    private val opening = mutableMapOf<String, () -> Unit>()
+
+    private fun peerConnection(): dynamic {
         val configuration: dynamic = js("({})")
         configuration.iceServers = iceServers
         val constructor = js("RTCPeerConnection")
-        val connection = js("new constructor(configuration)")
+        return js("new constructor(configuration)")
+    }
+
+    private fun connection(other: String): dynamic {
+        val connection = peerConnection()
         connections[other] = connection
         connection.onicecandidate = { event: dynamic ->
             if (event.candidate != null) site.signal(other, message("candidate", event.candidate))
         }
         return connection
     }
+
+    // Once the candidates of [connection] are all gathered (or after a few seconds, with those found)
+    private fun gathered(connection: dynamic): Promise<Unit> =
+        Promise { resolve, _ ->
+            if (connection.iceGatheringState == "complete") {
+                resolve(Unit)
+            } else {
+                connection.onicegatheringstatechange = { _: dynamic ->
+                    if (connection.iceGatheringState == "complete") resolve(Unit)
+                }
+                later(GATHERING) { resolve(Unit) }
+            }
+        }
 
     private fun offer(other: String) {
         val connection = connection(other)
@@ -85,13 +164,18 @@ class RtcLinks(
         candidates.remove(other)?.forEach { connections[other]?.addIceCandidate(it) }
     }
 
+    // [channel] as a link of the site, to [other] if introduced (null if paired by hand), [opened] once it opens
     private fun attach(
         channel: dynamic,
-        other: String,
+        other: String?,
+        opened: () -> Unit = {},
     ) {
         val link = ChannelLink(channel)
         val parts = StringBuilder()
-        channel.onopen = { _: dynamic -> handled { site.opened(link) } }
+        channel.onopen = { _: dynamic ->
+            handled { site.opened(link) }
+            opened()
+        }
         channel.onmessage = { event: dynamic ->
             val data = event.data as String
             parts.append(data, 1, data.length)
@@ -102,8 +186,10 @@ class RtcLinks(
             }
         }
         channel.onclose = { _: dynamic ->
-            connections.remove(other)?.close()
-            described -= other
+            if (other != null) {
+                connections.remove(other)?.close()
+                described -= other
+            }
             handled { site.closed(link) }
         }
     }
@@ -130,6 +216,9 @@ class RtcLinks(
         private const val MORE = '+'
         private const val LAST = '.'
 
+        // The seconds the candidates of a pairing by hand are gathered at most
+        private const val GATHERING = 5_000
+
         private fun message(
             key: String,
             value: dynamic,
@@ -137,6 +226,68 @@ class RtcLinks(
             val message: dynamic = js("({})")
             message[key] = value
             return JSON.stringify(message)
+        }
+
+        // A code for a pairing by hand: the pairing and the description, as JSON, compressed in base64 if the browser
+        // can ('z'), in base64 otherwise ('j')
+        private fun pack(
+            id: String,
+            description: dynamic,
+        ): Promise<String> {
+            val content: dynamic = js("({})")
+            content.id = id
+            content.description = description
+            val bytes = js("new TextEncoder()").encode(JSON.stringify(content))
+            if (js("typeof CompressionStream") == "undefined") return Promise.resolve("j" + base64(bytes))
+            return transformed(bytes, js("new CompressionStream('deflate-raw')")).then { compressed: dynamic -> "z" + base64(compressed) }
+        }
+
+        // The pairing and the description of a code made by pack
+        private fun unpack(code: String): Promise<Pair<String, dynamic>> {
+            val text = code.trim()
+            val bytes = bytes(text.drop(1))
+            val decoded =
+                when (text.firstOrNull()) {
+                    'z' -> transformed(bytes, js("new DecompressionStream('deflate-raw')"))
+                    'j' -> Promise.resolve<dynamic>(bytes)
+                    else -> return Promise.reject(IllegalArgumentException("Not a pairing code"))
+                }
+            return decoded.then { content: dynamic ->
+                val parsed: dynamic = JSON.parse(js("new TextDecoder()").decode(content) as String)
+                Pair<String, dynamic>(parsed.id as String, parsed.description)
+            }
+        }
+
+        // [bytes] through [stream] (a CompressionStream or a DecompressionStream)
+        private fun transformed(
+            bytes: dynamic,
+            stream: dynamic,
+        ): Promise<dynamic> {
+            val blob = js("new Blob([bytes])")
+            val response = js("new Response(blob.stream().pipeThrough(stream))")
+            val result: Promise<dynamic> = response.arrayBuffer().then { buffer: dynamic -> js("new Uint8Array(buffer)") }
+            return result
+        }
+
+        private fun base64(bytes: dynamic): String {
+            var binary = ""
+            val length = bytes.length as Int
+            for (index in 0 until length) binary += js("String.fromCharCode(bytes[index])") as String
+            return js("btoa(binary)") as String
+        }
+
+        private fun bytes(base64: String): dynamic {
+            val binary = js("atob(base64)") as String
+            val bytes = js("new Uint8Array(binary.length)")
+            for (index in binary.indices) bytes[index] = binary[index].code
+            return bytes
+        }
+
+        private fun later(
+            millis: Int,
+            task: () -> Unit,
+        ) {
+            js("setTimeout(task, millis)")
         }
     }
 }

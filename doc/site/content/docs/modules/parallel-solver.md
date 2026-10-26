@@ -138,6 +138,19 @@ The instance a browser connects to introduces it to the other browsers connected
 channel between them, and lend each other their Web Workers. On a local network they need nothing else; across
 networks, give the cluster the STUN or TURN servers to use (`iceServers`, as `RTCPeerConnection` takes them).
 
+Two browsers can also be paired by hand, with no server at all: one invites, the other accepts the invitation, and
+the first completes the pairing with the reply. The codes (some 600 characters) can travel any way, pasted in a chat
+or shown as a QR code; an invitation holds as long as the page that made it stays open.
+
+```javascript
+// first browser
+const invitation = await cluster.invite()        // to send to the second
+await cluster.complete(reply)                    // the reply of the second: linked
+
+// second browser
+const reply = await cluster.accept(invitation)   // to send back to the first
+```
+
 A Node.js cluster lends the workers of its threads as well: each thread is a site working for its cluster alone,
 reached through it. Only instances of the same version of arg2p federate. If an instance leaves while a graph is
 being built, the graph is built again with the workers left; once built, the graph lives with the instance that

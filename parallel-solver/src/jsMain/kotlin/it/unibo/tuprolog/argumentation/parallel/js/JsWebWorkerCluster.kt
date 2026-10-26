@@ -36,6 +36,18 @@ class JsWebWorkerCluster(
     /** Federates the cluster with the site listening at [url] (ws://host:port) */
     fun connect(url: String): Promise<Unit> = links.connect(url)
 
+    /**
+     * An invitation to pair with this cluster by hand, with no server between them: a code for another cluster to
+     * [accept] (see [RtcLinks.invite])
+     */
+    fun invite(): Promise<String> = rtc.invite()
+
+    /** The reply to the [invitation] of another cluster, for it to [complete] the pairing */
+    fun accept(invitation: String): Promise<String> = rtc.accept(invitation)
+
+    /** The pairing [invite]d completed with the [reply] of the other cluster: once the two are linked */
+    fun complete(reply: String): Promise<Unit> = rtc.complete(reply)
+
     /** The sites the cluster is federated with, its Web Workers included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
