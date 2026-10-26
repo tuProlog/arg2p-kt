@@ -94,8 +94,8 @@ object LabellingBenchmarkWorker {
     private val PHASES =
         listOf(
             "convert" to "context_reset, parser:::convertAllRules(_)",
-            "arguments" to "standard_af:::buildArguments",
-            "attacks" to "standard_af:::buildAttacks",
+            "arguments" to "ruleGraph:::buildArguments",
+            "attacks" to "ruleGraph:::buildAttacks",
             "extensions" to "structuredWhole:::modifyGraph",
             "labelling" to "structuredWhole:::buildArgumentLabelling",
             "statements" to "structuredWhole:::buildStatementLabelling",
@@ -103,7 +103,6 @@ object LabellingBenchmarkWorker {
 
     private fun configuration(semantics: String) =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode($semantics).
         orderingPrinciple(last).

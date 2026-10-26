@@ -28,7 +28,7 @@ class ConflictArgumentsModuleTest {
     @Test
     fun aCopyIsMadeForEachConflictArgument() {
         val module = ModuleTesting("metaConflicts.\nr1 : [] => a.\nr2 : [] => b.\nr3 : [] => conflict(a, b).\nr4 : [] => conflict(a, c).")
-        module.run("context_reset", "parser:::convertAllRules(_)", "standard_af:::buildArguments", "standard_af::buildAdditionalArguments")
+        module.run("context_reset", "parser:::convertAllRules(_)", "ruleGraph:::buildArguments", "ruleGraph::buildAdditionalArguments")
         val conflicts = module.values("graphStore::argumentFor([a], A), conflictArguments::conflictOf(A, C)", "C").toSet()
         assertEquals(setOf("conflict(a, b)", "conflict(a, c)"), conflicts)
         // each copy is supported by its conflict argument

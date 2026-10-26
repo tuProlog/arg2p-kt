@@ -50,7 +50,6 @@ const solver = new JsSolverBuilder()
         f1 :=> d.
         f2 :=> -d.`)
     .flags(`
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

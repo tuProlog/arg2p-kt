@@ -8,7 +8,6 @@ import kotlin.test.assertTrue
 class JsArg2pTest {
     private val flags =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

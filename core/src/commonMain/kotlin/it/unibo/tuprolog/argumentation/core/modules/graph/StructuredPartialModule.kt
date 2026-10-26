@@ -53,7 +53,8 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         queryAcceptance(Locality, Goal) :-
             queryExploration::explore(Goal),
             queryExploration::expand(Locality),
-            setting(graphBuildMode, X),
+            structuredWhole::checkProfile,
+            structuredWhole::builder(X),
             X:::buildAdditionalArguments,
             X:::buildAttacks,
             structuredWhole:::modifyGraph,

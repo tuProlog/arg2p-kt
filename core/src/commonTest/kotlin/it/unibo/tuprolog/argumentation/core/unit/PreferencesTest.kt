@@ -22,7 +22,6 @@ class PreferencesTest {
         r4 : a => d.
         r5 : -a => e.
         
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(rebutRestriction).

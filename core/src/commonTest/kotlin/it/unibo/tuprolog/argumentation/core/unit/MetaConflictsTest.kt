@@ -14,7 +14,6 @@ class MetaConflictsTest {
     private val config =
         """
         metaConflicts.
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

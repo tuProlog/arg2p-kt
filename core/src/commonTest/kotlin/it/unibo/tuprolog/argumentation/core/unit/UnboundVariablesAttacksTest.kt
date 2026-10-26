@@ -13,7 +13,6 @@ import kotlin.test.assertTrue
 class UnboundVariablesAttacksTest {
     private val groundedTheory: String =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
 

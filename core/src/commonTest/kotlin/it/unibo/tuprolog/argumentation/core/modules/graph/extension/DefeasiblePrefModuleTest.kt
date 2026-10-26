@@ -12,7 +12,6 @@ class DefeasiblePrefModuleTest {
         r2 : a => b.
         r3 : [] => -a.
         p : [] => sup(r1, r3).
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
@@ -50,7 +49,7 @@ class DefeasiblePrefModuleTest {
     }
 
     private val flags =
-        "graphBuildMode(standard_af).\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).\n" +
+        "statementLabellingMode(statement).\nargumentLabellingMode(grounded).\n" +
             "orderingPrinciple(last).\norderingComparator(elitist).\ngraphExtension(defeasiblePref)."
 
     // -a, on r2 and r3, rebuts a: sup(r1, r2) or sup(r1, r3) each invalidates the attack, and the first is undercut

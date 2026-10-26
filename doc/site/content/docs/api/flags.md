@@ -211,7 +211,6 @@ the required flags itself:
 ```kotlin
 val solver = Arg2pSolverFactory.default(
     theory = """
-        graphBuildMode(standard_af).
         argumentLabellingMode(grounded).
         statementLabellingMode(statement).
         orderingPrinciple(last).

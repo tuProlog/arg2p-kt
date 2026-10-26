@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.settings
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingSwitch
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingValue
@@ -25,7 +26,8 @@ import it.unibo.tuprolog.theory.Theory
  * switch for its values (and the other way round), raises a domain error.
  *
  * Their values are a view over the facts of the libraries (the settings of the solver, as [FlagsBuilder] states them)
- * and those of the theory: for each flag, the theory overrides the libraries.
+ * and those of the theory, through the profile of the theory (graphBuildMode, see [Profiles]): for each flag, the
+ * theory overrides the profile, which overrides the libraries.
  */
 class Settings(
     private val solver: Arg2pSolver,
@@ -74,7 +76,11 @@ class Settings(
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
         if (viewOf !== context.staticKb) {
             val libraries = context.libraries.asTheory(context.unificator)
-            view = flags.mapValues { (_, flag) -> stated(flag, context.staticKb).ifEmpty { stated(flag, libraries) } }
+            val theory = flags.mapValues { (_, flag) -> stated(flag, context.staticKb) }
+            val solver = flags.mapValues { (_, flag) -> stated(flag, libraries) }
+            val mode = theory[GraphBuildMode.predicate()].orEmpty().ifEmpty { solver[GraphBuildMode.predicate()].orEmpty() }
+            val presets = Profiles.named((mode.firstOrNull() as? Atom)?.value)?.presets.orEmpty()
+            view = flags.mapValues { (name, _) -> theory.getValue(name).ifEmpty { presets[name] ?: solver.getValue(name) } }
             viewOf = context.staticKb
         }
         return view

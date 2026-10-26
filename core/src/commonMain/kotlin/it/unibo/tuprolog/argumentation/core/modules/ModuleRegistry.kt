@@ -9,8 +9,9 @@ import it.unibo.tuprolog.argumentation.core.modules.data.SupportModule
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.argumentation.core.modules.extra.InterpreterModule
 import it.unibo.tuprolog.argumentation.core.modules.extra.ModuleCallsModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractGraphModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.StandardAfModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.RuleGraphModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.StructuredPartialModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.StructuredWholeModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.argument.ArgumentBuilderModule
@@ -65,7 +66,8 @@ object ModuleRegistry {
     /** Building the argumentation graph: its arguments and attacks, and where they are kept */
     val graph: List<ArgLibrary> =
         listOf(
-            StandardAfModule,
+            RuleGraphModule,
+            AbstractGraphModule,
             ArgumentBuilderModule,
             AttackBuilderModule,
             AttackRelationModule,

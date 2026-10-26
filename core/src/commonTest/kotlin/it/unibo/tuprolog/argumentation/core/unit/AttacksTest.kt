@@ -10,7 +10,6 @@ import kotlin.test.assertEquals
 class AttacksTest {
     private val baseConfig =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         graphExtension(rebutRestriction).

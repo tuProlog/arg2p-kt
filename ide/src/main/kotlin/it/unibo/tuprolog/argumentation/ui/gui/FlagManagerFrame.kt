@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.ui.gui
 
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.flags.OrderingComparator
 import it.unibo.tuprolog.argumentation.core.flags.OrderingPrinciple
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
@@ -42,7 +43,7 @@ internal class FlagManagerFrame private constructor(
         val rows = JPanel()
         rows.layout = BoxLayout(rows, BoxLayout.Y_AXIS)
 
-        rows.addRow("Graph Build Mode", choiceBox(listOf("standard_af"), flags.graphBuildMode) { copy(graphBuildMode = it) })
+        rows.addRow("Graph Build Mode", choiceBox(GraphBuildMode.values().toList(), flags.graphBuildMode) { copy(graphBuildMode = it) })
         rows.addRow(
             "Argument Labelling Mode",
             choiceBox(ArgumentLabellingMode.values(), flags.argumentLabellingMode) { copy(argumentLabellingMode = it) },

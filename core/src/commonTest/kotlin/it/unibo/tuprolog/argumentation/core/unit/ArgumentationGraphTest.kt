@@ -95,7 +95,7 @@ class ArgumentationGraphTest {
             arg2pScope {
                 solver().also {
                     TestingUtils.prepareContext(it, theory)
-                    it.solve("standard_af" call "buildArgumentationGraph").first()
+                    it.solve("ruleGraph" call "buildArgumentationGraph").first()
                     TestingUtils.checkResults(it, prepareGraph())
                 }
             }
@@ -108,7 +108,7 @@ class ArgumentationGraphTest {
             arg2pScope {
                 solver().also { solver ->
                     TestingUtils.prepareContext(solver, theory)
-                    solver.solve("standard_af" call "buildArguments").first()
+                    solver.solve("ruleGraph" call "buildArguments").first()
                     TestingUtils.checkResults(solver, prepareGraph().let { Graph(it.arguments, emptyList(), it.supports) })
                 }
             }
@@ -121,7 +121,7 @@ class ArgumentationGraphTest {
         arg2pScope {
             solver().also { solver ->
                 TestingUtils.prepareContext(solver, prepareGraph().let { Graph(it.arguments, emptyList(), it.supports) })
-                solver.solve("standard_af" call "buildAttacks").first()
+                solver.solve("ruleGraph" call "buildAttacks").first()
                 TestingUtils.checkResults(solver, prepareGraph())
             }
         }
