@@ -34,12 +34,26 @@ object MemoryLinks {
         first: LinkListener,
         second: LinkListener,
         via: TaskQueue? = null,
+    ) = link(first, second, via) { one, _ -> first.opened(one) }
+
+    /** A link between [site] and [delegate], a delegate of it (see [Site.delegate]), as [connect] makes it */
+    fun delegate(
+        site: Site,
+        delegate: LinkListener,
+        via: TaskQueue? = null,
+    ) = link(site, delegate, via) { one, _ -> site.delegate(one) }
+
+    private fun link(
+        first: LinkListener,
+        second: LinkListener,
+        via: TaskQueue?,
+        open: (Link, Link) -> Unit,
     ) {
         val one = End(first, via)
         val other = End(second, via)
         one.other = other
         other.other = one
-        first.opened(one)
+        open(one, other)
         second.opened(other)
     }
 

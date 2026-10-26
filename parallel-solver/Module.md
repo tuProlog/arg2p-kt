@@ -8,3 +8,7 @@ any semantics and graph extension.
 The same catalog and workers run on one thread (`LocalCluster`), on the threads of the JVM (`ThreadedCluster`), or on
 the threads of Node.js (`JsWorkerCluster`). On a machine the nodes share the terms of their messages; between processes
 the messages are written as Prolog text (`MessageCodec`).
+
+Each cluster is a `Site`, which can be federated with others, on any machine and engine, over `Link`s
+(`WebSocketLinks`, `MemoryLinks`): the sites lend one another their workers, and a graph is built by the workers of
+all of them.

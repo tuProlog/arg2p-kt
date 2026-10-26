@@ -74,6 +74,45 @@ offers the same methods on the calling thread, with `solve` returning the answer
 
 ---
 
+## Federation
+
+Instances of the parallel solver, on the same machine or on different ones, can be federated: each one keeps its
+own theory and its own workers, and lends its workers to the others. A graph is then built by the workers of every
+instance at once, the theory split among them in proportion to the workers each one runs. The engines can be mixed:
+a JVM cluster, a Node.js one and (soon) a browser can build a graph together.
+
+Instances federate over WebSockets: one listens, the others connect to it. An instance lends its workers to the
+instances it is linked to, and borrows theirs; two instances building the same graph with no link between them
+reach each other through the one whose graph it is.
+
+```kotlin
+// on one machine
+val hub = ThreadedCluster(threads = 8)
+val port = hub.listen(9431)
+
+// on another
+val other = ThreadedCluster(threads = 16)
+other.connect("ws://hub-host:9431")
+other.load(theory)
+other.solve("conclusion") // built by the 24 workers of both
+```
+
+```javascript
+const cluster = new JsWorkerCluster(4)
+await cluster.connect('ws://hub-host:9431')
+```
+
+A Node.js cluster lends the workers of its threads as well: each thread is a site working for its cluster alone,
+reached through it. Only instances of the same version of arg2p federate. If an instance leaves while a graph is
+being built, the graph is built again with the workers left; once built, the graph lives with the instance that
+asked for it, and needs the others only when its theory changes.
+
+> [!WARNING]
+> A federated instance runs the theories its peers send it, and sends them its own. Listen only on networks you
+> trust.
+
+---
+
 ## How the graph is built
 
 1. The catalog splits the theory into partitions of related rules (those whose conclusions and premises unify), the

@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.parallel.cluster
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.parallel.federation.PoolScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
+import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import java.util.concurrent.CompletableFuture
 
@@ -26,6 +27,23 @@ class ThreadedCluster(
     /** The site of the cluster, running a worker on each thread: to federate it with others, through its links */
     val site = Site(scheduler, threads, parts, settings, lends, textual)
 
+    // made when the cluster first listens or connects
+    private var links: WebSocketLinks? = null
+
+    private fun links() = links ?: WebSocketLinks(site).also { links = it }
+
+    /**
+     * Accepts the links of other sites (on any platform) over WebSockets, on [port] of [host] (an ephemeral port for
+     * 0): the port taken
+     */
+    fun listen(
+        port: Int = 0,
+        host: String = "0.0.0.0",
+    ): Int = links().listen(port, host)
+
+    /** Federates the cluster with the site listening at [uri] (ws://host:port) */
+    fun connect(uri: String) = links().connect(uri)
+
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = site.load(theory)
 
@@ -41,6 +59,9 @@ class ThreadedCluster(
             .also { response -> site.solve(statement) { response.complete(it) } }
             .join()
 
-    /** Stops the threads */
-    override fun close() = scheduler.close()
+    /** Closes the links to the other sites, and stops the threads */
+    override fun close() {
+        links?.close()
+        scheduler.close()
+    }
 }

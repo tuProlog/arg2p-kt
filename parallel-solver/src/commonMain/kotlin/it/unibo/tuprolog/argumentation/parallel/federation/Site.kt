@@ -26,7 +26,11 @@ import kotlin.random.Random
  * is split into as many parts as they can run together, or into [parts] if given, the parts placed on the sites in
  * proportion to their workers. The nodes of the site share the terms of their messages, written as text only towards
  * other sites (or always, with [textual]). A graph is built anew if a site running some of its workers leaves while
- * it is built; the workers it ran for a site that left are dropped.
+ * it is built, or a link its messages went through closes; the workers it ran for a site that left are dropped.
+ *
+ * A site may have delegates, sites working for it alone (the threads of a JS runtime, see [delegate]): it offers
+ * their workers with its own, and runs the workers it is given on them as well, its delegates reaching the other
+ * sites through it.
  *
  * Each graph built is a session of its site: the workers of a session, wherever they run, only hear from those of the
  * same session, so that nothing of a graph given up reaches the next one.
@@ -44,6 +48,7 @@ class Site(
         val link: Link,
         val capacity: Int?,
         val lends: Boolean,
+        val delegate: Boolean,
     )
 
     private class Hosted(
@@ -51,21 +56,24 @@ class Site(
         val node: Node,
     )
 
-    // A session known here: the sites of its workers by their addresses, and the sites linked to this one when the
-    // session began, the only ones its messages go to directly (to the others through the site of the session), so
-    // that the messages from a node to another always take the same way
+    // A session known here: the sites of its workers by their addresses, the sites linked to this one when the
+    // session began, the only ones its messages go to directly, and the site through which they reach the others (the
+    // one that placed the workers here), so that the messages from a node to another always take the same way
     private class Session(
         val workers: Map<String, String>,
         val direct: Set<String>,
+        val via: String,
     )
 
     // The state shared by the threads of the site, as immutable values replaced under the lock: the peers by site, the
-    // links of each, the sessions known and the workers run here (by session and address)
+    // links of each, the links to the delegates, the sessions known and the workers run here (by session and address)
     private val lock = Any()
 
     @Volatile private var peers: Map<String, Peer> = emptyMap()
 
     @Volatile private var links: Map<Link, String> = emptyMap()
+
+    @Volatile private var delegateLinks: Set<Link> = emptySet()
 
     @Volatile private var placements: Map<String, Session> = emptyMap()
 
@@ -83,8 +91,11 @@ class Site(
     // made at its first message: a site may only run workers for its peers
     private val catalog by lazy { Catalog(CatalogNetwork(), parts, settings) }
 
-    /** The sites this one is federated with */
+    /** The sites this one is federated with, its delegates included */
     val peerSites: Set<String> get() = peers.keys
+
+    // The workers this site runs, for the tests
+    internal val workersRun: Int get() = hosted.size
 
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
@@ -107,7 +118,13 @@ class Site(
         toCatalog(RequireEvaluation(statement, client))
     }
 
-    override fun opened(link: Link) = link.send(FrameCodec.encode(Frame.Hello(id, VERSION, workers, lends)))
+    /** [link], just opened, leads to a delegate of this site: the site offers its workers, and runs workers on them */
+    fun delegate(link: Link) {
+        locked(lock) { delegateLinks = delegateLinks + link }
+        opened(link)
+    }
+
+    override fun opened(link: Link) = link.send(hello(link))
 
     override fun received(
         link: Link,
@@ -115,13 +132,19 @@ class Site(
     ) {
         when (val decoded = FrameCodec.decode(frame)) {
             is Frame.Hello -> greeted(link, decoded)
-            is Frame.Placement -> locked(lock) { place(decoded.session, decoded.workers) }
-            is Frame.Lost -> if (decoded.session == session) catalogQueue.post { catalog.receive(Rebuild) }
+            is Frame.Placement -> placed(link, decoded)
+            is Frame.Forget -> locked(lock) { forget(decoded.site) }
+            is Frame.Lost ->
+                if (ownerOf(decoded.session) != id) {
+                    forward(decoded.session, ownerOf(decoded.session), frame)
+                } else if (decoded.session == session) {
+                    catalogQueue.post { catalog.receive(Rebuild) }
+                }
             is Frame.Deliver -> {
                 val (session, to) = decoded
                 val site = siteOf(session, to) ?: return
                 when {
-                    // a message between sites with no link between them, through the site of the session
+                    // a message between sites with no link between them, or to a delegate
                     site != id -> forward(session, site, frame)
                     to == Address.CATALOG ->
                         if (session == this.session) catalogQueue.post { catalog.receive(MessageCodec.decode(decoded.message)) }
@@ -135,60 +158,111 @@ class Site(
     }
 
     override fun closed(link: Link) {
-        val broken =
+        val (lost, broken) =
             locked(lock) {
                 val site = links[link]
                 links = links - link
+                delegateLinks = delegateLinks - link
                 val replacement = links.entries.firstOrNull { it.value == site }?.key
                 when {
-                    site == null || peers[site]?.link != link -> emptyList()
+                    site == null || peers[site]?.link != link -> null to emptyList()
                     replacement != null -> {
                         peers = peers + (site to peers.getValue(site).copy(link = replacement))
-                        emptyList()
+                        null to emptyList()
                     }
                     else -> {
+                        val peer = peers.getValue(site)
                         peers = peers - site
-                        // the workers it ran for its graphs are of no use any more
-                        placements = placements.filterKeys { ownerOf(it) != site }
-                        hosted = hosted.filterKeys { ownerOf(it.first) != site }
+                        forget(site)
                         // the sessions whose messages went to it directly: some may be lost
-                        placements.filterValues { site in it.direct }.keys.toList()
+                        (site to peer.delegate) to placements.filterValues { site in it.direct }.keys.toList()
                     }
                 }
             }
+        val (site, delegate) = lost ?: return
         broken.forEach { session ->
             if (ownerOf(session) == id) {
                 if (session == this.session) catalogQueue.post { catalog.receive(Rebuild) }
             } else {
-                peers[ownerOf(session)]?.link?.send(FrameCodec.encode(Frame.Lost(session)))
+                forward(session, ownerOf(session), FrameCodec.encode(Frame.Lost(session)))
             }
         }
+        // the delegates forget the workers they ran for it, the other sites learn of the workers offered now
+        if (delegate) announce() else toDelegates(FrameCodec.encode(Frame.Forget(site)))
         onPeersChanged?.invoke()
     }
 
-    // A peer known from its first frame, unless it is this very site or of another version: a second link to the same
-    // site is kept in case the first closes
+    // The first frame on [link]: a peer known, unless it is this very site or of another version, or the workers it
+    // offers updated. A second link to the same site is kept in case the first closes.
     private fun greeted(
         link: Link,
         hello: Frame.Hello,
     ) {
         if (hello.site == id || hello.version != VERSION) return link.close()
-        locked(lock) {
-            links = links + (link to hello.site)
-            if (hello.site !in peers) peers = peers + (hello.site to Peer(link, hello.capacity, hello.lends))
+        val joined =
+            locked(lock) {
+                links = links + (link to hello.site)
+                val known = peers[hello.site]
+                when {
+                    known == null -> {
+                        peers = peers + (hello.site to Peer(link, hello.capacity, hello.lends, link in delegateLinks))
+                        true
+                    }
+                    known.link == link -> {
+                        peers = peers + (hello.site to known.copy(capacity = hello.capacity, lends = hello.lends))
+                        false
+                    }
+                    else -> false
+                }
+            }
+        if (joined) {
+            if (peers[hello.site]?.delegate == true) announce()
+            onPeersChanged?.invoke()
         }
-        onPeersChanged?.invoke()
     }
 
-    // The placement of the workers of [session]: those of the earlier sessions of the same site are dropped
+    // The workers placed here for [placement], run here and on the delegates in proportion to their workers: the
+    // delegates are told where they all are
+    private fun placed(
+        link: Link,
+        placement: Frame.Placement,
+    ) {
+        val delegated =
+            locked(lock) {
+                val delegates = peers.filterValues { it.delegate }
+                val mine =
+                    placement.workers
+                        .filterValues { it == id }
+                        .keys
+                        .sortedBy { Address.indexOf(it) }
+                val workers =
+                    if (delegates.isEmpty() || mine.isEmpty()) {
+                        placement.workers
+                    } else {
+                        placement.workers + share(mine, delegates)
+                    }
+                place(placement.session, workers, links[link] ?: ownerOf(placement.session))
+                workers
+            }
+        toDelegates(FrameCodec.encode(Frame.Placement(placement.session, delegated)))
+    }
+
+    // The placement of the workers of [session], reaching the sites with no link to this one through [via]: those of
+    // the earlier sessions of the same site are dropped
     private fun place(
         session: String,
         workers: Map<String, String>,
+        via: String,
     ) {
-        val owner = ownerOf(session)
-        val direct = (workers.values.toSet() + owner).filter { it in peers }.toSet()
-        placements = placements.filterKeys { ownerOf(it) != owner } + (session to Session(workers, direct))
-        hosted = hosted.filterKeys { ownerOf(it.first) != owner }
+        forget(ownerOf(session))
+        val direct = (workers.values.toSet() + ownerOf(session)).filter { it in peers }.toSet()
+        placements = placements + (session to Session(workers, direct, via))
+    }
+
+    // The sessions of [site] and their workers forgotten
+    private fun forget(site: String) {
+        placements = placements.filterKeys { ownerOf(it) != site }
+        hosted = hosted.filterKeys { ownerOf(it.first) != site }
     }
 
     // The site of the node at [to] in [session], if known
@@ -197,15 +271,35 @@ class Site(
         to: String,
     ): String? = if (to == Address.CATALOG) ownerOf(session) else placements[session]?.workers?.get(to)
 
-    // [frame] of [session] sent towards [site]: directly if the session goes there so, through its site otherwise
+    // [frame] of [session] sent towards [site]: directly if the session goes there so, through the site it came
+    // through otherwise
     private fun forward(
         session: String,
         site: String,
         frame: String,
     ) {
-        val direct = placements[session]?.direct?.contains(site) ?: true
-        peers[if (direct) site else ownerOf(session)]?.link?.send(frame)
+        val known = placements[session]
+        val next = if (known == null || site in known.direct) site else known.via
+        peers[next]?.link?.send(frame)
     }
+
+    private fun toDelegates(frame: String) = peers.values.filter { it.delegate }.forEach { it.link.send(frame) }
+
+    // The first frame on [link]: to a delegate, the workers of this site alone; to another site, those of its
+    // delegates as well (null if one has no limit)
+    private fun hello(link: Link): String {
+        val offered =
+            if (link in delegateLinks) {
+                workers
+            } else {
+                val delegated = peers.values.filter { it.delegate }.map { it.capacity }
+                if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
+            }
+        return FrameCodec.encode(Frame.Hello(id, VERSION, offered, lends))
+    }
+
+    // The other sites told again of the workers this one offers, as its delegates come and go
+    private fun announce() = peers.values.filterNot { it.delegate }.forEach { it.link.send(hello(it.link)) }
 
     private fun toCatalog(message: KbMessage) = deliver(catalogQueue, catalog, message)
 
@@ -255,26 +349,26 @@ class Site(
         }
     }
 
-    // The workers of a graph, in proportion to the workers of the sites (this one and the peers lending theirs), each
-    // site given consecutive parts
-    private fun placement(
-        count: Int,
-        lenders: Map<String, Peer>,
+    // The workers at [addresses] shared among this site and [others], in proportion to their workers, each site given
+    // consecutive ones
+    private fun share(
+        addresses: List<String>,
+        others: Map<String, Peer>,
     ): Map<String, String> {
-        val sites = listOf(id to workers) + lenders.map { (site, peer) -> site to peer.capacity }
-        val weights = sites.map { (_, capacity) -> (capacity ?: count).toDouble() }
+        val sites = listOf(id to workers) + others.map { (site, peer) -> site to peer.capacity }
+        val weights = sites.map { (_, capacity) -> (capacity ?: addresses.size).toDouble() }
         val total = weights.sum()
-        if (total == 0.0) return (0 until count).associate { Address.worker(it) to id }
-        val quotas = weights.map { it * count / total }
+        if (total == 0.0) return addresses.associateWith { id }
+        val quotas = weights.map { it * addresses.size / total }
         val shares = quotas.map { it.toInt() }.toMutableList()
         quotas.indices
             .sortedByDescending { quotas[it] - shares[it] }
-            .take(count - shares.sum())
+            .take(addresses.size - shares.sum())
             .forEach { shares[it]++ }
         return sites.indices
             .flatMap { site -> List(shares[site]) { sites[site].first } }
-            .withIndex()
-            .associate { (index, site) -> Address.worker(index) to site }
+            .zip(addresses) { site, address -> address to site }
+            .toMap()
     }
 
     private inner class CatalogNetwork : Network {
@@ -296,8 +390,8 @@ class Site(
                 locked(lock) {
                     val next = "$id#${++sessions}"
                     val lenders = peers.filterValues { it.lends }
-                    val placed = placement(workers, lenders)
-                    place(next, placed)
+                    val placed = share(List(workers) { Address.worker(it) }, lenders)
+                    place(next, placed, id)
                     session = next
                     lenders.values to FrameCodec.encode(Frame.Placement(next, placed))
                 }

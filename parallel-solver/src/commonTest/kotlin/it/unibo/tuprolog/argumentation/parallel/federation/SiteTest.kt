@@ -80,6 +80,23 @@ class SiteTest {
     }
 
     @Test
+    fun theWorkersPlacedOnASiteRunOnItsDelegates() {
+        val scheduler = SequentialScheduler()
+        val evaluating = LocalCluster(parts = 0, scheduler = scheduler)
+        val lending = LocalCluster(parts = 0, scheduler = scheduler)
+        val delegates = List(2) { LocalCluster(parts = 1, scheduler = scheduler) }
+        delegates.forEach { MemoryLinks.delegate(lending.site, it.site, scheduler) }
+        MemoryLinks.connect(evaluating.site, lending.site, scheduler)
+        evaluating.load(theory)
+        assertEquals(listOf("a6"), evaluating.solve("a6").outArgs.map { it.claim })
+        assertEquals(0, evaluating.site.workersRun)
+        assertEquals(0, lending.site.workersRun)
+        assertEquals(listOf(1, 1), delegates.map { it.site.workersRun })
+        // the delegates are no peers of the evaluating site, their workers are offered by theirs
+        assertEquals(setOf(lending.site.id), evaluating.site.peerSites)
+    }
+
+    @Test
     fun framesAreReadBackAsWritten() {
         val frames =
             listOf(
@@ -87,6 +104,7 @@ class SiteTest {
                 Frame.Hello("site-2", Site.VERSION, 8, true),
                 Frame.Placement("site-1#3", mapOf("worker_0" to "site-1", "worker_1" to "site-2")),
                 Frame.Lost("site-1#3"),
+                Frame.Forget("site-2"),
                 Frame.Deliver("site-1#3", "worker_1", "3:Ack2:-1"),
             )
         frames.forEach { assertEquals(it, FrameCodec.decode(FrameCodec.encode(it))) }

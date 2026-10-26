@@ -22,6 +22,11 @@ internal sealed interface Frame {
         val workers: Map<String, String>,
     ) : Frame
 
+    /** To a delegate: [site] left, the workers of its sessions are of no use any more */
+    data class Forget(
+        val site: String,
+    ) : Frame
+
     /** To the site of [session]: a link its messages went through closed, some may be lost */
     data class Lost(
         val session: String,
@@ -49,6 +54,7 @@ internal object FrameCodec {
                             .text(if (frame.lends) "1" else "0")
                     is Frame.Placement ->
                         text("Placement").text(frame.session).list(frame.workers.entries.toList()) { text(it.key).text(it.value) }
+                    is Frame.Forget -> text("Forget").text(frame.site)
                     is Frame.Lost -> text("Lost").text(frame.session)
                     is Frame.Deliver -> text("Deliver").text(frame.session).text(frame.to).text(frame.message)
                 }
@@ -59,6 +65,7 @@ internal object FrameCodec {
             when (val kind = text()) {
                 "Hello" -> Frame.Hello(text(), text(), number().takeIf { it >= 0 }, text() == "1")
                 "Placement" -> Frame.Placement(text(), List(number()) { text() to text() }.toMap())
+                "Forget" -> Frame.Forget(text())
                 "Lost" -> Frame.Lost(text())
                 "Deliver" -> Frame.Deliver(text(), text(), text())
                 else -> error("Unknown frame $kind")

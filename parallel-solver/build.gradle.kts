@@ -55,6 +55,18 @@ kotlin {
                 api(project(":core"))
             }
         }
+        jvmMain {
+            dependencies {
+                // the links over WebSockets
+                implementation(libs.java.websocket)
+            }
+        }
+        jsMain {
+            dependencies {
+                // the WebSocket server of Node.js (the clients are those of the runtime)
+                implementation(npm("ws", libs.versions.ws.get()))
+            }
+        }
     }
 }
 

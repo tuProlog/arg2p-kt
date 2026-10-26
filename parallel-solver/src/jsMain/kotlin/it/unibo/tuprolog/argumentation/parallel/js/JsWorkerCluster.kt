@@ -3,15 +3,19 @@ package it.unibo.tuprolog.argumentation.parallel.js
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
+import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
+import it.unibo.tuprolog.argumentation.parallel.federation.handled
 import kotlin.js.JsExport
 import kotlin.js.Promise
 
 /**
  * A distributed solver on the threads of Node.js (worker_threads): the catalog on the calling thread, the workers on
  * [threads] threads, each loading this module ([module], this very file by default) and running a site of its own,
- * federated with the one of the calling thread over the messages between threads. The theory is split into at most
- * [parts] partitions if given, as many as the threads otherwise. The threads keep Node.js running only while an
- * evaluation is pending; [close] stops them.
+ * a delegate of the one of the calling thread (see [Site.delegate]), over the messages between threads: the cluster
+ * lends the workers of its threads to the sites it is federated with. The theory is split into at most
+ * [parts] partitions if given, as many as the workers of the threads and of the sites it is federated with otherwise
+ * (see [listen] and [connect]). The threads keep Node.js running only while an evaluation is pending; [close] stops
+ * them.
  */
 @JsExport
 class JsWorkerCluster(
@@ -21,17 +25,26 @@ class JsWorkerCluster(
 ) {
     // the catalog here, every worker on a thread
     private val site = Site(SequentialScheduler(), workers = 0, parts = parts)
+    private val links = WebSocketLinks(site)
+
+    // the evaluations asked before every thread greeted the site wait for them
     private val waiting = mutableListOf<() -> Unit>()
+    private var greeted = 0
     private var pending = 0
     private val workers: List<dynamic> = List(threads) { spawn(module ?: thisModule()) }
 
     init {
         referenced(false)
-        // the evaluations asked before every thread greeted the site wait for them
-        site.onPeersChanged = {
-            if (site.peerSites.size >= threads) waiting.toList().also { waiting.clear() }.forEach { it() }
-        }
     }
+
+    /** Accepts the links of other sites (on any platform) over WebSockets, on [port] (an ephemeral port for 0): the port taken */
+    fun listen(port: Int = 0): Promise<Int> = links.listen(port)
+
+    /** Federates the cluster with the site listening at [url] (ws://host:port) */
+    fun connect(url: String): Promise<Unit> = links.connect(url)
+
+    /** The sites the cluster is federated with, its threads included */
+    val peers: Array<String> get() = site.peerSites.toTypedArray()
 
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = site.load(theory)
@@ -53,11 +66,14 @@ class JsWorkerCluster(
                     if (--pending == 0) referenced(false)
                 }
             }
-            if (site.peerSites.size >= threads) evaluate() else waiting += evaluate
+            if (greeted == threads) evaluate() else waiting += evaluate
         }
 
-    /** Stops the threads */
-    fun close() = workers.forEach { it.terminate() }
+    /** Closes the links to the other sites, and stops the threads */
+    fun close() {
+        links.close()
+        workers.forEach { it.terminate() }
+    }
 
     // A thread running startWorkerThread from the module, linked to the site of this thread
     private fun spawn(module: String): dynamic {
@@ -71,10 +87,18 @@ class JsWorkerCluster(
         val thread = workerThreads().Worker
         val worker = js("new thread(code, options)")
         val link = PortLink(worker) { worker.terminate() }
-        worker.on("message") { frame: dynamic -> handled { site.received(link, frame as String) } }
+        var first = true
+        worker.on("message") { frame: dynamic ->
+            handled { site.received(link, frame as String) }
+            // its first frame greets the site
+            if (first) {
+                first = false
+                if (++greeted == threads) waiting.toList().also { waiting.clear() }.forEach { it() }
+            }
+        }
         worker.on("exit") { _: dynamic -> site.closed(link) }
         worker.on("error") { error: dynamic -> console.error(error) }
-        site.opened(link)
+        site.delegate(link)
         return worker
     }
 
@@ -103,9 +127,6 @@ private class PortLink(
 
     override fun close() = closing()
 }
-
-// A frame whose handling fails is skipped, as an actor resumed on a failure does
-private fun handled(block: () -> Unit) = runCatching(block).onFailure { console.error(it) }
 
 private fun workerThreads(): dynamic = js("require('worker_threads')")
 
