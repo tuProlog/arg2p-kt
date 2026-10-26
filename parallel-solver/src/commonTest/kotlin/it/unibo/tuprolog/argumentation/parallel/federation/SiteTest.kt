@@ -97,6 +97,26 @@ class SiteTest {
     }
 
     @Test
+    fun sitesOpeningLinksOfTheirOwnAreIntroducedAndSignalThroughTheirPeer() {
+        val scheduler = SequentialScheduler()
+        val hub = Site(scheduler, workers = 1)
+        val (first, second) = List(2) { Site(scheduler, workers = 1, introducible = true) }.sortedBy { it.id }
+        val signals = mutableListOf<String>()
+        // the first, of lower identifier, asks for a link; the second opens it
+        first.onIntroduced = { first.signal(it, "open") }
+        second.onSignal = { from, payload ->
+            signals += "$payload from ${if (from == first.id) "first" else from}"
+            MemoryLinks.connect(second, first, scheduler)
+        }
+        MemoryLinks.connect(hub, first, scheduler)
+        MemoryLinks.connect(hub, second, scheduler)
+        assertEquals(listOf("open from first"), signals)
+        assertEquals(setOf(hub.id, second.id), first.peerSites)
+        // a site that does not open links of its own is introduced to none
+        assertTrue(Site(scheduler, workers = 1).also { MemoryLinks.connect(hub, it, scheduler) }.peerSites == setOf(hub.id))
+    }
+
+    @Test
     fun framesAreReadBackAsWritten() {
         val frames =
             listOf(
@@ -105,6 +125,9 @@ class SiteTest {
                 Frame.Placement("site-1#3", mapOf("worker_0" to "site-1", "worker_1" to "site-2")),
                 Frame.Lost("site-1#3"),
                 Frame.Forget("site-2"),
+                Frame.Hello("site-3", Site.VERSION, 1, true, introducible = true),
+                Frame.Introduce("site-3"),
+                Frame.Signal("site-3", "site-1", "{\"description\": 1}"),
                 Frame.Deliver("site-1#3", "worker_1", "3:Ack2:-1"),
             )
         frames.forEach { assertEquals(it, FrameCodec.decode(FrameCodec.encode(it))) }

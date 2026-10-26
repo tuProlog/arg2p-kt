@@ -141,7 +141,7 @@ fun startWorkerThread() {
 }
 
 // A link over the messages between two threads of Node.js, on [port] (a Worker, or the port of the parent)
-private class PortLink(
+internal class PortLink(
     private val port: dynamic,
     private val closing: () -> Unit,
 ) : Link {

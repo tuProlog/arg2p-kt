@@ -31,6 +31,7 @@ The catalog and the workers are the same on every runtime; only the way their me
 | `LocalCluster` | JVM, JavaScript | Taking turns on the calling thread: the reference behaviour, for tests and debugging. |
 | `ThreadedCluster` | JVM | On a pool of threads, as many as the processors by default. |
 | `JsWorkerCluster` | Node.js | On `worker_threads`, each loading this module. |
+| `JsWebWorkerCluster` | Browsers | On Web Workers, each running a script that loads this module. |
 
 All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the JVM
 ones the settings of the solver (`FlagsBuilder`), which the flags written in the theory complete, as for the standard
@@ -79,7 +80,7 @@ offers the same methods on the calling thread, with `solve` returning the answer
 Instances of the parallel solver, on the same machine or on different ones, can be federated: each one keeps its
 own theory and its own workers, and lends its workers to the others. A graph is then built by the workers of every
 instance at once, the theory split among them in proportion to the workers each one runs. The engines can be mixed:
-a JVM cluster, a Node.js one and (soon) a browser can build a graph together.
+a JVM cluster, a Node.js one and a browser can build a graph together.
 
 Instances federate over WebSockets: one listens, the others connect to it. An instance lends its workers to the
 instances it is linked to, and borrows theirs; two instances building the same graph with no link between them
@@ -114,6 +115,28 @@ ThreadedCluster(threads = 8).discover()
 ```javascript
 await new JsWorkerCluster(4).discover()
 ```
+
+### In a browser
+
+`JsWebWorkerCluster` runs the workers on Web Workers, each loading a script of yours that loads the module and calls
+`startWebWorker()` (with a bundler, the entry point of a worker bundle). A browser cannot listen nor send beacons: it
+connects to a JVM or Node.js instance, and through it to the other browsers linked to that instance, over WebRTC.
+
+```javascript
+// the page
+const cluster = new JsWebWorkerCluster(4, '/arg2p-worker.js')
+await cluster.connect('ws://hub-host:9431')
+cluster.load(theory)
+const answer = await cluster.solve('conclusion')
+
+// arg2p-worker.js
+importScripts(/* the module and its dependencies */)
+startWebWorker()
+```
+
+The instance a browser connects to introduces it to the other browsers connected to it: the two open a WebRTC data
+channel between them, and lend each other their Web Workers. On a local network they need nothing else; across
+networks, give the cluster the STUN or TURN servers to use (`iceServers`, as `RTCPeerConnection` takes them).
 
 A Node.js cluster lends the workers of its threads as well: each thread is a site working for its cluster alone,
 reached through it. Only instances of the same version of arg2p federate. If an instance leaves while a graph is

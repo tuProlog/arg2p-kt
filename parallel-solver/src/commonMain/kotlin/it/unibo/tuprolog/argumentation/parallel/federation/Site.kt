@@ -32,6 +32,9 @@ import kotlin.random.Random
  * their workers with its own, and runs the workers it is given on them as well, its delegates reaching the other
  * sites through it.
  *
+ * Sites opening links of their own ([introducible], as browsers over WebRTC) are introduced to each other by the sites
+ * they are both linked to, which carry what they need to open the link ([signal]).
+ *
  * Each graph built is a session of its site: the workers of a session, wherever they run, only hear from those of the
  * same session, so that nothing of a graph given up reaches the next one.
  */
@@ -42,6 +45,7 @@ class Site(
     settings: FlagsBuilder = FlagsBuilder(),
     private val lends: Boolean = true,
     private val textual: Boolean = false,
+    private val introducible: Boolean = false,
     val id: String = newId(),
 ) : LinkListener {
     private data class Peer(
@@ -49,6 +53,7 @@ class Site(
         val capacity: Int?,
         val lends: Boolean,
         val delegate: Boolean,
+        val introducible: Boolean,
     )
 
     private class Hosted(
@@ -79,6 +84,9 @@ class Site(
 
     @Volatile private var hosted: Map<Pair<String, String>, Hosted> = emptyMap()
 
+    // The sites this one was introduced to, by the site that introduced them
+    @Volatile private var introducers: Map<String, String> = emptyMap()
+
     // The session of the graph of the theory of this site, the one built last
     @Volatile private var session: String = "$id#0"
 
@@ -99,6 +107,21 @@ class Site(
 
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
+
+    /** Called with a site opening links of its own this one is introduced to, if it opens such links as well */
+    var onIntroduced: ((site: String) -> Unit)? = null
+
+    /** Called with what a site sent this one to open a link of their own (see [signal]) */
+    var onSignal: ((from: String, payload: String) -> Unit)? = null
+
+    /** Sends [payload] to [to], a peer or a site this one was introduced to, to open a link of their own */
+    fun signal(
+        to: String,
+        payload: String,
+    ) {
+        val next = if (to in peers) to else introducers[to]
+        next?.let { peers[it]?.link?.send(FrameCodec.encode(Frame.Signal(id, to, payload))) }
+    }
 
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = toCatalog(Load(theory))
@@ -134,6 +157,17 @@ class Site(
             is Frame.Hello -> greeted(link, decoded)
             is Frame.Placement -> placed(link, decoded)
             is Frame.Forget -> locked(lock) { forget(decoded.site) }
+            is Frame.Introduce ->
+                if (introducible && decoded.site != id && decoded.site !in peers) {
+                    links[link]?.let { introducer -> locked(lock) { introducers = introducers + (decoded.site to introducer) } }
+                    onIntroduced?.invoke(decoded.site)
+                }
+            is Frame.Signal ->
+                if (decoded.to == id) {
+                    onSignal?.invoke(decoded.from, decoded.payload)
+                } else {
+                    peers[decoded.to]?.link?.send(frame)
+                }
             is Frame.Lost ->
                 if (ownerOf(decoded.session) != id) {
                     forward(decoded.session, ownerOf(decoded.session), frame)
@@ -205,7 +239,8 @@ class Site(
                 val known = peers[hello.site]
                 when {
                     known == null -> {
-                        peers = peers + (hello.site to Peer(link, hello.capacity, hello.lends, link in delegateLinks))
+                        val delegate = link in delegateLinks
+                        peers = peers + (hello.site to Peer(link, hello.capacity, hello.lends, delegate, hello.introducible))
                         true
                     }
                     known.link == link -> {
@@ -217,6 +252,7 @@ class Site(
             }
         if (joined) {
             if (peers[hello.site]?.delegate == true) announce()
+            if (hello.introducible) introduce(hello.site)
             onPeersChanged?.invoke()
         }
     }
@@ -295,7 +331,18 @@ class Site(
                 val delegated = peers.values.filter { it.delegate }.map { it.capacity }
                 if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
             }
-        return FrameCodec.encode(Frame.Hello(id, VERSION, offered, lends))
+        return FrameCodec.encode(Frame.Hello(id, VERSION, offered, lends, introducible))
+    }
+
+    // [site], just joined, and the other peers opening links of their own introduced to each other
+    private fun introduce(site: String) {
+        val joined = peers[site] ?: return
+        peers
+            .filter { (other, peer) -> other != site && peer.introducible && !peer.delegate }
+            .forEach { (other, peer) ->
+                peer.link.send(FrameCodec.encode(Frame.Introduce(site)))
+                joined.link.send(FrameCodec.encode(Frame.Introduce(other)))
+            }
     }
 
     // The other sites told again of the workers this one offers, as its delegates come and go

@@ -7,13 +7,27 @@ import it.unibo.tuprolog.argumentation.parallel.message.TextWriter
 internal sealed interface Frame {
     /**
      * The first frame on a link, from each end: the site, its version (sites of different versions do not federate),
-     * the workers it runs (null for no limit) and whether it lends them to its peers
+     * the workers it runs (null for no limit), whether it lends them to its peers, and whether it opens links of its
+     * own to the sites it is introduced to (as browsers do, over WebRTC)
      */
     data class Hello(
         val site: String,
         val version: String,
         val capacity: Int?,
         val lends: Boolean,
+        val introducible: Boolean = false,
+    ) : Frame
+
+    /** To a site opening links of its own: [site] does as well, and is reached through the sender of the frame */
+    data class Introduce(
+        val site: String,
+    ) : Frame
+
+    /** From [from] to [to], through the sites in between: what the two need to open a link of their own */
+    data class Signal(
+        val from: String,
+        val to: String,
+        val payload: String,
     ) : Frame
 
     /** The sites of the workers of a graph [session] builds, by their addresses: those of older sessions are dropped */
@@ -52,6 +66,9 @@ internal object FrameCodec {
                             .text(frame.version)
                             .number(frame.capacity ?: -1)
                             .text(if (frame.lends) "1" else "0")
+                            .text(if (frame.introducible) "1" else "0")
+                    is Frame.Introduce -> text("Introduce").text(frame.site)
+                    is Frame.Signal -> text("Signal").text(frame.from).text(frame.to).text(frame.payload)
                     is Frame.Placement ->
                         text("Placement").text(frame.session).list(frame.workers.entries.toList()) { text(it.key).text(it.value) }
                     is Frame.Forget -> text("Forget").text(frame.site)
@@ -63,7 +80,9 @@ internal object FrameCodec {
     fun decode(text: String): Frame =
         TextReader(text).run {
             when (val kind = text()) {
-                "Hello" -> Frame.Hello(text(), text(), number().takeIf { it >= 0 }, text() == "1")
+                "Hello" -> Frame.Hello(text(), text(), number().takeIf { it >= 0 }, text() == "1", text() == "1")
+                "Introduce" -> Frame.Introduce(text())
+                "Signal" -> Frame.Signal(text(), text(), text())
                 "Placement" -> Frame.Placement(text(), List(number()) { text() to text() }.toMap())
                 "Forget" -> Frame.Forget(text())
                 "Lost" -> Frame.Lost(text())
