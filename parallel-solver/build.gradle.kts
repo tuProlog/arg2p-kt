@@ -16,6 +16,27 @@ plugins {
     )
 }
 
+// The version of arg2p as a constant of the module: federated sites check that they are of the same one
+val generateVersion =
+    tasks.register("generateVersion") {
+        val version = project.version.toString()
+        val directory = layout.buildDirectory.dir("generated/version/kotlin")
+        inputs.property("version", version)
+        outputs.dir(directory)
+        doLast {
+            directory
+                .get()
+                .file("it/unibo/tuprolog/argumentation/parallel/federation/Version.kt")
+                .asFile
+                .apply { parentFile.mkdirs() }
+                .writeText(
+                    "package it.unibo.tuprolog.argumentation.parallel.federation\n\n" +
+                        "/** The version of arg2p this module was built with */\n" +
+                        "internal const val ARG2P_VERSION: String = \"$version\"\n",
+                )
+        }
+    }
+
 kotlin {
 
     js {
@@ -29,6 +50,7 @@ kotlin {
 
     sourceSets {
         commonMain {
+            kotlin.srcDir(generateVersion)
             dependencies {
                 api(project(":core"))
             }

@@ -12,6 +12,15 @@ fun interface Network {
         to: String,
         message: KbMessage,
     )
+
+    /** The workers the network can run, if it limits them: the catalog splits the theory into at most as many parts */
+    val capacity: Int? get() = null
+
+    /**
+     * The catalog is about to build a graph with [workers] workers: the messages to the workers of a graph built
+     * before are no longer delivered
+     */
+    fun building(workers: Int) = Unit
 }
 
 /** A node of a distributed solver (the coordinator, a worker): it handles the messages sent to it, one at a time */

@@ -16,6 +16,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.Interest
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.Publish
+import it.unibo.tuprolog.argumentation.parallel.message.Rebuild
 import it.unibo.tuprolog.argumentation.parallel.message.RequireEvaluation
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
 import it.unibo.tuprolog.argumentation.parallel.message.Response
@@ -30,8 +31,8 @@ import it.unibo.tuprolog.theory.parsing.parse
 
 /**
  * The catalog of a distributed solver: it holds the theory and partitions it among the workers (see
- * [TheoryPartitioner], at most [parts] partitions if given), each owning some of the rules, and gathers the graph
- * they build (see [it.unibo.tuprolog.argumentation.parallel.message.KbMessage] for the protocol):
+ * [TheoryPartitioner], at most [parts] partitions if given, at most as many as the network can run otherwise), each
+ * owning some of the rules, and gathers the graph they build (see [it.unibo.tuprolog.argumentation.parallel.message.KbMessage] for the protocol):
  * 1. each worker is sent its rules, and tells the premises they use; every worker is then told those of all, and
  *    builds the arguments of its rules, sending each one to the workers that build on it and publishing it here;
  * 2. once every Build is acknowledged, the arguments are all published: the workers find the direct attacks on their
@@ -42,7 +43,8 @@ import it.unibo.tuprolog.theory.parsing.parse
  *    semantics, every graph extension).
  *
  * The catalog knows the shared part of the theory (the flags, the preferences, the conflicts), not the rules, and
- * relays no argument. An evaluation reads the labels of the arguments for the statement.
+ * relays no argument. An evaluation reads the labels of the arguments for the statement. The graph is built again
+ * when the theory changes, and when the network loses some of the workers of a graph being built ([Rebuild]).
  */
 class Catalog(
     private val network: Network,
@@ -77,6 +79,7 @@ class Catalog(
     override fun receive(message: KbMessage) {
         when (message) {
             Reset -> change { theory.clear() }
+            Rebuild -> if (stage != Stage.READY) start()
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation -> {
@@ -122,11 +125,12 @@ class Catalog(
     // The theory partitioned again: the catalog keeps the shared part, each worker is given its rules (those left over
     // forget theirs)
     private fun start() {
-        val partitioning = TheoryPartitioner.partition(theory.toString(), parts)
+        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity)
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
         solve("context_reset, parser:::convertAllRules(_)")
         val count = partitioning.partitions.size
+        network.building(count)
         repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it))) }
         (count until workers).forEach { network.send(Address.worker(it), Reset) }
         workers = count

@@ -61,6 +61,9 @@ sealed interface KbMessage
 /** To the catalog: forget the theory; to a worker: forget its rules */
 data object Reset : KbMessage
 
+/** To the catalog: a graph being built lost some of its workers (a site left), build it again with those left */
+data object Rebuild : KbMessage
+
 /**
  * To the catalog: the whole theory, as Prolog text, partitioned among the workers (see TheoryPartitioner); to a
  * worker: its part of the theory, replacing the one it had
