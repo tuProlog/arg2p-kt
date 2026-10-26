@@ -47,7 +47,7 @@ class PreferencesTest {
     private fun attacksSize(solver: Solver): Int =
         logicProgramming {
             solver
-                .solve("context_check"("attack"("X", "Y", "Z", "U")))
+                .solve("::"("graphStore", "attack"("X", "Y", "Z", "U")))
                 .filter { it.isYes }
                 .count()
         }

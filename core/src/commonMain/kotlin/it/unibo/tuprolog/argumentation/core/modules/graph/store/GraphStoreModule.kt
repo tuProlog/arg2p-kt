@@ -1,6 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.store
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttack
+import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackById
+import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackIn
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
  * The argumentation graph kept in the active context, and its labels (module `graphStore`): the only module reading
@@ -12,12 +17,19 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  *   (`context_id`);
  * - `newConc(Tag, Conclusion)`, the conclusions of the arguments saved under a tag (the round of the graph builder);
  * - a compact copy of the graph by argument identifiers: `argInfo(Id, InfoId, Info)`, `supportId(IdA, IdB)`,
- *   `attackId(Type, IdA, IdB, IdOn)` and `att(IdA, IdB) :- attack(...)`. Loops over the graph go through it, so that
- *   resolution steps carry integers rather than whole arguments; InfoId identifies the info of the arguments (see the
- *   module argument), what the preferences weigh;
+ *   `attackId(Type, IdA, IdB, IdOn)`. Loops over the graph go through it, so that resolution steps carry integers
+ *   rather than whole arguments; InfoId identifies the info of the arguments (see the module argument), what the
+ *   preferences weigh;
  * - the labels of the arguments and of the statements (see the module label).
+ *
+ * Only the attacks found are saved: an attack on an argument is an attack on every argument built on it as well, and
+ * the attacks are read with those (attack/4, attackById/4, attacksById/2, attackIn/5, and the attack graph of the
+ * native labellings), extended once until the attacks or the supports change (see ExpandedAttacks).
  */
 object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "graphStore") {
+    override val primitives: Map<Signature, Primitive>
+        get() = listOf(ExpandedAttack, ExpandedAttackById, ExpandedAttackIn).associateBy { it.signature }
+
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -152,8 +164,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
             context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
             attack::new(Type, Attacker, Attacked, On, Attack),
-            context_assert(Attack),
-            context_assert(att(IdAttacker, IdAttacked) :- Attack).
+            context_assert(Attack).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
         %  The attack is removed, in all its forms.
@@ -163,29 +174,28 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Attacker), IdAttacker),
             context_id(argument(Attacked), IdAttacked),
             context_id(argument(On), IdOn),
-            context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            context_retract(att(IdAttacker, IdAttacked) :- Attack).
+            context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
 
         %! attack(?Type, ?Attacker, ?Attacked, ?On)
-        %  Attacker attacks Attacked on On, with an attack of Type.
+        %  Attacker attacks Attacked on On, with an attack of Type: saved, or extended to Attacked from On, which it is
+        %  built on.
         attack(Type, Attacker, Attacked, On) :-
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_check(Attack).
+            expandedAttack(Type, Attacker, Attacked, On).
 
         %! attacks(-Attacks)
-        %  Attacks are the (Type, Attacker, Attacked, On) attacks saved.
+        %  Attacks are the (Type, Attacker, Attacked, On) attacks, saved or extended (see attack/4).
         attacks(Attacks) :-
             findall((Type, Attacker, Attacked, On), attack(Type, Attacker, Attacked, On), Attacks).
 
         %! attackById(?Type, ?IdAttacker, ?IdAttacked, ?IdOn)
-        %  The attack, by the identifiers of its arguments.
+        %  The attack, saved or extended, by the identifiers of its arguments.
         attackById(Type, IdAttacker, IdAttacked, IdOn) :-
-            context_check(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+            expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
 
         %! attacksById(?IdAttacker, ?IdAttacked)
         %  The argument with identifier IdAttacker attacks the one with identifier IdAttacked.
         attacksById(IdAttacker, IdAttacked) :-
-            context_check(clause(att(IdAttacker, IdAttacked), _)).
+            expandedAttackById(_, IdAttacker, IdAttacked, _).
 
         %--------------------------------------------------------------------------
         % Labels
@@ -267,8 +277,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         %! attackIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
         attackIn(Branch, Type, Attacker, Attacked, On) :-
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_check(Branch, Attack).
+            expandedAttackIn(Branch, Type, Attacker, Attacked, On).
 
         %! argumentLabelIn(+Branch, ?Label, ?Argument)
         argumentLabelIn(Branch, Label, Argument) :-

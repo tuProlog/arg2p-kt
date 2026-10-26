@@ -114,15 +114,21 @@ Data produced by a stage is stored in the evaluation context and can be read bac
 ?- context_check(in(A)).
 ```
 
-This is how the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}}) helper reads results, and it is the most
-direct way to see what a single stage produced.
+This is the most direct way to see what a single stage produced. The context holds the attacks as they are found,
+each on the argument it targets: an attack on an argument also attacks every argument built on it, on the same
+sub-argument, and `graphStore::attack/4` reads them all, as the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}})
+helper does:
+
+```prolog
+?- graphStore::attack(Type, Attacker, Attacked, On).
+```
 
 Useful context predicates:
 
 | Predicate | Content |
 | --- | --- |
 | `argument/1` | An argument built by the graph builder. |
-| `attack/4` | `attack(Type, Attacker, Attacked, On)`. |
+| `attack/4` | `attack(Type, Attacker, Attacked, On)`, as found (see `graphStore::attack/4` for all of them). |
 | `support/2` | `support(Supporter, Supported)`. |
 | `in/1`, `out/1`, `und/1` | The argument labelling. |
 | `statIn/1`, `statOut/1`, `statUnd/1` | The statement labelling. |

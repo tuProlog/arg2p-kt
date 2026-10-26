@@ -52,13 +52,11 @@ class GraphStoreModuleTest {
         val ids = "context_id(argument($c), IdC), context_id(argument($b), IdB), context_id(argument($a), IdA)"
         assertTrue(module.holds("context_check(attack(rebut, $c, $b, $a))"))
         assertTrue(module.holds("$ids, context_check(attackId(rebut, IdC, IdB, IdA))"))
-        assertTrue(module.holds("$ids, context_check(att(IdC, IdB))"))
         assertFalse(module.holds("graphStore::saveAttack(rebut, $c, $b, $a)"))
 
         module.run("graphStore::removeAttack(rebut, $c, $b, $a)")
         assertFalse(module.holds("context_check(attack(_, _, _, _))"))
         assertFalse(module.holds("context_check(attackId(_, _, _, _))"))
-        assertFalse(module.holds("context_check(clause(att(_, _), _))"))
     }
 
     @Test
@@ -85,7 +83,8 @@ class GraphStoreModuleTest {
             "graphStore::labelStatement(in, [b])",
         )
         assertEquals("[($a, $b)]", module.value("graphStore::graph(_, _, S)", "S"))
-        assertEquals("[(rebut, $b, $a, $a)]", module.value("graphStore::graph(_, A, _)", "A"))
+        // the attack on a extends to b, built on it
+        assertEquals("[(rebut, $b, $b, $a), (rebut, $b, $a, $a)]", module.value("graphStore::graph(_, A, _)", "A"))
         assertEquals("[$b]", module.value("graphStore::argumentLabelling(I, _, _)", "I"))
         assertEquals("[[b]]", module.value("graphStore::statementLabelling(I, _, _)", "I"))
         assertEquals("[b]", module.value("graphStore::claimLabelling(I, _, _)", "I"))

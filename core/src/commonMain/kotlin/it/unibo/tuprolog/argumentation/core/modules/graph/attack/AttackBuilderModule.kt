@@ -4,17 +4,17 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The attacks between the arguments of the graph (module `attackBuilder`): each argument against those that may
- * attack it (see the module attackCandidates), as the module attackRelation states them, and the super-arguments of
- * the attacked one, saved in the context (see the module graphStore).
+ * attack it (see the module attackCandidates), as the module attackRelation states them, saved in the context (see
+ * the module graphStore, which reads them extended to the arguments built on the attacked one).
  */
 object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", "attackBuilder") {
     override val prologRawTheory: String =
         // language=Prolog
         """
         %! buildAttacks
-        %  The attacks between the saved arguments, direct and on their super-arguments, an argument attacking itself
-        %  included (as r : a => undercut(r) does). Loops over the graph go through its copy by identifiers (see the
-        %  module graphStore).
+        %  The direct attacks between the saved arguments, an argument attacking itself included (as r : a => undercut(r)
+        %  does): those on the arguments built on the attacked one follow from them (see the module graphStore). Loops
+        %  over the graph go through its copy by identifiers.
         buildAttacks :-
             findall(_, buildDirectAttack, _).
 
@@ -29,7 +29,6 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             attackRelation::attacks(T, CB, CA),
             graphStore::argumentId(B, IdB),
             graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
-            buildTransitiveAttacks(T, IdB, B, IdA, A),
             fail.
         buildDirectAttack.
 
@@ -38,14 +37,5 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             graphStore::argumentUnifiable([Head], B).
         findAttacker(Conclusion, B) :-
             graphStore::argumentFor(Conclusion, B).
-
-        %! buildTransitiveAttacks(+Type, +IdB, +B, +IdA, +A)
-        %  B, attacking A, attacks every argument that A supports, directly or not.
-        buildTransitiveAttacks(T, IdB, B, IdA, A) :-
-            findall(_, (
-                graphStore::supportedById(IdA, IdC),
-                graphStore::argumentById(IdC, C),
-                graphStore::saveAttackById(T, IdB, B, IdC, C, IdA, A)
-            ),_).
         """.trimIndent()
 }

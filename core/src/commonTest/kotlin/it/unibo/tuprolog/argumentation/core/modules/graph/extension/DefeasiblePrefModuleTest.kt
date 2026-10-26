@@ -38,13 +38,13 @@ class DefeasiblePrefModuleTest {
         assertTrue(
             module.holds(
                 "defeasiblePref::attackArgument(X, rebut, _, A, A), argument::claim(A, a), " +
-                    "argument::claim(B, b), context_check(attack(rebut, X, B, A))",
+                    "argument::claim(B, b), graphStore::attack(rebut, X, B, A)",
             ),
         )
         // and the preference attacks the attack argument
         assertTrue(
             module.holds(
-                "defeasiblePref::attackArgument(X, rebut, _, _, _), argument::claim(P, sup(r1, r3)), context_check(attack(pref, P, X, X))",
+                "defeasiblePref::attackArgument(X, rebut, _, _, _), argument::claim(P, sup(r1, r3)), graphStore::attack(pref, P, X, X)",
             ),
         )
     }

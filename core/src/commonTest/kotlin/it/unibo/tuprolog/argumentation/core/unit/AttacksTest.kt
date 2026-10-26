@@ -30,7 +30,7 @@ class AttacksTest {
                 attacks.forEach { attack ->
                     assertEquals(
                         attack.value,
-                        solver.solve("context_check"("attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count(),
+                        solver.solve("::"("graphStore", "attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count(),
                     )
                 }
             }

@@ -137,7 +137,7 @@ object LabellingBenchmarkWorker {
                                 solver
                                     .solve(
                                         Struct.parse(
-                                            "findall(A, context_check(argument(A)), As), findall(T, context_check(attack(T, _, _, _)), Ts)",
+                                            "findall(A, context_check(argument(A)), As), findall(T, graphStore::attack(T, _, _, _), Ts)",
                                             solver.operators,
                                         ),
                                     ).first()

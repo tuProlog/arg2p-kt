@@ -179,8 +179,9 @@ object TestingUtils {
         graph.arguments.forEach {
             testYesGoal("context_check"(it.toTerm()), solver)
         }
+        // the attacks as the graph store reads them, extended to the arguments built on the attacked ones
         graph.attacks.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("graphStore" call it.toTerm(), solver)
         }
         graph.supports.forEach {
             testYesGoal("context_check"(it.toTerm()), solver)
