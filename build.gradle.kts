@@ -62,7 +62,7 @@ gitSemVer {
 multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
-    ktProjects(rootProject.path, ":core", ":causality-solver")
+    ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
     jvmProjects(":ide", ":actor-solver")
     // jsProjects()
     otherProjects(":doc")
