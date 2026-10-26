@@ -50,12 +50,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         builder(ruleGraph).
 
         %! checkProfile
-        %  The theory is one of its profile (graphBuildMode): with aspic_defeasible, it has no strict rule nor axiom.
-        checkProfile :-
-            setting(graphBuildMode, aspic_defeasible),
-            parser::checkStrict(_), !,
-            throw(error(domain_error(defeasible_theory, strict), 'aspic_defeasible: the theory has strict rules or axioms')).
-        checkProfile.
+        %  The theory is written in the languages of its profile (see parser::checkLanguages).
+        checkProfile :- parser::checkLanguages.
 
         %! modifyGraph
         %  The graph changed by each graph extension, the last stated first.

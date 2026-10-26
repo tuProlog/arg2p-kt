@@ -9,6 +9,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class RationalityTest {
+    // The plain and restricted variants of Caminada's examples show what goes wrong without transposition, which the
+    // profile aspic_plus (the default) turns on
+    private companion object {
+        const val NOT_TRANSPOSED = "autoTransposition(off).\n"
+    }
+
     private val example4theory =
         """
         f1 :-> wr.
@@ -95,7 +101,7 @@ class RationalityTest {
     @Test
     fun caminadaExample4() =
         protoTest(
-            example4theory,
+            example4theory + NOT_TRANSPOSED,
             listOf("wr", "m", "go", "b"),
             listOf(),
             listOf("-hw", "hw"),
@@ -104,7 +110,7 @@ class RationalityTest {
     @Test
     fun caminadaExample4restricted() =
         protoTest(
-            example4theory + "graphExtension(rebutRestriction).",
+            example4theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
             listOf("-hw", "wr", "m", "hw", "go", "b"),
             listOf(),
             listOf(),
@@ -125,7 +131,7 @@ class RationalityTest {
     @Test
     fun caminadaExample5() =
         protoTest(
-            example5theory,
+            example5theory + NOT_TRANSPOSED,
             listOf("e", "d", "c", "b", "a"),
             listOf("-c"),
             listOf(),
@@ -134,7 +140,7 @@ class RationalityTest {
     @Test
     fun caminadaExample5restricted() =
         protoTest(
-            example5theory + "graphExtension(rebutRestriction).",
+            example5theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
             listOf("-c", "e", "d", "c", "b", "a"),
             listOf(),
             listOf(),
@@ -155,7 +161,7 @@ class RationalityTest {
     @Test
     fun caminadaExample6() =
         protoTest(
-            example6theory,
+            example6theory + NOT_TRANSPOSED,
             listOf("g", "f", "e", "d", "c", "b", "a"),
             listOf("-g"),
             listOf(),
@@ -164,7 +170,7 @@ class RationalityTest {
     @Test
     fun caminadaExample6restricted() =
         protoTest(
-            example6theory + "graphExtension(rebutRestriction).",
+            example6theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
             listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
             listOf(),
             listOf(),

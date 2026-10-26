@@ -34,6 +34,7 @@ class JsArg2pTest {
                 d2 : penguin(X) => bird(X).
                 s1 : penguin(X) -> -flies(X).
                 a1 :-> penguin(tweety).
+                autoTransposition(off).
                 """.trimIndent(),
             )
         val solution = JsArg2p.solve(solver, "buildLabelSets").next()

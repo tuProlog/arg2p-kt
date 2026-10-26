@@ -45,7 +45,8 @@ class PrologCompatibilityTest {
         val solution = solver.solve(Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)).first()
         val label = { name: String -> solution.substitution.getByName(name).toString() }
         assertEquals("[[penguin(tweety)], [flies(tweety)], [bird(tweety)], [prologStrictCompatibility]]", label("In"))
-        assertEquals("[['-'(flies(tweety))]]", label("Out"))
+        // the strict rules transposed (aspic_plus): -bird(tweety) from -flies(tweety)
+        assertEquals("[['-'(flies(tweety))], ['-'(bird(tweety))]]", label("Out"))
         assertEquals("[]", label("Und"))
     }
 }

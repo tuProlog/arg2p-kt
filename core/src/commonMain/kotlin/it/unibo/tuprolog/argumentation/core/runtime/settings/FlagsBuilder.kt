@@ -43,7 +43,9 @@ data class FlagsBuilder(
         fun setupSolver(target: FlagsBuilder) =
             MutableTheory.empty(Unificator.default).also { kb ->
                 if (target.emptyBuilder) return@also
-                target.graphExtensions.forEach { kb.assertA(Struct.parse("${GraphExtension.predicate()}($it)")) }
+                // no extension stated as none, so that it overrides those of the profile
+                val extensions = target.graphExtensions.toList().ifEmpty { listOf("none") }
+                extensions.forEach { kb.assertA(Struct.parse("${GraphExtension.predicate()}($it)")) }
                 if (target.queryMode) kb.assertA(Struct.parse(QueryMode.predicate()))
                 if (target.autoTransposition) kb.assertA(Struct.parse(AutoTransposition.predicate()))
                 if (target.prologStrictCompatibility) kb.assertA(Struct.parse(PrologStrictCompatibility.predicate()))

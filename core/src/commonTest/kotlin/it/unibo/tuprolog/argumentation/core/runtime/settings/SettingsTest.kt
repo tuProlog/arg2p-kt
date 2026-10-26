@@ -42,7 +42,11 @@ class SettingsTest {
         val flags = FlagsBuilder().argumentLabellingMode("grounded").graphExtensions(listOf("standardPref"))
         assertEquals("[preferred]", solve("findall(X, setting(argumentLabellingMode, X), L)", "argumentLabellingMode(preferred).", flags))
         assertEquals("[bp]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(bp).", flags))
-        assertEquals("[standardPref]", solve("findall(X, setting(graphExtension, X), L)", "argumentLabellingMode(preferred).", flags))
+        // a value of the builder the default of its flag states leaves the profile (aspic_plus) in charge
+        assertEquals(
+            "[standardPref, rebutRestriction]",
+            solve("findall(X, setting(graphExtension, X), L)", "argumentLabellingMode(preferred).", flags),
+        )
         assertEquals("yes", solve("setting(metaConflicts), L = yes", "metaConflicts."))
     }
 
@@ -50,7 +54,9 @@ class SettingsTest {
     fun flagsWithManyValuesInOrder() {
         val flags = FlagsBuilder().empty(true)
         assertEquals("[a, b]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(a).\ngraphExtension(b).", flags))
-        assertEquals("[]", solve("findall(X, setting(graphExtension, X), L)", "", flags))
+        // none stated: those of the profile (aspic_plus)
+        assertEquals("[standardPref, rebutRestriction]", solve("findall(X, setting(graphExtension, X), L)", "", flags))
+        assertEquals("[]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(none).", flags))
     }
 
     @Test
