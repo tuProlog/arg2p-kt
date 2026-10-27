@@ -121,6 +121,18 @@ object Profiles {
         )
 
     /**
+     * ABA+ (Čyras and Toni 2016): flat ABA with preferences between assumptions, `sup(Stronger, Weaker)`, an attack
+     * by an argument resting on a weaker assumption reversed (see the extension abaPref)
+     */
+    val ABA_PLUS =
+        Profile(
+            "aba_plus",
+            "ABA+: flat ABA with preferences between assumptions (sup/2), attacks from weaker ones reversed",
+            rules(false, "abaPref") +
+                listOf(values(GraphLanguage, "abaLanguage"), values(ConflictModel, "declared"), off(PrologStrictCompatibility)),
+        )
+
+    /**
      * Dung frameworks: the arguments, `a.` (or arg(a)), and the attacks, `a -> b.` (or att(a, b)), and `a <-> b.` for
      * a mutual one, stated or derived by Prolog clauses (`X -> Y :- beats(X, Y).`); an argument attacking or attacked
      * is an argument as well
@@ -142,7 +154,7 @@ object Profiles {
         )
 
     /** Every profile */
-    val all: List<Profile> = listOf(FREE, ASPIC_PLUS, ASPIC, ASPIC_DEFEASIBLE, META, ABA, ABSTRACT)
+    val all: List<Profile> = listOf(FREE, ASPIC_PLUS, ASPIC, ASPIC_DEFEASIBLE, META, ABA, ABA_PLUS, ABSTRACT)
 
     /** The profile of a theory naming none */
     val default: Profile = ASPIC_PLUS

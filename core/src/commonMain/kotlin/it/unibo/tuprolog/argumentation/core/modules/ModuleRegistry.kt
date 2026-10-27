@@ -18,6 +18,7 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.argument.ArgumentBuild
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackBuilderModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackCandidatesModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackRelationModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.extension.AbaPrefModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.BpModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.ConflictArgumentsModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.DefeasibleAllPrefModule
@@ -88,6 +89,7 @@ object ModuleRegistry {
             DefeasiblePrefModule,
             DefeasibleAllPrefModule,
             StandardPrefModule,
+            AbaPrefModule,
         )
 
     /** Evaluating the graph: abstract frameworks, the whole graph of a theory, or the part a query depends on */

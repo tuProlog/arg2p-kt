@@ -5,5 +5,6 @@ object GraphExtension : ArgsFlag<Iterable<String>, Iterable<String>> {
 
     override fun default(): Iterable<String> = listOf("standardPref")
 
-    override fun values(): Iterable<String> = listOf("rebutRestriction", "bp", "standardPref", "defeasiblePref", "defeasibleAllPref")
+    override fun values(): Iterable<String> =
+        listOf("rebutRestriction", "bp", "standardPref", "defeasiblePref", "defeasibleAllPref", "abaPref")
 }
