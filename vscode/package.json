@@ -145,7 +145,7 @@
     "lit": "3.3.3",
     "typescript": "7.0.2",
     "vitest": "5.0.4",
-    "vscode-jsonrpc": "9.0.3",
+    "vscode-jsonrpc": "10.0.0",
     "vscode-languageclient": "10.1.2"
   }
 }
