@@ -12,8 +12,8 @@ import kotlin.test.assertEquals
 
 /**
  * The labels of the arguments for a statement are the same in a distributed solver, its theory partitioned among
- * workers, and in the standard solver on the whole graph (grounded, no graph extensions): each subclass runs them on
- * a way of running the nodes
+ * workers, and in the standard solver answering it with the same flags (on the part of the graph the statement depends
+ * on, in query mode): each subclass runs them on a way of running the nodes
  */
 abstract class EquivalenceScenarios {
     // The number of arguments for a statement labelled in, out and und
@@ -35,7 +35,8 @@ abstract class EquivalenceScenarios {
         flags: Flags,
     ): Labels {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
-        solver.solve(Struct.parse("buildLabelSetsSilent", solver.operators)).first()
+        // the graph the standard solver builds to answer: in query mode, the part the statement depends on
+        solver.solve(Struct.parse("answerQuery(($statement), _, _, _)", solver.operators)).first()
         // the arguments whose claim unifies with the statement, as the workers look for them
         val count = { label: String ->
             solver

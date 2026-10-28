@@ -183,7 +183,7 @@ class Flags:
         return self._set(self._flags.modulesPath(path))
 
     def query_mode(self, on: bool) -> Flags:
-        """Whether the graph is built on the rules the query depends on alone."""
+        """Whether the graph is built on the arguments the query depends on alone."""
         return self._set(self._flags.queryMode(on))
 
     def auto_transposition(self, on: bool) -> Flags:

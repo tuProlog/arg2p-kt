@@ -78,8 +78,9 @@ class ThreadedCluster:
     A distributed solver on the threads of the JVM: each node handles its messages one at a time, the nodes in parallel
     on [threads] threads (as many as the processors by default). The theory is split into at most [parts] partitions
     if given, as many as the workers of the cluster and of the sites it is federated with otherwise; the graph is
-    labelled as the standard solver does with [flags]. With query mode (the default) the graph is built on the rules
-    the statements evaluated depend on. [lends] tells whether the cluster lends its workers to the others.
+    labelled as the standard solver does with [flags]. With query mode (the default) the graph is built on the
+    arguments the statements evaluated depend on, as the standard solver builds it. [lends] tells whether the cluster
+    lends its workers to the others.
     """
 
     def __init__(

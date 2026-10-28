@@ -72,7 +72,7 @@ class Flags private constructor(
     /** Where the modules loaded by name are looked for */
     fun modulesPath(path: String): Flags = value(ModulesPath, path)
 
-    /** Whether the graph is built on the rules the query depends on alone */
+    /** Whether the graph is built on the arguments the query depends on alone */
     fun queryMode(on: Boolean): Flags = switch(QueryMode, on)
 
     /** Whether the strict rules are transposed */

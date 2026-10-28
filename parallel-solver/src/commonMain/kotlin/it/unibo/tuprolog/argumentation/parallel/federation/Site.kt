@@ -108,6 +108,8 @@ class Site(
     // The arguments of the graph of the theory of this site, for the tests
     internal val argumentsBuilt: Int get() = catalog.argumentsBuilt
 
+    internal val graphArguments: List<it.unibo.tuprolog.core.Term> get() = catalog.graphArguments
+
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
 

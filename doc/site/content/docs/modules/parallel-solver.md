@@ -167,10 +167,10 @@ asked for it, and needs the others only when its theory changes.
 ## How the graph is built
 
 1. The catalog splits the theory into partitions of related rules (those whose conclusions and premises unify), the
-   largest split further so that every worker has a share. Each worker receives its rules and tells the catalog the
-   premises they use.
-2. Each worker builds the arguments of its rules and sends every new argument directly to the workers whose rules
-   use its conclusion, which build on it in turn, and publishes it to the catalog.
+   largest split further so that every worker has a share. Each worker receives its rules and the flags of the
+   solver, and tells the catalog the premises and the conclusions of its rules.
+2. Each worker builds the arguments of its rules and sends every new argument directly to the workers that need its
+   conclusion, which build on it in turn, and publishes it to the catalog.
 3. Once every argument is built, each worker asks the others for the arguments that could attack its own, and checks
    each such pair once. Only the direct attacks are sent to the catalog: the graph store extends them to the
    arguments built on the attacked ones.
@@ -180,24 +180,22 @@ With `metaConflicts`, where conflicts are themselves arguments, the catalog find
 
 ### Query mode
 
-With `queryMode` (on in `Flags.defaults()`), the graph is built only on the rules that the labels of the
-statements evaluated depend on, as the semantics declares, like the
-[query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver. The catalog finds those rules
-before any argument is built:
+With `queryMode` (on in `Flags.defaults()`), the workers build only the arguments the labels of the statements
+evaluated depend on, as the semantics declares: exactly those the
+[query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver builds, explored the same way, by the
+same modules (`queryExploration`), each worker on its own rules:
 
-- the rules concluding the statement, and those concluding their premises;
-- the rules of the arguments that may attack them;
-- for a semantics whose labels also depend on what an argument attacks or supports (the connected ones), those
-  rules as well.
+- the catalog asks the workers whose rules conclude a statement evaluated to explore it;
+- a worker explores it on its rules: the arguments for it, those for their premises, and the statements their labels
+  may depend on (their possible attackers, the conflicts that relate them with `metaConflicts`, what each graph
+  extension declares, and, for a semantics whose labels also depend on what an argument attacks or supports, the
+  connected ones, those as well);
+- a statement explored that the rules of other workers conclude is explored by them in turn: they send back the
+  arguments they build for it, on which the worker carries its exploration on (exploring again only what they may
+  support).
 
-The workers then build the arguments of those rules alone. A later evaluation that needs more rules adds them to
-the graph built; one that needs no more is answered from it. A change of the theory starts again from scratch.
+Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
+needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that
+needs no more is answered from it. A change of the theory starts again from scratch.
 
-The whole graph is built:
-
-- with no query mode;
-- for a semantics whose labels depend on all of it (`stable`);
-- with `metaConflicts`;
-- with a graph extension other than `standardPref`, `rebutRestriction`, `bp`, `defeasiblePref` and
-  `defeasibleAllPref`;
-- when the rules make too many statements to explore.
+The whole graph is built with no query mode, and for a semantics whose labels depend on all of it (`stable`).

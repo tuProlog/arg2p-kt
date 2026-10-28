@@ -38,10 +38,11 @@ data class SharedArgument(
     val supports: List<String> = emptyList(),
 )
 
-/** The premises of the rules of [worker] */
+/** The premises of the rules of [worker], and their conclusions */
 data class Interest(
     val worker: Int,
     val premises: List<Term>,
+    val conclusions: List<Term>,
 )
 
 /** A direct attack of type [type] of the argument [attacker] on the argument [target], by their global identifiers */
@@ -57,16 +58,24 @@ data class DirectAttack(
  * without copies); the transports between processes write them as Prolog text (see [MessageCodec]).
  *
  * After a change of the theory, the first evaluation builds the graph:
- * 1. the catalog sends each worker its rules ([Load]); each tells the premises they use ([Subscribe]);
- * 2. the catalog sends every worker the premises of all ([Build]); each builds the arguments of its rules, sends them
- *    to the workers whose rules use their conclusions ([Notify]), which build on them in turn, and publishes them to
- *    the catalog ([Publish]). Every Build, Notify and Publish is acknowledged to its sender ([Ack]); a worker
- *    acknowledges the message that engaged it only once all it sent is acknowledged (Dijkstra and Scholten): with
- *    every Build acknowledged, the arguments are all built and published;
+ * 1. the catalog sends each worker its rules and the flags ([Load]); each tells the premises and the conclusions of
+ *    its rules ([Subscribe]);
+ * 2. the catalog sends every worker those of all ([Build]). On the whole graph, each builds the arguments of its rules,
+ *    sends them to the workers whose rules use their conclusions ([Notify]), which build on them in turn, and
+ *    publishes them to the catalog ([Publish]). In query mode, the arguments the evaluations depend on alone, as the
+ *    standard solver explores them (see the module queryExploration): the catalog asks the workers concluding the
+ *    statements evaluated to explore them ([Explore]); each explores them on its rules, asks the others for the
+ *    statements its exploration needs and its rules do not conclude, and sends what it builds to those that asked for
+ *    it. Every Build, Explore, Notify and Publish is acknowledged to its sender ([Ack]); a worker acknowledges the
+ *    message that engaged it only once all it sent is acknowledged (Dijkstra and Scholten): with every Build and
+ *    Explore acknowledged, the arguments are all built and published;
  * 3. the workers find the attacks ([Attack]): each tells the others the statements that may attack its arguments
  *    ([Wanted]), sends each the arguments of its own for them ([Candidates]), finds the direct attacks on its own and
  *    sends them to the catalog ([AttacksFound]), which extends them to the arguments built on the attacked ones and
  *    labels the graph.
+ *
+ * In query mode a later evaluation needing more of the graph explores it further ([Explore]), then the attacks are
+ * found again.
  */
 sealed interface KbMessage
 
@@ -78,10 +87,11 @@ data object Rebuild : KbMessage
 
 /**
  * To the catalog: the whole theory, as Prolog text, partitioned among the workers (see TheoryPartitioner); to a
- * worker: its part of the theory, replacing the one it had
+ * worker: its part of the theory, replacing the one it had, and the [flags] of the solver, as Prolog facts
  */
 data class Load(
     val theory: String,
+    val flags: String = "",
 ) : KbMessage
 
 /** To the catalog: a clause more for the theory, as Prolog text */
@@ -115,15 +125,29 @@ data class EvaluationResponse(
     val undArray: Array<Response> get() = undArgs.toTypedArray()
 }
 
-/** To the catalog: the statements the rules of [worker] use as premises, whose arguments it needs */
+/** To the catalog: the statements the rules of [worker] use as premises, whose arguments it needs, and conclude */
 data class Subscribe(
     val worker: Int,
     val premises: List<Term>,
+    val conclusions: List<Term>,
 ) : KbMessage
 
-/** To a worker: build the arguments of its rules; [interests] are the premises of every worker */
+/**
+ * To a worker: the graph is to be built, [interests] the premises and conclusions of every worker. With no [locality],
+ * the arguments of all its rules; otherwise (query mode, directional or connected) those [Explore] asks for alone.
+ */
 data class Build(
     val interests: List<Interest>,
+    val locality: String? = null,
+) : KbMessage
+
+/**
+ * To a worker, from the catalog ([from] -1) or another worker: explore [statements] on its rules, as the standard solver
+ * explores a query (see the module queryExploration), and send the arguments for them to the sender
+ */
+data class Explore(
+    val from: Int,
+    val statements: List<Term>,
 ) : KbMessage
 
 /** To a worker: arguments of the worker [from] for the premises of its rules, to build on */
@@ -138,7 +162,7 @@ data class Publish(
     val arguments: List<SharedArgument>,
 ) : KbMessage
 
-/** To the sender of a Build, a Notify or a Publish: it is handled, and so is all it led to; [from] is -1 for the catalog */
+/** To the sender of a Build, an Explore, a Notify or a Publish: it is handled, and so is all it led to; [from] is -1 for the catalog */
 data class Ack(
     val from: Int,
 ) : KbMessage

@@ -53,20 +53,18 @@ object TheoryPartitioner {
     /**
      * The partitions of [theory], converted with [flags] and the flags of the theory: the groups of rules that
      * support one another, or, given [parts], that many partitions of about the same number of rules (the groups
-     * packed together, or the largest ones split in halves). Given [only], the rules (and premises) with those
-     * identifiers alone, as text (see [QueryScope][it.unibo.tuprolog.argumentation.parallel.node.QueryScope]).
+     * packed together, or the largest ones split in halves).
      */
     fun partition(
         theory: String,
         parts: Int? = null,
         flags: Flags = Flags.defaults().graphExtensions(),
-        only: Set<String>? = null,
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
         if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory), converted = false)
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
-        val rules = rules(solver).filter { only == null || it.id.toString() in only }
+        val rules = rules(solver)
         val groups = groups(rules, solver.holds("setting(metaRules)")).let { if (parts == null) it else split(pack(it, parts), parts) }
         val shared = clauses.filterNot { isRule(it) || (it.isFact && it.head.let { h -> h is Atom && h.value in conversionFlags }) }
         return Partitioning(

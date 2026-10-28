@@ -33,6 +33,56 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
                 true
             ).
 
+        % A solver given arguments built elsewhere (as a worker of the parallel solver, which has some of the rules) carries
+        % on its exploration as they come: resume/1 explores again what they may support, restart/0 forgets it all.
+
+        %! resume(+Statements)
+        %  The exploration carried on once arguments for Statements are saved: the statements explored whose rules use
+        %  them as premises, directly or through other statements, explored again, the others left as they are.
+        resume(Statements) :-
+            builtOn(Statements, [], Affected),
+            findall(_, (member(S, Affected), context_retract(explored(S))), _),
+            findall(_, (member(S, Affected), explore(S)), _).
+
+        %! restart
+        %  The exploration forgotten, not the arguments it built: exploring again finds all that the arguments saved
+        %  since support or make possible attackers (with metaConflicts, those for conflicts).
+        restart :-
+            context_retract(explored(_)),
+            context_retract(expanded(_)),
+            attackCandidates::forgetPossibleAttackers.
+
+        % builtOn(+Statements, +Seen, -Affected): the statements explored whose rules use one of Statements as a premise,
+        % as they were explored (q(X), rather than the instance q(1) of the rule using p(1)), and in turn those whose
+        % rules use them; Seen are those found so far (with groundVars/2)
+        builtOn([], _, []).
+        builtOn([Statement|Statements], Seen, Affected) :-
+            findall(S, (parser::ruleUsing(Statement, C), exploredAs(C, S)), Found),
+            unseen(Found, Seen, New, Seen1),
+            utils::appendLists([Statements, New], Next),
+            builtOn(Next, Seen1, Rest),
+            utils::appendLists([New, Rest], Affected).
+
+        % exploredAs(+Statement, -Explored): Explored is explored and unifies with Statement, as it was explored
+        exploredAs(Statement, Explored) :-
+            context_check(explored(Explored)),
+            \+ \+ Explored = Statement.
+
+        unseen([], Seen, [], Seen).
+        unseen([S|Ss], Seen, New, Seen1) :-
+            groundVars(S, N),
+            (member(N, Seen) ->
+                unseen(Ss, Seen, New, Seen1)
+            ;
+                New = [S|New1],
+                unseen(Ss, [N|Seen], New1, Seen1)
+            ).
+
+        %! exploreAll(+Queries)
+        %  Each of Queries explored (see explore/1).
+        exploreAll(Queries) :-
+            findall(_, (member(Query, Queries), explore(Query)), _).
+
         %! buildSubGraph(+Query, ?Argument)
         %  Argument is each argument for Query, a premise, once explored.
         buildSubGraph(Query, Argument) :-

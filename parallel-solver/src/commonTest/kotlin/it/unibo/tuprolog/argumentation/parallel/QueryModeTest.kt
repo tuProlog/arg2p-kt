@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.parallel.cluster.LocalCluster
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// Query mode: the graph built on the rules the evaluations depend on, as the semantics declares
+// Query mode: the graph built on the arguments the evaluations depend on, as the semantics declares
 class QueryModeTest {
     // two parts no attack relates: a and b, and c, d and -d
     private val theory = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => d.\nr5 :=> -d.\n"

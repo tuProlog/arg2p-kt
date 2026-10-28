@@ -2,6 +2,8 @@ package it.unibo.tuprolog.argumentation.parallel.node
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.model.mining.arguments
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.GraphStoreBatch
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
@@ -12,6 +14,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.AttacksFound
 import it.unibo.tuprolog.argumentation.parallel.message.Build
 import it.unibo.tuprolog.argumentation.parallel.message.DirectAttack
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Explore
 import it.unibo.tuprolog.argumentation.parallel.message.Interest
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
@@ -24,31 +27,35 @@ import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
+import it.unibo.tuprolog.unify.Unificator
 
 /**
  * The catalog of a distributed solver: it holds the theory and partitions it among the workers (see
  * [TheoryPartitioner], at most [parts] partitions if given, at most as many as the network can run otherwise), each
- * owning some of the rules, and gathers the graph they build (see [it.unibo.tuprolog.argumentation.parallel.message.KbMessage] for the protocol):
- * 1. each worker is sent its rules, and tells the premises they use; every worker is then told those of all, and
- *    builds the arguments of its rules, sending each one to the workers that build on it and publishing it here;
- * 2. once every Build is acknowledged, the arguments are all published: the workers find the direct attacks on their
- *    own (with metaConflicts, where the conflicts are arguments as well, the catalog builds the attacks itself), which
- *    the catalog saves as the graph builder does (the graph store extends them to the arguments built on the attacked
- *    ones);
- * 3. the catalog labels the graph as the standard solver does with [flags] and the flags of the theory (every
+ * owning some of the rules, and gathers the graph they build (see [it.unibo.tuprolog.argumentation.parallel.message.KbMessage]
+ * for the protocol):
+ * 1. each worker is sent its rules and the flags, and tells the premises and the conclusions of its rules; every
+ *    worker is then told those of all;
+ * 2. the workers build the arguments, sending each one to the workers that build on it and publishing it here: those
+ *    of all their rules, or, in query mode (as the standard solver, see the module queryExploration), those the labels
+ *    of the statements evaluated depend on, as the semantics declares (directional or connected), explored from the
+ *    workers that conclude them;
+ * 3. once every Build and Explore is acknowledged, the arguments are all published: the workers find the direct attacks
+ *    on their own (with metaConflicts, where the conflicts are arguments as well, the catalog builds the attacks
+ *    itself), which the catalog saves as the graph builder does (the graph store extends them to the arguments built on
+ *    the attacked ones);
+ * 4. the catalog labels the graph as the standard solver does with [flags] and the flags of the theory (every
  *    semantics, every graph extension).
  *
  * The catalog knows the shared part of the theory (the flags, the preferences, the conflicts), not the rules, and
  * relays no argument. An evaluation reads the labels of the arguments for the statement. The graph is built again
- * when the theory changes, and when the network loses some of the workers of a graph being built ([Rebuild]).
- *
- * In query mode (queryMode, as the standard solver), the graph is built on the rules the labels of the arguments for
- * the statements evaluated depend on (see [QueryScope]), as the semantics declares: the part of the graph built
- * grows as later evaluations need more of it, the whole graph built when they depend on all of it.
+ * when the theory changes, and when the network loses some of the workers of a graph being built ([Rebuild]); in query
+ * mode, it grows as later evaluations need more of it.
  */
 class Catalog(
     private val network: Network,
@@ -56,17 +63,18 @@ class Catalog(
     private val flags: Flags = Flags.defaults(),
 ) : Node {
     private val theory = StringBuilder()
-    private var changed = false
+    private var changed = true
     private var workers = 0
 
-    // The rules of the graph built and of the one being built (null for all of them), and those the evaluations depend
-    // on in query mode, found on the theory as it is
-    private var built: Set<String>? = emptySet()
-    private var building: Set<String>? = null
-    private var scope: QueryScope? = null
+    // Query mode: the locality explored (null on the whole graph), and the statements explored so far, or to explore
+    // once the workers are ready
+    private var locality: String? = null
+    private val explored = mutableListOf<Term>()
+    private val pending = mutableListOf<Term>()
 
     // The construction of the graph: the stage it is at, the replies it still waits for (the subscriptions, the
-    // acknowledgements of the Builds, the attacks of each worker), the premises of each worker, the evaluations waiting
+    // acknowledgements of the Builds and Explores, the attacks of each worker), the premises and conclusions of each
+    // worker, the evaluations waiting
     private enum class Stage { READY, SUBSCRIBING, BUILDING, ATTACKING }
 
     private var stage = Stage.READY
@@ -74,17 +82,21 @@ class Catalog(
     private val interests = mutableListOf<Interest>()
     private val waiting = mutableListOf<RequireEvaluation>()
 
-    // The arguments published, by their global identifiers, and their supports (saved once all are published)
+    // The arguments published, by their global identifiers, and their supports
     private val arguments = mutableMapOf<String, Term>()
 
     /** The arguments of the graph built, those the workers published */
     val argumentsBuilt: Int get() = arguments.size
+
+    // The arguments of the graph labelled, those derived from the others included, as terms, for the tests
+    internal val graphArguments: List<Term> get() = solver.arguments(solver.activeBranch()).map { it.termRepresentation() }
     private val supports = mutableListOf<Pair<String, String>>()
 
     // The direct attacks the workers found, extended once they all have
     private val directAttacks = mutableListOf<DirectAttack>()
 
     private val solver = Arg2pSolverFactory.default(settings = flags.library())
+    private val unificator = Unificator.default
 
     // The graph is saved in its context a batch at a time (see GraphStoreBatch)
     private val context = Context.of(solver.libraries)!!
@@ -92,7 +104,7 @@ class Catalog(
     override fun receive(message: KbMessage) {
         when (message) {
             Reset -> change { theory.clear() }
-            Rebuild -> if (stage != Stage.READY) start(building)
+            Rebuild -> if (stage != Stage.READY) start(explored.toList())
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation -> {
@@ -100,20 +112,20 @@ class Catalog(
                 if (stage == Stage.READY) evaluate()
             }
             is Subscribe -> {
-                interests += Interest(message.worker, message.premises)
+                interests += Interest(message.worker, message.premises, message.conclusions)
                 if (--awaited == 0) {
                     stage = Stage.BUILDING
                     awaited = workers
-                    repeat(workers) { network.send(Address.worker(it), Build(interests.toList())) }
+                    repeat(workers) { network.send(Address.worker(it), Build(interests.toList(), locality)) }
+                    explore(pending.toList())
+                    pending.clear()
                 }
             }
             is Publish -> {
-                val terms =
-                    message.arguments.map { argument ->
-                        argument.supports.forEach { supports += it to argument.id }
-                        argument.argument.also { arguments[argument.id] = it }
-                    }
-                GraphStoreBatch.saveArguments(context, Atom.of("a"), terms)
+                message.arguments.forEach { argument ->
+                    argument.supports.forEach { supports += it to argument.id }
+                    arguments[argument.id] = argument.argument
+                }
                 network.send(Address.worker(message.worker), Ack(-1))
             }
             is Ack -> if (stage == Stage.BUILDING && --awaited == 0) built()
@@ -131,47 +143,95 @@ class Catalog(
     private fun change(update: () -> Unit) {
         update()
         changed = true
-        scope = null
     }
 
-    // The evaluations waiting answered, on a graph built anew if the theory changed or if they depend on rules the
-    // graph built lacks (those added to its own)
+    // The evaluations waiting answered, on a graph built anew if the theory changed, explored further in query mode if
+    // they need statements not explored yet
     private fun evaluate() {
         if (waiting.isEmpty()) return
-        val needed = (scope ?: QueryScope(theory.toString(), flags).also { scope = it }).rules(waiting.map { parse(it.elem) })
-        val have = built
+        val goals = waiting.map { parse(it.elem) }
         when {
-            changed -> start(needed)
-            have == null || (needed != null && have.containsAll(needed)) -> serve()
-            else -> start(needed?.let { have + it })
+            changed -> start(goals)
+            locality == null -> serve()
+            else -> {
+                val unexplored = goals.filter { goal -> explored.none { covers(it, goal) } }
+                if (unexplored.isEmpty()) return serve()
+                stage = Stage.BUILDING
+                awaited = 0
+                explore(unexplored)
+                if (awaited == 0) built()
+            }
         }
     }
 
-    // The theory partitioned again, [rules] alone if given: the catalog keeps the shared part, each worker is given
-    // its rules (those left over forget theirs)
-    private fun start(rules: Set<String>?) {
-        building = rules
-        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, flags, rules)
+    // The theory partitioned again among the workers (those left over forget their rules), the workers loaded with
+    // their rules and the flags, and the locality of the graph chosen: [goals] are explored once the workers are ready
+    private fun start(goals: List<Term>) {
+        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, flags)
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
         solve("context_reset, parser:::convertAllRules(_)")
+        locality = locality()
         val count = partitioning.partitions.size
         network.building(count)
-        repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it))) }
+        repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it), flags.toString())) }
         (count until workers).forEach { network.send(Address.worker(it), Reset) }
         workers = count
         changed = false
         interests.clear()
+        explored.clear()
+        pending.clear()
+        if (locality != null) pending += goals
         arguments.clear()
         supports.clear()
         directAttacks.clear()
-        if (workers == 0) return complete(centralAttacks = true)
+        if (workers == 0) return built()
         stage = Stage.SUBSCRIBING
         awaited = workers
     }
 
-    // The arguments all published: their supports saved, then the attacks found by the workers, but with metaConflicts
+    // The part of the graph the labels of the arguments for a statement depend on, as the semantics declares it (see
+    // the module structuredPartial): directional or connected in query mode, on a graph built from the rules; null for
+    // the whole graph
+    private fun locality(): String? {
+        val goal =
+            "setting(queryMode), structuredWhole::builder(B), B == ruleGraph, setting(argumentLabellingMode, S), " +
+                "S::locality(L), L \\== whole_graph"
+        return solver
+            .solve(Struct.parse(goal, solver.operators))
+            .first()
+            .takeIf { it.isYes }
+            ?.substitution
+            ?.getByName("L")
+            ?.toString()
+    }
+
+    // [goals] explored by the workers whose rules conclude them, each Explore acknowledged
+    private fun explore(goals: List<Term>) {
+        explored += goals
+        interests.forEach { interest ->
+            val theirs = goals.filter { goal -> interest.conclusions.any { unificator.match(it, goal) } }
+            if (theirs.isNotEmpty()) {
+                awaited++
+                network.send(Address.worker(interest.worker), Explore(-1, theirs))
+            }
+        }
+    }
+
+    // Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it
+    private fun covers(
+        general: Term,
+        specific: Term,
+    ): Boolean {
+        val fixed = specific.variables.distinct().mapIndexed { i, variable -> variable to Atom.of("fixed variable $i") }
+        return unificator.match(general, specific.apply(Substitution.of(fixed.toMap())))
+    }
+
+    // The arguments all published: the graph saved anew, the arguments and their supports, then the attacks found by
+    // the workers, but with metaConflicts
     private fun built() {
+        solve("context_reset, parser:::convertAllRules(_)")
+        GraphStoreBatch.saveArguments(context, Atom.of("a"), arguments.values.toList())
         GraphStoreBatch.saveSupports(
             context,
             supports.map { (support, argument) ->
@@ -179,7 +239,8 @@ class Catalog(
                     arguments.getValue(argument)
             },
         )
-        if (solver.solve(Struct.parse("setting(metaConflicts)", solver.operators)).first().isYes) {
+        directAttacks.clear()
+        if (workers == 0 || solver.solve(Struct.parse("setting(metaConflicts)", solver.operators)).first().isYes) {
             return complete(centralAttacks = true)
         }
         stage = Stage.ATTACKING
@@ -207,7 +268,6 @@ class Catalog(
                 "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling",
         )
         stage = Stage.READY
-        built = building
         evaluate()
     }
 

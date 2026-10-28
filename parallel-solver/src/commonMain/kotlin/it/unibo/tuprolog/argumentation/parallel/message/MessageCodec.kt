@@ -17,13 +17,14 @@ object MessageCodec {
                 when (message) {
                     Reset -> text("Reset")
                     Rebuild -> text("Rebuild")
-                    is Load -> text("Load").text(message.theory)
+                    is Load -> text("Load").text(message.theory).text(message.flags)
                     is Add -> text("Add").text(message.elem)
                     is RequireEvaluation -> text("RequireEvaluation").text(message.elem).text(message.replyTo)
                     is EvaluationResponse ->
                         text("EvaluationResponse").responses(message.inArgs).responses(message.outArgs).responses(message.undArgs)
-                    is Subscribe -> text("Subscribe").number(message.worker).terms(message.premises)
-                    is Build -> text("Build").interests(message.interests)
+                    is Subscribe -> text("Subscribe").number(message.worker).terms(message.premises).terms(message.conclusions)
+                    is Build -> text("Build").interests(message.interests).text(message.locality ?: "")
+                    is Explore -> text("Explore").number(message.from).terms(message.statements)
                     is Notify -> text("Notify").number(message.from).shared(message.arguments)
                     is Publish -> text("Publish").number(message.worker).shared(message.arguments)
                     is Ack -> text("Ack").number(message.from)
@@ -39,12 +40,13 @@ object MessageCodec {
             when (val kind = text()) {
                 "Reset" -> Reset
                 "Rebuild" -> Rebuild
-                "Load" -> Load(text())
+                "Load" -> Load(text(), text())
                 "Add" -> Add(text())
                 "RequireEvaluation" -> RequireEvaluation(text(), text())
                 "EvaluationResponse" -> EvaluationResponse(responses(), responses(), responses())
-                "Subscribe" -> Subscribe(number(), terms())
-                "Build" -> Build(interests())
+                "Subscribe" -> Subscribe(number(), terms(), terms())
+                "Build" -> Build(interests(), text().ifEmpty { null })
+                "Explore" -> Explore(number(), terms())
                 "Notify" -> Notify(number(), shared())
                 "Publish" -> Publish(number(), shared())
                 "Ack" -> Ack(number())
@@ -63,7 +65,7 @@ object MessageCodec {
     private fun TextWriter.shared(values: List<SharedArgument>) =
         list(values) { text(it.id).text(it.argument.toString()).texts(it.supports) }
 
-    private fun TextWriter.interests(values: List<Interest>) = list(values) { number(it.worker).terms(it.premises) }
+    private fun TextWriter.interests(values: List<Interest>) = list(values) { number(it.worker).terms(it.premises).terms(it.conclusions) }
 
     private fun TextWriter.attacks(values: List<DirectAttack>) = list(values) { text(it.type).text(it.attacker).text(it.target) }
 
@@ -75,7 +77,7 @@ object MessageCodec {
 
     private fun TextReader.shared() = List(number()) { SharedArgument(text(), term(), texts()) }
 
-    private fun TextReader.interests() = List(number()) { Interest(number(), terms()) }
+    private fun TextReader.interests() = List(number()) { Interest(number(), terms(), terms()) }
 
     private fun TextReader.attacks() = List(number()) { DirectAttack(text(), text(), text()) }
 
