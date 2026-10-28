@@ -186,25 +186,29 @@ with it rather than guessing what they conclude. Its tools:
 | `answer` | The statements of a query labelled in, out and und |
 | `check` | Whether a theory or a query parses, and where it does not |
 | `settings` | The profile and the flags in effect for a theory |
+| `explore` | Shows the user the solver of a theory, in the conversation where the client shows MCP Apps, and as a link to the playground |
 
-In VS Code, the extension registers it for the assistants of VS Code (Copilot agent mode), nothing to configure.
-Elsewhere, download `arg2p-lsp-<VERSION>-redist.jar` from the
-[latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) and run it with `--mcp`, on Java 21 or later.
-In Claude Code:
+The plugin `arg2p` bundles it with the **skills** of Arg2P, to formalize problems as theories, solve them and
+explore their results. In Claude Code:
 
-```bash
-claude mcp add arg2p -- java -jar /path/to/arg2p-lsp-<VERSION>-redist.jar --mcp
+```text
+/plugin install arg2p --marketplace tuProlog/arg2p-kt
 ```
 
-In clients configured by JSON (Claude Desktop, Cursor, ...):
+Codex and ChatGPT read the same repository (`codex plugin marketplace add tuProlog/arg2p-kt`), any agent reading
+Agent Skills takes the skills alone (`npx skills add tuProlog/arg2p-kt`), and a release attaches them as zips for
+claude.ai. The server alone runs from the Python package with [uv](https://docs.astral.sh/uv/), in any MCP client:
 
 ```json
 {
   "mcpServers": {
-    "arg2p": { "command": "java", "args": ["-jar", "/path/to/arg2p-lsp-<VERSION>-redist.jar", "--mcp"] }
+    "arg2p": { "command": "uvx", "args": ["arg2p", "mcp"] }
   }
 }
 ```
+
+In VS Code, the extension registers it, nothing to configure. See
+[AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp) and the [plugin](./plugins/arg2p/README.md).
 
 ---
 

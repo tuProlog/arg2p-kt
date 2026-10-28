@@ -51,6 +51,7 @@ conclude.
 | `answer` | The statements of a query labelled in, out and und |
 | `check` | Whether a theory or a query parses, and where it does not |
 | `settings` | The profile and the flags in effect for a theory |
+| `explore` | Shows the solver of a theory in the chat, to explore its results there |
 
 It runs on the Java of the language server. For other assistants, see
 [Execution](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp).
