@@ -117,7 +117,7 @@
     "package": "node esbuild.mjs --production && vsce package --no-dependencies"
   },
   "devDependencies": {
-    "@tuprolog/arg2p-ui": "file:../../arg2p-kt-web/packages/ui",
+    "@tuprolog/arg2p-ui": "0.1.0",
     "@types/node": "24.19.1",
     "@types/vscode": "1.95.0",
     "@vscode/test-electron": "3.1.0",
