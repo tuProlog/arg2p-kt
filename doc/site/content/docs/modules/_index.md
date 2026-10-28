@@ -196,7 +196,7 @@ Inside the call:
   unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;
 - the resulting graph is written to the usual evaluation context, so it can be
-  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
+  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is drawn by the solver of the playground like any other
   evaluation.
 
 > [!NOTE]

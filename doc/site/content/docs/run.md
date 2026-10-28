@@ -53,7 +53,6 @@ the parallel solver, and is what most projects need. The individual modules can 
 | `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
 | `parallel-solver`, `parallel-solver-jvm`, `parallel-solver-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel-solver" %}}) |
 | `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
-| `ide` | The desktop IDE as a library |
 
 Artifacts without a suffix are the Kotlin Multiplatform ones; use `-jvm` or `-js` to depend on a single
 platform explicitly.

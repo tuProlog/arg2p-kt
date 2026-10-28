@@ -13,7 +13,8 @@ so a flag can be set in three ways:
 - **in the theory itself**, by writing the fact (e.g. `queryMode.`);
 - **from the API**, through [`Flags`]({{% ref "/docs/api/kotlin#flags" %}}) (in Kotlin, JavaScript and Python), each
   flag with a method taking a value of its enumeration (`Semantics.PREFERRED`, `Profile.ABA`, ...);
-- **from the IDE**, through the _Arg Flags_ tab.
+- **from the [playground](https://tuprolog.github.io/arg2p-kt-web/)** and the extension of VS Code, through the
+  _Flags_ panel of the solver.
 
 A flag stated in the theory replaces the value the solver was given for it: a theory stating
 `graphExtension(bp).` has only that extension, not the `standardPref` of `Flags.defaults()` as well.
@@ -106,10 +107,6 @@ described in the papers listed under [References]({{% ref "/docs/references" %}}
 
 To disable preference handling altogether, pass an empty list of extensions
 (`Flags.defaults().graphExtensions()`, which states `graphExtension(none).`) rather than omitting the flag.
-
-> [!WARNING]
-> In the IDE the _Unrestricted Rebut_ checkbox is the **inverse** of this flag: leaving it unticked adds
-> `graphExtension(rebutRestriction)`. The _Meta Bp_ checkbox corresponds to `graphExtension(bp)`.
 
 ---
 

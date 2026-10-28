@@ -27,8 +27,6 @@ The build uses the Gradle wrapper, so no local Gradle installation is needed. Th
 | `./gradlew jvmTest` | Run the JVM test suite only |
 | `./gradlew jsTest` | Run the JavaScript test suite only |
 | `./gradlew ktlintCheck` | Check the code style |
-| `./gradlew :ide:run` | Launch the IDE from source |
-| `./gradlew :ide:shadowJar` | Build the self-contained IDE jar |
 | `./gradlew dokkaGeneratePublicationHtml` | Generate the API documentation |
 
 The JVM tests target Java 21 by default; pass `-PtestJvm=<version>` to use a different one.
