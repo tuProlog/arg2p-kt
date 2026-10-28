@@ -16,16 +16,25 @@ solver did not give.
 
 Use the tools of the **Arg2P MCP server** when they are there (`solve`, `answer`, `check`, `settings`, `explore`):
 
-| Tool | Gives |
-| --- | --- |
-| `check` | whether a theory (`kind: theory`) or a query (`kind: query`) parses, and where it does not |
-| `answer` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und` |
-| `solve` | the solutions of any query (default `buildLabelSets(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
-| `settings` | the value in effect of every flag for the theory: its profile, its semantics, ... |
-| `explore` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
+| Tool | Takes | Gives |
+| --- | --- | --- |
+| `check` | `text`, `kind` (`theory`, the default, or `query`) | whether the text parses, and where it does not (line, column, token) |
+| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und` |
+| `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | the solutions of any query (default `buildLabelSets(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
+| `settings` | `theory`, `flags` | the value in effect of every flag for the theory: its profile, its semantics, ... |
+| `explore` | `theory`, `query`, `flags` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
 
-Each takes the `theory` as text and the `flags` as Prolog facts (see `arg2p-formalize`). `solve` and `answer` take a
-`timeoutSeconds` (60 by default).
+The `theory` is text, the `flags` Prolog facts (see `arg2p-formalize`); `theory`, and the `query` of `answer`, are
+required (and the `text` of `check`). `timeoutSeconds` is 60 by default.
+
+The errors are results to read, not to work around:
+
+- A theory that does not parse, or that its profile refuses, is an **error** of `solve`, `answer`, `settings` and
+  `explore`, saying why (with the line and column of a syntax error). Fix the theory or the profile; never answer in
+  the solver's place.
+- A query with no answer within `timeoutSeconds` is **stopped**, and the tool says so: see the sanity checks below.
+- The server runs the theories it is given, and nothing else: it loads no file nor URL, so a theory loading a module
+  (`call_module/2`) fails there. Put everything the theory needs in its text.
 
 Without the MCP server, the Python package does the same (it bundles its Java runtime: nothing else to install):
 
@@ -45,8 +54,8 @@ To install the MCP server itself, see <https://tuprolog.github.io/arg2p-kt/docs/
 
 ## Steps
 
-1. **Check** the theory parses (`check`). A syntax error comes with its line and column: fix the theory, do not guess
-   around it.
+1. **Check** the theory parses (`check`, with the theory as its `text`). A syntax error comes with its line and
+   column: fix the theory, do not guess around it.
 2. **Confirm the setup** (`settings`): the profile (`graphBuildMode`) and the semantics (`argumentLabellingMode`) in
    effect must be the ones the formalization chose. A profile refuses a theory written outside its framework, with an
    error saying why: read the error, and fix the theory or the profile.
