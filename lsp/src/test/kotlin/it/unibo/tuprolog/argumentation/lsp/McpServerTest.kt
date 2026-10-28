@@ -160,6 +160,8 @@ class McpServerTest {
                 .asJsonObject
         val html = page.get("text").asString
         assertTrue(html.contains("@tuprolog/arg2p-ui@${McpApp.UI_VERSION}?bundle"))
+        assertTrue(html.contains("/lit@${McpApp.LIT_VERSION}?bundle"))
+        assertTrue(html.contains("const DEFAULT_QUERY = \"${Solvers.DEFAULT_QUERY}\";"))
         assertFalse(html.contains("{{"))
         assertEquals(
             "https://esm.sh",

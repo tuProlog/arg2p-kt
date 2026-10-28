@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.lsp
 
+import java.util.Properties
+
 /**
  * The solver pane of the MCP server, an MCP App (the extension io.modelcontextprotocol/ui of MCP): the page of the
  * solver, served as the resource [URI], which the hosts of MCP Apps show when the tool explore is called. The page
@@ -19,8 +21,18 @@ internal object McpApp {
     /** Where the page loads its components and their dependencies from */
     const val CDN = "https://esm.sh"
 
+    // The versions of what the page loads, those the extension of VS Code is built with (see the build of the server)
+    private val versions =
+        Properties().apply {
+            McpApp::class.java.getResourceAsStream("page.properties")?.use(::load)
+                ?: error("The versions of the page are missing from the jar")
+        }
+
     /** The version of @tuprolog/arg2p-ui the page loads (ARG2P_UI_VERSION another one, to try it) */
-    val UI_VERSION: String = System.getenv("ARG2P_UI_VERSION")?.takeIf { it.isNotBlank() } ?: "0.2.0"
+    val UI_VERSION: String = System.getenv("ARG2P_UI_VERSION")?.takeIf { it.isNotBlank() } ?: versions.getProperty("ui")
+
+    /** The version of Lit the page loads, the one of @tuprolog/arg2p-ui */
+    val LIT_VERSION: String = versions.getProperty("lit")
 
     /** The page of the solver */
     val page: String by lazy {
@@ -29,7 +41,12 @@ internal object McpApp {
                 .getResourceAsStream("solver.html")
                 ?.use { it.readBytes().toString(Charsets.UTF_8) }
                 ?: error("The page of the solver is missing from the jar")
-        text.replace("{{ui}}", UI_VERSION).replace("{{cdn}}", CDN)
+        text
+            .replace("{{ui}}", UI_VERSION)
+            .replace("{{lit}}", LIT_VERSION)
+            .replace("{{cdn}}", CDN)
+            .replace("{{query}}", json.toJson(Solvers.DEFAULT_QUERY))
+            .replace("{{emptyGraph}}", json.toJson(GraphData.EMPTY))
     }
 
     /** The metadata of the page for the hosts: what it loads, from where */
