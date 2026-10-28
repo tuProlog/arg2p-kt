@@ -71,6 +71,11 @@ class Worker(
     private var deficit = 0
     private var parent: String? = null
 
+    // The arguments other workers sent before the Build of the catalog reached this one, by another way: handled
+    // once it has, as the worker only then knows the workers to send what it builds on them
+    private var building = false
+    private val early = mutableListOf<Notify>()
+
     // The search for the attacks: started, the statements each other worker wants, the arguments of the others sent to
     // it, how many workers sent theirs
     private var attacking = false
@@ -104,18 +109,25 @@ class Worker(
                 val needed = solver.solutions(premises.with()).map { it.getValue("P") }.distinctBy { it.toString() }
                 network.send(Address.CATALOG, Subscribe(index, needed))
             }
-            is Build ->
+            is Build -> {
                 engaged(Address.CATALOG) {
                     workers = message.interests.size
                     message.interests.filter { it.worker != index }.forEach { interests[it.worker] = it.premises }
                     solve("argumentBuilder::buildArguments")
                     share()
                 }
+                building = true
+                early.toList().also { early.clear() }.forEach { receive(it) }
+            }
             is Notify ->
-                engaged(Address.worker(message.from)) {
-                    val claims = keep(message.arguments)
-                    solver.solve(fire.with("N" to PlList.of(claims))).first()
-                    share()
+                if (!building) {
+                    early += message
+                } else {
+                    engaged(Address.worker(message.from)) {
+                        val claims = keep(message.arguments)
+                        solver.solve(fire.with("N" to PlList.of(claims))).first()
+                        share()
+                    }
                 }
             is Ack -> {
                 deficit--
@@ -149,6 +161,8 @@ class Worker(
         interests.clear()
         deficit = 0
         parent = null
+        building = false
+        early.clear()
         attacking = false
         candidatesSent = false
         attacksSent = false
