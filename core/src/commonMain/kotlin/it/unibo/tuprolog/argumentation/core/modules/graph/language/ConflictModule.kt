@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
+import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.flags.ConflictModel
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
@@ -7,10 +9,16 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * and its negation, and those between obligations and permissions) and those the theory declares (conflict/2,3);
  * with metaConflicts they are only those concluded by an argument for `conflict(A, B)` or `conflict(A, B, Guard)`.
  *
+ * The conflicts the languages of the theory state (graphLanguage) are kept in the context by the parser; with the
+ * conflict model declared (conflictModel), the built-in ones do not hold.
+ *
  * Statements are written as in the conclusions of arguments, `[Claim]`. A conflict may hold only under a guard, a
  * Prolog goal (or a term true or false) checked when the conflict is used.
  */
 object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "conflict") {
+    override val baseFlags: Iterable<ArgsFlag<*, *>>
+        get() = listOf(ConflictModel)
+
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -35,6 +43,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             Statement = [A], Other = [B],
             graphStore::argumentFor([conflict(A, B, Guard)], _).
         guarded(Statement, Other, Guard) :-
+            setting(conflictModel, builtin),
             builtin(Statement, Other, Guard).
         guarded(Statement, Other, Guard) :-
             conflict(Statement, Other, Guard).
@@ -46,6 +55,8 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             graphStore::argumentFor([conflict(A, B)], _).
         unguarded(Statement, Other) :-
             conflict(Statement, Other).
+        unguarded(Statement, Other) :-
+            context_check(conflict(Statement, Other)).
 
         %! statement(?Statement, ?Other, -ConflictStatement)
         %  With metaConflicts, the arguments for ConflictStatement make Statement conflict with Other.

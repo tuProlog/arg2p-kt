@@ -12,6 +12,7 @@ internal class ContextBranches {
     private var next: Int = 1
     private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore())
     private val identifiers: MutableMap<Term, Int> = mutableMapOf()
+    private val terms: MutableList<Term> = mutableListOf()
 
     /** The active branch */
     var active: Int = 0
@@ -39,6 +40,7 @@ internal class ContextBranches {
         stores.clear()
         stores[0] = ClauseStore()
         identifiers.clear()
+        terms.clear()
     }
 
     /** [branch] made active; false if there is no such branch */
@@ -75,7 +77,17 @@ internal class ContextBranches {
      * The identifier of [term], shared by all the copies of the term which only differ in variable names (variables
      * get renamed whenever a term is read back from the context)
      */
-    fun identifier(term: Term): Int = identifiers.getOrPut(canonical(term)) { identifiers.size }
+    fun identifier(term: Term): Int =
+        identifiers.getOrPut(canonical(term)) {
+            terms += term
+            terms.size - 1
+        }
+
+    /** The identifier of [term] if it has one already (see [identifier]) */
+    fun knownIdentifier(term: Term): Int? = identifiers[canonical(term)]
+
+    /** The term with identifier [identifier], as first given an identifier; null if none has it */
+    fun term(identifier: Int): Term? = terms.getOrNull(identifier)
 
     private fun canonical(term: Term): Term {
         val variables = term.variables.distinct().toList()

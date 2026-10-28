@@ -25,7 +25,7 @@ class EngineBenchmark {
     private fun property(name: String) = System.getProperty("benchmark.$name")?.takeIf { it.isNotBlank() }
 
     private val config =
-        "\ngraphBuildMode(standard_af).\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded)." +
+        "\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded)." +
             "\norderingPrinciple(last).\norderingComparator(elitist).\ngraphExtension(standardPref)."
 
     private class Workload(

@@ -1,0 +1,207 @@
+---
+title: Parallel Solver
+weight: 29
+---
+
+## Parallel Solver
+
+The parallel solver builds the argumentation graph of a theory with several workers at once, then labels it as the
+standard solver does. A coordinator, the **catalog**, splits the theory among the workers; each worker builds the
+arguments of its own rules, and finds the attacks on them. The answers are the same as the standard solver's, with
+any semantics and graph extension; the construction of the graph is what runs in parallel.
+
+It is meant for theories large enough that building the graph dominates the evaluation. On a small theory the
+coordination costs more than it saves.
+
+The module is available for the JVM and for JavaScript as `parallel-solver` (see [Running]({{% ref "/docs/run" %}})).
+
+> [!NOTE]
+> This module is more experimental than the rest of the framework: expect its API to change more often than the
+> core engine. The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) is a different design, with nodes that
+> argue over their fragments of the theory and combine their labels.
+
+---
+
+## Runtimes
+
+The catalog and the workers are the same on every runtime; only the way their messages travel changes.
+
+| Class | Runtime | Workers |
+| --- | --- | --- |
+| `LocalCluster` | JVM, JavaScript | Taking turns on the calling thread: the reference behaviour, for tests and debugging. |
+| `ThreadedCluster` | JVM | On a pool of threads, as many as the processors by default. |
+| `WorkerCluster` | Node.js | On `worker_threads`, each loading this module. |
+| `WebWorkerCluster` | Browsers | On Web Workers, each running a script that loads this module. |
+
+All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the flags
+of the solver (`Flags`, as for the [API]({{% ref "/docs/api/kotlin" %}})), which the flags written in the theory
+complete, as for the standard solver. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
+the Python package `arg2p`) as well.
+
+---
+
+## On the JVM
+
+```kotlin
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.Semantics
+import it.unibo.tuprolog.argumentation.parallel.cluster.ThreadedCluster
+
+ThreadedCluster(threads = 8, flags = Flags.defaults().argumentLabellingMode(Semantics.COMPLETE)).use { cluster ->
+    cluster.load(theory)
+    val answer = cluster.solve("conclusion")
+    println(answer.inArgs.map { it.claim })
+}
+```
+
+`load` replaces the theory, `add` adds a clause, `reset` forgets the theory. The first `solve` after a change
+builds and labels the graph; the following ones read the labels. `solve` may be called from several threads at
+once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
+Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
+
+---
+
+## On Node.js
+
+```javascript
+import { WorkerCluster } from '@tuprolog/arg2p'
+
+const cluster = new WorkerCluster(4)
+cluster.load(theory)
+const answer = await cluster.solve('conclusion')
+console.log(answer.inArgs.map(r => r.claim))
+cluster.close()
+```
+
+The worker threads keep Node.js running only while an evaluation is pending; `close` stops them. `LocalCluster`
+offers the same methods on the calling thread, with `solve` returning the answer directly.
+
+---
+
+## Federation
+
+Instances of the parallel solver, on the same machine or on different ones, can be federated: each one keeps its
+own theory and its own workers, and lends its workers to the others. A graph is then built by the workers of every
+instance at once, the theory split among them in proportion to the workers each one runs. The engines can be mixed:
+a JVM cluster, a Node.js one and a browser can build a graph together.
+
+Instances federate over WebSockets: one listens, the others connect to it. An instance lends its workers to the
+instances it is linked to, and borrows theirs; two instances building the same graph with no link between them
+reach each other through the one whose graph it is.
+
+```kotlin
+// on one machine
+val hub = ThreadedCluster(threads = 8)
+val port = hub.listen(9431)
+
+// on another
+val other = ThreadedCluster(threads = 16)
+other.connect("ws://hub-host:9431")
+other.load(theory)
+other.solve("conclusion") // built by the 24 workers of both
+```
+
+```javascript
+const cluster = new WorkerCluster(4)
+await cluster.connect('ws://hub-host:9431')
+```
+
+On a local network, instances can find each other instead: each one calling `discover()` listens on an ephemeral
+port and announces itself every two seconds over UDP multicast (group `239.255.42.99`, port `9430`, not routed beyond
+the network); the instances of the same version hearing it connect to it, and connect again if it comes back after
+leaving.
+
+```kotlin
+ThreadedCluster(threads = 8).discover()
+```
+
+```javascript
+await new WorkerCluster(4).discover()
+```
+
+### In a browser
+
+`WebWorkerCluster` runs the workers on Web Workers, each running a module of yours that calls `startWebWorker()` (an
+ES module, loaded as a module worker; with a bundler, the entry point of a worker bundle). A browser cannot listen nor
+send beacons: it connects to a JVM or Node.js instance, and through it to the other browsers linked to that instance,
+over WebRTC.
+
+```javascript
+// the page
+const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
+await cluster.connect('ws://hub-host:9431')
+cluster.load(theory)
+const answer = await cluster.solve('conclusion')
+
+// arg2p-worker.js
+import { startWebWorker } from '@tuprolog/arg2p'
+startWebWorker()
+```
+
+The instance a browser connects to introduces it to the other browsers connected to it: the two open a WebRTC data
+channel between them, and lend each other their Web Workers. On a local network they need nothing else; across
+networks, give the cluster the STUN or TURN servers to use (`iceServers`, as `RTCPeerConnection` takes them).
+
+Two browsers can also be paired by hand, with no server at all: one invites, the other accepts the invitation, and
+the first completes the pairing with the reply. The codes (some 600 characters) can travel any way, pasted in a chat
+or shown as a QR code; an invitation holds as long as the page that made it stays open.
+
+```javascript
+// first browser
+const invitation = await cluster.invite()        // to send to the second
+await cluster.complete(reply)                    // the reply of the second: linked
+
+// second browser
+const reply = await cluster.accept(invitation)   // to send back to the first
+```
+
+A Node.js cluster lends the workers of its threads as well: each thread is a site working for its cluster alone,
+reached through it. Only instances of the same version of arg2p federate. If an instance leaves while a graph is
+being built, the graph is built again with the workers left; once built, the graph lives with the instance that
+asked for it, and needs the others only when its theory changes.
+
+> [!WARNING]
+> A federated instance runs the theories its peers send it, and sends them its own. Listen only on networks you
+> trust.
+
+---
+
+## How the graph is built
+
+1. The catalog splits the theory into partitions of related rules (those whose conclusions and premises unify). A
+   group larger than its share is split where it joins parts that support nothing of one another (as a rule using the
+   conclusions of several chains), each part whole, so that they are built side by side; the largest partitions are
+   split further, in halves, so that every worker has a share. Each worker receives its rules and the flags of the
+   solver, and tells the catalog the premises and the conclusions of its rules.
+2. Each worker builds the arguments of its rules and sends every new argument directly to the workers that need its
+   conclusion, which build on it in turn, and publishes it to the catalog.
+3. Once every argument is built, each worker asks the others for the arguments that could attack its own, and checks
+   each such pair once. Only the direct attacks are sent to the catalog: the graph store extends them to the
+   arguments built on the attacked ones.
+4. The catalog labels the graph with the settings of the solver, as the standard solver does.
+
+With `metaConflicts`, where conflicts are themselves arguments, the catalog finds the attacks itself.
+
+### Query mode
+
+With `queryMode` (on in `Flags.defaults()`), the workers build only the arguments the labels of the statements
+evaluated depend on, as the semantics declares: exactly those the
+[query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver builds, explored the same way, by the
+same modules (`queryExploration`), each worker on its own rules:
+
+- the catalog asks the workers whose rules conclude a statement evaluated to explore it;
+- a worker explores it on its rules: the arguments for it, those for their premises, and the statements their labels
+  may depend on (their possible attackers, the conflicts that relate them with `metaConflicts`, what each graph
+  extension declares, and, for a semantics whose labels also depend on what an argument attacks or supports, the
+  connected ones, those as well);
+- a statement explored that the rules of other workers conclude is explored by them in turn: they send back the
+  arguments they build for it, on which the worker carries its exploration on (exploring again only what they may
+  support). The premises of a rule are asked for all at once, rather than each once the one before it is supported
+  as the standard solver does, so that the workers build them side by side; should a premise have no argument, the
+  arguments for the others are built nonetheless, which changes no label.
+
+Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
+needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that
+needs no more is answered from it. A change of the theory starts again from scratch.
+
+The whole graph is built with no query mode, and for a semantics whose labels depend on all of it (`stable`).

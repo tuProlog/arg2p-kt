@@ -1,0 +1,11 @@
+# made by the build: the jars of arg2p (./gradlew :python:pythonJars), its version (pythonVersion), a Java runtime
+# (pythonRuntime)
+src/arg2p/jars/
+src/arg2p/_version.py
+src/arg2p/jre/
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/

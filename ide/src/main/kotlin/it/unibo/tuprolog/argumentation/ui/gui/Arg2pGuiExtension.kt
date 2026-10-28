@@ -41,7 +41,7 @@ internal data class Arg2pFlags(
     val prologStrictCompatibility: Boolean = false,
     val unrestrictedRebut: Boolean = true,
     val bpGraph: Boolean = false,
-    val graphBuildMode: String = "standard_af",
+    val graphBuildMode: String = "free",
     val argumentLabellingMode: String = "grounded",
     val statementLabellingMode: String = "statement",
     val orderingPrinciple: String = "last",

@@ -7,8 +7,12 @@ semVer = "7.3.0"
 akka = "2.8.8"
 tuprolog = "3.0.5"
 jung = "2.1.1"
+javaWebSocket = "1.6.0"
+ws = "8.22.0"
+kover = "0.9.9"
 
 [plugins]
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
 
@@ -47,6 +51,8 @@ akka-actor-typed = { module = "com.typesafe.akka:akka-actor-typed_2.13", version
 akka-cluster-sharding-typed = { module = "com.typesafe.akka:akka-cluster-sharding-typed_2.13", version.ref = "akka" }
 akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
+
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebSocket" }
 
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.4"
 logback-classic = "ch.qos.logback:logback-classic:1.6.6"

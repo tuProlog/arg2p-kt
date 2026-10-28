@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arg2p"
+# the version of arg2p, written by ./gradlew :python:pythonVersion
+dynamic = ["version"]
+description = "Arg2P, structured argumentation in Prolog (ASPIC+, ABA, abstract frameworks), from Python"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["JPype1>=1.5"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Java",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://tuprolog.github.io/arg2p-kt/"
+Source = "https://github.com/tuProlog/arg2p-kt"
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+arg2p = "arg2p.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "arg2p._version.__version__" }
+
+[tool.setuptools.package-data]
+# the jars of arg2p, and the Java runtime a wheel for a platform bundles (./gradlew :python:pythonRuntime)
+arg2p = ["jars/*.jar", "jre/**/*", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# the JVM handles access violations of its own (on Windows), which the fault handler of pytest would report
+addopts = "-p no:faulthandler"

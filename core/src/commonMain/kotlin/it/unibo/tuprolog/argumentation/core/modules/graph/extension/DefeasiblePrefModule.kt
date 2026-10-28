@@ -60,7 +60,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         %! convertAttacks(+Attacks)
         %  Each attack becomes an argument for it: an attack of A on B becomes the argument X for attack(T, A, B, B),
         %  supported by A and attacking B. If A attacks B through C, a sub-argument of B, the argument for the attack
-        %  on C attacks B (transitive attack).
+        %  on C attacks B, as the attacks on C extend to the arguments built on it (see the module graphStore).
         convertAttacks(Attacks) :-
             conversion(Attacks).
 
@@ -68,27 +68,14 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             member((T, A, B, B), List),
             generateDirectAttackArgument(T, A, B, B),
             fail.
-        conversion(List) :-
-            member((T, A, B, C), List),
-            C \= B,
-            generateTransitiveAttackArgument(T, A, B, C),
-            fail.
         conversion(_).
 
-        generateTransitiveAttackArgument(T, A, B, C) :-
-            attackArgument(AttackArgument, T, A, C, C),
-            graphStore::saveAttack(T, AttackArgument, B, C),
-            graphStore::removeAttack(T, A, B, C).
-
+        % The attacks on A extend to the argument for the attack, which A supports
         generateDirectAttackArgument(T, A, B, B) :-
             argument::infoParts(Info, [attack], [attack], []),
             argument::new([attack], attack, [attack(T, A, B, B)], [], Info, AttackArgument),
             graphStore::saveArgument(a, [attack(T, A, B, B)], AttackArgument),
             graphStore::saveSupport(A, AttackArgument),
-            findall(_, (
-                graphStore::attack(X, Y, A, Z),
-                graphStore::saveAttack(X, Y, AttackArgument, Z)
-            ), _),
             graphStore::saveAttack(T, AttackArgument, B, B),
             graphStore::removeAttack(T, A, B, B).
 
@@ -101,7 +88,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
 
         %! buildPrefAttacks
         %  The arguments for the preferences invalidating an attack, by any of its justifications, attack its
-        %  argument, and what it supports.
+        %  argument (and so what it supports).
         buildPrefAttacks :-
             attackArgument(Attack, T, A, B, C),
             invalid(T, A, B, C, Preferences),
@@ -109,16 +96,8 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             argument::claim(Preference, X),
             graphStore::argument(Preference),
             graphStore::saveAttack(pref, Preference, Attack, Attack),
-            prefersTransitively(Preference, Attack),
             fail.
         buildPrefAttacks.
-
-        %! prefersTransitively(+Preference, +Attack)
-        %  The preference also attacks the arguments the attack argument supports.
-        prefersTransitively(Preference, Attack) :-
-            graphStore::argumentId(Preference, IdP),
-            graphStore::argumentId(Attack, IdA),
-            attackBuilder::buildTransitiveAttacks(pref, IdP, Preference, IdA, Attack).
 
         %==============================================================================
         % QUERY MODE

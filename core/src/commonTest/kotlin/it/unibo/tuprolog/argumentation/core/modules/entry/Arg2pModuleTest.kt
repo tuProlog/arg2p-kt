@@ -21,7 +21,6 @@ class Arg2pModuleTest {
                 
                 bp(-a).
                 
-                graphBuildMode(standard_af).
                 statementLabellingMode(statement).
                 argumentLabellingMode(bp_grounded_partial).
                 graphExtension(rebutRestriction).

@@ -6,12 +6,16 @@
   <a href="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml"><img src="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml/badge.svg?branch=master" alt="CI/CD"></a>
   <a href="https://central.sonatype.com/artifact/it.unibo.tuprolog.argumentation/arg2p-jvm"><img src="https://img.shields.io/maven-central/v/it.unibo.tuprolog.argumentation/arg2p-jvm?label=Maven%20Central" alt="Maven Central"></a>
   <a href="https://www.npmjs.com/package/@tuprolog/arg2p"><img src="https://img.shields.io/npm/v/@tuprolog/arg2p?label=npm" alt="npm"></a>
+  <a href="https://pypi.org/project/arg2p/"><img src="https://img.shields.io/pypi/v/arg2p?label=PyPI" alt="PyPI"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/coverage/kotlin/index.html"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Ftuprolog.github.io%2Farg2p-kt%2Fcoverage%2Fkotlin.json" alt="Kotlin coverage"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/coverage/prolog.md"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Ftuprolog.github.io%2Farg2p-kt%2Fcoverage%2Fprolog.json" alt="Prolog coverage"></a>
   <a href="https://tuprolog.github.io/arg2p-kt/"><img src="https://img.shields.io/badge/docs-wiki-blue" alt="Documentation"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/tuProlog/arg2p-kt" alt="License"></a>
 </p>
 
 Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
-Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it supports both JVM and Node environments.
+Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it runs on the JVM, in JavaScript
+(Node.js and browsers) and in Python, with the same API.
 
 More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
 
@@ -82,20 +86,22 @@ dependencies {
 #### Usage Example
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Arg2p
 
 fun main() {
-    val graph = Arg2pSolverFactory.evaluate("""
-        f1 :=> d.
-        f2 :=> -d.
-    """.trimIndent(), FlagsBuilder()).first()
+    val (graph) =
+        Arg2p.of(
+            """
+            f1 :=> d.
+            f2 :=> -d.
+            """.trimIndent(),
+        ).graphs()
 
     graph.labellings.forEach {
         println("${it.label} : ${it.argument.conclusion}")
     }
 }
-``` 
+```
 
 For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
 
@@ -116,21 +122,29 @@ badge above):
 #### Usage Example
 
 ```js
-const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
+import { Arg2p } from '@tuprolog/arg2p'
 
-const solver = JsArg2p.solver(`
+const [graph] = Arg2p.of(`
     f1 :=> d.
-    f2 :=> -d.
-    queryMode.`)
-JsArg2p.solve(solver, 'arg2p::solve').next()
-const graph = JsArg2p.graph(solver)
+    f2 :=> -d.`).graphs()
 
-graph.arguments.forEach(arg => {
-    console.log(`${arg.label} : ${arg.descriptor}`)
-})
+graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
 ```
 
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
+
+
+#### Python Library
+
+The same API, in snake case, is on PyPI: `pip install arg2p` (the wheel bundles a Java runtime).
+
+```python
+from arg2p import Arg2p
+
+(graph,) = Arg2p.of("f1 :=> d.\nf2 :=> -d.").graphs()
+for labelled in graph.labellings:
+    print(f"{labelled.label} : {labelled.argument.conclusion}")
+```
 
 ---
 

@@ -10,7 +10,6 @@ import kotlin.test.assertTrue
 class MiningTest {
     private val config =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

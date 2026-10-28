@@ -1,0 +1,231 @@
+package it.unibo.tuprolog.argumentation.behaviour
+
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.answerQuery
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.buildLabelSets
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class RationalityTest {
+    // The plain and restricted variants of Caminada's examples show what goes wrong without transposition, which the
+    // profile aspic_plus (the default) turns on
+    private companion object {
+        const val NOT_TRANSPOSED = "autoTransposition(off).\n"
+    }
+
+    private val example4theory =
+        """
+        f1 :-> wr.
+        f2 :-> go.
+        s1: b -> -hw.
+        s2: m -> hw.
+        d1: wr => m.
+        d2: go => b.
+        statementLabellingMode(statement).
+        argumentLabellingMode(grounded).
+        graphExtension(standardPref).
+        orderingPrinciple(last).
+        orderingComparator(elitist).
+        
+        """.trimIndent()
+
+    private val example5theory =
+        """
+        f1 :-> a.
+        f2 :-> d.
+        f3 :-> c.
+        s1 : b,e -> -c.
+        d1 : a => b.
+        d2 : d => e.
+        statementLabellingMode(statement).
+        argumentLabellingMode(grounded).
+        graphExtension(standardPref).
+        orderingPrinciple(last).
+        orderingComparator(elitist).
+        
+        """.trimIndent()
+
+    private val example6theory =
+        """
+        f1 :-> a.
+        f2 :-> d.
+        f3 :-> g.
+        s1 : b,c,e,f -> -g.
+        d1 : a => b.
+        d2 : b => c.
+        d3 : d => e.
+        d4 : e => f.
+        statementLabellingMode(statement).
+        argumentLabellingMode(grounded).
+        graphExtension(standardPref).
+        orderingPrinciple(last).
+        orderingComparator(elitist).
+        
+        """.trimIndent()
+
+    private val example7theory =
+        """
+        f1 :-> a.
+        f2 :-> b.
+        f3 :-> c.
+        f4 :-> g.
+        s1 : d,e,f -> -g.
+        d1 : a => d.
+        d2 : b => e.
+        d3 : c => f.
+        statementLabellingMode(statement).
+        graphExtension(standardPref).
+        orderingPrinciple(last).
+        orderingComparator(elitist). 
+        
+        """.trimIndent()
+
+    private fun protoTest(
+        theory: String,
+        argsIn: Iterable<String>,
+        argsOut: Iterable<String>,
+        argsUnd: Iterable<String>,
+    ) {
+        val prepare = { term: String -> "[$term]" }
+        val parse = { args: Iterable<String> -> args.map { prepare(it) }.joinToString(",", "[", "]") }
+
+        argsIn.forEach { answerQuery("$theory\nqueryMode.", it, "[$it]", "[]", "[]") }
+        argsOut.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[$it]", "[]") }
+        argsUnd.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[]", "[$it]") }
+
+        buildLabelSets(theory, parse(argsIn), parse(argsOut), parse(argsUnd))
+    }
+
+    @Test
+    fun caminadaExample4() =
+        protoTest(
+            example4theory + NOT_TRANSPOSED,
+            listOf("wr", "m", "go", "b"),
+            listOf(),
+            listOf("-hw", "hw"),
+        )
+
+    @Test
+    fun caminadaExample4restricted() =
+        protoTest(
+            example4theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
+            listOf("-hw", "wr", "m", "hw", "go", "b"),
+            listOf(),
+            listOf(),
+        )
+
+    @Test
+    fun caminadaExample4transposed() =
+        protoTest(
+            example4theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("wr", "go"),
+            listOf(),
+            listOf("-m", "-hw", "-b", "m", "hw", "b"),
+        )
+
+    @Test
+    fun caminadaExample5() =
+        protoTest(
+            example5theory + NOT_TRANSPOSED,
+            listOf("e", "d", "c", "b", "a"),
+            listOf("-c"),
+            listOf(),
+        )
+
+    @Test
+    fun caminadaExample5restricted() =
+        protoTest(
+            example5theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
+            listOf("-c", "e", "d", "c", "b", "a"),
+            listOf(),
+            listOf(),
+        )
+
+    @Test
+    fun caminadaExample5transposed() =
+        protoTest(
+            example5theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("d", "c", "a"),
+            listOf("-c"),
+            listOf("-e", "-b", "e", "b"),
+        )
+
+    @Test
+    fun caminadaExample6() =
+        protoTest(
+            example6theory + NOT_TRANSPOSED,
+            listOf("g", "f", "e", "d", "c", "b", "a"),
+            listOf("-g"),
+            listOf(),
+        )
+
+    @Test
+    fun caminadaExample6restricted() =
+        protoTest(
+            example6theory + NOT_TRANSPOSED + "graphExtension(rebutRestriction).",
+            listOf("-g", "g", "f", "e", "d", "c", "b", "a"),
+            listOf(),
+            listOf(),
+        )
+
+    @Test
+    fun caminadaExample6transposed() =
+        protoTest(
+            example6theory +
+                """
+                autoTransposition.
+                """.trimIndent(),
+            listOf("g", "d", "a"),
+            listOf("-g"),
+            listOf("-f", "-e", "-c", "-b", "f", "e", "c", "b"),
+        )
+
+    @Test
+    fun caminadaExample7transposed() =
+        protoTest(
+            example7theory +
+                """
+                argumentLabellingMode(grounded).
+                autoTransposition.
+                """.trimIndent(),
+            listOf("g", "c", "b", "a"),
+            listOf("-g"),
+            listOf("-f", "-e", "-d", "f", "e", "d"),
+        )
+
+    @Test
+    fun caminadaExample7completeSemantic() {
+        assertEquals(
+            11,
+            solver(
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    """.trimIndent(),
+            ).solve("buildLabelSets")
+                .toList()
+                .count { it.isYes },
+        )
+
+        assertEquals(
+            4,
+            solver(
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    graphExtension(rebutRestriction).
+                    """.trimIndent(),
+            ).solve("buildLabelSets")
+                .toList()
+                .count { it.isYes },
+        )
+    }
+}

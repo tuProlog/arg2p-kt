@@ -49,16 +49,32 @@ class Context :
     /** A new branch of the given one, made active, as context_branch/2; null if there is no branch [from] */
     fun branch(from: Int): Int? = branches.branch(from)
 
-    /** A value derived from the clauses of a predicate in the active branch (see [ClauseStore.derived]) */
+    /**
+     * A value derived from the clauses of a predicate in the given branch, the active one if null (see
+     * [ClauseStore.derived]); for a branch that does not exist, computed on no clause
+     */
     fun <T : Any> derived(
         functor: String,
         arity: Int,
         name: String,
+        branch: Int? = null,
         compute: (kotlin.collections.List<Clause>) -> T,
-    ): T = branches.selected.derived(functor, arity, name, compute)
+    ): T {
+        val store = if (branch == null) branches.selected else branches.storeOf(branch) ?: return compute(emptyList())
+        return store.derived(functor, arity, name, compute)
+    }
 
     /** The terms asserted in the active branch, in order, as context_assert_all/1 */
     fun assertAll(terms: Iterable<Term>) = terms.forEach { branches.selected.assertA(it) }
+
+    /** The identifier of [term], as context_id/2 gives it */
+    fun identifier(term: Term): Int = branches.identifier(term)
+
+    /** The identifier of [term] if it has one already, without giving it one */
+    fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
+
+    /** The term with identifier [identifier] (see [identifier]), if any */
+    fun term(identifier: Int): Term? = branches.term(identifier)
 
     /**
      * The instances of goal in the given branch (the active one if null), as context_all: for the native primitives

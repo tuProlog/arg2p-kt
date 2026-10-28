@@ -48,11 +48,17 @@ object Throw : UnaryPredicate<ExecutionContext>("throw") {
         when {
             // arg2p: an error whose type is not a structure (error(1), error(_, C)) is raised as any other ball
             error is Struct && error.functor == "error" && error.arity in 1..2 && error[0] is Struct -> {
-                LogicError.of(
-                    context = context,
-                    type = error[0] as Struct,
-                    extraData = if (error.arity > 1) error[1] else null,
-                )
+                try {
+                    LogicError.of(
+                        context = context,
+                        type = error[0] as Struct,
+                        extraData = if (error.arity > 1) error[1] else null,
+                    )
+                } catch (_: IllegalArgumentException) {
+                    // arg2p: a type 2P-Kt does not know the arguments of (a domain_error of a domain outside ISO, as
+                    // those of the languages of the profiles) is raised as any other ball, its message kept
+                    MessageError.of(error, context)
+                }
             }
             else -> MessageError.of(error, context)
         }

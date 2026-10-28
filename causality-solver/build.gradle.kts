@@ -9,11 +9,6 @@ plugins {
             .get()
             .pluginId,
     )
-    id(
-        libs.plugins.ktMpp.npmPublish
-            .get()
-            .pluginId,
-    )
 }
 
 kotlin {
@@ -25,6 +20,8 @@ kotlin {
             }
         }
         binaries.library()
+        // ES modules, as the npm package of arg2p (the aggregate project, which alone is published on npm)
+        useEsModules()
     }
 
     sourceSets {
