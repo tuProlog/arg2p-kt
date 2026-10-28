@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.PoolScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
@@ -38,11 +39,28 @@ class ThreadedCluster
 
         private fun links() = links ?: WebSocketLinks(site).also { links = it }
 
+        // The replies of the site, waited for: the evaluations of several callers run in parallel
+        private val replies =
+            object : Replies {
+                override fun <T> replied(ask: ((T) -> Unit) -> Unit): T =
+                    CompletableFuture<T>().also { response -> ask { response.complete(it) } }.join()
+            }
+
         /** The identifier of the site of the cluster, as the others know it */
         val id: String get() = site.id
 
         /** The sites the cluster is federated with */
         val peers: Set<String> get() = site.peerSites
+
+        /** Called whenever a site joins or leaves the peers of the cluster, on the thread that saw it */
+        var onPeersChanged: (() -> Unit)?
+            get() = site.onPeersChanged
+            set(value) {
+                site.onPeersChanged = value
+            }
+
+        /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
+        val stats: FederationStats get() = site.stats
 
         /**
          * Accepts the links of other sites (on any platform) over WebSockets, on [port] of [host] (an ephemeral port for
@@ -77,12 +95,14 @@ class ThreadedCluster
         fun reset() = site.reset()
 
         /** The arguments for [statement], as Prolog text, by label: the evaluations of several callers run in parallel */
-        fun solve(statement: String): EvaluationResponse =
-            answered(
-                CompletableFuture<EvaluationResponse>()
-                    .also { response -> site.solve(statement) { response.complete(it) } }
-                    .join(),
-            )
+        fun solve(statement: String): EvaluationResponse = answered(replies.replied { site.solve(statement, it) })
+
+        /**
+         * The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries. The goals
+         * of several callers are solved in turn by the catalog, each solved again from its start when another one was
+         * solved since its last solution.
+         */
+        val solver: ClusterSolver = ClusterSolver(site, replies)
 
         companion object {
             /** The threads of a cluster by default: as many as the processors */
