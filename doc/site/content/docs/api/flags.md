@@ -39,7 +39,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | --- | --- | --- |
 | `graphBuildMode(Mode)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free`: see [profiles]({{% ref "/docs/profiles" %}}) |
 | `graphBuilder(Mode)` | `ruleGraph` | `ruleGraph`, `abstractGraph`; set by the profile |
-| `graphLanguage(Mode)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`; set by the profile |
+| `graphLanguage(Mode)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`; set by the profile |
 | `conflictModel(Mode)` | `builtin` | `builtin`, `declared` |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
 | `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
@@ -79,7 +79,8 @@ and attacks it states. The profile sets it.
 
 The languages the parser reads beyond the one of arg2p, each also checking the theory is written in it:
 `aspicLanguage` (well-formed contraries), `abaLanguage` (assumptions and contraries; flat theories with strict
-rules only) and `defeasibleLanguage` (defeasible rules only). The profile sets them.
+rules only), `defeasibleLanguage` (defeasible rules only) and `abstractLanguage` (arguments and attacks only). The
+profile sets them.
 
 ### `conflictModel(Mode)`
 

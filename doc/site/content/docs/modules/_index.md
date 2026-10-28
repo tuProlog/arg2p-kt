@@ -55,7 +55,7 @@ implementation exists.
 
 | Stage | Module | Selected by |
 | --- | --- | --- |
-| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage` | `graphLanguage` (set by `graphBuildMode`) |
+| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
 | Apply graph extensions (preferences, restrictions) | one per extension | `graphExtension` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |

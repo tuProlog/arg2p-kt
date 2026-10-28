@@ -39,7 +39,7 @@ author meant in the framework.
 | `aspic_defeasible` | strict rules, axioms, premises | |
 | `meta` | | that the rules are argued applicable and the conflicts argued (see below): a theory of ASPIC<sup>+</sup> labels nothing in it |
 | `aba`, `aba_plus` | defeasible rules, ordinary premises (`f :=> a.`), a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition | that negation means nothing in ABA: `d` and `-d` conflict only if a contrary says so |
-| `abstract` | rules, premises and axioms (`r : B => H`, `f :=> a.`, `f :-> a.`, `assumption/1`, `contrary/2`) | |
+| `abstract` | rules, premises and axioms (`r : B => H`, `f :=> a.`, `f :-> a.`, `assumption/1`, `contrary/2`); preferences, conflicts and burdens (`sup/2`, `conflict/2,3`, `bp/N`) | that the other facts state arguments: only atoms do (see below) |
 | `free` | | anything |
 
 ### ASPIC<sup>+</sup>
@@ -131,8 +131,9 @@ A future labelling over attacks between sets of assumptions could handle these t
 
 `abstract` reads a Dung framework: `a.` (or `arg(a)`) an argument, `a -> b.` (or `att(a, b)`) an attack, and
 `a <-> b.` a mutual one. A theory with rules, premises or axioms (`r : B => H`, `f :=> a.`) is refused: an abstract
-framework has none, and `r1 : [] -> a.` would otherwise read as an attack. Prolog clauses can derive both, the
-arguments (`arg(X) :- thing(X).`) and the attacks:
+framework has none, and `r1 : [] -> a.` would otherwise read as an attack. So is one with preferences, conflicts or
+burdens (`sup/2`, `conflict/2,3`, `bp/N`, names arg2p reads in every theory): no argument would use them. Prolog
+clauses can derive both, the arguments (`arg(X) :- thing(X).`) and the attacks:
 
 ```prolog
 graphBuildMode(abstract).
@@ -141,3 +142,8 @@ beats(x, y).
 beats(y, z).
 X -> Y :- beats(X, Y).
 ```
+
+A fact states an argument when it is an atom: any other fact (`beats(x, y).`, `o(a).`) is data for the clauses,
+not an argument. An argument of another shape is stated with `arg/1` or `att/2` (`att([a], b).`), while in the
+notation a list or a conjunction (`[a] -> b.`, `a, b -> c.`) reads as the premises of a rule written without its
+label, and is refused. The check holds in query mode as well, where the whole framework is labelled.

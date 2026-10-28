@@ -93,6 +93,7 @@ class GraphLanguage(_FlagValue):
     ASPIC_LANGUAGE = "aspicLanguage"
     ABA_LANGUAGE = "abaLanguage"
     DEFEASIBLE_LANGUAGE = "defeasibleLanguage"
+    ABSTRACT_LANGUAGE = "abstractLanguage"
 
 
 class GraphBuilder(_FlagValue):
