@@ -2,9 +2,12 @@
 
 package it.unibo.tuprolog.argumentation.parallel.message
 
+import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.core.Term
 import kotlin.js.JsExport
 import kotlin.js.JsName
+import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
  * An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] (none
@@ -68,6 +71,9 @@ internal data class DirectAttack(
  *
  * In query mode a later evaluation needing more of the graph explores it further ([Explore]), then the attacks are
  * found again.
+ *
+ * The goals of the clients ([RequireSolution], [RequireAnswer], [RequireEvaluation]) are solved by the catalog, on the
+ * graph the workers built for them as above (see Catalog).
  */
 sealed interface KbMessage
 
@@ -117,6 +123,42 @@ data class EvaluationResponse(
     @JsName("undArgs")
     val undArray: Array<Response> get() = undArgs.toTypedArray()
 }
+
+/**
+ * To the catalog: the next solution of the goal the client solves in [run], to send to the client [replyTo]; [goal], as
+ * Prolog text, for the first one
+ */
+internal data class RequireSolution(
+    val run: String,
+    val goal: String?,
+    val replyTo: String,
+) : KbMessage
+
+/** To the catalog: the statements for [query], as Prolog text, by label (see answerQuery/4), to send to the client [replyTo] */
+internal data class RequireAnswer(
+    val query: String,
+    val replyTo: String,
+) : KbMessage
+
+/**
+ * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, whether the goal
+ * has more solutions, and what the solver printed computing it; or the [error] that kept it from one (a goal that
+ * cannot be read, a theory that cannot be read). Only for the clients of the site of the catalog: never written.
+ */
+internal data class SolutionResponse(
+    val run: String,
+    val solution: LogicSolution?,
+    val graph: Graph,
+    val hasNext: Boolean,
+    val output: String,
+    val error: String? = null,
+) : KbMessage
+
+/** To a client: the [answer] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
+internal data class AnswerResponse(
+    val answer: Answer?,
+    val error: String? = null,
+) : KbMessage
 
 /** To the catalog: the statements the rules of [worker] use as premises, whose arguments it needs, and conclude */
 internal data class Subscribe(

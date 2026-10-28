@@ -131,6 +131,19 @@ with ThreadedCluster(threads=1) as evaluating, ThreadedCluster(threads=4) as len
 
 A `LocalCluster` runs its nodes in turn, on the calling thread.
 
+The `solver` of a cluster solves any goal as `Arg2p` does, the graph built by the workers (see the
+[parallel solver]({{% ref "/docs/modules/parallel-solver#as-a-solver-of-arg2p" %}})), and `stats` tells what the
+federation does:
+
+```python
+solver = evaluating.solver
+solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution.text("In")                          # as for Arg2p
+solver.graph()                               # the Graph of the solution
+solver.answer("a").in_statements             # as Arg2p.answer
+evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
+```
+
 ---
 
 ### From the command line

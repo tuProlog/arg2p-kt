@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.RtcLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
@@ -37,6 +38,16 @@ class WebWorkerCluster(
     private var greeted = 0
     private val workers: List<Pair<dynamic, PortLink>> = List(threads) { spawn(worker) }
 
+    // The replies of the site, asked for once every Web Worker greeted it
+    private val replies =
+        object : AsyncReplies {
+            override fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T> =
+                Promise { resolve, _ ->
+                    val evaluate = { ask(resolve) }
+                    if (greeted == threads) evaluate() else waiting += evaluate
+                }
+        }
+
     /** Federates the cluster with the site listening at [url] (ws://host:port) */
     fun connect(url: String): Promise<Unit> = links.connect(url)
 
@@ -55,6 +66,16 @@ class WebWorkerCluster(
     /** The sites the cluster is federated with, its Web Workers included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
+    /** Called whenever a site joins or leaves the peers of the cluster, its Web Workers included */
+    var onPeersChanged: (() -> Unit)?
+        get() = site.onPeersChanged
+        set(value) {
+            site.onPeersChanged = value
+        }
+
+    /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
+    val stats: FederationStats get() = site.stats
+
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = site.load(theory)
 
@@ -66,10 +87,10 @@ class WebWorkerCluster(
 
     /** The arguments for [statement], as Prolog text, by label */
     fun solve(statement: String): Promise<EvaluationResponse> =
-        Promise { resolve, reject ->
-            val evaluate = { site.solve(statement) { runCatching { answered(it) }.fold(resolve, reject) } }
-            if (greeted == threads) evaluate() else waiting += evaluate
-        }
+        replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
+
+    /** The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries */
+    val solver: AsyncClusterSolver = AsyncClusterSolver(site, replies)
 
     /** Closes the links to the other sites, and stops the Web Workers */
     fun close() {

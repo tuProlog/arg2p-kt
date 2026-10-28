@@ -3,13 +3,17 @@ package it.unibo.tuprolog.argumentation.parallel.federation
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
+import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.MessageCodec
 import it.unibo.tuprolog.argumentation.parallel.message.Rebuild
+import it.unibo.tuprolog.argumentation.parallel.message.RequireAnswer
 import it.unibo.tuprolog.argumentation.parallel.message.RequireEvaluation
+import it.unibo.tuprolog.argumentation.parallel.message.RequireSolution
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
+import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
 import it.unibo.tuprolog.argumentation.parallel.node.Catalog
 import it.unibo.tuprolog.argumentation.parallel.node.Network
 import it.unibo.tuprolog.argumentation.parallel.node.Node
@@ -37,6 +41,10 @@ import kotlin.random.Random
  *
  * Each graph built is a session of its site: the workers of a session, wherever they run, only hear from those of the
  * same session, so that nothing of a graph given up reaches the next one.
+ *
+ * The catalog of the site evaluates the statements of its clients ([solve]) and solves their goals as the standard
+ * solver does (see [it.unibo.tuprolog.argumentation.parallel.cluster.ClusterSolver]); [stats] tells what the
+ * federation does, as the site knows it.
  */
 class Site(
     private val scheduler: Scheduler,
@@ -90,9 +98,13 @@ class Site(
     // The session of the graph of the theory of this site, the one built last
     @Volatile private var session: String = "$id#0"
 
+    // The last evaluation the catalog answered
+    @Volatile private var evaluation: EvaluationStats? = null
+
     private var sessions = 0
-    private val clients = mutableMapOf<String, (EvaluationResponse) -> Unit>()
+    private val clients = mutableMapOf<String, (KbMessage) -> Unit>()
     private var clientIds = 0
+    private var runIds = 0
 
     private val catalogQueue = scheduler.queue()
 
@@ -109,6 +121,24 @@ class Site(
     internal val argumentsBuilt: Int get() = catalog.argumentsBuilt
 
     internal val graphArguments: List<it.unibo.tuprolog.core.Term> get() = catalog.graphArguments
+
+    /**
+     * What the federation does, as this site knows it: itself, its peers, the sites it reaches through them (those
+     * introduced to it, and those running workers of a graph it runs some of), and the last evaluation it answered
+     */
+    val stats: FederationStats
+        get() {
+            val linked = peers
+            val reached =
+                introducers.toList() +
+                    placements.flatMap { (session, known) -> (known.workers.values + ownerOf(session)).map { it to known.via } }
+            val through = reached.filter { (site, via) -> site != id && site !in linked && via != id }.toMap()
+            val sites =
+                listOf(SiteStats(id, workers, delegate = false, via = null)) +
+                    linked.map { (site, peer) -> SiteStats(site, peer.capacity, peer.delegate, via = null) } +
+                    through.map { (site, via) -> SiteStats(site, workers = null, delegate = false, via = via) }
+            return FederationStats(id, sites, evaluation)
+        }
 
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
@@ -141,9 +171,33 @@ class Site(
     fun solve(
         statement: String,
         reply: (EvaluationResponse) -> Unit,
+    ) = ask({ RequireEvaluation(statement, it) }) { reply(it as EvaluationResponse) }
+
+    // Solves [goal], Prolog text, as the standard solver does, in a run of its own: [reply] is given its first solution
+    internal fun query(
+        goal: String,
+        reply: (SolutionResponse) -> Unit,
+    ) = ask({ RequireSolution(locked(lock) { "run_${runIds++}" }, goal, it) }) { reply(it as SolutionResponse) }
+
+    // The next solution of the goal solved in [run]
+    internal fun next(
+        run: String,
+        reply: (SolutionResponse) -> Unit,
+    ) = ask({ RequireSolution(run, null, it) }) { reply(it as SolutionResponse) }
+
+    // The statements for [query], Prolog text, by label, as the standard solver answers it
+    internal fun answer(
+        query: String,
+        reply: (AnswerResponse) -> Unit,
+    ) = ask({ RequireAnswer(query, it) }) { reply(it as AnswerResponse) }
+
+    // The catalog asked [request], for a client of this site given its answer
+    private fun ask(
+        request: (client: String) -> KbMessage,
+        reply: (KbMessage) -> Unit,
     ) {
         val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply } }
-        toCatalog(RequireEvaluation(statement, client))
+        toCatalog(request(client))
     }
 
     /** [link], just opened, leads to a delegate of this site: the site offers its workers, and runs workers on them */
@@ -399,7 +453,7 @@ class Site(
         val site =
             when {
                 to == Address.CATALOG || Address.isWorker(to) -> siteOf(session, to) ?: return
-                else -> return locked(lock) { clients.remove(to) }?.invoke(message as EvaluationResponse) ?: Unit
+                else -> return locked(lock) { clients.remove(to) }?.invoke(message) ?: Unit
             }
         when {
             site != id -> forward(session, site, FrameCodec.encode(Frame.Deliver(session, to, MessageCodec.encode(message))))
@@ -456,6 +510,12 @@ class Site(
                 }
             // every lender is told, so that those placed none drop the workers of the graphs built before
             lenders.forEach { it.link.send(frame) }
+        }
+
+        override fun siteOf(address: String): String = siteOf(session, address) ?: id
+
+        override fun evaluated(stats: EvaluationStats) {
+            evaluation = stats
         }
     }
 

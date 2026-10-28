@@ -20,6 +20,10 @@ internal object MessageCodec {
                     is Load -> text("Load").text(message.theory).text(message.flags)
                     is Add -> text("Add").text(message.elem)
                     is RequireEvaluation -> text("RequireEvaluation").text(message.elem).text(message.replyTo)
+                    is RequireSolution -> text("RequireSolution").text(message.run).texts(listOfNotNull(message.goal)).text(message.replyTo)
+                    is RequireAnswer -> text("RequireAnswer").text(message.query).text(message.replyTo)
+                    // the solvers of the clients: only on the site of the catalog
+                    is SolutionResponse, is AnswerResponse -> error("Not written: ${message::class.simpleName}")
                     is EvaluationResponse ->
                         text("EvaluationResponse")
                             .responses(message.inArgs)
@@ -47,6 +51,8 @@ internal object MessageCodec {
                 "Load" -> Load(text(), text())
                 "Add" -> Add(text())
                 "RequireEvaluation" -> RequireEvaluation(text(), text())
+                "RequireSolution" -> RequireSolution(text(), texts().singleOrNull(), text())
+                "RequireAnswer" -> RequireAnswer(text(), text())
                 "EvaluationResponse" -> EvaluationResponse(responses(), responses(), responses(), texts().singleOrNull())
                 "Subscribe" -> Subscribe(number(), terms(), terms())
                 "Build" -> Build(interests(), text().ifEmpty { null })

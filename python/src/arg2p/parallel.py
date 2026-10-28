@@ -5,11 +5,12 @@ found on the local network."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from . import _jvm
-from .arg2p import call
+from .arg2p import Answer, Solutions, answer_from_jvm, call
 from .flags import Flags
+from .model import Graph, graph_from_jvm
 
 _CLUSTER = "it.unibo.tuprolog.argumentation.parallel.cluster"
 
@@ -39,6 +40,113 @@ def _response(response: Any) -> EvaluationResponse:
         return [Response(str(it.getClaim()), tuple(str(argument) for argument in it.getQueryChain())) for it in of]
 
     return EvaluationResponse(responses(response.getInArgs()), responses(response.getOutArgs()), responses(response.getUndArgs()))
+
+
+@dataclass(frozen=True)
+class SiteStats:
+    """
+    A site of a federation: its identifier, the workers it offers (None for no limit, or for a site reached through
+    another), whether it is a delegate of the site knowing it (one of its threads), and the site through which it is
+    reached (via: None for the site itself and those linked to it).
+    """
+
+    id: str
+    workers: Optional[int]
+    delegate: bool
+    via: Optional[str]
+
+
+@dataclass(frozen=True)
+class WorkerStats:
+    """A worker of a graph: its partition of the theory, the site that ran it, the arguments it built, the attacks on them."""
+
+    partition: int
+    site: str
+    arguments: int
+    attacks: int
+
+
+@dataclass(frozen=True)
+class EvaluationStats:
+    """
+    An evaluation answered by the catalog of a site: the part of the graph it was answered on (directional or connected
+    in query mode, whole_graph otherwise), the arguments and the attacks of the graph labelled, the arguments the workers
+    built for it, what each worker built, and how long it took, in milliseconds.
+    """
+
+    locality: str
+    arguments: int
+    attacks: int
+    added: int
+    workers: list[WorkerStats]
+    milliseconds: float
+
+
+@dataclass(frozen=True)
+class FederationStats:
+    """What a federation does, as one of its sites knows it: the sites it knows (itself first), and its last evaluation."""
+
+    site: str
+    sites: list[SiteStats]
+    evaluation: Optional[EvaluationStats]
+
+
+def _stats(stats: Any) -> FederationStats:
+    def site(of: Any) -> SiteStats:
+        workers, via = of.getWorkers(), of.getVia()
+        delegate = bool(of.getDelegate())
+        return SiteStats(str(of.getId()), None if workers is None else int(workers), delegate, None if via is None else str(via))
+
+    def worker(of: Any) -> WorkerStats:
+        return WorkerStats(int(of.getPartition()), str(of.getSite()), int(of.getArguments()), int(of.getAttacks()))
+
+    evaluation = stats.getEvaluation()
+    return FederationStats(
+        str(stats.getSite()),
+        [site(it) for it in stats.getSites()],
+        None
+        if evaluation is None
+        else EvaluationStats(
+            str(evaluation.getLocality()),
+            int(evaluation.getArguments()),
+            int(evaluation.getAttacks()),
+            int(evaluation.getAdded()),
+            [worker(it) for it in evaluation.getWorkers()],
+            float(evaluation.getMilliseconds()),
+        ),
+    )
+
+
+class ClusterSolver:
+    """
+    A cluster as a solver of arg2p, as Arg2p is one, on the theory and the flags of the cluster: any goal solved as the
+    standard solver solves it, one solution at a time, with the graph of each, and the answers of queries. The graph a
+    goal needs is built by the workers of the cluster and of the sites it is federated with (in query mode, the part the
+    statements it evaluates depend on); the stages of a resolution are not kept, the graph of the last one alone.
+    """
+
+    def __init__(self, solver: Any) -> None:
+        self._solver = solver
+
+    def solve(self, goal: str) -> Solutions:
+        """The solutions of [goal], Prolog text, computed one at a time as they are asked for."""
+        return Solutions(call(lambda: self._solver.solve(goal)))
+
+    def answer(self, query: str) -> Answer:
+        """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
+        return answer_from_jvm(call(lambda: self._solver.answer(query)))
+
+    def graphs(self) -> list[Graph]:
+        """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
+        return call(lambda: [graph_from_jvm(graph) for graph in self._solver.graphs()])
+
+    def graph(self) -> Graph:
+        """The graph of the last solution given: the one of the last stage of its resolution."""
+        return call(lambda: graph_from_jvm(self._solver.graph()))
+
+    def output(self, consumer: Callable[[str], Any]) -> None:
+        """Gives what the solver prints to [consumer], as the solutions are given (the standard output otherwise)."""
+        self._solver.setOutput(_jvm.function1(lambda printed: consumer(str(printed))))
 
 
 def _arguments(*given: Any, defaults: tuple[Any, ...]) -> list[Any]:
@@ -80,6 +188,16 @@ class LocalCluster:
     def solve(self, statement: str) -> EvaluationResponse:
         """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
         return call(lambda: _response(self._cluster.solve(statement)))
+
+    @property
+    def solver(self) -> ClusterSolver:
+        """The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries."""
+        return ClusterSolver(self._cluster.getSolver())
+
+    @property
+    def stats(self) -> FederationStats:
+        """What the cluster does: its site, and the last evaluation it answered."""
+        return _stats(self._cluster.getStats())
 
 
 class ThreadedCluster:
@@ -148,6 +266,16 @@ class ThreadedCluster:
     def solve(self, statement: str) -> EvaluationResponse:
         """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
         return call(lambda: _response(self._cluster.solve(statement)))
+
+    @property
+    def solver(self) -> ClusterSolver:
+        """The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries."""
+        return ClusterSolver(self._cluster.getSolver())
+
+    @property
+    def stats(self) -> FederationStats:
+        """What the federation does, as the cluster knows it: the sites, and the last evaluation it answered."""
+        return _stats(self._cluster.getStats())
 
     def close(self) -> None:
         """Closes the links to the other sites, and stops the threads."""

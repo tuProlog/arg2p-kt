@@ -21,7 +21,17 @@ from .flags import (
     StatementLabelling,
 )
 from .model import Argument, Attack, Graph, LabelledArgument, Support
-from .parallel import EvaluationResponse, LocalCluster, Response, ThreadedCluster
+from .parallel import (
+    ClusterSolver,
+    EvaluationResponse,
+    EvaluationStats,
+    FederationStats,
+    LocalCluster,
+    Response,
+    SiteStats,
+    ThreadedCluster,
+    WorkerStats,
+)
 from .values import Struct, Value, Var
 
 try:
@@ -37,8 +47,11 @@ __all__ = [
     "Attack",
     "Builder",
     "Causality",
+    "ClusterSolver",
     "ConflictModel",
     "EvaluationResponse",
+    "EvaluationStats",
+    "FederationStats",
     "Flags",
     "Graph",
     "GraphBuilder",
@@ -51,6 +64,7 @@ __all__ = [
     "Profile",
     "Response",
     "Semantics",
+    "SiteStats",
     "Solution",
     "Solutions",
     "StatementLabelling",
@@ -60,5 +74,6 @@ __all__ = [
     "ThreadedCluster",
     "Value",
     "Var",
+    "WorkerStats",
     "__version__",
 ]

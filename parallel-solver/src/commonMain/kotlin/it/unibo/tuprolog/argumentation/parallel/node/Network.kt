@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
+import it.unibo.tuprolog.argumentation.parallel.federation.EvaluationStats
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 
 /**
@@ -21,6 +22,12 @@ internal fun interface Network {
      * before are no longer delivered
      */
     fun building(workers: Int) = Unit
+
+    /** The site running the node at [address] in the graph being built, for the statistics of an evaluation */
+    fun siteOf(address: String): String = ""
+
+    /** The catalog answered an evaluation, as [stats] tell */
+    fun evaluated(stats: EvaluationStats) = Unit
 }
 
 /** A node of a distributed solver (the coordinator, a worker): it handles the messages sent to it, one at a time */

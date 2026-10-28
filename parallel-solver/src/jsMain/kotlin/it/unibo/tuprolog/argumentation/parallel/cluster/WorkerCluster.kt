@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
@@ -42,6 +43,23 @@ class WorkerCluster(
     private var pending = 0
     private val workers: List<dynamic> = List(threads) { spawn(module ?: thisModule()) }
 
+    // The replies of the site, asked for once every thread greeted it: the threads keep Node.js running until they come
+    private val replies =
+        object : AsyncReplies {
+            override fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T> =
+                Promise { resolve, _ ->
+                    pending++
+                    referenced(true)
+                    val evaluate = {
+                        ask {
+                            resolve(it)
+                            if (--pending == 0) referenced(false)
+                        }
+                    }
+                    if (greeted == threads) evaluate() else waiting += evaluate
+                }
+        }
+
     init {
         referenced(false)
     }
@@ -74,6 +92,16 @@ class WorkerCluster(
     /** The sites the cluster is federated with, its threads included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
+    /** Called whenever a site joins or leaves the peers of the cluster, its threads included */
+    var onPeersChanged: (() -> Unit)?
+        get() = site.onPeersChanged
+        set(value) {
+            site.onPeersChanged = value
+        }
+
+    /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
+    val stats: FederationStats get() = site.stats
+
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = site.load(theory)
 
@@ -85,17 +113,10 @@ class WorkerCluster(
 
     /** The arguments for [statement], as Prolog text, by label */
     fun solve(statement: String): Promise<EvaluationResponse> =
-        Promise { resolve, reject ->
-            pending++
-            referenced(true)
-            val evaluate = {
-                site.solve(statement) {
-                    runCatching { answered(it) }.fold(resolve, reject)
-                    if (--pending == 0) referenced(false)
-                }
-            }
-            if (greeted == threads) evaluate() else waiting += evaluate
-        }
+        replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
+
+    /** The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries */
+    val solver: AsyncClusterSolver = AsyncClusterSolver(site, replies)
 
     /** Closes the links to the other sites, and stops the threads */
     fun close() {
