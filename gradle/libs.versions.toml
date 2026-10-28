@@ -10,6 +10,7 @@ jung = "2.1.1"
 javaWebSocket = "1.6.0"
 ws = "8.22.0"
 kover = "0.9.11"
+lsp4j = "1.0.0"
 
 [plugins]
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
@@ -53,6 +54,7 @@ akka-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-ja
 akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-typed_2.13", version.ref = "akka" }
 
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebSocket" }
+lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.4"
 logback-classic = "ch.qos.logback:logback-classic:1.6.6"
