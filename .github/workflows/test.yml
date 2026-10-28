@@ -68,7 +68,7 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.14'
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
@@ -89,13 +89,14 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: 24
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.49
+          node-version-file: package.json
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
-          # the extension carries the language server: its tests run it, through JSON-RPC
+          # the extension carries the language server: its tests run it, through JSON-RPC, and the extension in VS Code
+          # (on the display of xvfb), as vscodeTest does; the package for any platform fails here rather than once released
           build-command: ./gradlew :vscode:vscodeServer
           check-command: |
-            cd vscode && npm ci && npm run check && npm run build && npm test
+            xvfb-run -a ./gradlew :vscode:vscodeTest :vscode:vscodePackage
           should-run-codecov: false
