@@ -1,0 +1,38 @@
+# The flags of Arg2P
+
+Flags are Prolog facts. A theory can state them; a solver is given them beside the theory. A flag the theory states
+replaces the value given for it, and a profile (`graphBuildMode`) presets several. Full reference:
+<https://tuprolog.github.io/arg2p-kt/docs/api/flags/>.
+
+| Flag | Default | Values |
+| --- | --- | --- |
+| `graphBuildMode(P)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free` |
+| `argumentLabellingMode(S)` | `grounded` | `grounded`, `complete`, `preferred`, `stable`, `semistable`, `ideal`, `eager`, `naive`, `stage`, `cf2`, `stage2`, `conflictfree`, `admissible`, `stronglyadmissible`, `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete` |
+| `statementLabellingMode(M)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
+| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`, `none` |
+| `orderingPrinciple(P)` | `last` | `last`, `weakest` |
+| `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
+| `conflictModel(M)` | `builtin` | `builtin`, `declared` (only the declared conflicts, as ABA) |
+| `queryMode` | on with no flags given | present or absent |
+| `autoTransposition` | on under `aspic_plus` | present, or `autoTransposition(off).` |
+| `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
+
+## Semantics
+
+- `grounded`: skeptical, exactly one labelling. "What must be accepted?"
+- `preferred`, `stable`, `complete`, `semistable`, `stage`, `cf2`, `stage2`, `naive`: several labellings, each a
+  solution of its own. A statement in every labelling is **skeptically** accepted; in at least one, **credulously**.
+  `stable` may have none.
+- `bp_grounded*`: required by a theory declaring `bp/N`.
+
+## Statement labels
+
+With `statement` (the default), a statement is in if some in argument concludes it, otherwise out if some out argument
+does, otherwise und. `statement_binary` merges out and und.
+
+## Ordering
+
+`orderingPrinciple`: `last` compares the last defeasible rules of two arguments, `weakest` all of them (an argument is
+as strong as its weakest link). `orderingComparator`: `elitist`, an argument is weaker if some of its rules is weaker
+than all of the other's; `democrat`, if each of its rules is weaker than some of the other's; `normal`, the attack
+relation of Dung and Thang on the last rules (facts written as rules, `r : [] => a.`).

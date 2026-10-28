@@ -10,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -40,6 +41,8 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
 @JsExport
 class Arg2p private constructor(
     private val solver: MutableSolver,
+    // the libraries of the solver, which declare its flags
+    private val arg2p: Arg2pSolver,
 ) {
     /** The causality tests on the theory: NESS and but-for (see [Causality]) */
     val causality: Causality = Causality(this)
@@ -98,6 +101,49 @@ class Arg2p private constructor(
     /** The context branch of the last stage of the last resolution */
     val activeBranch: Int get() = solver.activeBranch()
 
+    /** The flags the solver knows, by name: graphBuildMode, queryMode, ... (see [setting]) */
+    @JsExport.Ignore
+    @JsName("knownFlagsList")
+    val knownFlags: List<String> get() = declaredFlags.keys.toList()
+
+    /** The flags the solver knows, by name (an array in JavaScript) */
+    @JsName("knownFlags")
+    val knownFlagArray: Array<String> get() = knownFlags.toTypedArray()
+
+    /**
+     * The values of [flag] in effect for the theory, as the solver checks them: those the theory states, or else those
+     * of the [Flags] of the solver that differ from their default, or else those the profile of the theory presets (see
+     * Profiles). A switch on has the value `true`, off none.
+     *
+     * @throws Arg2pException for a flag the solver does not know (see [knownFlags])
+     */
+    @JsExport.Ignore
+    @JsName("settingList")
+    fun setting(flag: String): List<String> {
+        val declared = declaredFlags[flag] ?: throw Arg2pException("Not a flag of arg2p: $flag (known: ${knownFlags.joinToString()})")
+        val value = Var.of("Value")
+        return if (declared.isSwitch) {
+            listOfNotNull(first(Struct.of("setting", Atom.of(flag)))?.let { "true" })
+        } else {
+            solver
+                .solve(Struct.of("setting", Atom.of(flag), value))
+                .map(::checked)
+                .filter { it.isYes }
+                .map { solution -> solution.substitution[value]!!.let { (it as? Atom)?.value ?: TermValues.format(it) } }
+                .toList()
+        }
+    }
+
+    /** The values of [flag] in effect for the theory (an array in JavaScript) */
+    @JsName("setting")
+    fun settingArray(flag: String): Array<String> = setting(flag).toTypedArray()
+
+    private val declaredFlags by lazy {
+        (arg2p.baseLibraries() + arg2p.staticLibraries() + arg2p.dynamicLibraries())
+            .flatMap { it.flags() }
+            .associateBy { it.predicate() }
+    }
+
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
     fun solve(goal: String): Solutions = Solutions(solver.solve(struct(goal)).iterator())
 
@@ -110,21 +156,16 @@ class Arg2p private constructor(
         goal: String,
     ): Solutions = Solutions(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
 
-    /** Adds the clauses of [theory], Prolog text, to the theory */
-    fun add(theory: String) = solver.appendStaticKb(RuleAnnotations.parse(theory, solver.operators))
+    /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
+    fun add(theory: String) = solver.appendStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
 
-    /** Replaces the theory with [theory], Prolog text */
-    fun load(theory: String) = solver.loadStaticKb(RuleAnnotations.parse(theory, solver.operators))
+    /** Replaces the theory with [theory], Prolog text (an [Arg2pException] telling where it does not parse) */
+    fun load(theory: String) = solver.loadStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term =
-        try {
-            Term.parse(text.trim().removeSuffix("."), solver.operators)
-        } catch (error: Exception) {
-            throw Arg2pException("Not a term: $text (${error.message})")
-        }
+    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), solver.operators) }
 
     private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
 
@@ -151,15 +192,17 @@ class Arg2p private constructor(
         /** The function receiving what the solver prints (the standard output otherwise) */
         fun output(consumer: (String) -> Unit): Builder = apply { output = consumer }
 
-        fun build(): Arg2p =
-            Arg2p(
-                Arg2pSolverFactory.solverOf(
-                    // the causality module of its own for each solver: it keeps the graphs it computes
-                    Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule())),
-                    theory,
-                    output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut(),
-                ),
+        /** The solver: an [Arg2pException] telling where the theory does not parse otherwise */
+        fun build(): Arg2p {
+            // the causality module of its own for each solver: it keeps the graphs it computes
+            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
+            return Arg2p(
+                SyntaxProblem.parsing("Theory") {
+                    Arg2pSolverFactory.solverOf(arg2p, theory, output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut())
+                },
+                arg2p,
             )
+        }
     }
 
     companion object {
@@ -176,6 +219,17 @@ class Arg2p private constructor(
         @JvmStatic
         @JsStatic
         fun builder(): Builder = Builder()
+
+        /** Where [theory], Prolog text (a theory, or flags), does not parse; null if it does. Nothing is solved. */
+        @JvmStatic
+        @JsStatic
+        fun checkTheory(theory: String): SyntaxProblem? = SyntaxProblem.check { RuleAnnotations.parse(theory, TermValues.operators) }
+
+        /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
+        @JvmStatic
+        @JsStatic
+        fun checkQuery(query: String): SyntaxProblem? =
+            SyntaxProblem.check { Term.parse(query.trim().removeSuffix("."), TermValues.operators) }
 
         /** The version of arg2p, the released one for a release */
         @JvmStatic

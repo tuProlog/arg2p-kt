@@ -161,6 +161,54 @@ jobs:
         with:
           name: wheel-${{ matrix.platform }}
           path: dist/*.whl
+  vscode-packages:
+    # The extension of VS Code of the release: a package for each platform, bundling its Java runtime, and one for any
+    # other (on the Java of the system)
+    needs:
+      - release
+    if: needs.release.outputs.version != ''
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: linux-x64 }
+          - { os: ubuntu-24.04-arm, target: linux-arm64 }
+          - { os: windows-latest, target: win32-x64 }
+          - { os: macos-latest, target: darwin-arm64 }
+          - { os: macos-15-intel, target: darwin-x64 }
+          - { os: ubuntu-latest, target: universal }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout the release
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.release.outputs.version }}
+          # the tags: the version of the build is that of the release
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Build the package
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.target }}" = universal ]; then
+            ./gradlew :vscode:vscodePackage
+          else
+            ./gradlew :vscode:vscodeRuntime
+            ./gradlew :vscode:vscodePackage -Ptarget=${{ matrix.target }}
+            test -d vscode/runtime/bin
+          fi
+          ls vscode/*.vsix
+          grep -q "${{ needs.release.outputs.version }}" <<< "$(ls vscode/*.vsix)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix-${{ matrix.target }}
+          path: vscode/*.vsix
   success:
     runs-on: ubuntu-26.04
     needs:
@@ -168,6 +216,7 @@ jobs:
       - test
       - release
       - python-wheels
+      - vscode-packages
     if: >-
       always() && (
         contains(join(needs.*.result, ','), 'failure')

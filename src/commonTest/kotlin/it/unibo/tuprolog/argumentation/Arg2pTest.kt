@@ -83,6 +83,40 @@ class Arg2pTest {
     }
 
     @Test
+    fun theSettingsInEffectComeFromTheTheoryTheFlagsAndTheProfile() {
+        val aspic = Arg2p.of("r1 : [] => a.")
+        assertTrue("graphBuildMode" in aspic.knownFlags && "queryMode" in aspic.knownFlags)
+        assertEquals(listOf("aspic_plus"), aspic.setting("graphBuildMode"))
+        // the extensions the profile presets, the switches it turns on
+        assertEquals(setOf("standardPref", "rebutRestriction"), aspic.setting("graphExtension").toSet())
+        assertEquals(listOf("true"), aspic.setting("autoTransposition"))
+        // the theory states its profile, which presets the others
+        val abstract = Arg2p.of("graphBuildMode(abstract).\na -> b.\nargumentLabellingMode(preferred).")
+        assertEquals(listOf("abstract"), abstract.setting("graphBuildMode"))
+        assertEquals(listOf("preferred"), abstract.setting("argumentLabellingMode"))
+        assertEquals(emptyList(), abstract.setting("graphExtension"))
+        assertEquals(emptyList(), abstract.setting("queryMode"))
+        assertEquals(listOf("https://example.org/t"), Arg2p.of("modulesPath('https://example.org/t').").setting("modulesPath"))
+        assertFailsWith<Arg2pException> { aspic.setting("noSuchFlag") }
+    }
+
+    @Test
+    fun textsThatDoNotParseTellWhere() {
+        val theory = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }.syntax
+        assertEquals(2, theory?.line)
+        assertEquals(9, theory?.column)
+        assertEquals(".", theory?.token)
+        assertEquals("Unexpected token '.'; expected term", theory?.description)
+        assertEquals(1, assertFailsWith<Arg2pException> { Arg2p.of().solve("flies(") }.syntax?.line)
+        assertEquals(1, assertFailsWith<Arg2pException> { Flags.parse("queryMode(") }.syntax?.line)
+        assertEquals(7, assertFailsWith<Arg2pException> { Value.parse("flies(") }.syntax?.column)
+        assertEquals(theory, Arg2p.checkTheory("a :=> b.\nc :=> d(."))
+        assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X)."))
+        assertEquals(null, Arg2p.checkQuery("buildLabelSets(In, Out, Und)."))
+        assertEquals(1, Arg2p.checkQuery("flies(")?.line)
+    }
+
+    @Test
     fun theTheoryChanges() {
         val arg2p = Arg2p.of("f1 :=> a.")
         arg2p.add("f2 :=> b.")

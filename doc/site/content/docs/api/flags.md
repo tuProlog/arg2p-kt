@@ -23,6 +23,16 @@ A flag stated in the theory replaces the value the solver was given for it: a th
 The [profile]({{% ref "/docs/profiles" %}}) of the theory, `graphBuildMode`, presets several flags at once. The
 theory overrides those presets, and so does a value the solver is given that differs from the default of its flag.
 
+A solver tells the values in effect for its theory, whichever way they came: `setting(flag)` gives the values of a
+flag (`["true"]` for a switch on, none for one off), and `knownFlags` (`known_flags` in Python) the names of the
+flags it knows.
+
+```kotlin
+val arg2p = Arg2p.of("graphBuildMode(abstract).\na -> b.")
+arg2p.setting("graphBuildMode")    // [abstract]
+arg2p.setting("queryMode")         // []: the profile turns it off
+```
+
 The table below lists the flags, with their values in `Flags.defaults()`.
 
 | Flag | Default | Accepted values |

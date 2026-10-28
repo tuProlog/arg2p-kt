@@ -139,13 +139,16 @@ class Flags private constructor(
         @JsStatic
         fun none(): Flags = Flags(linkedMapOf())
 
-        /** The flags stated by the facts of [text], Prolog text (`argumentLabellingMode(preferred). queryMode.`) */
+        /**
+         * The flags stated by the facts of [text], Prolog text (`argumentLabellingMode(preferred). queryMode.`): an
+         * [Arg2pException] telling where it does not parse otherwise
+         */
         @JvmStatic
         @JsStatic
         fun parse(text: String): Flags =
             Flags(
-                Theory
-                    .parse(text, TermValues.operators)
+                SyntaxProblem
+                    .parsing("Flags") { Theory.parse(text, TermValues.operators) }
                     .clauses
                     .groupBy({ it.head!!.functor }, { TermValues.format(it.head!!) })
                     .toMutableMap(),

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "arg2p",
+  "version": "0.19.1",
+  "description": "Structured argumentation with Arg2P: formalize problems as theories, solve them, and explore the results in its solver.",
+  "author": {
+    "name": "tuProlog",
+    "url": "https://github.com/tuProlog"
+  },
+  "homepage": "https://tuprolog.github.io/arg2p-kt/",
+  "repository": "https://github.com/tuProlog/arg2p-kt",
+  "license": "MIT",
+  "keywords": [
+    "argumentation",
+    "aspic",
+    "aba",
+    "prolog",
+    "reasoning",
+    "explainability",
+    "mcp"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Arg2P",
+        "shortDescription": "Formalize, solve and explore argumentation theories",
+        "developerName": "tuProlog",
+        "category": "Productivity",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}

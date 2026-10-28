@@ -84,3 +84,85 @@ graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descript
 ```
 
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
+
+## Python
+
+The package [`arg2p`](https://pypi.org/project/arg2p/) runs the same API from Python: see [Python]({{% ref "/docs/api/python" %}}).
+
+## Web Playground
+
+The [playground](https://tuprolog.github.io/arg2p-kt-web/) runs Arg2P in the browser, with nothing to install: write a
+theory, solve a query, and browse its argument graph and the stages of its computation; draw an abstract framework
+(the drawing is its theory), and set the profile and the flags. It keeps your theories in tabs, shares them as links,
+and works offline once installed as an app. Its components are on npm as
+[`@tuprolog/arg2p-ui`](https://www.npmjs.com/package/@tuprolog/arg2p-ui), to embed the solver in other pages.
+
+## VS Code
+
+The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) edits theories as
+`.arg2p` files: their syntax errors show as they are typed, and **Arg2P: Open the Solver** opens the solver of the
+playground beside a theory, on the JVM. It bundles the language server of Arg2P and the Java runtime it runs on.
+
+## AI assistants (MCP)
+
+The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
+with it rather than guessing what they conclude. Its tools:
+
+| Tool | |
+| --- | --- |
+| `solve` | The solutions of a query (default `buildLabelSets(In, Out, Und)`) on a theory, with their bindings and the argument graph: every argument with its conclusion, top rule and label, every attack with its type |
+| `answer` | The statements matching a literal (`flies(X)`) labelled in, out and und |
+| `check` | Whether a theory or a query parses, and where it does not (line, column, token) |
+| `settings` | The value in effect of every flag for a theory: its profile, its semantics, ... |
+| `explore` | Shows the user the solver of a theory, to explore its results themselves |
+
+A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is stopped after
+`timeoutSeconds` (60 by default).
+
+`explore` is an [MCP App](https://modelcontextprotocol.io/docs/extensions/apps): in the clients that show them
+(Claude, ChatGPT, VS Code), the solver of the playground appears in the conversation, runs the query, and lets the user
+browse its solutions, their argument graphs and stages, the drawing of an abstract framework and the flags, and solve
+again. Everywhere, its result links the [web playground](https://tuprolog.github.io/arg2p-kt-web/) with the same
+theory, query and flags.
+
+### The plugin and its skills
+
+The plugin `arg2p` bundles the MCP server with **skills**, the know-how of Arg2P for an assistant: `arg2p-formalize`
+(turning a problem into a theory, its profile and its flags), `arg2p-solve` (solving it, checking and reporting the
+result) and `arg2p-explore` (showing the user the solver). Its MCP server runs from the Python package with
+[uv](https://docs.astral.sh/uv/) (`uvx arg2p mcp`).
+
+| Client | |
+| --- | --- |
+| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` |
+| Claude (claude.ai, Desktop) | upload `arg2p-plugin-{{< version >}}.zip` of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone in _Customize > Skills_ |
+| Codex, ChatGPT | `codex plugin marketplace add tuProlog/arg2p-kt`, then install `arg2p` from `/plugins` |
+| Any agent reading [Agent Skills](https://agentskills.io) | `npx skills add tuProlog/arg2p-kt` |
+
+### The MCP server alone
+
+The extension of VS Code registers it for the assistants of VS Code (Copilot agent mode): nothing to configure.
+Elsewhere, with [uv](https://docs.astral.sh/uv/) (the Python package bundles its Java runtime), in Claude Code:
+
+```bash
+claude mcp add arg2p -- uvx arg2p mcp
+```
+
+In clients configured by JSON (Claude Desktop, Cursor, ...):
+
+```json
+{
+  "mcpServers": {
+    "arg2p": { "command": "uvx", "args": ["arg2p", "mcp"] }
+  }
+}
+```
+
+It is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.tuProlog/arg2p`. With Java
+21 or later instead, download `arg2p-lsp-{{< version >}}-redist.jar` from the
+[latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) and run `java -jar
+arg2p-lsp-{{< version >}}-redist.jar --mcp`.
+
+The server speaks MCP over its standard input and output (protocol versions 2025-06-18, 2025-03-26 and 2024-11-05).
+Without `--mcp`, the same jar is the language server of Arg2P (the Language Server Protocol, over the same streams),
+for editors other than VS Code.

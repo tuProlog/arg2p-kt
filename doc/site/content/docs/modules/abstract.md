@@ -67,10 +67,12 @@ All standard semantics are supported. The evaluation mode can be configured via 
 
 ## Drawing a framework instead of writing one
 
-The [Web Playground](https://tuprolog.github.io/arg2p-kt-web/) has an **Abstract** mode that builds these
-queries for you: add arguments and attacks on the canvas, pick a semantics, and it runs
-`abstract::solve(Arguments, Attacks, In, Out, Und)` and recolours the drawing with the resulting labelling.
-Frameworks can be shared as a link:
-[try the framework above](https://tuprolog.github.io/arg2p-kt-web/?mode=abstract&arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c),
-built from `?mode=abstract&arguments=a,b,c&attacks=a-b,b-c`. Both `,` and `;` separate items, and an attack
+In the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/), a framework is a theory under the `abstract`
+[profile]({{% ref "/docs/profiles" %}}) (`graphBuildMode(abstract).`, arguments `a.`, attacks `a -> b.` and
+`a <-> b.`), and it is drawn: add arguments and attacks on the canvas and the theory is written for you; pick a
+semantics in the flags, solve, and the drawing is recoloured with the resulting labelling. Hovering or tapping an
+argument tells its label, what attacks it and what it attacks. Frameworks are imported from APX, TGF and ICCMA'23
+files, exported to APX and TGF, and shared as links:
+[try the framework above](https://tuprolog.github.io/arg2p-kt-web/?arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c),
+built from `?arguments=a,b,c&attacks=a-b,b-c`. Both `,` and `;` separate items, and an attack
 may be written `a-b` or `a>b`; arguments mentioned only in `attacks` are added to the graph automatically.

@@ -13,7 +13,7 @@ val jvmVersion: String = libs.versions.jvm.get()
 // The interpreter running the tests (-Ppython=.venv/bin/python, say): python on the path otherwise
 val python: String = findProperty("python")?.toString() ?: "python"
 
-// The jars of the umbrella project on the JVM, and those it depends on
+// The jars of the umbrella project on the JVM, those of its MCP server (arg2p mcp), and those they depend on
 val jars by configurations.creating {
     isCanBeConsumed = false
     attributes {
@@ -24,6 +24,7 @@ val jars by configurations.creating {
 
 dependencies {
     jars(project(":"))
+    jars(project(":lsp"))
 }
 
 val pythonJars by tasks.registering(Sync::class) {
@@ -53,7 +54,8 @@ val pythonVersion by tasks.registering {
     }
 }
 
-// The modules of the Java runtime arg2p needs (jdeps on its jars, with those the WebSockets and their TLS need)
+// The modules of the Java runtime arg2p needs (jdeps on its jars and those of its MCP server, with those the WebSockets
+// and their TLS need)
 val runtimeModules =
     listOf(
         "java.base",
@@ -61,6 +63,7 @@ val runtimeModules =
         "java.management",
         "java.naming",
         "java.net.http",
+        "java.sql",
         "java.xml",
         "jdk.crypto.ec",
         "jdk.unsupported",

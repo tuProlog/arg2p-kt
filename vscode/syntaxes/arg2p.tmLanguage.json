@@ -1,0 +1,66 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Arg2P",
+  "scopeName": "source.arg2p",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#rule-label" },
+    { "include": "#arrows" },
+    { "include": "#flags" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#functors" },
+    { "include": "#variables" },
+    { "include": "#atoms" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.percentage.arg2p", "match": "%.*$" },
+        { "name": "comment.block.arg2p", "begin": "/\\*", "end": "\\*/" }
+      ]
+    },
+    "rule-label": {
+      "comment": "The name of a rule, premise or axiom: r1 : ..., f1 :=> ...",
+      "match": "^\\s*([a-z][A-Za-z0-9_]*(?:\\([^)]*\\))?)\\s*(?=:(?!-)|:=>|:->)",
+      "captures": { "1": { "name": "entity.name.function.rule.arg2p" } }
+    },
+    "arrows": {
+      "comment": "The arrows of rules (=>, ->), premises and axioms (:=>, :->), clauses (:-) and abstract attacks (->, <->)",
+      "name": "keyword.operator.arrow.arg2p",
+      "match": ":=>|:->|<->|=>|->|:-|\\?-"
+    },
+    "flags": {
+      "comment": "The flags of arg2p, stated as facts",
+      "match": "\\b(graphBuildMode|argumentLabellingMode|statementLabellingMode|orderingPrinciple|orderingComparator|graphExtension|graphBuilder|graphLanguage|conflictModel|modulesPath|queryMode|autoTransposition|prologStrictCompatibility|metaConflicts|metaRules|debug|naturalTerms)\\b",
+      "name": "support.constant.flag.arg2p"
+    },
+    "strings": {
+      "patterns": [
+        { "name": "string.quoted.double.arg2p", "begin": "\"", "end": "\"", "patterns": [{ "name": "constant.character.escape.arg2p", "match": "\\\\." }] },
+        { "name": "string.quoted.single.arg2p", "begin": "'", "end": "'", "patterns": [{ "name": "constant.character.escape.arg2p", "match": "\\\\.|''" }] }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.arg2p",
+      "match": "\\b\\d+(\\.\\d+)?([eE][-+]?\\d+)?\\b"
+    },
+    "functors": {
+      "name": "entity.name.function.arg2p",
+      "match": "\\b[a-z][A-Za-z0-9_]*(?=\\()"
+    },
+    "variables": {
+      "name": "variable.other.arg2p",
+      "match": "\\b[A-Z_][A-Za-z0-9_]*\\b"
+    },
+    "atoms": {
+      "name": "constant.other.atom.arg2p",
+      "match": "\\b[a-z][A-Za-z0-9_]*\\b"
+    },
+    "operators": {
+      "name": "keyword.operator.arg2p",
+      "match": "[-+*/\\\\^<>=~:.?@#&$!]+"
+    }
+  }
+}
