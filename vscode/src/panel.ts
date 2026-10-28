@@ -1,24 +1,11 @@
-import type { Answer, Request } from '@tuprolog/arg2p-ui/js';
 import * as vscode from 'vscode';
-import { Bridge, type Server } from './bridge.js';
+import { Bridge } from './bridge.js';
+import type { FromPage, ToPage } from './protocol.js';
+import type { LanguageServer } from './server.js';
 
 // The solver of a theory: a panel beside its document, with the query, the solutions, the graph (and the drawing of an
 // abstract framework) and the flags, the components of @tuprolog/arg2p-ui on the language server. The theory is the
 // text of the document: the panel follows it as it is edited, and the drawing edits it.
-
-/** What the page tells the extension */
-type FromPage =
-    | { type: 'ready' }
-    | { type: 'engine'; request: Request }
-    | { type: 'restart' }
-    | { type: 'edit'; theory: string }
-    | { type: 'state'; query: string; flags: string };
-
-/** What the extension tells the page */
-type ToPage =
-    | { type: 'document'; name: string; theory: string; query: string; flags: string }
-    | { type: 'theory'; theory: string }
-    | { type: 'engine'; answer: Answer };
 
 interface Saved {
     query: string;
@@ -32,7 +19,7 @@ export class SolverPanel {
      * The panel of [document], opened under it (in a group of editors of its own) or beside it, as arg2p.solver.position
      * says; shown, if it is open already. The theory keeps the focus, to go on editing it.
      */
-    static async show(context: vscode.ExtensionContext, server: () => Server, editor: vscode.TextEditor): Promise<void> {
+    static async show(context: vscode.ExtensionContext, server: LanguageServer, editor: vscode.TextEditor): Promise<void> {
         const document = editor.document;
         const key = document.uri.toString();
         const open = SolverPanel.panels.get(key);
@@ -44,11 +31,6 @@ export class SolverPanel {
         if (below) await vscode.window.showTextDocument(document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
-    /** What the run [params.id] of the server prints, for the panel that started it */
-    static output(params: { id: number; text: string }): void {
-        SolverPanel.panels.forEach(it => it.bridge.output(params));
-    }
-
     private readonly panel: vscode.WebviewPanel;
     private readonly bridge: Bridge;
     private readonly subscriptions: vscode.Disposable[] = [];
@@ -57,7 +39,7 @@ export class SolverPanel {
 
     private constructor(
         private readonly context: vscode.ExtensionContext,
-        server: () => Server,
+        server: LanguageServer,
         private readonly document: vscode.TextDocument,
         column: vscode.ViewColumn,
     ) {
@@ -68,12 +50,15 @@ export class SolverPanel {
             localResourceRoots: [media],
         });
         this.panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'icon.png');
-        this.bridge = new Bridge(
-            {
-                request: (method, params) => server().request(method, params),
-                notify: (method, params) => server().notify(method, params),
+        this.bridge = new Bridge(server, answer => this.send({ type: 'engine', answer }));
+        // the session of the panel went with the server: the page is told that its run stopped, and starts another
+        server.onDidStop(
+            () => {
+                this.bridge.renew();
+                this.send({ type: 'stopped' });
             },
-            answer => this.send({ type: 'engine', answer }),
+            null,
+            this.subscriptions,
         );
         this.panel.webview.html = page(this.panel.webview, media);
         this.panel.webview.onDidReceiveMessage((message: FromPage) => this.receive(message), null, this.subscriptions);
@@ -99,10 +84,6 @@ export class SolverPanel {
             }
             case 'engine':
                 void this.bridge.handle(message.request);
-                return;
-            case 'restart':
-                // the only way to stop a resolution: the server starts afresh
-                void vscode.commands.executeCommand('arg2p.restartServer');
                 return;
             case 'edit':
                 void this.edit(message.theory);

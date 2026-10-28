@@ -23,7 +23,8 @@ f2 :=> -flies(tweety).
 
 **Arg2P: Open the Solver** (the ▷ of the editor of a theory) opens its solver beside it (or under it: `arg2p.solver.position`):
 
-- the query, solved with **Run** (or Enter), one solution at a time (**Next**), **Stop** to stop it;
+- the query, solved with **Run** (or Enter), one solution at a time (**Next**), **Stop** to stop it (the query alone:
+  the other solvers and the language server go on);
 - the argument graph of a solution, the stages of its computation, and the popup of each argument;
 - for an abstract framework (`graphBuildMode(abstract).`), its drawing instead: what is drawn is written in the theory,
   the theory edited is drawn again, and each argument tells its label, what attacks it and what it attacks;
@@ -34,10 +35,10 @@ The solver keeps the query and the flags of each theory.
 
 ## The language server
 
-The extension runs the language server of Arg2P on the JVM. The package for a platform bundles its Java runtime;
-elsewhere it runs on the Java the settings name (`arg2p.java.path`), or that of `JAVA_HOME`, or `java` on the path
-(21 or later). `arg2p.java.options` are the options of the JVM: `-Xmx8g`, say, for the heap of large graphs.
-**Arg2P: Restart the Language Server** starts it afresh.
+The extension runs the language server of Arg2P on the JVM: on the Java the settings name (`arg2p.java.path`), or else
+on the Java runtime the package for a platform bundles, or else on that of `JAVA_HOME`, or else on `java` on the path
+(21 or later). `arg2p.java.options` are the options of the JVM: `-Xmx8g`, say, for the heap of large graphs. Both are
+user settings alone: a workspace cannot set them. **Arg2P: Restart the Language Server** starts it afresh.
 
 ## AI assistants
 
@@ -60,7 +61,7 @@ It runs on the Java of the language server. For other assistants, see
 
 | Setting | |
 | --- | --- |
-| `arg2p.java.path` | The `java` running the language server |
-| `arg2p.java.options` | The options of the JVM running it (`-Xss512m`) |
+| `arg2p.java.path` | The `java` running the language server (user settings) |
+| `arg2p.java.options` | The options of the JVM running it (`-Xss512m`, user settings) |
 | `arg2p.flags` | The flags a theory is first solved with |
 | `arg2p.solver.position` | Where the solver opens: beside the theory (`beside`) or under it (`below`) |

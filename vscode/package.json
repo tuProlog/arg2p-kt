@@ -32,6 +32,16 @@
     "logic"
   ],
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "The Java running the language server and its options are set in the user settings alone, never by a workspace.",
+      "restrictedConfigurations": [
+        "arg2p.java.path",
+        "arg2p.java.options"
+      ]
+    }
+  },
   "contributes": {
     "languages": [
       {
@@ -93,7 +103,8 @@
         "arg2p.java.path": {
           "type": "string",
           "default": "",
-          "markdownDescription": "The `java` running the language server. Empty: the Java runtime the extension bundles, or else the one of `JAVA_HOME`, or else `java` on the path (21 or later)."
+          "scope": "machine",
+          "markdownDescription": "The `java` running the language server, in the user settings alone (a workspace cannot run a program of its own). Empty: the Java runtime the extension bundles, or else the one of `JAVA_HOME`, or else `java` on the path (21 or later)."
         },
         "arg2p.java.options": {
           "type": "array",
@@ -103,6 +114,7 @@
           "default": [
             "-Xss512m"
           ],
+          "scope": "machine",
           "markdownDescription": "The options of the JVM running the language server: `-Xmx8g`, say, for the heap of large graphs. Resolution goes deep: keep a large stack (`-Xss512m`)."
         },
         "arg2p.flags": {
@@ -132,6 +144,7 @@
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:vscode": "node test/integration/run.mjs",
+    "verify": "npm run check && npm run build && npm test && npm run test:vscode",
     "preview": "node test/preview/server.mjs",
     "package": "node esbuild.mjs --production && vsce package --no-dependencies"
   },
