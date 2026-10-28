@@ -1,3 +1,7 @@
+import json
+import subprocess
+import sys
+
 import pytest
 
 from arg2p import (
@@ -153,6 +157,27 @@ def test_the_command_line(tmp_path, capsys):
     assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
     assert main([str(theory), "-s", "preferred"]) == 0
     assert "in: a" in capsys.readouterr().out
+
+
+def test_the_mcp_server():
+    # as an assistant runs it: one JSON-RPC message a line, the answers too
+    messages = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "answer", "arguments": {"theory": CONFLICT, "query": "a"}}},
+    ]
+    done = subprocess.run(
+        [sys.executable, "-m", "arg2p", "mcp"],
+        input="".join(json.dumps(it) + "\n" for it in messages),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=120,
+    )
+    assert done.returncode == 0, done.stderr
+    answers = {it["id"]: it for it in map(json.loads, done.stdout.splitlines())}
+    assert answers[1]["result"]["serverInfo"]["name"] == "arg2p"
+    assert answers[2]["result"]["structuredContent"]["in"] == ["a"]
 
 
 def test_the_jvm_takes_the_options_of_the_environment(monkeypatch):

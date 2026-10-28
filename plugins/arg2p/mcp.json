@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "arg2p": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "arg2p@0.19.1",
+        "mcp"
+      ]
+    }
+  }
+}

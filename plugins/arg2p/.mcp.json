@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "arg2p": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "arg2p@0.19.1",
+        "mcp"
+      ]
+    }
+  }
+}
