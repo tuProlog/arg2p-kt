@@ -15,6 +15,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Errors raised by the code of primitives, and by throw/1, are Prolog errors catch/3 can handle, rather than
@@ -64,6 +65,19 @@ class EngineErrorsTest {
     fun throwingAnErrorOfAnyShape() {
         assertEquals("error(1)", solve("catch(throw(error(1)), E, true), L = E"))
         assertEquals("error", solve("throw(error(_, c))"))
+    }
+
+    // a domain 2P-Kt does not know, as those of the languages of the profiles: caught as thrown, its message kept
+    @Test
+    fun throwingAnErrorOfADomainOutsideIso() {
+        assertEquals(
+            "flat_aba_theory",
+            solve("catch(throw(error(domain_error(flat_aba_theory, a), m)), error(domain_error(L, _), _), true)"),
+        )
+        val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().empty(true).create())
+        val halted = solver.solve(Struct.parse("throw(error(domain_error(flat_aba_theory, a), 'not flat'))", solver.operators)).first()
+        assertTrue(halted.isHalt)
+        assertTrue("not flat" in halted.exception?.message.orEmpty(), halted.exception?.message)
     }
 
     @Test
