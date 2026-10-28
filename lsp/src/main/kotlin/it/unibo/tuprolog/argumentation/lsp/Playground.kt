@@ -1,16 +1,16 @@
 package it.unibo.tuprolog.argumentation.lsp
 
-import com.google.gson.GsonBuilder
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.Deflater
+import java.util.zip.Inflater
 
 /**
  * Links to the web playground opening a theory, as the playground shares them: the JSON array `[2, flags, theory,
  * query]`, deflated with the dictionary of the version 2 of its links, base64url encoded, in the parameter `s` (see
  * links.ts in arg2p-kt-web).
  */
-object Playground {
+internal object Playground {
     /** The web playground */
     const val URL = "https://tuprolog.github.io/arg2p-kt-web/"
 
@@ -40,15 +40,13 @@ object Playground {
             "\\n\\n",
         ).joinToString("").toByteArray(Charsets.UTF_8)
 
-    private val gson = GsonBuilder().disableHtmlEscaping().create()
-
     /** The link opening [theory], [query] and [flags] in the playground */
     fun link(
         theory: String,
         query: String,
         flags: String,
     ): String {
-        val state = gson.toJson(listOf(VERSION, flags, theory, query)).toByteArray(Charsets.UTF_8)
+        val state = json.toJson(listOf(VERSION, flags, theory, query)).toByteArray(Charsets.UTF_8)
         val deflater = Deflater(Deflater.BEST_COMPRESSION, true)
         val packed =
             try {
@@ -63,5 +61,25 @@ object Playground {
                 deflater.end()
             }
         return URL + "?s=" + Base64.getUrlEncoder().withoutPadding().encodeToString(packed)
+    }
+
+    /** The state [packed] in the parameter `s` of a link, as its JSON (`[2, flags, theory, query]`) */
+    fun state(packed: String): String {
+        val inflater = Inflater(true)
+        return try {
+            inflater.setInput(Base64.getUrlDecoder().decode(packed))
+            // a raw stream, with no header asking for its dictionary
+            inflater.setDictionary(DICTIONARY)
+            val bytes = ByteArrayOutputStream()
+            val buffer = ByteArray(4096)
+            while (!inflater.finished()) {
+                val read = inflater.inflate(buffer)
+                if (read == 0 && inflater.needsInput()) error("A link of the playground cut short")
+                bytes.write(buffer, 0, read)
+            }
+            bytes.toString(Charsets.UTF_8)
+        } finally {
+            inflater.end()
+        }
     }
 }

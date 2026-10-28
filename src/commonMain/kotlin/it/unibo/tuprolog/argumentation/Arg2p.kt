@@ -15,9 +15,9 @@ import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.channel.OutputChannel
+import it.unibo.tuprolog.theory.Theory
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
@@ -138,11 +138,7 @@ class Arg2p private constructor(
     @JsName("setting")
     fun settingArray(flag: String): Array<String> = setting(flag).toTypedArray()
 
-    private val declaredFlags by lazy {
-        (arg2p.baseLibraries() + arg2p.staticLibraries() + arg2p.dynamicLibraries())
-            .flatMap { it.flags() }
-            .associateBy { it.predicate() }
-    }
+    private val declaredFlags get() = arg2p.settings.flags
 
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
     fun solve(goal: String): Solutions = Solutions(solver.solve(struct(goal)).iterator())
@@ -157,15 +153,18 @@ class Arg2p private constructor(
     ): Solutions = Solutions(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
 
     /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
-    fun add(theory: String) = solver.appendStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
+    fun add(theory: String) = solver.appendStaticKb(parsed(theory))
 
     /** Replaces the theory with [theory], Prolog text (an [Arg2pException] telling where it does not parse) */
-    fun load(theory: String) = solver.loadStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
+    fun load(theory: String) = solver.loadStaticKb(parsed(theory))
+
+    // The clauses of [theory], read with the operators of the solver
+    private fun parsed(theory: String): Theory = SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) }
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), solver.operators) }
+    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, solver.operators) }
 
     private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
 
@@ -177,11 +176,12 @@ class Arg2p private constructor(
         return solution
     }
 
-    /** A solver of arg2p, as it is described: its theory, its flags, and where what it prints goes */
+    /** A solver of arg2p, as it is described: its theory, its flags, where what it prints goes, and whether it is sandboxed */
     class Builder {
         private var theory = ""
         private var flags = Flags.defaults()
         private var output: ((String) -> Unit)? = null
+        private var sandboxed = false
 
         /** The theory, as Prolog text */
         fun theory(theory: String): Builder = apply { this.theory = theory }
@@ -192,10 +192,19 @@ class Arg2p private constructor(
         /** The function receiving what the solver prints (the standard output otherwise) */
         fun output(consumer: (String) -> Unit): Builder = apply { output = consumer }
 
+        /**
+         * Whether the solver is sandboxed (not by default), for a theory that is not trusted: one written by someone
+         * else, or by an AI model, which what it reads may steer. A theory solved by arg2p runs as a program does, with
+         * the rights of the process: a sandboxed solver reads and writes no file and no URL, the remote modules
+         * (`module::call_module/2`) raising a permission error; it still computes as long as it is let, a server
+         * bounds it with a timeout (interrupting its thread, on the JVM).
+         */
+        fun sandboxed(on: Boolean): Builder = apply { sandboxed = on }
+
         /** The solver: an [Arg2pException] telling where the theory does not parse otherwise */
         fun build(): Arg2p {
             // the causality module of its own for each solver: it keeps the graphs it computes
-            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
+            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule(sandboxed)), sandboxed)
             return Arg2p(
                 SyntaxProblem.parsing("Theory") {
                     Arg2pSolverFactory.solverOf(arg2p, theory, output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut())
@@ -228,8 +237,7 @@ class Arg2p private constructor(
         /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
         @JvmStatic
         @JsStatic
-        fun checkQuery(query: String): SyntaxProblem? =
-            SyntaxProblem.check { Term.parse(query.trim().removeSuffix("."), TermValues.operators) }
+        fun checkQuery(query: String): SyntaxProblem? = SyntaxProblem.check { TermValues.term(query) }
 
         /** The version of arg2p, the released one for a release */
         @JvmStatic

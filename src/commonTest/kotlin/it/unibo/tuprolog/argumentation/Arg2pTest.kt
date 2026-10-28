@@ -57,12 +57,13 @@ class Arg2pTest {
         assertEquals(listOf("a", "f(-b)", "[1, 2.5]", "Y"), solutions.map { it.text("X") })
         assertEquals(listOf("atom", "struct", "list", "variable"), solutions.map { it.value("X")!!.kind })
         assertEquals(Value.List(listOf(Value.Integer(1), Value.Real(2.5))), solutions[2].bindings["X"])
-        assertFalse(
+        assertEquals(
+            "no",
             Arg2p
                 .of()
                 .solve("member(x, [])")
                 .next()
-                .isYes,
+                .result,
         )
     }
 
@@ -72,12 +73,13 @@ class Arg2pTest {
         val nonFlat = "assumption(a).\nassumption(b).\ncontrary(a, x).\ncontrary(b, y).\nr0 : b -> a."
         val error = assertFailsWith<Arg2pException> { Arg2p.of(nonFlat, Flags.defaults().graphBuildMode(Profile.ABA)).answer("a") }
         assertTrue("not flat" in error.message.orEmpty(), error.message)
-        assertTrue(
+        assertEquals(
+            "halt",
             Arg2p
                 .of()
                 .solve("throw(error(type_error(integer, a), x))")
                 .next()
-                .isHalt,
+                .result,
         )
         assertFailsWith<Arg2pException> { Arg2p.of().solve("f(") }
     }
@@ -102,7 +104,9 @@ class Arg2pTest {
 
     @Test
     fun textsThatDoNotParseTellWhere() {
-        val theory = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }.syntax
+        val failure = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }
+        assertEquals("Theory: Unexpected token '.'; expected term at 2:9", failure.message)
+        val theory = failure.syntax
         assertEquals(2, theory?.line)
         assertEquals(9, theory?.column)
         assertEquals(".", theory?.token)

@@ -62,7 +62,7 @@
             import '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}?bundle';
             import { JsEngine } from '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}/js?bundle';
             import { DEFAULT_PROFILE, profileInfo, statedProfile } from '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}/data?bundle';
-            import { LitElement, css, html, nothing } from '{{cdn}}/lit@3.3.3?bundle';
+            import { LitElement, css, html, nothing } from '{{cdn}}/lit@{{lit}}?bundle';
 
             // --- the host: JSON-RPC over postMessage (MCP Apps) ---------------------------------------------------
 
@@ -131,7 +131,9 @@
             // --- the engine: the tool engine of the server --------------------------------------------------------
 
             const session = crypto.randomUUID();
-            const EMPTY_GRAPH = { profile: '', arguments: [], attacks: [] };
+            // the query solved when none is given, and the graph of none, as the server has them
+            const DEFAULT_QUERY = {{query}};
+            const EMPTY_GRAPH = {{emptyGraph}};
 
             // What a request is answered with when the server could not answer it
             function unanswered(message, text) {
@@ -166,7 +168,7 @@
                 const opened = {
                     onmessage: null,
                     postMessage: message => call(message).then(answers => answers.forEach(answer => opened.onmessage?.({ data: answer }))),
-                    // a resolution under way goes on on the server until its timeout: its answers are dropped
+                    // the page forgotten by the server, the resolution under way stops there
                     terminate: close,
                 };
                 return opened;
@@ -192,7 +194,7 @@
                 constructor() {
                     super();
                     this.theory = '';
-                    this.query = 'buildLabelSets(In, Out, Und)';
+                    this.query = DEFAULT_QUERY;
                     this.flags = '';
                     this.panel = 'results';
                     this.busy = false;
@@ -216,21 +218,27 @@
                     if (told.result !== null) this.opened(told.result);
                 }
 
-                /** The theory the assistant explores, solved at once */
+                /** The theory the assistant explores, shown until the server tells how it is solved */
                 open(input) {
                     this.theory = input.theory ?? '';
                     if (input.query) this.query = input.query;
                     if (input.flags) this.flags = input.flags;
-                    this.given = { theory: this.theory, query: this.query, flags: this.flags };
                     this.positions = null;
-                    this.updateComplete.then(() => this.run());
                 }
 
-                /** What the server tells of it: the flags it is solved with, and its link to the playground */
+                /**
+                 * What the server tells of it, solved at once: the theory, the query and the flags it is solved with (the
+                 * defaults of the server for those the assistant left out), and its link to the playground
+                 */
                 opened(result) {
                     if (result === null) return;
-                    if (result.flags && this.flags === '') this.flags = result.flags;
+                    this.theory = result.theory ?? this.theory;
+                    this.query = result.query ?? this.query;
+                    this.flags = result.flags ?? this.flags;
+                    this.given = { theory: this.theory, query: this.query, flags: this.flags };
                     this.playground = result.playground ?? null;
+                    this.positions = null;
+                    this.updateComplete.then(() => this.run());
                 }
 
                 contextChanged(changed) {
@@ -328,7 +336,7 @@
                                 id="query"
                                 kind="query"
                                 label="Query"
-                                placeholder="buildLabelSets(In, Out, Und)"
+                                placeholder=${DEFAULT_QUERY}
                                 .engine=${engine}
                                 .value=${this.query}
                                 @arg2p-change=${e => (this.query = e.detail.value)}

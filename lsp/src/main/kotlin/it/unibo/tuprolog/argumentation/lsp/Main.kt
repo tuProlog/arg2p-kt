@@ -1,20 +1,21 @@
 package it.unibo.tuprolog.argumentation.lsp
 
 import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.services.LanguageClient
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.system.exitProcess
 
 /** The server of [server], speaking the protocol of language servers on [input] and [output] */
-fun launcherOf(
+internal fun launcherOf(
     server: Arg2pLanguageServer,
     input: InputStream,
     output: OutputStream,
-): Launcher<Arg2pClient> =
+): Launcher<LanguageClient> =
     Launcher
-        .Builder<Arg2pClient>()
+        .Builder<LanguageClient>()
         .setLocalService(server)
-        .setRemoteInterface(Arg2pClient::class.java)
+        .setRemoteInterface(LanguageClient::class.java)
         .setInput(input)
         .setOutput(output)
         .create()

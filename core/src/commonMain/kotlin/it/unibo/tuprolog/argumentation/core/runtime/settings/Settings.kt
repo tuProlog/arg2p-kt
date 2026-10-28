@@ -34,7 +34,8 @@ import it.unibo.tuprolog.theory.Theory
 class Settings(
     private val solver: Arg2pSolver,
 ) : ArgLibrary {
-    private val flags: Map<String, ArgsFlag<*, *>> by lazy {
+    /** The flags the libraries of the solver declare, by name */
+    val flags: Map<String, ArgsFlag<*, *>> by lazy {
         (solver.baseLibraries() + solver.staticLibraries() + solver.dynamicLibraries())
             .flatMap { it.flags() }
             .associateBy { it.predicate() }

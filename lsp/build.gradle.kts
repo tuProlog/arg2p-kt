@@ -18,6 +18,30 @@ tasks.shadowJar {
     }
 }
 
+// The versions of what the page of the solver loads (see McpApp): the components of @tuprolog/arg2p-ui and Lit, as the
+// extension of VS Code builds with them (its package.json, which Renovate keeps up to date)
+val pageVersions =
+    tasks.register("pageVersions") {
+        val packageJson = rootProject.file("vscode/package.json")
+        val versions = layout.buildDirectory.file("generated/page/it/unibo/tuprolog/argumentation/lsp/page.properties")
+        inputs.file(packageJson)
+        outputs.file(versions)
+        doLast {
+            @Suppress("UNCHECKED_CAST")
+            val dependencies = (groovy.json.JsonSlurper().parse(packageJson) as Map<String, Any>)["devDependencies"] as Map<String, String>
+            val pinned = Regex("""\d+\.\d+\.\d+(-[\w.]+)?""")
+            val found =
+                mapOf("ui" to "@tuprolog/arg2p-ui", "lit" to "lit").mapValues { (_, name) ->
+                    dependencies[name]?.takeIf { pinned.matches(it) } ?: error("No exact version of $name in $packageJson")
+                }
+            versions.get().asFile.writeText(found.entries.joinToString("") { (key, version) -> "$key=$version\n" })
+        }
+    }
+
+sourceSets.main {
+    resources.srcDir(files(layout.buildDirectory.dir("generated/page")).builtBy(pageVersions))
+}
+
 val jvmStackSize: String = property("jvmStackSize").toString()
 
 tasks.withType<Test>().configureEach {

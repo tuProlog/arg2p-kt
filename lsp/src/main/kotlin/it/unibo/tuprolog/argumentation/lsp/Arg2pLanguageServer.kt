@@ -17,33 +17,37 @@ import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.ServerInfo
 import org.eclipse.lsp4j.TextDocumentSyncKind
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 
 /**
  * The language server of arg2p: the theories an editor opens are checked as they change (their syntax errors, as
- * diagnostics), and the requests of arg2p (see [Arg2pService]) solve them. Solving runs on threads of its own, with
- * the deep stack resolution needs; [exit] is what the server does when the editor tells it to exit.
+ * diagnostics), and the pages of the solver the editor shows solve on its engine (the request arg2p/engine, see
+ * [PageEngine]). The server reads its messages on a thread of its own: checking and solving run on threads of theirs,
+ * with the deep stack resolution needs (see [Solving]); [exit] is what the server does when the editor tells it to exit.
  */
-class Arg2pLanguageServer(
+internal class Arg2pLanguageServer(
     private val exit: () -> Unit = {},
 ) : LanguageServer,
     LanguageClientAware,
     Arg2pService {
-    private var client: Arg2pClient? = null
-    private val engine = Engine { id, text -> client?.output(OutputParams(id, text)) }
-    private val solving: ExecutorService =
-        Executors.newCachedThreadPool { task -> Thread(null, task, "arg2p-solver", STACK_SIZE).apply { isDaemon = true } }
+    private var client: LanguageClient? = null
+    private val solving = Solving("arg2p-solver")
+    private val pages = PageEngine(solving)
     private val documents = Documents()
 
     override fun connect(client: LanguageClient) {
-        this.client = client as? Arg2pClient
+        this.client = client
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> =
@@ -55,7 +59,8 @@ class Arg2pLanguageServer(
         )
 
     override fun shutdown(): CompletableFuture<Any> {
-        solving.shutdownNow()
+        pages.close()
+        solving.close()
         return CompletableFuture.completedFuture(null)
     }
 
@@ -70,53 +75,67 @@ class Arg2pLanguageServer(
             override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) = Unit
         }
 
-    override fun solve(params: SolveParams): CompletableFuture<SolveAnswer> =
-        CompletableFuture.supplyAsync({ engine.solve(params.theory ?: "", params.query ?: "", params.flags ?: "") }, solving)
+    override fun engine(params: EngineParams): CompletableFuture<EngineAnswers> =
+        try {
+            val session = params.session ?: throw InvalidParams("session is missing")
+            val request = params.request ?: throw InvalidParams("request is missing")
+            // cancelled by the editor, the request stops
+            pages.handle(session, request).handling { answers, failure -> EngineAnswers.of(answers ?: throw failure!!) }
+        } catch (failure: InvalidParams) {
+            throw ResponseErrorException(ResponseError(ResponseErrorCode.InvalidParams, failure.message, null))
+        }
 
-    override fun next(params: RunParams): CompletableFuture<NextAnswer> = CompletableFuture.supplyAsync({ engine.next(params.id) }, solving)
-
-    override fun graphAt(params: GraphAtParams): CompletableFuture<GraphData> =
-        CompletableFuture.supplyAsync({ engine.graphAt(params.id, params.branch) }, solving)
-
-    override fun check(params: CheckParams): CompletableFuture<ProblemData?> =
-        CompletableFuture.supplyAsync({ Engine.check(params.text ?: "", params.kind ?: "theory") }, solving)
-
-    override fun settings(params: SettingsParams): CompletableFuture<Map<String, List<String>>> =
-        CompletableFuture.supplyAsync({ Engine.settings(params.theory ?: "", params.flags ?: "") }, solving)
-
-    override fun close(params: RunParams) = engine.close(params.id)
-
-    // The theories open in the editor, checked as they change: the syntax errors are their diagnostics
+    // The theories open in the editor, checked once their text settles: the syntax errors are their diagnostics
     private inner class Documents : TextDocumentService {
-        override fun didOpen(params: DidOpenTextDocumentParams) = publish(params.textDocument.uri, params.textDocument.text)
+        // the last text of each document, and its check to come
+        private val texts = ConcurrentHashMap<String, String>()
+        private val checks = ConcurrentHashMap<String, Future<*>>()
+
+        override fun didOpen(params: DidOpenTextDocumentParams) = check(params.textDocument.uri, params.textDocument.text)
 
         override fun didChange(params: DidChangeTextDocumentParams) {
             // the whole text, as the server asks (TextDocumentSyncKind.Full)
-            params.contentChanges.lastOrNull()?.let { publish(params.textDocument.uri, it.text) }
+            params.contentChanges.lastOrNull()?.let { check(params.textDocument.uri, it.text) }
         }
 
         override fun didClose(params: DidCloseTextDocumentParams) {
-            client?.publishDiagnostics(PublishDiagnosticsParams(params.textDocument.uri, emptyList()))
+            val uri = params.textDocument.uri
+            texts.remove(uri)
+            checks.remove(uri)?.cancel(false)
+            client?.publishDiagnostics(PublishDiagnosticsParams(uri, emptyList()))
         }
 
         override fun didSave(params: DidSaveTextDocumentParams) = Unit
 
-        private fun publish(
+        // The diagnostics of [text], published once it settles, if it is still the text of the document
+        private fun check(
             uri: String,
             text: String,
         ) {
-            client?.publishDiagnostics(PublishDiagnosticsParams(uri, diagnostics(text)))
+            texts[uri] = text
+            val due =
+                Solving.timer.schedule(
+                    {
+                        solving.submit {
+                            val found = diagnostics(text)
+                            if (texts[uri] === text) client?.publishDiagnostics(PublishDiagnosticsParams(uri, found))
+                        }
+                    },
+                    SETTLING,
+                    TimeUnit.MILLISECONDS,
+                )
+            checks.put(uri, due)?.cancel(false)
         }
     }
 
     companion object {
-        /** The stack of the threads solving: resolution goes deep (the tests of arg2p run with the same) */
-        const val STACK_SIZE = 512L * 1024 * 1024
+        /** How long a text is left unchanged before it is checked, in milliseconds: the editor sends each keystroke */
+        const val SETTLING = 200L
 
         /** The diagnostics of [text], a theory: where it does not parse */
         fun diagnostics(text: String): List<Diagnostic> =
             listOfNotNull(
-                Engine.check(text, "theory")?.let { problem ->
+                Solvers.check(text, "theory")?.let { problem ->
                     val line = problem.line - 1
                     val column = problem.column - 1
                     Diagnostic(
