@@ -1,0 +1,22 @@
+{
+  "name": "arg2p",
+  "displayName": "Arg2P",
+  "version": "0.20.0",
+  "description": "Structured argumentation with Arg2P: formalize problems as theories, solve them, and explore the results in its solver.",
+  "author": {
+    "name": "tuProlog",
+    "url": "https://github.com/tuProlog"
+  },
+  "homepage": "https://tuprolog.github.io/arg2p-kt/",
+  "repository": "https://github.com/tuProlog/arg2p-kt",
+  "license": "MIT",
+  "keywords": [
+    "argumentation",
+    "aspic",
+    "aba",
+    "prolog",
+    "reasoning",
+    "explainability",
+    "mcp"
+  ]
+}
