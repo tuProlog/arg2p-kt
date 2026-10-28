@@ -26,6 +26,9 @@ import java.util.concurrent.TimeoutException
  *
  * A tool that fails (a theory that does not parse, a profile refusing it, a query taking longer than its timeout)
  * answers with its error, as MCP tools do, rather than failing the request.
+ *
+ * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the host shows them,
+ * and as a link to the web playground everywhere.
  */
 class McpServer(
     input: InputStream,
@@ -34,6 +37,7 @@ class McpServer(
     private val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
     private val writer = PrintStream(output, true, Charsets.UTF_8)
     private val gson: Gson = GsonBuilder().serializeNulls().create()
+    private val app = McpApp()
     private val solving =
         Executors.newCachedThreadPool {
             Thread(null, it, "arg2p-mcp", Arg2pLanguageServer.STACK_SIZE).apply {
@@ -67,6 +71,16 @@ class McpServer(
             "ping" -> respond(id, JsonObject())
             "tools/list" -> respond(id, JsonObject().apply { add("tools", gson.toJsonTree(TOOLS)) })
             "tools/call" -> respond(id, call(params))
+            "resources/list" -> respond(id, JsonObject().apply { add("resources", gson.toJsonTree(listOf(RESOURCE))) })
+            "resources/templates/list" -> respond(id, JsonObject().apply { add("resourceTemplates", JsonArray()) })
+            "resources/read" -> {
+                val uri = params.get("uri")?.asString
+                if (uri == McpApp.URI) {
+                    respond(id, JsonObject().apply { add("contents", gson.toJsonTree(listOf(RESOURCE + ("text" to McpApp.page)))) })
+                } else {
+                    respond(id, error = error(-32002, "Resource not found: $uri"))
+                }
+            }
             else -> respond(id, error = error(-32601, "Method not found: $method"))
         }
     }
@@ -75,7 +89,14 @@ class McpServer(
         val asked = params.get("protocolVersion")?.asString
         return JsonObject().apply {
             addProperty("protocolVersion", if (asked in PROTOCOL_VERSIONS) asked else PROTOCOL_VERSIONS.first())
-            add("capabilities", JsonObject().apply { add("tools", JsonObject()) })
+            add(
+                "capabilities",
+                JsonObject().apply {
+                    add("tools", JsonObject())
+                    add("resources", JsonObject())
+                    add("extensions", JsonObject().apply { add(McpApp.EXTENSION, JsonObject()) })
+                },
+            )
             add(
                 "serverInfo",
                 JsonObject().apply {
@@ -99,13 +120,18 @@ class McpServer(
                     "answer" -> answer(arguments)
                     "check" -> check(arguments)
                     "settings" -> settings(arguments)
+                    "explore" -> explore(arguments)
+                    "engine" ->
+                        mapOf(
+                            "answers" to app.handle(arguments.text("session") ?: "", arguments.getAsJsonObject("request") ?: JsonObject()),
+                        )
                     else -> throw IllegalArgumentException("Unknown tool: $name")
                 }
             }
         return try {
             val result = gson.toJsonTree(future.get(timeout, TimeUnit.SECONDS))
             JsonObject().apply {
-                add("content", content(gson.toJson(result)))
+                add("content", content(if (name == "explore") explored(result.asJsonObject) else gson.toJson(result)))
                 if (result.isJsonObject) add("structuredContent", result)
                 addProperty("isError", false)
             }
@@ -168,6 +194,28 @@ class McpServer(
     }
 
     private fun settings(arguments: JsonObject): Map<String, Any?> = Engine.settings(arguments.text("theory") ?: "", flagsText(arguments))
+
+    // What the solver is shown with: the theory, if it parses, its query, its flags, and the link to the playground
+    private fun explore(arguments: JsonObject): Map<String, Any?> {
+        val theory = arguments.text("theory") ?: ""
+        Engine.check(theory, "theory")?.let {
+            throw IllegalArgumentException("The theory does not parse at line ${it.line}, column ${it.column}: ${it.message}")
+        }
+        val query = arguments.text("query") ?: DEFAULT_QUERY
+        val flags = flagsText(arguments)
+        return mapOf(
+            "theory" to theory,
+            "query" to query,
+            "flags" to flags,
+            "profile" to (Engine.settings(theory, flags)["graphBuildMode"]?.firstOrNull() ?: ""),
+            "playground" to Playground.link(theory, query, flags),
+        )
+    }
+
+    private fun explored(result: JsonObject): String =
+        "The solver of the theory is shown to the user, where this client shows MCP Apps: they can run the query " +
+            "(${result.text("query")}), browse its solutions, their argument graphs and stages, and change the flags. " +
+            "The same theory opens in the web playground: ${result.text("playground")}"
 
     private fun solver(arguments: JsonObject): Arg2p =
         Arg2p
@@ -245,7 +293,8 @@ class McpServer(
             "Arg2P solves structured argumentation theories (ASPIC+, ABA, abstract frameworks) in Prolog. Use `check` to " +
                 "see whether a theory parses, `answer` for the statements a query labels in, out and und, `solve` for " +
                 "the solutions of any Prolog query on the theory with the argument graph (arguments, labels, attacks), " +
-                "and `settings` for the profile and the flags in effect. A theory refused by its profile, or that does " +
+                "and `settings` for the profile and the flags in effect; `explore` shows the user the solver of a theory, " +
+                "to browse its results themselves. A theory refused by its profile, or that does " +
                 "not parse, gives an error saying why: do not guess the answer instead. Documentation: " +
                 "https://tuprolog.github.io/arg2p-kt/"
 
@@ -317,6 +366,55 @@ class McpServer(
                         "graph extensions, ... as the theory, the flags and the profile set them.",
                     "inputSchema" to schema("theory" to text(THEORY), "flags" to text(FLAGS), required = listOf("theory")),
                 ),
+                mapOf(
+                    "name" to "explore",
+                    "title" to "Show the solver of a theory",
+                    "description" to
+                        "Shows the user the solver of a theory, to explore its results themselves: the query run, its " +
+                        "solutions, the argument graph of each and the stages of its computation, the drawing of an " +
+                        "abstract framework, the flags. Hosts of MCP Apps show it in the conversation; the result links the " +
+                        "same theory in the web playground too. Use it when the user wants to see or explore the results.",
+                    "inputSchema" to
+                        schema(
+                            "theory" to text(THEORY),
+                            "query" to text("The query run first (default: $DEFAULT_QUERY)"),
+                            "flags" to text(FLAGS),
+                            required = listOf("theory"),
+                        ),
+                    "_meta" to
+                        mapOf(
+                            "ui" to mapOf("resourceUri" to McpApp.URI, "visibility" to listOf("model", "app")),
+                            // the key of the first hosts of MCP Apps
+                            "ui/resourceUri" to McpApp.URI,
+                        ),
+                ),
+                mapOf(
+                    "name" to "engine",
+                    "title" to "The engine of the solver",
+                    "description" to "The engine the solver shown by explore runs on: for that solver only, not to be called otherwise.",
+                    "inputSchema" to
+                        mapOf(
+                            "type" to "object",
+                            "properties" to
+                                mapOf(
+                                    "session" to text("The solver asking"),
+                                    "request" to mapOf("type" to "object", "description" to "A message of the solver to its engine"),
+                                ),
+                            "required" to listOf("session", "request"),
+                        ),
+                    "_meta" to mapOf("ui" to mapOf("visibility" to listOf("app"))),
+                ),
+            )
+
+        /** The page of the solver, as a resource (its text added when read) */
+        private val RESOURCE: Map<String, Any> =
+            mapOf(
+                "uri" to McpApp.URI,
+                "name" to "solver",
+                "title" to "The solver of Arg2P",
+                "description" to "The solver of a theory: its query, solutions, argument graphs and flags",
+                "mimeType" to McpApp.MIME_TYPE,
+                "_meta" to McpApp.meta,
             )
     }
 }

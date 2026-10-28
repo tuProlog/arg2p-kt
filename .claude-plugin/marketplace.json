@@ -1,0 +1,30 @@
+{
+  "name": "arg2p",
+  "owner": {
+    "name": "tuProlog",
+    "url": "https://github.com/tuProlog"
+  },
+  "metadata": {
+    "description": "The plugins of Arg2P, structured argumentation in Prolog"
+  },
+  "plugins": [
+    {
+      "name": "arg2p",
+      "source": "./plugins/arg2p",
+      "description": "Structured argumentation with Arg2P: formalize problems as theories, solve them, and explore the results in its solver.",
+      "version": "0.20.0",
+      "category": "reasoning",
+      "keywords": [
+        "argumentation",
+        "aspic",
+        "aba",
+        "prolog",
+        "reasoning",
+        "explainability",
+        "mcp"
+      ],
+      "homepage": "https://tuprolog.github.io/arg2p-kt/",
+      "license": "MIT"
+    }
+  ]
+}

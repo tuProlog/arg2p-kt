@@ -66,3 +66,42 @@ jobs:
           node-version: 24
       - name: Publish the packages
         run: npx --yes @vscode/vsce@4.0.0 publish --oidc --packagePath dist/*.vsix
+  mcp-registry:
+    # The MCP server of the release in the MCP Registry, as the package of PyPI running it (uvx arg2p mcp): server.json of
+    # the release, published through GitHub OIDC (the namespace io.github.tuProlog, no token), once PyPI has the wheels
+    needs:
+      - ci-cd
+      - python-publish
+    if: needs.ci-cd.outputs.version != ''
+    runs-on: ubuntu-26.04
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.ci-cd.outputs.version }}
+      - uses: sigstore/cosign-installer@v4.1.2
+      - name: Install the publisher of the MCP Registry, verified
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl -fsSL -o "$archive" "$base/$archive"
+          curl -fsSL -o "$archive.sigstore.json" "$base/$archive.sigstore.json"
+          cosign verify-blob --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" "$archive"
+          tar xzf "$archive" mcp-publisher
+      - name: Publish the server
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+          # the registry reads the package from PyPI, which may not show it at once
+          for attempt in 1 2 3 4 5; do
+            ./mcp-publisher publish && exit 0
+            sleep 60
+          done
+          exit 1

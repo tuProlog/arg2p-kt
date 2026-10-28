@@ -23,11 +23,17 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
             catch(findall(conflict([C], [A]), contrary(A, C), Conflicts), error(existence_error(_, _), _), Conflicts = []).
 
         %! check
-        %  The theory is flat ABA: no defeasible rule, and no rule concluding an assumption.
+        %  The theory is flat ABA: no defeasible rule, no ordinary premise (its premises are its assumptions, its facts
+        %  strict), and no rule concluding an assumption.
         check :-
             parser::rule(Id, _, _),
             \+ parser::checkStrict(Id), !,
             throw(error(domain_error(aba_theory, defeasible), 'aba: the theory has defeasible rules')).
+        check :-
+            parser::premise(Id, _),
+            Id \= asm(_),
+            \+ parser::checkStrict(Id), !,
+            throw(error(domain_error(aba_theory, premise), 'aba: the theory has ordinary premises (f :=> a.): the premises of ABA are its assumptions (assumption/1), its facts strict (f :-> a.)')).
         check :-
             parser::rule(_, _, [A]),
             parser::premise(asm(A), _), !,
