@@ -4,8 +4,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.Base64
-import java.util.zip.Inflater
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -185,7 +183,7 @@ class McpServerTest {
         assertEquals("aspic_plus", explored.get("profile").asString)
         val link = explored.get("playground").asString
         assertTrue(link.startsWith(Playground.URL + "?s="))
-        val state = JsonParser.parseString(unpacked(link.substringAfter("?s="))).asJsonArray
+        val state = JsonParser.parseString(Playground.state(link.substringAfter("?s="))).asJsonArray
         assertEquals(2, state[0].asInt)
         assertEquals(tweety.replace("\\n", "\n"), state[2].asString)
         assertEquals(MCP_DEFAULT_QUERY, state[3].asString)
@@ -235,42 +233,7 @@ class McpServerTest {
         assertEquals("failed", answersOf(6).single().get("type").asString)
     }
 
-    // The JSON a link of the playground packs
-    private fun unpacked(packed: String): String {
-        val inflater = Inflater(true)
-        inflater.setInput(Base64.getUrlDecoder().decode(packed))
-        // a raw stream, with no header asking for its dictionary
-        inflater.setDictionary(PLAYGROUND_DICTIONARY)
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(4096)
-        while (!inflater.finished()) output.write(buffer, 0, inflater.inflate(buffer))
-        inflater.end()
-        return output.toString(Charsets.UTF_8)
-    }
-
     private companion object {
         const val MCP_DEFAULT_QUERY = "buildLabelSets(In, Out, Und)"
-        val PLAYGROUND_DICTIONARY =
-            listOf(
-                "[2,\"",
-                "buildLabelSets(In, Out, Und)",
-                "graphBuildMode(abstract).\\n",
-                "graphBuildMode(aba).\\n",
-                "graphBuildMode(aspic).\\n",
-                "argumentLabellingMode(grounded).\\n",
-                "argumentLabellingMode(preferred).\\n",
-                "statementLabellingMode(statement).\\n",
-                "queryMode.\\n",
-                "assumption(",
-                "contrary(",
-                " :=> ",
-                " => ",
-                " :- ",
-                " -> ",
-                " <-> ",
-                "(X)",
-                "(X, Y)",
-                "\\n\\n",
-            ).joinToString("").toByteArray(Charsets.UTF_8)
     }
 }
