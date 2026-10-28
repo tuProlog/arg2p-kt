@@ -187,9 +187,68 @@ Try Arg2P directly in your browser using the [Web Playground](https://tuprolog.g
 
 ![Web Playground](./imgs/playground.png)
 
-No installation required. It runs in two modes: **Structured**, to write a theory and query it as in the
-desktop IDE, and **Abstract**, to draw an argumentation framework and evaluate it with `abstract::solve/5`
-under any of the supported semantics. It ships ready-made examples, and setups can be shared as a link.
+No installation required: the solver runs in the browser. Write a theory, solve a query one solution at a time, and
+browse the argument graph of each solution and the stages of its computation. The profile a theory states
+(`graphBuildMode(aba).`, say) tells the framework it is read in, and the _Flags_ panel sets the semantics and every
+other flag, with the value in effect and where it comes from.
+
+An abstract framework is a theory too (`graphBuildMode(abstract).`, arguments `a.` and attacks `a -> b.`): it is
+drawn, and the drawing edits the theory. Arguments and attacks are added, renamed and deleted by drawing, the
+labelling of the solution colours them, and hovering or tapping an argument tells its label, what attacks it and what
+it attacks. Frameworks are imported from APX, TGF and ICCMA'23 files, and exported to APX and TGF.
+
+![An abstract framework, drawn](./imgs/playground-drawing.png)
+
+Theories are kept in tabs in the browser, shared as links, opened from and saved to files; the playground works
+offline once installed as an app, on desktops, tablets and phones. Its components are on npm as
+[`@tuprolog/arg2p-ui`](https://www.npmjs.com/package/@tuprolog/arg2p-ui), to embed the solver in other pages.
+
+---
+
+## Arg2p for VS Code
+
+The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) edits theories as
+`.arg2p` files: their syntax is highlighted and their syntax errors show as they are typed. **Arg2P: Open the Solver**
+opens the solver of the playground beside a theory, running on the JVM: its solutions, their graphs, the drawing of an
+abstract framework and the flags.
+
+![Arg2P in VS Code](./imgs/vscode.png)
+
+The extension bundles the language server of Arg2P and the Java runtime it runs on; see its
+[README](./vscode/README.md) for its settings.
+
+---
+
+## Arg2p for AI assistants (MCP)
+
+The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
+with it rather than guessing what they conclude. Its tools:
+
+| Tool | |
+| --- | --- |
+| `solve` | The solutions of a query on a theory, with their bindings and the argument graph: every argument with its conclusion and label, every attack |
+| `answer` | The statements of a query labelled in, out and und |
+| `check` | Whether a theory or a query parses, and where it does not |
+| `settings` | The profile and the flags in effect for a theory |
+
+In VS Code, the extension registers it for the assistants of VS Code (Copilot agent mode), nothing to configure.
+Elsewhere, download `arg2p-lsp-<VERSION>-redist.jar` from the
+[latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) and run it with `--mcp`, on Java 21 or later.
+In Claude Code:
+
+```bash
+claude mcp add arg2p -- java -jar /path/to/arg2p-lsp-<VERSION>-redist.jar --mcp
+```
+
+In clients configured by JSON (Claude Desktop, Cursor, ...):
+
+```json
+{
+  "mcpServers": {
+    "arg2p": { "command": "java", "args": ["-jar", "/path/to/arg2p-lsp-<VERSION>-redist.jar", "--mcp"] }
+  }
+}
+```
 
 ---
 
