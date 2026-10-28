@@ -61,6 +61,6 @@ object AbstractLanguageModule : PrologModule("prolog.argumentation.language.abst
         structuredFact(Head) :-
             callable(Head),
             functor(Head, Functor, Arity),
-            (Functor == sup, Arity == 2 ; Functor == conflict, (Arity == 2 ; Arity == 3) ; Functor == bp), !.
+            (Functor == sup, Arity == 2 ; Functor == conflict, (Arity == 2 ; Arity == 3) ; Functor == bp, Arity > 0), !.
         """.trimIndent()
 }

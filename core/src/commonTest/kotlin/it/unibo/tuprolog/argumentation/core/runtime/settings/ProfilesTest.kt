@@ -208,5 +208,7 @@ class ProfilesTest {
         // arg/1 and att/2 take arguments of any shape; in the notation, a list reads as the premises of a rule
         assertEquals("[[[[a]]], [[b]], []]", labels("graphBuildMode(abstract).\natt([a], b).\n"))
         assertTrue(labelling("graphBuildMode(abstract).\n[a] -> b.\n").isHalt)
+        // an argument may have the name of a burden or of a preference
+        assertEquals("[[[bp]], [[sup]], []]", labels("graphBuildMode(abstract).\nbp -> sup.\n"))
     }
 }
