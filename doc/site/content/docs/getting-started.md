@@ -136,7 +136,7 @@ how to embed Arg2P in an existing 2P-Kt solver; the same API is in [JavaScript](
 ```
 
 ```js
-const { Arg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
+import { Arg2p } from '@tuprolog/arg2p'
 
 const [graph] = Arg2p.of(`
     f1 :=> d.

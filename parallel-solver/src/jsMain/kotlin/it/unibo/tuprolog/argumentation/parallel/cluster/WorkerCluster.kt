@@ -8,6 +8,8 @@ import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.handled
+import it.unibo.tuprolog.argumentation.parallel.federation.nodeModule
+import it.unibo.tuprolog.argumentation.parallel.federation.thisModule
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.js.JsExport
 import kotlin.js.Promise
@@ -106,7 +108,7 @@ class WorkerCluster(
     private fun spawn(module: String): dynamic {
         val code =
             "const { workerData } = require('worker_threads');\n" +
-                "require(workerData.module).it.unibo.tuprolog.argumentation.parallel.cluster.startWorkerThread();"
+                "import(workerData.module).then(module => module.startWorkerThread());"
         val options: dynamic = js("({})")
         options.eval = true
         options.workerData = js("({})")
@@ -155,7 +157,4 @@ internal class PortLink(
     override fun close() = closing()
 }
 
-private fun workerThreads(): dynamic = js("require('worker_threads')")
-
-// The file of this module, loaded again by the threads
-private fun thisModule(): String = js("__filename") as String
+private fun workerThreads(): dynamic = nodeModule("worker_threads")

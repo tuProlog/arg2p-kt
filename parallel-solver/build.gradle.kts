@@ -9,11 +9,6 @@ plugins {
             .get()
             .pluginId,
     )
-    id(
-        libs.plugins.ktMpp.npmPublish
-            .get()
-            .pluginId,
-    )
 }
 
 // The version of arg2p as a constant of the module: federated sites check that they are of the same one
@@ -46,8 +41,8 @@ kotlin {
             }
         }
         binaries.library()
-        // the declarations of the exported API for TypeScript (.d.ts), next to the JavaScript
-        generateTypeScriptDefinitions()
+        // ES modules, as the npm package of arg2p (the aggregate project, which alone is published on npm)
+        useEsModules()
     }
 
     sourceSets {

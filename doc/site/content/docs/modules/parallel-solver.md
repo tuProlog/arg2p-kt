@@ -64,7 +64,7 @@ Python, the promise is rejected in JavaScript), and the cluster answers the foll
 ## On Node.js
 
 ```javascript
-const { WorkerCluster } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.parallel.cluster
+import { WorkerCluster } from '@tuprolog/arg2p'
 
 const cluster = new WorkerCluster(4)
 cluster.load(theory)
@@ -121,9 +121,10 @@ await new WorkerCluster(4).discover()
 
 ### In a browser
 
-`WebWorkerCluster` runs the workers on Web Workers, each loading a script of yours that loads the module and calls
-`startWebWorker()` (with a bundler, the entry point of a worker bundle). A browser cannot listen nor send beacons: it
-connects to a JVM or Node.js instance, and through it to the other browsers linked to that instance, over WebRTC.
+`WebWorkerCluster` runs the workers on Web Workers, each running a module of yours that calls `startWebWorker()` (an
+ES module, loaded as a module worker; with a bundler, the entry point of a worker bundle). A browser cannot listen nor
+send beacons: it connects to a JVM or Node.js instance, and through it to the other browsers linked to that instance,
+over WebRTC.
 
 ```javascript
 // the page
@@ -133,7 +134,7 @@ cluster.load(theory)
 const answer = await cluster.solve('conclusion')
 
 // arg2p-worker.js
-importScripts(/* the module and its dependencies */)
+import { startWebWorker } from '@tuprolog/arg2p'
 startWebWorker()
 ```
 

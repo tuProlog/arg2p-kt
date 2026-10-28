@@ -81,10 +81,12 @@ class WebWorkerCluster(
         }
     }
 
-    // A Web Worker running the script at [url], linked to the site of the page
+    // A Web Worker running the module at [url] (an ES module, as this one), linked to the site of the page
     private fun spawn(url: String): Pair<dynamic, PortLink> {
         val constructor = js("Worker")
-        val worker = js("new constructor(url)")
+        val options: dynamic = js("({})")
+        options.type = "module"
+        val worker = js("new constructor(url, options)")
         val link = PortLink(worker) { worker.terminate() }
         var first = true
         worker.onmessage = { event: dynamic ->

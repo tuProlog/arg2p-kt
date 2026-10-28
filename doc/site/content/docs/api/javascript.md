@@ -21,9 +21,10 @@ answers, graphs and solutions, the values of Prolog terms (`Value`), the causali
 ```
 
 ```js
-const argumentation = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
-const { Arg2p, Flags, Value, Semantics, Profile, GraphExtension } = argumentation
+import { Arg2p, Flags, Value, Semantics, Profile, GraphExtension } from '@tuprolog/arg2p'
 ```
+
+The package is an ES module (Node.js, bundlers, Deno, browsers), every declaration of the API exported by its name.
 
 `Arg2p.version()` is the version of the package. Every list of the API is an array in JavaScript.
 The package declares its API for TypeScript (`arg2p.d.ts`): the classes, their methods and the enumerations are typed
@@ -159,6 +160,7 @@ before them a single object, `JsBridge`. Their replacements:
 | `JsArg2p.activeBranch(solver)`, `JsArg2p.contextFacts(solver, b, g)` | `solver.activeBranch`, `solver.contextFacts(b, g)` |
 | `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.causality.ness('a', 'b')` |
 | `JsTerms.parse(text)`, `JsTerms.format(term)` | `Value.parse(text)`, `String(value)` |
+| `require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation...` | `import { ... } from '@tuprolog/arg2p'` |
 | `JsBridge.solve(query, theory, flags, output)` | `Arg2p.builder()...build().solve(query)` |
 
 ---

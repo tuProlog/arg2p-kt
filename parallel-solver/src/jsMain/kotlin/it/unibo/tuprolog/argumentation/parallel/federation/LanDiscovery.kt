@@ -28,7 +28,7 @@ class LanDiscovery(
             val options: dynamic = js("({})")
             options.type = "udp4"
             options.reuseAddr = true
-            val opened = js("require('dgram')").createSocket(options)
+            val opened = nodeModule("dgram").createSocket(options)
             opened.on("error") { error: dynamic -> reject(error as Throwable) }
             opened.on("message") { message: dynamic, remote: dynamic ->
                 handled {

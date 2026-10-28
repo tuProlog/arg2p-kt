@@ -118,7 +118,7 @@ badge above):
 #### Usage Example
 
 ```js
-const { Arg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
+import { Arg2p } from '@tuprolog/arg2p'
 
 const [graph] = Arg2p.of(`
     f1 :=> d.

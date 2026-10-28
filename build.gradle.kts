@@ -134,6 +134,8 @@ kotlin {
         binaries.library()
         // the declarations of the exported API for TypeScript (.d.ts), next to the JavaScript
         generateTypeScriptDefinitions()
+        // ES modules, as bundlers, Node.js and Deno import them
+        useEsModules()
     }
 
     sourceSets {
@@ -155,6 +157,22 @@ val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
     maxHeapSize = jvmMaxHeapSize
     jvmArgs("-Xss$jvmStackSize")
+}
+
+// The npm package of arg2p, the only one (the modules it is made of are published on Maven alone): an ES module (see
+// useEsModules) with every declaration of the API, and its declarations for TypeScript, as package.json tells Node.js,
+// bundlers and TypeScript. Set once the project is evaluated, as kt-mpp configures the package after this.
+afterEvaluate {
+    npmPublish {
+        packages.configureEach {
+            packageJson {
+                main.set("arg2p.mjs")
+                types.set("arg2p.d.mts")
+                this["type"] = "module"
+                this["exports"] = mapOf("." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"))
+            }
+        }
+    }
 }
 
 // The Kotlin & JS reference in the style of the documentation site

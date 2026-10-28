@@ -23,7 +23,7 @@ class WebSocketLinks(
             val options: dynamic = js("({})")
             options.port = port
             options.host = host
-            val constructor = js("require('ws')").WebSocketServer
+            val constructor = nodeModule("ws").WebSocketServer
             val started = js("new constructor(options)")
             started.on("listening") { _: dynamic ->
                 server = started
@@ -47,7 +47,7 @@ class WebSocketLinks(
     /** Opens a link to the site listening at [url] (ws://host:port) */
     fun connect(url: String): Promise<Unit> =
         Promise { resolve, reject ->
-            val constructor = js("globalThis.WebSocket") ?: js("require('ws')").WebSocket
+            val constructor = js("globalThis.WebSocket") ?: nodeModule("ws").WebSocket
             val socket = js("new constructor(url)")
             val link = SocketLink(socket)
             var open = false
