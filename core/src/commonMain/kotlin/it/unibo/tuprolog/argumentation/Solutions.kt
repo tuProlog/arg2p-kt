@@ -88,3 +88,11 @@ class Solution internal constructor(
             else -> "halt: $error"
         }
 }
+
+/** The solutions given by [solutions], computed as they are asked for (for the solvers of the modules of arg2p) */
+@InternalArg2pApi
+fun solutionsOf(solutions: Iterator<LogicSolution>): Solutions = Solutions(solutions)
+
+/** The solution of the API for [solution] (for the solvers of the modules of arg2p) */
+@InternalArg2pApi
+fun solutionOf(solution: LogicSolution): Solution = Solution(solution)

@@ -55,20 +55,7 @@ class Arg2p private constructor(
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
-    fun answer(query: String): Answer {
-        val labels = listOf(Var.of("In"), Var.of("Out"), Var.of("Und"))
-        val solution =
-            first(Struct.of("answerQuery", listOf(term(query)) + labels))
-                ?: return Answer(emptyList(), emptyList(), emptyList())
-        val (statementsIn, statementsOut, statementsUnd) =
-            labels.map { label ->
-                solution.substitution[label]!!
-                    .castToList()
-                    .toList()
-                    .map { TermValues.of(it) }
-            }
-        return Answer(statementsIn, statementsOut, statementsUnd)
-    }
+    fun answer(query: String): Answer = AnswerQuery(term(query)).let { it.answer(first(it.goal)) }
 
     /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,
@@ -145,7 +132,7 @@ class Arg2p private constructor(
     }
 
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
-    fun solve(goal: String): Solutions = Solutions(solver.solve(struct(goal)).iterator())
+    fun solve(goal: String): Solutions = solutionsOf(solver.solve(struct(goal)).iterator())
 
     /**
      * What the context branch [branch] stores matching [goal], Prolog text (facts, or clause(Head, Body) for rules):
@@ -154,7 +141,7 @@ class Arg2p private constructor(
     fun contextFacts(
         branch: Int,
         goal: String,
-    ): Solutions = Solutions(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
+    ): Solutions = solutionsOf(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
 
     /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
     fun add(theory: String) = solver.appendStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
