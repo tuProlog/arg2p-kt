@@ -59,6 +59,9 @@ builds and labels the graph; the following ones read the labels. `solve` may be 
 once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
 Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
 
+`solve` gives the arguments for a statement; any other goal is for the cluster as a solver of arg2p (`solver`, see
+[below](#as-a-solver-of-arg2p)).
+
 ---
 
 ## On Node.js
@@ -75,6 +78,88 @@ cluster.close()
 
 The worker threads keep Node.js running only while an evaluation is pending; `close` stops them. `LocalCluster`
 offers the same methods on the calling thread, with `solve` returning the answer directly.
+
+---
+
+## As a solver of arg2p
+
+Every cluster is also a solver of arg2p with the interface of `Arg2p` (see the [API]({{% ref "/docs/api/kotlin" %}})),
+on its theory and its flags: `solver` solves any goal as the standard solver does (`buildLabelSets(In, Out, Und)`,
+`answerQuery/4`, the Prolog predicates of the theory, ...), one solution at a time, and gives the graph of each
+solution and the answers of queries, in the types of the API (`Solutions`, `Solution`, `Answer`, `Graph`). The graph a
+goal needs is built by the workers, the rest is the standard solver of the catalog.
+
+```kotlin
+val solver = ThreadedCluster(threads = 8).apply { load(theory) }.solver
+val solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution.text("In")                  // [[a], [c]]
+solver.graph()                       // the graph of the solution: arguments, labels, attacks, supports
+solver.answer("a").inStatements      // [a]
+solver.graphs()                      // the graph of each labelling
+```
+
+| Member | Meaning |
+| --- | --- |
+| `solve(goal)` | The solutions of the goal, Prolog text, given one at a time (`Solutions`); a goal that cannot be read is an error |
+| `graph()` | The graph of the last solution given: the one of the last stage of its resolution |
+| `answer(query)` | The statements for the query labelled in, out and und (`Answer`), as `Arg2p.answer` |
+| `graphs()` | The graph of each labelling of the theory, as `Arg2p.graphs` |
+| `output` | Where what the solver prints goes, as the solutions are given (the standard output by default) |
+
+The clusters of JavaScript running their workers on threads (`WorkerCluster`, `WebWorkerCluster`) promise what the
+workers compute: their `solver` (`AsyncClusterSolver`) gives a promise of the solutions (`AsyncSolutions`, whose
+`next()` and `toArray()` are promises as well), of the answer and of the graphs; `graph()` is the graph of the
+solution last given. A `LocalCluster` answers at once, in JavaScript as well.
+
+```javascript
+const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+while (solutions.hasNext()) {
+  const solution = await solutions.next()
+  console.log(solution.text('In'), cluster.solver.graph().labellings.map(it => it.label))
+}
+```
+
+How the goals are solved:
+
+- the catalog solves the goal on its standard solver, whose graph builder (`ruleGraph`) and query mode
+  (`queryExploration`) take the arguments and the attacks the workers built: the graph store extends the attacks, the
+  solver derives the other arguments, applies the graph extensions and labels the graph, every semantics as the
+  standard solver does;
+- a goal needing a graph the workers did not build pauses: the workers build it (the whole graph for
+  `buildLabelSets`, the part the statements explored depend on for `answerQuery` in query mode, explored further by
+  the later goals), then the goal is solved again from its start. So is a goal whose next solution is asked for after
+  the catalog solved another one; the solutions given already are left out. What the goal does besides (asserting
+  facts, printing) is done again: what was printed is given once;
+- the catalog has the theory but its rules, which the workers have: a goal reading the rules themselves (the modules
+  of the parser, the context) does not find them;
+- with several labellings (`preferred`, `stable`, ...), the labellings are the same as those of the standard
+  solver, in an order of their own (that of the arguments the workers built);
+- the stages of a resolution (`graphAt`, `activeBranch` of `Arg2p`) are not kept: `graph()` is the last one.
+
+---
+
+## Statistics
+
+`stats` tells what a cluster and its federation do, cheap to read at any time (`FederationStats`):
+
+| Field | Meaning |
+| --- | --- |
+| `site` | The identifier of the site of the cluster |
+| `sites` | The sites it knows, itself first (`SiteStats`): `id`, `workers` it offers (null for no limit, or not known), `delegate` (one of its threads or Web Workers), `via` (the site it is reached through, null if linked directly) |
+| `evaluation` | The last evaluation it answered, a statement or a goal using the graph (`EvaluationStats`), null before the first |
+
+An `EvaluationStats` has the part of the graph it was answered on (`locality`: `directional` or `connected` in query
+mode, `whole_graph` otherwise), the `arguments` and the `attacks` of the graph labelled, the arguments the workers
+built for it (`added`: all of them for a graph built anew, those explored further in query mode, none for an
+evaluation answered on the graph as it was), how many each worker built (`workers`: its `partition`, its `site`, its
+`arguments` and the direct `attacks` it found), and how long it took (`milliseconds`).
+
+`onPeersChanged`, on `ThreadedCluster`, `WorkerCluster` and `WebWorkerCluster`, is called whenever a site joins or
+leaves the peers of the cluster: a page can update its view of the federation without polling.
+
+```javascript
+cluster.onPeersChanged = () => render(cluster.stats.sites)
+```
 
 ---
 
@@ -178,7 +263,8 @@ asked for it, and needs the others only when its theory changes.
 3. Once every argument is built, each worker asks the others for the arguments that could attack its own, and checks
    each such pair once. Only the direct attacks are sent to the catalog: the graph store extends them to the
    arguments built on the attacked ones.
-4. The catalog labels the graph with the settings of the solver, as the standard solver does.
+4. The catalog labels the graph with the settings of the solver, as the standard solver does: its graph builder and
+   query mode save the arguments and the attacks the workers built (see [above](#as-a-solver-of-arg2p)).
 
 With `metaConflicts`, where conflicts are themselves arguments, the catalog finds the attacks itself.
 
@@ -202,6 +288,10 @@ same modules (`queryExploration`), each worker on its own rules:
 
 Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
 needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that
-needs no more is answered from it. A change of the theory starts again from scratch.
+needs no more is answered from it. A change of the theory starts again from scratch. The graph of an evaluation in
+query mode (see `solver.graph()`) is thus the part built so far: that of its statements, and of those evaluated
+before.
 
-The whole graph is built with no query mode, and for a semantics whose labels depend on all of it (`stable`).
+The whole graph is built with no query mode, for a semantics whose labels depend on all of it (`stable`), and for a
+goal asking for it in query mode as well (`buildLabelSets`, as the standard solver): an evaluation in query mode after
+it builds the graph of its statements anew.
