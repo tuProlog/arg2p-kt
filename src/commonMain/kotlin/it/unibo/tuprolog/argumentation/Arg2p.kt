@@ -176,11 +176,12 @@ class Arg2p private constructor(
         return solution
     }
 
-    /** A solver of arg2p, as it is described: its theory, its flags, and where what it prints goes */
+    /** A solver of arg2p, as it is described: its theory, its flags, where what it prints goes, and whether it is sandboxed */
     class Builder {
         private var theory = ""
         private var flags = Flags.defaults()
         private var output: ((String) -> Unit)? = null
+        private var sandboxed = false
 
         /** The theory, as Prolog text */
         fun theory(theory: String): Builder = apply { this.theory = theory }
@@ -191,10 +192,19 @@ class Arg2p private constructor(
         /** The function receiving what the solver prints (the standard output otherwise) */
         fun output(consumer: (String) -> Unit): Builder = apply { output = consumer }
 
+        /**
+         * Whether the solver is sandboxed (not by default), for a theory that is not trusted: one written by someone
+         * else, or by an AI model, which what it reads may steer. A theory solved by arg2p runs as a program does, with
+         * the rights of the process: a sandboxed solver reads and writes no file and no URL, the remote modules
+         * (`module::call_module/2`) raising a permission error; it still computes as long as it is let, a server
+         * bounds it with a timeout (interrupting its thread, on the JVM).
+         */
+        fun sandboxed(on: Boolean): Builder = apply { sandboxed = on }
+
         /** The solver: an [Arg2pException] telling where the theory does not parse otherwise */
         fun build(): Arg2p {
             // the causality module of its own for each solver: it keeps the graphs it computes
-            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
+            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule(sandboxed)), sandboxed)
             return Arg2p(
                 SyntaxProblem.parsing("Theory") {
                     Arg2pSolverFactory.solverOf(arg2p, theory, output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut())
