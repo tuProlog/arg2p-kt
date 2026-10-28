@@ -117,18 +117,17 @@ class Solutions:
 
     def to_list(self, limit: Optional[int] = None) -> list[Solution]:
         """The solutions left, at most [limit] of them."""
-        found = []
-        while (limit is None or len(found) < limit) and self.has_next():
-            found.append(self.next())
-        return found
+        return [Solution(it) for it in _jvm.run(lambda: self._solutions.toList(2**31 - 1 if limit is None else limit))]
 
     def __iter__(self) -> Iterator[Solution]:
         return self
 
     def __next__(self) -> Solution:
-        if not self.has_next():
+        # the next solution, if there is one, in a single call
+        found = _jvm.run(lambda: self._solutions.next() if self._solutions.hasNext() else None)
+        if found is None:
             raise StopIteration
-        return self.next()
+        return Solution(found)
 
 
 class Causality:

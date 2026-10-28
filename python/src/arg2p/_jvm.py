@@ -84,14 +84,36 @@ class _Task:
             self.error = error
 
 
+@jpype.JImplements("java.util.concurrent.ThreadFactory", deferred=True)
+class _Threads:
+    @jpype.JOverride
+    def newThread(self, runnable: Any) -> Any:
+        # daemons, not to hold the JVM when Python exits; their stack is the one of -Xss (see STACK)
+        thread = jpype.JClass("java.lang.Thread")(runnable, _THREAD)
+        thread.setDaemon(True)
+        return thread
+
+
+_THREAD = "arg2p"
+_pool: Any = None
+
+
+def _threads() -> Any:
+    """The threads running arg2p, made as calls need them and kept for the next ones (a minute idle)."""
+    global _pool
+    with _lock:
+        if _pool is None:
+            _pool = jpype.JClass("java.util.concurrent.Executors").newCachedThreadPool(_Threads())
+    return _pool
+
+
 def run(function: Callable[[], T]) -> T:
     """The result of [function], run on a thread of the JVM, whose stack resolution needs (see STACK)."""
     start()
+    if str(jpype.JClass("java.lang.Thread").currentThread().getName()) == _THREAD:
+        return function()  # already on one
     task = _Task(function)
-    thread = jpype.JClass("java.lang.Thread")(task, "arg2p")
-    thread.setDaemon(True)
-    thread.start()
-    thread.join()
+    _threads().submit(task).get()
     if task.error is not None:
         raise task.error
     return task.value
