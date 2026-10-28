@@ -144,6 +144,7 @@
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:vscode": "node test/integration/run.mjs",
+    "verify": "npm run check && npm run build && npm test && npm run test:vscode",
     "preview": "node test/preview/server.mjs",
     "package": "node esbuild.mjs --production && vsce package --no-dependencies"
   },
