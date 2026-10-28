@@ -84,3 +84,20 @@ graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descript
 ```
 
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
+
+## Python
+
+The package [`arg2p`](https://pypi.org/project/arg2p/) runs the same API from Python: see [Python]({{% ref "/docs/api/python" %}}).
+
+## Web Playground
+
+The [playground](https://tuprolog.github.io/arg2p-kt-web/) runs Arg2P in the browser, with nothing to install: write a
+theory, solve a query, and browse its argument graph and the stages of its computation; draw an abstract framework,
+and pick a profile and the flags. It keeps your theories in tabs, shares them as links, and works offline once
+installed as an app.
+
+## VS Code
+
+The extension of VS Code edits theories as `.arg2p` files: their syntax errors show as they are typed, and
+**Arg2P: Open the Solver** opens the solver of the playground beside a theory, on the JVM. It bundles the language
+server of Arg2P and the Java runtime it runs on.
