@@ -19,14 +19,6 @@ Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) 
 
 More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
 
-<p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p"><img src="https://img.shields.io/badge/VS_Code-Install_the_extension-0098FF" alt="Install the extension of VS Code"></a>
-  <a href="./plugins/arg2p/README.md#installing"><img src="https://img.shields.io/badge/Claude_Code-Install_the_plugin-D97757?logo=claude&amp;logoColor=white" alt="Install the plugin in Claude Code"></a>
-  <a href="./plugins/arg2p/README.md#installing"><img src="https://img.shields.io/badge/Codex-Install_the_plugin-000000?logo=openai&amp;logoColor=white" alt="Install the plugin in Codex"></a>
-  <a href="https://vscode.dev/redirect/mcp/install?name=arg2p&amp;config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22arg2p%22%2C%22mcp%22%5D%7D"><img src="https://img.shields.io/badge/VS_Code-Add_the_MCP_server-0098FF" alt="Add the MCP server to VS Code"></a>
-  <a href="https://cursor.com/en/install-mcp?name=arg2p&amp;config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJhcmcycCIsIm1jcCJdfQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.svg" height="20" alt="Add the MCP server to Cursor"></a>
-</p>
-
 ---
 
 ## Getting Started
