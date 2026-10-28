@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.lsp
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -12,35 +14,37 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
+import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /** The server as an editor speaks to it: JSON-RPC over a pair of pipes */
 class ServerTest {
     // what the editor asks: the protocol of language servers, and the requests of arg2p
-    interface Remote :
+    internal interface Remote :
         LanguageServer,
         Arg2pService
 
-    // the editor, receiving the diagnostics and what runs print
-    private class Editor : Arg2pClient {
+    // the editor, receiving the diagnostics
+    private class Editor : LanguageClient {
         val diagnostics = LinkedBlockingQueue<PublishDiagnosticsParams>()
-        val printed = LinkedBlockingQueue<OutputParams>()
 
         override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams) {
             this.diagnostics.put(diagnostics)
         }
-
-        override fun output(params: OutputParams) = printed.put(params)
 
         override fun telemetryEvent(`object`: Any?) = Unit
 
@@ -76,6 +80,17 @@ class ServerTest {
 
     private fun <T> CompletableFuture<T>.done(): T = get(60, TimeUnit.SECONDS)
 
+    // The answers of the engine to [request] of the page [session]
+    private fun engine(
+        request: String,
+        session: String = "panel",
+    ): List<JsonObject> =
+        remote
+            .engine(EngineParams(session, JsonParser.parseString(request).asJsonObject))
+            .done()
+            .answers
+            .map { it.asJsonObject }
+
     @Test
     fun theServerSaysWhatItIs() {
         val result = remote.initialize(InitializeParams().apply { capabilities = ClientCapabilities() }).done()
@@ -109,23 +124,81 @@ class ServerTest {
     }
 
     @Test
-    fun anEditorSolvesThroughTheServer() {
-        val started = remote.solve(SolveParams("f1 :=> a.\nf2 :=> -a.\n", "buildLabelSets(In, Out, Und)", "queryMode.")).done()
-        val answer = remote.next(RunParams(started.id)).done()
-        assertEquals("yes", answer.solution?.result)
-        assertEquals(listOf("In", "Out", "Und"), answer.solution?.bindings?.map { it.name })
-        assertEquals(answer.solution?.graph, remote.graphAt(GraphAtParams(started.id, answer.solution!!.branch)).done())
-        assertEquals(2, remote.check(CheckParams("a :=> b.\nc :=> d(.", "theory")).done()?.line)
-        assertEquals(listOf("abstract"), remote.settings(SettingsParams("graphBuildMode(abstract).", "")).done()["graphBuildMode"])
+    fun aTheoryIsCheckedOnceItsTextSettles() {
+        remote.initialize(InitializeParams().apply { capabilities = ClientCapabilities() }).done()
+        remote.textDocumentService.didOpen(DidOpenTextDocumentParams(TextDocumentItem("file:///s.arg2p", "arg2p", 1, "a :=> b(.")))
+        remote.textDocumentService.didChange(
+            DidChangeTextDocumentParams(
+                VersionedTextDocumentIdentifier("file:///s.arg2p", 2),
+                listOf(TextDocumentContentChangeEvent("a :=> b.")),
+            ),
+        )
+        // the text checked is the last one
+        assertTrue(
+            editor.diagnostics
+                .poll(60, TimeUnit.SECONDS)!!
+                .diagnostics
+                .isEmpty(),
+        )
     }
 
     @Test
-    fun whatARunPrintsReachesTheEditor() {
-        val started = remote.solve(SolveParams("", "write(hello)", "")).done()
-        remote.next(RunParams(started.id)).done()
-        val printed = editor.printed.poll(60, TimeUnit.SECONDS)!!
-        assertEquals(started.id, printed.id)
-        assertTrue("hello" in printed.text)
+    fun aPageOfTheEditorSolvesThroughTheServer() {
+        assertEquals("warm", engine("""{"type":"warmUp"}""").single().get("type").asString)
+        val started =
+            engine(
+                """{"type":"solve","id":1,"theory":"f1 :=> a.\nf2 :=> -a.\n","query":"buildLabelSets(In, Out, Und)","flags":"queryMode."}""",
+            )
+        assertEquals("started", started.single().get("type").asString)
+        val solution = engine("""{"type":"next","id":1}""").single().getAsJsonObject("solution")
+        assertEquals("yes", solution.get("result").asString)
+        assertEquals(listOf("In", "Out", "Und"), solution.getAsJsonArray("bindings").map { it.asJsonObject.get("name").asString })
+        val branch = solution.get("branch").asInt
+        val graph = engine("""{"type":"graphAt","id":1,"branch":$branch,"reqId":2}""").single()
+        assertEquals(solution.get("graph"), graph.get("graph"))
+        val checked = engine("""{"type":"check","reqId":3,"text":"a :=> b.\nc :=> d(.","kind":"theory"}""").single()
+        assertEquals(2, checked.getAsJsonObject("problem").get("line").asInt)
+        // a text that parses has a problem null, not missing: the page tells them apart
+        assertTrue(engine("""{"type":"check","reqId":4,"text":"a.","kind":"theory"}""").single().get("problem").isJsonNull)
+        val settings = engine("""{"type":"settings","reqId":5,"theory":"graphBuildMode(abstract).","flags":""}""").single()
+        assertEquals("abstract", settings.getAsJsonObject("settings").getAsJsonArray("graphBuildMode")[0].asString)
+        assertTrue(engine("""{"type":"close"}""").isEmpty())
+        assertEquals("failed", engine("""{"type":"next","id":1}""").single().get("type").asString)
+    }
+
+    @Test
+    fun whatAQueryPrintsReachesThePage() {
+        engine("""{"type":"solve","id":1,"theory":"","query":"write(hello)","flags":""}""")
+        val printed = engine("""{"type":"next","id":1}""").first()
+        assertEquals("output", printed.get("type").asString)
+        assertEquals(1, printed.get("id").asInt)
+        assertTrue("hello" in printed.get("text").asString)
+    }
+
+    @Test
+    fun aPageStopsItsQuery() {
+        engine("""{"type":"solve","id":1,"theory":"loop :- loop.","query":"loop","flags":""}""")
+        val endless = remote.engine(EngineParams("panel", JsonParser.parseString("""{"type":"next","id":1}""").asJsonObject))
+        Thread.sleep(500)
+        assertTrue(engine("""{"type":"stop"}""").isEmpty())
+        val stopped =
+            endless
+                .done()
+                .answers
+                .single()
+                .asJsonObject
+        assertEquals("failed", stopped.get("type").asString)
+        assertEquals(PageEngine.STOPPED, stopped.getAsJsonObject("error").get("message").asString)
+    }
+
+    @Test
+    fun aRequestThatIsNotOneOfTheEngineIsAnError() {
+        val failure =
+            assertFailsWith<ExecutionException> {
+                remote.engine(EngineParams("panel", JsonParser.parseString("""{"type":"jump"}""").asJsonObject)).done()
+            }.cause
+        assertEquals(ResponseErrorCode.InvalidParams.value, (failure as ResponseErrorException).responseError.code)
+        assertFailsWith<ExecutionException> { remote.engine(EngineParams(null, JsonObject())).done() }
     }
 
     private companion object {
