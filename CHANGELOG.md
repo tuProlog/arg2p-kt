@@ -1,3 +1,23 @@
+## [0.19.2](https://github.com/tuProlog/arg2p-kt/compare/0.19.1...0.19.2) (2026-10-28)
+
+### Dependency updates
+
+* **deps:** update node.js to v26 ([#540](https://github.com/tuProlog/arg2p-kt/issues/540)) ([01c585b](https://github.com/tuProlog/arg2p-kt/commit/01c585b4f8b0a60806f8ad104ec8688f4bca773e))
+
+### Bug Fixes
+
+* **profiles:** aba and abstract refuse theories outside their frameworks ([4efde2d](https://github.com/tuProlog/arg2p-kt/commit/4efde2df4c6dd07b3625553f3f409ced867640e1))
+* the profiles refuse the theories outside their frameworks ([#537](https://github.com/tuProlog/arg2p-kt/issues/537)) ([186b752](https://github.com/tuProlog/arg2p-kt/commit/186b752d9247b9035ddabd0b42aa9eae2678d27b))
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.50 ([#539](https://github.com/tuProlog/arg2p-kt/issues/539)) ([9e0f125](https://github.com/tuProlog/arg2p-kt/commit/9e0f125dfbea43e0f3bb89348f4418a00bf60c66))
+
+### General maintenance
+
+* merge master into fix/profile-checks ([645ea4f](https://github.com/tuProlog/arg2p-kt/commit/645ea4f4752063d3844ce11b9d2f58c083ef8068))
+* merge master into fix/profile-checks ([19020cd](https://github.com/tuProlog/arg2p-kt/commit/19020cd2e6bc1078bef42b2fbc79139f52bb7ccd))
+
 ## [0.19.1](https://github.com/tuProlog/arg2p-kt/compare/0.19.0...0.19.1) (2026-10-28)
 
 ### Dependency updates
