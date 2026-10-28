@@ -45,15 +45,25 @@ import it.unibo.tuprolog.theory.parsing.parse
  * The catalog knows the shared part of the theory (the flags, the preferences, the conflicts), not the rules, and
  * relays no argument. An evaluation reads the labels of the arguments for the statement. The graph is built again
  * when the theory changes, and when the network loses some of the workers of a graph being built ([Rebuild]).
+ *
+ * In query mode (queryMode, as the standard solver), the graph is built on the rules the labels of the arguments for
+ * the statements evaluated depend on (see [QueryScope]), as the semantics declares: the part of the graph built
+ * grows as later evaluations need more of it, the whole graph built when they depend on all of it.
  */
 class Catalog(
     private val network: Network,
     private val parts: Int? = null,
-    settings: FlagsBuilder = FlagsBuilder(),
+    private val settings: FlagsBuilder = FlagsBuilder(),
 ) : Node {
     private val theory = StringBuilder()
     private var changed = false
     private var workers = 0
+
+    // The rules of the graph built and of the one being built (null for all of them), and those the evaluations depend
+    // on in query mode, found on the theory as it is
+    private var built: Set<String>? = emptySet()
+    private var building: Set<String>? = null
+    private var scope: QueryScope? = null
 
     // The construction of the graph: the stage it is at, the replies it still waits for (the subscriptions, the
     // acknowledgements of the Builds, the attacks of each worker), the premises of each worker, the evaluations waiting
@@ -66,6 +76,9 @@ class Catalog(
 
     // The arguments published, by their global identifiers, and their supports (saved once all are published)
     private val arguments = mutableMapOf<String, Term>()
+
+    /** The arguments of the graph built, those the workers published */
+    val argumentsBuilt: Int get() = arguments.size
     private val supports = mutableListOf<Pair<String, String>>()
 
     // The direct attacks the workers found, extended once they all have
@@ -79,14 +92,12 @@ class Catalog(
     override fun receive(message: KbMessage) {
         when (message) {
             Reset -> change { theory.clear() }
-            Rebuild -> if (stage != Stage.READY) start()
+            Rebuild -> if (stage != Stage.READY) start(building)
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation -> {
                 waiting += message
-                if (stage == Stage.READY) {
-                    if (changed) start() else serve()
-                }
+                if (stage == Stage.READY) evaluate()
             }
             is Subscribe -> {
                 interests += Interest(message.worker, message.premises)
@@ -120,12 +131,27 @@ class Catalog(
     private fun change(update: () -> Unit) {
         update()
         changed = true
+        scope = null
     }
 
-    // The theory partitioned again: the catalog keeps the shared part, each worker is given its rules (those left over
-    // forget theirs)
-    private fun start() {
-        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity)
+    // The evaluations waiting answered, on a graph built anew if the theory changed or if they depend on rules the
+    // graph built lacks (those added to its own)
+    private fun evaluate() {
+        if (waiting.isEmpty()) return
+        val needed = (scope ?: QueryScope(theory.toString(), settings).also { scope = it }).rules(waiting.map { parse(it.elem) })
+        val have = built
+        when {
+            changed -> start(needed)
+            have == null || (needed != null && have.containsAll(needed)) -> serve()
+            else -> start(needed?.let { have + it })
+        }
+    }
+
+    // The theory partitioned again, [rules] alone if given: the catalog keeps the shared part, each worker is given
+    // its rules (those left over forget theirs)
+    private fun start(rules: Set<String>?) {
+        building = rules
+        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, settings, rules)
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
         solve("context_reset, parser:::convertAllRules(_)")
@@ -181,7 +207,8 @@ class Catalog(
                 "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling",
         )
         stage = Stage.READY
-        serve()
+        built = building
+        evaluate()
     }
 
     // The evaluations waiting, answered from the labels of the graph

@@ -175,3 +175,27 @@ asked for it, and needs the others only when its theory changes.
 4. The catalog labels the graph with the settings of the solver, as the standard solver does.
 
 With `metaConflicts`, where conflicts are themselves arguments, the catalog finds the attacks itself.
+
+### Query mode
+
+With `queryMode` (the default of `FlagsBuilder`), the graph is built only on the rules that the labels of the
+statements evaluated depend on, as the semantics declares, like the
+[query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver. The catalog finds those rules
+before any argument is built:
+
+- the rules concluding the statement, and those concluding their premises;
+- the rules of the arguments that may attack them;
+- for a semantics whose labels also depend on what an argument attacks or supports (the connected ones), those
+  rules as well.
+
+The workers then build the arguments of those rules alone. A later evaluation that needs more rules adds them to
+the graph built; one that needs no more is answered from it. A change of the theory starts again from scratch.
+
+The whole graph is built:
+
+- with no query mode;
+- for a semantics whose labels depend on all of it (`stable`);
+- with `metaConflicts`;
+- with a graph extension other than `standardPref`, `rebutRestriction`, `bp`, `defeasiblePref` and
+  `defeasibleAllPref`;
+- when the rules make too many statements to explore.

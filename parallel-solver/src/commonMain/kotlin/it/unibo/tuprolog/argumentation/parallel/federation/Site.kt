@@ -105,6 +105,9 @@ class Site(
     // The workers this site runs, for the tests
     internal val workersRun: Int get() = hosted.size
 
+    // The arguments of the graph of the theory of this site, for the tests
+    internal val argumentsBuilt: Int get() = catalog.argumentsBuilt
+
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
 
