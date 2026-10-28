@@ -99,7 +99,7 @@ describe.skipIf(server === null)('The MCP server, as an assistant runs it', func
         equal(answers.get(1).result.serverInfo.name, 'arg2p');
         deepEqual(
             answers.get(2).result.tools.map((it: { name: string }) => it.name),
-            ['solve', 'answer', 'check', 'settings'],
+            ['solve', 'answer', 'check', 'settings', 'explore', 'engine'],
         );
         deepEqual(answers.get(3).result.structuredContent.out, ['flies(tweety)']);
     });
