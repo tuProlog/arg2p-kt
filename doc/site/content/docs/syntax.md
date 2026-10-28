@@ -255,8 +255,8 @@ penguin(tweety).    % f1
 
 Here `bird(tweety)` is an axiom and `flies(X) :- bird(X)` a strict rule, while `r1` is a defeasible rule and `f1` a
 premise. Any other comment, of more words or on a line of its own, leaves its clause as it is. The identifiers
-are read from the text of the theory, by every entry point of Arg2P (the factories in Kotlin and JavaScript, the
-IDE, modules loaded with `call_module/2`); a theory built as terms has none.
+are read from the text of the theory, by every entry point of Arg2P (the factories in Kotlin and JavaScript,
+modules loaded with `call_module/2`); a theory built as terms has none.
 
 ## Burden of proof
 

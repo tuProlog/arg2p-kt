@@ -21,10 +21,14 @@ written in. It refuses a theory written outside it, with an error saying why.
 | Profile | Use it when | Refuses |
 | --- | --- | --- |
 | `aspic_plus` (the default) | knowledge is facts and rules, possibly conflicting, with exceptions, evidence, norms, preferences: **most real problems** | a contrary targeting an axiom or the conclusion of a strict rule |
+| `aspic` | as `aspic_plus`, but no preference counts: every attack succeeds | as `aspic_plus` |
 | `aspic_defeasible` | everything is defeasible, facts are rules with no premise (`r : [] => a.`) | strict rules, axioms, premises |
-| `aba`, `aba_plus` | the problem is assumptions and their contraries (assumption-based argumentation); `aba_plus` adds preferences between assumptions | defeasible rules, ordinary premises, a rule concluding an assumption |
-| `abstract` | only who attacks whom matters: a debate, a thread of objections, a graph given as such | rules, premises, axioms |
+| `aba`, `aba_plus` | the problem is assumptions and their contraries (assumption-based argumentation); `aba_plus` adds preferences between assumptions | defeasible rules, ordinary premises, a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition |
+| `abstract` | only who attacks whom matters: a debate, a thread of objections, a graph given as such | rules, premises, axioms; preferences, conflicts, burdens (`sup/2`, `conflict/2`, `bp/N`) |
 | `meta` | the rules, conflicts and preferences are themselves argued (see `references/syntax.md`) | |
+| `free` | every flag is set by hand, with no preset | nothing |
+
+What each profile presets and checks: <https://tuprolog.github.io/arg2p-kt/docs/profiles/>.
 
 **Abstract** is right whenever the inner structure of the arguments does not matter. A debate can be abstracted on
 purpose: each self-contained position is an argument, each "X objects to Y" an attack. Keep a glossary from each name
@@ -108,7 +112,7 @@ Rule names are unique atoms. Without `sup/2`, two conflicting defeasible conclus
 Flags are Prolog facts, given to the solver beside the theory (or written in the theory). With no flags, the solver
 uses `argumentLabellingMode(grounded).`, `statementLabellingMode(statement).` and `queryMode.`; flags you give
 **replace** those three, and what they leave out takes the value of the profile (query mode is then off unless you
-state `queryMode.`). The full list is in `references/flags.md`; the choices that matter:
+state `queryMode.`). Every flag is in `references/flags.md`; the choices that matter:
 
 - **Semantics**, `argumentLabellingMode(S)`:
   - `grounded` (the default): skeptical, always exactly one labelling. "What must be accepted?"

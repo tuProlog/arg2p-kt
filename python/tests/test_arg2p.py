@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 
@@ -180,11 +181,61 @@ def test_the_mcp_server():
     assert answers[2]["result"]["structuredContent"]["in"] == ["a"]
 
 
+def test_the_command_line_tells_of_the_mcp_server(capsys):
+    with pytest.raises(SystemExit) as done:
+        main(["--help"])
+    assert done.value.code == 0
+    assert "arg2p mcp" in capsys.readouterr().out
+
+
+def test_arg2p_mcp_runs_the_server_and_a_theory_named_mcp_is_dot_slash_mcp(tmp_path, monkeypatch, capsys):
+    from arg2p._version import MCP_SERVER
+
+    commands = []
+    monkeypatch.setattr(subprocess, "call", lambda command: commands.append(command) or 0)
+    assert main(["mcp"]) == 0
+    assert commands == [[_jvm.java(), *_jvm.options(), "-cp", os.pathsep.join(_jvm.classpath()), MCP_SERVER, "--mcp"]]
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "mcp").write_text(CONFLICT)
+    assert main(["./mcp", "-q", "a"]) == 0
+    assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
+    assert len(commands) == 1
+
+
 def test_the_jvm_takes_the_options_of_the_environment(monkeypatch):
     monkeypatch.setenv("ARG2P_JVM_OPTIONS", " -Xmx8g  -XX:+UseG1GC ")
     assert _jvm.options()[-2:] == ["-Xmx8g", "-XX:+UseG1GC"]
+    # quoted, an option with blanks
+    monkeypatch.setenv("ARG2P_JVM_OPTIONS", '-Xmx8g "-Dlog=/my logs/arg2p.log"')
+    assert _jvm.options()[-2:] == ["-Xmx8g", "-Dlog=/my logs/arg2p.log"]
     monkeypatch.delenv("ARG2P_JVM_OPTIONS")
     assert _jvm.options() == [f"-Xss{_jvm.STACK}", "-Dslf4j.internal.verbosity=ERROR"]
+
+
+def test_options_split_as_a_shell_splits_them():
+    # a backslash separates directories on Windows, and escapes a character elsewhere
+    assert _jvm.split(r'"-Dlog=C:\My logs\a.log" -Xmx1g', windows=True) == [r"-Dlog=C:\My logs\a.log", "-Xmx1g"]
+    assert _jvm.split(r"-Dlog=/my\ logs/a.log -Xmx1g", windows=False) == ["-Dlog=/my logs/a.log", "-Xmx1g"]
+
+
+def test_the_jars_of_the_environment_come_before_those_of_the_package(monkeypatch, tmp_path):
+    stated = [str(tmp_path / "a.jar"), str(tmp_path / "b.jar")]
+    monkeypatch.setenv("ARG2P_CLASSPATH", os.pathsep.join(stated))
+    jars = _jvm.classpath()
+    assert jars[:2] == stated
+    assert any("lsp" in os.path.basename(it) for it in jars[2:])  # the MCP server, which they lack
+
+
+def test_java_is_that_of_the_runtime_of_the_jvm(monkeypatch, tmp_path):
+    executable = "java.exe" if sys.platform == "win32" else "java"
+    jdk = tmp_path / "jdk"
+    (jdk / "bin" / "server").mkdir(parents=True)
+    (jdk / "bin" / executable).write_text("")
+    monkeypatch.setenv("ARG2P_JVM", str(jdk / "bin" / "server" / "jvm.dll"))
+    assert _jvm.java() == str(jdk / "bin" / executable)
+    # a library with no java above it: the one on the path
+    monkeypatch.setenv("ARG2P_JVM", str(tmp_path / "none" / "lib" / "server" / "libjvm.so"))
+    assert _jvm.java() == "java"
 
 
 def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile():

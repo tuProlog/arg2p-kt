@@ -10,7 +10,6 @@ theory. It is a separate module, built on top of the core engine, and it adds a 
 implementing counterfactual and NESS causal tests.
 
 It is available as the Maven module `causality-solver`. It is also bundled in the
-[IDE]({{% ref "/docs/getting-started" %}}), ready to use with no extra setup, and in the
 [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) (`arg2p`, the npm package `@tuprolog/arg2p`, the Python package
 `arg2p`): every solver of the API has it.
 

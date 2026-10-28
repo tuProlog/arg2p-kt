@@ -104,39 +104,6 @@ for labelled in graph.labellings:
 
 ---
 
-## Arg2p IDE
-
-The Arg2p IDE is available on the [Releases section of the
-GitHub repository](https://github.com/tuProlog/arg2p-kt/releases/latest).
-
-![Java IDE](./imgs/javaide.png)
-
-In the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) page, download the _Asset_ named:
-```
-arg2p-ide-<VERSION>-redist.jar
-```
-a self-contained, executable Jar containing the 2P-Kt-based Prolog interpreter (`<VERSION>` is the release
-version).
-
-After you download the jar, you can simply launch it by running:
-```bash
-java -jar arg2p-ide-<VERSION>-redist.jar
-```
-If your JVM is properly configured, you can also start the IDE by double-clicking the JAR file.
-
-### Features
-
-- **Query Execution:** Write your query in the text field and hit <kbd>Enter</kbd> or click <kbd>&gt;</kbd>.
-- **Solution Exploration:** Click <kbd>&gt;</kbd> for the next solution or <kbd>&gt;&gt;</kbd> to compute all solutions.
-- **New Query:** Click <kbd>X</kbd> to stop the current query, then enter a new one.
-
-### Additional Tabs
-
-- **Graph Tab:** Displays a graphical representation of the abstract argumentation graph.
-- **Arg Flag Tab:** Shows and allows modification of Arg2P flags. Detailed descriptions are on the [Flags](https://tuprolog.github.io/arg2p-kt/docs/api/flags/) page of the wiki.
-
----
-
 ## Arg2p Playground
 
 Try Arg2P directly in your browser using the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/).
@@ -178,37 +145,16 @@ The extension bundles the language server of Arg2P and the Java runtime it runs 
 ## Arg2p for AI assistants (MCP)
 
 The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
-with it rather than guessing what they conclude. Its tools:
-
-| Tool | |
-| --- | --- |
-| `solve` | The solutions of a query on a theory, with their bindings and the argument graph: every argument with its conclusion and label, every attack |
-| `answer` | The statements of a query labelled in, out and und |
-| `check` | Whether a theory or a query parses, and where it does not |
-| `settings` | The profile and the flags in effect for a theory |
-| `explore` | Shows the user the solver of a theory, in the conversation where the client shows MCP Apps, and as a link to the playground |
-
-The plugin `arg2p` bundles it with the **skills** of Arg2P, to formalize problems as theories, solve them and
-explore their results. In Claude Code:
+with it (the tools `solve`, `answer`, `check`, `settings` and `explore`) rather than guessing what they conclude. The
+plugin `arg2p` bundles it with the **skills** of Arg2P, to formalize problems as theories, solve them and explore their
+results. In Claude Code:
 
 ```text
 /plugin install arg2p --marketplace tuProlog/arg2p-kt
 ```
 
-Codex and ChatGPT read the same repository (`codex plugin marketplace add tuProlog/arg2p-kt`), any agent reading
-Agent Skills takes the skills alone (`npx skills add tuProlog/arg2p-kt`), and a release attaches them as zips for
-claude.ai. The server alone runs from the Python package with [uv](https://docs.astral.sh/uv/), in any MCP client:
-
-```json
-{
-  "mcpServers": {
-    "arg2p": { "command": "uvx", "args": ["arg2p", "mcp"] }
-  }
-}
-```
-
-In VS Code, the extension registers it, nothing to configure. See
-[AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp) and the [plugin](./plugins/arg2p/README.md).
+See [AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp) for its tools, the other clients
+and the server alone (`uvx arg2p mcp`), and the [plugin](./plugins/arg2p/README.md).
 
 ---
 

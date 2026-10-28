@@ -30,7 +30,7 @@ Call `explore` with the same `theory`, `query` and `flags` you solved with:
 - Everywhere, the result also carries a **link to the web playground** with the same theory, query and flags: give the
   user the link when the client shows no app (a terminal, an editor without apps).
 
-A theory that does not parse is refused: fix it first (see `arg2p-solve`).
+A theory that does not parse, or that its profile refuses, is an error: fix it first (see `arg2p-solve`).
 
 ## After
 

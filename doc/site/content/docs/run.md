@@ -53,7 +53,6 @@ the parallel solver, and is what most projects need. The individual modules can 
 | `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
 | `parallel-solver`, `parallel-solver-jvm`, `parallel-solver-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel-solver" %}}) |
 | `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
-| `ide` | The desktop IDE as a library |
 
 Artifacts without a suffix are the Kotlin Multiplatform ones; use `-jvm` or `-js` to depend on a single
 platform explicitly.
@@ -119,6 +118,9 @@ with it rather than guessing what they conclude. Its tools:
 A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is stopped after
 `timeoutSeconds` (60 by default).
 
+The theories the server runs are written by a model, and may carry what a prompt injected into it: the server loads no
+file nor URL for them (a module `call_module/2` names is not loaded), so a theory has everything it needs in its text.
+
 `explore` is an [MCP App](https://modelcontextprotocol.io/docs/extensions/apps): in the clients that show them
 (Claude, ChatGPT, VS Code), the solver of the playground appears in the conversation, runs the query, and lets the user
 browse its solutions, their argument graphs and stages, the drawing of an abstract framework and the flags, and solve
@@ -134,8 +136,8 @@ result) and `arg2p-explore` (showing the user the solver). Its MCP server runs f
 
 | Client | |
 | --- | --- |
-| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` |
-| Claude (claude.ai, Desktop) | upload `arg2p-plugin-{{< version >}}.zip` of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone in _Customize > Skills_ |
+| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` (or `/plugin marketplace add tuProlog/arg2p-kt`, then `/plugin install arg2p@arg2p`) |
+| Claude (claude.ai, Desktop) | upload `arg2p-plugin-{{< version >}}.zip` of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone (`arg2p-formalize-skill-{{< version >}}.zip`, ...) in _Customize > Skills_; in chats local MCP servers do not run, so add the server to Claude Desktop (below) for the skills to solve |
 | Codex, ChatGPT | `codex plugin marketplace add tuProlog/arg2p-kt`, then install `arg2p` from `/plugins` |
 | Any agent reading [Agent Skills](https://agentskills.io) | `npx skills add tuProlog/arg2p-kt` |
 

@@ -27,6 +27,7 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.extension.RebutRestric
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.StandardPrefModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.SuperiorityModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.AbaLanguageModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.AbstractLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.AspicLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConflictModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.DefeasibleLanguageModule
@@ -66,7 +67,15 @@ object ModuleRegistry {
 
     /** The rules of a theory, as the graph builders read them */
     val language: List<ArgLibrary> =
-        listOf(ParserModule, TranspositionModule, ConflictModule, AspicLanguageModule, AbaLanguageModule, DefeasibleLanguageModule)
+        listOf(
+            ParserModule,
+            TranspositionModule,
+            ConflictModule,
+            AspicLanguageModule,
+            AbaLanguageModule,
+            DefeasibleLanguageModule,
+            AbstractLanguageModule,
+        )
 
     /** Building the argumentation graph: its arguments and attacks, and where they are kept */
     val graph: List<ArgLibrary> =

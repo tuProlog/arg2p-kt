@@ -108,7 +108,7 @@ class ModuleCallsTest {
             .first()
 
         // The evaluation contexts live on the shared Context library, so the graph built inside the
-        // module stays minable from the calling solver: this is what the IDE draws.
+        // module stays minable from the calling solver: this is what the solvers of the playground draw.
         val graph = solver.graph()
         assertEquals(2, graph.labellings.size, "expected both conclusions to be labelled, got $graph")
         assertEquals(1, graph.attacks.size, "expected the attack between the two arguments to survive")
