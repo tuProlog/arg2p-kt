@@ -37,7 +37,12 @@ server to Claude Desktop (below) for the skills to solve.
 
 **Skills alone**, in any agent reading [Agent Skills](https://agentskills.io): `npx skills add tuProlog/arg2p-kt`.
 
-**The MCP server alone**, in any MCP client (Claude Desktop, Cursor, ...):
+**The MCP server alone, in one click**: [![Add the MCP server to VS Code](https://img.shields.io/badge/VS_Code-Add_the_MCP_server-0098FF)](https://vscode.dev/redirect/mcp/install?name=arg2p&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22arg2p%22%2C%22mcp%22%5D%7D)
+[![Add the MCP server to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=arg2p&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJhcmcycCIsIm1jcCJdfQ==) (the
+[extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) adds it too, with the language
+and the solver of theories).
+
+**The MCP server alone**, in any other MCP client (Claude Desktop, ...):
 
 ```json
 {
