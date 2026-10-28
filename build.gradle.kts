@@ -185,7 +185,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
 
 // The npm package of arg2p, the only one (the modules it is made of are published on Maven alone): an ES module (see
 // useEsModules) with every declaration of the API, and its declarations for TypeScript, as package.json tells Node.js,
-// bundlers and TypeScript. Set once the project is evaluated, as kt-mpp configures the package after this.
+// bundlers and TypeScript. Set once the project is evaluated, as kt-mpp configures the package after this. Its
+// repository is the one its provenance names: npm refuses the package otherwise.
 afterEvaluate {
     npmPublish {
         packages.configureEach {
@@ -194,6 +195,22 @@ afterEvaluate {
                 types.set("arg2p.d.mts")
                 this["type"] = "module"
                 this["exports"] = mapOf("." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"))
+                description.set(property("projectDescription").toString())
+                homepage.set(property("projectHomepage").toString())
+                license.set(property("projectLicense").toString())
+                repository {
+                    type.set("git")
+                    url.set("git+${property("scmUrl")}.git")
+                }
+                bugs {
+                    url.set(property("issuesUrl").toString())
+                    email.set(property("issuesEmail").toString())
+                }
+                author {
+                    name.set(property("developerPisanoName").toString())
+                    email.set(property("developerPisanoEmail").toString())
+                    url.set(property("developerPisanoUrl").toString())
+                }
             }
         }
     }
