@@ -112,10 +112,11 @@ sealed class Value {
     }
 
     companion object {
-        /** The value written in [text], with the operators of arg2p */
+        /** The value written in [text], with the operators of arg2p: an [Arg2pException] telling where it does not parse otherwise */
         @JvmStatic
         @JsStatic
-        fun parse(text: String): Value = TermValues.of(LogicTerm.parse(text.trim().removeSuffix("."), TermValues.operators))
+        fun parse(text: String): Value =
+            TermValues.of(SyntaxProblem.parsing("Value") { LogicTerm.parse(text.trim().removeSuffix("."), TermValues.operators) })
 
         /** A compound term of [functor] and [args] (an array in JavaScript) */
         @JvmStatic

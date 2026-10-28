@@ -110,21 +110,16 @@ class Arg2p private constructor(
         goal: String,
     ): Solutions = Solutions(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
 
-    /** Adds the clauses of [theory], Prolog text, to the theory */
-    fun add(theory: String) = solver.appendStaticKb(RuleAnnotations.parse(theory, solver.operators))
+    /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
+    fun add(theory: String) = solver.appendStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
 
-    /** Replaces the theory with [theory], Prolog text */
-    fun load(theory: String) = solver.loadStaticKb(RuleAnnotations.parse(theory, solver.operators))
+    /** Replaces the theory with [theory], Prolog text (an [Arg2pException] telling where it does not parse) */
+    fun load(theory: String) = solver.loadStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term =
-        try {
-            Term.parse(text.trim().removeSuffix("."), solver.operators)
-        } catch (error: Exception) {
-            throw Arg2pException("Not a term: $text (${error.message})")
-        }
+    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), solver.operators) }
 
     private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
 
@@ -151,14 +146,17 @@ class Arg2p private constructor(
         /** The function receiving what the solver prints (the standard output otherwise) */
         fun output(consumer: (String) -> Unit): Builder = apply { output = consumer }
 
+        /** The solver: an [Arg2pException] telling where the theory does not parse otherwise */
         fun build(): Arg2p =
             Arg2p(
-                Arg2pSolverFactory.solverOf(
-                    // the causality module of its own for each solver: it keeps the graphs it computes
-                    Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule())),
-                    theory,
-                    output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut(),
-                ),
+                SyntaxProblem.parsing("Theory") {
+                    Arg2pSolverFactory.solverOf(
+                        // the causality module of its own for each solver: it keeps the graphs it computes
+                        Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule())),
+                        theory,
+                        output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut(),
+                    )
+                },
             )
     }
 
@@ -176,6 +174,17 @@ class Arg2p private constructor(
         @JvmStatic
         @JsStatic
         fun builder(): Builder = Builder()
+
+        /** Where [theory], Prolog text (a theory, or flags), does not parse; null if it does. Nothing is solved. */
+        @JvmStatic
+        @JsStatic
+        fun checkTheory(theory: String): SyntaxProblem? = SyntaxProblem.check { RuleAnnotations.parse(theory, TermValues.operators) }
+
+        /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
+        @JvmStatic
+        @JsStatic
+        fun checkQuery(query: String): SyntaxProblem? =
+            SyntaxProblem.check { Term.parse(query.trim().removeSuffix("."), TermValues.operators) }
 
         /** The version of arg2p, the released one for a release */
         @JvmStatic

@@ -15,8 +15,49 @@ from .values import Value, from_jvm
 _API = "it.unibo.tuprolog.argumentation"
 
 
+@dataclass(frozen=True)
+class SyntaxProblem:
+    """
+    Where a text (a theory, a query, flags) does not parse: its line and column (from 1), the token found there when
+    there is one, and why (as "Unexpected token '.'; expected term").
+    """
+
+    line: int
+    column: int
+    token: Optional[str]
+    description: str
+
+    @property
+    def length(self) -> int:
+        """How many characters the problem spans from its column: the token, or one."""
+        return len(self.token) if self.token else 1
+
+    def __str__(self) -> str:
+        return f"{self.description} at {self.line}:{self.column}"
+
+
+def problem_from_jvm(problem: Any) -> Optional[SyntaxProblem]:
+    """A SyntaxProblem of the library of the JVM, or None."""
+    if problem is None:
+        return None
+    token = problem.getToken()
+    return SyntaxProblem(
+        line=int(problem.getLine()),
+        column=int(problem.getColumn()),
+        token=None if token is None else str(token),
+        description=str(problem.getDescription()),
+    )
+
+
 class Arg2pError(Exception):
-    """An evaluation halted by an error: a theory its profile refuses, a goal that cannot be parsed, ..."""
+    """
+    An evaluation halted by an error: a theory its profile refuses, a goal that cannot be parsed, ... When a text does
+    not parse, syntax tells where.
+    """
+
+    def __init__(self, message: str, syntax: Optional[SyntaxProblem] = None) -> None:
+        super().__init__(message)
+        self.syntax = syntax
 
 
 def call(function: Callable[[], Any]) -> Any:
@@ -27,7 +68,7 @@ def call(function: Callable[[], Any]) -> Any:
             return function()
         except jpype.JException as error:
             if error.getClass().getName() == f"{_API}.Arg2pException":
-                raise Arg2pError(str(error.getMessage())) from None
+                raise Arg2pError(str(error.getMessage()), problem_from_jvm(error.getSyntax())) from None
             raise
 
     return _jvm.run(guarded)
@@ -191,6 +232,16 @@ class Arg2p:
     def builder() -> Builder:
         """A solver of arg2p, as it is described."""
         return Builder()
+
+    @staticmethod
+    def check_theory(theory: str) -> Optional[SyntaxProblem]:
+        """Where [theory], Prolog text (a theory, or flags), does not parse; None if it does. Nothing is solved."""
+        return call(lambda: problem_from_jvm(_jvm.jclass(f"{_API}.Arg2p").checkTheory(theory)))
+
+    @staticmethod
+    def check_query(query: str) -> Optional[SyntaxProblem]:
+        """Where [query], a goal in Prolog text, does not parse; None if it does. Nothing is solved."""
+        return call(lambda: problem_from_jvm(_jvm.jclass(f"{_API}.Arg2p").checkQuery(query)))
 
     @staticmethod
     def version() -> str:

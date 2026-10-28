@@ -83,6 +83,22 @@ class Arg2pTest {
     }
 
     @Test
+    fun textsThatDoNotParseTellWhere() {
+        val theory = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }.syntax
+        assertEquals(2, theory?.line)
+        assertEquals(9, theory?.column)
+        assertEquals(".", theory?.token)
+        assertEquals("Unexpected token '.'; expected term", theory?.description)
+        assertEquals(1, assertFailsWith<Arg2pException> { Arg2p.of().solve("flies(") }.syntax?.line)
+        assertEquals(1, assertFailsWith<Arg2pException> { Flags.parse("queryMode(") }.syntax?.line)
+        assertEquals(7, assertFailsWith<Arg2pException> { Value.parse("flies(") }.syntax?.column)
+        assertEquals(theory, Arg2p.checkTheory("a :=> b.\nc :=> d(."))
+        assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X)."))
+        assertEquals(null, Arg2p.checkQuery("buildLabelSets(In, Out, Und)."))
+        assertEquals(1, Arg2p.checkQuery("flies(")?.line)
+    }
+
+    @Test
     fun theTheoryChanges() {
         val arg2p = Arg2p.of("f1 :=> a.")
         arg2p.add("f2 :=> b.")

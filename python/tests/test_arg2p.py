@@ -15,6 +15,7 @@ from arg2p import (
     Semantics,
     StatementLabelling,
     Struct,
+    SyntaxProblem,
     Var,
 )
 from arg2p import _jvm
@@ -78,6 +79,18 @@ def test_an_error_halts_the_solution_and_is_raised_by_an_answer():
     assert Arg2p.of().solve("throw(error(type_error(integer, a), x))").next().is_halt
     with pytest.raises(Arg2pError):
         Arg2p.of().solve("f(")
+
+
+def test_texts_that_do_not_parse_tell_where():
+    with pytest.raises(Arg2pError) as raised:
+        Arg2p.of("a :=> b.\nc :=> d(.")
+    problem = raised.value.syntax
+    assert problem == SyntaxProblem(2, 9, ".", "Unexpected token '.'; expected term")
+    assert problem.length == 1
+    assert Arg2p.check_theory("a :=> b.\nc :=> d(.") == problem
+    assert Arg2p.check_theory("graphBuildMode(abstract).\na <-> b.") is None
+    assert Arg2p.check_query("buildLabelSets(In, Out, Und)") is None
+    assert Arg2p.check_query("flies(").line == 1
 
 
 def test_the_theory_changes():

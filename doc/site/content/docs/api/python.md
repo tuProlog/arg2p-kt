@@ -58,7 +58,13 @@ flags = (
 ```
 
 A theory its profile refuses (a non-flat ABA theory, say), or a query that cannot be parsed, raises `Arg2pError`,
-with the reason.
+with the reason. When a text does not parse, its `syntax` tells where: a `SyntaxProblem` with the `line` and `column`
+(from 1), the `token` found there and the `description`. `Arg2p.check_theory(text)` and `Arg2p.check_query(text)` tell
+the same without solving anything (None for a text that parses).
+
+```python
+Arg2p.check_theory("f1 :=> a.\nr1 : a => b(.")    # Unexpected token '.'; expected term at 2:13
+```
 
 ---
 

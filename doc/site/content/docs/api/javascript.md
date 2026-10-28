@@ -71,7 +71,9 @@ Flags.defaults()
 
 `answer(query)` gives the statements for a query labelled in, out and und (`inStatements`, `outStatements`,
 `undStatements`, and `label(statement)`). A theory its profile refuses, or a query that cannot be parsed, raises an
-`Arg2pException`.
+`Arg2pException`. When a text does not parse, its `syntax` tells where (`line`, `column`, `token`, `description`), and
+`Arg2p.checkTheory(text)` and `Arg2p.checkQuery(text)` tell the same without solving anything (null for a text that
+parses).
 
 ```js
 const answer = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
