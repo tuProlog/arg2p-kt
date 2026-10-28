@@ -27,6 +27,18 @@
       "automerge": false
     }
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The tools the workflows install by their version, as a comment above it tells (# renovate: datasource=... depName=...)",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: (?<currentValue>\\S+)"
+      ]
+    }
+  ],
   "automerge": true,
   "prConcurrentLimit": 30,
   "prHourlyLimit": 30,
