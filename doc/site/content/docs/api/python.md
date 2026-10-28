@@ -5,47 +5,120 @@ weight: 36
 
 ## Python API
 
-The Python package `arg2p` (in `python/` in the repository) runs the library of the JVM through
-[JPype](https://jpype.readthedocs.io): every profile, semantics and graph extension is there, and so is the
-[parallel solver]({{% ref "/docs/modules/parallel-solver" %}}). A JVM (Java 17 or later) is needed.
-
-### Installing
-
-The package carries the jars of the JVM library, which Gradle copies into it:
+The Python package `arg2p` is the [API of arg2p]({{% ref "/docs/api/kotlin" %}}) in snake case: a solver for a
+theory (`Arg2p`), its flags (`Flags`, with an enumeration for the values of each), its answers, graphs and
+solutions, the causality tests, and the clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}).
+It runs the library of the JVM through [JPype](https://jpype.readthedocs.io), on the Java runtime its wheel bundles:
+no Java is needed.
 
 ```sh
-./gradlew :parallel-solver:pythonJars
-pip install ./python
+pip install arg2p
 ```
 
-`ARG2P_CLASSPATH` (paths separated as in `PATH`) points the package at other jars.
+The wheels of Windows (x86-64), Linux (x86-64, ARM64) and macOS (ARM64, x86-64) bundle a Java runtime; on another
+platform the package runs on the Java of the system (21 or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
+the JVM to run on, `ARG2P_CLASSPATH` other jars.
 
-### Answering queries
+---
+
+### A solver
 
 ```python
-from arg2p import Flags, Solver
+from arg2p import Arg2p, Flags, Semantics
 
-solver = Solver("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).\n")
-solver.answer("a")        # Answer(in_=['a'], out=[], und=[])
+arg2p = Arg2p.of("""
+r1 : [] => a.
+r2 : [] => -a.
+sup(r1, r2).
+""")
+
+arg2p.answer("a").in_statements     # ['a']
+arg2p.answer("-a").out_statements   # [Struct(functor='-', args=('a',))], written -a
 ```
 
-`Flags` sets the [flags]({{% ref "/docs/api/flags" %}}) of `FlagsBuilder` in snake case (`graph_build_mode`,
-`argument_labelling_mode`, `graph_extensions`, ...). A flag left out keeps its default, or the value the
-[profile]({{% ref "/docs/profiles" %}}) of the theory presets. A theory its profile refuses raises `Arg2pError`, with
-the reason.
+`Arg2p.of(theory, flags)` is a solver for a theory (`Flags.defaults()` if no flags are given), `Arg2p.builder()`
+describes one in full (`theory`, `flags`, `output`, then `build()`). `add(text)` adds clauses to the theory,
+`load(text)` replaces it.
 
-| Python | Does |
-| --- | --- |
-| `Solver(theory, flags)` | The solver of a theory |
-| `solver.answer(query)` | The statements for the query labelled in, out and und (`answerQuery/4`) |
-| `solver.graphs()` | The graph of each labelling: arguments, labels, attacks, supports |
-| `solver.solve(goal, limit)` | The bindings of each solution of a Prolog goal, as Python values |
-| `solver.add(clauses)` | Adds clauses to the theory |
-| `evaluate(theory, flags)`, `answer_query(theory, query, flags)` | The same, for a theory evaluated once |
-| `Cluster(threads, parts, flags, lends)` | A cluster of the parallel solver: `load`, `add`, `solve`, `listen`, `connect`, `discover` |
+`Flags.defaults()`, `Flags.none()` (only the flags the theory states) and `Flags.parse(text)` are the flags of a
+solver; each flag has a method, taking a value of its enumeration (`Profile`, `Semantics`, `StatementLabelling`,
+`OrderingPrinciple`, `OrderingComparator`, `GraphExtension`, `GraphLanguage`, `GraphBuilder`, `ConflictModel`) or a
+boolean:
 
-Prolog terms come back as Python values: atoms as strings, numbers as numbers, lists as lists, compound terms as
-`Struct` (written as Prolog writes them by `str`) and variables as `Var`.
+```python
+from arg2p import GraphExtension, Profile
+
+flags = (
+    Flags.defaults()
+    .graph_build_mode(Profile.ABA)
+    .argument_labelling_mode(Semantics.PREFERRED)
+    .graph_extensions(GraphExtension.STANDARD_PREF)   # no argument: none
+    .query_mode(False)
+)
+```
+
+A theory its profile refuses (a non-flat ABA theory, say), or a query that cannot be parsed, raises `Arg2pError`,
+with the reason.
+
+---
+
+### Graphs
+
+`graphs()` gives the graph of each labelling (several for a semantics such as `preferred`), as plain data:
+
+```python
+(graph,) = Arg2p.of("f1 :=> d.\nf2 :=> -d.\n").graphs()
+graph.conclusions("und")                     # ['-d', 'd']
+[it.descriptor for it in graph.arguments]    # ['A0 : f2 : -d', 'A1 : f1 : d']
+graph.attacks[0].attacker.identifier          # 'A1'
+```
+
+A graph has its `arguments`, `attacks`, `supports` and `labellings`, and `label(argument)`, `labelled(label)` and
+`conclusions(label)`. `active_branch`, `graph()`, `graph_at(branch)` and `context_facts(branch, goal)` read the
+stages of the last resolution.
+
+---
+
+### Prolog goals
+
+`solve(goal)` gives the solutions of a goal one at a time (`has_next()` and `next()`, or iterated). Their values are
+Python values: atoms as strings, numbers as numbers, lists as lists, compound terms as `Struct` and variables as
+`Var`.
+
+```python
+[solution.value("X") for solution in arg2p.solve("member(X, [a, b])") if solution.is_yes]   # ['a', 'b']
+```
+
+---
+
+### Causality
+
+```python
+causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
+causality.ness("a", "b")      # the intervention, [Struct(functor='-', args=('a',))]: None if a is not a cause
+causality.but_for("a", "b")   # True
+```
+
+---
+
+### The parallel solver
+
+A `ThreadedCluster` builds the graph with workers on the threads of the JVM, and with those of the clusters it is
+federated with (on the JVM, Node.js or in browsers), over WebSockets:
+
+```python
+from arg2p import ThreadedCluster
+
+with ThreadedCluster(threads=1) as evaluating, ThreadedCluster(threads=4) as lending:
+    port = evaluating.listen(0, "127.0.0.1")
+    lending.connect(f"ws://127.0.0.1:{port}")   # or discover() on both, on a local network
+    evaluating.load(theory)
+    evaluating.solve("a")                       # EvaluationResponse(in_args=[Response(claim='a', ...)], ...)
+```
+
+A `LocalCluster` runs its nodes in turn, on the calling thread.
+
+---
 
 ### From the command line
 

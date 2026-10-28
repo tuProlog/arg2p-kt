@@ -82,20 +82,22 @@ dependencies {
 #### Usage Example
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Arg2p
 
 fun main() {
-    val graph = Arg2pSolverFactory.evaluate("""
-        f1 :=> d.
-        f2 :=> -d.
-    """.trimIndent(), FlagsBuilder()).first()
+    val (graph) =
+        Arg2p.of(
+            """
+            f1 :=> d.
+            f2 :=> -d.
+            """.trimIndent(),
+        ).graphs()
 
     graph.labellings.forEach {
         println("${it.label} : ${it.argument.conclusion}")
     }
 }
-``` 
+```
 
 For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
 
@@ -116,21 +118,29 @@ badge above):
 #### Usage Example
 
 ```js
-const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
+const { Arg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
 
-const solver = JsArg2p.solver(`
+const [graph] = Arg2p.of(`
     f1 :=> d.
-    f2 :=> -d.
-    queryMode.`)
-JsArg2p.solve(solver, 'arg2p::solve').next()
-const graph = JsArg2p.graph(solver)
+    f2 :=> -d.`).graphs()
 
-graph.arguments.forEach(arg => {
-    console.log(`${arg.label} : ${arg.descriptor}`)
-})
+graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
 ```
 
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
+
+
+#### Python Library
+
+The same API, in snake case, is on PyPI: `pip install arg2p` (the wheel bundles a Java runtime).
+
+```python
+from arg2p import Arg2p
+
+(graph,) = Arg2p.of("f1 :=> d.\nf2 :=> -d.").graphs()
+for labelled in graph.labellings:
+    print(f"{labelled.label} : {labelled.argument.conclusion}")
+```
 
 ---
 

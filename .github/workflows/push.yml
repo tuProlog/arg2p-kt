@@ -29,3 +29,20 @@ jobs:
       id-token: write  # Required for OIDC (trusted publishing) on npmjs, in both caller and called workflows
     uses: ./.github/workflows/release.yml
     secrets: inherit
+  python-publish:
+    # The wheels of the release on PyPI, through trusted publishing (OIDC, no token): from this workflow, as PyPI does
+    # not trust a reusable one
+    needs:
+      - ci-cd
+    if: needs.ci-cd.outputs.version != ''
+    runs-on: ubuntu-26.04
+    environment: release_env
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

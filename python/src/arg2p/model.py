@@ -1,94 +1,102 @@
-"""The argumentation graph of an evaluation, as plain data: its arguments, their labels, attacks and supports."""
+"""The argumentation graph of a labelling, as plain data: its arguments, their labels, attacks and supports."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 
 @dataclass(frozen=True)
 class Argument:
     """
-    An argument: its identifier (A0, A1, ... in a stable order), its rules, its top rule (none for a premise), its
-    conclusion, the identifiers of its sub-arguments, and a readable descriptor.
+    An argument: its rules, its top rule (none for a premise) and its conclusion, with the arguments it is built on
+    (supports), identified as A0, A1, ... in the graph (identifier); descriptor writes it as A2 : A0,r1 : c.
     """
 
     identifier: str
-    rules: tuple[str, ...]
-    top_rule: str
+    descriptor: str
     conclusion: str
-    supports: tuple[str, ...] = ()
-    descriptor: str = ""
+    top_rule: str
+    rules: tuple[str, ...] = ()
+    supports: tuple[Argument, ...] = field(default=(), repr=False)
 
 
 @dataclass(frozen=True)
 class Attack:
-    """An attack of [attacker] on [target] (identifiers), of a [type], on its sub-argument [on]."""
+    """[attacker] attacks [target], with its type (rebut, undermine, undercut, ...) and the sub-argument it hits."""
 
-    attacker: str
-    target: str
+    attacker: Argument
+    target: Argument
     type: Optional[str] = None
-    on: Optional[str] = None
+    on: Optional[Argument] = None
 
 
 @dataclass(frozen=True)
 class Support:
-    """[supporter] is a sub-argument of [supported] (identifiers)."""
+    """[supporter] is an argument [supported] is built on."""
 
-    supporter: str
-    supported: str
+    supporter: Argument
+    supported: Argument
+
+
+@dataclass(frozen=True)
+class LabelledArgument:
+    """An argument with its label: in, out, und (na for an argument the labelling does not label)."""
+
+    argument: Argument
+    label: str
 
 
 @dataclass(frozen=True)
 class Graph:
-    """The graph of one labelling: the arguments, their labels (in, out, und) by identifier, attacks and supports."""
+    """An argumentation graph: its arguments, the attacks and supports between them, and the label of each argument."""
 
     arguments: tuple[Argument, ...]
-    labels: dict[str, str] = field(default_factory=dict)
     attacks: tuple[Attack, ...] = ()
     supports: tuple[Support, ...] = ()
+    labellings: tuple[LabelledArgument, ...] = ()
 
-    def argument(self, identifier: str) -> Argument:
-        """The argument with [identifier]."""
-        return next(argument for argument in self.arguments if argument.identifier == identifier)
+    def label(self, argument: Argument) -> Optional[str]:
+        """The label of [argument]: in, out, und, or na for an argument the labelling does not label."""
+        return next((labelled.label for labelled in self.labellings if labelled.argument == argument), None)
 
     def labelled(self, label: str) -> list[Argument]:
-        """The arguments labelled [label] (in, out or und)."""
-        return [argument for argument in self.arguments if self.labels.get(argument.identifier) == label]
+        """The arguments labelled [label] (in, out, und)."""
+        return [labelled.argument for labelled in self.labellings if labelled.label == label]
 
-    def conclusions(self, label: str) -> set[str]:
-        """The conclusions of the arguments labelled [label]."""
-        return {argument.conclusion for argument in self.labelled(label)}
+    def conclusions(self, label: str) -> list[str]:
+        """The conclusions of the arguments labelled [label] (in, out, und), each once."""
+        return list(dict.fromkeys(argument.conclusion for argument in self.labelled(label)))
 
 
-def graph_of(graph: Any, statement: Callable[[str], str] = str) -> Graph:
-    """The Graph of [graph], a Graph of arg2p (its model package), the conclusions written by [statement]."""
+def graph_from_jvm(graph: Any) -> Graph:
+    """The graph of [graph], a Graph of the library of the JVM."""
+    arguments: dict[str, Argument] = {}
 
-    def identifier(argument: Any) -> str:
-        return str(argument.getIdentifier())
+    def argument(of: Any) -> Argument:
+        identifier = str(of.getIdentifier())
+        if identifier not in arguments:
+            arguments[identifier] = Argument(
+                identifier,
+                str(of.getDescriptor()),
+                str(of.getConclusion()),
+                str(of.getTopRule()),
+                tuple(str(rule) for rule in of.getRules()),
+                tuple(argument(support) for support in of.getSupports()),
+            )
+        return arguments[identifier]
 
-    arguments = tuple(
-        Argument(
-            identifier(argument),
-            tuple(str(rule) for rule in argument.getRules()),
-            str(argument.getTopRule()),
-            statement(str(argument.getConclusion())),
-            tuple(identifier(support) for support in argument.getSupports()),
-            str(argument.getDescriptor()),
-        )
-        for argument in graph.getArguments()
+    return Graph(
+        tuple(argument(of) for of in graph.getArguments()),
+        tuple(
+            Attack(
+                argument(of.getAttacker()),
+                argument(of.getTarget()),
+                None if of.getType() is None else str(of.getType()),
+                None if of.getOn() is None else argument(of.getOn()),
+            )
+            for of in graph.getAttacks()
+        ),
+        tuple(Support(argument(of.getSupporter()), argument(of.getSupported())) for of in graph.getSupports()),
+        tuple(LabelledArgument(argument(of.getArgument()), str(of.getLabel())) for of in graph.getLabellings()),
     )
-    labels = {identifier(labelled.getArgument()): str(labelled.getLabel()) for labelled in graph.getLabellings()}
-    attacks = tuple(
-        Attack(
-            identifier(attack.getAttacker()),
-            identifier(attack.getTarget()),
-            None if attack.getType() is None else str(attack.getType()),
-            None if attack.getOn() is None else identifier(attack.getOn()),
-        )
-        for attack in graph.getAttacks()
-    )
-    supports = tuple(
-        Support(identifier(support.getSupporter()), identifier(support.getSupported())) for support in graph.getSupports()
-    )
-    return Graph(arguments, labels, attacks, supports)

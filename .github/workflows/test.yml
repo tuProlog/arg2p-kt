@@ -73,7 +73,8 @@ jobs:
           python-version: '3.13'
       - uses: DanySK/build-check-deploy-gradle-action@4.0.49
         with:
-          build-command: ./gradlew :parallel-solver:pythonJars
+          # the package as a wheel bundles it: its jars, its version, its Java runtime
+          build-command: ./gradlew :python:pythonJars :python:pythonVersion :python:pythonRuntime
           check-command: |
             python -m pip install "./python[test]" && python -m pytest python/tests
           should-run-codecov: false

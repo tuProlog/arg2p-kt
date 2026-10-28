@@ -1,42 +1,50 @@
 import time
 
-from arg2p import Cluster, Flags, Solver
+from arg2p import Arg2p, Flags, LocalCluster, Semantics, ThreadedCluster
 
 THEORY = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => -b.\nsup(r2, r4).\nr5 :=> d.\n"
 
 
-def claims(evaluation):
-    return {label: sorted(e.claim for e in getattr(evaluation, label)) for label in ("in_", "out", "und")}
+def claims(response):
+    return {label: sorted(it.claim for it in getattr(response, label)) for label in ("in_args", "out_args", "und_args")}
 
 
 def test_a_cluster_labels_as_the_standard_solver():
-    solver = Solver(THEORY)
-    with Cluster(threads=2) as cluster:
+    arg2p = Arg2p.of(THEORY)
+    with ThreadedCluster(threads=2) as cluster:
         cluster.load(THEORY)
         for statement in ("b", "-b", "d"):
-            answer = solver.answer(statement)
+            answer = arg2p.answer(statement)
             labels = claims(cluster.solve(statement))
-            assert [len(answer.in_), len(answer.out), len(answer.und)] == [len(labels[l]) for l in ("in_", "out", "und")]
+            expected = [len(answer.in_statements), len(answer.out_statements), len(answer.und_statements)]
+            assert expected == [len(labels[label]) for label in ("in_args", "out_args", "und_args")]
+
+
+def test_a_local_cluster():
+    cluster = LocalCluster(parts=2)
+    cluster.load(THEORY)
+    response = cluster.solve("b")
+    assert claims(response)["in_args"] == ["b"]
+    assert response.in_args[0].query_chain
 
 
 def test_clusters_federated_over_websockets():
-    with Cluster(threads=1, flags=Flags(argument_labelling_mode="grounded")) as evaluating, Cluster(threads=2) as lending:
+    flags = Flags.defaults().argument_labelling_mode(Semantics.GROUNDED)
+    with ThreadedCluster(threads=1, flags=flags) as evaluating, ThreadedCluster(threads=2) as lending:
         port = evaluating.listen(0, "127.0.0.1")
         lending.connect(f"ws://127.0.0.1:{port}")
         deadline = time.time() + 10
-        while evaluating.peers != {lending.site}:
+        while evaluating.peers != {lending.id}:
             assert time.time() < deadline
             time.sleep(0.02)
         evaluating.load(THEORY)
-        assert claims(evaluating.solve("b"))["in_"] == ["b"]
-        assert claims(evaluating.solve("-b"))["out"] == ["-b"]
+        assert claims(evaluating.solve("b"))["in_args"] == ["b"]
+        assert claims(evaluating.solve("-b"))["out_args"] == ["-b"]
 
 
 def test_a_theory_changes():
-    with Cluster(threads=2) as cluster:
+    with ThreadedCluster(threads=2) as cluster:
         cluster.load("f1 :=> a.")
-        assert claims(cluster.solve("a"))["in_"] == ["a"]
+        assert claims(cluster.solve("a"))["in_args"] == ["a"]
         cluster.add("f2 :=> -a")
-        assert claims(cluster.solve("a"))["und"] == ["a"]
-        cluster.reset()
-        assert claims(cluster.solve("a")) == {"in_": [], "out": [], "und": ["a"]}
+        assert claims(cluster.solve("a"))["und_args"] == ["a"]
