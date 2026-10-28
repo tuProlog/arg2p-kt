@@ -47,6 +47,15 @@ class Solution internal constructor(
 
     val isHalt: Boolean get() = solution.isHalt
 
+    /** What the solution is: yes, no or halt */
+    val result: String
+        get() =
+            when {
+                isYes -> "yes"
+                isNo -> "no"
+                else -> "halt"
+            }
+
     /** The goal, as a yes solution solves it (its variables bound), otherwise as it was asked, as Prolog text */
     val query: String get() = TermValues.format(solution.solvedQuery ?: solution.query)
 
@@ -81,10 +90,5 @@ class Solution internal constructor(
     /** The value a yes solution binds to the variable of the goal named [name], as Prolog text */
     fun text(name: String): String? = value(name)?.toString()
 
-    override fun toString(): String =
-        when {
-            isYes -> "yes: $query"
-            isNo -> "no: $query"
-            else -> "halt: $error"
-        }
+    override fun toString(): String = "$result: ${if (isHalt) error else query}"
 }

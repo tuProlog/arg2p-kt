@@ -3,7 +3,6 @@
 package it.unibo.tuprolog.argumentation
 
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.core.parsing.parse
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
@@ -115,8 +114,7 @@ sealed class Value {
         /** The value written in [text], with the operators of arg2p: an [Arg2pException] telling where it does not parse otherwise */
         @JvmStatic
         @JsStatic
-        fun parse(text: String): Value =
-            TermValues.of(SyntaxProblem.parsing("Value") { LogicTerm.parse(text.trim().removeSuffix("."), TermValues.operators) })
+        fun parse(text: String): Value = TermValues.of(SyntaxProblem.parsing("Value") { TermValues.term(text) })
 
         /** A compound term of [functor] and [args] (an array in JavaScript) */
         @JvmStatic
