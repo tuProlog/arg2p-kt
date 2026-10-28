@@ -1,3 +1,19 @@
+## [0.19.1](https://github.com/tuProlog/arg2p-kt/compare/0.19.0...0.19.1) (2026-10-28)
+
+### Dependency updates
+
+* **deps:** the updates Renovate proposes ([11144fd](https://github.com/tuProlog/arg2p-kt/commit/11144fdebf256420cd9cffd34f896a36c1cdde6e)), closes [#527](https://github.com/tuProlog/arg2p-kt/issues/527) [#528](https://github.com/tuProlog/arg2p-kt/issues/528) [#529](https://github.com/tuProlog/arg2p-kt/issues/529) [#530](https://github.com/tuProlog/arg2p-kt/issues/530) [#531](https://github.com/tuProlog/arg2p-kt/issues/531) [#532](https://github.com/tuProlog/arg2p-kt/issues/532)
+
+### Bug Fixes
+
+* **js:** arg2p bundles for browsers, require taken from Node.js as the code runs ([498f690](https://github.com/tuProlog/arg2p-kt/commit/498f690b2f8b7b3bf83727d3865b7e1851db7843))
+* **js:** arg2p loads in browsers, fs taken from Node.js as the code runs ([900e0de](https://github.com/tuProlog/arg2p-kt/commit/900e0de617f6e33e61a8cbe9fc867f943b817fb6))
+* **js:** the npm package names its repository, as its provenance does ([8aa3b16](https://github.com/tuProlog/arg2p-kt/commit/8aa3b1669c0512626472e1b73d5cf909b3307b50))
+
+### Build and continuous integration
+
+* Python 3.14, and JPype from its wheels alone ([17c1705](https://github.com/tuProlog/arg2p-kt/commit/17c170511bc9306845ae4542ff5d612fa7092e2b))
+
 ## [0.19.0](https://github.com/tuProlog/arg2p-kt/compare/0.18.1...0.19.0) (2026-10-28)
 
 ### Features
