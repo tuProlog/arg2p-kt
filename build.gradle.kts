@@ -20,6 +20,25 @@ val jvmVersion: String = libs.versions.jvm.get()
 // A property reference built as a standalone statement, whose value is never used
 val deadPropertyReference = Regex("""(?m)^([ \t]*)getPropertyCallableRef\([^;\n]*\);[ \t]*$""")
 
+// A static import of a module of Node.js alone, `import { writeSync as writeSync, ... } from 'fs';` (kotlinx-io declares
+// fs a @JsModule): an ES module resolves its imports as it loads, so in a browser (or a bundle for one) the whole of
+// arg2p would fail to load
+val nodeOnlyImport = Regex("""(?m)^import \{([^}]*)\} from '(fs|os|path)';""")
+
+// The import as a lookup in Node.js, when there is one: elsewhere what uses the module fails when it is used
+fun lazyNodeImport(match: MatchResult): String {
+    val bindings =
+        match.groupValues[1]
+            .split(',')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(", ") { binding ->
+                val (name, alias) = binding.split(" as ").map { it.trim() }.let { it.first() to it.last() }
+                if (name == alias) name else "$name: $alias"
+            }
+    return "const { $bindings } = globalThis.process?.getBuiltinModule?.('${match.groupValues[2]}') ?? {};"
+}
+
 allprojects {
     repositories {
         google()
@@ -40,7 +59,8 @@ allprojects {
     }
 
     // Kotlin/JS re-creates (and then discards) a property reference on every access to a delegated property,
-    // e.g. `by lazy` (see KT-78124): in 2p-kt terms this dominates JS execution time, so dead references are removed
+    // e.g. `by lazy` (see KT-78124): in 2p-kt terms this dominates JS execution time, so dead references are removed.
+    // The modules of Node.js are taken as the code loads, for it to load in browsers too (see nodeOnlyImport).
     tasks.withType<KotlinJsIrLink>().configureEach {
         doLast {
             destinationDirectory
@@ -49,7 +69,10 @@ allprojects {
                 .matching { include("**/*.js", "**/*.mjs") }
                 .forEach { file ->
                     val original = file.readText()
-                    val patched = deadPropertyReference.replace(original) { "${it.groupValues[1]}/* dead property reference removed */" }
+                    val patched =
+                        deadPropertyReference
+                            .replace(original) { "${it.groupValues[1]}/* dead property reference removed */" }
+                            .let { nodeOnlyImport.replace(it, ::lazyNodeImport) }
                     if (patched != original) file.writeText(patched)
                 }
         }
