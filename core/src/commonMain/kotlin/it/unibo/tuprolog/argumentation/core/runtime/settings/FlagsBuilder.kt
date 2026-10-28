@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.settings
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
@@ -17,7 +17,6 @@ import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.unify.Unificator
 import kotlin.jvm.JvmStatic
@@ -87,17 +86,6 @@ data class FlagsBuilder(
 
     fun graphBuilder(graphBuilder: String) = apply { this.graphBuilder = graphBuilder }
 
-    fun create() =
-        object : ArgLibrary {
-            override val alias = "prolog.argumentation.flags"
-
-            override val baseContent: Library
-                get() =
-                    Library.of(
-                        alias = this.alias,
-                        clauses = setupSolver(this@FlagsBuilder),
-                    )
-            override val baseFlags: Iterable<ArgsFlag<*, *>>
-                get() = emptyList()
-        }
+    /** The library of the flags, for a solver of arg2p (the one of [Flags]) */
+    fun create(): ArgLibrary = Flags.of(this).library()
 }

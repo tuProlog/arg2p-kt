@@ -4,8 +4,6 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
-import it.unibo.tuprolog.argumentation.core.runtime.context.Context
-import it.unibo.tuprolog.argumentation.core.runtime.context.GraphStoreBatch
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
@@ -27,12 +25,13 @@ import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.unify.Unificator
+import it.unibo.tuprolog.core.List as PlList
 
 /**
  * The catalog of a distributed solver: it holds the theory and partitions it among the workers (see
@@ -57,7 +56,7 @@ import it.unibo.tuprolog.unify.Unificator
  * when the theory changes, and when the network loses some of the workers of a graph being built ([Rebuild]); in query
  * mode, it grows as later evaluations need more of it.
  */
-class Catalog(
+internal class Catalog(
     private val network: Network,
     private val parts: Int? = null,
     private val flags: Flags = Flags.defaults(),
@@ -80,13 +79,13 @@ class Catalog(
     private var stage = Stage.READY
     private var awaited = 0
     private val interests = mutableListOf<Interest>()
-    private val waiting = mutableListOf<RequireEvaluation>()
+    private val waiting = mutableListOf<Pair<RequireEvaluation, Term>>()
 
     // The arguments published, by their global identifiers, and their supports
     private val arguments = mutableMapOf<String, Term>()
 
-    /** The arguments of the graph built, those the workers published */
-    val argumentsBuilt: Int get() = arguments.size
+    // The arguments of the graph built, those the workers published, for the tests
+    internal val argumentsBuilt: Int get() = arguments.size
 
     // The arguments of the graph labelled, those derived from the others included, as terms, for the tests
     internal val graphArguments: List<Term> get() = solver.arguments(solver.activeBranch()).map { it.termRepresentation() }
@@ -98,8 +97,10 @@ class Catalog(
     private val solver = Arg2pSolverFactory.default(settings = flags.library())
     private val unificator = Unificator.default
 
-    // The graph is saved in its context a batch at a time (see GraphStoreBatch)
-    private val context = Context.of(solver.libraries)!!
+    // The graph saved a batch at a time, and the arguments for a statement read, by label
+    private val save = Goal("graphStore::saveArguments(a, Arguments), graphStore::saveSupports(Supports)", solver.operators)
+    private val saveAttacks = Goal("graphStore::saveAttacks(Attacks)", solver.operators)
+    private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), argument::claim(A, S)", solver.operators)
 
     override fun receive(message: KbMessage) {
         when (message) {
@@ -107,10 +108,15 @@ class Catalog(
             Rebuild -> if (stage != Stage.READY) start(explored.toList())
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
-            is RequireEvaluation -> {
-                waiting += message
-                if (stage == Stage.READY) evaluate()
-            }
+            is RequireEvaluation ->
+                try {
+                    waiting += message to Struct.parse(message.elem, solver.operators)
+                    if (stage == Stage.READY) evaluate()
+                } catch (error: ParseException) {
+                    val response =
+                        EvaluationResponse(emptyList(), emptyList(), emptyList(), "Not a statement: ${message.elem} (${error.message})")
+                    network.send(message.replyTo, response)
+                }
             is Subscribe -> {
                 interests += Interest(message.worker, message.premises, message.conclusions)
                 if (--awaited == 0) {
@@ -149,7 +155,7 @@ class Catalog(
     // they need statements not explored yet
     private fun evaluate() {
         if (waiting.isEmpty()) return
-        val goals = waiting.map { parse(it.elem) }
+        val goals = waiting.map { it.second }
         when {
             changed -> start(goals)
             locality == null -> serve()
@@ -170,7 +176,7 @@ class Catalog(
         val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, flags)
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
-        solve("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
         locality = locality()
         val count = partitioning.partitions.size
         network.building(count)
@@ -193,18 +199,15 @@ class Catalog(
     // The part of the graph the labels of the arguments for a statement depend on, as the semantics declares it (see
     // the module structuredPartial): directional or connected in query mode, on a graph built from the rules; null for
     // the whole graph
-    private fun locality(): String? {
-        val goal =
-            "setting(queryMode), structuredWhole::builder(B), B == ruleGraph, setting(argumentLabellingMode, S), " +
-                "S::locality(L), L \\== whole_graph"
-        return solver
-            .solve(Struct.parse(goal, solver.operators))
-            .first()
-            .takeIf { it.isYes }
+    private fun locality(): String? =
+        solver
+            .solveOnce(
+                "setting(queryMode), structuredWhole::builder(B), B == ruleGraph, setting(argumentLabellingMode, S), " +
+                    "S::locality(L), L \\== whole_graph",
+            ).takeIf { it.isYes }
             ?.substitution
             ?.getByName("L")
             ?.toString()
-    }
 
     // [goals] explored by the workers whose rules conclude them, each Explore acknowledged
     private fun explore(goals: List<Term>) {
@@ -218,29 +221,17 @@ class Catalog(
         }
     }
 
-    // Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it
-    private fun covers(
-        general: Term,
-        specific: Term,
-    ): Boolean {
-        val fixed = specific.variables.distinct().mapIndexed { i, variable -> variable to Atom.of("fixed variable $i") }
-        return unificator.match(general, specific.apply(Substitution.of(fixed.toMap())))
-    }
-
     // The arguments all published: the graph saved anew, the arguments and their supports, then the attacks found by
     // the workers, but with metaConflicts
     private fun built() {
-        solve("context_reset, parser:::convertAllRules(_)")
-        GraphStoreBatch.saveArguments(context, Atom.of("a"), arguments.values.toList())
-        GraphStoreBatch.saveSupports(
-            context,
+        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        val supported =
             supports.map { (support, argument) ->
-                arguments.getValue(support) to
-                    arguments.getValue(argument)
-            },
-        )
+                Struct.of("support", arguments.getValue(support), arguments.getValue(argument))
+            }
+        solver.solve(save.with("Arguments" to PlList.of(arguments.values), "Supports" to PlList.of(supported))).first()
         directAttacks.clear()
-        if (workers == 0 || solver.solve(Struct.parse("setting(metaConflicts)", solver.operators)).first().isYes) {
+        if (workers == 0 || solver.holds("setting(metaConflicts)")) {
             return complete(centralAttacks = true)
         }
         stage = Stage.ATTACKING
@@ -254,16 +245,16 @@ class Catalog(
         val attacks =
             directAttacks.distinct().map { (type, attacker, target) ->
                 val attacked = arguments.getValue(target)
-                GraphStoreBatch.Attack(Atom.of(type), arguments.getValue(attacker), attacked, attacked)
+                Struct.of("attack", Atom.of(type), arguments.getValue(attacker), attacked, attacked)
             }
-        GraphStoreBatch.saveAttacks(context, attacks)
+        solver.solve(saveAttacks.with("Attacks" to PlList.of(attacks))).first()
     }
 
     // The graph whole: the arguments derived from the others, the attacks (if the workers did not find them), the
     // extensions and the labels
     private fun complete(centralAttacks: Boolean) {
         val attacks = if (centralAttacks) ", X:::buildAttacks" else ""
-        solve(
+        solver.solveOnce(
             "structuredWhole::builder(X), X:::buildAdditionalArguments$attacks, structuredWhole:::modifyGraph, " +
                 "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling",
         )
@@ -275,21 +266,16 @@ class Catalog(
     private fun serve() {
         val requests = waiting.toList()
         waiting.clear()
-        requests.forEach { request ->
+        requests.forEach { (request, statement) ->
+            // the statement bound as a term, its variables apart from those of the goal
             val found =
-                solver
-                    .solve(Struct.parse("graphStore::argumentLabel(L, A), argument::claim(A, ${request.elem})", solver.operators))
-                    .filter { it.isYes }
-                    .map { it.substitution.getByName("L").toString() to it.substitution.getByName("A").toString() }
-                    .toList()
+                argumentsLabelled
+                    .solutions(solver, "S" to statement)
+                    .map { it.getValue("L").toString() to it.getValue("A").toString() }
                     .distinct()
             val labelled = { label: String -> found.filter { it.first == label }.map { Response(request.elem, listOf(it.second)) } }
             val und = if (found.isEmpty()) listOf(Response(request.elem, emptyList())) else labelled("und")
             network.send(request.replyTo, EvaluationResponse(labelled("in"), labelled("out"), und))
         }
     }
-
-    private fun parse(term: String) = Struct.parse(term, solver.operators)
-
-    private fun solve(goal: String) = solver.solve(Struct.parse(goal, solver.operators)).first()
 }

@@ -56,7 +56,8 @@ ThreadedCluster(threads = 8, flags = Flags.defaults().argumentLabellingMode(Sema
 
 `load` replaces the theory, `add` adds a clause, `reset` forgets the theory. The first `solve` after a change
 builds and labels the graph; the following ones read the labels. `solve` may be called from several threads at
-once.
+once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
+Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
 
 ---
 

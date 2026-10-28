@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.parse
@@ -10,7 +10,7 @@ import it.unibo.tuprolog.core.parsing.parse
  * the fields, each written as its length, a colon and its characters, so that no character needs escaping. The terms
  * are written as Prolog text, and parsed again with the operators of arg2p.
  */
-object MessageCodec {
+internal object MessageCodec {
     fun encode(message: KbMessage): String =
         TextWriter()
             .apply {
@@ -21,7 +21,11 @@ object MessageCodec {
                     is Add -> text("Add").text(message.elem)
                     is RequireEvaluation -> text("RequireEvaluation").text(message.elem).text(message.replyTo)
                     is EvaluationResponse ->
-                        text("EvaluationResponse").responses(message.inArgs).responses(message.outArgs).responses(message.undArgs)
+                        text("EvaluationResponse")
+                            .responses(message.inArgs)
+                            .responses(message.outArgs)
+                            .responses(message.undArgs)
+                            .texts(listOfNotNull(message.error))
                     is Subscribe -> text("Subscribe").number(message.worker).terms(message.premises).terms(message.conclusions)
                     is Build -> text("Build").interests(message.interests).text(message.locality ?: "")
                     is Explore -> text("Explore").number(message.from).terms(message.statements)
@@ -43,7 +47,7 @@ object MessageCodec {
                 "Load" -> Load(text(), text())
                 "Add" -> Add(text())
                 "RequireEvaluation" -> RequireEvaluation(text(), text())
-                "EvaluationResponse" -> EvaluationResponse(responses(), responses(), responses())
+                "EvaluationResponse" -> EvaluationResponse(responses(), responses(), responses(), texts().singleOrNull())
                 "Subscribe" -> Subscribe(number(), terms(), terms())
                 "Build" -> Build(interests(), text().ifEmpty { null })
                 "Explore" -> Explore(number(), terms())
@@ -81,7 +85,7 @@ object MessageCodec {
 
     private fun TextReader.attacks() = List(number()) { DirectAttack(text(), text(), text()) }
 
-    private val operators: OperatorSet by lazy { Arg2pSolver.default().operators() }
+    private val operators: OperatorSet get() = TermValues.operators
 }
 
 /** Fields written as text: each as its length, a colon and its characters (see [TextReader]) */

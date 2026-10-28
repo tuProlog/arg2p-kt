@@ -84,15 +84,16 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             context_check(explored(Statement)).
 
         %! premiseOfExplored(?Premise)
-        %  Premise is one of the premises, to be supported by an argument, of a rule concluding a statement explored. The
-        %  exploration supports them one at a time, the next once the one before is: a solver whose arguments for them
-        %  are built elsewhere asks for them all at once, so that they are built side by side.
+        %  Premise is one of the premises, to be supported by an argument, of a rule concluding a statement explored, and
+        %  the statement makes it ground. The exploration supports the premises one at a time, the next once the one
+        %  before is, with its bindings: a solver whose arguments for them are built elsewhere asks for the ground ones
+        %  all at once, so that they are built side by side (the bindings of the others leave them as they are).
         premiseOfExplored(Premise) :-
             context_check(explored(Statement)),
             parser::classicRule(_, Premises, [Statement]),
             member(Premise, Premises),
-            \+ parser::prolog([Premise], _),
-            \+ parser::contrary([Premise], _).
+            ground(Premise),
+            parser::argued(Premise).
 
         %! exploreAll(+Queries)
         %  Each of Queries explored (see explore/1).

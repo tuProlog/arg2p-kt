@@ -83,12 +83,12 @@ class WorkerCluster(
 
     /** The arguments for [statement], as Prolog text, by label */
     fun solve(statement: String): Promise<EvaluationResponse> =
-        Promise { resolve, _ ->
+        Promise { resolve, reject ->
             pending++
             referenced(true)
             val evaluate = {
                 site.solve(statement) {
-                    resolve(it)
+                    runCatching { answered(it) }.fold(resolve, reject)
                     if (--pending == 0) referenced(false)
                 }
             }

@@ -7,7 +7,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
  * [it.unibo.tuprolog.argumentation.parallel.message.Address]): the messages from a node to another one arrive in the
  * order they were sent
  */
-fun interface Network {
+internal fun interface Network {
     fun send(
         to: String,
         message: KbMessage,
@@ -24,6 +24,6 @@ fun interface Network {
 }
 
 /** A node of a distributed solver (the coordinator, a worker): it handles the messages sent to it, one at a time */
-fun interface Node {
+internal fun interface Node {
     fun receive(message: KbMessage)
 }

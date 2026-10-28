@@ -31,6 +31,22 @@ class GraphStoreModuleTest {
         assertEquals(1, module.solutions("context_check(argument(X))").count { it.isYes })
     }
 
+    // A batch saves what the predicates for one save, each once
+    @Test
+    fun aGraphIsSavedInBatches() {
+        val module = ModuleTesting()
+        module.run(
+            "graphStore::saveArguments(t, [$a, $b, $c, $a])",
+            "graphStore::saveSupports([support($a, $b), support($a, $b)])",
+            "graphStore::saveAttacks([attack(rebut, $c, $b, $a)])",
+        )
+        assertEquals(3, module.solutions("context_check(argument(X))").count { it.isYes })
+        assertTrue(module.holds("graphStore::argumentFor([b], X), X == $b"))
+        assertTrue(module.holds("context_id(argument($a), IdA), context_id(argument($b), IdB), context_check(supportId(IdA, IdB))"))
+        assertEquals(1, module.solutions("context_check(support(X, Y))").count { it.isYes })
+        assertTrue(module.holds("graphStore::attack(rebut, $c, $b, $a)"))
+    }
+
     @Test
     fun aSupportIsSavedByArgumentsAndIdentifiers() {
         val module = ModuleTesting()

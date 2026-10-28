@@ -50,6 +50,15 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(info(Info), InfoId),
             context_assert(argInfo(Id, InfoId, Info)).
 
+        %! saveArguments(+Tag, +Arguments)
+        %  Each of Arguments saved under Tag, for its conclusion (see saveArgument/3).
+        saveArguments(Tag, Arguments) :-
+            findall(_, (
+                member(Argument, Arguments),
+                argument::conclusion(Argument, Conclusion),
+                (saveArgument(Tag, Conclusion, Argument) -> true ; true)
+            ), _).
+
         %! argument(?Argument)
         %  Argument is saved.
         argument(Argument) :-
@@ -129,6 +138,11 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Supported), IdSupported),
             context_assert(supportId(IdSupporter, IdSupported)).
 
+        %! saveSupports(+Supports)
+        %  Each of Supports, support(Supporter, Supported), saved (see saveSupport/2).
+        saveSupports(Supports) :-
+            findall(_, (member(support(Supporter, Supported), Supports), (saveSupport(Supporter, Supported) -> true ; true)), _).
+
         %! support(?Supporter, ?Supported)
         %  Supporter supports Supported.
         support(Supporter, Supported) :-
@@ -157,6 +171,11 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Attacked), IdAttacked),
             context_id(argument(On), IdOn),
             saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
+
+        %! saveAttacks(+Attacks)
+        %  Each of Attacks, attack(Type, Attacker, Attacked, On), saved (see saveAttack/4).
+        saveAttacks(Attacks) :-
+            findall(_, (member(attack(Type, Attacker, Attacked, On), Attacks), (saveAttack(Type, Attacker, Attacked, On) -> true ; true)), _).
 
         %! saveAttackById(+Type, +IdAttacker, +Attacker, +IdAttacked, +Attacked, +IdOn, +On)
         %  As saveAttack/4, with the identifiers of the arguments known.

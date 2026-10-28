@@ -83,6 +83,14 @@ class QueryExplorationTest {
             "s",
         )
 
+    // premises sharing a variable: the one with fewer rules binds it for the others (q(1) alone is explored)
+    @Test
+    fun premisesSharingAVariable() =
+        assertSameExploration(
+            "r1 : p(X), q(X) => s.\nf1 :=> p(1).\nf2 :=> q(1).\nf3 :=> q(2).\nf4 :=> q(3).\nr2 : t => q(4).\nf5 :=> t.",
+            "s",
+        )
+
     @Test
     fun undercutsAndUnderminers() =
         assertSameExploration(

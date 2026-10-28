@@ -99,6 +99,7 @@ class Flags private constructor(
 
     /** The library of the flags, for a solver of arg2p */
     @JsExport.Ignore
+    @InternalArg2pApi
     fun library(): ArgLibrary =
         object : ArgLibrary {
             override val alias = ALIAS

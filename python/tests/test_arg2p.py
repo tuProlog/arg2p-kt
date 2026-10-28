@@ -31,6 +31,8 @@ def test_a_query_is_answered():
     assert [str(it) for it in negated.out_statements] == ["-a"]
     assert negated.out_statements == [Struct("-", ("a",))]
     assert negated.label("-a") == "out"
+    # a statement is compared as a term: '1' is not 1
+    assert Arg2p.of("f1 :=> p(1).").answer("p(X)").label("p('1')") is None
 
 
 def test_the_graph_of_each_labelling():

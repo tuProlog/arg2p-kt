@@ -1,6 +1,8 @@
 import time
 
-from arg2p import Arg2p, Flags, LocalCluster, Semantics, ThreadedCluster
+import pytest
+
+from arg2p import Arg2p, Arg2pError, Flags, LocalCluster, Semantics, ThreadedCluster
 
 THEORY = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => -b.\nsup(r2, r4).\nr5 :=> d.\n"
 
@@ -48,3 +50,15 @@ def test_a_theory_changes():
         assert claims(cluster.solve("a"))["in_args"] == ["a"]
         cluster.add("f2 :=> -a")
         assert claims(cluster.solve("a"))["und_args"] == ["a"]
+
+
+def test_a_statement_that_cannot_be_read_is_an_error():
+    cluster = LocalCluster()
+    cluster.load(THEORY)
+    with pytest.raises(Arg2pError, match="Not a statement"):
+        cluster.solve("p(")
+    assert claims(cluster.solve("b"))["in_args"] == ["b"]
+    with ThreadedCluster(threads=1) as threaded:
+        threaded.load(THEORY)
+        with pytest.raises(Arg2pError):
+            threaded.solve("p(")

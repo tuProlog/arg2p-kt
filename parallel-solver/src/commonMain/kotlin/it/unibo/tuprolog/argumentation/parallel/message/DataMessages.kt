@@ -6,14 +6,6 @@ import it.unibo.tuprolog.core.Term
 import kotlin.js.JsExport
 import kotlin.js.JsName
 
-/** The label of an argument, NOT_FOUND for a statement no argument concludes */
-enum class Label {
-    IN,
-    OUT,
-    UND,
-    NOT_FOUND,
-}
-
 /**
  * An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] (none
  * for a statement no argument concludes), as Prolog text
@@ -32,21 +24,21 @@ data class Response(
  * An argument, by its global identifier ([id], the worker that built it and its identifier there), with the identifiers
  * of the arguments it rests on directly ([supports], from a worker to the catalog only)
  */
-data class SharedArgument(
+internal data class SharedArgument(
     val id: String,
     val argument: Term,
     val supports: List<String> = emptyList(),
 )
 
 /** The premises of the rules of [worker], and their conclusions */
-data class Interest(
+internal data class Interest(
     val worker: Int,
     val premises: List<Term>,
     val conclusions: List<Term>,
 )
 
 /** A direct attack of type [type] of the argument [attacker] on the argument [target], by their global identifiers */
-data class DirectAttack(
+internal data class DirectAttack(
     val type: String,
     val attacker: String,
     val target: String,
@@ -80,37 +72,38 @@ data class DirectAttack(
 sealed interface KbMessage
 
 /** To the catalog: forget the theory; to a worker: forget its rules */
-data object Reset : KbMessage
+internal data object Reset : KbMessage
 
 /** To the catalog: a graph being built lost some of its workers (a site left), build it again with those left */
-data object Rebuild : KbMessage
+internal data object Rebuild : KbMessage
 
 /**
  * To the catalog: the whole theory, as Prolog text, partitioned among the workers (see TheoryPartitioner); to a
  * worker: its part of the theory, replacing the one it had, and the [flags] of the solver, as Prolog facts
  */
-data class Load(
+internal data class Load(
     val theory: String,
     val flags: String = "",
 ) : KbMessage
 
 /** To the catalog: a clause more for the theory, as Prolog text */
-data class Add(
+internal data class Add(
     val elem: String,
 ) : KbMessage
 
 /** To the catalog: the labels of the arguments for the statement [elem], to send to the client [replyTo] */
-data class RequireEvaluation(
+internal data class RequireEvaluation(
     val elem: String,
     val replyTo: String,
 ) : KbMessage
 
-/** To a client: the arguments for the statement it asked about, by label */
+/** To a client: the arguments for the statement it asked about, by label, or the [error] that kept it from an answer */
 @JsExport
 data class EvaluationResponse(
     @JsExport.Ignore @JsName("inArgsList") val inArgs: List<Response>,
     @JsExport.Ignore @JsName("outArgsList") val outArgs: List<Response>,
     @JsExport.Ignore @JsName("undArgsList") val undArgs: List<Response>,
+    val error: String? = null,
 ) : KbMessage {
     /** The arguments labelled in (an array in JavaScript) */
     @JsName("inArgs")
@@ -126,7 +119,7 @@ data class EvaluationResponse(
 }
 
 /** To the catalog: the statements the rules of [worker] use as premises, whose arguments it needs, and conclude */
-data class Subscribe(
+internal data class Subscribe(
     val worker: Int,
     val premises: List<Term>,
     val conclusions: List<Term>,
@@ -136,7 +129,7 @@ data class Subscribe(
  * To a worker: the graph is to be built, [interests] the premises and conclusions of every worker. With no [locality],
  * the arguments of all its rules; otherwise (query mode, directional or connected) those [Explore] asks for alone.
  */
-data class Build(
+internal data class Build(
     val interests: List<Interest>,
     val locality: String? = null,
 ) : KbMessage
@@ -145,33 +138,33 @@ data class Build(
  * To a worker, from the catalog ([from] -1) or another worker: explore [statements] on its rules, as the standard solver
  * explores a query (see the module queryExploration), and send the arguments for them to the sender
  */
-data class Explore(
+internal data class Explore(
     val from: Int,
     val statements: List<Term>,
 ) : KbMessage
 
 /** To a worker: arguments of the worker [from] for the premises of its rules, to build on */
-data class Notify(
+internal data class Notify(
     val from: Int,
     val arguments: List<SharedArgument>,
 ) : KbMessage
 
 /** To the catalog: the arguments [worker] built, with their supports */
-data class Publish(
+internal data class Publish(
     val worker: Int,
     val arguments: List<SharedArgument>,
 ) : KbMessage
 
 /** To the sender of a Build, an Explore, a Notify or a Publish: it is handled, and so is all it led to; [from] is -1 for the catalog */
-data class Ack(
+internal data class Ack(
     val from: Int,
 ) : KbMessage
 
 /** To a worker: the arguments are all built, find the attacks on its own */
-data object Attack : KbMessage
+internal data object Attack : KbMessage
 
 /** To another worker: the statements whose arguments may attack those of [worker] */
-data class Wanted(
+internal data class Wanted(
     val worker: Int,
     val statements: List<Term>,
 ) : KbMessage
@@ -180,19 +173,19 @@ data class Wanted(
  * To another worker: the arguments of [worker] for the statements it wants, as much of them as an attack needs (their
  * top rules, conclusions, bodies and info, not their rules)
  */
-data class Candidates(
+internal data class Candidates(
     val worker: Int,
     val arguments: List<SharedArgument>,
 ) : KbMessage
 
 /** To the catalog: the direct attacks on the arguments of [worker] */
-data class AttacksFound(
+internal data class AttacksFound(
     val worker: Int,
     val attacks: List<DirectAttack>,
 ) : KbMessage
 
 /** The addresses of the nodes of a distributed solver */
-object Address {
+internal object Address {
     /** The catalog, holding the theory, partitioning it and gathering the graph */
     const val CATALOG = "catalog"
 

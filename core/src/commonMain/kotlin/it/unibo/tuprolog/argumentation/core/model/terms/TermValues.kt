@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
+import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.Value
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.core.Term
@@ -10,6 +11,7 @@ import it.unibo.tuprolog.core.operators.OperatorSet
  * The terms of tuProlog as the values of arg2p ([Value]) and as text, written with the operators of arg2p: the
  * passage between the API of arg2p and tuProlog
  */
+@InternalArg2pApi
 object TermValues {
     /** The operators of the theories of arg2p, and the default ones */
     val operators: OperatorSet by lazy { Arg2pSolver.default().operators() }

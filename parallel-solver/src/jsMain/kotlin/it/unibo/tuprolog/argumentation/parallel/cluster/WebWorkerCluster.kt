@@ -66,8 +66,8 @@ class WebWorkerCluster(
 
     /** The arguments for [statement], as Prolog text, by label */
     fun solve(statement: String): Promise<EvaluationResponse> =
-        Promise { resolve, _ ->
-            val evaluate = { site.solve(statement) { resolve(it) } }
+        Promise { resolve, reject ->
+            val evaluate = { site.solve(statement) { runCatching { answered(it) }.fold(resolve, reject) } }
             if (greeted == threads) evaluate() else waiting += evaluate
         }
 

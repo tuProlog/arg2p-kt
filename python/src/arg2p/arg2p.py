@@ -10,7 +10,7 @@ import jpype
 from . import _jvm
 from .flags import Flags
 from .model import Graph, graph_from_jvm
-from .values import Value, from_jvm, text
+from .values import Value, from_jvm
 
 _API = "it.unibo.tuprolog.argumentation"
 
@@ -19,7 +19,7 @@ class Arg2pError(Exception):
     """An evaluation halted by an error: a theory its profile refuses, a goal that cannot be parsed, ..."""
 
 
-def _call(function: Callable[[], Any]) -> Any:
+def call(function: Callable[[], Any]) -> Any:
     """The result of [function], run on a thread of the JVM, an exception of arg2p raised as an Arg2pError."""
 
     def guarded() -> Any:
@@ -40,14 +40,15 @@ class Answer:
     in_statements: list[Value] = field(default_factory=list)
     out_statements: list[Value] = field(default_factory=list)
     und_statements: list[Value] = field(default_factory=list)
+    # the answer of the library of the JVM, for label
+    _answer: Any = field(default=None, compare=False, repr=False)
 
     def label(self, statement: str) -> Optional[str]:
         """The label of [statement], Prolog text: in, out or und, None for a statement the query did not label."""
-        written = text(from_jvm(_jvm.jclass(f"{_API}.Value").parse(statement)))
-        for label, statements in (("in", self.in_statements), ("out", self.out_statements), ("und", self.und_statements)):
-            if written in (text(it) for it in statements):
-                return label
-        return None
+        if self._answer is None:
+            raise ValueError("Not the answer of a solver")
+        label = call(lambda: self._answer.label(statement))
+        return None if label is None else str(label)
 
 
 class Solution:
@@ -142,23 +143,23 @@ class Causality:
 
     def ness(self, cause: str, effect: str) -> Optional[Value]:
         """Whether [cause] is a NESS cause of [effect] (the revised condition): the intervention, None if it is not."""
-        return _optional(_call(lambda: self._causality.ness(cause, effect)))
+        return _optional(call(lambda: self._causality.ness(cause, effect)))
 
     def ness_original(self, cause: str, effect: str) -> Optional[Value]:
         """Whether [cause] is a NESS cause of [effect] as published: the intervention, None if it is not."""
-        return _optional(_call(lambda: self._causality.nessOriginal(cause, effect)))
+        return _optional(call(lambda: self._causality.nessOriginal(cause, effect)))
 
     def ness_intervention(self, intervention: str, effect: str) -> bool:
         """Whether [intervention], a list of statements, meets the revised NESS condition for [effect]."""
-        return bool(_call(lambda: self._causality.nessIntervention(intervention, effect)))
+        return bool(call(lambda: self._causality.nessIntervention(intervention, effect)))
 
     def ness_original_intervention(self, intervention: str, effect: str) -> bool:
         """Whether [intervention], a list of statements, meets the NESS condition for [effect] as published."""
-        return bool(_call(lambda: self._causality.nessOriginalIntervention(intervention, effect)))
+        return bool(call(lambda: self._causality.nessOriginalIntervention(intervention, effect)))
 
     def but_for(self, cause: str, effect: str) -> bool:
         """Whether [cause] is a but-for cause of [effect]."""
-        return bool(_call(lambda: self._causality.butFor(cause, effect)))
+        return bool(call(lambda: self._causality.butFor(cause, effect)))
 
 
 def _optional(value: Any) -> Optional[Value]:
@@ -203,45 +204,46 @@ class Arg2p:
 
     def answer(self, query: str) -> Answer:
         """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
-        answer = _call(lambda: self._arg2p.answer(query))
+        answer = call(lambda: self._arg2p.answer(query))
         return Answer(
             [from_jvm(it) for it in answer.getInStatements()],
             [from_jvm(it) for it in answer.getOutStatements()],
             [from_jvm(it) for it in answer.getUndStatements()],
+            answer,
         )
 
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
-        return _call(lambda: [graph_from_jvm(graph) for graph in self._arg2p.graphs()])
+        return call(lambda: [graph_from_jvm(graph) for graph in self._arg2p.graphs()])
 
     def graph(self) -> Graph:
         """The graph of the last resolution: the one of its last stage."""
-        return _call(lambda: graph_from_jvm(self._arg2p.graph()))
+        return call(lambda: graph_from_jvm(self._arg2p.graph()))
 
     def graph_at(self, branch: int) -> Graph:
         """The graph of the context branch [branch]."""
-        return _call(lambda: graph_from_jvm(self._arg2p.graphAt(branch)))
+        return call(lambda: graph_from_jvm(self._arg2p.graphAt(branch)))
 
     @property
     def active_branch(self) -> int:
         """The context branch of the last stage of the last resolution."""
-        return int(_call(self._arg2p.getActiveBranch))
+        return int(call(self._arg2p.getActiveBranch))
 
     def solve(self, goal: str) -> Solutions:
         """The solutions of [goal], Prolog text, computed one at a time as they are asked for."""
-        return Solutions(_call(lambda: self._arg2p.solve(goal)))
+        return Solutions(call(lambda: self._arg2p.solve(goal)))
 
     def context_facts(self, branch: int, goal: str) -> Solutions:
         """What the context branch [branch] stores matching [goal], Prolog text: the solutions of context_check/2."""
-        return Solutions(_call(lambda: self._arg2p.contextFacts(branch, goal)))
+        return Solutions(call(lambda: self._arg2p.contextFacts(branch, goal)))
 
     def add(self, theory: str) -> None:
         """Adds the clauses of [theory], Prolog text, to the theory."""
-        _call(lambda: self._arg2p.add(theory))
+        call(lambda: self._arg2p.add(theory))
 
     def load(self, theory: str) -> None:
         """Replaces the theory with [theory], Prolog text."""
-        _call(lambda: self._arg2p.load(theory))
+        call(lambda: self._arg2p.load(theory))
 
 
 class Builder:
@@ -266,4 +268,4 @@ class Builder:
         return self
 
     def build(self) -> Arg2p:
-        return Arg2p(_call(self._builder.build))
+        return Arg2p(call(self._builder.build))

@@ -14,11 +14,8 @@ data class Graph(
     @JsExport.Ignore @JsName("argumentsList") val arguments: List<Argument>,
     @JsExport.Ignore @JsName("attacksList") val attacks: List<Attack>,
     @JsExport.Ignore @JsName("supportsList") val supports: List<Support>,
+    @JsExport.Ignore @JsName("labellingsList") val labellings: List<LabelledArgument> = emptyList(),
 ) {
-    @JsExport.Ignore
-    @JsName("labellingsList")
-    var labellings: List<LabelledArgument> = emptyList()
-
     /** The arguments (an array in JavaScript) */
     @JsName("arguments")
     val argumentArray: Array<Argument> get() = arguments.toTypedArray()
@@ -62,8 +59,6 @@ data class Graph(
             labellings: List<LabelledArgument>,
             attacks: List<Attack>,
             supports: List<Support>,
-        ) = Graph(labellings.map { it.argument }, attacks, supports).also {
-            it.labellings = labellings
-        }
+        ) = Graph(labellings.map { it.argument }, attacks, supports, labellings)
     }
 }

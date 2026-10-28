@@ -2,7 +2,8 @@ package it.unibo.tuprolog.argumentation.parallel.node
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.Attack
@@ -19,15 +20,9 @@ import it.unibo.tuprolog.argumentation.parallel.message.Reset
 import it.unibo.tuprolog.argumentation.parallel.message.SharedArgument
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.message.Wanted
-import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.EmptyList
 import it.unibo.tuprolog.core.Integer
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.unify.Unificator
@@ -42,7 +37,7 @@ import it.unibo.tuprolog.core.List as PlList
  * workers that need its conclusion, and publishes it to the catalog; then it finds the direct attacks on the arguments
  * of its rules (see [Catalog] and [it.unibo.tuprolog.argumentation.parallel.message.KbMessage]).
  */
-class Worker(
+internal class Worker(
     private val address: String,
     private val network: Network,
 ) : Node {
@@ -97,7 +92,7 @@ class Worker(
     private val conflictsOf = mutableMapOf<Int, List<Term>>()
     private var candidatesFrom = 0
 
-    private val premises = goal("parser::classicRule(_, Body, _), member(P, Body), P \\= ~(_), P \\= prolog(_)")
+    private val premises = goal("parser::classicRule(_, Body, _), member(P, Body), parser::argued(P)")
     private val heads = goal("(parser::classicRule(_, _, [C]) ; parser::classicRule(_, [C]))")
     private val explorations = goal("queryExploration::exploreAll(Q)")
     private val resumption = goal("queryExploration::resume(S)")
@@ -119,15 +114,15 @@ class Worker(
             Reset -> load("", flags.orEmpty())
             is Load -> {
                 load(message.theory, message.flags)
-                val needed = solver.solutions(premises.with()).map { it.getValue("P") }.distinctBy { it.toString() }
-                val concluded = solver.solutions(heads.with()).map { it.getValue("C") }.distinctBy { it.toString() }
+                val needed = premises.solutions(solver).map { it.getValue("P") }.distinctBy { it.toString() }
+                val concluded = heads.solutions(solver).map { it.getValue("C") }.distinctBy { it.toString() }
                 network.send(Address.CATALOG, Subscribe(index, needed, concluded))
             }
             is Build -> {
                 engaged(Address.CATALOG) {
                     workers = message.interests.size
                     locality = message.locality
-                    metaConflicts = solve("setting(metaConflicts)").isYes
+                    metaConflicts = solver.holds("setting(metaConflicts)")
                     message.interests.filter { it.worker != index }.forEach {
                         conclusionsOf[it.worker] = it.conclusions
                         // on the whole graph, the others need the arguments for their premises; in query mode, those
@@ -135,7 +130,7 @@ class Worker(
                         if (locality == null) interests[it.worker] = it.premises
                     }
                     if (locality == null) {
-                        solve("argumentBuilder::buildArguments")
+                        solver.solveOnce("argumentBuilder::buildArguments")
                         share()
                     }
                 }
@@ -150,7 +145,7 @@ class Worker(
                         if (message.from >= 0) {
                             interests[message.from] = interests[message.from].orEmpty() + message.statements
                             // the arguments for them built before: those built from now on go with the others
-                            val built = own.filter { id -> message.statements.any { unificator.match(it, claim(terms.getValue(id))) } }
+                            val built = own.filter { id -> message.statements.any { unificator.match(it, claimOf(terms.getValue(id))) } }
                             if (built.isNotEmpty()) {
                                 send(
                                     Address.worker(message.from),
@@ -233,7 +228,7 @@ class Worker(
         candidatesFrom = 0
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(theory, solver.operators))
-        solve("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
     }
 
     // A message from sender handled: the first one engages the worker (sender acknowledged once all the worker sent
@@ -270,7 +265,7 @@ class Worker(
     // again from scratch
     private fun resume(claims: List<Term>) {
         if (metaConflicts) {
-            solve("queryExploration::restart")
+            solver.solveOnce("queryExploration::restart")
             solver.solve(explorations.with("Q" to PlList.of(queries))).first()
         } else {
             solver.solve(resumption.with("S" to PlList.of(claims))).first()
@@ -282,14 +277,14 @@ class Worker(
     // arguments of its rules built shared, and the others asked to explore the statements explored that their rules
     // conclude
     private fun explored() {
-        if (locality == "connected") solve("queryExploration::expand(connected)")
+        if (locality == "connected") solver.solveOnce("queryExploration::expand(connected)")
         share()
         // the statements explored since the last time (by their text), with the premises of the rules for them (asked
         // all at once, so that the others build their arguments side by side: the exploration would ask for each once
         // the one before it is supported), and of those the ones not asked yet
         val needed =
-            solver
-                .solutions(exploredStatements.with())
+            exploredStatements
+                .solutions(solver)
                 .map { it.getValue("S") }
                 .filter { handled.add(it.toString()) }
                 .filter { statement -> asked.none { covers(it, statement) } }
@@ -300,20 +295,11 @@ class Worker(
         }
     }
 
-    // Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it
-    private fun covers(
-        general: Term,
-        specific: Term,
-    ): Boolean {
-        val fixed = specific.variables.distinct().mapIndexed { i, variable -> variable to Atom.of("fixed variable $i") }
-        return unificator.match(general, specific.apply(Substitution.of(fixed.toMap())))
-    }
-
     // The arguments of the others kept in the graph, their conclusions given
     private fun keep(arguments: List<SharedArgument>): List<Term> =
         arguments.flatMap { argument ->
             val term = argument.argument
-            solver.solutions(kept.with("A" to term)).map {
+            kept.solutions(solver, "A" to term).map {
                 val id = it.integer("Id")
                 received += id
                 terms[id] = term
@@ -325,7 +311,7 @@ class Worker(
     // The arguments of its rules built since the last time, published with their supports, and sent to the workers
     // whose rules use their conclusions
     private fun share() {
-        val new = solver.solutions(built.with("L" to Integer.of(lastId))).sortedBy { it.integer("Id") }
+        val new = built.solutions(solver, "L" to Integer.of(lastId)).sortedBy { it.integer("Id") }
         lastId = maxOf(lastId, new.maxOfOrNull { it.integer("Id") } ?: lastId)
         val mine =
             new.filter { it.integer("Id") !in received }.map {
@@ -342,7 +328,7 @@ class Worker(
         if (mine.isEmpty()) return
         send(Address.CATALOG, Publish(index, mine.map { it.second }))
         interests.forEach { (worker, patterns) ->
-            val wanted = mine.filter { (id, _) -> patterns.any { unificator.match(it, claim(terms.getValue(id))) } }
+            val wanted = mine.filter { (id, _) -> patterns.any { unificator.match(it, claimOf(terms.getValue(id))) } }
             if (wanted.isNotEmpty()) {
                 send(
                     Address.worker(worker),
@@ -360,7 +346,7 @@ class Worker(
     // The statements whose arguments may attack the arguments of its rules, found once for each (see sendAttacks)
     private fun wanted(): List<Term> {
         own.filter { it !in conflictsOf }.forEach { id ->
-            conflictsOf[id] = solver.solutions(conflicts.with("X" to terms.getValue(id))).map { it.getValue("S") }
+            conflictsOf[id] = conflicts.solutions(solver, "X" to terms.getValue(id)).map { it.getValue("S") }
         }
         return conflictsOf.values.flatten().distinctBy { it.toString() }
     }
@@ -371,7 +357,7 @@ class Worker(
         if (!attacking || candidatesSent || wantedBy.size < workers - 1) return
         candidatesSent = true
         wantedBy.forEach { (worker, patterns) ->
-            val matching = own.filter { id -> patterns.any { unificator.match(it, claim(terms.getValue(id))) } }
+            val matching = own.filter { id -> patterns.any { unificator.match(it, claimOf(terms.getValue(id))) } }
             network.send(
                 Address.worker(worker),
                 Candidates(index, matching.map { SharedArgument(globalIds.getValue(it), stub(terms.getValue(it))) }),
@@ -393,10 +379,10 @@ class Worker(
                     val target = terms.getValue(id)
                     val statements = conflictsOf.getValue(id)
                     attackers
-                        .filter { (_, attacker) -> statements.any { unificator.match(it, claim(attacker)) } }
+                        .filter { (_, attacker) -> statements.any { unificator.match(it, claimOf(attacker)) } }
                         .flatMap { (attackerId, attacker) ->
-                            solver
-                                .solutions(attack.with("B" to attacker, "X" to target))
+                            attack
+                                .solutions(solver, "B" to attacker, "X" to target)
                                 .map { DirectAttack(it.getValue("T").toString(), attackerId, globalIds.getValue(id)) }
                         }
                 }.distinct()
@@ -410,32 +396,26 @@ class Worker(
         candidatesFrom = 0
     }
 
-    // An argument, [Rules, TopRule, [Conclusion], Body, Info]: its conclusion, and itself without its rules
-    private fun claim(argument: Term) =
-        argument
-            .castToList()
-            .toList()[2]
-            .castToList()
-            .toList()
-            .first()
-
-    private fun stub(argument: Term) = PlList.of(listOf(EmptyList()) + argument.castToList().toList().drop(1))
+    // An argument as much of it as an attack needs: itself without its rules
+    private fun stub(argument: Term) =
+        ArgumentTerm.parts(argument)!!.let {
+            ArgumentTerm.of(
+                EmptyList(),
+                it.topRule,
+                it.conclusion,
+                it.body,
+                ArgumentTerm.info(it.lastDefeasibleRules, it.defeasibleRules, it.defeasiblePremises),
+            )
+        }
 
     private fun goal(text: String) = Goal(text, solver.operators)
 
     // A solver of arg2p with [flags], as Prolog facts (the defaults with no graph extension, given none)
     private fun solverOf(flags: String) =
-        Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-            otherLibraries =
-                Arg2pSolver
-                    .default(listOf((if (flags.isEmpty()) Flags.defaults().graphExtensions() else Flags.parse(flags)).library()))
-                    .to2pLibraries(),
-            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
+        Arg2pSolverFactory.solverOf(
+            Arg2pSolver.default(listOf((if (flags.isEmpty()) Flags.defaults().graphExtensions() else Flags.parse(flags)).library())),
+            "",
         )
-
-    private fun parse(term: String) = Struct.parse(term, solver.operators)
-
-    private fun solve(goal: String) = solver.solve(Struct.parse(goal, solver.operators)).first()
 
     private fun Map<String, Term>.integer(name: String) = (getValue(name) as Integer).intValue.toInt()
 }

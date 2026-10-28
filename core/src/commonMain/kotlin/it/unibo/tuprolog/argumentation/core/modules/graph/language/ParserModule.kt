@@ -188,6 +188,11 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %! prolog(?Premise, ?Goal)
         %  Premise, as [prolog(Goal)], is a Prolog check.
         prolog([prolog(Term)], Term).
+        %! argued(+Premise)
+        %  Premise, of a rule, is supported by an argument: neither a Prolog check nor a contrary.
+        argued(Premise) :-
+            \+ prolog([Premise], _),
+            \+ contrary([Premise], _).
         %! contrary(?Premise, ?Statement)
         %  Premise, as [~(Statement)], is a contrary premise.
         contrary([~(Term)], Term).

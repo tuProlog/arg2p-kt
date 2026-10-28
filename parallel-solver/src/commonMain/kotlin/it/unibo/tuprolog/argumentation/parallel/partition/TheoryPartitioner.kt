@@ -2,6 +2,9 @@ package it.unibo.tuprolog.argumentation.parallel.partition
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.parallel.node.holds
+import it.unibo.tuprolog.argumentation.parallel.node.solutions
+import it.unibo.tuprolog.argumentation.parallel.node.solveOnce
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.EmptyList
@@ -9,7 +12,6 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -78,7 +80,8 @@ object TheoryPartitioner {
         )
     }
 
-    // A rule or a premise of the theory, as converted: its conclusion, its premises (none for a premise) and its text
+    // A rule or a premise of the theory, as converted: its conclusion, its premises supported by arguments (none for a
+    // premise) and its text
     private class Rule(
         val id: Term,
         val premises: List<Term>,
@@ -89,13 +92,13 @@ object TheoryPartitioner {
     private fun rules(solver: Solver): List<Rule> {
         val strictness = "(parser::checkStrict(Id) -> S = strict ; S = defeasible)"
         val rules =
-            solver.solutions("parser::rule(Id, P, [C]), $strictness").map {
+            solver.solutions("parser::rule(Id, P, [C]), findall(A, (member(A, P), parser::argued(A)), Argued), $strictness").map {
                 val premises = it.getValue("P").castToList().toList()
                 val body = if (premises.isEmpty()) EmptyList() else Tuple.wrapIfNeeded(*premises.toTypedArray())
                 val arrow = if (it.getValue("S") == Atom.of("strict")) "->" else "=>"
                 // Id : Body => Conclusion, that is =>(:(Id, Body), Conclusion)
                 val rule = Struct.of(arrow, Struct.of(":", it.getValue("Id"), body), it.getValue("C"))
-                Rule(it.getValue("Id"), premises, it.getValue("C"), rule.toString())
+                Rule(it.getValue("Id"), it.getValue("Argued").castToList().toList(), it.getValue("C"), rule.toString())
             }
         val premises =
             solver.solutions("parser::premise(Id, [C]), $strictness").map {
@@ -117,7 +120,6 @@ object TheoryPartitioner {
             val rule = rules[index]
             val premises = rule.premises + (if (metaRules) listOf(Struct.of("applicable", rule.id)) else emptyList())
             premises
-                .filterNot { isCheck(it) }
                 .flatMap { premise ->
                     val key = key(premise)
                     val candidates = if (key == null) rules.indices.toList() else byKey[key].orEmpty() + byKey[null].orEmpty()
@@ -256,9 +258,6 @@ object TheoryPartitioner {
             else -> term.toString()
         }
 
-    // A premise that no argument supports: a contrary (~) or a Prolog check
-    private fun isCheck(premise: Term) = premise is Struct && premise.arity == 1 && (premise.functor == "~" || premise.functor == "prolog")
-
     // A rule or a premise written in the language of arg2p (Id : Body => Conclusion parses as =>(:(Id, Body),
     // Conclusion)): it is converted, the rules of the partitions replace it
     private fun isRule(clause: Clause): Boolean {
@@ -271,15 +270,4 @@ object TheoryPartitioner {
             else -> false
         }
     }
-
-    private fun Solver.solveOnce(goal: String) = solve(Struct.parse(goal, operators)).first()
-
-    private fun Solver.holds(goal: String) = solveOnce(goal).isYes
-
-    // The bindings of the variables of goal in each of its solutions
-    private fun Solver.solutions(goal: String): List<Map<String, Term>> =
-        solve(Struct.parse(goal, operators))
-            .filter { it.isYes }
-            .map { solution -> solution.substitution.entries.associate { (variable, value) -> variable.name to value } }
-            .toList()
 }

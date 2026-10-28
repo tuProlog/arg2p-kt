@@ -32,8 +32,7 @@ sealed class Value {
     override fun toString(): String = TermValues.format(toTerm())
 
     /** The term of tuProlog of the value */
-    @JsExport.Ignore
-    abstract fun toTerm(): LogicTerm
+    internal abstract fun toTerm(): LogicTerm
 
     /** An atom, as `a` or `'Hello world'` */
     data class Atom(

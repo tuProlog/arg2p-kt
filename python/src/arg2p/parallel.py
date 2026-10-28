@@ -4,11 +4,11 @@ found on the local network."""
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from . import _jvm
+from .arg2p import call
 from .flags import Flags
 
 _CLUSTER = "it.unibo.tuprolog.argumentation.parallel.cluster"
@@ -41,6 +41,15 @@ def _response(response: Any) -> EvaluationResponse:
     return EvaluationResponse(responses(response.getInArgs()), responses(response.getOutArgs()), responses(response.getUndArgs()))
 
 
+def _arguments(*given: Any, defaults: tuple[Any, ...]) -> list[Any]:
+    """
+    The arguments of a constructor of the JVM, up to the last one given: those left out after it take its defaults,
+    those left out before it [defaults] (as the constructor has them)
+    """
+    last = max((i for i, it in enumerate(given) if it is not None), default=-1)
+    return [given[i] if given[i] is not None else defaults[i] for i in range(last + 1)]
+
+
 def _parts(parts: Optional[int]) -> Any:
     return None if parts is None else _jvm.jclass("java.lang.Integer").valueOf(parts)
 
@@ -53,24 +62,24 @@ class LocalCluster:
     """
 
     def __init__(self, parts: Optional[int] = None, flags: Optional[Flags] = None) -> None:
-        scheduler = _jvm.jclass("it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler")()
-        self._cluster = _jvm.jclass(f"{_CLUSTER}.LocalCluster")(_parts(parts), (flags or Flags.defaults()).jvm(), scheduler, True)
+        arguments = _arguments(_parts(parts), flags and flags.jvm(), defaults=(None, None))
+        self._cluster = call(lambda: _jvm.jclass(f"{_CLUSTER}.LocalCluster")(*arguments))
 
     def load(self, theory: str) -> None:
         """Replaces the theory with [theory], as Prolog text."""
-        _jvm.run(lambda: self._cluster.load(theory))
+        call(lambda: self._cluster.load(theory))
 
     def add(self, clause: str) -> None:
         """Adds [clause], as Prolog text, to the theory."""
-        _jvm.run(lambda: self._cluster.add(clause))
+        call(lambda: self._cluster.add(clause))
 
     def reset(self) -> None:
         """Forgets the theory."""
-        _jvm.run(self._cluster.reset)
+        call(self._cluster.reset)
 
     def solve(self, statement: str) -> EvaluationResponse:
-        """The arguments for [statement], as Prolog text, by label."""
-        return _jvm.run(lambda: _response(self._cluster.solve(statement)))
+        """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
+        return call(lambda: _response(self._cluster.solve(statement)))
 
 
 class ThreadedCluster:
@@ -80,7 +89,7 @@ class ThreadedCluster:
     if given, as many as the workers of the cluster and of the sites it is federated with otherwise; the graph is
     labelled as the standard solver does with [flags]. With query mode (the default) the graph is built on the
     arguments the statements evaluated depend on, as the standard solver builds it. [lends] tells whether the cluster
-    lends its workers to the others.
+    lends its workers to the others (it does by default).
     """
 
     def __init__(
@@ -88,12 +97,19 @@ class ThreadedCluster:
         threads: Optional[int] = None,
         parts: Optional[int] = None,
         flags: Optional[Flags] = None,
-        textual: bool = False,
-        lends: bool = True,
+        lends: Optional[bool] = None,
     ) -> None:
-        self._cluster = _jvm.jclass(f"{_CLUSTER}.ThreadedCluster")(
-            threads or os.cpu_count() or 1, _parts(parts), (flags or Flags.defaults()).jvm(), textual, lends
+        cluster = _jvm.jclass(f"{_CLUSTER}.ThreadedCluster")
+        # the constructor takes (threads, parts, flags, textual, lends): textual is for the tests of the JVM alone
+        arguments = _arguments(
+            threads,
+            _parts(parts),
+            flags and flags.jvm(),
+            None,
+            lends,
+            defaults=(cluster.getProcessors(), None, Flags.defaults().jvm(), False, None),
         )
+        self._cluster = call(lambda: cluster(*arguments))
 
     @property
     def id(self) -> str:
@@ -107,37 +123,35 @@ class ThreadedCluster:
 
     def listen(self, port: int = 0, host: str = "0.0.0.0") -> int:
         """Accepts the links of other sites over WebSockets, on [port] of [host] (an ephemeral port for 0): the port."""
-        return int(self._cluster.listen(port, host))
+        return int(call(lambda: self._cluster.listen(port, host)))
 
-    def discover(self, beacon_port: Optional[int] = None) -> None:
+    def discover(self) -> None:
         """Federates the cluster with the clusters of the local network that discover the others as well."""
-        if beacon_port is None:
-            beacon_port = int(_jvm.jclass("it.unibo.tuprolog.argumentation.parallel.federation.Beacons").PORT)
-        self._cluster.discover(beacon_port)
+        call(self._cluster.discover)
 
     def connect(self, uri: str) -> None:
         """Federates the cluster with the site listening at [uri] (ws://host:port)."""
-        self._cluster.connect(uri)
+        call(lambda: self._cluster.connect(uri))
 
     def load(self, theory: str) -> None:
         """Replaces the theory with [theory], as Prolog text."""
-        self._cluster.load(theory)
+        call(lambda: self._cluster.load(theory))
 
     def add(self, clause: str) -> None:
         """Adds [clause], as Prolog text, to the theory."""
-        self._cluster.add(clause)
+        call(lambda: self._cluster.add(clause))
 
     def reset(self) -> None:
         """Forgets the theory."""
-        self._cluster.reset()
+        call(self._cluster.reset)
 
     def solve(self, statement: str) -> EvaluationResponse:
-        """The arguments for [statement], as Prolog text, by label."""
-        return _response(self._cluster.solve(statement))
+        """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
+        return call(lambda: _response(self._cluster.solve(statement)))
 
     def close(self) -> None:
         """Closes the links to the other sites, and stops the threads."""
-        self._cluster.close()
+        call(self._cluster.close)
 
     def __enter__(self) -> ThreadedCluster:
         return self
