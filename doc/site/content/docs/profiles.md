@@ -27,6 +27,21 @@ turns off a switch it turns on.
 | `abstract` | Dung frameworks | arguments and attacks |
 | `free` | nothing in particular | none: every flag as the solver and the theory state it |
 
+### What a profile checks
+
+A profile refuses a theory written outside its framework, with an error telling why, rather than reading it some
+other way. It checks what the table below says, and nothing more: a theory that passes may still not mean what its
+author meant in the framework.
+
+| Profile | Refuses | Does not check |
+| --- | --- | --- |
+| `aspic_plus`, `aspic` | a contrary targeting an axiom or the conclusion of a strict rule | that the strict closure of the axioms is consistent: `r1 : [] -> d.` and `r2 : [] -> -d.` label both `d` and `-d` in |
+| `aspic_defeasible` | strict rules, axioms, premises | |
+| `meta` | | that the rules are argued applicable and the conflicts argued (see below): a theory of ASPIC<sup>+</sup> labels nothing in it |
+| `aba`, `aba_plus` | defeasible rules, ordinary premises (`f :=> a.`), a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition | that negation means nothing in ABA: `d` and `-d` conflict only if a contrary says so |
+| `abstract` | rules, premises and axioms (`r : B => H`, `f :=> a.`, `f :-> a.`, `assumption/1`, `contrary/2`) | |
+| `free` | | anything |
+
 ### ASPIC<sup>+</sup>
 
 `aspic_plus` is the framework of Modgil and Prakken: strict and defeasible rules, axioms and ordinary premises,
@@ -38,6 +53,26 @@ and transposition closes the strict rules over them.
 
 `aspic_defeasible` takes defeasible rules alone, facts written as rules with no premise (`r : [] => a.`). It refuses
 strict rules, axioms and premises.
+
+### Meta-argumentation
+
+`meta` reads ASPIC<sup>+</sup> with its machinery argued (see [Meta-argumentation]({{% ref "/docs/modules/meta" %}})):
+a rule fires only when an argument concludes `applicable(Rule)`, two statements conflict only when an argument
+concludes `conflict(A, B)` (even `a` and `-a`), and the preferences are the `sup/2` arguments conclude. A theory
+written for `aspic_plus` is not one for `meta`: its rules never fire, and its conflicts are none.
+
+```prolog
+graphBuildMode(meta).
+
+f0 :=> applicable(r1).    % r1 fires
+r1 : a => b.
+f1 :=> a.
+f2 :=> -b.
+f3 :=> conflict(-b, b).   % -b attacks b: b is out
+```
+
+Without `f0` and `f3`, `b` is never concluded, and nothing would make `-b` attack it. A rule concluding
+`applicable/1` or `conflict/2` needs an argument for its own applicability too.
 
 ### ABA
 
@@ -95,7 +130,9 @@ A future labelling over attacks between sets of assumptions could handle these t
 ### Abstract frameworks
 
 `abstract` reads a Dung framework: `a.` (or `arg(a)`) an argument, `a -> b.` (or `att(a, b)`) an attack, and
-`a <-> b.` a mutual one. Prolog clauses can derive them:
+`a <-> b.` a mutual one. A theory with rules, premises or axioms (`r : B => H`, `f :=> a.`) is refused: an abstract
+framework has none, and `r1 : [] -> a.` would otherwise read as an attack. Prolog clauses can derive both, the
+arguments (`arg(X) :- thing(X).`) and the attacks:
 
 ```prolog
 graphBuildMode(abstract).

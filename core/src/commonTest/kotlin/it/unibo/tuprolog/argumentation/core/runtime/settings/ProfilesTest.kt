@@ -151,4 +151,25 @@ class ProfilesTest {
         val notFlat = labelling("$aba\nr3 : x -> a.\n")
         assertTrue(notFlat.isHalt, notFlat.toString())
     }
+
+    @Test
+    fun anAbaTheoryHasNoOrdinaryPremise() {
+        // its premises are its assumptions: an ordinary premise is refused, an axiom (a strict fact) is not
+        val premise = labelling("graphBuildMode(aba).\nf1 :=> d.\nf2 :=> -d.\n")
+        assertTrue(premise.isHalt, premise.toString())
+        assertTrue(premise.exception.toString().contains("ordinary premises"), premise.exception.toString())
+        assertEquals("[[[d]], [], []]", labels("graphBuildMode(aba).\nf1 :-> d.\n"))
+    }
+
+    @Test
+    fun anAbstractTheoryHasNoRule() {
+        // rules, premises and axioms of the structured notations are refused, not dropped nor read as attacks
+        for (theory in listOf("f1 :=> d.\n", "r1 : [] => d.\n", "r1 : [] -> d.\nr2 : [] -> -d.\n", "f1 :-> d.\n", "assumption(a).\n")) {
+            val refused = labelling("graphBuildMode(abstract).\n$theory")
+            assertTrue(refused.isHalt, "$theory: $refused")
+        }
+        // the notation of the profile, its Prolog clauses and its arguments of any shape are not
+        assertEquals("[[[f(x)]], [[g(y)]], []]", labels("graphBuildMode(abstract).\nf(x) -> g(y).\n"))
+        assertEquals("[[[b], [a]], [], []]", labels("graphBuildMode(abstract).\nthing(a).\nthing(b).\narg(X) :- thing(X).\n"))
+    }
 }
