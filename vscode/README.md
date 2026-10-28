@@ -19,7 +19,7 @@ f2 :=> -flies(tweety).
 
 ## The solver
 
-**Arg2P: Open the Solver** (the ▷ of the editor of a theory) opens its solver beside it:
+**Arg2P: Open the Solver** (the ▷ of the editor of a theory) opens its solver under it (or beside it: `arg2p.solver.position`):
 
 - the query, solved with **Run** (or Enter), one solution at a time (**Next**), **Stop** to stop it;
 - the argument graph of a solution, the stages of its computation, and the popup of each argument;
@@ -44,3 +44,4 @@ elsewhere it runs on the Java the settings name (`arg2p.java.path`), or that of 
 | `arg2p.java.path` | The `java` running the language server |
 | `arg2p.java.options` | The options of the JVM running it (`-Xss512m`) |
 | `arg2p.flags` | The flags a theory is first solved with |
+| `arg2p.solver.position` | Where the solver opens: under the theory (`below`) or beside it |

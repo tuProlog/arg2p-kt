@@ -28,12 +28,20 @@ interface Saved {
 export class SolverPanel {
     private static readonly panels = new Map<string, SolverPanel>();
 
-    /** The panel of [document], opened beside it (or shown, if it is open already) */
-    static show(context: vscode.ExtensionContext, server: () => Server, document: vscode.TextDocument): void {
+    /**
+     * The panel of [document], opened under it (in a group of editors of its own) or beside it, as arg2p.solver.position
+     * says; shown, if it is open already. The theory keeps the focus, to go on editing it.
+     */
+    static async show(context: vscode.ExtensionContext, server: () => Server, editor: vscode.TextEditor): Promise<void> {
+        const document = editor.document;
         const key = document.uri.toString();
         const open = SolverPanel.panels.get(key);
-        if (open !== undefined) return open.panel.reveal(vscode.ViewColumn.Beside);
-        SolverPanel.panels.set(key, new SolverPanel(context, server, document));
+        if (open !== undefined) return open.panel.reveal(undefined, true);
+        const below = vscode.workspace.getConfiguration('arg2p').get<string>('solver.position', 'below') === 'below';
+        // a group under the one of the theory, made active: the panel opens there
+        if (below) await vscode.commands.executeCommand('workbench.action.newGroupBelow');
+        SolverPanel.panels.set(key, new SolverPanel(context, server, document, below ? vscode.ViewColumn.Active : vscode.ViewColumn.Beside));
+        if (below) await vscode.window.showTextDocument(document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
     /** What the run [params.id] of the server prints, for the panel that started it */
@@ -51,9 +59,10 @@ export class SolverPanel {
         private readonly context: vscode.ExtensionContext,
         server: () => Server,
         private readonly document: vscode.TextDocument,
+        column: vscode.ViewColumn,
     ) {
         const media = vscode.Uri.joinPath(context.extensionUri, 'dist');
-        this.panel = vscode.window.createWebviewPanel('arg2p.solver', `Solve ${baseName(document.uri)}`, vscode.ViewColumn.Beside, {
+        this.panel = vscode.window.createWebviewPanel('arg2p.solver', `Solve ${baseName(document.uri)}`, { viewColumn: column, preserveFocus: true }, {
             enableScripts: true,
             retainContextWhenHidden: true,
             localResourceRoots: [media],

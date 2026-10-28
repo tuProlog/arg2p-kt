@@ -103,6 +103,19 @@
           "type": "string",
           "default": "argumentLabellingMode(grounded).\nstatementLabellingMode(statement).\nqueryMode.\n",
           "markdownDescription": "The flags a theory is first solved with, as Prolog facts (the solver keeps those of each theory afterwards)."
+        },
+        "arg2p.solver.position": {
+          "type": "string",
+          "enum": [
+            "below",
+            "beside"
+          ],
+          "enumDescriptions": [
+            "Under the theory, in a group of editors of its own",
+            "Beside the theory, on its right"
+          ],
+          "default": "below",
+          "markdownDescription": "Where **Arg2P: Open the Solver** opens the solver of a theory."
         }
       }
     }

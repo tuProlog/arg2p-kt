@@ -11,12 +11,12 @@ let client: LanguageClient | null = null;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     context.subscriptions.push(
         vscode.commands.registerCommand('arg2p.solve', () => {
-            const document = vscode.window.activeTextEditor?.document;
-            if (document === undefined || document.languageId !== 'arg2p') {
+            const editor = vscode.window.activeTextEditor;
+            if (editor === undefined || editor.document.languageId !== 'arg2p') {
                 void vscode.window.showInformationMessage('Open a theory of Arg2P (a .arg2p file) to solve it.');
                 return;
             }
-            SolverPanel.show(context, server, document);
+            void SolverPanel.show(context, server, editor);
         }),
         vscode.commands.registerCommand('arg2p.restartServer', async () => {
             await client?.restart();
