@@ -43,6 +43,15 @@ class TheoryPartitionerTest {
             groups("r4 : c => d.\nr2 : a => b.\nr1 :=> a.\nr3 : b => c.", parts = 2),
         )
 
+    // A group joining parts that support nothing of one another (g on the chains of b and of d) is split there, each
+    // part whole: they are explored side by side
+    @Test
+    fun theGroupsAreSplitWhereTheyJoinIndependentParts() =
+        assertEquals(
+            listOf(listOf("a1", "a2"), listOf("c1", "c2", "g")),
+            groups("a1 :=> a.\na2 : a => b.\nc1 :=> c.\nc2 : c => d.\ng : b, d => e.", parts = 2),
+        )
+
     @Test
     fun whatIsNotARuleIsShared() {
         val partitioning =

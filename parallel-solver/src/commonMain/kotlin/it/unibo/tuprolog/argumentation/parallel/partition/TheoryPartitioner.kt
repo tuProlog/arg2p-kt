@@ -52,8 +52,10 @@ object TheoryPartitioner {
 
     /**
      * The partitions of [theory], converted with [flags] and the flags of the theory: the groups of rules that
-     * support one another, or, given [parts], that many partitions of about the same number of rules (the groups
-     * packed together, or the largest ones split in halves).
+     * support one another, or, given [parts], that many partitions of about the same number of rules. A group larger
+     * than its share is first split where it joins parts that support nothing of one another (see [joined]), so that
+     * they are explored side by side; the groups are then packed together, and the largest partitions split in halves
+     * if there are still fewer than [parts].
      */
     fun partition(
         theory: String,
@@ -65,7 +67,10 @@ object TheoryPartitioner {
         if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory), converted = false)
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
         val rules = rules(solver)
-        val groups = groups(rules, solver.holds("setting(metaRules)")).let { if (parts == null) it else split(pack(it, parts), parts) }
+        val supporters = supporters(rules, solver.holds("setting(metaRules)"))
+        val groups =
+            components(rules.indices.toList(), supporters)
+                .let { if (parts == null) it else split(pack(balanced(it, supporters, rules.size, parts), parts), parts) }
         val shared = clauses.filterNot { isRule(it) || (it.isFact && it.head.let { h -> h is Atom && h.value in conversionFlags }) }
         return Partitioning(
             if (shared.isEmpty()) "" else Theory.of(shared).toString(asPrologText = true),
@@ -100,52 +105,103 @@ object TheoryPartitioner {
         return rules + premises
     }
 
-    // The groups of rules supporting one another (indexes in rules), by the union of those whose conclusion unifies
-    // with a premise of another; with metaRules, a rule has applicable(Id) for premise as well
-    private fun groups(
+    // The rules supporting each rule (indexes in rules): those whose conclusion unifies with one of its premises; with
+    // metaRules, a rule has applicable(Id) for premise as well
+    private fun supporters(
         rules: List<Rule>,
         metaRules: Boolean,
+    ): Array<Set<Int>> {
+        val byKey = rules.indices.groupBy { key(rules[it].conclusion) }
+        val unificator = Unificator.default
+        return Array(rules.size) { index ->
+            val rule = rules[index]
+            val premises = rule.premises + (if (metaRules) listOf(Struct.of("applicable", rule.id)) else emptyList())
+            premises
+                .filterNot { isCheck(it) }
+                .flatMap { premise ->
+                    val key = key(premise)
+                    val candidates = if (key == null) rules.indices.toList() else byKey[key].orEmpty() + byKey[null].orEmpty()
+                    candidates.filter { unificator.match(rules[it].conclusion, premise) }
+                }.toSet()
+        }
+    }
+
+    // The groups of [rules] (indexes) supporting one another, as [supporters] relates them, each in the order of its
+    // supports
+    private fun components(
+        rules: List<Int>,
+        supporters: Array<Set<Int>>,
     ): List<List<Int>> {
-        val parent = IntArray(rules.size) { it }
+        val members = rules.toSet()
+        val parent = rules.associateWith { it }.toMutableMap()
 
         fun find(i: Int): Int {
             var root = i
-            while (parent[root] != root) root = parent[root]
+            while (parent.getValue(root) != root) root = parent.getValue(root)
             var node = i
-            while (parent[node] != root) {
-                val next = parent[node]
+            while (parent.getValue(node) != root) {
+                val next = parent.getValue(node)
                 parent[node] = root
                 node = next
             }
             return root
         }
-        val byKey = rules.indices.groupBy { key(rules[it].conclusion) }
-        val unificator = Unificator.default
-        val supporters = Array(rules.size) { mutableSetOf<Int>() }
-        rules.forEachIndexed { index, rule ->
-            val premises = rule.premises + (if (metaRules) listOf(Struct.of("applicable", rule.id)) else emptyList())
-            premises.filterNot { isCheck(it) }.forEach { premise ->
-                val key = key(premise)
-                val candidates = if (key == null) rules.indices.toList() else byKey[key].orEmpty() + byKey[null].orEmpty()
-                candidates
-                    .filter { unificator.match(rules[it].conclusion, premise) }
-                    .forEach {
-                        supporters[index] += it
-                        parent[find(it)] = find(index)
-                    }
-            }
-        }
-        return rules.indices
+        rules.forEach { rule -> supporters[rule].filter { it in members }.forEach { parent[find(it)] = find(rule) } }
+        return rules
             .groupBy { find(it) }
             .values
             .map { ordered(it, supporters) }
+    }
+
+    // The groups larger than their share of the [total] rules for [parts] partitions split where they join parts that
+    // support nothing of one another (see [joined]), the largest first, as long as they can be
+    private fun balanced(
+        groups: List<List<Int>>,
+        supporters: Array<Set<Int>>,
+        total: Int,
+        parts: Int,
+    ): List<List<Int>> {
+        val share = (total + parts - 1) / parts
+        val result = groups.toMutableList()
+        val whole = mutableSetOf<List<Int>>()
+        while (true) {
+            val largest = result.filter { it.size > share && it !in whole }.maxByOrNull { it.size } ?: return result
+            val pieces = joined(largest, supporters)
+            if (pieces.size < 2) {
+                whole += largest
+            } else {
+                result.remove(largest)
+                result += pieces
+            }
+        }
+    }
+
+    // A group split where it joins parts that support nothing of one another: its last rules, those no rule of the
+    // group builds on (as one that joins chains), are set apart, then those of what is left, until what is left falls
+    // apart; the parts, and the rules set apart together. A group that never falls apart (a chain, a cycle) stays whole.
+    private fun joined(
+        group: List<Int>,
+        supporters: Array<Set<Int>>,
+    ): List<List<Int>> {
+        var rest = group.toSet()
+        val apart = mutableListOf<Int>()
+        while (rest.isNotEmpty()) {
+            val used = rest.flatMap { rule -> supporters[rule].filter { it in rest && it != rule } }.toSet()
+            val last = rest.filter { it !in used }
+            if (last.isEmpty()) return listOf(group)
+            apart += last
+            rest = rest - last.toSet()
+            val parts = components(group.filter { it in rest }, supporters)
+            if (parts.size > 1) return parts + listOf(ordered(apart, supporters))
+        }
+        return listOf(group)
     }
 
     // The rules of a group in the order of their supports, each after those supporting it (those in a cycle of
     // supports last, in the order of the theory): a group split there cuts few supports, a chain only one
     private fun ordered(
         group: List<Int>,
-        supporters: Array<MutableSet<Int>>,
+        supporters: Array<Set<Int>>,
     ): List<Int> {
         val members = group.toSet()
         val inside = group.associateWith { rule -> supporters[rule].filter { it in members && it != rule } }

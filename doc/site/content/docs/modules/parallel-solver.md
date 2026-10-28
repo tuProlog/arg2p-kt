@@ -166,8 +166,10 @@ asked for it, and needs the others only when its theory changes.
 
 ## How the graph is built
 
-1. The catalog splits the theory into partitions of related rules (those whose conclusions and premises unify), the
-   largest split further so that every worker has a share. Each worker receives its rules and the flags of the
+1. The catalog splits the theory into partitions of related rules (those whose conclusions and premises unify). A
+   group larger than its share is split where it joins parts that support nothing of one another (as a rule using the
+   conclusions of several chains), each part whole, so that they are built side by side; the largest partitions are
+   split further, in halves, so that every worker has a share. Each worker receives its rules and the flags of the
    solver, and tells the catalog the premises and the conclusions of its rules.
 2. Each worker builds the arguments of its rules and sends every new argument directly to the workers that need its
    conclusion, which build on it in turn, and publishes it to the catalog.
@@ -192,7 +194,9 @@ same modules (`queryExploration`), each worker on its own rules:
   connected ones, those as well);
 - a statement explored that the rules of other workers conclude is explored by them in turn: they send back the
   arguments they build for it, on which the worker carries its exploration on (exploring again only what they may
-  support).
+  support). The premises of a rule are asked for all at once, rather than each once the one before it is supported
+  as the standard solver does, so that the workers build them side by side; should a premise have no argument, the
+  arguments for the others are built nonetheless, which changes no label.
 
 Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
 needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that

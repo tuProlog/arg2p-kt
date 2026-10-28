@@ -101,7 +101,7 @@ class Worker(
     private val heads = goal("(parser::classicRule(_, _, [C]) ; parser::classicRule(_, [C]))")
     private val explorations = goal("queryExploration::exploreAll(Q)")
     private val resumption = goal("queryExploration::resume(S)")
-    private val exploredStatements = goal("context_check(explored(S))")
+    private val exploredStatements = goal("(queryExploration::explored(S) ; queryExploration::premiseOfExplored(S))")
     private val kept =
         goal("argument::conclusion(A, [C]), (graphStore::saveArgument(f, [C], A) -> true ; true), graphStore::argumentId(A, Id)")
     private val fire =
@@ -284,7 +284,9 @@ class Worker(
     private fun explored() {
         if (locality == "connected") solve("queryExploration::expand(connected)")
         share()
-        // the statements explored since the last time (by their text), and of those the ones not asked yet
+        // the statements explored since the last time (by their text), with the premises of the rules for them (asked
+        // all at once, so that the others build their arguments side by side: the exploration would ask for each once
+        // the one before it is supported), and of those the ones not asked yet
         val needed =
             solver
                 .solutions(exploredStatements.with())

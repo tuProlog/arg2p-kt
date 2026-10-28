@@ -78,6 +78,22 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
                 unseen(Ss, [N|Seen], New1, Seen1)
             ).
 
+        %! explored(?Statement)
+        %  Statement is explored (with the statements it generalises).
+        explored(Statement) :-
+            context_check(explored(Statement)).
+
+        %! premiseOfExplored(?Premise)
+        %  Premise is one of the premises, to be supported by an argument, of a rule concluding a statement explored. The
+        %  exploration supports them one at a time, the next once the one before is: a solver whose arguments for them
+        %  are built elsewhere asks for them all at once, so that they are built side by side.
+        premiseOfExplored(Premise) :-
+            context_check(explored(Statement)),
+            parser::classicRule(_, Premises, [Statement]),
+            member(Premise, Premises),
+            \+ parser::prolog([Premise], _),
+            \+ parser::contrary([Premise], _).
+
         %! exploreAll(+Queries)
         %  Each of Queries explored (see explore/1).
         exploreAll(Queries) :-
