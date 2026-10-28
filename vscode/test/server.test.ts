@@ -22,12 +22,14 @@ const server = jar();
 describe.skipIf(server === null)('The language server, through JSON-RPC', function () {
     let process: ChildProcessWithoutNullStreams;
     let connection: MessageConnection;
-    const printed: { id: number; text: string }[] = [];
+
+    // the answers of the engine to [request], in [session]
+    const engine = (session: string, request: object) =>
+        connection.sendRequest<{ answers: any[] }>('arg2p/engine', { session, request }).then(it => it.answers);
 
     beforeAll(async () => {
         process = spawn(javaOf('', join(__dirname, '..'), globalThis.process.env.JAVA_HOME), argumentsOf([], server!));
         connection = createMessageConnection(new StreamMessageReader(process.stdout), new StreamMessageWriter(process.stdin));
-        connection.onNotification('arg2p/output', (params: { id: number; text: string }) => void printed.push(params));
         connection.listen();
         await connection.sendRequest('initialize', { processId: null, rootUri: null, capabilities: {} });
     });
@@ -37,26 +39,35 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
         process?.kill();
     });
 
-    it('should solve a query, give its graph and what it prints', async function () {
-        const started = await connection.sendRequest<{ id: number; query: string }>('arg2p/solve', {
-            theory: 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).',
-            query: 'buildLabelSets(In, Out, Und), write(done)',
-            flags: 'queryMode.',
-        });
-        const answer = await connection.sendRequest<{ solution: { result: string; graph: { profile: string; arguments: unknown[] } } }>('arg2p/next', {
-            id: started.id,
-        });
-        equal(answer.solution.result, 'yes');
-        equal(answer.solution.graph.profile, 'aspic_plus');
-        ok(answer.solution.graph.arguments.length >= 3);
-        ok(printed.some(it => it.id === started.id && it.text.includes('done')), JSON.stringify(printed));
+    it('should solve a query, give its graph and what it prints, in a session apart', async function () {
+        const answers = [
+            ...(await engine('one', {
+                type: 'solve',
+                id: 1,
+                theory: 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).',
+                query: 'buildLabelSets(In, Out, Und), write(done)',
+                flags: 'queryMode.',
+            })),
+            ...(await engine('one', { type: 'next', id: 1 })),
+        ];
+        const solution = answers.find(it => it.type === 'solution');
+        equal(solution?.solution.result, 'yes', JSON.stringify(answers));
+        equal(solution.solution.graph.profile, 'aspic_plus');
+        ok(solution.solution.graph.arguments.length >= 3);
+        ok(answers.some(it => it.type === 'output' && it.id === 1 && it.text.includes('done')), JSON.stringify(answers));
+        // the run 1 of a session is not that of another
+        deepEqual(
+            (await engine('two', { type: 'next', id: 1 })).map(it => it.type),
+            ['failed'],
+        );
+        await engine('one', { type: 'close' });
     });
 
     it('should check texts and give the settings in effect', async function () {
-        const problem = await connection.sendRequest<{ line: number; column: number } | null>('arg2p/check', { text: 'a :=> b.\nc :=> d(.', kind: 'theory' });
-        deepEqual([problem?.line, problem?.column], [2, 9]);
-        const settings = await connection.sendRequest<Record<string, string[]>>('arg2p/settings', { theory: 'graphBuildMode(aba).', flags: '' });
-        deepEqual(settings.graphBuildMode, ['aba']);
+        const [checked] = await engine('one', { type: 'check', reqId: 1, text: 'a :=> b.\nc :=> d(.', kind: 'theory' });
+        deepEqual([checked.problem?.line, checked.problem?.column], [2, 9]);
+        const [settings] = await engine('one', { type: 'settings', reqId: 2, theory: 'graphBuildMode(aba).', flags: '' });
+        deepEqual(settings.settings.graphBuildMode, ['aba']);
     });
 });
 

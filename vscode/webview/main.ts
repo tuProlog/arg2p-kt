@@ -1,15 +1,16 @@
 import '@tuprolog/arg2p-ui';
 import type { Arg2pEditor, Arg2pFramework, Arg2pGraph, Arg2pSolutions } from '@tuprolog/arg2p-ui';
 import { DEFAULT_PROFILE, profileInfo, statedProfile, type EngineError, type Positions, type Run, type SolutionData } from '@tuprolog/arg2p-ui/data';
-import { JsEngine, type Answer, type Channel } from '@tuprolog/arg2p-ui/js';
+import { JsEngine, type Channel } from '@tuprolog/arg2p-ui/js';
 import { LitElement, css, html, nothing } from 'lit';
+import type { FromPage, ToPage } from '../src/protocol.js';
 
 // The solver of a theory, in the webview of VS Code: the components of @tuprolog/arg2p-ui, on an engine that is the
 // language server (the extension passes the messages of the engine on, see bridge.ts). The theory is the document the
 // panel belongs to: the extension sends it as it changes, and the drawing of a framework edits it.
 
 interface VsCode {
-    postMessage(message: unknown): void;
+    postMessage(message: FromPage): void;
 }
 
 declare function acquireVsCodeApi(): VsCode;
@@ -24,8 +25,8 @@ const engine = new JsEngine(() => {
     const opened: Channel = {
         onmessage: null,
         postMessage: request => vscode.postMessage({ type: 'engine', request }),
-        // a resolution is stopped by restarting the server
-        terminate: () => vscode.postMessage({ type: 'restart' }),
+        // the resolution of the page is stopped on the server, which goes on with the others
+        terminate: () => vscode.postMessage({ type: 'engine', request: { type: 'stop' } }),
     };
     channel = opened;
     return opened;
@@ -63,6 +64,8 @@ export class Arg2pSolver extends LitElement {
 
     private receive(message: ToPage): void {
         if (message.type === 'engine') channel?.onmessage?.({ data: message.answer });
+        // the server stopped, and what the page waited for with it
+        else if (message.type === 'stopped') engine.stop();
         else if (message.type === 'theory') this.theory = message.theory;
         else if (message.type === 'document') {
             this.name = message.name;
@@ -338,11 +341,6 @@ export class Arg2pSolver extends LitElement {
         }
     `;
 }
-
-type ToPage =
-    | { type: 'document'; name: string; theory: string; query: string; flags: string }
-    | { type: 'theory'; theory: string }
-    | { type: 'engine'; answer: Answer };
 
 // The colours of the components, those of the theme of VS Code
 const theme = document.createElement('style');
