@@ -38,7 +38,6 @@ export class Arg2pSolver extends LitElement {
         query: { state: true },
         flags: { state: true },
         panel: { state: true },
-        drawing: { state: true },
         busy: { state: true },
         output: { state: true },
         notice: { state: true },
@@ -50,7 +49,6 @@ export class Arg2pSolver extends LitElement {
     private query = '';
     private flags = '';
     private panel: Panel = 'results';
-    private drawing = true;
     private busy = false;
     private output = '';
     private notice: string | null = null;
@@ -151,13 +149,6 @@ export class Arg2pSolver extends LitElement {
             <div class="tabs" role="tablist">
                 ${tab('results', 'Solutions')} ${tab('flags', 'Flags')} ${tab('console', this.output === '' ? 'Console' : 'Console •')}
                 <span class="profile" title=${info?.help ?? ''}>${info?.label ?? this.profile}</span>
-                <span class="spacer"></span>
-                ${this.abstract && this.panel === 'results'
-                    ? html`<span class="switch">
-                          <button type="button" class=${this.drawing ? 'active' : ''} @click=${() => (this.drawing = true)}>Drawing</button>
-                          <button type="button" class=${this.drawing ? '' : 'active'} @click=${() => (this.drawing = false)}>Graph</button>
-                      </span>`
-                    : nothing}
             </div>
             ${this.notice === null ? nothing : html`<div class="notice">${this.notice}</div>`}
             <div class="panel results" ?hidden=${this.panel !== 'results'}>
@@ -170,13 +161,11 @@ export class Arg2pSolver extends LitElement {
                 ></arg2p-solutions>
                 <div class="view">
                     <arg2p-graph
-                        ?hidden=${this.abstract && this.drawing}
+                        ?hidden=${this.abstract}
                         file-name=${this.name}
-                        .positions=${this.positions}
-                        @arg2p-positions=${(e: CustomEvent<{ positions: Positions }>) => (this.positions = e.detail.positions)}
                     ></arg2p-graph>
                     <arg2p-framework
-                        ?hidden=${!(this.abstract && this.drawing)}
+                        ?hidden=${!this.abstract}
                         file-name=${this.name}
                         .theory=${this.theory}
                         .positions=${this.positions}
@@ -290,13 +279,6 @@ export class Arg2pSolver extends LitElement {
             border-radius: 8px;
             border: 1px solid var(--arg2p-accent);
             color: var(--arg2p-accent);
-        }
-        .spacer {
-            flex: 1;
-        }
-        .switch button.active {
-            color: var(--vscode-button-foreground);
-            background: var(--vscode-button-background);
         }
         .notice {
             padding: 4px 8px;
