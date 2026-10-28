@@ -1,3 +1,19 @@
+## [0.19.0](https://github.com/tuProlog/arg2p-kt/compare/0.18.1...0.19.0) (2026-10-28)
+
+### Features
+
+* profiles, the API of arg2p on every platform, and the parallel solver ([#525](https://github.com/tuProlog/arg2p-kt/issues/525)) ([1a10407](https://github.com/tuProlog/arg2p-kt/commit/1a1040763cf025a96a8fce64d2cbde7fe1c05ada))
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to f221265 ([#523](https://github.com/tuProlog/arg2p-kt/issues/523)) ([619c397](https://github.com/tuProlog/arg2p-kt/commit/619c3977383793b31d08ab1d44e03220ca9978eb))
+* **deps:** update ktmpp to v6.1.0 ([#524](https://github.com/tuProlog/arg2p-kt/issues/524)) ([888440c](https://github.com/tuProlog/arg2p-kt/commit/888440cce58c366bb54f9c9b1fdb1bc122d145dc))
+
+### General maintenance
+
+* merge master into develop after 0.18.0 ([aaea27b](https://github.com/tuProlog/arg2p-kt/commit/aaea27b83dce8155bad283e624850e9ab230cb1d))
+* merge master into develop after 0.18.1 ([ba6b15a](https://github.com/tuProlog/arg2p-kt/commit/ba6b15a8ea2a58506cf19d56763c18e78a77d724))
+
 ## [0.18.1](https://github.com/tuProlog/arg2p-kt/compare/0.18.0...0.18.1) (2026-10-25)
 
 ### Bug Fixes
