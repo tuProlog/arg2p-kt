@@ -37,7 +37,7 @@ export class SolverPanel {
         const key = document.uri.toString();
         const open = SolverPanel.panels.get(key);
         if (open !== undefined) return open.panel.reveal(undefined, true);
-        const below = vscode.workspace.getConfiguration('arg2p').get<string>('solver.position', 'below') === 'below';
+        const below = vscode.workspace.getConfiguration('arg2p').get<string>('solver.position', 'beside') === 'below';
         // a group under the one of the theory, made active: the panel opens there
         if (below) await vscode.commands.executeCommand('workbench.action.newGroupBelow');
         SolverPanel.panels.set(key, new SolverPanel(context, server, document, below ? vscode.ViewColumn.Active : vscode.ViewColumn.Beside));

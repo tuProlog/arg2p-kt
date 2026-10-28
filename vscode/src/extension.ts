@@ -25,10 +25,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             if (event.affectsConfiguration('arg2p.java')) {
                 await stop();
                 await start(context);
+                changed.fire();
             }
+        }),
+        changed,
+        // the MCP server of arg2p, for the AI assistants of VS Code: the same jar, on the same java, with --mcp
+        vscode.lm.registerMcpServerDefinitionProvider('arg2p', {
+            onDidChangeMcpServerDefinitions: changed.event,
+            provideMcpServerDefinitions: () => {
+                const { java, args } = command(context);
+                return [new vscode.McpStdioServerDefinition('Arg2P', java, [...args, '--mcp'], {}, context.extension.packageJSON.version)];
+            },
         }),
     );
     await start(context);
+}
+
+// The definitions of the MCP server change with the java running it
+const changed = new vscode.EventEmitter<void>();
+
+// java, and its arguments running the server: the language server, or with --mcp the MCP server
+function command(context: vscode.ExtensionContext): { java: string; args: string[] } {
+    const settings = vscode.workspace.getConfiguration('arg2p');
+    const java = javaOf(settings.get<string>('java.path') ?? '', context.extensionPath, process.env.JAVA_HOME);
+    return { java, args: argumentsOf(settings.get<string[]>('java.options') ?? [], context.asAbsolutePath('server/arg2p-lsp.jar')) };
 }
 
 export async function deactivate(): Promise<void> {
@@ -36,10 +56,8 @@ export async function deactivate(): Promise<void> {
 }
 
 async function start(context: vscode.ExtensionContext): Promise<void> {
-    const settings = vscode.workspace.getConfiguration('arg2p');
-    const java = javaOf(settings.get<string>('java.path') ?? '', context.extensionPath, process.env.JAVA_HOME);
-    const jar = context.asAbsolutePath('server/arg2p-lsp.jar');
-    const serverOptions: ServerOptions = { command: java, args: argumentsOf(settings.get<string[]>('java.options') ?? [], jar) };
+    const { java, args } = command(context);
+    const serverOptions: ServerOptions = { command: java, args };
     const clientOptions: LanguageClientOptions = { documentSelector: [{ language: 'arg2p' }] };
     client = new LanguageClient('arg2p', 'Arg2P', serverOptions, clientOptions);
     client.onNotification('arg2p/output', (params: { id: number; text: string }) => SolverPanel.output(params));

@@ -59,3 +59,48 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
         deepEqual(settings.graphBuildMode, ['aba']);
     });
 });
+
+describe.skipIf(server === null)('The MCP server, as an assistant runs it', function () {
+    // one JSON-RPC message a line, answers read as they come
+    async function session(messages: object[]): Promise<Map<number, any>> {
+        const process = spawn(javaOf('', join(__dirname, '..'), globalThis.process.env.JAVA_HOME), [...argumentsOf([], server!), '--mcp']);
+        const answers = new Map<number, any>();
+        let buffer = '';
+        const done = new Promise<void>(resolve => {
+            process.stdout.on('data', chunk => {
+                buffer += chunk.toString();
+                const lines = buffer.split('\n');
+                buffer = lines.pop()!;
+                lines.filter(it => it.trim() !== '').forEach(line => {
+                    const answer = JSON.parse(line);
+                    answers.set(answer.id, answer);
+                });
+                if (messages.filter(it => 'id' in it).every(it => answers.has((it as { id: number }).id))) resolve();
+            });
+        });
+        messages.forEach(it => process.stdin.write(`${JSON.stringify(it)}\n`));
+        await done;
+        process.kill();
+        return answers;
+    }
+
+    it('should list its tools and answer a query', async function () {
+        const answers = await session([
+            { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } } },
+            { jsonrpc: '2.0', method: 'notifications/initialized' },
+            { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+            {
+                jsonrpc: '2.0',
+                id: 3,
+                method: 'tools/call',
+                params: { name: 'answer', arguments: { theory: 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).', query: 'flies(tweety)' } },
+            },
+        ]);
+        equal(answers.get(1).result.serverInfo.name, 'arg2p');
+        deepEqual(
+            answers.get(2).result.tools.map((it: { name: string }) => it.name),
+            ['solve', 'answer', 'check', 'settings'],
+        );
+        deepEqual(answers.get(3).result.structuredContent.out, ['flies(tweety)']);
+    });
+});

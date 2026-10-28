@@ -36,7 +36,7 @@ export async function run(): Promise<void> {
     await editor.edit(edit => edit.replace(new vscode.Range(1, 0, 1, 200), 'r1 : bird(X) => flies(X).'));
     await eventually(() => (vscode.languages.getDiagnostics(fixture).length === 0 ? true : undefined));
 
-    // the solver opens under the theory, in a group of its own, and the theory keeps the focus
+    // the solver opens beside the theory, in a group of its own, and the theory keeps the focus
     await vscode.commands.executeCommand('arg2p.solve');
     const solver = await eventually(() => vscode.window.tabGroups.all.find(group => group.tabs.some(tab => tab.label === 'Solve broken.arg2p')));
     const theory = vscode.window.tabGroups.all.find(group => group.tabs.some(tab => tab.label === 'broken.arg2p'));
