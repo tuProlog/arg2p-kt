@@ -41,4 +41,5 @@ pytest python/tests
 ```
 
 Without the runtime (`pythonRuntime`), the package runs on the Java of the system (21 or later). `ARG2P_JVM` names
-another library of the JVM, `ARG2P_CLASSPATH` other jars.
+another library of the JVM, `ARG2P_CLASSPATH` other jars, `ARG2P_STACK` the stack of its threads (`512m`) and
+`ARG2P_JVM_OPTIONS` its other options (as `-Xmx8g`, for the heap of large graphs).

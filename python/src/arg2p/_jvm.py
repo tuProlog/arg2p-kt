@@ -25,6 +25,14 @@ RUNTIME = os.path.join(os.path.dirname(__file__), "jre")
 STACK = os.environ.get("ARG2P_STACK", "512m")
 
 
+def options() -> list[str]:
+    """
+    The options the JVM starts with: the stack of ``ARG2P_STACK``, then those of ``ARG2P_JVM_OPTIONS`` (as
+    ``-Xmx8g``, for the heap of large graphs), split at blanks.
+    """
+    return [f"-Xss{STACK}", "-Dslf4j.internal.verbosity=ERROR", *os.environ.get("ARG2P_JVM_OPTIONS", "").split()]
+
+
 def classpath() -> list[str]:
     """The jars of arg2p: those of ``ARG2P_CLASSPATH`` if set, those of the package otherwise."""
     stated = os.environ.get("ARG2P_CLASSPATH")
@@ -58,9 +66,7 @@ def start() -> None:
     """Starts the JVM, unless it runs already (started by another library: the jars of arg2p must be on its path)."""
     with _lock:
         if not jpype.isJVMStarted():
-            jpype.startJVM(
-                jvm_path(), f"-Xss{STACK}", "-Dslf4j.internal.verbosity=ERROR", classpath=classpath(), convertStrings=True
-            )
+            jpype.startJVM(jvm_path(), *options(), classpath=classpath(), convertStrings=True)
 
 
 def jclass(name: str) -> Any:

@@ -19,6 +19,10 @@ The wheels of Windows (x86-64), Linux (x86-64, ARM64) and macOS (ARM64, x86-64) 
 platform the package runs on the Java of the system (21 or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
 the JVM to run on, `ARG2P_CLASSPATH` other jars.
 
+The JVM starts at the first use of the package, once per process, with the stack of `ARG2P_STACK` (`512m`) and the
+options of `ARG2P_JVM_OPTIONS`, split at blanks: its heap is the default of the JVM (a quarter of the memory), and a
+large graph may need more, as `ARG2P_JVM_OPTIONS="-Xmx8g"`. Set them before the first call into the package.
+
 ---
 
 ### A solver
