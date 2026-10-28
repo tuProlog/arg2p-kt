@@ -83,6 +83,24 @@ class Arg2pTest {
     }
 
     @Test
+    fun theSettingsInEffectComeFromTheTheoryTheFlagsAndTheProfile() {
+        val aspic = Arg2p.of("r1 : [] => a.")
+        assertTrue("graphBuildMode" in aspic.knownFlags && "queryMode" in aspic.knownFlags)
+        assertEquals(listOf("aspic_plus"), aspic.setting("graphBuildMode"))
+        // the extensions the profile presets, the switches it turns on
+        assertEquals(setOf("standardPref", "rebutRestriction"), aspic.setting("graphExtension").toSet())
+        assertEquals(listOf("true"), aspic.setting("autoTransposition"))
+        // the theory states its profile, which presets the others
+        val abstract = Arg2p.of("graphBuildMode(abstract).\na -> b.\nargumentLabellingMode(preferred).")
+        assertEquals(listOf("abstract"), abstract.setting("graphBuildMode"))
+        assertEquals(listOf("preferred"), abstract.setting("argumentLabellingMode"))
+        assertEquals(emptyList(), abstract.setting("graphExtension"))
+        assertEquals(emptyList(), abstract.setting("queryMode"))
+        assertEquals(listOf("https://example.org/t"), Arg2p.of("modulesPath('https://example.org/t').").setting("modulesPath"))
+        assertFailsWith<Arg2pException> { aspic.setting("noSuchFlag") }
+    }
+
+    @Test
     fun textsThatDoNotParseTellWhere() {
         val theory = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }.syntax
         assertEquals(2, theory?.line)

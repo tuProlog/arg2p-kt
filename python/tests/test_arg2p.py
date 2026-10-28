@@ -160,3 +160,15 @@ def test_the_jvm_takes_the_options_of_the_environment(monkeypatch):
     assert _jvm.options()[-2:] == ["-Xmx8g", "-XX:+UseG1GC"]
     monkeypatch.delenv("ARG2P_JVM_OPTIONS")
     assert _jvm.options() == [f"-Xss{_jvm.STACK}", "-Dslf4j.internal.verbosity=ERROR"]
+
+
+def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile():
+    aspic = Arg2p.of("r1 : [] => a.")
+    assert "graphBuildMode" in aspic.known_flags
+    assert aspic.setting("graphBuildMode") == ["aspic_plus"]
+    assert set(aspic.setting("graphExtension")) == {"standardPref", "rebutRestriction"}
+    assert aspic.setting("autoTransposition") == ["true"]
+    abstract = Arg2p.of("graphBuildMode(abstract).\na -> b.")
+    assert abstract.setting("queryMode") == []
+    with pytest.raises(Arg2pError):
+        aspic.setting("noSuchFlag")

@@ -253,6 +253,19 @@ class Arg2p:
         """The theory, as Prolog text."""
         return str(self._arg2p.getTheory())
 
+    @property
+    def known_flags(self) -> list[str]:
+        """The flags the solver knows, by name: graphBuildMode, queryMode, ... (see setting)."""
+        return [str(flag) for flag in self._arg2p.getKnownFlags()]
+
+    def setting(self, flag: str) -> list[str]:
+        """
+        The values of [flag] in effect for the theory, as the solver checks them: those the theory states, or else
+        those of the flags of the solver that differ from their default, or else those the profile of the theory
+        presets. A switch on has the value "true", off none.
+        """
+        return [str(value) for value in call(lambda: self._arg2p.setting(flag))]
+
     def answer(self, query: str) -> Answer:
         """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
         answer = call(lambda: self._arg2p.answer(query))
