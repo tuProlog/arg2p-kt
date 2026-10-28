@@ -14,7 +14,6 @@ class DefeasibleAllPrefModuleTest {
         r1 : a => c.
         r2 : b(X) => -c.
         f4 :=> sup(r1, r2).
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

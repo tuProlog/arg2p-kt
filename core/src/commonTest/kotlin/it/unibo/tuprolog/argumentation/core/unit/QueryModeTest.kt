@@ -35,7 +35,6 @@ class QueryModeTest {
 
     private val config =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         orderingPrinciple(last).
         orderingComparator(elitist).

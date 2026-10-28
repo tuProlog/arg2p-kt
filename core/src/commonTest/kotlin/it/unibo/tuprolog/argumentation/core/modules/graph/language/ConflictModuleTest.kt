@@ -48,7 +48,7 @@ class ConflictModuleTest {
     @Test
     fun withMetaConflictsOnlyTheConcludedConflictsHold() {
         val module = ModuleTesting("metaConflicts.\nr1 : [] => conflict(a, b).\nr2 : [] => conflict(c, d, true).")
-        module.run("context_reset", "parser:::convertAllRules(_)", "standard_af:::buildArguments")
+        module.run("context_reset", "parser:::convertAllRules(_)", "ruleGraph:::buildArguments")
         assertTrue(module.holds("conflict::between([a], [b])"))
         assertTrue(module.holds("conflict::between([c], [d])"))
         // the built-in conflicts are off

@@ -25,7 +25,7 @@ class AttackBuilderModuleTest {
     fun anArgumentAttackingItself() {
         val module =
             ModuleTesting(
-                "f1 :=> a.\nr1 : a => undercut(r1).\ngraphBuildMode(standard_af).\nstatementLabellingMode(statement).\n" +
+                "f1 :=> a.\nr1 : a => undercut(r1).\nstatementLabellingMode(statement).\n" +
                     "argumentLabellingMode(grounded).",
             )
         assertEquals("[[undercut(r1)]]", module.value("buildLabelSets(_, _, U)", "U"))

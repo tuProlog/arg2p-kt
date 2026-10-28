@@ -177,7 +177,7 @@ class Catalog(
     private fun complete(centralAttacks: Boolean) {
         val attacks = if (centralAttacks) ", X:::buildAttacks" else ""
         solve(
-            "setting(graphBuildMode, X), X:::buildAdditionalArguments$attacks, structuredWhole:::modifyGraph, " +
+            "structuredWhole::builder(X), X:::buildAdditionalArguments$attacks, structuredWhole:::modifyGraph, " +
                 "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling",
         )
         stage = Stage.READY

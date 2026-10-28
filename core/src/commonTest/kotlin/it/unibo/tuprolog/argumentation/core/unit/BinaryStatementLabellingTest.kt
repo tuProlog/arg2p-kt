@@ -10,7 +10,6 @@ import kotlin.test.assertEquals
 class BinaryStatementLabellingTest {
     private val config =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement_binary).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

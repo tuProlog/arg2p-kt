@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.modules.graph
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder
 import it.unibo.tuprolog.argumentation.core.flags.GraphExtension
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -15,7 +16,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StructuredWholeModule : PrologModule("prolog.argumentation.structured.whole", "structuredWhole") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode)
+        get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode, GraphBuilder)
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -37,10 +38,20 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             graphStore::statementLabelling(StatIn, StatOut, StatUnd).
 
         %! buildGraph
-        %  The graph of the theory, by the builder of graphBuildMode.
+        %  The graph of the theory, by the builder of its profile (graphBuilder), once the theory is checked against it.
         buildGraph :-
-            setting(graphBuildMode, X),
+            checkProfile,
+            builder(X),
             X:::buildArgumentationGraph.
+
+        %! builder(-Builder)
+        %  The module building the graph: that of the flag graphBuilder, ruleGraph if no setting names one.
+        builder(X) :- setting(graphBuilder, X), !.
+        builder(ruleGraph).
+
+        %! checkProfile
+        %  The theory is written in the languages of its profile (see parser::checkLanguages).
+        checkProfile :- parser::checkLanguages.
 
         %! modifyGraph
         %  The graph changed by each graph extension, the last stated first.

@@ -50,7 +50,7 @@ class QueryExplorationModuleTest {
     fun theArgumentsAreThoseOfTheWholeGraph() {
         val theory =
             "f1 :=> a.\nf2 :=> b.\nr1 : b, a, prolog(true) => c.\nr2 : c, a => d.\nr3 : d -> e.\n" +
-                "graphBuildMode(standard_af).\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).\n"
+                "statementLabellingMode(statement).\nargumentLabellingMode(grounded).\n"
         val arguments = "context_check(argument(A))"
         val whole = ModuleTesting(theory).also { it.run("buildLabelSets(_, _, _)") }
         val query = ModuleTesting(theory + "queryMode.").also { it.run("answerQuery(e, _, _, _)") }
@@ -63,7 +63,7 @@ class QueryExplorationModuleTest {
         val module =
             ModuleTesting(
                 "f1 :=> p(a, a).\nf2 :=> p(a, b).\nr1 : p(X, X) => q(X).\nr2 : p(X, Y) => s(X, Y).\n" +
-                    "r3 : q(_), s(A, B) => t(A, B).\nqueryMode.\ngraphBuildMode(standard_af).\n" +
+                    "r3 : q(_), s(A, B) => t(A, B).\nqueryMode.\n" +
                     "statementLabellingMode(statement).\nargumentLabellingMode(grounded).",
             )
         val statIn = module.value("answerQuery(t(X, Y), I, _, _)", "I")!!

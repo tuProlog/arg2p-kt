@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder
 import it.unibo.tuprolog.argumentation.core.flags.GraphExtension
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
@@ -35,19 +36,23 @@ data class FlagsBuilder(
     var graphExtensions: Iterable<String> = GraphExtension.default(),
     var metaConflicts: Boolean = MetaConflicts.default(),
     var metaRules: Boolean = MetaRules.default(),
+    var graphBuilder: String = GraphBuilder.default(),
 ) {
     companion object {
         @JvmStatic
         fun setupSolver(target: FlagsBuilder) =
             MutableTheory.empty(Unificator.default).also { kb ->
                 if (target.emptyBuilder) return@also
-                target.graphExtensions.forEach { kb.assertA(Struct.parse("${GraphExtension.predicate()}($it)")) }
+                // no extension stated as none, so that it overrides those of the profile
+                val extensions = target.graphExtensions.toList().ifEmpty { listOf("none") }
+                extensions.forEach { kb.assertA(Struct.parse("${GraphExtension.predicate()}($it)")) }
                 if (target.queryMode) kb.assertA(Struct.parse(QueryMode.predicate()))
                 if (target.autoTransposition) kb.assertA(Struct.parse(AutoTransposition.predicate()))
                 if (target.prologStrictCompatibility) kb.assertA(Struct.parse(PrologStrictCompatibility.predicate()))
                 if (target.metaConflicts) kb.assertA(Struct.parse(MetaConflicts.predicate()))
                 if (target.metaRules) kb.assertA(Struct.parse(MetaRules.predicate()))
                 kb.assertA(Struct.parse("${GraphBuildMode.predicate()}(${target.graphBuildMode})"))
+                kb.assertA(Struct.parse("${GraphBuilder.predicate()}(${target.graphBuilder})"))
                 kb.assertA(Struct.parse("${ArgumentLabellingMode.predicate()}(${target.argumentLabellingMode})"))
                 kb.assertA(Struct.parse("${StatementLabellingMode.predicate()}(${target.statementLabellingMode})"))
                 kb.assertA(Struct.parse("${OrderingPrinciple.predicate()}(${target.orderingPrinciple})"))
@@ -79,6 +84,8 @@ data class FlagsBuilder(
     fun metaConflicts(metaConflicts: Boolean) = apply { this.metaConflicts = metaConflicts }
 
     fun metaRules(metaRules: Boolean) = apply { this.metaRules = metaRules }
+
+    fun graphBuilder(graphBuilder: String) = apply { this.graphBuilder = graphBuilder }
 
     fun create() =
         object : ArgLibrary {

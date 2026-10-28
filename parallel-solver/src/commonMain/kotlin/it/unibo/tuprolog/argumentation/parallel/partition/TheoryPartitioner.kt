@@ -21,9 +21,18 @@ import it.unibo.tuprolog.unify.Unificator
 data class Partitioning(
     val shared: String,
     val partitions: List<String>,
+    /** The rules of the partitions are those the theory converts to: the workers convert them no further */
+    val converted: Boolean = true,
 ) {
-    /** The theory of the worker of the partition [index] */
-    fun theoryOf(index: Int) = "$shared\n${partitions[index]}"
+    /**
+     * The theory of the worker of the partition [index]: the conversions turned off if applied, whatever the profile
+     * of the theory presets
+     */
+    fun theoryOf(index: Int) = "$shared\n${if (converted) CONVERTED else ""}${partitions[index]}"
+
+    private companion object {
+        const val CONVERTED = "autoTransposition(off).\nprologStrictCompatibility(off).\n"
+    }
 }
 
 /**
@@ -35,8 +44,8 @@ data class Partitioning(
  * The rules are those the theory converts to (see the module parser): with their identifiers, their transpositions
  * (autoTransposition), and the Prolog clauses argued (prologStrictCompatibility), each written back as a rule of arg2p.
  * Everything else in the theory is shared by every partition (flags, preferences, conflicts, burdens, the Prolog
- * predicates the rules check), but the flags of the conversion, already applied. A theory with naturalTerms is left
- * whole, in a single partition.
+ * predicates the rules check), but the flags of the conversion, already applied (the workers are told to apply them
+ * no further, whatever the profile). A theory with naturalTerms is left whole, in a single partition.
  */
 object TheoryPartitioner {
     private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility")
@@ -51,7 +60,7 @@ object TheoryPartitioner {
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder(graphExtensions = emptyList()).create())
         val clauses = solver.staticKb.clauses.toList()
-        if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory))
+        if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory), converted = false)
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
         val rules = rules(solver)
         val groups = groups(rules, solver.holds("setting(metaRules)")).let { if (parts == null) it else split(pack(it, parts), parts) }

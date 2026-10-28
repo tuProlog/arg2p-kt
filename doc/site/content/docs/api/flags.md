@@ -15,21 +15,28 @@ so a flag can be set in three ways:
 - **from the IDE**, through the _Arg Flags_ tab.
 
 A flag stated in the theory replaces the value the solver was given for it: a theory stating
-`graphExtension(bp).` has only that extension, not the `standardPref` of `FlagsBuilder()` as well. A switch the
-solver turns on (such as `queryMode`) cannot be turned off from the theory.
+`graphExtension(bp).` has only that extension, not the `standardPref` of `FlagsBuilder()` as well.
+`graphExtension(none).` states no extension, and a switch is turned off by `Switch(off).` (e.g.
+`autoTransposition(off).`).
+
+The [profile]({{% ref "/docs/profiles" %}}) of the theory, `graphBuildMode`, presets several flags at once. The
+theory overrides those presets, and so does a value the solver is given that differs from the default of its flag.
 
 The table below lists the flags, with the defaults of `FlagsBuilder()`.
 
 | Flag | Default | Accepted values |
 | --- | --- | --- |
-| `graphBuildMode(Mode)` | `standard_af` | `standard_af` |
+| `graphBuildMode(Mode)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free`: see [profiles]({{% ref "/docs/profiles" %}}) |
+| `graphBuilder(Mode)` | `ruleGraph` | `ruleGraph`, `abstractGraph`; set by the profile |
+| `graphLanguage(Mode)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`; set by the profile |
+| `conflictModel(Mode)` | `builtin` | `builtin`, `declared` |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
 | `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp` |
+| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` |
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
-| `autoTransposition` | disabled | the fact is present or absent |
+| `autoTransposition` | enabled by `aspic_plus` | the fact is present or absent |
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
@@ -48,8 +55,25 @@ The table below lists the flags, with the defaults of `FlagsBuilder()`.
 
 ### `graphBuildMode(Mode)`
 
-Selects how the argumentation graph is built from the parsed theory. `standard_af` is the only mode currently
-implemented; it builds arguments, attacks and supports according to ASPIC<sup>+</sup>.
+Selects the [profile]({{% ref "/docs/profiles" %}}) the theory is read in, which presets the flags its
+framework needs. The default, `aspic_plus`, builds arguments, attacks and supports according to
+ASPIC<sup>+</sup>, with preferences, restricted rebut and transposition.
+
+### `graphBuilder(Mode)`
+
+The module that builds the graph: `ruleGraph` from the rules of the theory, `abstractGraph` from the arguments
+and attacks it states. The profile sets it.
+
+### `graphLanguage(Mode)`
+
+The languages the parser reads beyond the one of arg2p, each also checking the theory is written in it:
+`aspicLanguage` (well-formed contraries), `abaLanguage` (assumptions and contraries; flat theories with strict
+rules only) and `defeasibleLanguage` (defeasible rules only). The profile sets them.
+
+### `conflictModel(Mode)`
+
+`builtin` adds the built-in conflicts to those the theory declares: a literal and its negation, obligations and
+permissions. `declared` keeps the declared ones only, as ABA does.
 
 ### `graphExtension(Mode)`
 
@@ -62,6 +86,7 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 | `defeasiblePref` | Defeasible preferences, where a `sup/2` concluded by a rule counts as a preference. Supports comparisons that rest on a single superiority. |
 | `defeasibleAllPref` | The richer model, which also supports comparators that need several superiorities at once. |
 | `rebutRestriction` | Applies the *restricted rebut* constraint: an argument cannot rebut a conclusion drawn by a strict rule. |
+| `abaPref` | The preferences between assumptions of ABA<sup>+</sup>, `sup(Stronger, Weaker)`: an attack from a weaker assumption is reversed. See [profiles]({{% ref "/docs/profiles#aba" %}}). |
 | `bp` | Makes the burden of persuasion arguable: the burden is concluded by a rule, e.g. `r : [] => bp(something).`, instead of being declared as a fact. See [Meta-argumentation]({{% ref "/docs/modules/meta" %}}). |
 
 The defeasible preference models and the meta-argumentation treatment of the burden of persuasion are
@@ -167,8 +192,8 @@ considerably faster on large theories. It is **enabled by default** by `FlagsBui
 ### `autoTransposition`
 
 Closes the theory under transposition: for every strict rule the contrapositive variants are added
-automatically. This is required by some rationality postulates, and is **disabled by default** because it
-enlarges the theory.
+automatically, over negations and conflicts declared both ways. The rationality postulates require it, and the
+profiles `aspic_plus` and `aspic` turn it on; `autoTransposition(off).` turns it off.
 
 ```prolog
 autoTransposition.
@@ -211,7 +236,6 @@ the required flags itself:
 ```kotlin
 val solver = Arg2pSolverFactory.default(
     theory = """
-        graphBuildMode(standard_af).
         argumentLabellingMode(grounded).
         statementLabellingMode(statement).
         orderingPrinciple(last).

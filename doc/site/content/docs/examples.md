@@ -162,7 +162,7 @@ f2 :=> -a.
 Asking for all solutions yields two labellings: one accepting `a`, one accepting `-a`. In Kotlin, iterate over
 the sequence rather than taking `first()`.
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20a.%0Af2%20%3A%3D%3E%20-a.&query=arg2p%3A%3Asolve&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28preferred%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20a.%0Af2%20%3A%3D%3E%20-a.&query=arg2p%3A%3Asolve&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28preferred%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
 — the link carries the whole flag block, since a shared link replaces the flags editor wholesale.
 
 ---
@@ -211,7 +211,7 @@ Res = [out(guilty)]
 The evidence and the alibi defeat each other, so without a burden `guilty` would be **UND**. The burden
 resolves the deadlock against the party carrying it, and `guilty` comes out **OUT**.
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=bp%28guilty%29.%0Ar1%20%3A%20evidence%20%3D%3E%20guilty.%0Ar2%20%3A%20alibi%20%3D%3E%20-guilty.%0Af1%20%3A%3D%3E%20evidence.%0Af2%20%3A%3D%3E%20alibi.&query=arg2p%3A%3Asolve%28guilty%2C%20Res%29&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28bp_grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=bp%28guilty%29.%0Ar1%20%3A%20evidence%20%3D%3E%20guilty.%0Ar2%20%3A%20alibi%20%3D%3E%20-guilty.%0Af1%20%3A%3D%3E%20evidence.%0Af2%20%3A%3D%3E%20alibi.&query=arg2p%3A%3Asolve%28guilty%2C%20Res%29&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28bp_grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
 
 ---
 

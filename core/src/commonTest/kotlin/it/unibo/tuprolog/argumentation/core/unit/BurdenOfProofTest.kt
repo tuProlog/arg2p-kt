@@ -11,7 +11,6 @@ import kotlin.test.assertEquals
 class BurdenOfProofTest {
     private val config =
         """
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
