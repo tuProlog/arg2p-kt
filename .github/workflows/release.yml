@@ -132,13 +132,13 @@ jobs:
           ref: ${{ needs.release.outputs.version }}
           # the tags: the version of the build is that of the release
           fetch-depth: 0
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
-      - uses: actions/setup-python@v6
+          java-version: '25'
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Build the wheel
         shell: bash
         run: |
@@ -155,9 +155,9 @@ jobs:
       - name: Check the wheel
         shell: bash
         run: |
-          python -m pip install dist/*.whl
+          python -m pip install --only-binary=jpype1 dist/*.whl
           cd "$RUNNER_TEMP" && python -c "from arg2p import Arg2p; assert Arg2p.of('f1 :=> a.').answer('a').in_statements == ['a']"
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.platform }}
           path: dist/*.whl
