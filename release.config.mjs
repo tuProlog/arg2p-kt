@@ -1,7 +1,7 @@
 var publishCmd = `
 ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication || exit 1
 ./gradlew publishJsPackageToNpmjsRegistry --continue || echo "::error title=npm publication failed::Some packages were not published on npmjs, see the publishJsPackageToNpmjsRegistry tasks output"
-./gradlew :plugins:pluginPackages || exit 1
+./gradlew :plugins:pluginPackages :lsp:shadowJar || exit 1
 `
 
 // The version of the release, where the plugins for AI assistants and the MCP Registry state it (committed with the
