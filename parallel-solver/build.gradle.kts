@@ -79,3 +79,13 @@ tasks.withType<KotlinJvmTest> {
 extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
     dokkaSourceSets.configureEach { includes.from("Module.md") }
 }
+
+// The jars of the module and of its dependencies on the JVM, for the Python package (python/), which runs them
+// through JPype
+tasks.register<Sync>("pythonJars") {
+    group = "python"
+    description = "Copies the jars of the JVM library into the Python package (python/src/arg2p/jars)"
+    from(tasks.named("jvmJar"))
+    from(configurations.named("jvmRuntimeClasspath"))
+    into(rootProject.layout.projectDirectory.dir("python/src/arg2p/jars"))
+}

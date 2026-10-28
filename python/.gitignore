@@ -1,0 +1,8 @@
+# the jars of the JVM library, copied by ./gradlew :parallel-solver:pythonJars
+src/arg2p/jars/
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/

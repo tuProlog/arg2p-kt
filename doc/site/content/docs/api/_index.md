@@ -14,6 +14,7 @@ Everything arg2p exposes, by the way it is used:
   preferences, query mode).
 - [Kotlin]({{% ref "/docs/api/kotlin" %}}): using arg2p from Kotlin or Java (the solvers, the results, the DSL).
 - [JavaScript]({{% ref "/docs/api/javascript" %}}): using arg2p from JavaScript, through the npm package.
+- [Python]({{% ref "/docs/api/python" %}}): using arg2p from Python, the library of the JVM through JPype.
 - [Prolog modules]({{% ref "/docs/api/prolog" %}}): every predicate of the Prolog modules, generated from their
   sources.
 - [Kotlin & JS reference]({{% ref "/docs/api/reference" %}}): every class and function of the Kotlin libraries,
