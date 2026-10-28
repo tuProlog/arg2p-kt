@@ -39,6 +39,34 @@ fun lazyNodeImport(match: MatchResult): String {
     return "const { $bindings } = globalThis.process?.getBuiltinModule?.('${match.groupValues[2]}') ?? {};"
 }
 
+// A call of require in the code of 2p-kt, `require('os')` or `eval('require')('url')`, for a module of Node.js or one
+// it depends on (sync-request): an ES module has no require, and bundlers take the call for an import to bundle
+val requireCall = Regex("""eval\('require'\)|(?<![\w$.'"])require(?=\(')""")
+
+// require, as Node.js gives it to an ES module: elsewhere, what asks for a module fails when it does
+val nodeRequire =
+    "const __nodeRequire = globalThis.process?.getBuiltinModule?.('module')?.createRequire(import.meta.url) ?? " +
+        "(name => { throw new Error(`\${name} is available in Node.js alone`); });\n"
+
+// The calls of require going through Node.js (nodeRequire), but those in a string (code run elsewhere, as a worker)
+fun nodeRequires(code: String): String {
+    var replaced = false
+    val patched =
+        code.lines().joinToString("\n") { line ->
+            requireCall.replace(line) { match ->
+                val before = line.substring(0, match.range.first)
+                val quoted = before.count { it == '"' } % 2 == 1 || before.count { it == '`' } % 2 == 1
+                if (quoted) {
+                    match.value
+                } else {
+                    replaced = true
+                    "__nodeRequire"
+                }
+            }
+        }
+    return if (replaced) nodeRequire + patched else code
+}
+
 allprojects {
     repositories {
         google()
@@ -60,7 +88,8 @@ allprojects {
 
     // Kotlin/JS re-creates (and then discards) a property reference on every access to a delegated property,
     // e.g. `by lazy` (see KT-78124): in 2p-kt terms this dominates JS execution time, so dead references are removed.
-    // The modules of Node.js are taken as the code loads, for it to load in browsers too (see nodeOnlyImport).
+    // The modules of Node.js are taken as the code runs, for it to load in browsers and bundles too (see nodeOnlyImport
+    // and requireCall).
     tasks.withType<KotlinJsIrLink>().configureEach {
         doLast {
             destinationDirectory
@@ -73,6 +102,7 @@ allprojects {
                         deadPropertyReference
                             .replace(original) { "${it.groupValues[1]}/* dead property reference removed */" }
                             .let { nodeOnlyImport.replace(it, ::lazyNodeImport) }
+                            .let(::nodeRequires)
                     if (patched != original) file.writeText(patched)
                 }
         }
@@ -194,7 +224,11 @@ afterEvaluate {
                 main.set("arg2p.mjs")
                 types.set("arg2p.d.mts")
                 this["type"] = "module"
-                this["exports"] = mapOf("." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"))
+                this["exports"] =
+                    mapOf(
+                        "." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"),
+                        "./package.json" to "./package.json",
+                    )
                 description.set(property("projectDescription").toString())
                 homepage.set(property("projectHomepage").toString())
                 license.set(property("projectLicense").toString())
