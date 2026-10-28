@@ -7,106 +7,48 @@ import it.unibo.tuprolog.core.parsing.parse
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * ABA+ on the arguments of arg2p (the profile aba_plus, the extension abaPref) against the definitions of Čyras and
- * Toni (2016) on sets of assumptions, computed by brute force: the statements of the grounded labelling are those the
- * well-founded set of assumptions (the intersection of the complete ones) derives.
+ * Flat ABA and ABA+ on the arguments of arg2p (the profiles aba and aba_plus, the extension abaPref) against the
+ * definitions on sets of assumptions (see [AbaReference]): the statements labelled in are those the extensions derive,
+ * for every semantics. ABA+ on the theories satisfying Weak Contraposition, the others refused.
  */
 class AbaPrefModuleTest {
-    // A flat ABA+ framework: the rules (head, body), the contrary of each assumption, and the strict preferences
-    // (weaker, stronger), closed transitively
-    private class Framework(
-        val assumptions: List<String>,
-        val rules: List<Pair<String, List<String>>>,
-        val contraries: Map<String, String>,
-        val weaker: Set<Pair<String, String>>,
-    ) {
-        private fun derived(set: Set<String>): Set<String> {
-            val known = set.toMutableSet()
-            do {
-                val more = rules.filter { (head, body) -> head !in known && known.containsAll(body) }.map { it.first }
-                known += more
-            } while (more.isNotEmpty())
-            return known
+    private fun solutions(theory: String) =
+        Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create()).let { solver ->
+            solver.solve(Struct.parse("buildLabelSets(I, _, _)", solver.operators)).toList()
         }
 
-        private val subsets: List<Set<String>> =
-            (0 until (1 shl assumptions.size)).map { mask -> assumptions.filterIndexed { i, _ -> mask and (1 shl i) != 0 }.toSet() }
-
-        private fun subsetsOf(set: Set<String>) = subsets.filter { set.containsAll(it) }
-
-        // A <-attacks B: normally, or reversed
-        fun attacks(
-            a: Set<String>,
-            b: Set<String>,
-        ): Boolean =
-            subsetsOf(a).any { part ->
-                b.any { beta -> contraries.getValue(beta) in derived(part) && part.none { (it to beta) in weaker } }
-            } ||
-                subsetsOf(b).any { part ->
-                    a.any { alpha ->
-                        contraries.getValue(alpha) in derived(part) &&
-                            part.any { (it to alpha) in weaker }
-                    }
-                }
-
-        private fun defends(
-            e: Set<String>,
-            target: Set<String>,
-        ) = subsets.filter { attacks(it, target) }.all { attacks(e, it) }
-
-        private val complete: List<Set<String>> =
-            subsets.filter { e ->
-                !attacks(e, e) && defends(e, e) && subsets.filter { defends(e, it) }.all { e.containsAll(it) }
-            }
-
-        /**
-         * The statements the well-founded set derives; null if there is no complete extension (as may be without Weak
-         * Contraposition, Čyras and Toni 2016)
-         */
-        val accepted: Set<String>? = complete.takeIf { it.isNotEmpty() }?.let { derived(it.reduce { all, e -> all intersect e }) }
-
-        fun theory(): String =
-            buildString {
-                appendLine("graphBuildMode(aba_plus).")
-                assumptions.forEach { appendLine("assumption($it).") }
-                contraries.forEach { (a, c) -> appendLine("contrary($a, $c).") }
-                rules.forEachIndexed {
-                    i,
-                    (head, body),
-                    ->
-                    appendLine("r$i : ${if (body.isEmpty()) "[]" else body.joinToString(", ")} -> $head.")
-                }
-                weaker.forEach { (w, s) -> appendLine("sup($s, $w).") }
-            }
-    }
-
-    // The statements labelled in by the grounded labelling of arg2p
-    private fun accepted(theory: String): Set<String> {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create())
-        val solution = solver.solve(Struct.parse("buildLabelSets(I, _, _)", solver.operators)).first()
-        check(solution.isYes) { "$solution\n$theory" }
-        return solution.substitution
-            .getByName("I")!!
-            .castToList()
-            .toList()
-            .map {
-                it
+    // The statements labelled in by each labelling of arg2p
+    private fun labelled(theory: String): Set<Set<String>> {
+        val solutions = solutions(theory).filter { it.isYes }
+        check(solutions.isNotEmpty()) { "No labelling\n$theory" }
+        return solutions
+            .map { solution ->
+                solution.substitution
+                    .getByName("I")!!
                     .castToList()
                     .toList()
-                    .single()
-                    .toString()
+                    .map {
+                        it
+                            .castToList()
+                            .toList()
+                            .single()
+                            .toString()
+                    }.toSet()
             }.toSet()
     }
+
+    private fun refused(theory: String) = solutions(theory).first().isHalt
 
     // Example 13 of Čyras and Toni: {beta, beta2} attacks eps, though beta is weaker than it; the attack is reversed
     // on the set, so that eps also attacks the argument for the contrary of alpha resting on the same set
     @Test
     fun anAttackIsReversedOnEveryArgumentOfTheSameAssumptions() {
         val framework =
-            Framework(
+            AbaReference(
                 listOf("alpha", "beta", "beta2", "eps"),
                 listOf(
                     "neps" to listOf("beta", "beta2"),
@@ -121,49 +63,106 @@ class AbaPrefModuleTest {
                 mapOf("alpha" to "nalpha", "beta" to "nbeta", "beta2" to "nbeta2", "eps" to "neps"),
                 setOf("beta" to "eps"),
             )
-        assertEquals(setOf("alpha", "eps"), framework.accepted)
-        assertEquals(framework.accepted, accepted(framework.theory()))
+        assertTrue(framework.weakContraposition)
+        assertEquals(setOf("alpha", "eps"), framework.grounded)
+        assertEquals(setOf(framework.grounded), labelled(framework.theory("aba_plus")))
     }
 
-    // Frameworks where reversals matter: rules mostly from assumptions, several from the same ones (arguments resting on
-    // the same assumptions for different contraries), the contraries mostly symbols of their own
+    // {a0, a1} derives p1, the contrary of a1 and of the stronger a2: a2 attacks {a0, a1} in reverse, a1 stands. The
+    // contraposed attack of a1 on a0 alone would not defend it: {a0, a1} attacks a1 back
     @Test
-    fun randomFrameworksAgreeWithTheDefinitions() {
+    fun aReversedAttackGroundsTheDefenceOfTheContraposition() {
+        val framework =
+            AbaReference(
+                listOf("a0", "a1", "a2", "a3"),
+                listOf("p0" to listOf("a0", "a1"), "p1" to listOf("a0", "a1")),
+                mapOf("a0" to "a1", "a1" to "p1", "a2" to "p1", "a3" to "p0"),
+                setOf("a0" to "a3", "a1" to "a2", "a3" to "a2", "a0" to "a2"),
+            )
+        assertTrue(framework.weakContraposition)
+        assertEquals(setOf("a1", "a2", "a3"), framework.grounded)
+        assertEquals(setOf(framework.grounded), labelled(framework.theory("aba_plus")))
+    }
+
+    // {a0, a1} derives x, the contrary of a0, a1 weaker than a0; nothing derives y, the contrary of a1, from a0: the
+    // sets {a0} and {a1} stand, not together, though no argument attacks another. Refused
+    @Test
+    fun aTheoryWithNoWeakContrapositionIsRefused() {
+        val framework =
+            AbaReference(
+                listOf("a0", "a1"),
+                listOf("x" to listOf("a0", "a1")),
+                mapOf("a0" to "x", "a1" to "y"),
+                setOf("a1" to "a0"),
+            )
+        assertFalse(framework.weakContraposition)
+        assertEquals(setOf(setOf("a0"), setOf("a1")), framework.preferred)
+        assertTrue(refused(framework.theory("aba_plus", "preferred")))
+        // a0 deriving y contraposes it
+        val contraposed =
+            AbaReference(framework.assumptions, framework.rules + ("y" to listOf("a0")), framework.contraries, framework.weaker)
+        assertTrue(contraposed.weakContraposition)
+        assertEquals(contraposed.preferred, labelled(contraposed.theory("aba_plus", "preferred")))
+    }
+
+    // the labellings of arg2p, for every semantics, those of the definitions
+    private fun agree(
+        framework: AbaReference,
+        profile: String,
+    ) {
+        framework.grounded?.let { assertEquals(setOf(it), labelled(framework.theory(profile)), framework.theory(profile)) }
+        mapOf("preferred" to framework.preferred, "stable" to framework.stable, "complete" to framework.completes)
+            .filterValues { it.isNotEmpty() }
+            .forEach { (semantics, expected) ->
+                assertEquals(
+                    expected,
+                    labelled(framework.theory(profile, semantics)),
+                    "$semantics\n" + framework.theory(profile, semantics),
+                )
+            }
+    }
+
+    @Test
+    fun flatAbaAgreesWithTheDefinitions() {
+        val random = Random(1997)
+        repeat(40) { agree(AbaReference.random(random, flat = true, preferences = false), "aba") }
+    }
+
+    @Test
+    fun abaPlusAgreesWithTheDefinitionsUnderWeakContraposition() {
         val random = Random(2016)
         var compared = 0
-        repeat(60) {
-            val assumptions = List(random.nextInt(3, 6)) { "a$it" }
-            val atoms = List(random.nextInt(2, 5)) { "p$it" }
-            val sentences = assumptions + atoms
-            val bodies = List(random.nextInt(1, 4)) { List(random.nextInt(1, 3)) { assumptions.random(random) }.distinct() }
-            val rules =
-                List(random.nextInt(2, 8)) {
-                    val body = if (random.nextInt(4) == 0) listOf(sentences.random(random)) else bodies.random(random)
-                    atoms.random(random) to body
+        var refusals = 0
+        repeat(600) {
+            val framework = AbaReference.random(random, flat = true, preferences = true)
+            when {
+                !framework.reversing -> Unit
+                framework.weakContraposition ->
+                    if (compared < 15) {
+                        agree(framework, "aba_plus")
+                        compared++
+                    }
+                refusals < 8 -> {
+                    assertTrue(refused(framework.theory("aba_plus")), framework.theory("aba_plus"))
+                    refusals++
                 }
-            val contraries = assumptions.associateWith { if (random.nextInt(4) == 0) sentences.random(random) else atoms.random(random) }
-            val rank = assumptions.associateWith { random.nextInt(3) }
-            val weaker =
-                assumptions
-                    .flatMap { w -> assumptions.map { s -> w to s } }
-                    .filter { (w, s) -> rank.getValue(w) < rank.getValue(s) && random.nextInt(3) > 0 }
-                    .toSet()
-                    .let { pairs -> closure(pairs) }
-            val framework = Framework(assumptions, rules, contraries, weaker)
-            framework.accepted?.let {
-                compared++
-                assertEquals(it, accepted(framework.theory()), framework.theory())
             }
         }
-        assertTrue(compared >= 40, "$compared frameworks compared")
+        assertEquals(15, compared)
+        assertEquals(8, refusals)
     }
 
-    private fun closure(pairs: Set<Pair<String, String>>): Set<Pair<String, String>> {
-        var closed = pairs
-        do {
-            val more = closed.flatMap { (a, b) -> closed.filter { it.first == b }.map { a to it.second } }.toSet() - closed
-            closed = closed + more
-        } while (more.isNotEmpty())
-        return closed
+    @Test
+    fun aNonFlatTheoryIsRefused() {
+        val random = Random(2009)
+        var nonFlat = 0
+        repeat(20) {
+            val framework = AbaReference.random(random, flat = false, preferences = false)
+            if (framework.rules.any { it.first in framework.assumptions }) {
+                nonFlat++
+                assertTrue(refused(framework.theory("aba")), framework.theory("aba"))
+            }
+        }
+        assertTrue(nonFlat >= 5, "$nonFlat theories not flat")
     }
 }

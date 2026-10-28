@@ -9,17 +9,46 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * attacks every argument whose support (its assumptions, see the module abaLanguage) contains the whole support of
  * the attacker. The reversal hits the arguments resting on the same assumptions as the attacker, not only the
  * attacker: as ABA+ reverses attacks between sets of assumptions, and the arguments do not share a sub-argument for
- * those sets.
+ * those sets. That holds on the theories satisfying Weak Contraposition (Čyras and Toni 2016, Axiom 4), and those
+ * failing it are refused: their semantics are those of sets of assumptions, which the arguments do not capture.
  */
 object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba", "abaPref") {
     override val prologRawTheory: String =
         // language=Prolog
         """
         %! modifyArgumentationGraph
-        %  The attacks on assumptions by arguments resting on weaker ones reversed.
+        %  The attacks on assumptions by arguments resting on weaker ones reversed, the theory satisfying Weak
+        %  Contraposition.
         modifyArgumentationGraph :-
             findall(attack(undermine, X, Y, On), graphStore::attack(undermine, X, Y, On), Attacks),
+            utils::forEach(attack(_, X, _, On), Attacks, abaPref::contraposed(X, On)),
             utils::forEach(attack(T, X, Y, On), Attacks, abaPref::reverse(T, X, Y, On)).
+
+        %! contraposed(+Attacker, +On)
+        %  Weak Contraposition (Čyras and Toni 2016, Axiom 4), on which the reversal of the attacks between arguments
+        %  is that of ABA+ between sets of assumptions: if Attacker, resting on the assumptions Support, attacks the
+        %  assumption Beta though some are weaker than it, then for one Alpha of the weakest of them an argument
+        %  attacks Alpha resting on Support but Alpha, and Beta. A theory failing it is refused.
+        contraposed(X, On) :-
+            \+ weaker(X, On), !.
+        contraposed(X, On) :-
+            argument::claim(On, Beta),
+            support(X, Support),
+            findall(A, (member(A, Support), context_check(sup(Beta, A))), Weaker),
+            member(Alpha, Weaker),
+            \+ (member(Other, Weaker), Other \== Alpha, context_check(sup(Alpha, Other))),
+            graphStore::attack(undermine, D, Premise, Premise),
+            argument::claim(Premise, Alpha),
+            support(D, Deduction),
+            \+ member(Alpha, Deduction),
+            contained(Deduction, [Beta|Support]), !.
+        contraposed(X, On) :-
+            argument::claim(On, Beta),
+            support(X, Support),
+            throw(error(
+                domain_error(weak_contraposition, attack(Support, Beta)),
+                'aba_plus: no weak contraposition (some assumptions attack a stronger one, and no argument from them and the stronger one attacks the weakest of them)'
+            )).
 
         %! reverse(+Type, +Attacker, +Attacked, +On)
         %  The attack of Attacker on On, the argument for an assumption, reversed if Attacker rests on a weaker

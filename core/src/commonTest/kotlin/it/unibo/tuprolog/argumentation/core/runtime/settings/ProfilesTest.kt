@@ -88,6 +88,19 @@ class ProfilesTest {
         assertEquals(listOf("normal"), module.values("setting(orderingComparator, X)", "X"))
     }
 
+    // ASPIC+ is well formed: a contrary (a conflict declared one way) targets no axiom nor conclusion of a strict rule
+    @Test
+    fun aspicRefusesContrariesOfStrictConclusions() {
+        val strict = "f1 :-> b.\ns1 : b -> c.\nr1 : [] => d.\n"
+        assertTrue(labelling(strict + "conflict([d], [c]).\n").isHalt)
+        assertTrue(labelling(strict + "conflict([d], [b]).\n").isHalt)
+        // on a defeasible conclusion, or both ways (a contradictory), it stands
+        assertTrue(labelling(strict + "conflict([c], [d]).\n").isYes)
+        assertTrue(labelling(strict + "conflict([d], [c]).\nconflict([c], [d]).\n").isYes)
+        // and the profile free does not check it
+        assertTrue(labelling(strict + "conflict([d], [c]).\ngraphBuildMode(free).\n").isYes)
+    }
+
     @Test
     fun theSettingsOfTheSolverOverrideTheProfile() {
         val solver = Arg2pSolverFactory.default(theory = "", settings = FlagsBuilder().metaRules(true).create())

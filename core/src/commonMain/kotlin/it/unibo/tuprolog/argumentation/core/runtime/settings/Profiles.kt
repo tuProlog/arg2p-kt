@@ -76,11 +76,16 @@ object Profiles {
         Profile(
             "aspic_plus",
             "ASPIC+: strict and defeasible rules, axioms and premises, preferences, restricted rebut, transposition",
-            rules(true, "standardPref", "rebutRestriction"),
+            rules(true, "standardPref", "rebutRestriction") + values(GraphLanguage, "aspicLanguage"),
         )
 
     /** ASPIC+ with no preferences: every attack succeeds */
-    val ASPIC = Profile("aspic", "ASPIC+ with no preferences: every attack succeeds", rules(true, "rebutRestriction"))
+    val ASPIC =
+        Profile(
+            "aspic",
+            "ASPIC+ with no preferences: every attack succeeds",
+            rules(true, "rebutRestriction") + values(GraphLanguage, "aspicLanguage"),
+        )
 
     /**
      * The defeasible part of ASPIC+: defeasible rules alone, facts as rules with no premise (`r : [] => a.`), their
@@ -111,7 +116,8 @@ object Profiles {
      * Flat assumption-based argumentation (Bondarenko et al. 1997; Dung, Kowalski and Toni 2009), as the instance of
      * ASPIC+ it is (Prakken 2010): strict rules, assumptions (assumption/1) as ordinary premises, contraries
      * (contrary(Assumption, Contrary)) one way only, no preference, no other conflict (not even negation). A theory
-     * with defeasible rules, or an assumption a rule concludes (not flat), is refused.
+     * with defeasible rules, or an assumption a rule concludes (not flat), is refused: the semantics of non-flat ABA
+     * are those of sets of assumptions, which the arguments do not capture.
      */
     val ABA =
         Profile(
@@ -122,7 +128,9 @@ object Profiles {
 
     /**
      * ABA+ (Čyras and Toni 2016): flat ABA with preferences between assumptions, `sup(Stronger, Weaker)`, an attack
-     * by an argument resting on a weaker assumption reversed (see the extension abaPref)
+     * by an argument resting on a weaker assumption reversed (see the extension abaPref). The theory satisfies Weak
+     * Contraposition (Axiom 4 of Čyras and Toni), and is refused otherwise: without it, the semantics of ABA+ are
+     * those of sets of assumptions, which the arguments do not capture.
      */
     val ABA_PLUS =
         Profile(
