@@ -33,6 +33,14 @@ jobs:
       - name: Build the site
         run: |
           ./gradlew -PbaseUrl="${{ steps.pages.outputs.base_url }}/" hugoBuild
+      - name: The coverage of the tests, published with the site (and read by the badges of the README)
+        run: |
+          ./gradlew -Pcoverage koverBadge koverHtmlReport :core:jvmPrologCoverage
+          mkdir -p doc/build/hugo/publish/coverage
+          cp -r build/reports/kover/html doc/build/hugo/publish/coverage/kotlin
+          cp build/reports/kover/badge.json doc/build/hugo/publish/coverage/kotlin.json
+          cp core/build/reports/prolog-coverage/coverage.md doc/build/hugo/publish/coverage/prolog.md
+          cp core/build/reports/prolog-coverage/badge.json doc/build/hugo/publish/coverage/prolog.json
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

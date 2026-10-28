@@ -22,6 +22,12 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             context_assert(possibleAttackersOf(Id, Statements)),
             member(Statement, Statements).
 
+        %! forgetPossibleAttackers
+        %  The possible attackers looked for forgotten: with arguments for conflicts built since (metaConflicts), they
+        %  may be more.
+        forgetPossibleAttackers :-
+            context_retract(possibleAttackersOf(_, _)).
+
         %! findPossibleAttackers(+Argument, -Statement)
         %  The arguments for Statement may attack Argument: Statement conflicts with its conclusion or its top rule, it
         %  is the contrary of a premise of its top rule, or it undercuts its top rule.

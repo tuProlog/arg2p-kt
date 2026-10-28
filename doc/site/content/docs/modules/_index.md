@@ -55,8 +55,8 @@ implementation exists.
 
 | Stage | Module | Selected by |
 | --- | --- | --- |
-| Parse the theory into internal rules | `parser` | always |
-| Build arguments, attacks and supports | `standard_af` | `graphBuildMode` |
+| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage` | `graphLanguage` (set by `graphBuildMode`) |
+| Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
 | Apply graph extensions (preferences, restrictions) | one per extension | `graphExtension` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
@@ -78,7 +78,8 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `standard_af` | Builds the argumentation graph: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
+| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
+| `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
@@ -99,7 +100,7 @@ one per value of `statementLabellingMode`. They all expose the same entry point,
 
 ### Graph extension modules
 
-`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction` and `bp` all expose
+`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp` and `abaPref` all expose
 `modifyArgumentationGraph/0`, and are applied after the graph has been built.
 
 ---
@@ -114,15 +115,21 @@ Data produced by a stage is stored in the evaluation context and can be read bac
 ?- context_check(in(A)).
 ```
 
-This is how the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}}) helper reads results, and it is the most
-direct way to see what a single stage produced.
+This is the most direct way to see what a single stage produced. The context holds the attacks as they are found,
+each on the argument it targets: an attack on an argument also attacks every argument built on it, on the same
+sub-argument, and `graphStore::attack/4` reads them all, as the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}})
+helper does:
+
+```prolog
+?- graphStore::attack(Type, Attacker, Attacked, On).
+```
 
 Useful context predicates:
 
 | Predicate | Content |
 | --- | --- |
 | `argument/1` | An argument built by the graph builder. |
-| `attack/4` | `attack(Type, Attacker, Attacked, On)`. |
+| `attack/4` | `attack(Type, Attacker, Attacked, On)`, as found (see `graphStore::attack/4` for all of them). |
 | `support/2` | `support(Supporter, Supported)`. |
 | `in/1`, `out/1`, `und/1` | The argument labelling. |
 | `statIn/1`, `statOut/1`, `statUnd/1` | The statement labelling. |

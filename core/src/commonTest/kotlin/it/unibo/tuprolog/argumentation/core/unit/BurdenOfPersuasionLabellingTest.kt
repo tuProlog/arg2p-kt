@@ -159,7 +159,6 @@ class BurdenOfPersuasionLabellingTest {
             r1 : [] => a.
             r2 : [] => -a.
             sup(r2, r1).
-            graphBuildMode(standard_af).
             statementLabellingMode(statement).
             argumentLabellingMode(bp_grounded_partial).
             orderingPrinciple(last).

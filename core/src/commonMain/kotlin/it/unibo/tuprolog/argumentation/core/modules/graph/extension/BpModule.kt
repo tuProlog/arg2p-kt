@@ -30,7 +30,7 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
             createBpAttacks(BpPairs).
 
         % The conflict argument of a burdened argument is the same for every burden of proof on it: it is saved once, and
-        % supported by each of them
+        % supported by each of them, so attacked as they are (see the module graphStore)
         createBpArguments([], []).
         createBpArguments([(Bp, Burdened)|Others], [(Conflict, Burdened)|BpPairs]) :-
             argument::rules(Burdened, Rules),
@@ -39,18 +39,10 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
             argument::new([artificial|Rules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
             ignore(graphStore::saveArgument(a, [-burdmet(Conclusion)], Conflict)),
             ignore(graphStore::saveSupport(Bp, Conflict)),
-            liftBpAttacks(Bp, Conflict),
             createBpArguments(Others, BpPairs).
 
         ignore(Goal) :- call(Goal), !.
         ignore(_).
-
-        % The attacks on the burden of proof also attack the conflict argument
-        liftBpAttacks(Bp, Conflict) :-
-            findall(_, (
-                graphStore::attack(T, A, Bp, O),
-                graphStore::saveAttack(T, A, Conflict, O)
-            ), _).
 
         createBpAttacks(BpPairs) :-
             generateBpsEvaluationChain(BpPairs, OrderedBpPairs),

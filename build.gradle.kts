@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.ktMpp.npmPublish)
     alias(libs.plugins.ktMpp.multiplatform)
     alias(libs.plugins.gitSemVer)
+    alias(libs.plugins.kover) apply false
 }
 
 group = "it.unibo.tuprolog.argumentation"
@@ -62,10 +63,10 @@ gitSemVer {
 multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
-    ktProjects(rootProject.path, ":core", ":causality-solver")
+    ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
     jvmProjects(":ide", ":actor-solver")
     // jsProjects()
-    otherProjects(":doc")
+    otherProjects(":doc", ":python")
 
     val baseProjectTemplate =
         buildSet {
@@ -132,6 +133,10 @@ kotlin {
             }
         }
         binaries.library()
+        // the declarations of the exported API for TypeScript (.d.ts), next to the JavaScript
+        generateTypeScriptDefinitions()
+        // ES modules, as bundlers, Node.js and Deno import them
+        useEsModules()
     }
 
     sourceSets {
@@ -140,7 +145,74 @@ kotlin {
             dependencies {
                 api(project(":core"))
                 api(project(":causality-solver"))
+                api(project(":parallel-solver"))
             }
+        }
+    }
+}
+
+// The tests of the API run the solvers of arg2p, as those of the modules
+val jvmStackSize: String = property("jvmStackSize").toString()
+val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
+    maxHeapSize = jvmMaxHeapSize
+    jvmArgs("-Xss$jvmStackSize")
+}
+
+// The npm package of arg2p, the only one (the modules it is made of are published on Maven alone): an ES module (see
+// useEsModules) with every declaration of the API, and its declarations for TypeScript, as package.json tells Node.js,
+// bundlers and TypeScript. Set once the project is evaluated, as kt-mpp configures the package after this.
+afterEvaluate {
+    npmPublish {
+        packages.configureEach {
+            packageJson {
+                main.set("arg2p.mjs")
+                types.set("arg2p.d.mts")
+                this["type"] = "module"
+                this["exports"] = mapOf("." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"))
+            }
+        }
+    }
+}
+
+// The coverage of the Kotlin code by the tests on the JVM (Kover), with -Pcoverage alone, as it instruments them: the
+// code of core, of the causality and the parallel solver and of the API (commonMain is the code of JavaScript as
+// well), in one report (build/reports/kover), and its total for a badge (koverBadge)
+val coverage = findProperty("coverage") != null
+val covered = listOf(":core", ":causality-solver", ":parallel-solver")
+
+if (coverage) {
+    apply(plugin = "org.jetbrains.kotlinx.kover")
+    covered.forEach { project(it).apply(plugin = "org.jetbrains.kotlinx.kover") }
+    dependencies { covered.forEach { "kover"(project(it)) } }
+
+    tasks.register("koverBadge") {
+        group = "verification"
+        description = "Writes the coverage of the lines for a badge, as shields.io reads it (build/reports/kover/badge.json)"
+        dependsOn("koverXmlReport")
+        val report = layout.buildDirectory.file("reports/kover/report.xml")
+        val badge = layout.buildDirectory.file("reports/kover/badge.json")
+        inputs.file(report)
+        outputs.file(badge)
+        doLast {
+            // the counter of the lines of the whole report, the last one
+            val line = Regex("""<counter type="LINE" missed="(\d+)" covered="(\d+)"/>""").findAll(report.get().asFile.readText()).last()
+            val (missed, hit) = line.destructured
+            val share = 100 * hit.toInt() / (hit.toInt() + missed.toInt())
+            val color =
+                if (share >= 90) {
+                    "brightgreen"
+                } else if (share >= 75) {
+                    "green"
+                } else if (share >= 60) {
+                    "yellow"
+                } else {
+                    "orange"
+                }
+            badge.get().asFile.writeText(
+                "{\"schemaVersion\": 1, \"label\": \"Kotlin coverage\", \"message\": \"$share%\", \"color\": \"$color\"}\n",
+            )
         }
     }
 }
@@ -161,6 +233,7 @@ allprojects {
 dependencies {
     "dokka"(project(":core"))
     "dokka"(project(":causality-solver"))
+    "dokka"(project(":parallel-solver"))
 }
 
 // project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {

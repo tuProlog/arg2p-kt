@@ -28,12 +28,11 @@ object DefeasibleAllPrefModule : PrologModule(
             defeasiblePref::invalid(T, A, B, C, Preferences),
             createSuperiorityArgument(Preferences, Argument),
             graphStore::saveAttack(pref, Argument, Attack, Attack),
-            defeasiblePref::prefersTransitively(Argument, Attack),
             fail.
         buildPrefAttacks.
 
-        % The argument for preference(Preferences), supported by the arguments for each of the preferences, and
-        % attacked as they are: saved once, for the first attack the preferences invalidate
+        % The argument for preference(Preferences), supported by the arguments for each of the preferences, and so
+        % attacked as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
         createSuperiorityArgument(Preferences, Argument) :-
             findall(Support, (
                 member(X, Preferences),
@@ -48,11 +47,7 @@ object DefeasibleAllPrefModule : PrologModule(
         saveRelations(Supports, Argument) :-
             findall(_, (
                 member(A, Supports),
-                graphStore::saveSupport(A, Argument),
-                findall(_, (
-                    graphStore::attack(X, Y, A, Z),
-                    graphStore::saveAttack(X, Y, Argument, Z)
-                ), _)
+                graphStore::saveSupport(A, Argument)
             ), _).
 
         % The rules of the arguments, after pref

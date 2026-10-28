@@ -4,7 +4,6 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextAssertAll
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextInstances
-import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -24,20 +23,16 @@ internal fun Solve.Request<ExecutionContext>.storedArguments(): List<Pair<Term, 
     }
 
 /**
- * The attack graph of the active branch, from its att/2 clauses: built once until they change (the native
- * labellings read it at each step of their search)
+ * The attack graph of the active branch, the saved attacks and those they extend to (see [ExpandedAttacks]): built
+ * once until they change (the native labellings read it at each step of their search)
  */
-internal fun Solve.Request<ExecutionContext>.attackGraph(): AttackGraph =
-    contextLibrary.derived("att", 2, "attackGraph") { clauses ->
-        AttackGraph(clauses.map { it.head!!.let { att -> att[0] to att[1] } })
-    }
+internal fun Solve.Request<ExecutionContext>.attackGraph(): AttackGraph = expandedAttacks().graph
 
 /** Attacks as (attacker, attacked) argument identifiers */
 internal fun Solve.Request<ExecutionContext>.attacks(): List<Pair<Term, Term>> = attackGraph().attacks
 
 /** The conflicts between the arguments of the active branch (see [ConflictGraph]), built once until the attacks change */
-internal fun Solve.Request<ExecutionContext>.conflictGraph(): ConflictGraph<Term> =
-    contextLibrary.derived("att", 2, "conflictGraph") { ConflictGraph(attacks()) }
+internal fun Solve.Request<ExecutionContext>.conflictGraph(): ConflictGraph<Term> = expandedAttacks().conflicts
 
 /** The identifiers of the arguments labelled with [label] (in, out or und), in the given or the active branch */
 internal fun Solve.Request<ExecutionContext>.labelledIds(

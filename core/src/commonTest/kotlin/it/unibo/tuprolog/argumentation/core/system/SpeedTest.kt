@@ -105,7 +105,6 @@ class SpeedTest {
         f24 :-> production_manager(mike).
         f25 :=> claim(mike, test_ok(ambulance)).
         
-        graphBuildMode(standard_af).
         statementLabellingMode(statement).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).

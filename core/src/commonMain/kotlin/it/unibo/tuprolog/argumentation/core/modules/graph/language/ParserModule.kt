@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
+import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
@@ -14,6 +15,7 @@ import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPrem
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologStrictRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClause
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClauseNatural
+import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
 import it.unibo.tuprolog.core.operators.Operator
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.operators.Specifier
@@ -46,7 +48,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         get() = super.theoryOperators.plus(operators())
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules)
+        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage)
 
     fun operators() =
         OperatorSet(
@@ -55,7 +57,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             Operator(":->", Specifier.XFX, 1199),
             Operator(":", Specifier.XFX, 1001),
 //            Operator("->", Specifier.XFX, 1050)
-        )
+        ) + Profiles.operators()
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -73,7 +75,8 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
             findall(sup(X, Y), sup(X, Y), Stated),
             supClosure(Stated, Sup),
-            utils::appendLists([Clauses, MappedIds, Sup, SpecialRules], ArgRules),
+            languageConflicts(Conflicts),
+            utils::appendLists([Clauses, MappedIds, Sup, SpecialRules, Conflicts], ArgRules),
             utils::assertAll(ArgRules), !.
 
         %! supClosure(+Stated, -Closed)
@@ -127,7 +130,26 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         ordinaryPremises(Premises) :-
             findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
             prologPremises(PremisesNew),
-            utils::appendFast(PremisesOld, PremisesNew, Premises).
+            languagePremises(PremisesLanguages),
+            utils::appendLists([PremisesOld, PremisesNew, PremisesLanguages], Premises).
+
+        %! languagePremises(-Premises)
+        %  The ordinary premises the languages of the theory state (graphLanguage), as [Id, Statement].
+        languagePremises(Premises) :-
+            findall(P, (setting(graphLanguage, L), L:::premises(P)), Lists),
+            utils::appendLists(Lists, Premises).
+
+        %! languageConflicts(-Conflicts)
+        %  The conflicts the languages of the theory state (graphLanguage), as conflict(Statement, Other).
+        languageConflicts(Conflicts) :-
+            findall(C, (setting(graphLanguage, L), L:::conflicts(C)), Lists),
+            utils::appendLists(Lists, Conflicts).
+
+        %! checkLanguages
+        %  The theory is written in each of its languages (graphLanguage): each checks it, raising an error if not.
+        checkLanguages :-
+            findall(L, setting(graphLanguage, L), Languages),
+            utils::forEach(L, Languages, L:::check).
 
         axiomPremises(Axioms, Ids) :-
             findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
@@ -166,6 +188,11 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %! prolog(?Premise, ?Goal)
         %  Premise, as [prolog(Goal)], is a Prolog check.
         prolog([prolog(Term)], Term).
+        %! argued(+Premise)
+        %  Premise, of a rule, is supported by an argument: neither a Prolog check nor a contrary.
+        argued(Premise) :-
+            \+ prolog([Premise], _),
+            \+ contrary([Premise], _).
         %! contrary(?Premise, ?Statement)
         %  Premise, as [~(Statement)], is a contrary premise.
         contrary([~(Term)], Term).

@@ -267,7 +267,7 @@ bp(Term1,…, TermN).
 ```
 
 Declared this way it is read by the `bp_grounded` family of semantics.
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=bp%28guilty%29.%0Ar1%20%3A%20evidence%20%3D%3E%20guilty.%0Ar2%20%3A%20alibi%20%3D%3E%20-guilty.%0Af1%20%3A%3D%3E%20evidence.%0Af2%20%3A%3D%3E%20alibi.&query=arg2p%3A%3Asolve%28guilty%2C%20Res%29&flags=graphBuildMode%28standard_af%29.%0AstatementLabellingMode%28statement%29.%0AargumentLabellingMode%28bp_grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=bp%28guilty%29.%0Ar1%20%3A%20evidence%20%3D%3E%20guilty.%0Ar2%20%3A%20alibi%20%3D%3E%20-guilty.%0Af1%20%3A%3D%3E%20evidence.%0Af2%20%3A%3D%3E%20alibi.&query=arg2p%3A%3Asolve%28guilty%2C%20Res%29&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28bp_grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
 — the link carries the `bp_grounded` flag block.
 
 A burden that should itself be open to argument is written as a rule conclusion instead — see

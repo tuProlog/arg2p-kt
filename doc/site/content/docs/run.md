@@ -21,34 +21,37 @@ dependencies {
 ### Usage Example
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Arg2p
 
 fun main() {
-    val graph = Arg2pSolverFactory.evaluate("""
-        f1 :=> d.
-        f2 :=> -d.
-    """.trimIndent(), FlagsBuilder()).first()
+    val (graph) =
+        Arg2p.of(
+            """
+            f1 :=> d.
+            f2 :=> -d.
+            """.trimIndent(),
+        ).graphs()
 
     graph.labellings.forEach {
         println("${it.label} : ${it.argument.conclusion}")
     }
 }
-``` 
+```
 
 For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
 
 ### Available modules
 
-`arg2p-jvm` is the aggregate module: it brings in the core engine and the causality solver, and is what most
-projects need. The individual modules can also be depended upon directly, all under the group
+`arg2p-jvm` is the aggregate module: it brings in the API of Arg2P (`Arg2p`), with the core engine, the causality and
+the parallel solver, and is what most projects need. The individual modules can also be depended upon directly, all under the group
 `it.unibo.tuprolog.argumentation`:
 
 | Artifact | Contents |
 | --- | --- |
-| `arg2p`, `arg2p-jvm`, `arg2p-js` | Aggregate: core engine + causality solver |
+| `arg2p`, `arg2p-jvm`, `arg2p-js` | Aggregate: the API of Arg2P, with the core engine, the causality and the parallel solver |
 | `core`, `core-jvm`, `core-js` | The argumentation engine alone |
 | `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
+| `parallel-solver`, `parallel-solver-jvm`, `parallel-solver-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel-solver" %}}) |
 | `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
 | `ide` | The desktop IDE as a library |
 
@@ -71,18 +74,13 @@ To use the library, add the dependency to your `package.json`:
 ### Usage Example
 
 ```js
-const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
+import { Arg2p } from '@tuprolog/arg2p'
 
-const solver = JsArg2p.solver(`
+const [graph] = Arg2p.of(`
     f1 :=> d.
-    f2 :=> -d.
-    queryMode.`)
-JsArg2p.solve(solver, 'arg2p::solve').next()
-const graph = JsArg2p.graph(solver)
+    f2 :=> -d.`).graphs()
 
-graph.arguments.forEach(arg => {
-    console.log(`${arg.label} : ${arg.descriptor}`)
-})
+graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
 ```
 
 For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).

@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.settings
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingSwitch
 import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingValue
@@ -25,7 +26,10 @@ import it.unibo.tuprolog.theory.Theory
  * switch for its values (and the other way round), raises a domain error.
  *
  * Their values are a view over the facts of the libraries (the settings of the solver, as [FlagsBuilder] states them)
- * and those of the theory: for each flag, the theory overrides the libraries.
+ * and those of the theory, through the profile of the theory (graphBuildMode, see [Profiles]): for each flag, the
+ * theory states its values, or else the settings of the solver if they differ from the default of the flag, or else
+ * the profile, or else the settings of the solver. A flag is stated with no value by `Flag(none)` (no graph
+ * extension, say), a switch stated off by `Switch(off)`: so a theory clears what its profile presets.
  */
 class Settings(
     private val solver: Arg2pSolver,
@@ -68,29 +72,53 @@ class Settings(
     fun states(clause: Clause): Boolean {
         val head = clause.head ?: return false
         val flag = flags[head.functor] ?: return false
-        return clause.isFact && head.arity == (if (flag.isSwitch) 0 else 1)
+        return clause.isFact && (head.arity == 1 || (flag.isSwitch && head.arity == 0))
     }
 
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
         if (viewOf !== context.staticKb) {
             val libraries = context.libraries.asTheory(context.unificator)
-            view = flags.mapValues { (_, flag) -> stated(flag, context.staticKb).ifEmpty { stated(flag, libraries) } }
+            val theory = flags.mapValues { (_, flag) -> stated(flag, context.staticKb) }
+            val solver = flags.mapValues { (_, flag) -> stated(flag, libraries) }
+            val mode = theory[GraphBuildMode.predicate()].orEmpty().ifEmpty { solver[GraphBuildMode.predicate()].orEmpty() }
+            val profile = if (mode.isEmpty()) Profiles.default else Profiles.named((mode.first() as? Atom)?.value)
+            val presets = profile?.presets.orEmpty()
+            view =
+                flags.mapValues { (name, flag) ->
+                    // a switch of the solver is off with no fact, another flag has no value stated
+                    val stated = solver.getValue(name)
+                    val explicit = (flag.isSwitch || stated.isNotEmpty()) && stated.map { it.toString() } != defaultOf(flag)
+                    val values =
+                        when {
+                            theory.getValue(name).isNotEmpty() -> theory.getValue(name)
+                            explicit -> stated
+                            flag.isSwitch -> presets[name] ?: stated
+                            else -> presets[name] ?: stated.ifEmpty { defaultOf(flag).map { Atom.of(it) } }
+                        }
+                    values.filter { it != NONE && it != OFF }
+                }
             viewOf = context.staticKb
         }
         return view
     }
 
-    // The values of a flag stated by the facts of a theory
+    // The values of a flag stated by the facts of a theory: none or off for one stated with no value
     private fun stated(
         flag: ArgsFlag<*, *>,
         theory: Theory,
     ): List<Term> {
-        val pattern = if (flag.isSwitch) Atom.of(flag.predicate()) else Struct.of(flag.predicate(), Var.of("Value"))
-        return theory[pattern]
-            .filter { it.isFact }
-            .map { if (flag.isSwitch) Truth.TRUE else it.head[0] }
-            .toList()
+        val valued = theory[Struct.of(flag.predicate(), Var.of("Value"))].filter { it.isFact }.map { it.head[0] }
+        if (!flag.isSwitch) return valued.toList()
+        return theory[Atom.of(flag.predicate())].filter { it.isFact }.map { Truth.TRUE }.toList() + valued.filter { it == OFF }
     }
+
+    // The default values of a flag, as text
+    private fun defaultOf(flag: ArgsFlag<*, *>): List<String> =
+        when (val default = flag.default()) {
+            is Boolean -> if (default) listOf(Truth.TRUE.toString()) else emptyList()
+            is Iterable<*> -> default.map { Atom.of(it.toString()).toString() }
+            else -> listOf(Atom.of(default.toString()).toString())
+        }
 
     /** The flag named by the first argument of [request], declared of the kind its check expects (a switch or not) */
     internal fun declared(
@@ -118,6 +146,10 @@ class Settings(
         get() = emptyList()
 
     companion object {
+        // The values stating a flag with no value, and a switch off
+        private val NONE = Atom.of("none")
+        private val OFF = Atom.of("off")
+
         /** The settings of the solver of [context], if they are reachable */
         fun of(context: ExecutionContext): Settings? = (context.libraries.primitives[SettingSwitch.SIGNATURE] as? SettingSwitch)?.owner
     }
