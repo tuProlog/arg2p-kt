@@ -1,0 +1,46 @@
+# Arg2P for VS Code
+
+Structured argumentation in Prolog with [Arg2P](https://tuprolog.github.io/arg2p-kt/): write theories (ASPIC<sup>+</sup>,
+ABA, abstract frameworks), see where they do not parse as you type, solve queries and browse their argument graphs,
+in the editor.
+
+## Theories
+
+A theory is a `.arg2p` file: its syntax is highlighted, and its syntax errors show as you type, as problems of the
+document. Its profile (`graphBuildMode(aba).`, say) tells the framework it is read in: see
+[Profiles](https://tuprolog.github.io/arg2p-kt/docs/profiles/).
+
+```prolog
+% Tweety, the bird that does not fly
+f1 :=> bird(tweety).
+r1 : bird(X) => flies(X).
+f2 :=> -flies(tweety).
+```
+
+## The solver
+
+**Arg2P: Open the Solver** (the ▷ of the editor of a theory) opens its solver beside it:
+
+- the query, solved with **Run** (or Enter), one solution at a time (**Next**), **Stop** to stop it;
+- the argument graph of a solution, the stages of its computation, and the popup of each argument;
+- for an abstract framework (`graphBuildMode(abstract).`), its drawing: what is drawn is written in the theory, and the
+  theory edited is drawn again;
+- the flags, the profile first, each with the value in effect and where it comes from;
+- what the theory prints.
+
+The solver keeps the query and the flags of each theory.
+
+## The language server
+
+The extension runs the language server of Arg2P on the JVM. The package for a platform bundles its Java runtime;
+elsewhere it runs on the Java the settings name (`arg2p.java.path`), or that of `JAVA_HOME`, or `java` on the path
+(21 or later). `arg2p.java.options` are the options of the JVM: `-Xmx8g`, say, for the heap of large graphs.
+**Arg2P: Restart the Language Server** starts it afresh.
+
+## Settings
+
+| Setting | |
+| --- | --- |
+| `arg2p.java.path` | The `java` running the language server |
+| `arg2p.java.options` | The options of the JVM running it (`-Xss512m`) |
+| `arg2p.flags` | The flags a theory is first solved with |

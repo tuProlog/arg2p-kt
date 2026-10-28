@@ -1,0 +1,132 @@
+{
+  "name": "arg2p",
+  "displayName": "Arg2P",
+  "description": "Structured argumentation in Prolog: write theories (ASPIC+, ABA, abstract frameworks), see their errors as you type, solve queries and browse their argument graphs.",
+  "version": "0.0.0",
+  "publisher": "tuprolog",
+  "license": "MIT",
+  "author": "Giuseppe Pisano",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tuProlog/arg2p-kt",
+    "directory": "vscode"
+  },
+  "homepage": "https://tuprolog.github.io/arg2p-kt/",
+  "bugs": {
+    "url": "https://github.com/tuProlog/arg2p-kt/issues"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "argumentation",
+    "prolog",
+    "aspic",
+    "aba",
+    "logic"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "arg2p",
+        "aliases": [
+          "Arg2P",
+          "arg2p"
+        ],
+        "extensions": [
+          ".arg2p"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "arg2p",
+        "scopeName": "source.arg2p",
+        "path": "./syntaxes/arg2p.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "arg2p.solve",
+        "title": "Open the Solver",
+        "category": "Arg2P",
+        "icon": "$(play)"
+      },
+      {
+        "command": "arg2p.restartServer",
+        "title": "Restart the Language Server",
+        "category": "Arg2P"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "arg2p.solve",
+          "when": "editorLangId == arg2p",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "arg2p.solve",
+          "when": "editorLangId == arg2p"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Arg2P",
+      "properties": {
+        "arg2p.java.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The `java` running the language server. Empty: the Java runtime the extension bundles, or else the one of `JAVA_HOME`, or else `java` on the path (21 or later)."
+        },
+        "arg2p.java.options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "-Xss512m"
+          ],
+          "markdownDescription": "The options of the JVM running the language server: `-Xmx8g`, say, for the heap of large graphs. Resolution goes deep: keep a large stack (`-Xss512m`)."
+        },
+        "arg2p.flags": {
+          "type": "string",
+          "default": "argumentLabellingMode(grounded).\nstatementLabellingMode(statement).\nqueryMode.\n",
+          "markdownDescription": "The flags a theory is first solved with, as Prolog facts (the solver keeps those of each theory afterwards)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:vscode": "node test/integration/run.mjs",
+    "preview": "node test/preview/server.mjs",
+    "package": "node esbuild.mjs --production && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@tuprolog/arg2p-ui": "file:../../arg2p-kt-web/packages/ui",
+    "@types/node": "24.19.1",
+    "@types/vscode": "1.95.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "lit": "3.3.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4",
+    "vscode-jsonrpc": "9.0.3",
+    "vscode-languageclient": "10.1.2"
+  }
+}

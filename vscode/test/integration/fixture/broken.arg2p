@@ -1,0 +1,2 @@
+f1 :=> bird(tweety).
+r1 : bird(X) => flies(X(.
