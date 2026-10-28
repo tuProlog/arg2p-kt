@@ -34,8 +34,7 @@ import kotlin.time.Duration.Companion.minutes
  * Each page is a session of its own, by the name it gives: its query (the last one alone, as in the browser), and the
  * requests solving it (solve and next, one at a time in their order, as the worker solves them), which a new query, a
  * stop or a close stops, answered with a failure. A session idle for [idle] is forgotten, the least recently used past
- * [MAX_SESSIONS] too: their query is no longer running. The theories are those of the user, or of an AI model: their
- * solvers are sandboxed (see [Solvers]), and each request is stopped past [limit], if there is one.
+ * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past [limit], if there is one.
  */
 internal class PageEngine(
     private val solving: Solving,

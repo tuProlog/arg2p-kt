@@ -17,7 +17,6 @@ import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
-import it.unibo.tuprolog.solve.exception.error.PermissionError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
@@ -70,21 +69,6 @@ object CallModule : Primitive {
                 },
             )
         }
-    }
-
-    /**
-     * call_module/2 of a sandboxed solver (see ModuleRegistry.sandboxed): no module is read, from a file or a URL, the
-     * call raises a permission error
-     */
-    object Refused : Primitive {
-        override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-            throw PermissionError.of(
-                request.context,
-                request.signature,
-                PermissionError.Operation.ACCESS,
-                PermissionError.Permission.SOURCE_SINK,
-                request.arguments[0],
-            )
     }
 
     // The modules path of the settings (empty if there is none)

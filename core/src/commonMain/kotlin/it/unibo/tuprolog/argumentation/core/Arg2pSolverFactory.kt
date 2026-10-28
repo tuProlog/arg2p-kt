@@ -24,14 +24,12 @@ object Arg2pSolverFactory {
         dynamicLibs: Iterable<ArgLibrary>,
     ) = solverOf(Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs), theory)
 
-    /** A solver of the libraries of arg2p (see Arg2pSolver.default) for [theory], with [settings] */
     fun default(
         theory: String = "",
         settings: ArgLibrary = FlagsBuilder().create(),
         staticLibs: Iterable<ArgLibrary> = emptyList(),
         dynamicLibs: Iterable<ArgLibrary> = emptyList(),
-        sandboxed: Boolean = false,
-    ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs, sandboxed), theory)
+    ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
     /**
      * A solver of the libraries of [arg2p], and the [extra] ones, for [theory] (its clauses tagged with the

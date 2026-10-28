@@ -30,15 +30,12 @@ private const val GRAPH_CACHE_SIZE = 256
  * The causal analysis of a theory, for the primitives of the causality module: the graphs of the theory and of its
  * interventions, labelled by a solver of its own with grounded semantics (the other flags those of the solver asking),
  * and the NESS and but-for checks on them. The theory is the static knowledge base of the solver asking
- * ([Solve.Request]), solved [sandboxed] as the solver asking is (see Arg2pSolver.default).
+ * ([Solve.Request]).
  */
-internal class CausalityAnalysis(
-    sandboxed: Boolean,
-) {
+internal class CausalityAnalysis {
     private val solver =
         Arg2pSolverFactory.default(
             settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create(),
-            sandboxed = sandboxed,
         )
 
     private val operators = Arg2pSolver.default().operators()

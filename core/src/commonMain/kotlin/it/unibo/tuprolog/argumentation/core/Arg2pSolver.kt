@@ -48,17 +48,12 @@ interface Arg2pSolver {
             override fun dynamicLibraries() = dynamicLibs
         }
 
-        /**
-         * The libraries of arg2p with [staticLibs] and [dynamicLibs]: [sandboxed], for theories that are not trusted,
-         * the modules read no file nor URL (see ModuleRegistry.sandboxed)
-         */
         fun default(
             staticLibs: Iterable<ArgLibrary> = emptyList(),
             dynamicLibs: Iterable<ArgLibrary> = emptyList(),
-            sandboxed: Boolean = false,
         ) = of(
             listOf(Arg2pModule) + staticLibs,
-            (if (sandboxed) ModuleRegistry.sandboxed else ModuleRegistry.all) + dynamicLibs,
+            ModuleRegistry.all + dynamicLibs,
         )
     }
 }

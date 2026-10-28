@@ -31,8 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * error, as MCP tools do, rather than failing the request; a message that is not a request of the server, or not well
  * formed, is answered with the error of JSON-RPC.
  *
- * The theories are written by an AI model, which what it reads (a document, a page) may steer: they are solved
- * sandboxed, reading and writing no file nor URL (see Arg2p.Builder.sandboxed), and within their timeout.
+ * The theories are written by an AI model: they are solved within their timeout.
  *
  * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the client declares it
  * shows them, and as a link to the web playground everywhere.

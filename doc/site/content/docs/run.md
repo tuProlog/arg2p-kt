@@ -118,9 +118,6 @@ with it rather than guessing what they conclude. Its tools:
 A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is stopped after
 `timeoutSeconds` (60 by default).
 
-The theories the server runs are written by a model, and may carry what a prompt injected into it: the server loads no
-file nor URL for them (a module `call_module/2` names is not loaded), so a theory has everything it needs in its text.
-
 `explore` is an [MCP App](https://modelcontextprotocol.io/docs/extensions/apps): in the clients that show them
 (Claude, ChatGPT, VS Code), the solver of the playground appears in the conversation, runs the query, and lets the user
 browse its solutions, their argument graphs and stages, the drawing of an abstract framework and the flags, and solve

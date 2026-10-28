@@ -9,9 +9,8 @@ import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 
 /**
- * The solvers of the servers, and what they tell of a theory without solving it. The servers solve theories they did
- * not write, the MCP server those of an AI model, which what it reads may steer: their solvers are sandboxed (see
- * Arg2p.Builder.sandboxed), and stopped past a time limit (see [Deadline]) or when asked (see [PageEngine]).
+ * The solvers of the servers, and what they tell of a theory without solving it: stopped past a time limit (see
+ * [Deadline]) or when asked (see [PageEngine]).
  */
 internal object Solvers {
     /** The query solved when none is given: the statements labelled in, out and und */
@@ -44,7 +43,6 @@ internal object Solvers {
             .theory(theory)
             .flags(flags)
             .output(output)
-            .sandboxed(true)
             .build()
 
     /** The profile of the theory of [solver] (the theory states it, or the flags, or it is the default): none if it cannot tell */

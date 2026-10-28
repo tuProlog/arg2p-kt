@@ -21,7 +21,7 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `graphLanguage(L)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`: set by the profile |
 | `debug` | off | present: `bp_grounded_partial` writes the steps of its labelling |
 | `naturalTerms` | off | present (in the theory only): natural-language-like terms are normalised as the rules are parsed |
-| `modulesPath(P)` | `none` | a directory or a base URL `call_module/2` loads modules from (not in the MCP server, which loads no file nor URL) |
+| `modulesPath(P)` | `none` | a directory or a base URL `call_module/2` loads modules from |
 
 ## Semantics
 

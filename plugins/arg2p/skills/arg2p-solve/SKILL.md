@@ -33,8 +33,6 @@ The errors are results to read, not to work around:
   `explore`, saying why (with the line and column of a syntax error). Fix the theory or the profile; never answer in
   the solver's place.
 - A query with no answer within `timeoutSeconds` is **stopped**, and the tool says so: see the sanity checks below.
-- The server runs the theories it is given, and nothing else: it loads no file nor URL, so a theory loading a module
-  (`call_module/2`) fails there. Put everything the theory needs in its text.
 
 Without the MCP server, the Python package does the same (it bundles its Java runtime: nothing else to install):
 

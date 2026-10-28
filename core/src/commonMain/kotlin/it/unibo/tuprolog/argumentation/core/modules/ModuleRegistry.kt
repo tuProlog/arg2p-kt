@@ -147,10 +147,4 @@ object ModuleRegistry {
             require(repeated.isEmpty()) { "Modules with the same identifier: $repeated" }
         }
     }
-
-    /**
-     * The modules of a sandboxed solver, for theories it does not trust: those of [all], but for the module calls,
-     * which read no file nor URL (see ModuleCallsModule.sandboxed)
-     */
-    val sandboxed: List<ArgLibrary> by lazy { all.map { if (it === ModuleCallsModule) ModuleCallsModule.sandboxed else it } }
 }
