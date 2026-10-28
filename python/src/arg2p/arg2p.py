@@ -92,6 +92,16 @@ class Answer:
         return None if label is None else str(label)
 
 
+def answer_from_jvm(answer: Any) -> Answer:
+    """The answer of [answer], an Answer of the library of the JVM."""
+    return Answer(
+        [from_jvm(it) for it in answer.getInStatements()],
+        [from_jvm(it) for it in answer.getOutStatements()],
+        [from_jvm(it) for it in answer.getUndStatements()],
+        answer,
+    )
+
+
 class Solution:
     """A solution of a goal: yes, no or halt (an error), with the values a yes solution binds to its variables."""
 
@@ -268,13 +278,7 @@ class Arg2p:
 
     def answer(self, query: str) -> Answer:
         """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
-        answer = call(lambda: self._arg2p.answer(query))
-        return Answer(
-            [from_jvm(it) for it in answer.getInStatements()],
-            [from_jvm(it) for it in answer.getOutStatements()],
-            [from_jvm(it) for it in answer.getUndStatements()],
-            answer,
-        )
+        return answer_from_jvm(call(lambda: self._arg2p.answer(query)))
 
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""

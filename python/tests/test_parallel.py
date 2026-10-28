@@ -67,3 +67,26 @@ def test_a_statement_that_cannot_be_read_is_an_error():
 def test_a_cluster_discovers_the_others_on_the_local_network():
     with ThreadedCluster(threads=1) as cluster:
         cluster.discover()
+
+
+def test_a_cluster_is_a_solver_of_arg2p():
+    arg2p = Arg2p.of(THEORY)
+    with ThreadedCluster(threads=2) as cluster:
+        cluster.load(THEORY)
+        solver = cluster.solver
+        expected = arg2p.solve("buildLabelSets(In, Out, Und)").next()
+        solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+        assert [expected.text(it) for it in ("In", "Out", "Und")] == [solution.text(it) for it in ("In", "Out", "Und")]
+        assert sorted(it.label for it in arg2p.graph().labellings) == sorted(it.label for it in solver.graph().labellings)
+        assert solver.answer("b").in_statements == arg2p.answer("b").in_statements
+
+
+def test_the_statistics_of_a_cluster():
+    cluster = LocalCluster(parts=2)
+    assert cluster.stats.evaluation is None
+    cluster.load(THEORY)
+    cluster.solve("b")
+    stats = cluster.stats
+    assert [it.id for it in stats.sites] == [stats.site]
+    assert stats.evaluation.locality == "directional"
+    assert stats.evaluation.added == sum(it.arguments for it in stats.evaluation.workers)
