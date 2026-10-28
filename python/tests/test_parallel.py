@@ -62,3 +62,8 @@ def test_a_statement_that_cannot_be_read_is_an_error():
         threaded.load(THEORY)
         with pytest.raises(Arg2pError):
             threaded.solve("p(")
+
+
+def test_a_cluster_discovers_the_others_on_the_local_network():
+    with ThreadedCluster(threads=1) as cluster:
+        cluster.discover()

@@ -20,6 +20,7 @@ import it.unibo.tuprolog.solve.channel.OutputChannel
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
+import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
@@ -164,6 +165,7 @@ class Arg2p private constructor(
     companion object {
         /** A solver of arg2p for [theory], Prolog text, with [flags] */
         @JvmStatic
+        @JvmOverloads
         @JsStatic
         fun of(
             theory: String = "",

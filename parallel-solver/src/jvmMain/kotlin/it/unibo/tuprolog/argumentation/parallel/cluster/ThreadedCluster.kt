@@ -48,6 +48,7 @@ class ThreadedCluster
          * Accepts the links of other sites (on any platform) over WebSockets, on [port] of [host] (an ephemeral port for
          * 0): the port taken
          */
+        @JvmOverloads
         fun listen(
             port: Int = 0,
             host: String = "0.0.0.0",
@@ -57,6 +58,7 @@ class ThreadedCluster
          * Federates the cluster with the clusters of the local network that discover the others as well, as they come
          * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort]
          */
+        @JvmOverloads
         fun discover(beaconPort: Int = Beacons.PORT) {
             check(discovery == null) { "Already discovering" }
             discovery = LanDiscovery(site, links(), port ?: listen(), beaconPort)

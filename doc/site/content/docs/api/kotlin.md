@@ -40,7 +40,7 @@ fun main() {
 }
 ```
 
-`Arg2p.builder()` describes one in full: its `theory`, its `flags`, and the `output` receiving what it prints (the
+From Java, `Arg2p.of(theory)` and `Arg2p.of(theory, flags)` are static methods as well. `Arg2p.builder()` describes one in full: its `theory`, its `flags`, and the `output` receiving what it prints (the
 standard output otherwise). `add(text)` adds clauses to the theory, `load(text)` replaces it, and `theory` is the
 theory as Prolog text. `Arg2p.version()` is the version of Arg2P.
 

@@ -133,6 +133,37 @@ class SiteTest {
         frames.forEach { assertEquals(it, FrameCodec.decode(FrameCodec.encode(it))) }
     }
 
+    // A lending site leaving once a graph is built: a later evaluation needing more of it builds it again with the sites
+    // left, rather than waiting for the workers of the one that left
+    @Test
+    fun theGraphIsBuiltAgainWhenASiteLeavesOnceItIsBuilt() {
+        val scheduler = SequentialScheduler()
+        val evaluating = LocalCluster(parts = 0, scheduler = scheduler)
+        val leaving = Closable(LocalCluster(parts = 2, scheduler = scheduler).site)
+        val staying = LocalCluster(parts = 2, scheduler = scheduler)
+        MemoryLinks.connect(evaluating.site, leaving, scheduler)
+        MemoryLinks.connect(evaluating.site, staying.site, scheduler)
+        evaluating.load("$theory\nu0 :=> c0.\nu1 : c0 => c1.\n")
+        assertEquals(listOf("a6"), evaluating.solve("a6").outArgs.map { it.claim })
+        leaving.close()
+        assertEquals(setOf(staying.site.id), evaluating.site.peerSites)
+        assertEquals(listOf("c1"), evaluating.solve("c1").inArgs.map { it.claim })
+    }
+
+    // A site whose links can be closed
+    private class Closable(
+        private val site: Site,
+    ) : LinkListener by site {
+        private val links = mutableListOf<Link>()
+
+        override fun opened(link: Link) {
+            links += link
+            site.opened(link)
+        }
+
+        fun close() = links.toList().forEach { it.close() }
+    }
+
     // A site whose link closes after it received [after] messages for its workers
     private class Leaving(
         private val site: Site,

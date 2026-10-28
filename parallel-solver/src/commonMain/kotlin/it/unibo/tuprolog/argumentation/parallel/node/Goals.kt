@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
@@ -56,6 +57,15 @@ internal fun Solver.solveOnce(goal: String): Solution = solve(Struct.parse(goal,
 
 /** Whether [goal], Prolog text, succeeds */
 internal fun Solver.holds(goal: String): Boolean = solveOnce(goal).isYes
+
+/** [solution], unless it is a halt: its error raised, as an [Arg2pException] */
+internal fun checked(solution: Solution): Solution {
+    if (solution.isHalt) {
+        val error = solution.exception
+        throw Arg2pException(error?.message ?: error?.toString() ?: solution.toString())
+    }
+    return solution
+}
 
 /** Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it */
 internal fun covers(

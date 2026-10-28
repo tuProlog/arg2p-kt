@@ -71,7 +71,7 @@ internal data class DirectAttack(
  */
 sealed interface KbMessage
 
-/** To the catalog: forget the theory; to a worker: forget its rules */
+/** To the catalog: forget the theory */
 internal data object Reset : KbMessage
 
 /** To the catalog: a graph being built lost some of its workers (a site left), build it again with those left */

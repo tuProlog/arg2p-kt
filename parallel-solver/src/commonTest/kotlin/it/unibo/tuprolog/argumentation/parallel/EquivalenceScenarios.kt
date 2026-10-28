@@ -158,6 +158,19 @@ abstract class EquivalenceScenarios {
     @Test
     fun conflictsArgued() = assertSameLabels("metaConflicts.\nr0 : [] => conflict(a, b).\nf1 :=> a.\nf2 :=> b.", "a", "b")
 
+    // a graph not built from rules: by the catalog, as the standard solver builds it
+    @Test
+    fun abstractFrameworks() = assertSameLabels("graphBuildMode(abstract).\nd.\na -> b.\nb -> c.\n", "a", "b", "c", "d")
+
+    // a theory not split: the catalog has all of it, its preferences included
+    @Test
+    fun naturalTerms() = assertSameLabels("naturalTerms.\nr1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).", "a", "-a")
+
+    // the flags the theory states alone: those of its profile preset, in the workers as in the catalog
+    @Test
+    fun theFlagsOfTheTheoryAlone() =
+        assertSameLabels(Flags.none(), "graphBuildMode(meta).\nr1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).", "a", "-a")
+
     @Test
     fun burdenOfPersuasion() =
         assertSameLabels(

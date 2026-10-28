@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.parallel.partition
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.parallel.node.checked
 import it.unibo.tuprolog.argumentation.parallel.node.holds
 import it.unibo.tuprolog.argumentation.parallel.node.solutions
 import it.unibo.tuprolog.argumentation.parallel.node.solveOnce
@@ -25,6 +26,8 @@ data class Partitioning(
     val partitions: List<String>,
     /** The rules of the partitions are those the theory converts to: the workers convert them no further */
     val converted: Boolean = true,
+    /** The theory of the catalog: its shared part, or the whole theory when it is not split */
+    val catalog: String = shared,
 ) {
     /**
      * The theory of the worker of the partition [index]: the conversions turned off if applied, whatever the profile
@@ -66,8 +69,12 @@ object TheoryPartitioner {
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
-        if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory), converted = false)
+        if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) {
+            return Partitioning("", listOf(theory), converted = false, catalog = theory)
+        }
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        // a theory its profile refuses is refused here, as by the standard solver
+        checked(solver.solveOnce("structuredWhole::checkProfile"))
         val rules = rules(solver)
         val supporters = supporters(rules, solver.holds("setting(metaRules)"))
         val groups =

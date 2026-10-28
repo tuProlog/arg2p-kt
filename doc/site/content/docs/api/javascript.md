@@ -26,6 +26,8 @@ const { Arg2p, Flags, Value, Semantics, Profile, GraphExtension } = argumentatio
 ```
 
 `Arg2p.version()` is the version of the package. Every list of the API is an array in JavaScript.
+The package declares its API for TypeScript (`arg2p.d.ts`): the classes, their methods and the enumerations are typed
+in the editor.
 
 ---
 

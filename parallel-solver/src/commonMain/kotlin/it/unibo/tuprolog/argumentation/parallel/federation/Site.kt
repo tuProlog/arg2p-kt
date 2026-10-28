@@ -177,7 +177,7 @@ class Site(
                 if (ownerOf(decoded.session) != id) {
                     forward(decoded.session, ownerOf(decoded.session), frame)
                 } else if (decoded.session == session) {
-                    catalogQueue.post { catalog.receive(Rebuild) }
+                    toCatalogOf(decoded.session, Rebuild)
                 }
             is Frame.Deliver -> {
                 val (session, to) = decoded
@@ -185,8 +185,7 @@ class Site(
                 when {
                     // a message between sites with no link between them, or to a delegate
                     site != id -> forward(session, site, frame)
-                    to == Address.CATALOG ->
-                        if (session == this.session) catalogQueue.post { catalog.receive(MessageCodec.decode(decoded.message)) }
+                    to == Address.CATALOG -> toCatalogOf(session, MessageCodec.decode(decoded.message))
                     else ->
                         worker(session, to)?.let { worker ->
                             worker.queue.post { worker.node.receive(MessageCodec.decode(decoded.message)) }
@@ -221,7 +220,7 @@ class Site(
         val (site, delegate) = lost ?: return
         broken.forEach { session ->
             if (ownerOf(session) == id) {
-                if (session == this.session) catalogQueue.post { catalog.receive(Rebuild) }
+                toCatalogOf(session, Rebuild)
             } else {
                 forward(session, ownerOf(session), FrameCodec.encode(Frame.Lost(session)))
             }
@@ -355,16 +354,24 @@ class Site(
 
     private fun toCatalog(message: KbMessage) = deliver(catalogQueue, catalog, message)
 
+    // [message] of the graph of [session] to the catalog: handled if the catalog still builds that graph when it comes
+    // to it (one it gave up builds a graph anew, and the messages of the old one queued before reach none)
+    private fun toCatalogOf(
+        session: String,
+        message: KbMessage,
+    ) = deliver(catalogQueue, catalog, message) { session == this.session }
+
     private fun deliver(
         queue: TaskQueue,
         node: Node,
         message: KbMessage,
+        current: () -> Boolean = { true },
     ) {
         if (textual) {
             val text = MessageCodec.encode(message)
-            queue.post { node.receive(MessageCodec.decode(text)) }
+            queue.post { if (current()) node.receive(MessageCodec.decode(text)) }
         } else {
-            queue.post { node.receive(message) }
+            queue.post { if (current()) node.receive(message) }
         }
     }
 
@@ -396,7 +403,7 @@ class Site(
             }
         when {
             site != id -> forward(session, site, FrameCodec.encode(Frame.Deliver(session, to, MessageCodec.encode(message))))
-            to == Address.CATALOG -> if (session == this.session) toCatalog(message)
+            to == Address.CATALOG -> toCatalogOf(session, message)
             else -> worker(session, to)?.let { deliver(it.queue, it.node, message) }
         }
     }

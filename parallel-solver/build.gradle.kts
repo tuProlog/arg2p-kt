@@ -46,6 +46,8 @@ kotlin {
             }
         }
         binaries.library()
+        // the declarations of the exported API for TypeScript (.d.ts), next to the JavaScript
+        generateTypeScriptDefinitions()
     }
 
     sourceSets {

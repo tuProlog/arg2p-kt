@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.Attack
@@ -16,13 +17,13 @@ import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.Notify
 import it.unibo.tuprolog.argumentation.parallel.message.Publish
-import it.unibo.tuprolog.argumentation.parallel.message.Reset
 import it.unibo.tuprolog.argumentation.parallel.message.SharedArgument
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.message.Wanted
 import it.unibo.tuprolog.core.EmptyList
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.unify.Unificator
@@ -43,9 +44,9 @@ internal class Worker(
 ) : Node {
     private val index = Address.indexOf(address)
 
-    // The solver of its rules, with the flags of the catalog (made again when they change)
-    private var flags: String? = null
-    private var solver = solverOf("")
+    // The solver of its rules, with the flags of the catalog: made as the worker is loaded, once (a graph built again has
+    // workers of its own)
+    private lateinit var solver: MutableSolver
     private val unificator = Unificator.default
 
     // The workers, the statements each other one needs (the premises of its rules, or those it asked to explore), and
@@ -111,7 +112,6 @@ internal class Worker(
 
     override fun receive(message: KbMessage) {
         when (message) {
-            Reset -> load("", flags.orEmpty())
             is Load -> {
                 load(message.theory, message.flags)
                 val needed = premises.solutions(solver).map { it.getValue("P") }.distinctBy { it.toString() }
@@ -196,37 +196,12 @@ internal class Worker(
         }
     }
 
+    // The solver of the rules of the worker, [theory], with [flags], as Prolog facts (the catalog has the same)
     private fun load(
         theory: String,
         flags: String,
     ) {
-        if (flags != this.flags) {
-            this.flags = flags
-            solver = solverOf(flags)
-        }
-        lastId = -1
-        received.clear()
-        own.clear()
-        terms.clear()
-        globalIds.clear()
-        interests.clear()
-        conclusionsOf.clear()
-        locality = null
-        queries.clear()
-        asked.clear()
-        handled.clear()
-        deficit = 0
-        parent = null
-        building = false
-        early.clear()
-        attacking = false
-        candidatesSent = false
-        attacksSent = false
-        wantedBy.clear()
-        candidates.clear()
-        conflictsOf.clear()
-        candidatesFrom = 0
-        solver.resetStaticKb()
+        solver = Arg2pSolverFactory.solverOf(Arg2pSolver.default(listOf(Flags.parse(flags).library())), "")
         solver.loadStaticKb(Theory.parse(theory, solver.operators))
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
     }
@@ -408,14 +383,7 @@ internal class Worker(
             )
         }
 
-    private fun goal(text: String) = Goal(text, solver.operators)
-
-    // A solver of arg2p with [flags], as Prolog facts (the defaults with no graph extension, given none)
-    private fun solverOf(flags: String) =
-        Arg2pSolverFactory.solverOf(
-            Arg2pSolver.default(listOf((if (flags.isEmpty()) Flags.defaults().graphExtensions() else Flags.parse(flags)).library())),
-            "",
-        )
+    private fun goal(text: String) = Goal(text, TermValues.operators)
 
     private fun Map<String, Term>.integer(name: String) = (getValue(name) as Integer).intValue.toInt()
 }

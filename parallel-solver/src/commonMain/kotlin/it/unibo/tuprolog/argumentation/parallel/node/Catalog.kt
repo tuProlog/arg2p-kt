@@ -68,6 +68,7 @@ internal class Catalog(
     // Query mode: the locality explored (null on the whole graph), and the statements explored so far, or to explore
     // once the workers are ready
     private var locality: String? = null
+    private var central = false
     private val explored = mutableListOf<Term>()
     private val pending = mutableListOf<Term>()
 
@@ -102,10 +103,25 @@ internal class Catalog(
     private val saveAttacks = Goal("graphStore::saveAttacks(Attacks)", solver.operators)
     private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), argument::claim(A, S)", solver.operators)
 
+    // A message handled: an error (a theory that cannot be read, or that its profile refuses) answers the evaluations
+    // waiting with it, and the graph is built anew for the next ones
     override fun receive(message: KbMessage) {
+        try {
+            handle(message)
+        } catch (error: Exception) {
+            val answer = EvaluationResponse(emptyList(), emptyList(), emptyList(), error.message ?: error.toString())
+            waiting.toList().also { waiting.clear() }.forEach { (request, _) -> network.send(request.replyTo, answer) }
+            stage = Stage.READY
+            changed = true
+        }
+    }
+
+    private fun handle(message: KbMessage) {
         when (message) {
             Reset -> change { theory.clear() }
-            Rebuild -> if (stage != Stage.READY) start(explored.toList())
+            // a graph lost some of its workers: built again now if being built, at the next evaluation otherwise (its
+            // workers are those of a site that left)
+            Rebuild -> if (stage != Stage.READY) start(explored.toList()) else changed = true
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation ->
@@ -170,18 +186,19 @@ internal class Catalog(
         }
     }
 
-    // The theory partitioned again among the workers (those left over forget their rules), the workers loaded with
-    // their rules and the flags, and the locality of the graph chosen: [goals] are explored once the workers are ready
+    // The theory partitioned again among the workers, the workers loaded with their rules and the flags, and the
+    // locality of the graph chosen: [goals] are explored once the workers are ready. A graph built otherwise than from
+    // rules (an abstract framework, see graphBuilder) is built by the catalog alone.
     private fun start(goals: List<Term>) {
         val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, flags)
         solver.resetStaticKb()
-        solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
+        solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
-        locality = locality()
-        val count = partitioning.partitions.size
+        central = !solver.holds("structuredWhole::builder(B), B == ruleGraph")
+        locality = if (central) null else locality()
+        val count = if (central) 0 else partitioning.partitions.size
         network.building(count)
         repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it), flags.toString())) }
-        (count until workers).forEach { network.send(Address.worker(it), Reset) }
         workers = count
         changed = false
         interests.clear()
@@ -229,7 +246,7 @@ internal class Catalog(
             supports.map { (support, argument) ->
                 Struct.of("support", arguments.getValue(support), arguments.getValue(argument))
             }
-        solver.solve(save.with("Arguments" to PlList.of(arguments.values), "Supports" to PlList.of(supported))).first()
+        checked(solver.solve(save.with("Arguments" to PlList.of(arguments.values), "Supports" to PlList.of(supported))).first())
         directAttacks.clear()
         if (workers == 0 || solver.holds("setting(metaConflicts)")) {
             return complete(centralAttacks = true)
@@ -247,16 +264,23 @@ internal class Catalog(
                 val attacked = arguments.getValue(target)
                 Struct.of("attack", Atom.of(type), arguments.getValue(attacker), attacked, attacked)
             }
-        solver.solve(saveAttacks.with("Attacks" to PlList.of(attacks))).first()
+        checked(solver.solve(saveAttacks.with("Attacks" to PlList.of(attacks))).first())
     }
 
     // The graph whole: the arguments derived from the others, the attacks (if the workers did not find them), the
-    // extensions and the labels
+    // extensions and the labels; a graph not built from rules, all of it, as the standard solver does. An error (a
+    // graph extension refusing the theory) is raised.
     private fun complete(centralAttacks: Boolean) {
         val attacks = if (centralAttacks) ", X:::buildAttacks" else ""
-        solver.solveOnce(
-            "structuredWhole::builder(X), X:::buildAdditionalArguments$attacks, structuredWhole:::modifyGraph, " +
-                "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling",
+        checked(
+            solver.solveOnce(
+                if (central) {
+                    "structuredWhole:::computeGlobalAcceptance"
+                } else {
+                    "structuredWhole::builder(X), X:::buildAdditionalArguments$attacks, structuredWhole:::modifyGraph, " +
+                        "structuredWhole:::buildArgumentLabelling, structuredWhole:::buildStatementLabelling"
+                },
+            ),
         )
         stage = Stage.READY
         evaluate()
