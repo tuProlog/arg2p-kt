@@ -108,9 +108,10 @@ describe.skipIf(server === null)('The MCP server, as an assistant runs it', func
             },
         ]);
         equal(answers.get(1).result.serverInfo.name, 'arg2p');
+        // a client of no MCP Apps: the engine of the solver page is not listed to it
         deepEqual(
             answers.get(2).result.tools.map((it: { name: string }) => it.name),
-            ['solve', 'answer', 'check', 'settings', 'explore', 'engine'],
+            ['solve', 'answer', 'check', 'settings', 'explore'],
         );
         deepEqual(answers.get(3).result.structuredContent.out, ['flies(tweety)']);
     });
