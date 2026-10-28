@@ -19,50 +19,6 @@ Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) 
 
 More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
 
-## References
-
-Arg2P is described in:
-
-- Roberta Calegari, Andrea Omicini, Giuseppe Pisano, Giovanni Sartor.
-  **Arg2P: an argumentation framework for explainable intelligent systems.**
-  _Journal of Logic and Computation_, 32(2):369–401, 2022.
-  [doi:10.1093/logcom/exab089](https://doi.org/10.1093/logcom/exab089)
-- Giuseppe Pisano.
-  **Argumentation for legal reasoning: meta-models, technology and beyond.**
-  PhD thesis, Alma Mater Studiorum — Università di Bologna, 2024.
-  [doi:10.48676/unibo/amsdottorato/11671](https://doi.org/10.48676/unibo/amsdottorato/11671)
-
-Individual features — burden of persuasion, defeasible preferences, modularity, causality, distributed
-reasoning — have their own papers, listed on the
-[References](https://tuprolog.github.io/arg2p-kt/docs/references/) page of the wiki.
-
-### Cite me
-
-If you use Arg2P in academic work, please cite:
-
-```bibtex
-@article{arg2p,
-  author  = {Calegari, Roberta and Omicini, Andrea and Pisano, Giuseppe and Sartor, Giovanni},
-  title   = {{Arg2P}: an argumentation framework for explainable intelligent systems},
-  journal = {Journal of Logic and Computation},
-  volume  = {32},
-  number  = {2},
-  pages   = {369--401},
-  year    = {2022},
-  doi     = {10.1093/logcom/exab089}
-}
-```
-
-```bibtex
-@phdthesis{pisano2024argumentation,
-  author  = {Pisano, Giuseppe},
-  title   = {Argumentation for legal reasoning: meta-models, technology and beyond},
-  school  = {Alma Mater Studiorum --- Universit\`a di Bologna},
-  year    = {2024},
-  doi     = {10.48676/unibo/amsdottorato/11671}
-}
-```
-
 ---
 
 ## Getting Started
@@ -256,3 +212,49 @@ In clients configured by JSON (Claude Desktop, Cursor, ...):
 
 If you encounter any issues, please report them on the [GitHub Issues](https://github.com/tuProlog/arg2p-kt/issues) page.  
 Your feedback helps improve the project!
+
+---
+
+## References
+
+Arg2P is described in:
+
+- Roberta Calegari, Andrea Omicini, Giuseppe Pisano, Giovanni Sartor.
+  **Arg2P: an argumentation framework for explainable intelligent systems.**
+  _Journal of Logic and Computation_, 32(2):369–401, 2022.
+  [doi:10.1093/logcom/exab089](https://doi.org/10.1093/logcom/exab089)
+- Giuseppe Pisano.
+  **Argumentation for legal reasoning: meta-models, technology and beyond.**
+  PhD thesis, Alma Mater Studiorum — Università di Bologna, 2024.
+  [doi:10.48676/unibo/amsdottorato/11671](https://doi.org/10.48676/unibo/amsdottorato/11671)
+
+Individual features — burden of persuasion, defeasible preferences, modularity, causality, distributed
+reasoning — have their own papers, listed on the
+[References](https://tuprolog.github.io/arg2p-kt/docs/references/) page of the wiki.
+
+### Cite me
+
+If you use Arg2P in academic work, please cite:
+
+```bibtex
+@article{arg2p,
+  author  = {Calegari, Roberta and Omicini, Andrea and Pisano, Giuseppe and Sartor, Giovanni},
+  title   = {{Arg2P}: an argumentation framework for explainable intelligent systems},
+  journal = {Journal of Logic and Computation},
+  volume  = {32},
+  number  = {2},
+  pages   = {369--401},
+  year    = {2022},
+  doi     = {10.1093/logcom/exab089}
+}
+```
+
+```bibtex
+@phdthesis{pisano2024argumentation,
+  author  = {Pisano, Giuseppe},
+  title   = {Argumentation for legal reasoning: meta-models, technology and beyond},
+  school  = {Alma Mater Studiorum --- Universit\`a di Bologna},
+  year    = {2024},
+  doi     = {10.48676/unibo/amsdottorato/11671}
+}
+```
