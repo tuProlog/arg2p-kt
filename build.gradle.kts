@@ -117,7 +117,7 @@ multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
     ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
-    jvmProjects(":ide", ":actor-solver", ":lsp")
+    jvmProjects(":actor-solver", ":lsp")
     // jsProjects()
     otherProjects(":doc", ":python", ":vscode")
 
