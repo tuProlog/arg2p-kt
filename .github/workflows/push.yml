@@ -46,3 +46,23 @@ jobs:
           merge-multiple: true
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
+  vscode-publish:
+    # The packages of the extension of VS Code on the Visual Studio Marketplace, through trusted publishing (OIDC, no
+    # token): from this workflow, as the wheels
+    needs:
+      - ci-cd
+    if: needs.ci-cd.outputs.version != ''
+    runs-on: ubuntu-26.04
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: vsix-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Publish the packages
+        run: npx --yes @vscode/vsce@4.0.0 publish --oidc --packagePath dist/*.vsix

@@ -1,0 +1,10 @@
+# made by the build: the bundles (npm run build), the language server (./gradlew :vscode:vscodeServer), a Java runtime
+# (vscodeRuntime), the packages (vscodePackage)
+node_modules/
+dist/
+server/
+runtime/
+build/
+*.vsix
+dist-test/
+.vscode-test/

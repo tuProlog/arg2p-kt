@@ -27,7 +27,7 @@ jobs:
           build-command: |
             ./gradlew jsMainClasses jsTestClasses --parallel || ./gradlew jsMainClasses jsTestClasses --parallel
           check-command: |
-            ./gradlew jvmTest -PtestJvm=${{ matrix.java-version }} --parallel --continue || ./gradlew jvmTest -PtestJvm=${{ matrix.java-version }} --parallel --continue
+            ./gradlew jvmTest :lsp:test -PtestJvm=${{ matrix.java-version }} --parallel --continue || ./gradlew jvmTest :lsp:test -PtestJvm=${{ matrix.java-version }} --parallel --continue
           should-run-codecov: false
 
   test-js:
@@ -79,4 +79,23 @@ jobs:
           # would), rather than building it from its sources, which users would have to do as well
           check-command: |
             python -m pip install --only-binary=jpype1 "./python[test]" && python -m pytest python/tests
+          should-run-codecov: false
+
+  test-vscode:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: build-${{ github.workflow }}-vscode-${{ github.event.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: DanySK/action-checkout@0.2.31
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.49
+        with:
+          # the extension carries the language server: its tests run it, through JSON-RPC
+          build-command: ./gradlew :vscode:vscodeServer
+          check-command: |
+            cd vscode && npm ci && npm run check && npm run build && npm test
           should-run-codecov: false

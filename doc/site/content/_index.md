@@ -49,16 +49,37 @@ If your JVM is properly configured, you can also start the IDE by double-clickin
 
 Try Arg2P directly in your browser using the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/).
 
-{{< resize src="playground.png" size="560x" alt="Run" >}}
+{{< resize src="playground.png" size="720x" alt="The playground" >}}
 
-No installation required. The playground runs in either of two modes, selected from the toolbar:
+No installation required: the solver runs in the browser. Write an [Arg2P theory]({{% ref "/docs/syntax" %}}), solve a
+query one solution at a time, and browse the argument graph of each solution and the stages of its computation. The
+[profile]({{% ref "/docs/profiles" %}}) a theory states tells the framework it is read in, and the _Flags_ panel sets
+the semantics and every other [flag]({{% ref "/docs/api/flags" %}}), with the value in effect and where it comes from.
 
-- **Structured** — write an [Arg2P theory]({{% ref "/docs/syntax" %}}) and run any query against it, as in the
-  desktop IDE.
-- **Abstract** — draw an argumentation framework instead of writing rules. The query is generated for you as
-  [`abstract::solve/5`]({{% ref "/docs/modules/abstract" %}}), and the drawing is recoloured with the labelling of the
-  solution being shown. A _Semantics_ selector next to the query sets the
-  [`argumentLabellingMode`]({{% ref "/docs/api/flags" %}}) flag, covering every semantics the engine implements.
+An [abstract framework]({{% ref "/docs/modules/abstract" %}}) is a theory too (`graphBuildMode(abstract).`): it is
+drawn, and the drawing edits the theory. Arguments and attacks are added, renamed and deleted by drawing, the labelling
+of the solution colours them, and hovering or tapping an argument tells its label, what attacks it and what it
+attacks. Frameworks are imported from APX, TGF and ICCMA'23 files, and exported to APX and TGF.
 
-It also ships a handful of ready-made examples, and _Share_ builds a link that restores whatever is currently
-loaded — handy for sending a case to someone else.
+{{< resize src="playground-drawing.png" size="720x" alt="An abstract framework, drawn" >}}
+
+Theories are kept in tabs in the browser, shared as links, opened from and saved to files; the playground works
+offline once installed as an app, on desktops, tablets and phones.
+
+---
+
+## Arg2p for VS Code
+
+The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) edits theories as
+`.arg2p` files: their syntax is highlighted and their syntax errors show as they are typed. **Arg2P: Open the Solver**
+opens the solver of the playground beside a theory, running on the JVM: its solutions, their graphs, the drawing of an
+abstract framework and the flags. It bundles the language server of Arg2P and the Java runtime it runs on.
+
+{{< resize src="vscode.png" size="720x" alt="Arg2P in VS Code" >}}
+
+---
+
+## Arg2p for AI assistants
+
+The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server, for AI assistants to solve
+theories with it: see [Execution]({{% ref "/docs/run#ai-assistants-mcp" %}}).

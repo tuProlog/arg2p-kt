@@ -1,0 +1,12 @@
+# The package carries the bundles, the language server, the Java runtime (for a platform) and what describes the
+# extension: not its sources, its tests nor its build
+**
+!package.json
+!README.md
+!LICENSE
+!language-configuration.json
+!syntaxes/**
+!media/**
+!dist/*.js
+!server/**
+!runtime/**

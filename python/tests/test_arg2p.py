@@ -15,6 +15,7 @@ from arg2p import (
     Semantics,
     StatementLabelling,
     Struct,
+    SyntaxProblem,
     Var,
 )
 from arg2p import _jvm
@@ -80,6 +81,18 @@ def test_an_error_halts_the_solution_and_is_raised_by_an_answer():
         Arg2p.of().solve("f(")
 
 
+def test_texts_that_do_not_parse_tell_where():
+    with pytest.raises(Arg2pError) as raised:
+        Arg2p.of("a :=> b.\nc :=> d(.")
+    problem = raised.value.syntax
+    assert problem == SyntaxProblem(2, 9, ".", "Unexpected token '.'; expected term")
+    assert problem.length == 1
+    assert Arg2p.check_theory("a :=> b.\nc :=> d(.") == problem
+    assert Arg2p.check_theory("graphBuildMode(abstract).\na <-> b.") is None
+    assert Arg2p.check_query("buildLabelSets(In, Out, Und)") is None
+    assert Arg2p.check_query("flies(").line == 1
+
+
 def test_the_theory_changes():
     arg2p = Arg2p.of("f1 :=> a.")
     arg2p.add("f2 :=> b.")
@@ -140,3 +153,22 @@ def test_the_command_line(tmp_path, capsys):
     assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
     assert main([str(theory), "-s", "preferred"]) == 0
     assert "in: a" in capsys.readouterr().out
+
+
+def test_the_jvm_takes_the_options_of_the_environment(monkeypatch):
+    monkeypatch.setenv("ARG2P_JVM_OPTIONS", " -Xmx8g  -XX:+UseG1GC ")
+    assert _jvm.options()[-2:] == ["-Xmx8g", "-XX:+UseG1GC"]
+    monkeypatch.delenv("ARG2P_JVM_OPTIONS")
+    assert _jvm.options() == [f"-Xss{_jvm.STACK}", "-Dslf4j.internal.verbosity=ERROR"]
+
+
+def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile():
+    aspic = Arg2p.of("r1 : [] => a.")
+    assert "graphBuildMode" in aspic.known_flags
+    assert aspic.setting("graphBuildMode") == ["aspic_plus"]
+    assert set(aspic.setting("graphExtension")) == {"standardPref", "rebutRestriction"}
+    assert aspic.setting("autoTransposition") == ["true"]
+    abstract = Arg2p.of("graphBuildMode(abstract).\na -> b.")
+    assert abstract.setting("queryMode") == []
+    with pytest.raises(Arg2pError):
+        aspic.setting("noSuchFlag")

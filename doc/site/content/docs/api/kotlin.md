@@ -94,7 +94,14 @@ Arg2p.of(theory, Flags.defaults().argumentLabellingMode(Semantics.PREFERRED))
 ```
 
 A theory its profile refuses (a non-flat ABA theory, say), or a query that cannot be parsed, raises an
-`Arg2pException`, with the reason.
+`Arg2pException`, with the reason. When a text does not parse (a theory, a query, flags), its `syntax` tells where: a
+`SyntaxProblem`, with the `line` and `column` (from 1), the `token` found there and the `description` of the problem.
+`Arg2p.checkTheory(text)` and `Arg2p.checkQuery(text)` give the same without solving anything (null for a text that
+parses), as an editor checks what is typed.
+
+```kotlin
+Arg2p.checkTheory("f1 :=> a.\nr1 : a => b(.")    // Unexpected token '.'; expected term at 2:13
+```
 
 The context of a solver keeps a branch for every stage of a resolution (each module call made with `:::`), numbered
 from 0: `activeBranch` is the last one, `graph()` and `graphAt(branch)` the graph of the last or of any of them, and

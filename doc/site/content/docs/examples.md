@@ -181,8 +181,8 @@ U = [].
 
 See [Abstract Evaluation]({{% ref "/docs/modules/abstract" %}}).
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=abstract&arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c) — this
-one opens the playground in **Abstract** mode with the framework already drawn.
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c) — this one opens
+the playground on the framework, as a theory (`graphBuildMode(abstract).`) already drawn.
 
 ---
 

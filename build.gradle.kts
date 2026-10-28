@@ -117,9 +117,9 @@ multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
     ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
-    jvmProjects(":ide", ":actor-solver")
+    jvmProjects(":ide", ":actor-solver", ":lsp")
     // jsProjects()
-    otherProjects(":doc", ":python")
+    otherProjects(":doc", ":python", ":vscode")
 
     val baseProjectTemplate =
         buildSet {
