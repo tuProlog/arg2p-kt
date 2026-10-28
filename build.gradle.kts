@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.ktMpp.npmPublish)
     alias(libs.plugins.ktMpp.multiplatform)
     alias(libs.plugins.gitSemVer)
+    alias(libs.plugins.kover) apply false
 }
 
 group = "it.unibo.tuprolog.argumentation"
@@ -171,6 +172,47 @@ afterEvaluate {
                 this["type"] = "module"
                 this["exports"] = mapOf("." to mapOf("types" to "./arg2p.d.mts", "import" to "./arg2p.mjs"))
             }
+        }
+    }
+}
+
+// The coverage of the Kotlin code by the tests on the JVM (Kover), with -Pcoverage alone, as it instruments them: the
+// code of core, of the causality and the parallel solver and of the API (commonMain is the code of JavaScript as
+// well), in one report (build/reports/kover), and its total for a badge (koverBadge)
+val coverage = findProperty("coverage") != null
+val covered = listOf(":core", ":causality-solver", ":parallel-solver")
+
+if (coverage) {
+    apply(plugin = "org.jetbrains.kotlinx.kover")
+    covered.forEach { project(it).apply(plugin = "org.jetbrains.kotlinx.kover") }
+    dependencies { covered.forEach { "kover"(project(it)) } }
+
+    tasks.register("koverBadge") {
+        group = "verification"
+        description = "Writes the coverage of the lines for a badge, as shields.io reads it (build/reports/kover/badge.json)"
+        dependsOn("koverXmlReport")
+        val report = layout.buildDirectory.file("reports/kover/report.xml")
+        val badge = layout.buildDirectory.file("reports/kover/badge.json")
+        inputs.file(report)
+        outputs.file(badge)
+        doLast {
+            // the counter of the lines of the whole report, the last one
+            val line = Regex("""<counter type="LINE" missed="(\d+)" covered="(\d+)"/>""").findAll(report.get().asFile.readText()).last()
+            val (missed, hit) = line.destructured
+            val share = 100 * hit.toInt() / (hit.toInt() + missed.toInt())
+            val color =
+                if (share >= 90) {
+                    "brightgreen"
+                } else if (share >= 75) {
+                    "green"
+                } else if (share >= 60) {
+                    "yellow"
+                } else {
+                    "orange"
+                }
+            badge.get().asFile.writeText(
+                "{\"schemaVersion\": 1, \"label\": \"Kotlin coverage\", \"message\": \"$share%\", \"color\": \"$color\"}\n",
+            )
         }
     }
 }

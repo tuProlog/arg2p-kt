@@ -38,6 +38,8 @@ class PrologCoverage {
         val output = File(System.getProperty("coverage.output") ?: "build/reports/prolog-coverage/coverage.md")
         output.parentFile.mkdirs()
         output.writeText(report(owners, used, result.runCount, result.failureCount))
+        // the total for a badge, as shields.io reads it (https://shields.io/badges/endpoint-badge)
+        File(output.parentFile, "badge.json").writeText(badge(owners.count { it.clause in used }, owners.size))
         println("PROLOG COVERAGE|${output.absolutePath}")
     }
 
@@ -52,9 +54,9 @@ class PrologCoverage {
                 }
         }
 
-    // The test classes on the class path, but for the tools
+    // The test classes on the class path (those of core, and of the projects the task adds), but for the tools
     private fun testClasses(): List<Class<*>> {
-        val root = "it/unibo/tuprolog/argumentation/core"
+        val root = "it/unibo/tuprolog/argumentation"
         return System
             .getProperty("java.class.path")
             .split(File.pathSeparator)
@@ -109,6 +111,21 @@ class PrologCoverage {
 
     // The name of the class compiled to the file at this path
     private fun String.className() = removeSuffix(".class").replace(File.separatorChar, '.')
+
+    private fun badge(
+        covered: Int,
+        total: Int,
+    ): String {
+        val share = if (total == 0) 0 else 100 * covered / total
+        val color =
+            when {
+                share >= 90 -> "brightgreen"
+                share >= 75 -> "green"
+                share >= 60 -> "yellow"
+                else -> "orange"
+            }
+        return "{\"schemaVersion\": 1, \"label\": \"Prolog coverage\", \"message\": \"$share%\", \"color\": \"$color\"}\n"
+    }
 
     private fun percent(
         part: Int,

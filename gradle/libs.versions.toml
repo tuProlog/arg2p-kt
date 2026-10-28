@@ -9,8 +9,10 @@ tuprolog = "3.0.5"
 jung = "2.1.1"
 javaWebSocket = "1.6.0"
 ws = "8.22.0"
+kover = "0.9.9"
 
 [plugins]
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version.ref = "semVer" }
 

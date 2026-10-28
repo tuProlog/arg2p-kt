@@ -56,7 +56,8 @@ tasks.withType<KotlinJvmTest> {
 // Timing benchmarks live with the JVM tests but only run through jvmBenchmark (-Pbenchmark.* options)
 val benchmarkTests = "it.unibo.tuprolog.argumentation.core.benchmark.*"
 
-// The Prolog coverage of the tests only runs through jvmPrologCoverage, which runs the tests itself
+// The Prolog coverage of the tests only runs through jvmPrologCoverage, which runs the tests itself: those of core, of
+// the causality solver and of the API (the behaviour of arg2p), whose test classes it adds
 val coverageTests = "it.unibo.tuprolog.argumentation.core.coverage.*"
 
 tasks.named<KotlinJvmTest>("jvmTest") {
@@ -68,9 +69,22 @@ tasks.register<Test>("jvmPrologCoverage") {
     group = "verification"
     description = "Reports the clauses of the Prolog modules the tests never use (build/reports/prolog-coverage)"
     val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
-    dependsOn("jvmTestClasses")
+    val others = listOf(":causality-solver", ":")
+    dependsOn(listOf("jvmTestClasses") + others.map { "${it.removeSuffix(":")}:jvmTestClasses" })
     testClassesDirs = jvmTest.testClassesDirs
-    classpath = jvmTest.classpath
+    classpath =
+        jvmTest.classpath +
+        files(
+            provider {
+                others.map {
+                    project(it)
+                        .tasks
+                        .named<KotlinJvmTest>("jvmTest")
+                        .get()
+                        .classpath
+                }
+            },
+        )
     filter.includeTestsMatching(coverageTests)
     maxHeapSize = jvmMaxHeapSize
     jvmArgs("-Xss$jvmStackSize")

@@ -6,12 +6,16 @@
   <a href="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml"><img src="https://github.com/tuProlog/arg2p-kt/actions/workflows/push.yml/badge.svg?branch=master" alt="CI/CD"></a>
   <a href="https://central.sonatype.com/artifact/it.unibo.tuprolog.argumentation/arg2p-jvm"><img src="https://img.shields.io/maven-central/v/it.unibo.tuprolog.argumentation/arg2p-jvm?label=Maven%20Central" alt="Maven Central"></a>
   <a href="https://www.npmjs.com/package/@tuprolog/arg2p"><img src="https://img.shields.io/npm/v/@tuprolog/arg2p?label=npm" alt="npm"></a>
+  <a href="https://pypi.org/project/arg2p/"><img src="https://img.shields.io/pypi/v/arg2p?label=PyPI" alt="PyPI"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/coverage/kotlin/index.html"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Ftuprolog.github.io%2Farg2p-kt%2Fcoverage%2Fkotlin.json" alt="Kotlin coverage"></a>
+  <a href="https://tuprolog.github.io/arg2p-kt/coverage/prolog.md"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Ftuprolog.github.io%2Farg2p-kt%2Fcoverage%2Fprolog.json" alt="Prolog coverage"></a>
   <a href="https://tuprolog.github.io/arg2p-kt/"><img src="https://img.shields.io/badge/docs-wiki-blue" alt="Documentation"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/tuProlog/arg2p-kt" alt="License"></a>
 </p>
 
 Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
-Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it supports both JVM and Node environments.
+Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it runs on the JVM, in JavaScript
+(Node.js and browsers) and in Python, with the same API.
 
 More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
 
