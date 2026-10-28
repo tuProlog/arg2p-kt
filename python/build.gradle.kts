@@ -1,14 +1,7 @@
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
-plugins {
-    // the JDKs of the toolchains, for the Java runtime of the package
-    `jvm-toolchains`
-}
-
 // The Python package (see README.md): the library of the JVM, the umbrella project with every module of arg2p, run
 // through JPype. The package carries its jars and its version, and a wheel for a platform a Java runtime of its own.
-
-val jvmVersion: String = libs.versions.jvm.get()
 
 // The interpreter running the tests (-Ppython=.venv/bin/python, say): python on the path otherwise
 val python: String = findProperty("python")?.toString() ?: "python"
@@ -54,40 +47,11 @@ val pythonVersion by tasks.registering {
     }
 }
 
-// The modules of the Java runtime arg2p needs (jdeps on its jars and those of its MCP server, with those the WebSockets
-// and their TLS need)
-val runtimeModules =
-    listOf(
-        "java.base",
-        "java.logging",
-        "java.management",
-        "java.naming",
-        "java.net.http",
-        "java.sql",
-        "java.xml",
-        "jdk.crypto.ec",
-        "jdk.unsupported",
-    )
-
-val pythonRuntime by tasks.registering(Exec::class) {
+val pythonRuntime by tasks.registering(Sync::class) {
     group = "python"
-    description = "Makes the Java runtime the package bundles, for this platform (src/arg2p/jre)"
-    val jdk = javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(jvmVersion)) }
-    val output = layout.projectDirectory.dir("src/arg2p/jre")
-    outputs.dir(output)
-    doFirst { delete(output) }
-    executable(jdk.map { it.metadata.installationPath.file("bin/jlink").asFile.absolutePath }.get())
-    args(
-        "--add-modules",
-        runtimeModules.joinToString(","),
-        "--strip-debug",
-        "--no-header-files",
-        "--no-man-pages",
-        "--compress",
-        "zip-6",
-        "--output",
-        output.asFile.absolutePath,
-    )
+    description = "Copies the Java runtime of arg2p for this platform into the package (src/arg2p/jre)"
+    from(rootProject.tasks.named("javaRuntime"))
+    into(layout.projectDirectory.dir("src/arg2p/jre"))
 }
 
 tasks.register<Exec>("pythonTest") {

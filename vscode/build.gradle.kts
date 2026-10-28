@@ -1,12 +1,5 @@
-plugins {
-    // the JDKs of the toolchains, for the Java runtime of the extension
-    `jvm-toolchains`
-}
-
 // The extension of VS Code (see README.md): the language arg2p, and the solver of a theory, from the language server of
 // arg2p (:lsp), which it carries as a jar, with a Java runtime of its own in a package for a platform.
-
-val jvmVersion: String = libs.versions.jvm.get()
 
 // npm, as the build runs it (npm.cmd on Windows)
 val npm = if (System.getProperty("os.name").lowercase().contains("windows")) "npm.cmd" else "npm"
@@ -19,40 +12,11 @@ val vscodeServer by tasks.registering(Copy::class) {
     rename { "arg2p-lsp.jar" }
 }
 
-// The modules of the Java runtime the server needs: those of arg2p (as the Python package bundles them), and java.sql
-// for the JSON of the protocol
-val runtimeModules =
-    listOf(
-        "java.base",
-        "java.logging",
-        "java.management",
-        "java.naming",
-        "java.net.http",
-        "java.sql",
-        "java.xml",
-        "jdk.crypto.ec",
-        "jdk.unsupported",
-    )
-
-val vscodeRuntime by tasks.registering(Exec::class) {
+val vscodeRuntime by tasks.registering(Sync::class) {
     group = "vscode"
-    description = "Makes the Java runtime the extension bundles, for this platform (runtime/)"
-    val jdk = javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(jvmVersion)) }
-    val output = layout.projectDirectory.dir("runtime")
-    outputs.dir(output)
-    doFirst { delete(output) }
-    executable(jdk.map { it.metadata.installationPath.file("bin/jlink").asFile.absolutePath }.get())
-    args(
-        "--add-modules",
-        runtimeModules.joinToString(","),
-        "--strip-debug",
-        "--no-header-files",
-        "--no-man-pages",
-        "--compress",
-        "zip-6",
-        "--output",
-        output.asFile.absolutePath,
-    )
+    description = "Copies the Java runtime of arg2p for this platform into the extension (runtime/)"
+    from(rootProject.tasks.named("javaRuntime"))
+    into(layout.projectDirectory.dir("runtime"))
 }
 
 val vscodeInstall by tasks.registering(Exec::class) {
