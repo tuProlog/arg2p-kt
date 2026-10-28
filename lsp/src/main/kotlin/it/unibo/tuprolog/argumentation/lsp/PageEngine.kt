@@ -119,19 +119,19 @@ internal class PageEngine(
                 val id = request.requiredInteger("id")
                 val branch = request.requiredInteger("branch").toInt()
                 val reqId = request.requiredInteger("reqId")
-                submit { answers(answer("graph", "reqId" to reqId, "graph" to graphAt(runOf(page, id), branch))) }
+                submit { listOf(answer("graph", "reqId" to reqId, "graph" to graphAt(runOf(page, id), branch))) }
             }
             "check" -> {
                 val reqId = request.requiredInteger("reqId")
                 val text = request.text("text") ?: ""
                 val kind = request.text("kind") ?: "theory"
-                submit { answers(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
+                submit { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
             }
             "settings" -> {
                 val reqId = request.requiredInteger("reqId")
                 val theory = request.text("theory") ?: ""
                 val flags = request.text("flags") ?: ""
-                submit { answers(answer("settings", "reqId" to reqId, "settings" to Solvers.settings(theory, flags))) }
+                submit { listOf(answer("settings", "reqId" to reqId, "settings" to Solvers.settings(theory, flags))) }
             }
             "stop" -> {
                 synchronized(sessions) { page.stop() }
@@ -277,8 +277,8 @@ internal class PageEngine(
 
     // Forgets the sessions idle for too long
     private fun expire() {
-        val oldest = System.nanoTime() - idle.inWholeNanoseconds
-        synchronized(sessions) { sessions.filterValues { it.used < oldest }.keys.toList() }.forEach(::forget)
+        val now = System.nanoTime()
+        synchronized(sessions) { sessions.filterValues { now - it.used > idle.inWholeNanoseconds }.keys.toList() }.forEach(::forget)
     }
 
     companion object {
@@ -298,8 +298,6 @@ internal class PageEngine(
             type: String,
             vararg fields: Pair<String, Any?>,
         ): Answer = mapOf("type" to type, *fields)
-
-        private fun answers(vararg answers: Answer) = answers.toList()
 
         private fun failed(
             id: Long,
