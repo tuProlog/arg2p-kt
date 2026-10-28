@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
@@ -42,7 +42,7 @@ class Site(
     private val scheduler: Scheduler,
     private val workers: Int?,
     private val parts: Int? = null,
-    settings: FlagsBuilder = FlagsBuilder(),
+    flags: Flags = Flags.defaults(),
     private val lends: Boolean = true,
     private val textual: Boolean = false,
     private val introducible: Boolean = false,
@@ -97,7 +97,7 @@ class Site(
     private val catalogQueue = scheduler.queue()
 
     // made at its first message: a site may only run workers for its peers
-    private val catalog by lazy { Catalog(CatalogNetwork(), parts, settings) }
+    private val catalog by lazy { Catalog(CatalogNetwork(), parts, flags) }
 
     /** The sites this one is federated with, its delegates included */
     val peerSites: Set<String> get() = peers.keys

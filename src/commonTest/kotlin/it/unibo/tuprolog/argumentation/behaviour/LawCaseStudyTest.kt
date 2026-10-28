@@ -1,17 +1,6 @@
-package it.unibo.tuprolog.argumentation.core.system
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.MutableSolver
-import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
+import it.unibo.tuprolog.argumentation.Arg2p
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.DurationUnit
@@ -1747,8 +1736,8 @@ class LawCaseStudyTest {
         argsOut: String,
         argsUnd: String,
     ) {
-        TestingUtils.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
-        TestingUtils.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
+        Behaviour.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
+        Behaviour.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
     }
 
     @Test
@@ -1756,7 +1745,7 @@ class LawCaseStudyTest {
     fun abstractResolutionSpeedTest() {
         val time =
             measureTime {
-                TestingUtils.answerQuery(
+                Behaviour.answerQuery(
                     baseTheory,
                     "violation(X)",
                     "[violation(viol(ca(epr, x, r))), violation(viol(epr)), violation(viol(epc))]",
@@ -1773,7 +1762,7 @@ class LawCaseStudyTest {
     fun structuredResolutionSpeedTest() {
         val time =
             measureTime {
-                TestingUtils.answerQuery(
+                Behaviour.answerQuery(
                     structuredTheory,
                     "violation(X)",
                     "[violation(viol(ca(epr, x, r))), violation(viol(epr)), violation(viol(epc))]",
@@ -1788,42 +1777,16 @@ class LawCaseStudyTest {
     @Test
     @ExperimentalTime
     fun structuredResolution() {
+        // the rules converted once, as the structured solver does before its queries
         val prepare = { theory: String ->
-            arg2pScope {
-                Arg2pSolver.default().let { arg2pSolver ->
-                    Arg2pPrologSolverFactory
-                        .mutableSolverWithDefaultBuiltins(
-                            otherLibraries = arg2pSolver.to2pLibraries().plus(FlagsBuilder().create().content()),
-                            staticKb = Theory.parse(theory, arg2pSolver.operators()),
-                        ).let { solver ->
-                            solver
-                                .solve(
-                                    "parser" call "convertAllRules"(`_`),
-                                    SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
-                                ).first()
-                            solver
-                        }
-                }
-            }
+            Arg2p.of(theory).also { it.solve("parser::convertAllRules(_)").next() }
         }
 
-        val run = { queryList: List<String>, solver: MutableSolver ->
-            arg2pScope {
-                queryList.map { query ->
-                    println("Evaluating $query")
-                    solver
-                        .solve(
-                            "structuredPartial" call
-                                "query"(
-                                    Struct.parse(query, Arg2pSolver.default().operators()),
-                                    X,
-                                ),
-                            SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE),
-                        ).first()
-                        .let {
-                            Pair(query, it.substitution[X]!!.toString() == "yes")
-                        }
-                }
+        val run = { queryList: List<String>, solver: Arg2p ->
+            queryList.map { query ->
+                println("Evaluating $query")
+                val solution = solver.solve("structuredPartial::query(($query), X)").next()
+                Pair(query, solution.text("X") == "yes")
             }
         }
 

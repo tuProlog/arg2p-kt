@@ -30,22 +30,24 @@ The catalog and the workers are the same on every runtime; only the way their me
 | --- | --- | --- |
 | `LocalCluster` | JVM, JavaScript | Taking turns on the calling thread: the reference behaviour, for tests and debugging. |
 | `ThreadedCluster` | JVM | On a pool of threads, as many as the processors by default. |
-| `JsWorkerCluster` | Node.js | On `worker_threads`, each loading this module. |
-| `JsWebWorkerCluster` | Browsers | On Web Workers, each running a script that loads this module. |
+| `WorkerCluster` | Node.js | On `worker_threads`, each loading this module. |
+| `WebWorkerCluster` | Browsers | On Web Workers, each running a script that loads this module. |
 
-All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the JVM
-ones the settings of the solver (`FlagsBuilder`), which the flags written in the theory complete, as for the standard
-solver.
+All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the flags
+of the solver (`Flags`, as for the [API]({{% ref "/docs/api/kotlin" %}})), which the flags written in the theory
+complete, as for the standard solver. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
+the Python package `arg2p`) as well.
 
 ---
 
 ## On the JVM
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.parallel.cluster.ThreadedCluster
 
-ThreadedCluster(threads = 8, settings = FlagsBuilder().argumentLabellingMode("complete")).use { cluster ->
+ThreadedCluster(threads = 8, flags = Flags.defaults().argumentLabellingMode(Semantics.COMPLETE)).use { cluster ->
     cluster.load(theory)
     val answer = cluster.solve("conclusion")
     println(answer.inArgs.map { it.claim })
@@ -61,16 +63,16 @@ once.
 ## On Node.js
 
 ```javascript
-const { JsWorkerCluster } = require('@tuprolog/arg2p-parallel-solver').it.unibo.tuprolog.argumentation.parallel.js
+const { WorkerCluster } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.parallel.cluster
 
-const cluster = new JsWorkerCluster(4)
+const cluster = new WorkerCluster(4)
 cluster.load(theory)
 const answer = await cluster.solve('conclusion')
 console.log(answer.inArgs.map(r => r.claim))
 cluster.close()
 ```
 
-The worker threads keep Node.js running only while an evaluation is pending; `close` stops them. `JsLocalCluster`
+The worker threads keep Node.js running only while an evaluation is pending; `close` stops them. `LocalCluster`
 offers the same methods on the calling thread, with `solve` returning the answer directly.
 
 ---
@@ -99,7 +101,7 @@ other.solve("conclusion") // built by the 24 workers of both
 ```
 
 ```javascript
-const cluster = new JsWorkerCluster(4)
+const cluster = new WorkerCluster(4)
 await cluster.connect('ws://hub-host:9431')
 ```
 
@@ -113,18 +115,18 @@ ThreadedCluster(threads = 8).discover()
 ```
 
 ```javascript
-await new JsWorkerCluster(4).discover()
+await new WorkerCluster(4).discover()
 ```
 
 ### In a browser
 
-`JsWebWorkerCluster` runs the workers on Web Workers, each loading a script of yours that loads the module and calls
+`WebWorkerCluster` runs the workers on Web Workers, each loading a script of yours that loads the module and calls
 `startWebWorker()` (with a bundler, the entry point of a worker bundle). A browser cannot listen nor send beacons: it
 connects to a JVM or Node.js instance, and through it to the other browsers linked to that instance, over WebRTC.
 
 ```javascript
 // the page
-const cluster = new JsWebWorkerCluster(4, '/arg2p-worker.js')
+const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
 await cluster.connect('ws://hub-host:9431')
 cluster.load(theory)
 const answer = await cluster.solve('conclusion')
@@ -178,7 +180,7 @@ With `metaConflicts`, where conflicts are themselves arguments, the catalog find
 
 ### Query mode
 
-With `queryMode` (the default of `FlagsBuilder`), the graph is built only on the rules that the labels of the
+With `queryMode` (on in `Flags.defaults()`), the graph is built only on the rules that the labels of the
 statements evaluated depend on, as the semantics declares, like the
 [query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver. The catalog finds those rules
 before any argument is built:

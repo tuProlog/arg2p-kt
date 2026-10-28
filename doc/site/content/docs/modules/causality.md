@@ -11,14 +11,40 @@ implementing counterfactual and NESS causal tests.
 
 It is available as the Maven module `causality-solver` and as the npm package
 `@tuprolog/arg2p-causality-solver`. It is also bundled in the
-[IDE]({{% ref "/docs/getting-started" %}}), ready to use with no extra setup, and in the npm package
-`@tuprolog/arg2p`, as a module to give to the solvers that need it.
+[IDE]({{% ref "/docs/getting-started" %}}), ready to use with no extra setup, and in the
+[API of Arg2P]({{% ref "/docs/api/kotlin" %}}) (`arg2p`, the npm package `@tuprolog/arg2p`, the Python package
+`arg2p`): every solver of the API has it.
 
 ---
 
-## Getting a causality solver
+## From the API
 
-From Kotlin, the entry point is the `causality` extension on `Arg2pSolverFactory`:
+Every solver of the [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) tests causality on its theory, through its
+`causality`, one method for each predicate below, the statements given as Prolog text:
+
+```kotlin
+import it.unibo.tuprolog.argumentation.Arg2p
+
+val causality = Arg2p.of("r_0 : exposure => disease.\nf_1 :=> exposure.").causality
+causality.ness("exposure", "disease")      // the intervention, [-exposure]: null if it is not a NESS cause
+causality.butFor("exposure", "disease")    // true
+```
+
+| Method | Predicate |
+| --- | --- |
+| `butFor(cause, effect)` | `but_for/2` |
+| `ness(cause, effect)`, `nessOriginal(cause, effect)` | `ness/3`, `ness_original/3`: the intervention, or null |
+| `nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` | `ness_intervention/2`, `ness_original_intervention/2` |
+
+The same methods are in [JavaScript]({{% ref "/docs/api/javascript" %}}) and, in snake case (`but_for`,
+`ness_original`, ...), in [Python]({{% ref "/docs/api/python" %}}). Each test starts from a reset context, as the
+others before it left nothing behind.
+
+---
+
+## Getting a causality solver of 2P-Kt
+
+From Kotlin, a solver of 2P-Kt with the causality module is the `causality` extension on `Arg2pSolverFactory`:
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.causality.causality
@@ -81,12 +107,7 @@ arg2pScope {
 }
 ```
 
-From [JavaScript]({{% ref "/docs/api/javascript" %}}), give the solver the causality module:
-
-```js
-const solver = new JsSolverBuilder().theory(theory).module(JsCausality.module()).build()
-JsArg2p.solve(solver, 'causality::ness(X, a, b)').next()
-```
+Through the API, the predicates are goals as well: `Arg2p.of(theory).solve("causality::ness(X, a, b)")`.
 
 ---
 

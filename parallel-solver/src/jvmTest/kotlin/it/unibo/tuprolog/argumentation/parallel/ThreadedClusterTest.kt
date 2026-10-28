@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.cluster.ThreadedCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.test.AfterTest
@@ -11,9 +11,9 @@ class ThreadedClusterTest : EquivalenceScenarios() {
 
     override fun distributed(
         theory: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): (String) -> EvaluationResponse =
-        ThreadedCluster(threads = 3, settings = settings).also {
+        ThreadedCluster(threads = 3, flags = flags).also {
             clusters += it
             it.load(theory)
         }::solve

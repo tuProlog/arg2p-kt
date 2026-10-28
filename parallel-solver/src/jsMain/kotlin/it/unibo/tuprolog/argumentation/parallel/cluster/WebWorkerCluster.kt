@@ -1,10 +1,12 @@
-package it.unibo.tuprolog.argumentation.parallel.js
+package it.unibo.tuprolog.argumentation.parallel.cluster
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.RtcLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.handled
+import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.js.JsExport
 import kotlin.js.Promise
 
@@ -14,17 +16,19 @@ import kotlin.js.Promise
  * one of the page (see [Site.delegate]). The theory is split into at most [parts] partitions if given, as many as the
  * workers of the Web Workers and of the sites the cluster is federated with otherwise: it federates with JVM and
  * Node.js sites over WebSockets ([connect]), lending them the workers of its Web Workers, and with the browsers they
- * are linked to over WebRTC (see [RtcLinks], with [iceServers] if given, as RTCPeerConnection takes them).
+ * are linked to over WebRTC (see [RtcLinks], with [iceServers] if given, as RTCPeerConnection takes them). The graph is
+ * labelled as the standard solver does with [flags].
  */
 @JsExport
-class JsWebWorkerCluster(
+class WebWorkerCluster(
     private val threads: Int,
     worker: String,
     parts: Int? = null,
+    flags: Flags = Flags.defaults(),
     iceServers: Array<dynamic> = emptyArray(),
 ) {
     // the catalog here, every worker on a Web Worker
-    private val site = Site(SequentialScheduler(), workers = 0, parts = parts, introducible = true)
+    private val site = Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags, introducible = true)
     private val links = WebSocketLinks(site)
     private val rtc = RtcLinks(site, iceServers)
 
@@ -61,9 +65,9 @@ class JsWebWorkerCluster(
     fun reset() = site.reset()
 
     /** The arguments for [statement], as Prolog text, by label */
-    fun solve(statement: String): Promise<JsEvaluation> =
+    fun solve(statement: String): Promise<EvaluationResponse> =
         Promise { resolve, _ ->
-            val evaluate = { site.solve(statement) { resolve(JsEvaluation.of(it)) } }
+            val evaluate = { site.solve(statement) { resolve(it) } }
             if (greeted == threads) evaluate() else waiting += evaluate
         }
 
@@ -97,7 +101,7 @@ class JsWebWorkerCluster(
     }
 }
 
-/** The loop of a Web Worker of [JsWebWorkerCluster]: a site running a worker for the site of the page that started it */
+/** The loop of a Web Worker of [WebWorkerCluster]: a site running a worker for the site of the page that started it */
 @JsExport
 fun startWebWorker() {
     val scope = js("self")

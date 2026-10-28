@@ -1,6 +1,10 @@
+@file:Suppress("NON_EXPORTABLE_TYPE")
+
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.core.Term
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 /** The label of an argument, NOT_FOUND for a statement no argument concludes */
 enum class Label {
@@ -10,11 +14,19 @@ enum class Label {
     NOT_FOUND,
 }
 
-/** An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] */
+/**
+ * An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] (none
+ * for a statement no argument concludes), as Prolog text
+ */
+@JsExport
 data class Response(
     val claim: String,
-    val queryChain: List<String>,
-)
+    @JsExport.Ignore @JsName("queryChainList") val queryChain: List<String>,
+) {
+    /** The argument, as Prolog text (an array in JavaScript) */
+    @JsName("queryChain")
+    val queryChainArray: Array<String> get() = queryChain.toTypedArray()
+}
 
 /**
  * An argument, by its global identifier ([id], the worker that built it and its identifier there), with the identifiers
@@ -84,11 +96,24 @@ data class RequireEvaluation(
 ) : KbMessage
 
 /** To a client: the arguments for the statement it asked about, by label */
+@JsExport
 data class EvaluationResponse(
-    val inArgs: List<Response>,
-    val outArgs: List<Response>,
-    val undArgs: List<Response>,
-) : KbMessage
+    @JsExport.Ignore @JsName("inArgsList") val inArgs: List<Response>,
+    @JsExport.Ignore @JsName("outArgsList") val outArgs: List<Response>,
+    @JsExport.Ignore @JsName("undArgsList") val undArgs: List<Response>,
+) : KbMessage {
+    /** The arguments labelled in (an array in JavaScript) */
+    @JsName("inArgs")
+    val inArray: Array<Response> get() = inArgs.toTypedArray()
+
+    /** The arguments labelled out (an array in JavaScript) */
+    @JsName("outArgs")
+    val outArray: Array<Response> get() = outArgs.toTypedArray()
+
+    /** The arguments labelled und (an array in JavaScript) */
+    @JsName("undArgs")
+    val undArray: Array<Response> get() = undArgs.toTypedArray()
+}
 
 /** To the catalog: the statements the rules of [worker] use as premises, whose arguments it needs */
 data class Subscribe(

@@ -1,9 +1,6 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -22,8 +19,8 @@ class UnboundVariablesAttacksTest {
         theory: String,
         query: String? = null,
     ): Map<String, Set<String>> =
-        solverWithTheory(groundedTheory + theory + (if (query != null) "\nqueryMode." else "")).let { solver ->
-            solver.solve(Struct.parse(if (query != null) "answerQuery($query)" else "buildLabelSets")).first()
+        solver(groundedTheory + theory + (if (query != null) "\nqueryMode." else "")).let { solver ->
+            solver.solve(if (query != null) "answerQuery($query)" else "buildLabelSets").next()
             solver
                 .graph()
                 .labellings

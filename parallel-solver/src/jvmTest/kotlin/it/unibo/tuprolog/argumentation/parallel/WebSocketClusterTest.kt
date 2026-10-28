@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.cluster.ThreadedCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.test.AfterTest
@@ -15,9 +15,9 @@ class WebSocketClusterTest : EquivalenceScenarios() {
 
     override fun distributed(
         theory: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): (String) -> EvaluationResponse {
-        val evaluating = ThreadedCluster(threads = 1, settings = settings).also { clusters += it }
+        val evaluating = ThreadedCluster(threads = 1, flags = flags).also { clusters += it }
         val port = evaluating.listen(0, "127.0.0.1")
         repeat(2) {
             ThreadedCluster(threads = 2).also {

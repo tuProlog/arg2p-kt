@@ -1,10 +1,8 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
-import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.answerQuery
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.buildLabelSets
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -205,31 +203,29 @@ class RationalityTest {
     fun caminadaExample7completeSemantic() {
         assertEquals(
             11,
-            TestingUtils
-                .solverWithTheory(
-                    example7theory +
-                        """
-                        argumentLabellingMode(complete).
-                        autoTransposition.
-                        """.trimIndent(),
-                ).solve(Struct.parse("buildLabelSets"))
-                .filter { it.isYes }
-                .count(),
+            solver(
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    """.trimIndent(),
+            ).solve("buildLabelSets")
+                .toList()
+                .count { it.isYes },
         )
 
         assertEquals(
             4,
-            TestingUtils
-                .solverWithTheory(
-                    example7theory +
-                        """
-                        argumentLabellingMode(complete).
-                        autoTransposition.
-                        graphExtension(rebutRestriction).
-                        """.trimIndent(),
-                ).solve(Struct.parse("buildLabelSets"))
-                .filter { it.isYes }
-                .count(),
+            solver(
+                example7theory +
+                    """
+                    argumentLabellingMode(complete).
+                    autoTransposition.
+                    graphExtension(rebutRestriction).
+                    """.trimIndent(),
+            ).solve("buildLabelSets")
+                .toList()
+                .count { it.isYes },
         )
     }
 }

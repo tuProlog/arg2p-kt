@@ -1,5 +1,6 @@
-package it.unibo.tuprolog.argumentation.parallel.js
+package it.unibo.tuprolog.argumentation.parallel.cluster
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
@@ -7,6 +8,7 @@ import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.handled
+import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.js.JsExport
 import kotlin.js.Promise
 
@@ -16,17 +18,18 @@ import kotlin.js.Promise
  * a delegate of the one of the calling thread (see [Site.delegate]), over the messages between threads: the cluster
  * lends the workers of its threads to the sites it is federated with. The theory is split into at most
  * [parts] partitions if given, as many as the workers of the threads and of the sites it is federated with otherwise
- * (see [listen] and [connect]). The threads keep Node.js running only while an evaluation is pending; [close] stops
+ * (see [listen] and [connect]); the graph is labelled as the standard solver does with [flags]. The threads keep Node.js running only while an evaluation is pending; [close] stops
  * them.
  */
 @JsExport
-class JsWorkerCluster(
+class WorkerCluster(
     private val threads: Int,
     parts: Int? = null,
+    flags: Flags = Flags.defaults(),
     module: String? = null,
 ) {
     // the catalog here, every worker on a thread
-    private val site = Site(SequentialScheduler(), workers = 0, parts = parts)
+    private val site = Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags)
     private val links = WebSocketLinks(site)
     private var port: Int? = null
     private var discovery: LanDiscovery? = null
@@ -79,13 +82,13 @@ class JsWorkerCluster(
     fun reset() = site.reset()
 
     /** The arguments for [statement], as Prolog text, by label */
-    fun solve(statement: String): Promise<JsEvaluation> =
+    fun solve(statement: String): Promise<EvaluationResponse> =
         Promise { resolve, _ ->
             pending++
             referenced(true)
             val evaluate = {
                 site.solve(statement) {
-                    resolve(JsEvaluation.of(it))
+                    resolve(it)
                     if (--pending == 0) referenced(false)
                 }
             }
@@ -103,7 +106,7 @@ class JsWorkerCluster(
     private fun spawn(module: String): dynamic {
         val code =
             "const { workerData } = require('worker_threads');\n" +
-                "require(workerData.module).it.unibo.tuprolog.argumentation.parallel.js.startWorkerThread();"
+                "require(workerData.module).it.unibo.tuprolog.argumentation.parallel.cluster.startWorkerThread();"
         val options: dynamic = js("({})")
         options.eval = true
         options.workerData = js("({})")
@@ -130,7 +133,7 @@ class JsWorkerCluster(
     private fun referenced(on: Boolean) = workers.forEach { if (on) it.ref() else it.unref() }
 }
 
-/** The loop of a thread of [JsWorkerCluster]: a site running a worker for the site of the thread that started it */
+/** The loop of a thread of [WorkerCluster]: a site running a worker for the site of the thread that started it */
 @JsExport
 fun startWorkerThread() {
     val port = workerThreads().parentPort

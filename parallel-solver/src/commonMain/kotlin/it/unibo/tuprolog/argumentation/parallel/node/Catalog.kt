@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.GraphStoreBatch
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
@@ -39,7 +39,7 @@ import it.unibo.tuprolog.theory.parsing.parse
  *    own (with metaConflicts, where the conflicts are arguments as well, the catalog builds the attacks itself), which
  *    the catalog saves as the graph builder does (the graph store extends them to the arguments built on the attacked
  *    ones);
- * 3. the catalog labels the graph as the standard solver does with [settings] and the flags of the theory (every
+ * 3. the catalog labels the graph as the standard solver does with [flags] and the flags of the theory (every
  *    semantics, every graph extension).
  *
  * The catalog knows the shared part of the theory (the flags, the preferences, the conflicts), not the rules, and
@@ -53,7 +53,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 class Catalog(
     private val network: Network,
     private val parts: Int? = null,
-    private val settings: FlagsBuilder = FlagsBuilder(),
+    private val flags: Flags = Flags.defaults(),
 ) : Node {
     private val theory = StringBuilder()
     private var changed = false
@@ -84,7 +84,7 @@ class Catalog(
     // The direct attacks the workers found, extended once they all have
     private val directAttacks = mutableListOf<DirectAttack>()
 
-    private val solver = Arg2pSolverFactory.default(settings = settings.create())
+    private val solver = Arg2pSolverFactory.default(settings = flags.library())
 
     // The graph is saved in its context a batch at a time (see GraphStoreBatch)
     private val context = Context.of(solver.libraries)!!
@@ -138,7 +138,7 @@ class Catalog(
     // graph built lacks (those added to its own)
     private fun evaluate() {
         if (waiting.isEmpty()) return
-        val needed = (scope ?: QueryScope(theory.toString(), settings).also { scope = it }).rules(waiting.map { parse(it.elem) })
+        val needed = (scope ?: QueryScope(theory.toString(), flags).also { scope = it }).rules(waiting.map { parse(it.elem) })
         val have = built
         when {
             changed -> start(needed)
@@ -151,7 +151,7 @@ class Catalog(
     // its rules (those left over forget theirs)
     private fun start(rules: Set<String>?) {
         building = rules
-        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, settings, rules)
+        val partitioning = TheoryPartitioner.partition(theory.toString(), parts ?: network.capacity, flags, rules)
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.shared, solver.operators))
         solve("context_reset, parser:::convertAllRules(_)")

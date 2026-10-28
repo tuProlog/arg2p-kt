@@ -1,13 +1,9 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.answerQuery
-import it.unibo.tuprolog.argumentation.core.TestingUtils.buildLabelSets
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.logicProgramming
-import it.unibo.tuprolog.solve.Solution
-import it.unibo.tuprolog.solve.Solver
+import it.unibo.tuprolog.argumentation.Arg2p
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.answerQuery
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.buildLabelSets
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,13 +39,11 @@ class PreferencesTest {
             "und" to "[]",
         )
 
-    private fun attacksSize(solver: Solver): Int =
-        logicProgramming {
-            solver
-                .solve("::"("graphStore", "attack"("X", "Y", "Z", "U")))
-                .filter { it.isYes }
-                .count()
-        }
+    private fun attacksSize(solver: Arg2p): Int =
+        solver
+            .solve("graphStore::attack(X, Y, Z, U)")
+            .toList()
+            .count { it.isYes }
 
     private fun check(
         theory: String,
@@ -150,9 +144,9 @@ class PreferencesTest {
         goal: String,
         flags: String = "",
     ) {
-        val solver = solverWithTheory(baseTheory + "sup(r3, r1).\norderingPrinciple(weakest).\norderingComparator(normal).\n$flags")
-        val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
-        assertTrue(solution is Solution.Halt && "domain_error(orderingPrinciple(last), weakest)" in solution.exception.toString())
+        val arg2p = solver(baseTheory + "sup(r3, r1).\norderingPrinciple(weakest).\norderingComparator(normal).\n$flags")
+        val solution = arg2p.solve(goal).next()
+        assertTrue(solution.isHalt && "domain_error(orderingPrinciple(last), weakest)" in solution.error.orEmpty(), solution.toString())
     }
 
     @Test

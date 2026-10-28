@@ -93,17 +93,16 @@ dependencies {
 Then evaluate a theory and read the labelling:
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Arg2p
 
 fun main() {
-    val graph = Arg2pSolverFactory.evaluate(
-        """
-        f1 :=> d.
-        f2 :=> -d.
-        """.trimIndent(),
-        FlagsBuilder(),
-    ).first()
+    val (graph) =
+        Arg2p.of(
+            """
+            f1 :=> d.
+            f2 :=> -d.
+            """.trimIndent(),
+        ).graphs()
 
     graph.labellings.forEach {
         println("${it.label} : ${it.argument.conclusion}")
@@ -114,14 +113,15 @@ fun main() {
 which prints:
 
 ```text
-und : '-'(d)
+und : -d
 und : d
 ```
 
-Both conclusions are undecided, and the negated one is printed in canonical term form, `'-'(d)`.
+Both conclusions are undecided.
 
-The [Kotlin API]({{% ref "/docs/api/kotlin" %}}) page covers configuration, the result model and how to embed
-Arg2P in an existing 2P-Kt solver.
+The [Kotlin API]({{% ref "/docs/api/kotlin" %}}) page covers the flags, the result model, Prolog goals, causality and
+how to embed Arg2P in an existing 2P-Kt solver; the same API is in [JavaScript]({{% ref "/docs/api/javascript" %}}) and
+[Python]({{% ref "/docs/api/python" %}}).
 
 ---
 
@@ -136,16 +136,13 @@ Arg2P in an existing 2P-Kt solver.
 ```
 
 ```js
-const { JsArg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation.core.js
+const { Arg2p } = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
 
-const solver = JsArg2p.solver(`
+const [graph] = Arg2p.of(`
     f1 :=> d.
-    f2 :=> -d.
-    queryMode.`)
-JsArg2p.solve(solver, 'arg2p::solve').next()
-const graph = JsArg2p.graph(solver)
+    f2 :=> -d.`).graphs()
 
-graph.arguments.forEach(arg => console.log(`${arg.label} : ${arg.descriptor}`))
+graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
 ```
 
 See [JavaScript API]({{% ref "/docs/api/javascript" %}}) for the whole API.

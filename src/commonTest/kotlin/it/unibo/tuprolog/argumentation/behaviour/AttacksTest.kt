@@ -1,9 +1,6 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.dsl.logicProgramming
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -23,15 +20,10 @@ class AttacksTest {
         theory: String,
         attacks: Map<String, Int>,
     ) {
-        logicProgramming {
-            TestingUtils.solverWithTheory(theory).also { solver ->
-                solver.solve(Struct.parse("buildLabelSets")).toList()
-                attacks.forEach { attack ->
-                    assertEquals(
-                        attack.value,
-                        solver.solve("::"("graphStore", "attack"(attack.key, "Y", "Z", "U"))).filter { it.isYes }.count(),
-                    )
-                }
+        solver(theory).also { solver ->
+            solver.solve("buildLabelSets").toList()
+            attacks.forEach { (type, count) ->
+                assertEquals(count, solver.solve("graphStore::attack($type, Y, Z, U)").toList().count { it.isYes }, type)
             }
         }
     }

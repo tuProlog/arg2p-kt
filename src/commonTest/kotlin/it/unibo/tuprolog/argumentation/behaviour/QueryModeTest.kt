@@ -1,14 +1,10 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
-import it.unibo.tuprolog.core.Atom
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.unify.Unificator
+import it.unibo.tuprolog.argumentation.Semantics
+import it.unibo.tuprolog.argumentation.Value
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.canonical
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.unifies
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -27,11 +23,7 @@ class QueryModeTest {
         override fun toString() = "in=$yes out=$no und=$und"
     }
 
-    private fun Iterable<Term>.canonical() =
-        map { term ->
-            val variables = term.variables.distinct().toList()
-            term.apply(Substitution.of(variables.mapIndexed { i, v -> v to Atom.of("_V$i") }.toMap())).toString()
-        }.toSet()
+    private fun Iterable<Value>.canonical() = map { canonical(it) }.toSet()
 
     private val config =
         """
@@ -43,16 +35,14 @@ class QueryModeTest {
     private fun solve(
         theory: String,
         goal: String,
-    ): List<Map<String, Term>> {
-        val solver = solverWithTheory(theory)
-        return solver
-            .solve(Struct.parse(goal, solver.operators), SolveOptions.allLazilyWithTimeout(Long.MAX_VALUE))
-            .filter { it.isYes }
-            .map { solution -> solution.substitution.entries.associate { it.key.name to it.value } }
+    ): List<Map<String, Value>> =
+        solver(theory)
+            .solve(goal)
             .toList()
-    }
+            .filter { it.isYes }
+            .map { it.bindings }
 
-    private fun Term.items() = castToList().toList()
+    private fun Value.items() = (this as Value.List).items
 
     // The answers of the whole graph: its statement labellings, projected on each query
     private fun wholeGraph(
@@ -61,13 +51,13 @@ class QueryModeTest {
     ): Map<String, Set<Answer>> {
         val labellings = solve(theory, "buildLabelSets(In, Out, Und)")
         return queries.associateWith { query ->
-            val goal = Term.parse(query)
+            val goal = Value.parse(query)
 
-            fun project(statements: Term) =
+            fun project(statements: Value) =
                 statements
                     .items()
                     .map { it.items().single() }
-                    .filter { Unificator.default.mgu(it, goal).isSuccess }
+                    .filter { unifies(it, goal) }
                     .canonical()
             labellings.map { Answer(project(it.getValue("In")), project(it.getValue("Out")), project(it.getValue("Und"))) }.toSet()
         }
@@ -81,12 +71,12 @@ class QueryModeTest {
             .map { answer -> Answer(answer.labelled("In"), answer.labelled("Out"), answer.labelled("Und")) }
             .toSet()
 
-    private fun Map<String, Term>.labelled(label: String) = getValue(label).items().canonical()
+    private fun Map<String, Value>.labelled(label: String) = getValue(label).items().canonical()
 
     private fun checkQueries(
         theory: String,
         queries: List<String>,
-        semantics: Iterable<String> = ArgumentLabellingMode.values(),
+        semantics: Iterable<String> = Semantics.entries.map { it.value },
         extensions: List<String> = listOf("standardPref"),
     ) {
         val graphExtensions = extensions.joinToString("\n") { "graphExtension($it)." }

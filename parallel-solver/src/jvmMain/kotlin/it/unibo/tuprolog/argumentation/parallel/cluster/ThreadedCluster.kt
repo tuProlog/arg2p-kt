@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.PoolScheduler
@@ -13,21 +13,21 @@ import java.util.concurrent.CompletableFuture
  * A distributed solver on the threads of this JVM: each node (the catalog, each worker) handles its messages one
  * at a time, the nodes in parallel on [threads] threads. The theory is split into at most [parts] partitions if
  * given, as many as the workers of the cluster and of the sites it is federated with otherwise (see [site]); the
- * graph is labelled as the standard solver does with [settings]. The nodes share the terms of their messages; with
+ * graph is labelled as the standard solver does with [flags]. The nodes share the terms of their messages; with
  * [textual], every message is written as text by its sender and read by its receiver instead, as between processes
  * (see [it.unibo.tuprolog.argumentation.parallel.message.MessageCodec]).
  */
 class ThreadedCluster(
     threads: Int = Runtime.getRuntime().availableProcessors(),
     parts: Int? = null,
-    settings: FlagsBuilder = FlagsBuilder(),
+    flags: Flags = Flags.defaults(),
     textual: Boolean = false,
     lends: Boolean = true,
 ) : AutoCloseable {
     private val scheduler = PoolScheduler(threads)
 
     /** The site of the cluster, running a worker on each thread: to federate it with others, through its links */
-    val site = Site(scheduler, threads, parts, settings, lends, textual)
+    val site = Site(scheduler, threads, parts, flags, lends, textual)
 
     // made when the cluster first listens or connects
     private var links: WebSocketLinks? = null
@@ -35,6 +35,12 @@ class ThreadedCluster(
     private var discovery: LanDiscovery? = null
 
     private fun links() = links ?: WebSocketLinks(site).also { links = it }
+
+    /** The identifier of the site of the cluster, as the others know it */
+    val id: String get() = site.id
+
+    /** The sites the cluster is federated with */
+    val peers: Set<String> get() = site.peerSites
 
     /**
      * Accepts the links of other sites (on any platform) over WebSockets, on [port] of [host] (an ephemeral port for

@@ -7,10 +7,10 @@ aliases:
 
 ## JavaScript API
 
-The npm package `@tuprolog/arg2p` exposes arg2p to JavaScript through the `js` packages of the core and of the
-causality solver. The solvers, their solutions and the terms are tuProlog's own; the `js` packages export what
-JavaScript cannot reach by itself: building a solver, reading its solutions one at a time, the argumentation graph
-it computed, and building and reading terms.
+The npm package `@tuprolog/arg2p` exposes the [API of arg2p]({{% ref "/docs/api/kotlin" %}}) to JavaScript, as it is
+in Kotlin: a solver for a theory (`Arg2p`), its flags (`Flags`, with an enumeration for the values of each), its
+answers, graphs and solutions, the values of Prolog terms (`Value`), the causality tests, and the clusters of the
+[parallel solver]({{% ref "/docs/modules/parallel-solver" %}}). Nothing of tuProlog is needed.
 
 ```json
 {
@@ -22,144 +22,142 @@ it computed, and building and reading terms.
 
 ```js
 const argumentation = require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation
-const { JsArg2p, JsSolverBuilder, JsTerms, JsTheories } = argumentation.core.js
-const { JsCausality } = argumentation.causality.js
+const { Arg2p, Flags, Value, Semantics, Profile, GraphExtension } = argumentation
 ```
 
-`argumentation.Arg2pLibrary.version()` is the version of the package.
+`Arg2p.version()` is the version of the package. Every list of the API is an array in JavaScript.
 
 ---
 
 ## A solver
 
-`JsSolverBuilder` describes a solver, then `build()` makes it:
+`Arg2p.of(theory, flags)` is a solver for a theory, Prolog text, with flags (`Flags.defaults()` if left out).
+`Arg2p.builder()` describes one in full:
 
 | Method | Meaning |
 | --- | --- |
 | `theory(text)` | The theory, as Prolog text |
-| `flags(text)` | The [flags]({{% ref "/docs/api/flags" %}}), as Prolog facts: the solver has only these, not the default ones |
-| `module(module)` | A module besides those of arg2p, as the causality solver's `JsCausality.module()` |
+| `flags(flags)` | The [flags]({{% ref "/docs/api/flags" %}}) |
 | `output(consumer)` | A function receiving whatever the solver prints (the standard output otherwise) |
 
-Without `flags`, the solver has the default flags, and the theory adds those it needs (as `metaConflicts.`).
-With `flags`, the string must declare every required flag.
-
 ```js
-const solver = new JsSolverBuilder()
+const solver = Arg2p.builder()
     .theory(`
         f1 :=> d.
         f2 :=> -d.`)
-    .flags(`
-        statementLabellingMode(statement).
-        argumentLabellingMode(grounded).
-        orderingPrinciple(last).
-        orderingComparator(elitist).
-        graphExtension(standardPref).
-        queryMode.`)
+    .flags(Flags.defaults().argumentLabellingMode(Semantics.PREFERRED))
     .output(out => console.log(out))
     .build()
 ```
 
-`JsArg2p.solver(theory)` and `JsArg2p.solverWithoutDefaults(theory)` are the short forms for a theory with the default
-flags, or with only those it states.
+`Flags.defaults()` are the flags of arg2p by default, `Flags.none()` only those the theory states, and
+`Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of its enumeration
+(`Profile`, `Semantics`, `StatementLabelling`, `OrderingPrinciple`, `OrderingComparator`, `GraphExtension`,
+`GraphLanguage`, `GraphBuilder`, `ConflictModel`), a boolean for a switch:
+
+```js
+Flags.defaults()
+    .graphBuildMode(Profile.ABA)
+    .graphExtensions([GraphExtension.STANDARD_PREF, GraphExtension.BP])   // [] for none
+    .queryMode(false)
+```
 
 ---
 
-## Its solutions
+## Answers and graphs
 
-`JsArg2p.solve(solver, goal)` gives the solutions of a goal, computed one at a time as they are asked for, with
-`hasNext()` and `next()`. Each solution has:
+`answer(query)` gives the statements for a query labelled in, out and und (`inStatements`, `outStatements`,
+`undStatements`, and `label(statement)`). A theory its profile refuses, or a query that cannot be parsed, raises an
+`Arg2pException`.
+
+```js
+const answer = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
+answer.inStatements.map(String)    // ['a']
+```
+
+`graphs()` gives the graph of each labelling of the theory: one, or several for a semantics with several (preferred,
+stable, ...). A graph has its `arguments`, `attacks`, `supports` and `labellings` (each argument with its label), and
+`label(argument)`, `labelled(label)` and `conclusions(label)`:
+
+```js
+const [graph] = solver.graphs()
+graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
+graph.attacks.forEach(it => console.log(`${it.attacker.identifier} attacks ${it.target.identifier} (${it.type})`))
+graph.conclusions('in')
+```
+
+An argument has its `identifier` (A0, A1, ...), `descriptor` (`A2 : A0,r1 : c`), `conclusion`, `topRule`, `rules`
+and `supports` (the arguments it is built on); an attack its `attacker`, `target`, `type` (`rebut`, `undermine`,
+`undercut`, ...) and `on`, the sub-argument of the target it hits.
+
+The context of a solver keeps a branch for every stage of a resolution (each module call made with `:::`), numbered
+from 0: `activeBranch` is the last one, `graph()` and `graphAt(branch)` the graph of the last or of any of them, and
+`contextFacts(branch, goal)` what a branch stores.
+
+---
+
+## Prolog goals
+
+`solve(goal)` gives the solutions of a goal, computed one at a time as they are asked for, with `hasNext()` and
+`next()` (or `toArray(limit)`). Each solution has:
 
 | Member | Content |
 | --- | --- |
 | `isYes`, `isNo`, `isHalt` | What the solution is (halt: the solver raised an error) |
 | `query` | The goal, with its variables bound for a yes solution |
-| `error` | The error of a halt solution, as text |
+| `error` | The error of a halt solution |
 | `variables` | The names of the variables a yes solution binds |
-| `term(name)`, `formatted(name)` | The value of a variable, as a term or as text |
+| `value(name)`, `text(name)` | The value of a variable, as a `Value` or as Prolog text |
+
+A `Value` is an atom (`name`), an integer or a real (`value`), a variable (`name`), a list (`items`) or a compound
+term (`functor`, `args`); its `kind` tells which, and `toString()` writes it as arg2p does (`-a`). `Value.parse(text)`
+reads one.
 
 ```js
-const solution = JsArg2p.solve(solver, 'answerQuery(d, In, Out, Und)').next()
-console.log(solution.formatted('Und'))     // [d]
+const solutions = Arg2p.of().solve('member(X, [a, f(-b)])')
+while (solutions.hasNext()) {
+    const solution = solutions.next()
+    if (solution.isYes) console.log(solution.text('X'), solution.value('X').kind)
+}
 ```
 
----
-
-## The argumentation graph
-
-After a query, the context of the solver holds the graph it computed. `JsArg2p.graph(solver)` gives it, with:
-
-| Field | Content |
-| --- | --- |
-| `arguments` | Objects with `id`, `descriptor` and `label` (`in`, `out`, `und`) |
-| `attacks` | Objects with `from` and `to`, the ids of the two arguments, the attack `type` (`rebut`, `undermine`, `undercut`, ...) and `on`, the id of the sub-argument of `to` it hits |
-
-```js
-JsArg2p.solve(solver, 'buildLabelSets').next()
-const graph = JsArg2p.graph(solver)
-
-graph.arguments.forEach(arg => console.log(`${arg.label} : ${arg.descriptor}`))
-graph.attacks.forEach(att => console.log(`${att.from} attacks ${att.to}`))
-```
-
-The context keeps a branch for every stage of the computation (each module call made with `:::`), numbered from 0:
-`JsArg2p.activeBranch(solver)` is the last one, `JsArg2p.graphAt(solver, branch)` the graph of any of them, and
-`JsArg2p.contextFacts(solver, branch, goal)` the solutions of `context_check(Branch, Goal)`, what a branch stores:
-
-```js
-const facts = JsArg2p.contextFacts(solver, JsArg2p.activeBranch(solver), 'statIn(S)')
-while (facts.hasNext()) console.log(facts.next().formatted('S'))
-```
+`add(text)` adds clauses to the theory, `load(text)` replaces it.
 
 ---
 
 ## Causality
 
-The causality predicates come with the causality module, given to the solver:
+Every solver tests causality on its theory ([causality]({{% ref "/docs/modules/causality" %}})): `ness(cause, effect)`
+and `nessOriginal(cause, effect)` give the intervention showing a cause NESS (null if it is not one),
+`nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` and `butFor(cause,
+effect)` whether they hold.
 
 ```js
-const causal = new JsSolverBuilder()
-    .theory(`
-        r1 :=> a.
-        r2 : a => b.`)
-    .module(JsCausality.module())
-    .build()
-
-console.log(JsArg2p.solve(causal, 'causality::ness(X, a, b)').next().formatted('X'))   // [- a]
+const causality = Arg2p.of('r1 :=> a.\nr2 : a => b.').causality
+String(causality.ness('a', 'b'))   // [-a]
+causality.butFor('a', 'b')         // true
 ```
 
 ---
 
-## Terms and theories
+## From earlier versions
 
-- `JsTerms`: parsing and formatting terms (`parse`, `format`), building them (`atom`, `variable`, `integer`, `real`,
-  `struct`, `list`), and reading them (`kind`, `functor`, `arity`, `args`, `items`, `name`, `numberValue`);
-- `JsTheories`: parsing a theory, its clauses, and formatting it.
+Earlier versions exposed the solver of tuProlog through the `js` packages (`JsArg2p`, `JsSolverBuilder`, ...), and
+before them a single object, `JsBridge`. Their replacements:
 
-The solver is tuProlog's own, so its named methods work as well:
-
-```js
-solver.assertAFact(JsTerms.struct('fact', [JsTerms.atom('x')]))
-```
-
----
-
-## From the JS bridge
-
-Earlier versions of the package exposed a single object, `JsBridge`, solving a query on a theory and flags given as
-text. Its replacements:
-
-| `JsBridge` | Now |
+| Before | Now |
 | --- | --- |
-| `JsBridge.solve(query, theory, flags, output)` | `new JsSolverBuilder().theory(theory).flags(flags).output(output).build()`, then `JsArg2p.solve(solver, query)` |
-| the causality library, always there | `.module(JsCausality.module())` |
-| `result.i.hasNext()`, `result.i.next()` | `solutions.hasNext()`, `solutions.next()` |
-| `solution.res` | `solution.isYes`, `isNo`, `isHalt` |
-| `solution.substitutions` | `solution.variables` and `solution.formatted(name)` |
-| `solution.exception` | `solution.error` |
-| `solution.graph`, `solution.context` | `JsArg2p.graph(solver)`, `JsArg2p.activeBranch(solver)` |
-| `result.graphAt(branch)` | `JsArg2p.graphAt(solver, branch)` |
-| `result.queryContext(branch, goal)` | `JsArg2p.contextFacts(solver, branch, goal)` |
+| `new JsSolverBuilder().theory(t).flags(f).output(o).build()` | `Arg2p.builder().theory(t).flags(Flags.parse(f)).output(o).build()` |
+| `JsArg2p.solver(theory)`, `JsArg2p.solverWithoutDefaults(theory)` | `Arg2p.of(theory)`, `Arg2p.of(theory, Flags.none())` |
+| `JsArg2p.solve(solver, goal)` | `solver.solve(goal)` |
+| `solution.term(name)`, `solution.formatted(name)` | `solution.value(name)`, `solution.text(name)` |
+| `JsArg2p.graph(solver)`, `JsArg2p.graphAt(solver, branch)` | `solver.graph()`, `solver.graphAt(branch)` |
+| `graph.arguments[i].id`, `.label` | `graph.labellings[i].argument.identifier`, `graph.labellings[i].label` |
+| `attack.from`, `attack.to`, `attack.on` (identifiers) | `attack.attacker`, `attack.target`, `attack.on` (arguments) |
+| `JsArg2p.activeBranch(solver)`, `JsArg2p.contextFacts(solver, b, g)` | `solver.activeBranch`, `solver.contextFacts(b, g)` |
+| `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.causality.ness('a', 'b')` |
+| `JsTerms.parse(text)`, `JsTerms.format(term)` | `Value.parse(text)`, `String(value)` |
+| `JsBridge.solve(query, theory, flags, output)` | `Arg2p.builder()...build().solve(query)` |
 
 ---
 

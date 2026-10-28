@@ -1,20 +1,14 @@
-package it.unibo.tuprolog.argumentation.causality.examples
+package it.unibo.tuprolog.argumentation.behaviour.causality
 
-import it.unibo.tuprolog.argumentation.causality.causality
-import it.unibo.tuprolog.argumentation.causality.isButForCause
-import it.unibo.tuprolog.argumentation.causality.isNessCause
-import it.unibo.tuprolog.argumentation.causality.isNessIntervention
-import it.unibo.tuprolog.argumentation.causality.isNessOriginalCause
-import it.unibo.tuprolog.argumentation.causality.isNessOriginalIntervention
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2p
 import kotlin.test.Test
 
 // The causation examples of the literature, by every test: ness/3 holds only for causes with an IN argument
 class CausalityExamplesTest {
     @Test
     fun causalityTestRefinedTheory1(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 f1 :=> a.
                 f1 :=> b.
@@ -35,8 +29,8 @@ class CausalityExamplesTest {
 
     @Test
     fun causalityTestRefinedTheory2(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 f1 :=> a.
                 f2 :=> b.
@@ -55,8 +49,8 @@ class CausalityExamplesTest {
 
     @Test
     fun causalityTestComplex(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 tx2 : d, e => undercut(r2).
 
@@ -87,8 +81,8 @@ class CausalityExamplesTest {
 
     @Test
     fun causalityTest(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 tx2 : d => -r2.
 
@@ -117,8 +111,8 @@ class CausalityExamplesTest {
 
     @Test
     fun asbestos(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_0 : ca => di.
                 r_1 : ex_1, ex_2 => ca.
@@ -149,8 +143,8 @@ class CausalityExamplesTest {
 
     @Test
     fun tobacco(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_0 : ge_di => lu_ca.
                 r_1 : ge_di => sm_to.
@@ -169,8 +163,8 @@ class CausalityExamplesTest {
 
     @Test
     fun doubleShooting(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_0 : bu_sh => bu_ki.
                 r_1 : dl_sh => du_ki.
@@ -191,8 +185,8 @@ class CausalityExamplesTest {
 
     @Test
     fun leukaemia(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_0 : ch_le => ch_di.
                 r_1 : pa_co => chem.
@@ -211,8 +205,8 @@ class CausalityExamplesTest {
 
     @Test
     fun brakes(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_0 : -dr_pu => ac_ha.
                 r_1 : br_ma => br_fa.
@@ -237,14 +231,14 @@ class CausalityExamplesTest {
         r_1 : se_sh => pr_di.
         r_2 : -so_sh => se_sh.
         """.trimIndent().let { theory ->
-            Arg2pSolverFactory.causality("$theory\nf1 :=> so_sh.\n").let {
+            Arg2p.of("$theory\nf1 :=> so_sh.\n").let {
                 isNessOriginalIntervention(it, "[-so_sh]", "pr_di")
                 isNessOriginalIntervention(it, "[-se_sh]", "pr_di", false)
 
                 isNessIntervention(it, "[-so_sh]", "pr_di")
                 isNessIntervention(it, "[-se_sh]", "pr_di", false)
             }
-            Arg2pSolverFactory.causality("$theory\nf1 :=> -so_sh.\n").let {
+            Arg2p.of("$theory\nf1 :=> -so_sh.\n").let {
                 isNessOriginalIntervention(it, "[so_sh]", "pr_di")
                 isNessOriginalIntervention(it, "[-se_sh]", "pr_di")
 

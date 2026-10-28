@@ -9,88 +9,107 @@ aliases:
 
 There are two ways to use Arg2P from Kotlin or Java:
 
-1. **The high-level API** — `Arg2pSolverFactory.evaluate`, which runs a theory and hands back the resulting
-   graph as Kotlin objects. Start here.
+1. **The API of arg2p** — `Arg2p`, a solver for a theory: its answers, graphs and solutions as Kotlin objects, its
+   flags as enumerations, and the causality tests. Start here: it is the same API in
+   [JavaScript]({{% ref "/docs/api/javascript" %}}) and, in snake case, in [Python]({{% ref "/docs/api/python" %}}),
+   and nothing of 2P-Kt is needed.
 2. **The 2P-Kt integration** — load Arg2P as a library into your own `Solver` and query it with Prolog goals.
    Use this when you need the full Prolog interface, custom libraries, or an existing 2P-Kt setup.
 
+The API is in the aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), with every module of Arg2P (the core, the
+causality and the parallel solver), package `it.unibo.tuprolog.argumentation`.
+
 ---
 
-## The high-level API
+## A solver
 
-`Arg2pSolverFactory.evaluate(theory, flags)` evaluates a theory and returns a sequence of
-`Graph` objects — one per labelling, since some semantics admit more than one.
+`Arg2p.of(theory, flags)` is a solver for a theory, Prolog text, with its flags (`Flags.defaults()` if left out):
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Arg2p
 
 fun main() {
-    val graph = Arg2pSolverFactory.evaluate(
+    val arg2p = Arg2p.of(
         """
-        f1 :=> d.
-        f2 :=> -d.
+        r1 : [] => a.
+        r2 : [] => -a.
+        sup(r1, r2).
         """.trimIndent(),
-        FlagsBuilder(),
-    ).first()
-
-    graph.labellings.forEach {
-        println("${it.label} : ${it.argument.conclusion}")
-    }
+    )
+    println(arg2p.answer("a").inStatements)   // [a]
 }
 ```
 
-### Configuring the evaluation
+`Arg2p.builder()` describes one in full: its `theory`, its `flags`, and the `output` receiving what it prints (the
+standard output otherwise). `add(text)` adds clauses to the theory, `load(text)` replaces it, and `theory` is the
+theory as Prolog text. `Arg2p.version()` is the version of Arg2P.
 
-The [flags]({{% ref "/docs/api/flags" %}}) are fields of `FlagsBuilder` (all but `naturalTerms` and `debug`,
-written in the theory), so they can be set with named arguments:
+### Flags
 
-```kotlin
-val flags = FlagsBuilder(
-    argumentLabellingMode = "complete",
-    statementLabellingMode = "statement",
-    orderingPrinciple = "weakest",
-    orderingComparator = "democrat",
-    graphExtensions = listOf("standardPref", "rebutRestriction"),
-    autoTransposition = true,
-)
-```
-
-Most fields also have a fluent setter, which is handy when adjusting a single value:
+`Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default, `Flags.none()` only those
+the theory states, and `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of
+its enumeration, or a boolean for a switch:
 
 ```kotlin
-val flags = FlagsBuilder().argumentLabellingMode("preferred")
+val flags =
+    Flags.defaults()
+        .graphBuildMode(Profile.ASPIC_PLUS)
+        .argumentLabellingMode(Semantics.COMPLETE)
+        .orderingPrinciple(OrderingPrinciple.WEAKEST)
+        .orderingComparator(OrderingComparator.DEMOCRAT)
+        .graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.REBUT_RESTRICTION)   // none: no argument
+        .autoTransposition(true)
 ```
 
-> [!NOTE]
-> `autoTransposition` has no fluent setter — set it through the constructor, or with `copy()` on an existing
-> builder.
+| Flag | Values |
+| --- | --- |
+| `graphBuildMode` | `Profile`: `FREE`, `ASPIC_PLUS`, `ASPIC`, `ASPIC_DEFEASIBLE`, `META`, `ABA`, `ABA_PLUS`, `ABSTRACT` |
+| `argumentLabellingMode` | `Semantics`: `GROUNDED`, `COMPLETE`, `PREFERRED`, `STABLE`, ... |
+| `statementLabellingMode` | `StatementLabelling` |
+| `orderingPrinciple`, `orderingComparator` | `OrderingPrinciple`, `OrderingComparator` |
+| `graphExtensions`, `graphLanguage` | `GraphExtension`, `GraphLanguage` (several) |
+| `graphBuilder`, `conflictModel` | `GraphBuilder`, `ConflictModel` |
+| `modulesPath` | a path |
+| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `debug` | on or off |
 
-### Reading several labellings
-
-With a multiple-status semantics, do not stop at `first()`:
-
-```kotlin
-Arg2pSolverFactory
-    .evaluate(theory, FlagsBuilder(argumentLabellingMode = "preferred"))
-    .forEachIndexed { index, graph ->
-        println("Extension #$index")
-        graph.labellings.forEach { println("  ${it.label} : ${it.argument.conclusion}") }
-    }
-```
+Each value has the atom stating it in a theory (`Semantics.PREFERRED.value` is `preferred`); `toString()` writes the
+flags as the facts stating them. A flag the theory states overrides the one of the solver.
 
 ---
 
-## The result model
+## Answers and graphs
 
-`evaluate` returns `Graph` objects made of plain data classes:
+`answer(query)` gives the statements for a query labelled in, out and und (`inStatements`, `outStatements`,
+`undStatements`, as [values](#prolog-goals-and-values), and `label(statement)`).
+
+`graphs()` gives the graph of each labelling of the theory: one, or several with a semantics admitting several
+(preferred, stable, ...):
+
+```kotlin
+Arg2p.of(theory, Flags.defaults().argumentLabellingMode(Semantics.PREFERRED))
+    .graphs()
+    .forEachIndexed { index, graph ->
+        println("Extension #$index: ${graph.conclusions("in")}")
+    }
+```
+
+A theory its profile refuses (a non-flat ABA theory, say), or a query that cannot be parsed, raises an
+`Arg2pException`, with the reason.
+
+The context of a solver keeps a branch for every stage of a resolution (each module call made with `:::`), numbered
+from 0: `activeBranch` is the last one, `graph()` and `graphAt(branch)` the graph of the last or of any of them, and
+`contextFacts(branch, goal)` what a branch stores.
+
+### The result model
+
+A graph is made of plain data classes (package `it.unibo.tuprolog.argumentation.core.model`):
 
 | Type | Content |
 | --- | --- |
-| `Graph` | `labellings: List<LabelledArgument>`, `attacks: List<Attack>`, `supports: List<Support>` |
+| `Graph` | `arguments`, `attacks`, `supports`, `labellings: List<LabelledArgument>`; `label(argument)`, `labelled(label)`, `conclusions(label)` |
 | `LabelledArgument` | `argument: Argument` and its `label` (`in`, `out`, `und`, or `na` when unlabelled) |
-| `Argument` | `rules`, `topRule`, `conclusion`, `supports` (its sub-arguments) and a readable `descriptor` |
-| `Attack` | `attacker`, `target`, the attack `type` and the attacked element `on` |
+| `Argument` | `identifier`, `rules`, `topRule`, `conclusion`, `supports` (its sub-arguments) and a readable `descriptor` |
+| `Attack` | `attacker`, `target`, the attack `type` and the attacked sub-argument `on` |
 | `Support` | `supporter` and `supported` |
 
 Attack types are `rebut`, `contrary_rebut`, `undermine`, `contrary_undermine` and `undercut`, plus `pref` (an
@@ -103,6 +122,53 @@ graph.attacks.forEach { println("${it.attacker.descriptor} --${it.type}--> ${it.
 
 Arguments receive synthetic identifiers (`A0`, `A1`, …) assigned in a stable order, so the same theory always
 produces the same names.
+
+---
+
+## Prolog goals and values
+
+`solve(goal)` gives the solutions of a Prolog goal, computed one at a time as they are asked for (`hasNext()` and
+`next()`, a Kotlin `for`, or `toList(limit)`). A solution is yes, no or halt (`isYes`, `isNo`, `isHalt`, and the
+`error` of a halt); a yes one binds the variables of the goal (`variables`, `bindings`, `value(name)`, `text(name)`).
+
+The terms are `Value`s: `Value.Atom`, `Value.Integer`, `Value.Real`, `Value.Variable`, `Value.List` and
+`Value.Struct`, data classes written as Arg2P writes them (`-a`, not `'-'(a)`). `Value.parse(text)` reads one.
+
+```kotlin
+for (solution in Arg2p.of().solve("member(X, [a, f(-b)])")) {
+    if (solution.isYes) println(solution.value("X"))   // a, then f(-b)
+}
+```
+
+---
+
+## Causality
+
+`causality` tests causality on the theory of a solver (see [causality]({{% ref "/docs/modules/causality" %}})):
+
+```kotlin
+val causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
+causality.ness("a", "b")      // [-a], the intervention: null if a is not a NESS cause of b
+causality.butFor("a", "b")    // true
+```
+
+`nessOriginal` is the NESS test as published, `nessIntervention` and `nessOriginalIntervention` whether a given
+intervention meets the condition.
+
+---
+
+## The parallel solver
+
+The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) take the same `Flags`:
+`LocalCluster(parts, flags)` on every platform, `ThreadedCluster(threads, parts, flags)` on the JVM.
+
+---
+
+## Earlier entry points
+
+`Arg2pSolverFactory.evaluate(theory, flags)` (package `it.unibo.tuprolog.argumentation.core`), the graph of each
+labelling of a theory with the flags of a `FlagsBuilder`, is still there, as `FlagsBuilder` is, for the 2P-Kt
+integration below: `Flags.of(builder)` are the flags of a builder.
 
 ---
 

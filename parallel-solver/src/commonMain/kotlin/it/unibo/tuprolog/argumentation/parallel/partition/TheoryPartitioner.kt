@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.partition
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.EmptyList
@@ -51,7 +51,7 @@ object TheoryPartitioner {
     private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility")
 
     /**
-     * The partitions of [theory], converted with [settings] and the flags of the theory: the groups of rules that
+     * The partitions of [theory], converted with [flags] and the flags of the theory: the groups of rules that
      * support one another, or, given [parts], that many partitions of about the same number of rules (the groups
      * packed together, or the largest ones split in halves). Given [only], the rules (and premises) with those
      * identifiers alone, as text (see [QueryScope][it.unibo.tuprolog.argumentation.parallel.node.QueryScope]).
@@ -59,10 +59,10 @@ object TheoryPartitioner {
     fun partition(
         theory: String,
         parts: Int? = null,
-        settings: FlagsBuilder = FlagsBuilder(graphExtensions = emptyList()),
+        flags: Flags = Flags.defaults().graphExtensions(),
         only: Set<String>? = null,
     ): Partitioning {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = settings.create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
         if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) return Partitioning("", listOf(theory), converted = false)
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")

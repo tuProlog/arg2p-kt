@@ -1,8 +1,7 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.argumentation.Value
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -27,12 +26,10 @@ class MetaConflictsTest {
 
     // The statements IN, OUT and UND, each sorted
     private fun labels(rules: List<String>): List<String> {
-        val solver = solverWithTheory((rules + config).joinToString("\n"))
-        val solution = solver.solve(Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)).first()
-        val labelled = solution.substitution.entries.associate { it.key.name to it.value.castToList().toList() }
+        val solution = solver((rules + config).joinToString("\n")).solve("buildLabelSets(In, Out, Und)").next()
         return listOf("In", "Out", "Und").map { label ->
-            labelled
-                .getValue(label)
+            (solution.value(label) as Value.List)
+                .items
                 .map { it.toString() }
                 .sorted()
                 .joinToString(" ")

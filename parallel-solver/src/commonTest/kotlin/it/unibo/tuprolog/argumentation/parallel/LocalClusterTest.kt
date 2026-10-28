@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.cluster.LocalCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 
@@ -8,6 +8,6 @@ import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 class LocalClusterTest : EquivalenceScenarios() {
     override fun distributed(
         theory: String,
-        settings: FlagsBuilder,
-    ): (String) -> EvaluationResponse = LocalCluster(settings = settings).also { it.load(theory) }::solve
+        flags: Flags,
+    ): (String) -> EvaluationResponse = LocalCluster(flags = flags).also { it.load(theory) }::solve
 }

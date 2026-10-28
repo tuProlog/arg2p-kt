@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.EquivalenceScenarios
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.random.Random
@@ -46,10 +46,10 @@ abstract class InterleavedLocalClusterTest(
 ) : EquivalenceScenarios() {
     override fun distributed(
         theory: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): (String) -> EvaluationResponse {
         val scheduler = InterleavedScheduler(seed)
-        val evaluating = Site(scheduler, 1, settings = settings)
+        val evaluating = Site(scheduler, 1, flags = flags)
         val first = Site(scheduler, 2)
         val second = Site(scheduler, 2)
         MemoryLinks.connect(evaluating, first, scheduler.queue())

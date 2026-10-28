@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -11,7 +11,7 @@ import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.unify.Unificator
 
 /**
- * Query mode for a distributed solver: the rules of [theory] (converted with [settings], as the partitioner converts
+ * Query mode for a distributed solver: the rules of [theory] (converted with [flags], as the partitioner converts
  * them) the labels of the arguments for some statements may depend on, so that the workers build the arguments of
  * those rules alone. It is the exploration of query mode (see the modules structuredPartial and queryExploration),
  * on the rules rather than on the arguments, before any argument is built: the statements of the query, those of the
@@ -28,9 +28,9 @@ import it.unibo.tuprolog.unify.Unificator
  */
 internal class QueryScope(
     theory: String,
-    settings: FlagsBuilder,
+    flags: Flags,
 ) {
-    private val solver = Arg2pSolverFactory.default(theory = theory, settings = settings.create())
+    private val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
     private val unificator = Unificator.default
 
     private fun goal(text: String) = Goal(text, solver.operators)

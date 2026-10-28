@@ -1,9 +1,6 @@
-package it.unibo.tuprolog.argumentation.causality.examples
+package it.unibo.tuprolog.argumentation.behaviour.causality
 
-import it.unibo.tuprolog.argumentation.causality.causality
-import it.unibo.tuprolog.argumentation.causality.isNessIntervention
-import it.unibo.tuprolog.argumentation.causality.isNessOriginalIntervention
-import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2p
 import kotlin.test.Test
 
 // Causation over time: the theories state when the events happen and what holds at each time
@@ -22,8 +19,8 @@ class TemporalExamplesTest {
 
     @Test
     fun doubleShootingTemporal(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r_1(X, Y, T) : sh(X, Y, T), prolog(next(T, T1)) => hit(X, Y, T1).
                 r_2(X, Y, T) : hit(X, Y, T) => di(Y, T).
@@ -45,8 +42,8 @@ class TemporalExamplesTest {
 
     @Test
     fun doubleShootingTemporalAdvanced(): Unit =
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r1(X, Y, T) : causesF(X, Y), happens(X, T) => holdsAt(Y, T).
                 r2(X, Y, T) : causesE(X, Y), happens(X, T), prolog(next(T, T1)) => happens(Y, T1).
@@ -71,8 +68,8 @@ class TemporalExamplesTest {
 
     @Test
     fun poisoningTemporal() {
-        Arg2pSolverFactory
-            .causality(
+        Arg2p
+            .of(
                 """
                 r1(X, Y, T) : happens(X, T), causesF(X, Y, T)  => holdsAt(Y, T).
                 r2(X, Y, T) : happens(X, T), causesE(X, Y, T), prolog(next(T, T1)) => happens(Y, T1).

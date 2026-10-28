@@ -1,7 +1,9 @@
 package it.unibo.tuprolog.argumentation.parallel
 
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.GraphExtension
+import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -21,18 +23,18 @@ abstract class EquivalenceScenarios {
         val undArgs: Int,
     )
 
-    /** The evaluation of the statements of [theory], by a distributed solver labelling as the standard one with [settings] */
+    /** The evaluation of the statements of [theory], by a distributed solver labelling as the standard one with [flags] */
     abstract fun distributed(
         theory: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): (String) -> EvaluationResponse
 
     private fun centralised(
         theory: String,
         statement: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): Labels {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = settings.create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         solver.solve(Struct.parse("buildLabelSetsSilent", solver.operators)).first()
         // the arguments whose claim unifies with the statement, as the workers look for them
         val count = { label: String ->
@@ -46,14 +48,14 @@ abstract class EquivalenceScenarios {
     private fun assertSameLabels(
         theory: String,
         vararg statements: String,
-    ) = assertSameLabels(FlagsBuilder(graphExtensions = emptyList()), theory, *statements)
+    ) = assertSameLabels(Flags.defaults().graphExtensions(), theory, *statements)
 
     private fun assertSameLabels(
-        settings: FlagsBuilder,
+        flags: Flags,
         theory: String,
         vararg statements: String,
     ) {
-        val solve = distributed(theory, settings)
+        val solve = distributed(theory, flags)
         statements.forEach { statement ->
             val response = solve(statement)
             // a statement with no argument is reported as one und, for no argument
@@ -68,7 +70,7 @@ abstract class EquivalenceScenarios {
                 } else {
                     Labels(response.inArgs.size, response.outArgs.size, response.undArgs.size)
                 }
-            assertEquals(centralised(theory, statement, settings), actual, "the arguments for $statement")
+            assertEquals(centralised(theory, statement, flags), actual, "the arguments for $statement")
         }
     }
 
@@ -131,12 +133,12 @@ abstract class EquivalenceScenarios {
     // The graph is labelled by the catalog as the standard solver does: every semantics, every graph extension
 
     @Test
-    fun preferences() = assertSameLabels(FlagsBuilder(), "r1 : a => b.\nr2 : c => -b.\nf1 :=> a.\nf2 :=> c.\nsup(r1, r2).", "b", "-b")
+    fun preferences() = assertSameLabels(Flags.defaults(), "r1 : a => b.\nr2 : c => -b.\nf1 :=> a.\nf2 :=> c.\nsup(r1, r2).", "b", "-b")
 
     @Test
     fun anotherSemantics() =
         assertSameLabels(
-            FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "stable"),
+            Flags.defaults().graphExtensions().argumentLabellingMode(Semantics.STABLE),
             "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => -a.\nr5 :=> undercut(r4).",
             "a",
             "b",
@@ -146,7 +148,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun defeasiblePreferences() =
         assertSameLabels(
-            FlagsBuilder(graphExtensions = listOf("standardPref", "defeasiblePref")),
+            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.DEFEASIBLE_PREF),
             "r1 : p => q.\nr2 : s => -q.\nf1 :=> p.\nf2 :=> s.\nrs : [] => sup(r1, r2).",
             "q",
             "-q",
@@ -158,7 +160,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun burdenOfPersuasion() =
         assertSameLabels(
-            FlagsBuilder(argumentLabellingMode = "bp_grounded", graphExtensions = listOf("standardPref", "bp")),
+            Flags.defaults().argumentLabellingMode(Semantics.BP_GROUNDED).graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.BP),
             "bp(guilty).\nr1 : evidence => guilty.\nr2 : alibi => -guilty.\nf1 :=> evidence.\nf2 :=> alibi.",
             "guilty",
             "-guilty",

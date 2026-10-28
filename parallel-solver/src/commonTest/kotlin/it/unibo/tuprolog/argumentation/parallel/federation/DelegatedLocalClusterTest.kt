@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.EquivalenceScenarios
 import it.unibo.tuprolog.argumentation.parallel.cluster.LocalCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
@@ -10,10 +10,10 @@ import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 class DelegatedLocalClusterTest : EquivalenceScenarios() {
     override fun distributed(
         theory: String,
-        settings: FlagsBuilder,
+        flags: Flags,
     ): (String) -> EvaluationResponse {
         val scheduler = SequentialScheduler()
-        val evaluating = LocalCluster(parts = 0, settings = settings, scheduler = scheduler)
+        val evaluating = LocalCluster(parts = 0, flags = flags, scheduler = scheduler)
         val lending = LocalCluster(parts = 0, scheduler = scheduler)
         repeat(2) { MemoryLinks.delegate(lending.site, LocalCluster(parts = 1, scheduler = scheduler).site, scheduler) }
         MemoryLinks.connect(evaluating.site, lending.site, scheduler)

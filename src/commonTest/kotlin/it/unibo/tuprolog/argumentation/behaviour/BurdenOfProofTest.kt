@@ -1,9 +1,6 @@
-package it.unibo.tuprolog.argumentation.core.unit
+package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.SolveOptions
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -19,22 +16,15 @@ class BurdenOfProofTest {
         graphExtension(bp).
         """.trimIndent()
 
-    // The statement labellings of the theory (each as In/Out/Und), within a time limit
-    private fun labellings(theory: String): List<String> {
-        val solver = solverWithTheory("$theory\n$config")
-        val goal = Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)
-        return solver
-            .solve(goal, SolveOptions.allLazilyWithTimeout(20_000))
+    // The statement labellings of the theory (each as In/Out/Und)
+    private fun labellings(theory: String): List<String> =
+        solver("$theory\n$config")
+            .solve("buildLabelSets(In, Out, Und)")
+            .toList()
             .map { solution ->
-                check(!solution.isHalt) { "${solution.exception}" }
-                if (solution.isYes) {
-                    val bindings = solution.substitution.entries.associate { it.key.name to it.value.toString() }
-                    listOf("In", "Out", "Und").joinToString(" ") { bindings.getValue(it) }
-                } else {
-                    "no"
-                }
-            }.toList()
-    }
+                check(!solution.isHalt) { "${solution.error}" }
+                if (solution.isYes) listOf("In", "Out", "Und").joinToString(" ") { solution.text(it)!! } else "no"
+            }
 
     @Test
     fun burdensOnArgumentsInAttackCycles() {

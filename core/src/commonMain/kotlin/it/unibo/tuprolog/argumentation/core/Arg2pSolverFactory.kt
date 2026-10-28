@@ -37,7 +37,7 @@ object Arg2pSolverFactory {
      * as conflict/2 and sup/2, are called whether it does or not), what it prints goes to [output] (the standard
      * output by default)
      */
-    internal fun solverOf(
+    fun solverOf(
         arg2p: Arg2pSolver,
         theory: String,
         extra: Runtime = Runtime.empty(),

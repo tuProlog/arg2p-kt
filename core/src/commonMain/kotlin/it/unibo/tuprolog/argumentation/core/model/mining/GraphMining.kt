@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.Support
+import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
@@ -39,8 +40,10 @@ fun Solver.arguments(context: Int): List<Argument> {
                 .toList()
         }
     supportsBetween(context, arguments).forEach { (supporter, supported) -> supported.supports.add(supporter) }
+    // ordered by the conclusion as tuProlog writes it ('-'(a)), as arguments always were
+    val claims = arguments.associateWith { ArgumentTerm.parts(it.termRepresentation())!!.claim.toString() }
     return arguments
-        .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { it.conclusion }, { it.topRule }))
+        .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { claims.getValue(it) }, { it.topRule }))
         .onEachIndexed { index, argument -> argument.identifier = "A$index" }
 }
 
@@ -95,8 +98,9 @@ fun Solver.labels(
     return arguments.map { LabelledArgument(it, labels.firstOrNull(it.termRepresentation())?.second ?: "na") }
 }
 
-/** The number of the active context branch */
-internal fun Solver.activeBranch(): Int =
+/** The number of the active context branch: the one of the last stage of the last resolution */
+@JsName("mineActiveBranch")
+fun Solver.activeBranch(): Int =
     arg2pScope {
         this@activeBranch
             .solve("context_active"(X))

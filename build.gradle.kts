@@ -140,9 +140,19 @@ kotlin {
             dependencies {
                 api(project(":core"))
                 api(project(":causality-solver"))
+                api(project(":parallel-solver"))
             }
         }
     }
+}
+
+// The tests of the API run the solvers of arg2p, as those of the modules
+val jvmStackSize: String = property("jvmStackSize").toString()
+val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
+    maxHeapSize = jvmMaxHeapSize
+    jvmArgs("-Xss$jvmStackSize")
 }
 
 // The Kotlin & JS reference in the style of the documentation site
@@ -161,6 +171,7 @@ allprojects {
 dependencies {
     "dokka"(project(":core"))
     "dokka"(project(":causality-solver"))
+    "dokka"(project(":parallel-solver"))
 }
 
 // project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
