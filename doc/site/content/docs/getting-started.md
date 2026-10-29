@@ -6,7 +6,7 @@ weight: 5
 ## Getting Started
 
 This page takes you from nothing to a first working evaluation. If you only want to try the framework out,
-start with the [IDE](#try-it-without-installing-anything) — it needs no project setup at all.
+start with the [Web Playground](#try-it-without-installing-anything) — it needs no project setup at all.
 
 ---
 
@@ -16,15 +16,9 @@ Ready-made environments run Arg2P without any configuration:
 
 - the **[Web Playground](https://tuprolog.github.io/arg2p-kt-web/)**, which runs entirely in your browser;
 - the **[extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p)**, which edits
-  theories as `.arg2p` files and solves them beside the editor;
-- the **desktop IDE**, a single executable jar. Download `arg2p-ide-{{< version >}}-redist.jar` from the
-  [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) and run it:
+  theories as `.arg2p` files and solves them beside the editor.
 
-```bash
-java -jar arg2p-ide-{{< version >}}-redist.jar
-```
-
-All accept a theory, run queries against it, draw the resulting argumentation graph and let you change the
+Both accept a theory, run queries against it, draw the resulting argumentation graph and let you change the
 [flags]({{% ref "/docs/api/flags" %}}) interactively.
 
 ---

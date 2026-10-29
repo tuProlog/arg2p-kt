@@ -114,6 +114,7 @@ enum class GraphLanguage(
     ASPIC_LANGUAGE("aspicLanguage"),
     ABA_LANGUAGE("abaLanguage"),
     DEFEASIBLE_LANGUAGE("defeasibleLanguage"),
+    ABSTRACT_LANGUAGE("abstractLanguage"),
 }
 
 /** The module building the graph (graphBuilder): from the rules, or from the arguments and attacks of the theory */

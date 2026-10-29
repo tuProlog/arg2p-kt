@@ -15,9 +15,9 @@ import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.channel.OutputChannel
+import it.unibo.tuprolog.theory.Theory
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
@@ -55,20 +55,7 @@ class Arg2p private constructor(
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
-    fun answer(query: String): Answer {
-        val labels = listOf(Var.of("In"), Var.of("Out"), Var.of("Und"))
-        val solution =
-            first(Struct.of("answerQuery", listOf(term(query)) + labels))
-                ?: return Answer(emptyList(), emptyList(), emptyList())
-        val (statementsIn, statementsOut, statementsUnd) =
-            labels.map { label ->
-                solution.substitution[label]!!
-                    .castToList()
-                    .toList()
-                    .map { TermValues.of(it) }
-            }
-        return Answer(statementsIn, statementsOut, statementsUnd)
-    }
+    fun answer(query: String): Answer = AnswerQuery(term(query)).let { it.answer(first(it.goal)) }
 
     /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,
@@ -138,14 +125,10 @@ class Arg2p private constructor(
     @JsName("setting")
     fun settingArray(flag: String): Array<String> = setting(flag).toTypedArray()
 
-    private val declaredFlags by lazy {
-        (arg2p.baseLibraries() + arg2p.staticLibraries() + arg2p.dynamicLibraries())
-            .flatMap { it.flags() }
-            .associateBy { it.predicate() }
-    }
+    private val declaredFlags get() = arg2p.settings.flags
 
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
-    fun solve(goal: String): Solutions = Solutions(solver.solve(struct(goal)).iterator())
+    fun solve(goal: String): Solutions = solutionsOf(solver.solve(struct(goal)).iterator())
 
     /**
      * What the context branch [branch] stores matching [goal], Prolog text (facts, or clause(Head, Body) for rules):
@@ -154,18 +137,21 @@ class Arg2p private constructor(
     fun contextFacts(
         branch: Int,
         goal: String,
-    ): Solutions = Solutions(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
+    ): Solutions = solutionsOf(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
 
     /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
-    fun add(theory: String) = solver.appendStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
+    fun add(theory: String) = solver.appendStaticKb(parsed(theory))
 
     /** Replaces the theory with [theory], Prolog text (an [Arg2pException] telling where it does not parse) */
-    fun load(theory: String) = solver.loadStaticKb(SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) })
+    fun load(theory: String) = solver.loadStaticKb(parsed(theory))
+
+    // The clauses of [theory], read with the operators of the solver
+    private fun parsed(theory: String): Theory = SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) }
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), solver.operators) }
+    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, solver.operators) }
 
     private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
 
@@ -228,8 +214,7 @@ class Arg2p private constructor(
         /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
         @JvmStatic
         @JsStatic
-        fun checkQuery(query: String): SyntaxProblem? =
-            SyntaxProblem.check { Term.parse(query.trim().removeSuffix("."), TermValues.operators) }
+        fun checkQuery(query: String): SyntaxProblem? = SyntaxProblem.check { TermValues.term(query) }
 
         /** The version of arg2p, the released one for a release */
         @JvmStatic

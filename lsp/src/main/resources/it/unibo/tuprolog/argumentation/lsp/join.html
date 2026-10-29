@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <title>Join Arg2P</title>
+        <style>
+            /* The page a phone joins the federation of an editor from (see Federation of the language server) */
+            :root {
+                --surface: #ffffff;
+                --text: #212529;
+                --muted: #6c727a;
+                --border: #dedfe2;
+                --accent: #008080;
+                --error: #b00020;
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --surface: #1f2125;
+                    --text: #e3e5e8;
+                    --muted: #9aa0a8;
+                    --border: #383c43;
+                    --accent: #3fb0ac;
+                    --error: #ff6b81;
+                }
+            }
+            body {
+                margin: 0;
+                padding: 24px 16px;
+                background: var(--surface);
+                color: var(--text);
+            }
+            main {
+                max-width: 420px;
+                margin: 0 auto;
+            }
+            h1 {
+                font-size: 1.4rem;
+                margin: 0 0 8px;
+            }
+            p {
+                color: var(--muted);
+                line-height: 1.4;
+            }
+            form {
+                display: flex;
+                gap: 8px;
+                margin: 20px 0;
+            }
+            input {
+                flex: 1;
+                min-width: 0;
+                font-size: 1.6rem;
+                letter-spacing: 0.4em;
+                text-align: center;
+                padding: 10px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: transparent;
+                color: var(--text);
+            }
+            button {
+                font-size: 1.1rem;
+                padding: 10px 20px;
+                border: 0;
+                border-radius: 8px;
+                background: var(--accent);
+                color: #ffffff;
+            }
+            button:disabled {
+                opacity: 0.5;
+            }
+            #status {
+                font-size: 1.05rem;
+                color: var(--text);
+            }
+            #status.error {
+                color: var(--error);
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Join the Arg2P federation</h1>
+            <p>Type the code the editor shows next to its name: this phone then solves with it, on its Web Workers, while this page stays open.</p>
+            <form id="join">
+                <input id="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="0000" aria-label="Code" required />
+                <button id="link" type="submit" disabled>Join</button>
+            </form>
+            <p id="status" role="status">Loading the solver...</p>
+        </main>
+        <script type="module">
+            // The phone as a site of the federation of the editor serving this page: a WebWorkerCluster of
+            // @tuprolog/arg2p (the version of the editor, which a site checks), its workers on Web Workers (worker.js,
+            // served next to this page), linked to the editor over the WebSocket of the port of this page
+            const MODULE = '{{module}}';
+            const form = document.getElementById('join');
+            const input = document.getElementById('code');
+            const button = document.getElementById('link');
+            const status = document.getElementById('status');
+            const tell = (text, error = false) => {
+                status.textContent = text;
+                status.className = error ? 'error' : '';
+            };
+
+            // One Web Worker less than the processors, at most 4: a phone has little memory to spare
+            const threads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency ?? 2) - 1));
+            const editor = `ws://${location.host}`;
+            let cluster = null;
+
+            // What the phone lends, once linked: the sites it is federated with, its Web Workers apart
+            const linked = () => (cluster === null ? [] : [...cluster.stats.sites].slice(1).filter(site => !site.delegate));
+            const shown = () => {
+                const sites = linked();
+                if (sites.length > 0) tell(`Connected: lending ${threads} worker${threads === 1 ? '' : 's'} to ${sites.length} site${sites.length === 1 ? '' : 's'}. Keep this page open.`);
+                else if (cluster !== null) tell('Disconnected from the editor: type its code again to join.', true);
+            };
+
+            let arg2p;
+            try {
+                arg2p = await import(MODULE);
+                button.disabled = false;
+                tell('Type the code of the editor.');
+            } catch (error) {
+                tell(`The solver could not be loaded (${MODULE}): ${error.message ?? error}`, true);
+            }
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const code = input.value.trim();
+                if (!/^[0-9]{4}$/.test(code)) return tell('The code is 4 digits.', true);
+                button.disabled = true;
+                tell('Joining...');
+                cluster?.close();
+                cluster = new arg2p.WebWorkerCluster(threads, new URL('worker.js', location.href).href);
+                try {
+                    await cluster.connect(editor, code);
+                    // a wrong code: the editor closes the link before it greets the phone
+                    const deadline = Date.now() + 5000;
+                    while (linked().length === 0 && Date.now() < deadline) await new Promise(done => setTimeout(done, 100));
+                    if (linked().length === 0) {
+                        cluster.close();
+                        cluster = null;
+                        tell('Refused: check the code (after a few wrong ones, wait a while before trying again).', true);
+                    } else {
+                        cluster.onPeersChanged = shown;
+                        shown();
+                    }
+                } catch (error) {
+                    cluster.close();
+                    cluster = null;
+                    tell(`The editor could not be reached (${editor}): ${error.message ?? error}`, true);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        </script>
+    </body>
+</html>

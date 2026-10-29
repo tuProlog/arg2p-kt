@@ -6,7 +6,6 @@ ktMpp = "6.1.0"
 semVer = "7.3.0"
 akka = "2.8.8"
 tuprolog = "3.0.5"
-jung = "2.1.1"
 javaWebSocket = "1.6.0"
 ws = "8.22.0"
 kover = "0.9.11"
@@ -33,13 +32,6 @@ ktMpp-fatJar = { id = "io.github.gciatto.kt-mpp.fat-jar", version.ref = "ktMpp" 
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ktNpmPublish = "io.github.gciatto:kt-npm-publish:0.3.9"
 
-jung-api = { module = "net.sf.jung:jung-api", version.ref = "jung" }
-jung-visualization = { module = "net.sf.jung:jung-visualization", version.ref = "jung" }
-jung-graphimpl = { module = "net.sf.jung:jung-graph-impl", version.ref = "jung" }
-jung-algorithms = { module = "net.sf.jung:jung-algorithms", version.ref = "jung" }
-jung-io = { module = "net.sf.jung:jung-io", version.ref = "jung" }
-
-tuprolog-ide-swing = { module = "it.unibo.tuprolog:ide-swing", version.ref = "tuprolog" }
 tuprolog-dsl-solve = { module = "it.unibo.tuprolog:dsl-solve", version.ref = "tuprolog" }
 tuprolog-solve-prolog = { module = "it.unibo.tuprolog:solve-prolog", version.ref = "tuprolog" }
 tuprolog-parser-theory = { module = "it.unibo.tuprolog:parser-theory", version.ref = "tuprolog" }
@@ -58,4 +50,3 @@ lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" 
 
 jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.4"
 logback-classic = "ch.qos.logback:logback-classic:1.6.6"
-logback-core = "ch.qos.logback:logback-core:1.6.6"

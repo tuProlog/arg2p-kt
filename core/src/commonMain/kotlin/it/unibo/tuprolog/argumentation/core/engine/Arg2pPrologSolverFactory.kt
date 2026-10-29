@@ -20,8 +20,7 @@ import kotlin.js.JsExport
 /**
  * The [SolverFactory] of the engine of arg2p, the fork of 2P-Kt's ISO-standard, SLD-NF resolution engine
  * (`:solve-prolog`) that inlines module calls and keeps the bindings of the goals left to solve (see README.md in this
- * package). The solvers of arg2p are built with it (Arg2pSolverFactory); it is public for the tools building their own,
- * as the IDE.
+ * package). The solvers of arg2p are built with it (Arg2pSolverFactory); it is public for the tools building their own.
  *
  * Every [Solver]/[MutableSolver] produced here resolves goals with the explicit, inspectable finite-state
  * machine documented under `it.unibo.tuprolog.argumentation.core.engine.fsm` (see [PrologExecutionContext] and

@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.core.parsing.parse
 
 /**
  * The terms of tuProlog as the values of arg2p ([Value]) and as text, written with the operators of arg2p: the
@@ -20,6 +21,12 @@ object TermValues {
 
     // a prefix negation as arg2p writes it (-a, ~a), rather than - a: at the start, or after an opening or a separator
     private val negation = Regex("""(^|[(\[,|]\s*)([-~]) (?=\S)""")
+
+    /** The term written in [text], a goal or a value (its final dot left out), read with [operators] */
+    fun term(
+        text: String,
+        operators: OperatorSet = this.operators,
+    ): Term = Term.parse(text.trim().removeSuffix("."), operators)
 
     /** [term] as Prolog text, written with the operators of arg2p */
     fun format(term: Term): String = negation.replace(formatter.format(term), "$1$2")

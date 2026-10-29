@@ -3,13 +3,21 @@ package it.unibo.tuprolog.argumentation.parallel.federation
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
+import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Configure
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.MessageCodec
+import it.unibo.tuprolog.argumentation.parallel.message.NO_GRAPH
 import it.unibo.tuprolog.argumentation.parallel.message.Rebuild
+import it.unibo.tuprolog.argumentation.parallel.message.RequireAnswer
 import it.unibo.tuprolog.argumentation.parallel.message.RequireEvaluation
+import it.unibo.tuprolog.argumentation.parallel.message.RequireSolution
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
+import it.unibo.tuprolog.argumentation.parallel.message.STOPPED
+import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.node.Catalog
 import it.unibo.tuprolog.argumentation.parallel.node.Network
 import it.unibo.tuprolog.argumentation.parallel.node.Node
@@ -35,8 +43,16 @@ import kotlin.random.Random
  * Sites opening links of their own ([introducible], as browsers over WebRTC) are introduced to each other by the sites
  * they are both linked to, which carry what they need to open the link ([signal]).
  *
+ * A site may require a [code] of the sites linking to it ([requiresCode]): one presenting it is paired with it, and
+ * presents the token of their pairing instead from then on, linked again with no code while the two run; one
+ * presenting another is refused, and after a few wrong codes from an address its codes are refused for a while.
+ *
  * Each graph built is a session of its site: the workers of a session, wherever they run, only hear from those of the
  * same session, so that nothing of a graph given up reaches the next one.
+ *
+ * The catalog of the site evaluates the statements of its clients ([solve]) and solves their goals as the standard
+ * solver does (see [it.unibo.tuprolog.argumentation.parallel.cluster.ClusterSolver]); [stats] tells what the
+ * federation does, as the site knows it.
  */
 class Site(
     private val scheduler: Scheduler,
@@ -90,9 +106,22 @@ class Site(
     // The session of the graph of the theory of this site, the one built last
     @Volatile private var session: String = "$id#0"
 
+    // The last evaluation the catalog answered
+    @Volatile private var evaluation: EvaluationStats? = null
+
+    // The code of the site and its pairings, the links this site opened waiting to be greeted (told then, or told why
+    // they are refused), and the sites heard on the local network
+    private val pairing = Pairing()
+    private val greetings = mutableMapOf<Link, (refusal: String?) -> Unit>()
+
+    @Volatile private var heard: List<NearbySite> = emptyList()
+
     private var sessions = 0
-    private val clients = mutableMapOf<String, (EvaluationResponse) -> Unit>()
+
+    // The clients waiting for an answer: how each is given it, and what it is given if stopped
+    private val clients = mutableMapOf<String, Pair<(KbMessage) -> Unit, KbMessage>>()
     private var clientIds = 0
+    private var runIds = 0
 
     private val catalogQueue = scheduler.queue()
 
@@ -102,6 +131,47 @@ class Site(
     /** The sites this one is federated with, its delegates included */
     val peerSites: Set<String> get() = peers.keys
 
+    /** The name of the site, as its beacons tell the sites nearby (see [Beacons]) */
+    @Volatile var name: String = ""
+
+    /**
+     * Whether the sites linking to this one must present its [code], or the token of a pairing made with it: refused
+     * otherwise. Its delegates and the links it opens are not checked.
+     */
+    @Volatile var requiresCode: Boolean = false
+
+    /** The code the sites linking to this one present, if it requires one: four digits, random */
+    val code: String get() = pairing.code
+
+    /** A new [code], the one before refused from now on (the pairings made stay) */
+    fun newCode(): String = pairing.renew()
+
+    /** The sites paired with this one (one presented the code of the other): linked again with no code while they run */
+    val pairedSites: Set<String> get() = pairing.paired
+
+    /** The sites heard on the local network (see [Beacons]) that are not peers of this one */
+    val nearby: List<NearbySite> get() = heard.filter { it.id !in peers }
+
+    /** Called whenever the sites heard on the local network change */
+    var onNearbyChanged: (() -> Unit)? = null
+
+    // The sites heard on the local network, now
+    internal fun heard(sites: List<NearbySite>) {
+        if (sites == heard) return
+        heard = sites
+        onNearbyChanged?.invoke()
+    }
+
+    // The token of the pairing with [site], to present linking to it again
+    internal fun tokenOf(site: String): String? = pairing.tokenOf(site)
+
+    // [link], opened by this site, told [done] once the site at its other end greets this one (null), refuses it or
+    // closes (why)
+    internal fun greeting(
+        link: Link,
+        done: (refusal: String?) -> Unit,
+    ) = locked(lock) { greetings[link] = done }
+
     // The workers this site runs, for the tests
     internal val workersRun: Int get() = hosted.size
 
@@ -109,6 +179,24 @@ class Site(
     internal val argumentsBuilt: Int get() = catalog.argumentsBuilt
 
     internal val graphArguments: List<it.unibo.tuprolog.core.Term> get() = catalog.graphArguments
+
+    /**
+     * What the federation does, as this site knows it: itself, its peers, the sites it reaches through them (those
+     * introduced to it, and those running workers of a graph it runs some of), and the last evaluation it answered
+     */
+    val stats: FederationStats
+        get() {
+            val linked = peers
+            val reached =
+                introducers.toList() +
+                    placements.flatMap { (session, known) -> (known.workers.values + ownerOf(session)).map { it to known.via } }
+            val through = reached.filter { (site, via) -> site != id && site !in linked && via != id }.toMap()
+            val sites =
+                listOf(SiteStats(id, offered, delegate = false, via = null)) +
+                    linked.map { (site, peer) -> SiteStats(site, peer.capacity, peer.delegate, via = null) } +
+                    through.map { (site, via) -> SiteStats(site, workers = null, delegate = false, via = via) }
+            return FederationStats(id, sites, evaluation, nearby)
+        }
 
     /** Called whenever a site joins or leaves the peers of this one */
     var onPeersChanged: (() -> Unit)? = null
@@ -128,6 +216,13 @@ class Site(
         next?.let { peers[it]?.link?.send(FrameCodec.encode(Frame.Signal(id, to, payload))) }
     }
 
+    /** The flags of the solver of the catalog: those set apply from the next evaluation on, the graph built anew */
+    var flags: Flags = flags
+        set(value) {
+            field = value
+            toCatalog(Configure(value.toString()))
+        }
+
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = toCatalog(Load(theory))
 
@@ -141,10 +236,56 @@ class Site(
     fun solve(
         statement: String,
         reply: (EvaluationResponse) -> Unit,
-    ) {
-        val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply } }
-        toCatalog(RequireEvaluation(statement, client))
+    ) = ask({ RequireEvaluation(statement, it) }, EvaluationResponse(emptyList(), emptyList(), emptyList(), STOPPED)) {
+        reply(it as EvaluationResponse)
     }
+
+    // Solves [goal], Prolog text, as the standard solver does, in a run of its own: [reply] is given its first solution
+    internal fun query(
+        goal: String,
+        reply: (SolutionResponse) -> Unit,
+    ) {
+        val run = locked(lock) { "run_${runIds++}" }
+        ask({ RequireSolution(run, goal, it) }, stopped(run)) { reply(it as SolutionResponse) }
+    }
+
+    // The next solution of the goal solved in [run]
+    internal fun next(
+        run: String,
+        reply: (SolutionResponse) -> Unit,
+    ) = ask({ RequireSolution(run, null, it) }, stopped(run)) { reply(it as SolutionResponse) }
+
+    // The statements for [query], Prolog text, by label, as the standard solver answers it
+    internal fun answer(
+        query: String,
+        reply: (AnswerResponse) -> Unit,
+    ) = ask({ RequireAnswer(query, it) }, AnswerResponse(null, STOPPED)) { reply(it as AnswerResponse) }
+
+    /**
+     * Stops what the catalog evaluates for the clients of this site: their evaluations end at once, as stopped, and
+     * the graph being built for them is given up (the resolution under way interrupted, where it can be); the next
+     * ones are answered as before. Nothing is done if none is under way.
+     */
+    fun stop() {
+        val stopped = locked(lock) { clients.values.toList().also { clients.clear() } }
+        if (stopped.isEmpty()) return
+        catalogQueue.interrupt()
+        toCatalog(Stop)
+        stopped.forEach { (reply, answer) -> reply(answer) }
+    }
+
+    // The catalog asked [request], for a client of this site given its answer ([stopped] if stopped)
+    private fun ask(
+        request: (client: String) -> KbMessage,
+        stopped: KbMessage,
+        reply: (KbMessage) -> Unit,
+    ) {
+        val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply to stopped } }
+        toCatalog(request(client))
+    }
+
+    // What a client solving a goal in [run] is given if stopped
+    private fun stopped(run: String) = SolutionResponse(run, null, NO_GRAPH, false, "", stopped = true)
 
     /** [link], just opened, leads to a delegate of this site: the site offers its workers, and runs workers on them */
     fun delegate(link: Link) {
@@ -152,7 +293,13 @@ class Site(
         opened(link)
     }
 
-    override fun opened(link: Link) = link.send(hello(link))
+    // A site requiring a code greets the sites linking to it once they presented it
+    override fun opened(link: Link) {
+        if (!guarded(link)) link.send(hello(link))
+    }
+
+    // Whether a site linking to this one on [link] must present its code
+    private fun guarded(link: Link) = requiresCode && !link.outgoing && link !in delegateLinks
 
     override fun received(
         link: Link,
@@ -160,6 +307,7 @@ class Site(
     ) {
         when (val decoded = FrameCodec.decode(frame)) {
             is Frame.Hello -> greeted(link, decoded)
+            is Frame.Refused -> locked(lock) { greetings.remove(link) }?.invoke(decoded.reason)
             is Frame.Placement -> placed(link, decoded)
             is Frame.Forget -> locked(lock) { forget(decoded.site) }
             is Frame.Introduce ->
@@ -196,6 +344,7 @@ class Site(
     }
 
     override fun closed(link: Link) {
+        locked(lock) { greetings.remove(link) }?.invoke("The link closed")
         val (lost, broken) =
             locked(lock) {
                 val site = links[link]
@@ -230,13 +379,22 @@ class Site(
         onPeersChanged?.invoke()
     }
 
-    // The first frame on [link]: a peer known, unless it is this very site or of another version, or the workers it
-    // offers updated. A second link to the same site is kept in case the first closes.
+    // The first frame on [link]: a peer known, unless it is this very site or of another version, or a site linking to
+    // this one with no code it requires (refused, and told), or the workers it offers updated. A second link to the
+    // same site is kept in case the first closes. The token of a pairing it gives is remembered.
     private fun greeted(
         link: Link,
         hello: Frame.Hello,
     ) {
         if (hello.site == id || hello.version != VERSION) return link.close()
+        val admitting = link !in links && guarded(link)
+        if (admitting) {
+            pairing.refusal(hello.site, link.address ?: "", hello.code)?.let { refusal ->
+                link.send(FrameCodec.encode(Frame.Refused(refusal)))
+                return link.close()
+            }
+        }
+        if (link.outgoing) hello.code?.let { pairing.remember(hello.site, it) }
         val joined =
             locked(lock) {
                 links = links + (link to hello.site)
@@ -254,6 +412,9 @@ class Site(
                     else -> false
                 }
             }
+        // the site admitted greeted in turn, with the token of their pairing
+        if (admitting) link.send(hello(link))
+        locked(lock) { greetings.remove(link) }?.invoke(null)
         if (joined) {
             if (peers[hello.site]?.delegate == true) announce()
             if (hello.introducible) introduce(hello.site)
@@ -328,15 +489,17 @@ class Site(
     // The first frame on [link]: to a delegate, the workers of this site alone; to another site, those of its
     // delegates as well (null if one has no limit)
     private fun hello(link: Link): String {
-        val offered =
-            if (link in delegateLinks) {
-                workers
-            } else {
-                val delegated = peers.values.filter { it.delegate }.map { it.capacity }
-                if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
-            }
-        return FrameCodec.encode(Frame.Hello(id, VERSION, offered, lends, introducible))
+        // the code presented on a link opened, the token of a pairing on the others
+        val code = if (link.outgoing) link.code else links[link]?.let { pairing.tokenOf(it) }
+        return FrameCodec.encode(Frame.Hello(id, VERSION, if (link in delegateLinks) workers else offered, lends, introducible, code))
     }
+
+    // The workers this site offers the other sites: its own and those of its delegates (null if one has no limit)
+    private val offered: Int?
+        get() {
+            val delegated = peers.values.filter { it.delegate }.map { it.capacity }
+            return if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
+        }
 
     // [site], just joined, and the other peers opening links of their own introduced to each other
     private fun introduce(site: String) {
@@ -399,7 +562,7 @@ class Site(
         val site =
             when {
                 to == Address.CATALOG || Address.isWorker(to) -> siteOf(session, to) ?: return
-                else -> return locked(lock) { clients.remove(to) }?.invoke(message as EvaluationResponse) ?: Unit
+                else -> return locked(lock) { clients.remove(to) }?.first?.invoke(message) ?: Unit
             }
         when {
             site != id -> forward(session, site, FrameCodec.encode(Frame.Deliver(session, to, MessageCodec.encode(message))))
@@ -456,6 +619,12 @@ class Site(
                 }
             // every lender is told, so that those placed none drop the workers of the graphs built before
             lenders.forEach { it.link.send(frame) }
+        }
+
+        override fun siteOf(address: String): String = siteOf(session, address) ?: id
+
+        override fun evaluated(stats: EvaluationStats) {
+            evaluation = stats
         }
     }
 

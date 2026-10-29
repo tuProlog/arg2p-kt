@@ -55,7 +55,7 @@ implementation exists.
 
 | Stage | Module | Selected by |
 | --- | --- | --- |
-| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage` | `graphLanguage` (set by `graphBuildMode`) |
+| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
 | Apply graph extensions (preferences, restrictions) | one per extension | `graphExtension` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
@@ -196,7 +196,7 @@ Inside the call:
   unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;
 - the resulting graph is written to the usual evaluation context, so it can be
-  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is displayed in the IDE's _Graph_ tab like any other
+  [mined]({{% ref "/docs/api/kotlin" %}}) afterwards and is drawn by the solver of the playground like any other
   evaluation.
 
 > [!NOTE]

@@ -12,3 +12,7 @@ nodes share the terms of their messages; between processes the messages are writ
 Each cluster is a `Site`, which can be federated with others, on any machine and engine, over `Link`s
 (`WebSocketLinks`, `RtcLinks` between browsers, `MemoryLinks`), found on a local network by their beacons
 (`LanDiscovery`): the sites lend one another their workers, and a graph is built by the workers of all of them.
+
+Each cluster is also a solver of arg2p, with the interface of `Arg2p` (`ClusterSolver`, `AsyncClusterSolver` where
+the workers run on other threads of JavaScript): the catalog solves any goal on the standard solver, whose graph builder
+and query mode take the graph the workers built for it. Each tells what its federation does (`FederationStats`).

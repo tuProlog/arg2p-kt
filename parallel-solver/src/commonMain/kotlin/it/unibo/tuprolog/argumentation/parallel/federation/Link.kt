@@ -8,6 +8,15 @@ interface Link {
     /** Sends [frame] to the site at the other end, if the link is still open */
     fun send(frame: String)
 
+    /** Whether this site opened the link: a site requiring a code (see [Site.requiresCode]) checks the links it did not */
+    val outgoing: Boolean get() = false
+
+    /** The code this site presents on a link it opened, to a site requiring one: none by default */
+    val code: String? get() = null
+
+    /** The address of the other end, if known: the wrong codes of an address are refused for a while, after a few */
+    val address: String? get() = null
+
     /** Closes the link: both ends are told (see [LinkListener.closed]) */
     fun close()
 }
