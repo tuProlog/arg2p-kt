@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <title>{{title}}</title>
+        <style>
+{{style}}
+        </style>
+        <style>
+            /* what the page tells of the run it shows: cut short, or out of time */
+            .note {
+                margin: 0;
+                padding: 8px 12px 0;
+                color: var(--arg2p-muted);
+                font-family: var(--arg2p-font);
+                font-size: 13px;
+            }
+        </style>
+        <script>
+            // The theme of the system, light or dark, set before the page is drawn (the colours of the style follow it)
+            {
+                const dark = window.matchMedia('(prefers-color-scheme: dark)');
+                const theme = () => (document.documentElement.dataset.theme = dark.matches ? 'dark' : 'light');
+                theme();
+                dark.addEventListener('change', () => {
+                    theme();
+                    document.querySelector('arg2p-solver')?.restyle?.();
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <p class="note" id="note" hidden></p>
+        <arg2p-solver theory-tab>
+            <p class="loading">Loading the solver of Arg2P…</p>
+            <a slot="actions" href="{{playground}}" target="_blank" rel="noopener" title="Solve this theory live in the web playground">Playground ↗</a>
+        </arg2p-solver>
+        <script type="application/json" id="recording">{{recording}}</script>
+        <script>
+            // The solver of @tuprolog/arg2p-ui, from jsDelivr. There each package is a module of its own (+esm), which
+            // imports the others at the versions jsDelivr resolved when it built it: several copies of CodeMirror,
+            // whose editors refuse the extensions of another copy. The modules the solver imports are read first, and
+            // the copies of each package (of a major version) mapped to the latest of them (an import map), before the
+            // solver is imported: as they are if the modules cannot be read.
+            const SOLVER = 'https://cdn.jsdelivr.net/npm/@tuprolog/arg2p-ui@{{ui}}/solver/+esm';
+
+            // A module imported by another, its path on jsDelivr: /npm/<package>@<version>/+esm
+            const IMPORTED = /(?:from|import)\s*\(?\s*"(\/npm\/((?:@[^/@"]+\/)?[^/@"]+)@(\d+)\.(\d+)\.(\d+)[^/"]*\/\+esm)"/g;
+
+            // The copies of each package the solver imports, by the package and its major version: their versions, by
+            // their modules
+            async function copies() {
+                const found = new Map();
+                const read = new Set([SOLVER]);
+                let unread = [SOLVER];
+                while (unread.length > 0) {
+                    const texts = await Promise.all(unread.map(url => fetch(url).then(response => (response.ok ? response.text() : ''))));
+                    unread = [];
+                    for (const text of texts) {
+                        for (const [, path, name, major, minor, patch] of text.matchAll(IMPORTED)) {
+                            const url = new URL(path, SOLVER).href;
+                            const key = `${name}@${major}`;
+                            if (!found.has(key)) found.set(key, new Map());
+                            found.get(key).set(url, [Number(major), Number(minor), Number(patch)]);
+                            if (!read.has(url)) {
+                                read.add(url);
+                                unread.push(url);
+                            }
+                        }
+                    }
+                }
+                return found;
+            }
+
+            // The import map of the copies: each to the latest one of its package
+            function deduplicated(found) {
+                const imports = {};
+                const later = (a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2];
+                for (const modules of found.values()) {
+                    const [latest] = [...modules].sort(([, a], [, b]) => later(a, b))[0];
+                    modules.forEach((_, url) => {
+                        if (url !== latest) imports[url] = latest;
+                    });
+                }
+                return imports;
+            }
+
+            const loaded = copies()
+                .then(deduplicated, () => ({}))
+                .then(imports => {
+                    const map = document.createElement('script');
+                    map.type = 'importmap';
+                    map.textContent = JSON.stringify({ imports });
+                    document.head.append(map);
+                    return import(SOLVER);
+                });
+        </script>
+        <script>
+            // A run of Arg2P already solved, recorded with the page (see RecordedPage of the language server): shown by
+            // <arg2p-solver> of @tuprolog/arg2p-ui, on an engine that replays the recording, and solves nothing.
+            {
+                const recording = JSON.parse(document.getElementById('recording').textContent);
+                const solver = document.querySelector('arg2p-solver');
+                const note = document.getElementById('note');
+
+                // What a request of another theory, query or flags fails with
+                const UNRECORDED = { name: 'Error', message: 'This page shows the run the assistant made: ask it to solve this one.', syntax: null };
+
+                // The solutions recorded, in their order
+                const solutions = recording.next.flat().filter(answer => answer.type === 'solution').map(answer => answer.solution);
+
+                // The answers to a request replayed: what it printed told to [output], then its result, or its failure
+                function replayed(answers, output) {
+                    const result = answers.find(answer => answer.type !== 'output');
+                    answers.filter(answer => answer.type === 'output').forEach(answer => output?.(answer.text));
+                    return result === undefined || result.type === 'failed' ? Promise.reject(result?.error ?? UNRECORDED) : Promise.resolve(result);
+                }
+
+                // The run recorded: its solutions one at a time, as they were asked for; the graph of a stage, that of
+                // the solution recorded at it, or else that of the first solution after it
+                class Replay {
+                    constructor(query, output) {
+                        this.query = query;
+                        this.output = output;
+                        this.asked = 0;
+                    }
+
+                    hasNext() {
+                        return this.asked < recording.next.length;
+                    }
+
+                    next() {
+                        const answers = recording.next[this.asked++] ?? [];
+                        return replayed(answers, this.output).then(answer => answer.solution);
+                    }
+
+                    graphAt(branch) {
+                        const solution = solutions.find(it => it.branch === branch) ?? solutions.find(it => it.branch > branch);
+                        return solution === undefined ? Promise.reject(UNRECORDED) : Promise.resolve(solution.graph);
+                    }
+                }
+
+                const recorded = (theory, flags) => theory === recording.theory && flags === recording.flags;
+
+                const engine = {
+                    solve(request, output) {
+                        if (!recorded(request.theory, request.flags) || request.query !== recording.query) return Promise.reject(UNRECORDED);
+                        return replayed(recording.solve, output).then(started => new Replay(started.query, output));
+                    },
+                    check: () => Promise.resolve(null),
+                    // those of another theory, or other flags, are not recorded: the flags tell what they state alone
+                    settings: (theory, flags) => (recorded(theory, flags) ? Promise.resolve(recording.settings) : Promise.reject(UNRECORDED)),
+                    stop() {},
+                };
+
+                // What the recording leaves out
+                if (recording.timedOut) {
+                    note.textContent = `Out of time after ${recording.timeout} seconds: the solutions found until then.`;
+                } else if (recording.more) {
+                    note.textContent = `The first ${solutions.length} solutions: there are more.`;
+                }
+                note.hidden = note.textContent === '';
+
+                // The run shown once the solver is there; the graph fitted to the room it has as the page is resized
+                loaded.then(() => {
+                    solver.engine = engine;
+                    solver.theory = recording.theory;
+                    solver.query = recording.query;
+                    solver.flags = recording.flags;
+                    solver.run();
+                    window.addEventListener('resize', () => requestAnimationFrame(() => solver.fit()));
+                });
+            }
+        </script>
+    </body>
+</html>

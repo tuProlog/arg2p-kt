@@ -291,7 +291,8 @@ internal class PageEngine(
             vararg fields: Pair<String, Any?>,
         ): Answer = mapOf("type" to type, *fields)
 
-        private fun failed(
+        /** The answer of the request [id] of a query that failed for [error] */
+        internal fun failed(
             id: Long,
             error: ErrorData,
         ) = answer("failed", "id" to id, "error" to error)
