@@ -149,6 +149,23 @@ def test_flags_are_facts():
     assert "graphBuildMode(aspic_plus)." in str(Flags.defaults())
 
 
+def test_the_conflict_model_takes_several_parts():
+    parts = Flags.none().conflict_model(ConflictModel.NEGATION, ConflictModel.DECLARED)
+    assert str(parts) == "conflictModel(negation).\nconflictModel(declared).\n"
+    assert str(Flags.none().conflict_model()) == "conflictModel(none).\n"
+    assert str(Flags.none().conflict_model(ConflictModel.DECLARED)) == "conflictModel(declared).\n"
+    assert Arg2p.of("", parts).setting("conflictModel") == ["negation", "declared"]
+    # builtin stands for all the parts, and the settings tell them
+    all_parts = ["negation", "deontic", "preference", "declared"]
+    assert Arg2p.of("").setting("conflictModel") == all_parts
+    assert Arg2p.of("", Flags.defaults().conflict_model(ConflictModel.BUILTIN)).setting("conflictModel") == all_parts
+    assert Arg2p.of("conflictModel(declared).").setting("conflictModel") == ["declared"]
+    # a negation conflicts with the part negation alone
+    theory = "f1 :=> d.\nf2 :=> -d.\n"
+    assert Arg2p.of(theory + "conflictModel(negation).").answer("d").und_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(declared).").answer("d").in_statements == ["d"]
+
+
 @pytest.mark.parametrize(
     "values",
     [Profile, Semantics, StatementLabelling, OrderingPrinciple, OrderingComparator, GraphExtension, GraphLanguage,
