@@ -17,6 +17,8 @@ internal object MessageCodec {
                 when (message) {
                     Reset -> text("Reset")
                     Rebuild -> text("Rebuild")
+                    Stop -> text("Stop")
+                    is Configure -> text("Configure").text(message.flags)
                     is Load -> text("Load").text(message.theory).text(message.flags)
                     is Add -> text("Add").text(message.elem)
                     is RequireEvaluation -> text("RequireEvaluation").text(message.elem).text(message.replyTo)
@@ -48,6 +50,8 @@ internal object MessageCodec {
             when (val kind = text()) {
                 "Reset" -> Reset
                 "Rebuild" -> Rebuild
+                "Stop" -> Stop
+                "Configure" -> Configure(text())
                 "Load" -> Load(text(), text())
                 "Add" -> Add(text())
                 "RequireEvaluation" -> RequireEvaluation(text(), text())

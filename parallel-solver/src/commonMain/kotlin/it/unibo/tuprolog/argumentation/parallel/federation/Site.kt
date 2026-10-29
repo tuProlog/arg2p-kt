@@ -4,16 +4,20 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Configure
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.MessageCodec
+import it.unibo.tuprolog.argumentation.parallel.message.NO_GRAPH
 import it.unibo.tuprolog.argumentation.parallel.message.Rebuild
 import it.unibo.tuprolog.argumentation.parallel.message.RequireAnswer
 import it.unibo.tuprolog.argumentation.parallel.message.RequireEvaluation
 import it.unibo.tuprolog.argumentation.parallel.message.RequireSolution
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
+import it.unibo.tuprolog.argumentation.parallel.message.STOPPED
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.node.Catalog
 import it.unibo.tuprolog.argumentation.parallel.node.Network
 import it.unibo.tuprolog.argumentation.parallel.node.Node
@@ -102,7 +106,9 @@ class Site(
     @Volatile private var evaluation: EvaluationStats? = null
 
     private var sessions = 0
-    private val clients = mutableMapOf<String, (KbMessage) -> Unit>()
+
+    // The clients waiting for an answer: how each is given it, and what it is given if stopped
+    private val clients = mutableMapOf<String, Pair<(KbMessage) -> Unit, KbMessage>>()
     private var clientIds = 0
     private var runIds = 0
 
@@ -134,7 +140,7 @@ class Site(
                     placements.flatMap { (session, known) -> (known.workers.values + ownerOf(session)).map { it to known.via } }
             val through = reached.filter { (site, via) -> site != id && site !in linked && via != id }.toMap()
             val sites =
-                listOf(SiteStats(id, workers, delegate = false, via = null)) +
+                listOf(SiteStats(id, offered, delegate = false, via = null)) +
                     linked.map { (site, peer) -> SiteStats(site, peer.capacity, peer.delegate, via = null) } +
                     through.map { (site, via) -> SiteStats(site, workers = null, delegate = false, via = via) }
             return FederationStats(id, sites, evaluation)
@@ -158,6 +164,13 @@ class Site(
         next?.let { peers[it]?.link?.send(FrameCodec.encode(Frame.Signal(id, to, payload))) }
     }
 
+    /** The flags of the solver of the catalog: those set apply from the next evaluation on, the graph built anew */
+    var flags: Flags = flags
+        set(value) {
+            field = value
+            toCatalog(Configure(value.toString()))
+        }
+
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = toCatalog(Load(theory))
 
@@ -171,34 +184,56 @@ class Site(
     fun solve(
         statement: String,
         reply: (EvaluationResponse) -> Unit,
-    ) = ask({ RequireEvaluation(statement, it) }) { reply(it as EvaluationResponse) }
+    ) = ask({ RequireEvaluation(statement, it) }, EvaluationResponse(emptyList(), emptyList(), emptyList(), STOPPED)) {
+        reply(it as EvaluationResponse)
+    }
 
     // Solves [goal], Prolog text, as the standard solver does, in a run of its own: [reply] is given its first solution
     internal fun query(
         goal: String,
         reply: (SolutionResponse) -> Unit,
-    ) = ask({ RequireSolution(locked(lock) { "run_${runIds++}" }, goal, it) }) { reply(it as SolutionResponse) }
+    ) {
+        val run = locked(lock) { "run_${runIds++}" }
+        ask({ RequireSolution(run, goal, it) }, stopped(run)) { reply(it as SolutionResponse) }
+    }
 
     // The next solution of the goal solved in [run]
     internal fun next(
         run: String,
         reply: (SolutionResponse) -> Unit,
-    ) = ask({ RequireSolution(run, null, it) }) { reply(it as SolutionResponse) }
+    ) = ask({ RequireSolution(run, null, it) }, stopped(run)) { reply(it as SolutionResponse) }
 
     // The statements for [query], Prolog text, by label, as the standard solver answers it
     internal fun answer(
         query: String,
         reply: (AnswerResponse) -> Unit,
-    ) = ask({ RequireAnswer(query, it) }) { reply(it as AnswerResponse) }
+    ) = ask({ RequireAnswer(query, it) }, AnswerResponse(null, STOPPED)) { reply(it as AnswerResponse) }
 
-    // The catalog asked [request], for a client of this site given its answer
+    /**
+     * Stops what the catalog evaluates for the clients of this site: their evaluations end at once, as stopped, and
+     * the graph being built for them is given up (the resolution under way interrupted, where it can be); the next
+     * ones are answered as before. Nothing is done if none is under way.
+     */
+    fun stop() {
+        val stopped = locked(lock) { clients.values.toList().also { clients.clear() } }
+        if (stopped.isEmpty()) return
+        catalogQueue.interrupt()
+        toCatalog(Stop)
+        stopped.forEach { (reply, answer) -> reply(answer) }
+    }
+
+    // The catalog asked [request], for a client of this site given its answer ([stopped] if stopped)
     private fun ask(
         request: (client: String) -> KbMessage,
+        stopped: KbMessage,
         reply: (KbMessage) -> Unit,
     ) {
-        val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply } }
+        val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply to stopped } }
         toCatalog(request(client))
     }
+
+    // What a client solving a goal in [run] is given if stopped
+    private fun stopped(run: String) = SolutionResponse(run, null, NO_GRAPH, false, "", stopped = true)
 
     /** [link], just opened, leads to a delegate of this site: the site offers its workers, and runs workers on them */
     fun delegate(link: Link) {
@@ -381,16 +416,15 @@ class Site(
 
     // The first frame on [link]: to a delegate, the workers of this site alone; to another site, those of its
     // delegates as well (null if one has no limit)
-    private fun hello(link: Link): String {
-        val offered =
-            if (link in delegateLinks) {
-                workers
-            } else {
-                val delegated = peers.values.filter { it.delegate }.map { it.capacity }
-                if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
-            }
-        return FrameCodec.encode(Frame.Hello(id, VERSION, offered, lends, introducible))
-    }
+    private fun hello(link: Link): String =
+        FrameCodec.encode(Frame.Hello(id, VERSION, if (link in delegateLinks) workers else offered, lends, introducible))
+
+    // The workers this site offers the other sites: its own and those of its delegates (null if one has no limit)
+    private val offered: Int?
+        get() {
+            val delegated = peers.values.filter { it.delegate }.map { it.capacity }
+            return if (workers == null || null in delegated) null else workers + delegated.sumOf { it ?: 0 }
+        }
 
     // [site], just joined, and the other peers opening links of their own introduced to each other
     private fun introduce(site: String) {
@@ -453,7 +487,7 @@ class Site(
         val site =
             when {
                 to == Address.CATALOG || Address.isWorker(to) -> siteOf(session, to) ?: return
-                else -> return locked(lock) { clients.remove(to) }?.invoke(message) ?: Unit
+                else -> return locked(lock) { clients.remove(to) }?.first?.invoke(message) ?: Unit
             }
         when {
             site != id -> forward(session, site, FrameCodec.encode(Frame.Deliver(session, to, MessageCodec.encode(message))))

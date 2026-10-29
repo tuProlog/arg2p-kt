@@ -40,7 +40,7 @@ class ClusterSolver internal constructor(
      *
      * @throws Arg2pException for a goal that cannot be read
      */
-    fun solve(goal: String): Solutions = solutionsOf(Given(solved.checked(replies.replied { site.query(goal, it) })))
+    fun solve(goal: String): Solutions = solutionsOf(Given(goal, solved.checked(replies.replied { site.query(goal, it) })))
 
     /**
      * The statements for [query], Prolog text, labelled in, out and und (see answerQuery/4)
@@ -73,8 +73,16 @@ class ClusterSolver internal constructor(
     /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
     fun graph(): Graph = solved.graph
 
-    // The solutions of a goal, from the [first] reply of the site
+    /**
+     * Stops the goal being solved, from another thread: its solution waited for is a halt, at once (`The evaluation was
+     * stopped`), and the work of the cluster for it is given up; the next goals are solved as before. Nothing is done
+     * if no goal is being solved.
+     */
+    fun stop() = site.stop()
+
+    // The solutions of [goal], from the [first] reply of the site
     private inner class Given(
+        private val goal: String,
         first: SolutionResponse,
     ) : Iterator<LogicSolution> {
         private val run = first.run
@@ -87,7 +95,7 @@ class ClusterSolver internal constructor(
             val response = pending ?: replies.replied { site.next(run, it) }
             pending = null
             more = response.hasNext
-            return solved.given(response)
+            return solved.given(response, goal)
         }
     }
 }

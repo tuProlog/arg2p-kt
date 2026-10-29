@@ -38,7 +38,7 @@ class AsyncClusterSolver internal constructor(
     /** The solutions of [goal], Prolog text, given one at a time as they are asked for (rejected for a goal that cannot be read) */
     fun solve(goal: String): Promise<AsyncSolutions> =
         replies.replied<SolutionResponse> { site.query(goal, it) }.then { first ->
-            AsyncSolutions(solved.checked(first), solved) { replies.replied { reply -> site.next(first.run, reply) } }
+            AsyncSolutions(goal, solved.checked(first), solved) { replies.replied { reply -> site.next(first.run, reply) } }
         }
 
     /** The statements for [query], Prolog text, labelled in, out and und (rejected if the evaluation halts) */
@@ -49,6 +49,13 @@ class AsyncClusterSolver internal constructor(
 
     /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
     fun graph(): Graph = solved.graph
+
+    /**
+     * Stops the goal being solved: the solution promised is a halt, at once (`The evaluation was stopped`), as the
+     * other halts of a goal, and the work of the cluster for it is given up; the next goals are solved as before.
+     * Nothing is done if no goal is being solved.
+     */
+    fun stop() = site.stop()
 
     // The graphs of the yes [solutions] left, after [found]
     private fun graphsOf(
@@ -70,6 +77,7 @@ class AsyncClusterSolver internal constructor(
 /** The solutions of a goal, given one at a time as they are asked for */
 @JsExport
 class AsyncSolutions internal constructor(
+    private val goal: String,
     first: SolutionResponse,
     private val solved: Solved,
     private val asked: () -> Promise<SolutionResponse>,
@@ -86,7 +94,7 @@ class AsyncSolutions internal constructor(
         pending = null
         return response.then {
             more = it.hasNext
-            solutionOf(solved.given(it))
+            solutionOf(solved.given(it, goal))
         }
     }
 
