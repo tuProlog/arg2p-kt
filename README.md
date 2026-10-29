@@ -130,7 +130,7 @@ offline once installed as an app, on desktops, tablets and phones. Its component
 
 ## Arg2p for VS Code
 
-The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) edits theories as
+The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=GiuseppePisano.arg2p) edits theories as
 `.arg2p` files: their syntax is highlighted and their syntax errors show as they are typed. **Arg2P: Open the Solver**
 opens the solver of the playground beside a theory, running on the JVM: its solutions, their graphs, the drawing of an
 abstract framework and the flags.
