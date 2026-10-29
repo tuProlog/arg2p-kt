@@ -1,3 +1,4 @@
+import threading
 import time
 
 import pytest
@@ -90,3 +91,24 @@ def test_the_statistics_of_a_cluster():
     assert [it.id for it in stats.sites] == [stats.site]
     assert stats.evaluation.locality == "directional"
     assert stats.evaluation.added == sum(it.arguments for it in stats.evaluation.workers)
+
+
+def test_the_flags_of_a_cluster_change():
+    cluster = LocalCluster(parts=2)
+    cluster.load(THEORY)
+    flags = Flags.defaults().argument_labelling_mode(Semantics.COMPLETE).query_mode(False)
+    cluster.flags = flags
+    assert "queryMode" not in str(cluster.flags.jvm().toString())
+    expected = Arg2p.of(THEORY, flags).solve("buildLabelSets(In, Out, Und)").next()
+    assert str(expected) == str(cluster.solver.solve("buildLabelSets(In, Out, Und)").next())
+
+
+def test_a_goal_is_stopped():
+    with ThreadedCluster(threads=2) as cluster:
+        cluster.load("slow :- between(1, 100000000, _), fail.\nslow.\n")
+        solver = cluster.solver
+        threading.Timer(0.5, solver.stop).start()
+        solution = solver.solve("slow").next()
+        assert solution.is_halt and solution.error == "The evaluation was stopped"
+        cluster.load(THEORY)
+        assert claims(cluster.solve("b"))["in_args"] == ["b"]
