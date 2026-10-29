@@ -60,7 +60,7 @@ class RecordedPageTest {
     @Test
     fun thePageLoadsTheSolverFromJsDelivrInTheVersionOfTheComponents() {
         val page = RecordedPage.page(tweety)
-        assertTrue(page.contains("https://cdn.jsdelivr.net/npm/@tuprolog/arg2p-ui@${Pages.UI_VERSION}/solver/+esm"))
+        assertTrue(page.contains("https://cdn.jsdelivr.net/npm/@tuprolog/arg2p-ui@${Pages.UI_VERSION}/dist/bundle/solver.js"))
         assertTrue(page.contains(Pages.style))
         assertFalse(page.contains("{{"))
         assertEquals(RecordedPage.DEFAULT_FLAGS, recordingOf(page).get("flags").asString)

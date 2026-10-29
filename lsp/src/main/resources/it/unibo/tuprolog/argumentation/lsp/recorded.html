@@ -39,63 +39,9 @@
         </arg2p-solver>
         <script type="application/json" id="recording">{{recording}}</script>
         <script>
-            // The solver of @tuprolog/arg2p-ui, from jsDelivr. There each package is a module of its own (+esm), which
-            // imports the others at the versions jsDelivr resolved when it built it: several copies of CodeMirror,
-            // whose editors refuse the extensions of another copy. The modules the solver imports are read first, and
-            // the copies of each package (of a major version) mapped to the latest of them (an import map), before the
-            // solver is imported: as they are if the modules cannot be read.
-            const SOLVER = 'https://cdn.jsdelivr.net/npm/@tuprolog/arg2p-ui@{{ui}}/solver/+esm';
-
-            // A module imported by another, its path on jsDelivr: /npm/<package>@<version>/+esm
-            const IMPORTED = /(?:from|import)\s*\(?\s*"(\/npm\/((?:@[^/@"]+\/)?[^/@"]+)@(\d+)\.(\d+)\.(\d+)[^/"]*\/\+esm)"/g;
-
-            // The copies of each package the solver imports, by the package and its major version: their versions, by
-            // their modules
-            async function copies() {
-                const found = new Map();
-                const read = new Set([SOLVER]);
-                let unread = [SOLVER];
-                while (unread.length > 0) {
-                    const texts = await Promise.all(unread.map(url => fetch(url).then(response => (response.ok ? response.text() : ''))));
-                    unread = [];
-                    for (const text of texts) {
-                        for (const [, path, name, major, minor, patch] of text.matchAll(IMPORTED)) {
-                            const url = new URL(path, SOLVER).href;
-                            const key = `${name}@${major}`;
-                            if (!found.has(key)) found.set(key, new Map());
-                            found.get(key).set(url, [Number(major), Number(minor), Number(patch)]);
-                            if (!read.has(url)) {
-                                read.add(url);
-                                unread.push(url);
-                            }
-                        }
-                    }
-                }
-                return found;
-            }
-
-            // The import map of the copies: each to the latest one of its package
-            function deduplicated(found) {
-                const imports = {};
-                const later = (a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2];
-                for (const modules of found.values()) {
-                    const [latest] = [...modules].sort(([, a], [, b]) => later(a, b))[0];
-                    modules.forEach((_, url) => {
-                        if (url !== latest) imports[url] = latest;
-                    });
-                }
-                return imports;
-            }
-
-            const loaded = copies()
-                .then(deduplicated, () => ({}))
-                .then(imports => {
-                    const map = document.createElement('script');
-                    map.type = 'importmap';
-                    map.textContent = JSON.stringify({ imports });
-                    document.head.append(map);
-                    return import(SOLVER);
-                });
+            // The solver of @tuprolog/arg2p-ui from jsDelivr, in one file with its dependencies (solver.bundle): the
+            // modules of its packages, built apart there, would give the editors copies of CodeMirror they refuse
+            const loaded = import('https://cdn.jsdelivr.net/npm/@tuprolog/arg2p-ui@{{ui}}/dist/bundle/solver.js');
         </script>
         <script>
             // A run of Arg2P already solved, recorded with the page (see RecordedPage of the language server): shown by
