@@ -1,3 +1,53 @@
+## [0.20.0](https://github.com/tuProlog/arg2p-kt/compare/0.19.2...0.20.0) (2026-10-28)
+
+### Features
+
+* **api:** the settings in effect for a theory ([4018f87](https://github.com/tuProlog/arg2p-kt/commit/4018f871f08876a1026165a61c09ce469ff9a2ea))
+* **api:** where a text does not parse, and texts checked without solving ([8829aee](https://github.com/tuProlog/arg2p-kt/commit/8829aee1bf6189077d9bcd33f8d8e974c9a0e640))
+* **lsp:** the language server of arg2p ([d2cf642](https://github.com/tuProlog/arg2p-kt/commit/d2cf642ec596e2f9e55161889283e1218ad7ed79))
+* **lsp:** the MCP server of arg2p, for AI assistants ([bcd5930](https://github.com/tuProlog/arg2p-kt/commit/bcd593093a489277ede057d9e860d1e04cb1f600))
+* **lsp:** the solver in the conversation, an MCP App of the MCP server ([f3a6aa5](https://github.com/tuProlog/arg2p-kt/commit/f3a6aa599fbba6a6196c31f30ad86dd94dfe8bb8))
+* **plugins:** the skills of Arg2P, in a plugin for AI assistants ([97fa41a](https://github.com/tuProlog/arg2p-kt/commit/97fa41abc836e167c4515d947c441660da66fda5))
+* **python:** arg2p mcp, the MCP server of Arg2P from the package ([a8e1b3a](https://github.com/tuProlog/arg2p-kt/commit/a8e1b3a0ee51ef49e96865527464d9768838d14a))
+* **python:** the options of the JVM from ARG2P_JVM_OPTIONS ([831cd88](https://github.com/tuProlog/arg2p-kt/commit/831cd888ff39ee0b17d356d06913ab1f191f33d1))
+* release 0.20.0, the extension of VS Code, the MCP server and the skills of Arg2P ([#542](https://github.com/tuProlog/arg2p-kt/issues/542)) ([ef336c0](https://github.com/tuProlog/arg2p-kt/commit/ef336c0f5d69ca33be875a055c18b7d2f313e392))
+* the extension of VS Code and the MCP server of Arg2P ([#538](https://github.com/tuProlog/arg2p-kt/issues/538)) ([7750f16](https://github.com/tuProlog/arg2p-kt/commit/7750f163449b1abdb003adc008850e0d05d17003))
+* **vscode:** an abstract framework is drawn alone ([d7f871b](https://github.com/tuProlog/arg2p-kt/commit/d7f871b7f25cb4a7aa1eb7739d180348e756d38b))
+* **vscode:** the extension of VS Code ([6280230](https://github.com/tuProlog/arg2p-kt/commit/6280230008c00e390e5fdca0493335dbb41e00a9))
+* **vscode:** the solver opens under its theory ([ca8832c](https://github.com/tuProlog/arg2p-kt/commit/ca8832c87cbd294faad0f86aa260d3d5a2b7540c))
+
+### Documentation
+
+* buttons to install Arg2P in an assistant ([2af7a60](https://github.com/tuProlog/arg2p-kt/commit/2af7a604db8bae828096ad24cc621f55b062dd9f))
+* Python, the playground and VS Code among the ways to run Arg2P ([8fe8cc2](https://github.com/tuProlog/arg2p-kt/commit/8fe8cc22bff126f2d493b8025de3169476c90687))
+* the install commands of Claude Code and Codex, without buttons ([dcb254e](https://github.com/tuProlog/arg2p-kt/commit/dcb254e7e500ec893eaa33b6c8e9566565520a9b))
+* the playground as it is now, VS Code and the MCP server, in screenshots ([8b174bb](https://github.com/tuProlog/arg2p-kt/commit/8b174bb9520ccb37b906ab4fb118464abf2893eb))
+* the plugin, its skills and the solver of explore, for AI assistants ([ed463c4](https://github.com/tuProlog/arg2p-kt/commit/ed463c4da9e74e17ebfcef3a2a2a2e593ebe95d8))
+* the references and how to cite Arg2P, last in the README ([6b2d711](https://github.com/tuProlog/arg2p-kt/commit/6b2d7111de349df02bd82d880ccad2d32c149ff9))
+
+### Tests
+
+* **vscode:** the MCP server lists explore and engine too ([db4afdb](https://github.com/tuProlog/arg2p-kt/commit/db4afdb5c3dcb547ecc11b7da6d498bec1f0d9e0))
+
+### Build and continuous integration
+
+* the extension of VS Code released on the Marketplace ([ca229a6](https://github.com/tuProlog/arg2p-kt/commit/ca229a61fd5021ad7e0a6478f7fce99c067bc4a0))
+* the release on Node.js 24, as Node.js 26 breaks the upload of its assets ([bfc9a34](https://github.com/tuProlog/arg2p-kt/commit/bfc9a34ee8bfe27ba538aff05d67da84e6fc4e6d)), closes [#540](https://github.com/tuProlog/arg2p-kt/issues/540)
+* the release on Node.js 24, as Node.js 26 breaks the upload of its assets ([69bfddd](https://github.com/tuProlog/arg2p-kt/commit/69bfddd01608fb42ddb72bbc2f2bac343993ccb2)), closes [#540](https://github.com/tuProlog/arg2p-kt/issues/540)
+* **vscode:** the components 0.2.0, whose drawing tells about its arguments ([2004b07](https://github.com/tuProlog/arg2p-kt/commit/2004b077a19e426f21a08aaac0d3f3362a97a6ca))
+* **vscode:** the components from npm, and the extension tested in CI ([e0af070](https://github.com/tuProlog/arg2p-kt/commit/e0af0707b216e9ec0f0333579594dd8f7044141d))
+
+### General maintenance
+
+* merge develop into feature/vscode-extension ([5e2a649](https://github.com/tuProlog/arg2p-kt/commit/5e2a64917dc5f78474bb78868bc51465acd2f2e2))
+* merge feature/ai-skills into the release of 0.20.0 ([c2c9f88](https://github.com/tuProlog/arg2p-kt/commit/c2c9f8829b0fa6c157c995d20fb23b84215adc15))
+* merge feature/ai-skills into the release of 0.20.0 ([7d9bc28](https://github.com/tuProlog/arg2p-kt/commit/7d9bc280eb2fcb1130618820013c960d53b37ff6))
+* merge feature/vscode-extension into feature/ai-skills ([7285e14](https://github.com/tuProlog/arg2p-kt/commit/7285e1451c662ad883856db32d563937d9c96e82))
+* merge master into develop after 0.19.0 ([456f95e](https://github.com/tuProlog/arg2p-kt/commit/456f95e458ade560aae34ddfd3f9c89338927d54))
+* merge master into develop after 0.19.1 ([edc4ef2](https://github.com/tuProlog/arg2p-kt/commit/edc4ef22106db5edde348a513af49d20c9a61cd7))
+* merge master into develop after 0.19.2 ([0a05736](https://github.com/tuProlog/arg2p-kt/commit/0a057362a166f1cc5bf3c9c0a902c4df9da5ed69))
+* merge master into the release of 0.20.0 ([4ffbcb9](https://github.com/tuProlog/arg2p-kt/commit/4ffbcb95951ba86f3800c2cddb7df7dcc1280797))
+
 ## [0.19.2](https://github.com/tuProlog/arg2p-kt/compare/0.19.1...0.19.2) (2026-10-28)
 
 ### Dependency updates
