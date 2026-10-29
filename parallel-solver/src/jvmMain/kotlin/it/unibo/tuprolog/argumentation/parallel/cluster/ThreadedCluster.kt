@@ -1,14 +1,19 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
 import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
+import it.unibo.tuprolog.argumentation.parallel.federation.NearbySite
 import it.unibo.tuprolog.argumentation.parallel.federation.PoolScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
+import it.unibo.tuprolog.argumentation.parallel.federation.StaticContent
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
+import java.net.InetAddress
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * A distributed solver on the threads of this JVM: each node (the catalog, each worker) handles its messages one
@@ -30,7 +35,7 @@ class ThreadedCluster
         private val scheduler = PoolScheduler(threads)
 
         /** The site of the cluster, running a worker on each thread: to federate it with others, through its links */
-        val site = Site(scheduler, threads, parts, flags, lends, textual)
+        val site = Site(scheduler, threads, parts, flags, lends, textual).apply { name = hostName() }
 
         // made when the cluster first listens or connects
         private var links: WebSocketLinks? = null
@@ -74,16 +79,81 @@ class ThreadedCluster
 
         /**
          * Federates the cluster with the clusters of the local network that discover the others as well, as they come
-         * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort]
+         * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort].
+         * With [requireCode] (see [requiresCode]), the clusters heard are [nearby] alone, linked to once paired by hand
+         * ([pair]), and linked again with no code from then on.
          */
         @JvmOverloads
-        fun discover(beaconPort: Int = Beacons.PORT) {
+        fun discover(
+            beaconPort: Int = Beacons.PORT,
+            requireCode: Boolean = false,
+        ) {
             check(discovery == null) { "Already discovering" }
+            if (requireCode) requiresCode = true
             discovery = LanDiscovery(site, links(), port ?: listen(), beaconPort)
         }
 
-        /** Federates the cluster with the site listening at [uri] (ws://host:port) */
-        fun connect(uri: String) = links().connect(uri)
+        /** Federates the cluster with the site listening at [uri] (ws://host:port), presenting [code] if it requires one */
+        @JvmOverloads
+        fun connect(
+            uri: String,
+            code: String? = null,
+        ) = links().connect(uri, code = code)
+
+        /** The name of the site of the cluster, as its beacons tell the sites nearby: the name of its host by default */
+        var name: String
+            get() = site.name
+            set(value) {
+                site.name = value
+            }
+
+        /**
+         * Whether the sites linking to this cluster must present its [code], or the token of a pairing made with it:
+         * refused otherwise, and after a few wrong codes from an address its codes are refused for a while
+         */
+        var requiresCode: Boolean
+            get() = site.requiresCode
+            set(value) {
+                site.requiresCode = value
+            }
+
+        /** The code the sites linking to this cluster present, if it requires one: four digits, random */
+        val code: String get() = site.code
+
+        /** A new [code], the one before refused from now on (the pairings made stay) */
+        fun newCode(): String = site.newCode()
+
+        /** The sites heard on the local network, not linked to this cluster (see [discover]) */
+        val nearby: List<NearbySite> get() = site.nearby
+
+        /** Called whenever the sites heard on the local network change */
+        var onNearbyChanged: (() -> Unit)?
+            get() = site.onNearbyChanged
+            set(value) {
+                site.onNearbyChanged = value
+            }
+
+        /**
+         * Links this cluster to [site], nearby, presenting [code]: the two paired, linked again with no code while they
+         * run; an Arg2pException if it refuses the code (or no site nearby is [site])
+         */
+        fun pair(
+            site: String,
+            code: String,
+        ) {
+            val nearby = this.site.nearby.find { it.id == site } ?: throw Arg2pException("No site $site nearby")
+            val greeted = CompletableFuture<String?>()
+            links().connect(nearby.address, code = code) { this.site.greeting(it) { refusal -> greeted.complete(refusal) } }
+            greeted.get(PAIRING, TimeUnit.MILLISECONDS)?.let { throw Arg2pException("$site refused the link: $it") }
+        }
+
+        /**
+         * Serves [pages] over plain HTTP on the port the cluster listens on (see [WebSocketLinks.pages]): the page a GET
+         * of a path is answered with, none (null) for a 404
+         */
+        fun serve(pages: (path: String) -> StaticContent?) {
+            links().pages = pages
+        }
 
         /**
          * The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
@@ -118,6 +188,12 @@ class ThreadedCluster
             /** The threads of a cluster by default: as many as the processors */
             @JvmStatic
             val processors: Int get() = Runtime.getRuntime().availableProcessors()
+
+            // How long a pairing waits for the other site, in milliseconds
+            private const val PAIRING = 10_000L
+
+            // The name of this host, if it has one
+            private fun hostName(): String = runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("")
         }
 
         /** Closes the links to the other sites, and stops the threads */

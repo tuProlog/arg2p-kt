@@ -48,8 +48,11 @@ class WebWorkerCluster(
                 }
         }
 
-    /** Federates the cluster with the site listening at [url] (ws://host:port) */
-    fun connect(url: String): Promise<Unit> = links.connect(url)
+    /** Federates the cluster with the site listening at [url] (ws://host:port), presenting [code] if it requires one */
+    fun connect(
+        url: String,
+        code: String? = null,
+    ): Promise<Unit> = links.connect(url, code)
 
     /**
      * An invitation to pair with this cluster by hand, with no server between them: a code for another cluster to

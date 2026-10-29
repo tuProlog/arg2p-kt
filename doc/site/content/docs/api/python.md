@@ -125,6 +125,7 @@ from arg2p import ThreadedCluster
 with ThreadedCluster(threads=1) as evaluating, ThreadedCluster(threads=4) as lending:
     port = evaluating.listen(0, "127.0.0.1")
     lending.connect(f"ws://127.0.0.1:{port}")   # or discover() on both, on a local network
+                                                # (connect(uri, code) to one requiring a code: requires_code, code)
     evaluating.load(theory)
     evaluating.solve("a")                       # EvaluationResponse(in_args=[Response(claim='a', ...)], ...)
 ```
@@ -145,6 +146,10 @@ evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='s
 evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations, the peers kept
 solver.stop()                                # from another thread: the goal being solved ends as a halt
 ```
+
+Discovering with a code required (`discover(require_code=True)`), the clusters heard are `nearby` alone, linked to
+once paired with their code (`pair(site, code)`; see the
+[parallel solver]({{% ref "/docs/modules/parallel-solver#with-a-code" %}})).
 
 ---
 

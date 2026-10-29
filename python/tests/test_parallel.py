@@ -112,3 +112,15 @@ def test_a_goal_is_stopped():
         assert solution.is_halt and solution.error == "The evaluation was stopped"
         cluster.load(THEORY)
         assert claims(cluster.solve("b"))["in_args"] == ["b"]
+
+
+def test_a_connection_presents_the_code():
+    with ThreadedCluster(threads=1) as listening, ThreadedCluster(threads=1) as admitted:
+        listening.requires_code = True
+        assert len(listening.code) == 4
+        port = listening.listen(0, "127.0.0.1")
+        admitted.connect(f"ws://127.0.0.1:{port}", listening.code)
+        deadline = time.time() + 10
+        while listening.peers != {admitted.id}:
+            assert time.time() < deadline
+            time.sleep(0.02)

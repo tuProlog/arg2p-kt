@@ -43,6 +43,10 @@ import kotlin.random.Random
  * Sites opening links of their own ([introducible], as browsers over WebRTC) are introduced to each other by the sites
  * they are both linked to, which carry what they need to open the link ([signal]).
  *
+ * A site may require a [code] of the sites linking to it ([requiresCode]): one presenting it is paired with it, and
+ * presents the token of their pairing instead from then on, linked again with no code while the two run; one
+ * presenting another is refused, and after a few wrong codes from an address its codes are refused for a while.
+ *
  * Each graph built is a session of its site: the workers of a session, wherever they run, only hear from those of the
  * same session, so that nothing of a graph given up reaches the next one.
  *
@@ -105,6 +109,13 @@ class Site(
     // The last evaluation the catalog answered
     @Volatile private var evaluation: EvaluationStats? = null
 
+    // The code of the site and its pairings, the links this site opened waiting to be greeted (told then, or told why
+    // they are refused), and the sites heard on the local network
+    private val pairing = Pairing()
+    private val greetings = mutableMapOf<Link, (refusal: String?) -> Unit>()
+
+    @Volatile private var heard: List<NearbySite> = emptyList()
+
     private var sessions = 0
 
     // The clients waiting for an answer: how each is given it, and what it is given if stopped
@@ -119,6 +130,47 @@ class Site(
 
     /** The sites this one is federated with, its delegates included */
     val peerSites: Set<String> get() = peers.keys
+
+    /** The name of the site, as its beacons tell the sites nearby (see [Beacons]) */
+    @Volatile var name: String = ""
+
+    /**
+     * Whether the sites linking to this one must present its [code], or the token of a pairing made with it: refused
+     * otherwise. Its delegates and the links it opens are not checked.
+     */
+    @Volatile var requiresCode: Boolean = false
+
+    /** The code the sites linking to this one present, if it requires one: four digits, random */
+    val code: String get() = pairing.code
+
+    /** A new [code], the one before refused from now on (the pairings made stay) */
+    fun newCode(): String = pairing.renew()
+
+    /** The sites paired with this one (one presented the code of the other): linked again with no code while they run */
+    val pairedSites: Set<String> get() = pairing.paired
+
+    /** The sites heard on the local network (see [Beacons]) that are not peers of this one */
+    val nearby: List<NearbySite> get() = heard.filter { it.id !in peers }
+
+    /** Called whenever the sites heard on the local network change */
+    var onNearbyChanged: (() -> Unit)? = null
+
+    // The sites heard on the local network, now
+    internal fun heard(sites: List<NearbySite>) {
+        if (sites == heard) return
+        heard = sites
+        onNearbyChanged?.invoke()
+    }
+
+    // The token of the pairing with [site], to present linking to it again
+    internal fun tokenOf(site: String): String? = pairing.tokenOf(site)
+
+    // [link], opened by this site, told [done] once the site at its other end greets this one (null), refuses it or
+    // closes (why)
+    internal fun greeting(
+        link: Link,
+        done: (refusal: String?) -> Unit,
+    ) = locked(lock) { greetings[link] = done }
 
     // The workers this site runs, for the tests
     internal val workersRun: Int get() = hosted.size
@@ -143,7 +195,7 @@ class Site(
                 listOf(SiteStats(id, offered, delegate = false, via = null)) +
                     linked.map { (site, peer) -> SiteStats(site, peer.capacity, peer.delegate, via = null) } +
                     through.map { (site, via) -> SiteStats(site, workers = null, delegate = false, via = via) }
-            return FederationStats(id, sites, evaluation)
+            return FederationStats(id, sites, evaluation, nearby)
         }
 
     /** Called whenever a site joins or leaves the peers of this one */
@@ -241,7 +293,13 @@ class Site(
         opened(link)
     }
 
-    override fun opened(link: Link) = link.send(hello(link))
+    // A site requiring a code greets the sites linking to it once they presented it
+    override fun opened(link: Link) {
+        if (!guarded(link)) link.send(hello(link))
+    }
+
+    // Whether a site linking to this one on [link] must present its code
+    private fun guarded(link: Link) = requiresCode && !link.outgoing && link !in delegateLinks
 
     override fun received(
         link: Link,
@@ -249,6 +307,7 @@ class Site(
     ) {
         when (val decoded = FrameCodec.decode(frame)) {
             is Frame.Hello -> greeted(link, decoded)
+            is Frame.Refused -> locked(lock) { greetings.remove(link) }?.invoke(decoded.reason)
             is Frame.Placement -> placed(link, decoded)
             is Frame.Forget -> locked(lock) { forget(decoded.site) }
             is Frame.Introduce ->
@@ -285,6 +344,7 @@ class Site(
     }
 
     override fun closed(link: Link) {
+        locked(lock) { greetings.remove(link) }?.invoke("The link closed")
         val (lost, broken) =
             locked(lock) {
                 val site = links[link]
@@ -319,13 +379,22 @@ class Site(
         onPeersChanged?.invoke()
     }
 
-    // The first frame on [link]: a peer known, unless it is this very site or of another version, or the workers it
-    // offers updated. A second link to the same site is kept in case the first closes.
+    // The first frame on [link]: a peer known, unless it is this very site or of another version, or a site linking to
+    // this one with no code it requires (refused, and told), or the workers it offers updated. A second link to the
+    // same site is kept in case the first closes. The token of a pairing it gives is remembered.
     private fun greeted(
         link: Link,
         hello: Frame.Hello,
     ) {
         if (hello.site == id || hello.version != VERSION) return link.close()
+        val admitting = link !in links && guarded(link)
+        if (admitting) {
+            pairing.refusal(hello.site, link.address ?: "", hello.code)?.let { refusal ->
+                link.send(FrameCodec.encode(Frame.Refused(refusal)))
+                return link.close()
+            }
+        }
+        if (link.outgoing) hello.code?.let { pairing.remember(hello.site, it) }
         val joined =
             locked(lock) {
                 links = links + (link to hello.site)
@@ -343,6 +412,9 @@ class Site(
                     else -> false
                 }
             }
+        // the site admitted greeted in turn, with the token of their pairing
+        if (admitting) link.send(hello(link))
+        locked(lock) { greetings.remove(link) }?.invoke(null)
         if (joined) {
             if (peers[hello.site]?.delegate == true) announce()
             if (hello.introducible) introduce(hello.site)
@@ -416,8 +488,11 @@ class Site(
 
     // The first frame on [link]: to a delegate, the workers of this site alone; to another site, those of its
     // delegates as well (null if one has no limit)
-    private fun hello(link: Link): String =
-        FrameCodec.encode(Frame.Hello(id, VERSION, if (link in delegateLinks) workers else offered, lends, introducible))
+    private fun hello(link: Link): String {
+        // the code presented on a link opened, the token of a pairing on the others
+        val code = if (link.outgoing) link.code else links[link]?.let { pairing.tokenOf(it) }
+        return FrameCodec.encode(Frame.Hello(id, VERSION, if (link in delegateLinks) workers else offered, lends, introducible, code))
+    }
 
     // The workers this site offers the other sites: its own and those of its delegates (null if one has no limit)
     private val offered: Int?
