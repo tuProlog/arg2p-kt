@@ -1,3 +1,4 @@
+import threading
 import time
 
 import pytest
@@ -67,3 +68,59 @@ def test_a_statement_that_cannot_be_read_is_an_error():
 def test_a_cluster_discovers_the_others_on_the_local_network():
     with ThreadedCluster(threads=1) as cluster:
         cluster.discover()
+
+
+def test_a_cluster_is_a_solver_of_arg2p():
+    arg2p = Arg2p.of(THEORY)
+    with ThreadedCluster(threads=2) as cluster:
+        cluster.load(THEORY)
+        solver = cluster.solver
+        expected = arg2p.solve("buildLabelSets(In, Out, Und)").next()
+        solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+        assert [expected.text(it) for it in ("In", "Out", "Und")] == [solution.text(it) for it in ("In", "Out", "Und")]
+        assert sorted(it.label for it in arg2p.graph().labellings) == sorted(it.label for it in solver.graph().labellings)
+        assert solver.answer("b").in_statements == arg2p.answer("b").in_statements
+
+
+def test_the_statistics_of_a_cluster():
+    cluster = LocalCluster(parts=2)
+    assert cluster.stats.evaluation is None
+    cluster.load(THEORY)
+    cluster.solve("b")
+    stats = cluster.stats
+    assert [it.id for it in stats.sites] == [stats.site]
+    assert stats.evaluation.locality == "directional"
+    assert stats.evaluation.added == sum(it.arguments for it in stats.evaluation.workers)
+
+
+def test_the_flags_of_a_cluster_change():
+    cluster = LocalCluster(parts=2)
+    cluster.load(THEORY)
+    flags = Flags.defaults().argument_labelling_mode(Semantics.COMPLETE).query_mode(False)
+    cluster.flags = flags
+    assert "queryMode" not in str(cluster.flags.jvm().toString())
+    expected = Arg2p.of(THEORY, flags).solve("buildLabelSets(In, Out, Und)").next()
+    assert str(expected) == str(cluster.solver.solve("buildLabelSets(In, Out, Und)").next())
+
+
+def test_a_goal_is_stopped():
+    with ThreadedCluster(threads=2) as cluster:
+        cluster.load("slow :- between(1, 100000000, _), fail.\nslow.\n")
+        solver = cluster.solver
+        threading.Timer(0.5, solver.stop).start()
+        solution = solver.solve("slow").next()
+        assert solution.is_halt and solution.error == "The evaluation was stopped"
+        cluster.load(THEORY)
+        assert claims(cluster.solve("b"))["in_args"] == ["b"]
+
+
+def test_a_connection_presents_the_code():
+    with ThreadedCluster(threads=1) as listening, ThreadedCluster(threads=1) as admitted:
+        listening.requires_code = True
+        assert len(listening.code) == 4
+        port = listening.listen(0, "127.0.0.1")
+        admitted.connect(f"ws://127.0.0.1:{port}", listening.code)
+        deadline = time.time() + 10
+        while listening.peers != {admitted.id}:
+            assert time.time() < deadline
+            time.sleep(0.02)

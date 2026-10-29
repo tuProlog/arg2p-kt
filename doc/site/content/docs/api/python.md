@@ -17,11 +17,14 @@ pip install arg2p
 
 The wheels of Windows (x86-64), Linux (x86-64, ARM64) and macOS (ARM64, x86-64) bundle a Java runtime; on another
 platform the package runs on the Java of the system (21 or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
-the JVM to run on, `ARG2P_CLASSPATH` other jars.
+the JVM to run on (`arg2p mcp` runs the `java` of its runtime), `ARG2P_CLASSPATH` other jars, put before those of the
+package: their classes are the ones loaded, and the package gives those they lack.
 
 The JVM starts at the first use of the package, once per process, with the stack of `ARG2P_STACK` (`512m`) and the
-options of `ARG2P_JVM_OPTIONS`, split at blanks: its heap is the default of the JVM (a quarter of the memory), and a
-large graph may need more, as `ARG2P_JVM_OPTIONS="-Xmx8g"`. Set them before the first call into the package.
+options of `ARG2P_JVM_OPTIONS`, split as a shell splits them (an option with blanks quoted, as
+`"-Dlog=C:/My logs/arg2p.log"`; a backslash escapes a character, but on Windows): its heap is the default of the JVM
+(a quarter of the memory), and a large graph may need more, as `ARG2P_JVM_OPTIONS="-Xmx8g"`. Set them before the
+first call into the package.
 
 ---
 
@@ -122,11 +125,31 @@ from arg2p import ThreadedCluster
 with ThreadedCluster(threads=1) as evaluating, ThreadedCluster(threads=4) as lending:
     port = evaluating.listen(0, "127.0.0.1")
     lending.connect(f"ws://127.0.0.1:{port}")   # or discover() on both, on a local network
+                                                # (connect(uri, code) to one requiring a code: requires_code, code)
     evaluating.load(theory)
     evaluating.solve("a")                       # EvaluationResponse(in_args=[Response(claim='a', ...)], ...)
 ```
 
 A `LocalCluster` runs its nodes in turn, on the calling thread.
+
+The `solver` of a cluster solves any goal as `Arg2p` does, the graph built by the workers (see the
+[parallel solver]({{% ref "/docs/modules/parallel-solver#as-a-solver-of-arg2p" %}})), and `stats` tells what the
+federation does:
+
+```python
+solver = evaluating.solver
+solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution.text("In")                          # as for Arg2p
+solver.graph()                               # the Graph of the solution
+solver.answer("a").in_statements             # as Arg2p.answer
+evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
+evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations, the peers kept
+solver.stop()                                # from another thread: the goal being solved ends as a halt
+```
+
+Discovering with a code required (`discover(require_code=True)`), the clusters heard are `nearby` alone, linked to
+once paired with their code (`pair(site, code)`; see the
+[parallel solver]({{% ref "/docs/modules/parallel-solver#with-a-code" %}})).
 
 ---
 
@@ -137,3 +160,7 @@ arg2p theory.pl                    # the statements of each labelling, by label
 arg2p theory.pl -q a --query=-a    # the labels of some statements
 arg2p theory.pl -p aba -s preferred
 ```
+
+`arg2p mcp` runs the [MCP server]({{% ref "/docs/run#ai-assistants-mcp" %}}) of arg2p instead, over the standard
+input and output, until its client closes them: `uvx arg2p mcp` with [uv](https://docs.astral.sh/uv/), installing
+nothing first. A theory in a file named `mcp` is `arg2p ./mcp`.

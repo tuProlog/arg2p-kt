@@ -11,6 +11,8 @@ plugins {
     alias(libs.plugins.ktMpp.multiplatform)
     alias(libs.plugins.gitSemVer)
     alias(libs.plugins.kover) apply false
+    // the JDKs of the toolchains, for the Java runtime of arg2p (javaRuntime)
+    `jvm-toolchains`
 }
 
 group = "it.unibo.tuprolog.argumentation"
@@ -117,7 +119,7 @@ multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
     ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
-    jvmProjects(":ide", ":actor-solver", ":lsp")
+    jvmProjects(":actor-solver", ":lsp")
     // jsProjects()
     otherProjects(":doc", ":python", ":vscode")
 
@@ -211,6 +213,53 @@ val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
     maxHeapSize = jvmMaxHeapSize
     jvmArgs("-Xss$jvmStackSize")
+}
+
+// The modules of the Java runtime of arg2p: jdeps on its jars and those of its servers (:lsp), with those the
+// WebSockets and their TLS need, and java.sql for the JSON of the protocol
+val runtimeModules =
+    listOf(
+        "java.base",
+        "java.logging",
+        "java.management",
+        "java.naming",
+        "java.net.http",
+        "java.sql",
+        "java.xml",
+        "jdk.crypto.ec",
+        "jdk.unsupported",
+    )
+
+// The Java runtime of arg2p, for this platform: the one the Python package and the extension of VS Code bundle (see
+// pythonRuntime and vscodeRuntime)
+tasks.register<Exec>("javaRuntime") {
+    group = "build"
+    description = "Makes the Java runtime of arg2p for this platform (build/runtime)"
+    val jdk = javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(jvmVersion)) }
+    val output = layout.buildDirectory.dir("runtime")
+    inputs.property("jvm", jvmVersion)
+    inputs.property("modules", runtimeModules)
+    outputs.dir(output)
+    doFirst { delete(output) }
+    executable(
+        jdk
+            .map {
+                it.metadata.installationPath
+                    .file("bin/jlink")
+                    .asFile.absolutePath
+            }.get(),
+    )
+    args(
+        "--add-modules",
+        runtimeModules.joinToString(","),
+        "--strip-debug",
+        "--no-header-files",
+        "--no-man-pages",
+        "--compress",
+        "zip-6",
+        "--output",
+        output.get().asFile.absolutePath,
+    )
 }
 
 // The npm package of arg2p, the only one (the modules it is made of are published on Maven alone): an ES module (see

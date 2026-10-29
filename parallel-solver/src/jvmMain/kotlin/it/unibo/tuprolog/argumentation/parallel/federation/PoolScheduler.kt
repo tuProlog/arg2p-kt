@@ -27,6 +27,12 @@ class PoolScheduler(
         private val tasks = ConcurrentLinkedQueue<() -> Unit>()
         private val scheduled = AtomicBoolean(false)
 
+        // The thread running a task of the queue now, if one is: an interruption reaches that task alone
+        private val lock = Any()
+        private var running: Thread? = null
+
+        override fun interrupt() = synchronized(lock) { running?.interrupt() ?: Unit }
+
         override fun post(task: () -> Unit) {
             tasks.add(task)
             schedule()
@@ -40,7 +46,13 @@ class PoolScheduler(
             try {
                 while (true) {
                     val task = tasks.poll() ?: break
+                    synchronized(lock) { running = Thread.currentThread() }
                     runCatching(task).onFailure { it.printStackTrace() }
+                    // an interruption of the task not left to the next ones on the thread, of any queue
+                    synchronized(lock) {
+                        running = null
+                        Thread.interrupted()
+                    }
                 }
             } finally {
                 scheduled.set(false)

@@ -18,34 +18,12 @@ it links the web playground with the same theory.
 
 ## Installing
 
-The plugin needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for its MCP server.
-
-**Claude Code**:
+The plugin needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for its MCP server. In Claude Code:
 
 ```text
 /plugin install arg2p --marketplace tuProlog/arg2p-kt
 ```
 
-or `/plugin marketplace add tuProlog/arg2p-kt`, then `/plugin install arg2p@arg2p`.
-
-**Claude (claude.ai, Claude Desktop)**: upload `arg2p-plugin-<version>.zip` of the
-[latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone
-(`arg2p-formalize-skill-<version>.zip`, ...) in _Customize > Skills_. In chats, local MCP servers do not run: add the
-server to Claude Desktop (below) for the skills to solve.
-
-**Codex, ChatGPT**: `codex plugin marketplace add tuProlog/arg2p-kt`, then install `arg2p` from `/plugins`.
-
-**Skills alone**, in any agent reading [Agent Skills](https://agentskills.io): `npx skills add tuProlog/arg2p-kt`.
-
-**The MCP server alone**, in any MCP client (Claude Desktop, Cursor, ...):
-
-```json
-{
-  "mcpServers": {
-    "arg2p": { "command": "uvx", "args": ["arg2p", "mcp"] }
-  }
-}
-```
-
-It is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.tuProlog/arg2p`. With Java
-21 or later instead of uv: `java -jar arg2p-lsp-<version>-redist.jar --mcp`, the jar of the latest release.
+Claude (claude.ai, Claude Desktop), Codex and ChatGPT, the skills alone in any agent reading
+[Agent Skills](https://agentskills.io), and the MCP server alone in any MCP client: see
+[AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp).

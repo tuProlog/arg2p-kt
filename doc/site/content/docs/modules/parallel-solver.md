@@ -35,7 +35,9 @@ The catalog and the workers are the same on every runtime; only the way their me
 
 All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the flags
 of the solver (`Flags`, as for the [API]({{% ref "/docs/api/kotlin" %}})), which the flags written in the theory
-complete, as for the standard solver. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
+complete, as for the standard solver. The flags can be changed at any time (`flags`, a property of every cluster):
+the next evaluation uses them, the catalog and the workers given them and the graph built anew, as when the theory
+changes; the links and the peers of the cluster are kept. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
 the Python package `arg2p`) as well.
 
 ---
@@ -59,6 +61,9 @@ builds and labels the graph; the following ones read the labels. `solve` may be 
 once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
 Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
 
+`solve` gives the arguments for a statement; any other goal is for the cluster as a solver of arg2p (`solver`, see
+[below](#as-a-solver-of-arg2p)).
+
 ---
 
 ## On Node.js
@@ -75,6 +80,102 @@ cluster.close()
 
 The worker threads keep Node.js running only while an evaluation is pending; `close` stops them. `LocalCluster`
 offers the same methods on the calling thread, with `solve` returning the answer directly.
+
+---
+
+## As a solver of arg2p
+
+Every cluster is also a solver of arg2p with the interface of `Arg2p` (see the [API]({{% ref "/docs/api/kotlin" %}})),
+on its theory and its flags: `solver` solves any goal as the standard solver does (`buildLabelSets(In, Out, Und)`,
+`answerQuery/4`, the Prolog predicates of the theory, ...), one solution at a time, and gives the graph of each
+solution and the answers of queries, in the types of the API (`Solutions`, `Solution`, `Answer`, `Graph`). The graph a
+goal needs is built by the workers, the rest is the standard solver of the catalog.
+
+```kotlin
+val solver = ThreadedCluster(threads = 8).apply { load(theory) }.solver
+val solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution.text("In")                  // [[a], [c]]
+solver.graph()                       // the graph of the solution: arguments, labels, attacks, supports
+solver.answer("a").inStatements      // [a]
+solver.graphs()                      // the graph of each labelling
+```
+
+| Member | Meaning |
+| --- | --- |
+| `solve(goal)` | The solutions of the goal, Prolog text, given one at a time (`Solutions`); a goal that cannot be read is an error |
+| `graph()` | The graph of the last solution given: the one of the last stage of its resolution |
+| `answer(query)` | The statements for the query labelled in, out and und (`Answer`), as `Arg2p.answer` |
+| `graphs()` | The graph of each labelling of the theory, as `Arg2p.graphs` |
+| `output` | Where what the solver prints goes, as the solutions are given (the standard output by default) |
+| `stop()` | Stops the goal being solved (see below); nothing is done if none is |
+
+The clusters of JavaScript running their workers on threads (`WorkerCluster`, `WebWorkerCluster`) promise what the
+workers compute: their `solver` (`AsyncClusterSolver`) gives a promise of the solutions (`AsyncSolutions`, whose
+`next()` and `toArray()` are promises as well), of the answer and of the graphs; `graph()` is the graph of the
+solution last given. A `LocalCluster` answers at once, in JavaScript as well.
+
+```javascript
+const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+while (solutions.hasNext()) {
+  const solution = await solutions.next()
+  console.log(solution.text('In'), cluster.solver.graph().labellings.map(it => it.label))
+}
+```
+
+How the goals are solved:
+
+- the catalog solves the goal on its standard solver, whose graph builder (`ruleGraph`) and query mode
+  (`queryExploration`) take the arguments and the attacks the workers built: the graph store extends the attacks, the
+  solver derives the other arguments, applies the graph extensions and labels the graph, every semantics as the
+  standard solver does;
+- a goal needing a graph the workers did not build pauses: the workers build it (the whole graph for
+  `buildLabelSets`, the part the statements explored depend on for `answerQuery` in query mode, explored further by
+  the later goals), then the goal is solved again from its start. So is a goal whose next solution is asked for after
+  the catalog solved another one; the solutions given already are left out. What the goal does besides (asserting
+  facts, printing) is done again: what was printed is given once;
+- the catalog has the theory but its rules, which the workers have: a goal reading the rules themselves (the modules
+  of the parser, the context) does not find them;
+- with several labellings (`preferred`, `stable`, ...), the labellings are the same as those of the standard
+  solver, in an order of their own (that of the arguments the workers built);
+- the stages of a resolution (`graphAt`, `activeBranch` of `Arg2p`) are not kept: `graph()` is the last one.
+
+`stop()` stops the goal being solved (on the JVM, from another thread): the solution waited for is at once a halt,
+whose error is `The evaluation was stopped`, as the other halts of a goal (in JavaScript, the promise of the next
+solution is fulfilled with it, as for any halt); so do the statements being evaluated with `solve`, and the answers
+raise it. The graph being built for them is given up: what the workers still compute for it reaches no later
+evaluation (a graph is built in a session of its own), and a resolution of the catalog on the JVM is interrupted. The
+next goals are solved as before. A Prolog check of a worker still running ends on its own, its result dropped.
+
+---
+
+## Statistics
+
+`stats` tells what a cluster and its federation do, cheap to read at any time (`FederationStats`):
+
+| Field | Meaning |
+| --- | --- |
+| `site` | The identifier of the site of the cluster |
+| `sites` | The sites it knows, itself first (`SiteStats`): `id`, `workers` it offers (null for no limit, or not known), `delegate` (one of its threads or Web Workers), `via` (the site it is reached through, null if linked directly) |
+| `evaluation` | The last evaluation it answered, a statement or a goal labelling or reading a graph (`EvaluationStats`), null before the first; a goal using no graph (a Prolog predicate) leaves it as it is |
+| `nearby` | The sites heard on the local network that are not peers (`NearbySite`, see [With a code](#with-a-code)) |
+
+The `workers` of a site are those it offers the federation, its threads or Web Workers included, for the cluster
+itself as for the others: a `WebWorkerCluster` of four Web Workers reports 4 for itself, and lists its Web Workers as
+well, as delegates with 1 each. The workers of the federation are those of the sites that are not delegates.
+
+An `EvaluationStats` has the part of the graph it was answered on (`locality`: `directional` or `connected` in query
+mode, `whole_graph` otherwise, `catalog` for a graph the catalog builds alone, as an abstract framework, with no
+worker), the `arguments` and the `attacks` of the graph labelled, the arguments the workers
+built for it (`added`: all of them for a graph built anew, those explored further in query mode, none for an
+evaluation answered on the graph as it was), how many each worker built (`workers`: its `partition`, its `site`, its
+`arguments` and the direct `attacks` it found), and how long it took (`milliseconds`).
+
+`onPeersChanged`, on `ThreadedCluster`, `WorkerCluster` and `WebWorkerCluster`, is called whenever a site joins or
+leaves the peers of the cluster: a page can update its view of the federation without polling.
+
+```javascript
+cluster.onPeersChanged = () => render(cluster.stats.sites)
+```
 
 ---
 
@@ -119,6 +220,57 @@ ThreadedCluster(threads = 8).discover()
 await new WorkerCluster(4).discover()
 ```
 
+### With a code
+
+An instance can require a code of the instances linking to it (`requiresCode`): its `code`, four random digits
+(`newCode()` makes another, the one before refused from then on). An instance links to it presenting the code
+(`connect(url, code)`, on the JVM, on Node.js and in browsers); one presenting no code or a wrong one is refused, and
+after three wrong codes from an address its codes are refused for a while, a second after the third, twice as long
+after each one more (up to a quarter of an hour). The instance that presented the right code is paired with it: the
+two are given a token of their own, presented in place of the code from then on, so that they link again with no code
+after a link drops, while they both run. The instances an instance requiring a code opens links to itself, and its
+own threads, are not checked.
+
+Discovering with a code required (`discover(requireCode = true)`), an instance links to no instance it hears, but to
+those it is paired with: the instances heard are `nearby` (`NearbySite`: `id`, `name`, `address`, `requiresCode`), as
+long as their beacons come, and `onNearbyChanged` is called as they come and go. The name of an instance is that of
+its host, unless it is given another (`name`). `pair(site, code)` links to a nearby instance with its code, as read on
+it: once it admits the code, the two are paired, and federated as any two instances.
+
+```kotlin
+val cluster = ThreadedCluster(threads = 8)
+cluster.discover(requireCode = true)
+cluster.code                        // 4831: told to whom pairs with this instance
+cluster.onNearbyChanged = { println(cluster.nearby.map { it.name }) }
+cluster.pair(cluster.nearby.first().id, "2716")   // the code read on the other: an Arg2pException if refused
+```
+
+```javascript
+const cluster = new WorkerCluster(4)
+await cluster.discover(undefined, true)
+await cluster.pair(cluster.nearby[0].id, '2716')
+await new WebWorkerCluster(4, '/arg2p-worker.js').connect('ws://hub-host:9431', '4831')
+```
+
+The instances that require no code link to those that do not either, as before, and to none that does but those they
+are paired with. `stats.nearby` lists the instances heard that are not peers, with the peers in `stats.sites`.
+
+The extension of VS Code federates its language servers this way, and lets phones join them: see
+[VS Code]({{% ref "/docs/run#federation-and-parallel-solving" %}}).
+
+### Pages on the port of an instance
+
+A JVM instance answers the plain HTTP requests on the port it listens on as well, with the pages it is given
+(`serve`): a page joining the federation from a phone, say, on the same address as the WebSockets.
+
+```kotlin
+cluster.serve { path -> if (path == "/join") StaticContent(page, "text/html; charset=utf-8") else null }
+cluster.listen(9431)                // http://host:9431/join, and ws://host:9431 for the instances
+```
+
+A GET of a path is answered with its page (`StaticContent`: the bytes and their media type), any other request with
+404; the requests opening a WebSocket are those of the instances, as before.
+
 ### In a browser
 
 `WebWorkerCluster` runs the workers on Web Workers, each running a module of yours that calls `startWebWorker()` (an
@@ -162,7 +314,7 @@ asked for it, and needs the others only when its theory changes.
 
 > [!WARNING]
 > A federated instance runs the theories its peers send it, and sends them its own. Listen only on networks you
-> trust.
+> trust, or require a code.
 
 ---
 
@@ -178,7 +330,8 @@ asked for it, and needs the others only when its theory changes.
 3. Once every argument is built, each worker asks the others for the arguments that could attack its own, and checks
    each such pair once. Only the direct attacks are sent to the catalog: the graph store extends them to the
    arguments built on the attacked ones.
-4. The catalog labels the graph with the settings of the solver, as the standard solver does.
+4. The catalog labels the graph with the settings of the solver, as the standard solver does: its graph builder and
+   query mode save the arguments and the attacks the workers built (see [above](#as-a-solver-of-arg2p)).
 
 With `metaConflicts`, where conflicts are themselves arguments, the catalog finds the attacks itself.
 
@@ -202,6 +355,10 @@ same modules (`queryExploration`), each worker on its own rules:
 
 Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
 needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that
-needs no more is answered from it. A change of the theory starts again from scratch.
+needs no more is answered from it. A change of the theory starts again from scratch. The graph of an evaluation in
+query mode (see `solver.graph()`) is thus the part built so far: that of its statements, and of those evaluated
+before.
 
-The whole graph is built with no query mode, and for a semantics whose labels depend on all of it (`stable`).
+The whole graph is built with no query mode, for a semantics whose labels depend on all of it (`stable`), and for a
+goal asking for it in query mode as well (`buildLabelSets`, as the standard solver): an evaluation in query mode after
+it builds the graph of its statements anew.

@@ -1,8 +1,8 @@
 import * as esbuild from 'esbuild';
 
-// The two bundles of the extension: the extension itself (Node.js, CommonJS, vscode left to VS Code) and the page of
-// the solver in its webview (a browser, with the components of @tuprolog/arg2p-ui in it). Everything they use is in
-// them: the package has no node_modules.
+// The bundles of the extension: the extension itself (Node.js, CommonJS, vscode left to VS Code), the page of the
+// solver in its webview (a browser, with the components of @tuprolog/arg2p-ui in it) and the page of the federation
+// view. Everything they use is in them: the package has no node_modules.
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -21,10 +21,8 @@ const contexts = await Promise.all([
     }),
     esbuild.context({
         ...common,
-        entryPoints: ['webview/main.ts'],
-        outfile: 'dist/webview.js',
-        // one Lit, the page's, for the components too
-        alias: { lit: './node_modules/lit' },
+        entryPoints: { webview: 'webview/main.ts', federation: 'webview/federationMain.ts' },
+        outdir: 'dist',
         platform: 'browser',
         format: 'esm',
         target: 'es2022',

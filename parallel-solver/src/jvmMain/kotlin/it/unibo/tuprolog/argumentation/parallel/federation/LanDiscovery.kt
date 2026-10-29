@@ -30,8 +30,8 @@ class LanDiscovery(
     private val executor =
         Executors.newScheduledThreadPool(2) { task -> Thread(task, "arg2p-discovery").apply { isDaemon = true } }
     private val beacons =
-        Beacons(site, wsPort, interval) { url, done ->
-            executor.execute { runCatching { links.connect(url) }.also { done() } }
+        Beacons(site, wsPort, interval) { url, code, done ->
+            executor.execute { runCatching { links.connect(url, code = code) }.also { done() } }
         }
 
     private val channel =

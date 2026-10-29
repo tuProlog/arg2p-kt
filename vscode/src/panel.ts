@@ -1,28 +1,19 @@
-import type { Answer, Request } from '@tuprolog/arg2p-ui/js';
+import type { SyntaxProblem } from '@tuprolog/arg2p-ui/data';
 import * as vscode from 'vscode';
-import { Bridge, type Server } from './bridge.js';
+import { Bridge } from './bridge.js';
+import { page } from './page.js';
+import type { FromPage, ToPage } from './protocol.js';
+import type { LanguageServer } from './server.js';
 
 // The solver of a theory: a panel beside its document, with the query, the solutions, the graph (and the drawing of an
-// abstract framework) and the flags, the components of @tuprolog/arg2p-ui on the language server. The theory is the
-// text of the document: the panel follows it as it is edited, and the drawing edits it.
-
-/** What the page tells the extension */
-type FromPage =
-    | { type: 'ready' }
-    | { type: 'engine'; request: Request }
-    | { type: 'restart' }
-    | { type: 'edit'; theory: string }
-    | { type: 'state'; query: string; flags: string };
-
-/** What the extension tells the page */
-type ToPage =
-    | { type: 'document'; name: string; theory: string; query: string; flags: string }
-    | { type: 'theory'; theory: string }
-    | { type: 'engine'; answer: Answer };
+// abstract framework) and the flags, the components of @tuprolog/arg2p-ui on the language server, which solves the
+// queries in parallel on its federation if the switch Parallel says so. The theory is the text of the document: the
+// panel follows it as it is edited, and the drawing edits it.
 
 interface Saved {
     query: string;
     flags: string;
+    parallel?: boolean;
 }
 
 export class SolverPanel {
@@ -32,7 +23,7 @@ export class SolverPanel {
      * The panel of [document], opened under it (in a group of editors of its own) or beside it, as arg2p.solver.position
      * says; shown, if it is open already. The theory keeps the focus, to go on editing it.
      */
-    static async show(context: vscode.ExtensionContext, server: () => Server, editor: vscode.TextEditor): Promise<void> {
+    static async show(context: vscode.ExtensionContext, server: LanguageServer, editor: vscode.TextEditor): Promise<void> {
         const document = editor.document;
         const key = document.uri.toString();
         const open = SolverPanel.panels.get(key);
@@ -44,11 +35,6 @@ export class SolverPanel {
         if (below) await vscode.window.showTextDocument(document, { viewColumn: editor.viewColumn, preserveFocus: false });
     }
 
-    /** What the run [params.id] of the server prints, for the panel that started it */
-    static output(params: { id: number; text: string }): void {
-        SolverPanel.panels.forEach(it => it.bridge.output(params));
-    }
-
     private readonly panel: vscode.WebviewPanel;
     private readonly bridge: Bridge;
     private readonly subscriptions: vscode.Disposable[] = [];
@@ -57,7 +43,7 @@ export class SolverPanel {
 
     private constructor(
         private readonly context: vscode.ExtensionContext,
-        server: () => Server,
+        server: LanguageServer,
         private readonly document: vscode.TextDocument,
         column: vscode.ViewColumn,
     ) {
@@ -68,14 +54,17 @@ export class SolverPanel {
             localResourceRoots: [media],
         });
         this.panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'icon.png');
-        this.bridge = new Bridge(
-            {
-                request: (method, params) => server().request(method, params),
-                notify: (method, params) => server().notify(method, params),
+        this.bridge = new Bridge(server, answer => this.send({ type: 'engine', answer }));
+        // the session of the panel went with the server: the page is told that its run stopped, and starts another
+        server.onDidStop(
+            () => {
+                this.bridge.renew();
+                this.send({ type: 'stopped' });
             },
-            answer => this.send({ type: 'engine', answer }),
+            null,
+            this.subscriptions,
         );
-        this.panel.webview.html = page(this.panel.webview, media);
+        this.panel.webview.html = page(this.panel.webview, media, 'webview.js', '<arg2p-solver></arg2p-solver>');
         this.panel.webview.onDidReceiveMessage((message: FromPage) => this.receive(message), null, this.subscriptions);
         vscode.workspace.onDidChangeTextDocument(
             event => {
@@ -95,21 +84,33 @@ export class SolverPanel {
         switch (message.type) {
             case 'ready': {
                 const saved = this.saved();
-                return this.send({ type: 'document', name: baseName(this.document.uri), theory: this.document.getText(), ...saved });
+                this.bridge.parallel = saved.parallel ?? false;
+                return this.send({ type: 'document', name: baseName(this.document.uri), theory: this.document.getText(), ...saved, parallel: this.bridge.parallel });
             }
             case 'engine':
                 void this.bridge.handle(message.request);
-                return;
-            case 'restart':
-                // the only way to stop a resolution: the server starts afresh
-                void vscode.commands.executeCommand('arg2p.restartServer');
                 return;
             case 'edit':
                 void this.edit(message.theory);
                 return;
             case 'state':
-                void this.context.workspaceState.update(this.key, { query: message.query, flags: message.flags } satisfies Saved);
+                this.bridge.parallel = message.parallel;
+                void this.context.workspaceState.update(this.key, { query: message.query, flags: message.flags, parallel: message.parallel } satisfies Saved);
+                return;
+            case 'problem':
+                void this.reveal(message.problem);
         }
+    }
+
+    // Where the theory does not parse: told, and shown in the document if asked (its problem is there, the language
+    // server reports it), the focus left where it is otherwise
+    private async reveal(problem: SyntaxProblem): Promise<void> {
+        const go = 'Go to the error';
+        const asked = await vscode.window.showWarningMessage(`The theory does not parse at line ${problem.line}.`, go);
+        if (asked !== go) return;
+        const at = new vscode.Position(problem.line - 1, problem.column - 1);
+        const shown = vscode.window.visibleTextEditors.find(it => it.document === this.document);
+        await vscode.window.showTextDocument(this.document, { viewColumn: shown?.viewColumn, selection: new vscode.Range(at, at.translate(0, problem.length)) });
     }
 
     // The theory drawn, written into the document
@@ -143,30 +144,4 @@ export class SolverPanel {
 
 function baseName(uri: vscode.Uri): string {
     return uri.path.split('/').pop() ?? 'theory';
-}
-
-// The page: the bundle of the webview, under a policy letting nothing else run
-function page(webview: vscode.Webview, media: vscode.Uri): string {
-    const script = webview.asWebviewUri(vscode.Uri.joinPath(media, 'webview.js'));
-    const nonce = Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
-    const policy = [
-        "default-src 'none'",
-        `script-src 'nonce-${nonce}'`,
-        `style-src ${webview.cspSource} 'unsafe-inline'`,
-        `img-src ${webview.cspSource} data:`,
-        `font-src ${webview.cspSource}`,
-    ].join('; ');
-    return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="${policy}">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Arg2P</title>
-</head>
-<body>
-<arg2p-solver></arg2p-solver>
-<script type="module" nonce="${nonce}" src="${script}"></script>
-</body>
-</html>`;
 }

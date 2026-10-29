@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
-// The bridge and the lookup of java on their own; the language server, through JSON-RPC, once its jar is built
+// The bridge, the lifecycle of the server and the lookup of java on their own; the language server, through JSON-RPC,
+// once its jar is built
 export default defineConfig({
     test: {
         include: ['test/**/*.test.ts'],

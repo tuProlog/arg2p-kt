@@ -56,8 +56,7 @@ abstract::solve(Arguments, Attacks).
 This version **does not return values directly**.
 Instead, the **argumentation graph** can be inspected programmatically or using:
 
-* The **Graph tab** in the Java IDE
-* The **Web IDE graph visualization**
+* The **argument graph** of the [playground](https://tuprolog.github.io/arg2p-kt-web/) and of the extension of VS Code
 
 ---
 

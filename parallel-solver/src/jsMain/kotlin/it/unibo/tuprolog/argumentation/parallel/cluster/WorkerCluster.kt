@@ -1,9 +1,12 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
+import it.unibo.tuprolog.argumentation.parallel.federation.NearbySite
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
@@ -31,7 +34,11 @@ class WorkerCluster(
     module: String? = null,
 ) {
     // the catalog here, every worker on a thread
-    private val site = Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags)
+    private val site =
+        Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags).apply {
+            name =
+                nodeModule("os").hostname() as String
+        }
     private val links = WebSocketLinks(site)
     private var port: Int? = null
     private var discovery: LanDiscovery? = null
@@ -41,6 +48,23 @@ class WorkerCluster(
     private var greeted = 0
     private var pending = 0
     private val workers: List<dynamic> = List(threads) { spawn(module ?: thisModule()) }
+
+    // The replies of the site, asked for once every thread greeted it: the threads keep Node.js running until they come
+    private val replies =
+        object : AsyncReplies {
+            override fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T> =
+                Promise { resolve, _ ->
+                    pending++
+                    referenced(true)
+                    val evaluate = {
+                        ask {
+                            resolve(it)
+                            if (--pending == 0) referenced(false)
+                        }
+                    }
+                    if (greeted == threads) evaluate() else waiting += evaluate
+                }
+        }
 
     init {
         referenced(false)
@@ -56,11 +80,16 @@ class WorkerCluster(
     /**
      * Federates the cluster with the clusters of the local network that discover the others as well, as they come
      * (see [Beacons]): it listens (on an ephemeral port, if it did not already), and its beacons go to [beaconPort].
-     * The port it listens on, once its beacons start.
+     * With [requireCode] (see [requiresCode]), the clusters heard are [nearby] alone, linked to once paired by hand
+     * ([pair]), and linked again with no code from then on. The port it listens on, once its beacons start.
      */
-    fun discover(beaconPort: Int = Beacons.PORT): Promise<Int> =
+    fun discover(
+        beaconPort: Int = Beacons.PORT,
+        requireCode: Boolean = false,
+    ): Promise<Int> =
         Promise { resolve, reject ->
             check(discovery == null) { "Already discovering" }
+            if (requireCode) requiresCode = true
             val listening = port?.let { Promise.resolve(it) } ?: listen()
             listening.then({ wsPort ->
                 val started = LanDiscovery(site, links, wsPort, beaconPort).also { discovery = it }
@@ -68,11 +97,89 @@ class WorkerCluster(
             }, reject)
         }
 
-    /** Federates the cluster with the site listening at [url] (ws://host:port) */
-    fun connect(url: String): Promise<Unit> = links.connect(url)
+    /** Federates the cluster with the site listening at [url] (ws://host:port), presenting [code] if it requires one */
+    fun connect(
+        url: String,
+        code: String? = null,
+    ): Promise<Unit> = links.connect(url, code)
+
+    /** The name of the site of the cluster, as its beacons tell the sites nearby: the name of its host by default */
+    var name: String
+        get() = site.name
+        set(value) {
+            site.name = value
+        }
+
+    /**
+     * Whether the sites linking to this cluster must present its [code], or the token of a pairing made with it:
+     * refused otherwise, and after a few wrong codes from an address its codes are refused for a while
+     */
+    var requiresCode: Boolean
+        get() = site.requiresCode
+        set(value) {
+            site.requiresCode = value
+        }
+
+    /** The code the sites linking to this cluster present, if it requires one: four digits, random */
+    val code: String get() = site.code
+
+    /** A new [code], the one before refused from now on (the pairings made stay) */
+    fun newCode(): String = site.newCode()
+
+    /** The sites heard on the local network, not linked to this cluster (see [discover]) */
+    val nearby: Array<NearbySite> get() = site.nearby.toTypedArray()
+
+    /** Called whenever the sites heard on the local network change */
+    var onNearbyChanged: (() -> Unit)?
+        get() = site.onNearbyChanged
+        set(value) {
+            site.onNearbyChanged = value
+        }
+
+    /**
+     * Links this cluster to [site], nearby, presenting [code]: the two paired, linked again with no code while they
+     * run; rejected if it refuses the code (or no site nearby is [site])
+     */
+    fun pair(
+        site: String,
+        code: String,
+    ): Promise<Unit> =
+        Promise { resolve, reject ->
+            val nearby = this.site.nearby.find { it.id == site } ?: return@Promise reject(Arg2pException("No site $site nearby"))
+            val greeted = { refusal: String? ->
+                if (refusal ==
+                    null
+                ) {
+                    resolve(Unit)
+                } else {
+                    reject(Arg2pException("$site refused the link: $refusal"))
+                }
+            }
+            links.connect(nearby.address, code) { this.site.greeting(it, greeted) }.catch { reject(it) }
+        }
 
     /** The sites the cluster is federated with, its threads included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
+
+    /** Called whenever a site joins or leaves the peers of the cluster, its threads included */
+    var onPeersChanged: (() -> Unit)?
+        get() = site.onPeersChanged
+        set(value) {
+            site.onPeersChanged = value
+        }
+
+    /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
+    val stats: FederationStats get() = site.stats
+
+    /**
+     * The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
+     * built anew, the links and the peers of the cluster kept
+     */
+    var flags: Flags
+        get() = site.flags
+        set(value) {
+            site.flags = value
+        }
 
     /** Replaces the theory with [theory], as Prolog text */
     fun load(theory: String) = site.load(theory)
@@ -85,17 +192,10 @@ class WorkerCluster(
 
     /** The arguments for [statement], as Prolog text, by label */
     fun solve(statement: String): Promise<EvaluationResponse> =
-        Promise { resolve, reject ->
-            pending++
-            referenced(true)
-            val evaluate = {
-                site.solve(statement) {
-                    runCatching { answered(it) }.fold(resolve, reject)
-                    if (--pending == 0) referenced(false)
-                }
-            }
-            if (greeted == threads) evaluate() else waiting += evaluate
-        }
+        replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
+
+    /** The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries */
+    val solver: AsyncClusterSolver = AsyncClusterSolver(site, replies)
 
     /** Closes the links to the other sites, and stops the threads */
     fun close() {

@@ -6,7 +6,7 @@ import java.io.OutputStream
 import kotlin.system.exitProcess
 
 /** The server of [server], speaking the protocol of language servers on [input] and [output] */
-fun launcherOf(
+internal fun launcherOf(
     server: Arg2pLanguageServer,
     input: InputStream,
     output: OutputStream,

@@ -44,7 +44,10 @@ class SyntaxProblem(
                 description = (exception.message ?: "Syntax error").replace(POSITION, ""),
             )
 
-        /** [parse] done, or an [Arg2pException] telling where the text it reads does not parse ([what] it is) */
+        /**
+         * [parse] done, or an [Arg2pException] telling where the text it reads does not parse ([what] it is): its
+         * message is the problem, as `Theory: Unexpected token '.'; expected term at 2:9`
+         */
         @InternalArg2pApi
         @JvmStatic
         fun <T> parsing(
@@ -54,7 +57,7 @@ class SyntaxProblem(
             try {
                 parse()
             } catch (exception: ParseException) {
-                throw Arg2pException("$what: ${exception.message}", of(exception))
+                of(exception).let { throw Arg2pException("$what: $it", it) }
             }
 
         /** Where [parse] finds that the text it reads does not parse, or null if it does */

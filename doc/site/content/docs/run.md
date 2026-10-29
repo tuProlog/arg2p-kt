@@ -53,7 +53,6 @@ the parallel solver, and is what most projects need. The individual modules can 
 | `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
 | `parallel-solver`, `parallel-solver-jvm`, `parallel-solver-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel-solver" %}}) |
 | `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
-| `ide` | The desktop IDE as a library |
 
 Artifacts without a suffix are the Kotlin Multiplatform ones; use `-jvm` or `-js` to depend on a single
 platform explicitly.
@@ -103,6 +102,35 @@ The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=t
 `.arg2p` files: their syntax errors show as they are typed, and **Arg2P: Open the Solver** opens the solver of the
 playground beside a theory, on the JVM. It bundles the language server of Arg2P and the Java runtime it runs on.
 
+### Federation and parallel solving
+
+The switch **Parallel** of the solver solves the query on the
+[parallel solver]({{% ref "/docs/modules/parallel-solver#federation" %}}): any theory, flags and query (query mode
+too), on the workers of the language server, and on those of the devices linked to it. With none linked, it solves on
+the workers of this device alone, concurrently. The solver keeps the switch of each theory with its query and flags; the
+graph of a solution is that of the last stage of its computation, the stages before it are not kept.
+
+The language servers of the same local network see each other: the view **Arg2P Federation** (in the explorer, or
+**Arg2P: Show the Federation**) shows the name of this device and its 4-digit code, and the devices nearby, each linked
+to once its code is typed (shown on that device); linked once, two devices link again by themselves while they run.
+It lists the devices linked with their workers, and **New code** refuses the code shown from then on.
+
+A phone joins too: the view shows the QR code of a page the language server serves on the local network
+(`http://<address>:<port>/`). Scanned with a phone on the same network, the page asks for the code of the device, and
+the phone lends the workers of its Web Workers while the page stays open. The page loads `@tuprolog/arg2p` of the same
+version as the extension from [jsDelivr](https://www.jsdelivr.com/package/npm/@tuprolog/arg2p).
+
+| Setting | |
+| --- | --- |
+| `arg2p.federation.enabled` | Whether the language server is seen by the devices nearby and lets phones join (`true` by default): disabled, it neither listens nor is heard, and **Parallel** solves on this device alone |
+| `arg2p.federation.name` | The name of this device, as the others see it (the name of the host by default) |
+
+The language server speaks of its federation with the requests `arg2p/federation` (its state), `arg2p/federation/pair`
+(`{ site, code }`), `arg2p/federation/newCode`, `arg2p/federation/rename` (`{ name }`) and `arg2p/federation/enable`
+(`{ enabled }`), each answered with the state, and the notification `arg2p/federationChanged`; the editor enables it
+with the options of `initialize` (`{ federation: { enabled, name } }`), and a query of the request `arg2p/engine` is
+solved on it with `parallel: true`.
+
 ## AI assistants (MCP)
 
 The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
@@ -134,8 +162,8 @@ result) and `arg2p-explore` (showing the user the solver). Its MCP server runs f
 
 | Client | |
 | --- | --- |
-| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` |
-| Claude (claude.ai, Desktop) | upload `arg2p-plugin-{{< version >}}.zip` of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone in _Customize > Skills_ |
+| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` (or `/plugin marketplace add tuProlog/arg2p-kt`, then `/plugin install arg2p@arg2p`) |
+| Claude (claude.ai, Desktop) | upload `arg2p-plugin-{{< version >}}.zip` of the [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) in _Customize > Plugins_, or a skill alone (`arg2p-formalize-skill-{{< version >}}.zip`, ...) in _Customize > Skills_; in chats local MCP servers do not run, so add the server to Claude Desktop (below) for the skills to solve |
 | Codex, ChatGPT | `codex plugin marketplace add tuProlog/arg2p-kt`, then install `arg2p` from `/plugins` |
 | Any agent reading [Agent Skills](https://agentskills.io) | `npx skills add tuProlog/arg2p-kt` |
 

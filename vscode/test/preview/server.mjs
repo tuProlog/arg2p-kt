@@ -5,6 +5,7 @@ import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node';
+import { argumentsOf, javaOf } from '../../src/java.ts';
 
 // The page of the solver in a browser, on the language server (npm run preview): http://localhost:5400, the theory of
 // the file given (Tweety otherwise). It needs the bundles and the server (npm run build, ./gradlew :vscode:vscodeServer).
@@ -24,11 +25,9 @@ await esbuild.build({
 
 const jar = join(extension, 'server', 'arg2p-lsp.jar');
 if (!existsSync(jar)) throw new Error(`No server: build it with ./gradlew :vscode:vscodeServer (${jar})`);
-const java = process.env.JAVA_HOME ? join(process.env.JAVA_HOME, 'bin', 'java') : 'java';
-const server = spawn(java, ['-Xss512m', '-jar', jar], { stdio: ['pipe', 'pipe', 'inherit'] });
+// the java of the extension, the settings aside
+const server = spawn(javaOf('', extension, process.env.JAVA_HOME), argumentsOf([], jar), { stdio: ['pipe', 'pipe', 'inherit'] });
 const connection = createMessageConnection(new StreamMessageReader(server.stdout), new StreamMessageWriter(server.stdin));
-const printed = [];
-connection.onNotification('arg2p/output', params => printed.push(params));
 connection.listen();
 await connection.sendRequest('initialize', { processId: null, rootUri: null, capabilities: {} });
 
@@ -52,15 +51,10 @@ createServer(async (request, response) => {
         if (request.url === '/') return response.writeHead(200, { 'content-type': 'text/html' }).end(page);
         if (request.url === '/preview.js') return response.writeHead(200, { 'content-type': 'text/javascript' }).end(readFileSync(join(extension, 'dist-test', 'preview.js')));
         if (request.url === '/webview.js') return response.writeHead(200, { 'content-type': 'text/javascript' }).end(readFileSync(join(extension, 'dist', 'webview.js')));
-        if (request.url === '/output') return response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(printed.splice(0)));
         if (request.url === '/rpc') {
             let body = '';
             for await (const chunk of request) body += chunk;
-            const { method, params, notify } = JSON.parse(body);
-            if (notify) {
-                await connection.sendNotification(method, params);
-                return response.writeHead(204).end();
-            }
+            const { method, params } = JSON.parse(body);
             const result = await connection.sendRequest(method, params);
             return response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(result ?? null));
         }
