@@ -20,6 +20,9 @@ export type Solver = Pick<Arg2pSolver, 'engine' | 'theory' | 'query' | 'flags' |
 /** A switch, as the extension sets it and is told of it */
 export type Switch = { checked: boolean } & EventTarget;
 
+/** What the page waited for fails with, once the server stopped */
+export const STOPPED = 'The language server of Arg2P stopped.';
+
 /**
  * Binds [solver] to [vscode], whose messages come to [page]: the engine of the solver, on the language server, solving
  * in parallel as [parallel] says
@@ -30,6 +33,8 @@ export function connect(solver: Solver, vscode: VsCode, page: EventTarget, paral
     const engine = new JsEngine(() => {
         const opened: Channel = {
             onmessage: null,
+            // the server stopped: the engine fails what it waited for, and opens a channel to the server started anew
+            onerror: null,
             postMessage: request => vscode.postMessage({ type: 'engine', request }),
             // the resolution of the page is stopped on the server, which goes on with the others
             terminate: () => vscode.postMessage({ type: 'engine', request: { type: 'stop' } }),
@@ -42,8 +47,9 @@ export function connect(solver: Solver, vscode: VsCode, page: EventTarget, paral
     page.addEventListener('message', event => {
         const message = (event as MessageEvent<ToPage>).data;
         if (message.type === 'engine') channel?.onmessage?.({ data: message.answer });
-        // the server stopped, and what the page waited for with it
-        else if (message.type === 'stopped') engine.stop();
+        // the server stopped, and what the page waited for with it: an error of the channel (stop is the user's, and
+        // keeps the checks of the editors waiting, which a server stopped no longer answers)
+        else if (message.type === 'stopped') channel?.onerror?.({ message: STOPPED, preventDefault: () => {} });
         else if (message.type === 'theory') solver.theory = message.theory;
         else if (message.type === 'document') {
             solver.fileName = message.name.replace(/\.arg2p$/, '');

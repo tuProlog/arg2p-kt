@@ -5,7 +5,7 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
  * every edge between two components goes from an earlier one to a later one. Nodes keep their input order
  * within a component, and successors outside nodes are ignored.
  */
-fun <T> stronglyConnectedComponents(
+internal fun <T> stronglyConnectedComponents(
     nodes: Iterable<T>,
     successors: (T) -> Iterable<T>,
 ): List<List<T>> {

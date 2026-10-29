@@ -126,14 +126,26 @@ enum class GraphBuilder(
     ABSTRACT_GRAPH("abstractGraph"),
 }
 
-/** The conflicts beyond those a theory declares (conflictModel) */
+/**
+ * A part of the conflicts beyond those of the languages of a theory (conflictModel): the flag takes any of them, all
+ * by default
+ */
 @JsExport
 enum class ConflictModel(
     val value: String,
 ) {
-    /** The built-in ones as well: a literal and its negation, obligations and permissions */
-    BUILTIN("builtin"),
+    /** A literal and its negation */
+    NEGATION("negation"),
 
-    /** None: those declared alone, as the contraries of ABA */
+    /** The obligations and permissions in conflict: o(a) and o(-a), p(a) and o(-a), o(a) and p(-a), o(a) and -p(a) */
+    DEONTIC("deontic"),
+
+    /** A superiority and its converse: sup(X, Y) and sup(Y, X) */
+    PREFERENCE("preference"),
+
+    /** Those the theory declares (conflict/2,3): alone, as the contraries of ABA */
     DECLARED("declared"),
+
+    /** All the parts, those built in and those declared: the default */
+    BUILTIN("builtin"),
 }

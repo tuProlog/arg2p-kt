@@ -1,7 +1,7 @@
 import type { EngineError } from '@tuprolog/arg2p-ui/data';
 import { assert, describe, it } from 'vitest';
 import type { FromPage, ToPage } from '../src/protocol.js';
-import { connect, type Solver, type Switch } from '../webview/solver.js';
+import { connect, STOPPED, type Solver, type Switch } from '../webview/solver.js';
 
 const { deepEqual, equal } = assert;
 
@@ -79,7 +79,7 @@ describe('The page of the solver', function () {
             () => null,
             (it: EngineError) => it,
         );
-        equal(error?.stopped, true);
+        equal(error?.message, STOPPED);
         // the server stops the resolution of the page, and a fresh one warms up
         deepEqual(
             posted.slice(-2).map(it => (it.type === 'engine' ? it.request.type : it.type)),

@@ -1,78 +1,113 @@
 name: Test
 on:
   workflow_call:
+    # What the tests run on, as release.yml tells from the changes of a push (everything, run by hand)
+    inputs: &inputs
+      full:
+        description: Every platform (Windows, macOS and Linux, the older Node.js too), rather than Linux alone
+        type: boolean
+        default: true
+      jvm:
+        description: The tests on the JVM
+        type: boolean
+        default: true
+      js:
+        description: The tests on Node.js
+        type: boolean
+        default: true
+      python:
+        description: The tests of the Python package
+        type: boolean
+        default: true
+      vscode:
+        description: The tests of the extension of VS Code
+        type: boolean
+        default: true
+      coverage:
+        description: The coverage of the tests on the JVM, on Linux, for the documentation site (an artifact, coverage)
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs: *inputs
+
+permissions:
+  contents: read
+
+env:
+  # The JDK the builds run on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties); the tests run on the
+  # JVM arg2p targets (jvm in gradle/libs.versions.toml), a toolchain of its own
+  # renovate: datasource=java-version depName=java-jdk
+  JAVA_VERSION: 25.0.5+8.0.LTS
 
 jobs:
   test-jvm:
+    if: inputs.jvm
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, macos-latest, ubuntu-latest ]
-        java-version: [21]
-        jdk-dist:
-          - oracle
-          - temurin
+        # every platform, or Linux alone (a branch of its own, whose merge runs on every platform)
+        os: &os ${{ fromJSON(inputs.full && '["windows-latest", "macos-latest", "ubuntu-26.04"]' || '["ubuntu-26.04"]') }}
     runs-on: ${{ matrix.os }}
-    concurrency:
-      group: build-${{ github.workflow }}-${{ matrix.os }}-${{ matrix.java-version }}-${{ matrix.jdk-dist }}-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
-          java-distribution: ${{ matrix.jdk-dist }}
-          java-version: ${{ matrix.java-version }}
-          build-command: |
-            ./gradlew jsMainClasses jsTestClasses --parallel || ./gradlew jsMainClasses jsTestClasses --parallel
-          check-command: |
-            ./gradlew jvmTest :lsp:test -PtestJvm=${{ matrix.java-version }} --parallel --continue || ./gradlew jvmTest :lsp:test -PtestJvm=${{ matrix.java-version }} --parallel --continue
+          java-version: ${{ env.JAVA_VERSION }}
+          build-command: true
+          # with the coverage, the tests instrumented and those of the Prolog modules (build/reports/coverage)
+          check-command: >-
+            ./gradlew jvmTest :lsp:test --continue
+            ${{ inputs.coverage && runner.os == 'Linux' && '-Pcoverage coverageReports' || '' }}
           should-run-codecov: false
+      - name: Keep the coverage, for the documentation site
+        if: inputs.coverage && runner.os == 'Linux'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: coverage
+          path: build/reports/coverage
+          if-no-files-found: error
 
   test-js:
+    if: inputs.js
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, macos-latest, ubuntu-latest ]
-        node-version:
-          - 'latest-22'
-          - 'latest-24'
+        os: *os
+        # the Node.js of the build (node in gradle/libs.versions.toml), and the older one arg2p runs on
+        node-version: ${{ fromJSON(inputs.full && '["22-latest", "catalog"]' || '["catalog"]') }}
     runs-on: ${{ matrix.os }}
     env:
-      ORG_GRADLE_PROJECT_nodeVersion: ${{ matrix.node-version }}
-    concurrency:
-      group: build-${{ github.workflow }}-${{ matrix.os }}-${{ matrix.node-version }}-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
+      ORG_GRADLE_PROJECT_nodeVersion: ${{ matrix.node-version != 'catalog' && matrix.node-version || '' }}
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
-          build-command: |
-            ./gradlew jsMainClasses jsTestClasses --parallel || ./gradlew jsMainClasses jsTestClasses --parallel
-          check-command: |
-            ./gradlew jsTest --parallel --continue || ./gradlew jsTest --parallel --continue
+          java-version: ${{ env.JAVA_VERSION }}
+          build-command: ./gradlew jsMainClasses jsTestClasses
+          check-command: ./gradlew jsTest --continue
           clean-command: ./gradlew cleanTest
           should-run-codecov: false
 
   test-python:
+    if: inputs.python
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, macos-latest, ubuntu-latest ]
+        os: *os
     runs-on: ${{ matrix.os }}
-    concurrency:
-      group: build-${{ github.workflow }}-python-${{ matrix.os }}-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.15'
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
+          java-version: ${{ env.JAVA_VERSION }}
           # the package as a wheel bundles it: its jars, its version, its Java runtime
           build-command: ./gradlew :python:pythonJars :python:pythonVersion :python:pythonRuntime
           # JPype from its wheels alone: a Python it has none for yet fails here (as an update Renovate proposes
@@ -82,18 +117,19 @@ jobs:
           should-run-codecov: false
 
   test-vscode:
-    runs-on: ubuntu-latest
-    concurrency:
-      group: build-${{ github.workflow }}-vscode-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
+    if: inputs.vscode
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: package.json
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
+          java-version: ${{ env.JAVA_VERSION }}
           # the extension carries the language server: its tests run it, through JSON-RPC, and the extension in VS Code
           # (on the display of xvfb), as vscodeTest does; the package for any platform fails here rather than once released
           build-command: ./gradlew :vscode:vscodeServer

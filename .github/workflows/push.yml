@@ -1,34 +1,55 @@
 name: CI/CD
 on:
+  # every push runs, whatever it changes: a push the paths left out would report no check at all (a merge changing no
+  # file, say), and its pull request would wait for one forever; what a push tests is told by the changes job
   push:
-    branches-ignore:
-      - 'dependabot/**'
-    paths-ignore:
-      - '.gitignore'
-      - '.mergify.yml'
-      - 'LICENSE'
-      - 'README.md'
   pull_request:
   workflow_dispatch:
 
+# Read alone, unless a job says otherwise: those releasing and publishing
+permissions:
+  contents: read
+
+# One run of a branch at a time: a push cancels the run of the push before it, but on master, whose runs release (a run
+# waits for the one before it instead)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  # The JDK the builds run on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties)
+  # renovate: datasource=java-version depName=java-jdk
+  JAVA_VERSION: 25.0.5+8.0.LTS
+
 jobs:
   dispatcher:
+    # A pull request runs from a fork alone: the push of a branch of this repository runs already
     runs-on: ubuntu-26.04
-    if: >-
-      github.event_name != 'pull_request'
-      || github.event.pull_request.head.repo.full_name != github.repository
-      || startsWith(github.head_ref, 'refs/heads/dependabot/')
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - run: 'true'
   ci-cd:
     needs:
       - dispatcher
+    # those of the release, the one job of release.yml granted them (the others read alone)
     permissions:
       contents: write
-      packages: write
       id-token: write  # Required for OIDC (trusted publishing) on npmjs, in both caller and called workflows
     uses: ./.github/workflows/release.yml
     secrets: inherit
+  docs:
+    # The documentation site, from master once CI/CD is through: of the release it made, tagged by then, or else of the
+    # commit pushed (of the documentation alone, say), stating the latest release
+    needs:
+      - ci-cd
+    if: github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/doc.yml
+    with:
+      version: ${{ needs.ci-cd.outputs.version }}
   python-wheels:
     # The Python package of the release: a wheel for each platform, bundling its Java runtime, and one for any other
     # (on the Java of the system)
@@ -40,12 +61,12 @@ jobs:
       # the platforms of the release: the runner building for each, and its name for Python and for VS Code
       matrix: &platforms
         include:
-          - { os: ubuntu-latest, python: manylinux2014_x86_64, vscode: linux-x64 }
+          - { os: ubuntu-26.04, python: manylinux2014_x86_64, vscode: linux-x64 }
           - { os: ubuntu-24.04-arm, python: manylinux2014_aarch64, vscode: linux-arm64 }
           - { os: windows-latest, python: win_amd64, vscode: win32-x64 }
           - { os: macos-latest, python: macosx_11_0_arm64, vscode: darwin-arm64 }
           - { os: macos-15-intel, python: macosx_10_15_x86_64, vscode: darwin-x64 }
-          - { os: ubuntu-latest, python: any, vscode: universal }
+          - { os: ubuntu-26.04, python: any, vscode: universal }
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -59,10 +80,13 @@ jobs:
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.15'
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
       - name: Build the wheel
         shell: bash
         run: |
@@ -101,6 +125,9 @@ jobs:
           merge-multiple: true
           path: dist
       - uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          # a run again (of a job that failed) publishes what PyPI lacks
+          skip-existing: true
   vscode-packages:
     # The extension of VS Code of the release: a package for each platform, bundling its Java runtime, and one for any
     # other (on the Java of the system), attached to the release as well
@@ -123,10 +150,13 @@ jobs:
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: package.json
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
       - name: Build the package
         shell: bash
         run: |
@@ -173,11 +203,14 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: package.json
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
       - name: Publish the packages
         working-directory: vscode
         run: |
           npm ci
-          npx vsce publish --oidc --packagePath ../dist/*.vsix
+          # a run again (of a job that failed) publishes what the Marketplace lacks
+          npx vsce publish --oidc --skip-duplicate --packagePath ../dist/*.vsix
   mcp-registry:
     # The MCP server of the release in the MCP Registry, as the package of PyPI running it (uvx arg2p mcp): server.json of
     # the release, published through GitHub OIDC (the namespace io.github.tuProlog, no token), once PyPI has the wheels

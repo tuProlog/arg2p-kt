@@ -16,7 +16,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * newLabelling(+Branch, +Ids): in a new branch of Branch (left active), the arguments of Ids IN, the unlabelled
  * arguments attacked by an IN one OUT, and the other unlabelled ones UND, asserted with a single context_assert_all
  */
-object NewLabelling : Primitive {
+internal object NewLabelling : Primitive {
     val signature: Signature = Signature("newLabelling", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =

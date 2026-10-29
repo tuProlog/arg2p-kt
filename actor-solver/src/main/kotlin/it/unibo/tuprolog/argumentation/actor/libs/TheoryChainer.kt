@@ -7,7 +7,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 
-object TheoryChainer : ArgLibrary, Loadable {
+internal object TheoryChainer : ArgLibrary, Loadable {
     override val alias = "prolog.argumentation.actor.helper"
 
     override val baseContent: Library

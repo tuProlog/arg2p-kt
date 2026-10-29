@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { STACK } from './defaults.js';
 
 // The java running the language server: the one the settings name, or the runtime the extension bundles (a package
 // for a platform has one), or the one of JAVA_HOME, or java on the path
@@ -19,6 +20,6 @@ export function javaOf(setting: string, extension: string, javaHome: string | un
 
 /** The arguments of java running the server [jar]: the [options] of the settings, and the stack resolution needs */
 export function argumentsOf(options: readonly string[], jar: string): string[] {
-    const stack = options.some(it => it.startsWith('-Xss')) ? [] : ['-Xss512m'];
+    const stack = options.some(it => it.startsWith('-Xss')) ? [] : [STACK];
     return [...stack, ...options, '-jar', jar];
 }

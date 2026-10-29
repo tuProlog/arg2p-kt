@@ -8,7 +8,7 @@ bookCollapseSection: true
 
 Everything arg2p exposes, by the way it is used:
 
-- [Engine predicates]({{% ref "/docs/api/engine" %}}): the predicates a theory is queried with, as `buildLabelSets`,
+- [Engine predicates]({{% ref "/docs/api/engine" %}}): the predicates a theory is queried with, as `arg2p::solve`,
   `answerQuery` and `solve`.
 - [Flags]({{% ref "/docs/api/flags" %}}): the flags configuring the evaluation (semantics, graph building,
   preferences, query mode).

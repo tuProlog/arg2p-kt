@@ -15,9 +15,9 @@ class StatisticsTest {
     @Test
     fun theDelegatesOfASite() {
         val scheduler = SequentialScheduler()
-        val evaluating = LocalCluster(parts = 0, scheduler = scheduler)
-        val lending = LocalCluster(parts = 0, scheduler = scheduler)
-        val delegates = List(2) { LocalCluster(parts = 1, scheduler = scheduler) }
+        val evaluating = LocalSite(0, scheduler)
+        val lending = LocalSite(0, scheduler)
+        val delegates = List(2) { LocalSite(1, scheduler) }
         delegates.forEach { MemoryLinks.delegate(lending.site, it.site, scheduler) }
         MemoryLinks.connect(evaluating.site, lending.site, scheduler)
         // the lending site offers the workers of its delegates, as one site
@@ -34,9 +34,9 @@ class StatisticsTest {
     @Test
     fun aSiteReachedThroughAnother() {
         val scheduler = SequentialScheduler()
-        val evaluating = LocalCluster(parts = 0, scheduler = scheduler)
-        val first = LocalCluster(parts = 2, scheduler = scheduler)
-        val second = LocalCluster(parts = 1, scheduler = scheduler)
+        val evaluating = LocalSite(0, scheduler)
+        val first = LocalSite(2, scheduler)
+        val second = LocalSite(1, scheduler)
         MemoryLinks.connect(evaluating.site, first.site, scheduler)
         MemoryLinks.connect(evaluating.site, second.site, scheduler)
         evaluating.load(theory)

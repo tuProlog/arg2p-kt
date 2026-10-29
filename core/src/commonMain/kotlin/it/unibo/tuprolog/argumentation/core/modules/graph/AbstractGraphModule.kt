@@ -1,27 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
-import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.TheoryClause
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
-
 /**
  * The argumentation graph of an abstract theory (module `abstractGraph`, the graphBuilder of the profile abstract):
  * the arguments it states, `a.` or arg(a), and the attacks between them, `a -> b.` or att(a, b), and `a <-> b.` for a
  * mutual attack, facts or derived by Prolog clauses (`X -> Y :- beats(X, Y).`); an argument attacking or attacked is
  * an argument as well. Each is saved as abstract::solve saves them. The module abstractLanguage checks the theory.
  */
-object AbstractGraphModule : PrologModule("prolog.argumentation.graph.abstract", "abstractGraph") {
-    // the operators of the notation, for the clauses below
-    override val theoryOperators: OperatorSet
-        get() = super.theoryOperators + Profiles.ABSTRACT.operators
-
-    // the clauses of the notation are read as data: ->/2 cannot be called
-    override val primitives: Map<Signature, Primitive>
-        get() = mapOf(TheoryClause.signature to TheoryClause)
-
+internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentation.graph.abstract", "abstractGraph") {
     override val prologRawTheory: String =
         // language=Prolog
         """

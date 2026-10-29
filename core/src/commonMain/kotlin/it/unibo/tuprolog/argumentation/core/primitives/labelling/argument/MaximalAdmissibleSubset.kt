@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * maximalAdmissibleSubset(+Ids, -Subset): the largest admissible subset of the conflict-free set Ids, removing the
  * arguments with an attacker not attacked by the remaining ones until none is left (a greatest fixpoint, polynomial)
  */
-object MaximalAdmissibleSubset : Primitive {
+internal object MaximalAdmissibleSubset : Primitive {
     val signature: Signature = Signature("maximalAdmissibleSubset", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.UnaryPredicate
  * prologDefeasibleRules(-Rules): the Prolog clauses of the theory (Head :- Body) with an identifier (see
  * [RuleAnnotations]) as defeasible rules, `[Id, Body, Head]`, with prologStrictCompatibility on (none otherwise)
  */
-object PrologDefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologDefeasibleRules") {
+internal object PrologDefeasibleRules : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologDefeasibleRules") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses

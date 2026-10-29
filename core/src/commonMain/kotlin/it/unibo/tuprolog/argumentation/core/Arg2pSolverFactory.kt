@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
@@ -8,8 +8,8 @@ import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -50,18 +50,19 @@ object Arg2pSolverFactory {
         stdOut = output,
     )
 
+    /**
+     * The graph of each labelling of [kb] with [flags]: none if the theory has no labelling, an [Arg2pException] if
+     * the evaluation halts (a theory its profile refuses, say)
+     */
     fun evaluate(
         kb: String,
         flags: FlagsBuilder,
     ): Sequence<Graph> =
-        arg2pScope {
-            default(
-                theory = kb,
-                settings = flags.create(),
-            ).let { solver ->
-                solver
-                    .solve(Struct.parse("buildLabelSetsSilent"))
-                    .map { solver.graph() }
-            }
+        default(theory = kb, settings = flags.create()).let { solver ->
+            solver
+                .solve(Atom.of("buildLabelSetsSilent"))
+                .onEach { if (it is Solution.Halt) throw Arg2pException(it.exception.message ?: it.exception.toString()) }
+                .filter { it.isYes }
+                .map { solver.graph() }
         }
 }

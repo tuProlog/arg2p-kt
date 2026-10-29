@@ -15,8 +15,6 @@ import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.unify.Unificator
 import kotlin.jvm.JvmStatic
@@ -38,26 +36,9 @@ data class FlagsBuilder(
     var graphBuilder: String = GraphBuilder.default(),
 ) {
     companion object {
+        /** The facts stating the flags of [target] (see [Flags.of], which writes them) */
         @JvmStatic
-        fun setupSolver(target: FlagsBuilder) =
-            MutableTheory.empty(Unificator.default).also { kb ->
-                if (target.emptyBuilder) return@also
-                // no extension stated as none, so that it overrides those of the profile
-                val extensions = target.graphExtensions.toList().ifEmpty { listOf("none") }
-                extensions.forEach { kb.assertA(Struct.parse("${GraphExtension.predicate()}($it)")) }
-                if (target.queryMode) kb.assertA(Struct.parse(QueryMode.predicate()))
-                if (target.autoTransposition) kb.assertA(Struct.parse(AutoTransposition.predicate()))
-                if (target.prologStrictCompatibility) kb.assertA(Struct.parse(PrologStrictCompatibility.predicate()))
-                if (target.metaConflicts) kb.assertA(Struct.parse(MetaConflicts.predicate()))
-                if (target.metaRules) kb.assertA(Struct.parse(MetaRules.predicate()))
-                kb.assertA(Struct.parse("${GraphBuildMode.predicate()}(${target.graphBuildMode})"))
-                kb.assertA(Struct.parse("${GraphBuilder.predicate()}(${target.graphBuilder})"))
-                kb.assertA(Struct.parse("${ArgumentLabellingMode.predicate()}(${target.argumentLabellingMode})"))
-                kb.assertA(Struct.parse("${StatementLabellingMode.predicate()}(${target.statementLabellingMode})"))
-                kb.assertA(Struct.parse("${OrderingPrinciple.predicate()}(${target.orderingPrinciple})"))
-                kb.assertA(Struct.parse("${OrderingComparator.predicate()}(${target.orderingComparator})"))
-                kb.assertA(Struct.parse("${ModulesPath.predicate()}(${target.modulesPath})"))
-            }
+        fun setupSolver(target: FlagsBuilder): MutableTheory = MutableTheory.of(Unificator.default, Flags.of(target).theory().clauses)
     }
 
     fun empty(emptyBuilder: Boolean) = apply { this.emptyBuilder = emptyBuilder }

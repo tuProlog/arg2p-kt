@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * assertAll(+Clauses): each of Clauses asserted in the context
  */
-object AssertAll : Primitive {
+internal object AssertAll : Primitive {
     val signature: Signature = Signature("assertAll", 1)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

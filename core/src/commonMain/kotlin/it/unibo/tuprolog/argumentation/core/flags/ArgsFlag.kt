@@ -15,4 +15,11 @@ interface ArgsFlag<T, G> {
     /** Whether the flag is a switch, on when stated by its predicate alone (`queryMode.`), rather than taking values */
     val isSwitch: Boolean
         get() = false
+
+    /**
+     * The values standing for several others, by value: a theory stating one of them states the values it stands
+     * for, and the settings tell those (as for the builtin of conflictModel, all its parts)
+     */
+    val aliases: Map<String, List<String>>
+        get() = emptyMap()
 }

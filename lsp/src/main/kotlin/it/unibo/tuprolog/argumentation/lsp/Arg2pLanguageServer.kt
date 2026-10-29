@@ -28,7 +28,6 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -52,7 +51,7 @@ internal class Arg2pLanguageServer(
     private var client: LanguageClient? = null
     private val solving = Solving("arg2p-solver")
     private val federation = Federation(solving, beaconPort) { state -> (client as? Arg2pClient)?.federationChanged(state) }
-    private val pages = PageEngine(solving, federation = federation)
+    private val pages = PageEngine(solving, parallel = federation)
     private val documents = Documents()
 
     override fun connect(client: LanguageClient) {
@@ -140,10 +139,7 @@ internal class Arg2pLanguageServer(
     // federation unable to listen) is the error of the request
     private fun federating(change: () -> Unit): CompletableFuture<FederationState> =
         solving.submit(change).handling { _, failure ->
-            val cause = (failure as? CompletionException)?.cause ?: failure
-            if (cause !=
-                null
-            ) {
+            failure?.unwrapped()?.let { cause ->
                 throw ResponseErrorException(ResponseError(ResponseErrorCode.RequestFailed, cause.message ?: cause.toString(), null))
             }
             federation.state

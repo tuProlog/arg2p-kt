@@ -50,6 +50,23 @@ class TranspositionModuleTest {
         assertEquals(expected.map { Term.parse(it) }.toSet(), transposed)
     }
 
+    // without the declared conflicts in the conflict model, c and d are no contradictories: only the negations count
+    @Test
+    fun aConflictDeclaredOutOfTheConflictModelIsNotTransposed() {
+        val module = ModuleTesting("autoTransposition.\nconflictModel(negation).\nconflict([c], [d]).\nconflict([d], [c]).")
+        val transposed =
+            module
+                .value("transposition::transpose($rules, $rules, T)", "T")!!
+                .let { Term.parse(it, module.solver.operators) }
+                .castToList()
+                .toList()
+                .toSet()
+        assertEquals(
+            setOf("[s1, (a, b), c]", "[s1_i, ('-'(c), b), '-'(a)]", "[s1_ii, ('-'(c), a), '-'(b)]").map { Term.parse(it) }.toSet(),
+            transposed,
+        )
+    }
+
     // d, an axiom, conflicts with c both ways: c rests strictly on the defeasible a, so -a follows from d strictly,
     // and a is out with c, as consistency wants
     @Test

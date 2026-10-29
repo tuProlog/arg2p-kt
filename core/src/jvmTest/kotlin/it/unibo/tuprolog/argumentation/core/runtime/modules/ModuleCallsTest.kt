@@ -7,12 +7,13 @@ import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
+import it.unibo.tuprolog.solve.exception.error.ExistenceError
+import it.unibo.tuprolog.solve.exception.error.SyntaxError
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ModuleCallsTest {
@@ -21,7 +22,7 @@ class ModuleCallsTest {
     private fun solverWithModulesIn(path: String): MutableSolver =
         Arg2pSolverFactory.default(
             theory = "",
-            settings = FlagsBuilder(modulesPath = "'$path'").create(),
+            settings = FlagsBuilder(modulesPath = path).create(),
         )
 
     private fun temporaryModule(): String {
@@ -29,6 +30,21 @@ class ModuleCallsTest {
         Files.writeString(directory.resolve("greetings.pl"), moduleTheory)
         return directory.toString().replace("\\", "/")
     }
+
+    // The first solution of [goal] on [solver]
+    private fun solve(
+        solver: MutableSolver,
+        goal: String,
+    ) = solver.solve(Struct.parse(goal, solver.operators)).first()
+
+    // A directory of modules, [modules] by their file name
+    private fun modules(
+        vararg modules: Pair<String, String>,
+        directory: Path = Files.createTempDirectory("arg2p-modules"),
+    ): Path =
+        directory.also { Files.createDirectories(it) }.also { dir ->
+            modules.forEach { (file, theory) -> Files.writeString(dir.resolve(file), theory) }
+        }
 
     @Test
     fun callModuleResolvesModuleNamesAgainstModulesPath() {
@@ -147,20 +163,6 @@ class ModuleCallsTest {
     }
 
     @Test
-    fun callModuleFailsWhenTheModuleCannotBeLoaded() {
-        val path = temporaryModule()
-        val solver = solverWithModulesIn(path)
-
-        val solution =
-            solver
-                .solve(Struct.parse("module::call_module(['missing'], hello(X))", solver.operators))
-                .first()
-
-        // The primitive raises an existence error, which the :: dispatch turns into a plain failure.
-        assertFalse(solution.isYes, "a module that cannot be loaded must not succeed")
-    }
-
-    @Test
     fun callModuleAcceptsAnExplicitFilePath() {
         val path = temporaryModule()
         val solver = solverWithModulesIn(path)
@@ -171,5 +173,69 @@ class ModuleCallsTest {
                 .first()
 
         assertTrue(solution.isYes, "call_module should accept a fully qualified .pl path")
+    }
+
+    // The modules path as the platform writes it (C:\mods on Windows), with a directory in upper case
+    @Test
+    fun callModuleResolvesNamesAgainstAModulesPathAsThePlatformWritesIt() {
+        val directory = modules("greetings.pl" to moduleTheory, directory = Files.createTempDirectory("arg2p").resolve("Mods"))
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['greetings'], hello(X))")
+        assertTrue(solution.isYes, "expected the module in $directory to be found, got $solution")
+    }
+
+    @Test
+    fun callModuleTakesANameContainingPlForAName() {
+        val directory = modules("my.plan.pl" to moduleTheory)
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['my.plan'], hello(X))")
+        assertTrue(solution.isYes, "expected my.plan to be the name of a module, got $solution")
+    }
+
+    @Test
+    fun callModuleResolvesNamesAndPathsAgainstTheWorkingDirectoryWithoutModulesPath() {
+        val workingDirectory = Path.of("").toAbsolutePath()
+        val directory =
+            modules(
+                "greetings.pl" to moduleTheory,
+                directory =
+                    Files.createTempDirectory(
+                        workingDirectory.resolve("build").also {
+                            Files.createDirectories(it)
+                        },
+                        "modules",
+                    ),
+            )
+        val relative = workingDirectory.relativize(directory).toString().replace("\\", "/")
+        val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().create())
+        listOf("'$relative/greetings'", "'$relative/greetings.pl'").forEach { module ->
+            val solution = solve(solver, "module::call_module([$module], hello(X))")
+            assertTrue(solution.isYes, "expected $module to be found in the working directory, got $solution")
+        }
+    }
+
+    @Test
+    fun callModuleReadsModulesCallingOtherModules() {
+        val directory = modules("calls.pl" to "both(Y) :- utils::appendLists([[a], [b]], Y).\n")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['calls'], both(Y))")
+        assertTrue(solution.isYes, "expected a module with :: to be read, got $solution")
+        assertEquals(
+            "[a, b]",
+            solution.substitution.entries
+                .first { it.key.name == "Y" }
+                .value
+                .toString(),
+        )
+    }
+
+    @Test
+    fun callModuleRaisesASyntaxErrorForAModuleThatDoesNotParse() {
+        val directory = modules("broken.pl" to "hello(.\n")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['broken'], hello(X))")
+        assertTrue(solution.exception is SyntaxError, "expected a syntax error, got $solution")
+    }
+
+    @Test
+    fun callModuleRaisesAnExistenceErrorForAModuleThatCannotBeRead() {
+        val solution = solve(solverWithModulesIn(temporaryModule()), "module::call_module(['missing'], hello(X))")
+        assertTrue(solution.exception is ExistenceError, "expected an existence error, got $solution")
     }
 }

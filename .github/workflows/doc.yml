@@ -1,46 +1,64 @@
 name: Deploy Wiki
 on:
-  push:
-    branches:
-      - master
+  # From push.yml, once a push to master is through CI/CD: the release it made, if any, is tagged, and the site states it
+  workflow_call:
+    inputs:
+      version:
+        description: The release the site is built from, empty for the commit pushed (stating the latest release before it)
+        type: string
+        default: ''
   workflow_dispatch:
+
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: false
+
+env:
+  # The JDK the build runs on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties)
+  # renovate: datasource=java-version depName=java-jdk
+  JAVA_VERSION: 25.0.5+8.0.LTS
+
 defaults:
   run:
     shell: bash
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
+          # the release: its tag is the version the site states
+          ref: ${{ inputs.version || github.sha }}
           submodules: recursive
           fetch-depth: 0
       - uses: actions/setup-java@v6.1.0
         with:
-          distribution: 'temurin'
-          java-version: '25.0.5+8.0.LTS'
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
       - name: Build the site
         run: |
           ./gradlew -PbaseUrl="${{ steps.pages.outputs.base_url }}/" hugoBuild
-      - name: The coverage of the tests, published with the site (and read by the badges of the README)
+      - name: The coverage of the tests of this run (test.yml, on master)
+        id: tested
+        continue-on-error: true
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: coverage
+          path: doc/build/hugo/publish/coverage
+      - name: The coverage of the tests, when this run did not test (run by hand, or a merge of Renovate)
+        if: steps.tested.outcome != 'success'
         run: |
-          ./gradlew -Pcoverage koverBadge koverHtmlReport :core:jvmPrologCoverage
+          ./gradlew -Pcoverage coverageReports
           mkdir -p doc/build/hugo/publish/coverage
-          cp -r build/reports/kover/html doc/build/hugo/publish/coverage/kotlin
-          cp build/reports/kover/badge.json doc/build/hugo/publish/coverage/kotlin.json
-          cp core/build/reports/prolog-coverage/coverage.md doc/build/hugo/publish/coverage/prolog.md
-          cp core/build/reports/prolog-coverage/badge.json doc/build/hugo/publish/coverage/prolog.json
+          cp -r build/reports/coverage/. doc/build/hugo/publish/coverage
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5.0.0
         with:
@@ -49,8 +67,15 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: build
+    permissions:
+      pages: write
+      id-token: write
+    # one deployment at a time, none cancelled
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

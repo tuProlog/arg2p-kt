@@ -196,7 +196,7 @@ class ServerTest {
                 .single()
                 .asJsonObject
         assertEquals("failed", stopped.get("type").asString)
-        assertEquals(PageEngine.STOPPED, stopped.getAsJsonObject("error").get("message").asString)
+        assertEquals(Resolution.STOPPED, stopped.getAsJsonObject("error").get("message").asString)
     }
 
     @Test

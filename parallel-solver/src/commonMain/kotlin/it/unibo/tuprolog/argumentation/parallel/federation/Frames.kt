@@ -6,11 +6,12 @@ import it.unibo.tuprolog.argumentation.parallel.message.TextWriter
 /** What sites send one another on their links, as text (see [FrameCodec]) */
 internal sealed interface Frame {
     /**
-     * The first frame on a link, from each end: the site, its version (sites of different versions do not federate),
-     * the workers it runs (null for no limit), whether it lends them to its peers, whether it opens links of its own
-     * to the sites it is introduced to (as browsers do, over WebRTC), and the [code] it presents: from the site that
-     * opened the link, the code of the other (or the token of their pairing) if it requires one; from a site requiring
-     * a code, the token of the pairing it made, once it admitted the other
+     * The greeting of a site, on each link: the site, its version (sites of different versions do not federate), the
+     * workers it runs (null for no limit), whether it lends them to its peers, and whether it opens links of its own to
+     * the sites it is introduced to (as browsers do, over WebRTC). The first one on a link carries as well the [nonce]
+     * the other site proves its secret on (a code, or the token of a pairing), the [proof] of the secret of this one on
+     * the nonce of the other (see [Pairing.proof]), and, from a site paired just now by its code, the [token] of the
+     * pairing. Neither a code nor a token is ever sent but in that last case.
      */
     data class Hello(
         val site: String,
@@ -18,7 +19,17 @@ internal sealed interface Frame {
         val capacity: Int?,
         val lends: Boolean,
         val introducible: Boolean = false,
-        val code: String? = null,
+        val nonce: String? = null,
+        val proof: String? = null,
+        val token: String? = null,
+    ) : Frame
+
+    /**
+     * The first frame on a link from the site that did not open it (see [Link.outgoing]): the [nonce] the other proves
+     * its code or token on, greeting it then
+     */
+    data class Challenge(
+        val nonce: String,
     ) : Frame
 
     /** To the site that opened a link: the link is refused (the code it presented is not that of this site), why */
@@ -75,7 +86,10 @@ internal object FrameCodec {
                             .number(frame.capacity ?: -1)
                             .text(if (frame.lends) "1" else "0")
                             .text(if (frame.introducible) "1" else "0")
-                            .texts(listOfNotNull(frame.code))
+                            .texts(listOfNotNull(frame.nonce))
+                            .texts(listOfNotNull(frame.proof))
+                            .texts(listOfNotNull(frame.token))
+                    is Frame.Challenge -> text("Challenge").text(frame.nonce)
                     is Frame.Refused -> text("Refused").text(frame.reason)
                     is Frame.Introduce -> text("Introduce").text(frame.site)
                     is Frame.Signal -> text("Signal").text(frame.from).text(frame.to).text(frame.payload)
@@ -87,18 +101,59 @@ internal object FrameCodec {
                 }
             }.toString()
 
+    /** The frame of [text]: an IllegalArgumentException if it is none */
     fun decode(text: String): Frame =
         TextReader(text).run {
             when (val kind = text()) {
-                "Hello" -> Frame.Hello(text(), text(), number().takeIf { it >= 0 }, text() == "1", text() == "1", texts().singleOrNull())
+                "Hello" ->
+                    Frame.Hello(
+                        text(),
+                        text(),
+                        number().takeIf { it >= 0 },
+                        text() == "1",
+                        text() == "1",
+                        optional(),
+                        optional(),
+                        optional(),
+                    )
+                "Challenge" -> Frame.Challenge(text())
                 "Refused" -> Frame.Refused(text())
                 "Introduce" -> Frame.Introduce(text())
                 "Signal" -> Frame.Signal(text(), text(), text())
-                "Placement" -> Frame.Placement(text(), List(number()) { text() to text() }.toMap())
+                "Placement" -> Frame.Placement(text(), list { text() to text() }.toMap())
                 "Forget" -> Frame.Forget(text())
                 "Lost" -> Frame.Lost(text())
                 "Deliver" -> Frame.Deliver(text(), text(), text())
-                else -> error("Unknown frame $kind")
+                else -> throw IllegalArgumentException("Unknown frame $kind")
             }
         }
+
+    // A field written as a list of none or one text
+    private fun TextReader.optional(): String? = texts().singleOrNull()
+}
+
+/**
+ * The longest frame a site receives, in bytes: a longer one closes its link, rather than filling the memory of the
+ * site (see the transports)
+ */
+internal const val LONGEST_FRAME: Int = 64 * 1024 * 1024
+
+/**
+ * The chunks of [frame], of at most [size] characters, one at least, for the transports bounding their messages: none
+ * ends between the two halves of a character beyond 16 bits (a surrogate pair), which a transport sending UTF-8 would
+ * not carry
+ */
+internal fun chunked(
+    frame: String,
+    size: Int,
+): List<String> {
+    val chunks = mutableListOf<String>()
+    var start = 0
+    while (start < frame.length) {
+        var end = minOf(start + size, frame.length)
+        if (end < frame.length && end - 1 > start && frame[end - 1].isHighSurrogate()) end--
+        chunks += frame.substring(start, end)
+        start = end
+    }
+    return chunks.ifEmpty { listOf("") }
 }

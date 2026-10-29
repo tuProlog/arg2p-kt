@@ -14,7 +14,7 @@ import kotlin.collections.List as KList
  * ruleToClauseNatural(+Rules, -Clauses): as ruleToClause/2, with naturalTerms: the statements written as text
  * are turned into terms, the words in upper case and in brackets becoming their arguments
  */
-object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("ruleToClauseNatural") {
+internal object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("ruleToClauseNatural") {
     class TemplateExtractor {
         private val upperRegex = Regex("""\b[A-Z][a-zA-Z]*\b""")
         private val bracketRegex = Regex("""\[([^\]]+)\]""")
@@ -62,10 +62,11 @@ object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>
             }
 
             // 1. Uppercase extraction
-            val upperMatches = upperRegex.findAll(text).map { it.value }.toList()
-            if (upperMatches.isNotEmpty()) {
+            val upperWords = upperRegex.findAll(text).toList()
+            if (upperWords.isNotEmpty()) {
+                val upperMatches = upperWords.map { it.value }
                 val predicate = buildPredicate(text, upperMatches)
-                val template = buildTemplate(text, upperMatches)
+                val template = buildTemplate(text, upperWords)
                 knownTemplates[template] = upperMatches.size
                 return Result(upperMatches, predicate)
             }
@@ -115,13 +116,19 @@ object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>
             return "$predicate($args)"
         }
 
+        // The pattern of the texts written as [text], with other words in place of [words]: the rest of the text, the
+        // user's, matched as it is (escaped)
         private fun buildTemplate(
             text: String,
-            extracted: KList<String>,
+            words: KList<MatchResult>,
         ): String {
-            var template = text
-            extracted.forEach { template = template.replace(it, "(.+?)") }
-            return "^$template$"
+            var last = 0
+            val template = StringBuilder("^")
+            words.forEach { word ->
+                template.append(Regex.escape(text.substring(last, word.range.first))).append("(.+?)")
+                last = word.range.last + 1
+            }
+            return template.append(Regex.escape(text.substring(last))).append("$").toString()
         }
     }
 

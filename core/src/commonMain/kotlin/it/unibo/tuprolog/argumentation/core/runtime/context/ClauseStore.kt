@@ -22,7 +22,7 @@ import it.unibo.tuprolog.core.Var
  * first variable: lookups only unify the clauses whose paths are compatible with the query ones.
  * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they modify.
  */
-class ClauseStore private constructor(
+internal class ClauseStore private constructor(
     private var data: Data,
     private var shared: Boolean,
 ) {
