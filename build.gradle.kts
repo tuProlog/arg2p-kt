@@ -359,11 +359,6 @@ dependencies {
     "dokka"(project(":parallel-solver"))
 }
 
-// project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
-//    nodeVersion(it)
-//    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
-// }
-
 afterEvaluate {
     subprojects {
         version = rootProject.version
