@@ -1,7 +1,7 @@
 {
   "name": "arg2p",
   "displayName": "Arg2P",
-  "version": "0.21.1",
+  "version": "0.22.0",
   "description": "Structured argumentation with Arg2P: formalize problems as theories, solve them, and explore the results in its solver.",
   "author": {
     "name": "tuProlog",

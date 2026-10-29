@@ -1,3 +1,31 @@
+## [0.22.0](https://github.com/tuProlog/arg2p-kt/compare/0.21.1...0.22.0) (2026-10-29)
+
+### Features
+
+* **lsp:** the recorded page of the solver, a run already solved shown where no engine runs ([251a623](https://github.com/tuProlog/arg2p-kt/commit/251a6232669f8daf917bccdae0deee5c24b7e915))
+* **python:** arg2p page, the recorded page of a query solved on a theory ([61c8d1a](https://github.com/tuProlog/arg2p-kt/commit/61c8d1ae5309c8a3485eb20cf2395492b6143296))
+* the recorded page of the solver, made by the Python package where no MCP server runs ([#558](https://github.com/tuProlog/arg2p-kt/issues/558)) ([d38ff00](https://github.com/tuProlog/arg2p-kt/commit/d38ff0092b27fc1ca0c534bdda338efd7143a824))
+
+### Bug Fixes
+
+* **lsp:** the recorded page loads the solver in one file, @tuprolog/arg2p-ui 0.3.2 ([5303a54](https://github.com/tuProlog/arg2p-kt/commit/5303a541a50fb0a951ff041f4255b781afdcd200))
+
+### Documentation
+
+* **plugins:** the readings of an ambiguous text in one theory, with the profile meta ([065e8fe](https://github.com/tuProlog/arg2p-kt/commit/065e8fe1ba9b382b56f23c30df8147d8e964a022))
+* **plugins:** the readings of an ambiguous text in one theory, with the profile meta ([#559](https://github.com/tuProlog/arg2p-kt/issues/559)) ([05704c7](https://github.com/tuProlog/arg2p-kt/commit/05704c7c0b6982e156f45270f46adb4212402f66))
+* the recorded page in the skills and the documentation ([b693ccf](https://github.com/tuProlog/arg2p-kt/commit/b693ccf5035d7491bc7430e860ac0faa72e6f656))
+
+### General maintenance
+
+* merge master into develop after 0.20.0 ([f0e8ede](https://github.com/tuProlog/arg2p-kt/commit/f0e8ededd9d28790339431b2e24216f4842cbad1))
+* merge master into develop after 0.21.0 ([715247a](https://github.com/tuProlog/arg2p-kt/commit/715247acbea8bd9603a69ffe3d1d8f15c9a2fd4e))
+* merge master into develop after 0.21.1 ([6dcd9f8](https://github.com/tuProlog/arg2p-kt/commit/6dcd9f8b1bf56e5f48d349715e8993bf43cb611f))
+
+### Refactoring
+
+* **lsp:** the style and the version of the components shared by the pages of the solver ([b03efad](https://github.com/tuProlog/arg2p-kt/commit/b03efad59e284ecd22c6eeea0196092271f6ceff))
+
 ## [0.21.1](https://github.com/tuProlog/arg2p-kt/compare/0.21.0...0.21.1) (2026-10-29)
 
 ### Bug Fixes
