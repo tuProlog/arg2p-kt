@@ -16,8 +16,9 @@ class Causality internal constructor(
     private val arg2p: Arg2p,
 ) {
     /**
-     * Whether [cause] is a NESS cause of [effect] (the revised condition): an intervention removing it refutes an
-     * explanation of the effect as no part of it does; the intervention, null if it is not a cause
+     * Whether [cause] is a NESS cause of [effect] (the revised condition): an argument for it is IN in the grounded
+     * labelling of the theory, and an intervention removing it refutes an explanation of the effect as no part of it
+     * does; the intervention, null if it is not a cause
      */
     fun ness(
         cause: String,

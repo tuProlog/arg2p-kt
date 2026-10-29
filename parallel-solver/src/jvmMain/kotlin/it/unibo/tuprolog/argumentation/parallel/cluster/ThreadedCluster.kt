@@ -48,7 +48,7 @@ class ThreadedCluster private constructor(
         flags: Flags,
         textual: Boolean,
         lends: Boolean,
-    ) : this(scheduler, Site(scheduler, threads, parts, flags, lends, textual).apply { name = hostName() })
+    ) : this(scheduler, Site(scheduler, threads, parts, flags, lends, textual).apply { name = HOST_NAME })
 
     // made when the cluster first listens or connects
     private var links: WebSocketLinks? = null
@@ -200,7 +200,8 @@ class ThreadedCluster private constructor(
 
         private val CLOSED get() = Arg2pException("The cluster is closed")
 
-        // The name of this host, if it has one
-        private fun hostName(): String = runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("")
+        /** The name of this host, if it has one (empty otherwise): the name of the sites of the clusters by default */
+        @JvmStatic
+        val HOST_NAME: String by lazy { runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("") }
     }
 }

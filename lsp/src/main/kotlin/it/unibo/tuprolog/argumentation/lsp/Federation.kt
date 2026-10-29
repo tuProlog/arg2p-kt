@@ -235,7 +235,7 @@ internal class Federation(
     private fun notifyChanged() = changed(state)
 
     // The name of the site: the one given, or else the name of the host, as the cluster names its site by default
-    private fun named(): String = name ?: HOST
+    private fun named(): String = name ?: ThreadedCluster.HOST_NAME
 
     companion object {
         /** Where the page joining a cluster loads arg2p from: the npm package of the version of the server */
@@ -264,9 +264,6 @@ internal class Federation(
 
         // The page served at [path] (its query left out): the page joining the cluster, or the script of its workers
         private fun page(path: String): StaticContent? = pages[path.substringBefore('?')]
-
-        // The name of this host, if it has one, looked up once
-        private val HOST: String by lazy { runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("") }
 
         // The address of this host on the local network, as a phone on it reaches it: that of the route out of the host
         // (opened without sending anything), or else the first one of an interface up that is not virtual; none if there
