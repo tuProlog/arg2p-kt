@@ -10,6 +10,9 @@ import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
+import it.unibo.tuprolog.argumentation.parallel.checked
+import it.unibo.tuprolog.argumentation.parallel.graphsOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -66,14 +69,8 @@ class Arg2p private constructor(
     @JsExport.Ignore
     @JsName("graphsList")
     fun graphs(): List<Graph> =
-        solver
-            .solve(Struct.of("buildLabelSetsSilent"))
-            .map { solution ->
-                checked(solution)
-                // read while the solver is at the solution, the graph of its labelling in the active branch
-                if (solution.isYes) solver.graph() else null
-            }.filterNotNull()
-            .toList()
+        // read while the solver is at each solution, the graph of its labelling in the active branch
+        graphsOf(solver.solve(Struct.of(LABELLINGS)).iterator()) { solver.graph() }
 
     /** The graph of each labelling of the theory (an array in JavaScript) */
     @JsName("graphs")
@@ -154,14 +151,6 @@ class Arg2p private constructor(
     internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, solver.operators) }
 
     private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
-
-    private fun checked(solution: LogicSolution): LogicSolution {
-        if (solution.isHalt) {
-            val error = solution.exception
-            throw Arg2pException(error?.message ?: error?.toString() ?: solution.toString())
-        }
-        return solution
-    }
 
     /** A solver of arg2p, as it is described: its theory, its flags, and where what it prints goes */
     class Builder {

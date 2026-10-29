@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.parallel.federation
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.EquivalenceScenarios
-import it.unibo.tuprolog.argumentation.parallel.cluster.LocalCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 
 // The scenarios on a site lending the workers of its delegates (as the threads of a JS runtime) to the evaluating
@@ -13,9 +12,9 @@ class DelegatedLocalClusterTest : EquivalenceScenarios() {
         flags: Flags,
     ): (String) -> EvaluationResponse {
         val scheduler = SequentialScheduler()
-        val evaluating = LocalCluster(parts = 0, flags = flags, scheduler = scheduler)
-        val lending = LocalCluster(parts = 0, scheduler = scheduler)
-        repeat(2) { MemoryLinks.delegate(lending.site, LocalCluster(parts = 1, scheduler = scheduler).site, scheduler) }
+        val evaluating = LocalSite(0, scheduler, flags)
+        val lending = LocalSite(0, scheduler)
+        repeat(2) { MemoryLinks.delegate(lending.site, LocalSite(1, scheduler).site, scheduler) }
         MemoryLinks.connect(evaluating.site, lending.site, scheduler)
         evaluating.load(theory)
         return evaluating::solve

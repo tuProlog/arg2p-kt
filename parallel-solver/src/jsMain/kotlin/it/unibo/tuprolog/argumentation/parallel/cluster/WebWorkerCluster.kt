@@ -1,7 +1,8 @@
+@file:Suppress("NON_EXPORTABLE_TYPE")
+
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.RtcLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
@@ -22,33 +23,26 @@ import kotlin.js.Promise
  */
 @JsExport
 class WebWorkerCluster(
-    private val threads: Int,
+    threads: Int,
     worker: String,
     parts: Int? = null,
     flags: Flags = Flags.defaults(),
     iceServers: Array<dynamic> = emptyArray(),
-) {
-    // the catalog here, every worker on a Web Worker
-    private val site = Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags, introducible = true)
+) : LinkedCluster(
+        // the catalog here, every worker on a Web Worker
+        Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags, introducible = true),
+    ) {
     private val links = WebSocketLinks(site)
     private val rtc = RtcLinks(site, iceServers)
 
-    // the evaluations asked before every Web Worker greeted the site wait for them
-    private val waiting = mutableListOf<() -> Unit>()
-    private var greeted = 0
+    // The replies of the site, asked for once every Web Worker greeted it
+    private val replies = ThreadReplies(threads)
     private val workers: List<Pair<dynamic, PortLink>> = List(threads) { spawn(worker) }
 
-    // The replies of the site, asked for once every Web Worker greeted it
-    private val replies =
-        object : AsyncReplies {
-            override fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T> =
-                Promise { resolve, _ ->
-                    val evaluate = { ask(resolve) }
-                    if (greeted == threads) evaluate() else waiting += evaluate
-                }
-        }
-
-    /** Federates the cluster with the site listening at [url] (ws://host:port), presenting [code] if it requires one */
+    /**
+     * Federates the cluster with the site listening at [url] (ws://host:port), proving it knows [code] if it requires
+     * one: rejected if no site answers in a few seconds
+     */
     fun connect(
         url: String,
         code: String? = null,
@@ -56,57 +50,36 @@ class WebWorkerCluster(
 
     /**
      * An invitation to pair with this cluster by hand, with no server between them: a code for another cluster to
-     * [accept] (see [RtcLinks.invite])
+     * [accept] (see [RtcLinks.invite]). Each step of a pairing by hand may be given an AbortSignal ([signal]): once it
+     * aborts, the pairing is abandoned, its connection closed, and the promise of the step rejected if still pending.
      */
-    fun invite(): Promise<String> = rtc.invite()
+    fun invite(signal: dynamic = null): Promise<String> = rtc.invite(signal)
 
-    /** The reply to the [invitation] of another cluster, for it to [complete] the pairing */
-    fun accept(invitation: String): Promise<String> = rtc.accept(invitation)
+    /** The reply to the [invitation] of another cluster, for it to [complete] the pairing: abandoned once [signal] aborts */
+    fun accept(
+        invitation: String,
+        signal: dynamic = null,
+    ): Promise<String> = rtc.accept(invitation, signal)
 
-    /** The pairing [invite]d completed with the [reply] of the other cluster: once the two are linked */
-    fun complete(reply: String): Promise<Unit> = rtc.complete(reply)
+    /** The pairing [invite]d completed with the [reply] of the other cluster: once the two are linked; abandoned once [signal] aborts */
+    fun complete(
+        reply: String,
+        signal: dynamic = null,
+    ): Promise<Unit> = rtc.complete(reply, signal)
 
     /** The sites the cluster is federated with, its Web Workers included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
-    /** Called whenever a site joins or leaves the peers of the cluster, its Web Workers included */
-    var onPeersChanged: (() -> Unit)?
-        get() = site.onPeersChanged
-        set(value) {
-            site.onPeersChanged = value
-        }
-
-    /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
-    val stats: FederationStats get() = site.stats
-
-    /**
-     * The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
-     * built anew, the links and the peers of the cluster kept
-     */
-    var flags: Flags
-        get() = site.flags
-        set(value) {
-            site.flags = value
-        }
-
-    /** Replaces the theory with [theory], as Prolog text */
-    fun load(theory: String) = site.load(theory)
-
-    /** Adds [clause], as Prolog text, to the theory */
-    fun add(clause: String) = site.add(clause)
-
-    /** Forgets the theory */
-    fun reset() = site.reset()
-
-    /** The arguments for [statement], as Prolog text, by label */
+    /** The arguments for [statement], as Prolog text, by label (rejected if the cluster closes meanwhile) */
     fun solve(statement: String): Promise<EvaluationResponse> =
         replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
 
     /** The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries */
     val solver: AsyncClusterSolver = AsyncClusterSolver(site, replies)
 
-    /** Closes the links to the other sites, and stops the Web Workers */
+    /** Closes the links to the other sites, and stops the Web Workers: the evaluations pending are rejected */
     fun close() {
+        replies.close()
         rtc.close()
         links.close()
         workers.forEach { (worker, link) ->
@@ -122,15 +95,8 @@ class WebWorkerCluster(
         options.type = "module"
         val worker = js("new constructor(url, options)")
         val link = PortLink(worker) { worker.terminate() }
-        var first = true
-        worker.onmessage = { event: dynamic ->
-            handled { site.received(link, event.data as String) }
-            // its first frame greets the site
-            if (first) {
-                first = false
-                if (++greeted == threads) waiting.toList().also { waiting.clear() }.forEach { it() }
-            }
-        }
+        val received = replies.receiver(site, link)
+        worker.onmessage = { event: dynamic -> received(event.data as String) }
         worker.onerror = { error: dynamic -> console.error(error) }
         site.delegate(link)
         return Pair(worker, link)

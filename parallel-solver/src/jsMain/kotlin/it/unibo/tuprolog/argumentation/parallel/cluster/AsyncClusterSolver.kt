@@ -1,15 +1,17 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Answer
-import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Solution
 import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
+import it.unibo.tuprolog.argumentation.parallel.checked
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
 import it.unibo.tuprolog.argumentation.solutionOf
 import kotlin.js.JsExport
 import kotlin.js.Promise
+import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /** How a cluster of JavaScript waits for the replies of its site: [ask] asks the site, the promise fulfilled by the reply */
 internal interface AsyncReplies {
@@ -38,14 +40,14 @@ class AsyncClusterSolver internal constructor(
     /** The solutions of [goal], Prolog text, given one at a time as they are asked for (rejected for a goal that cannot be read) */
     fun solve(goal: String): Promise<AsyncSolutions> =
         replies.replied<SolutionResponse> { site.query(goal, it) }.then { first ->
-            AsyncSolutions(goal, solved.checked(first), solved) { replies.replied { reply -> site.next(first.run, reply) } }
+            AsyncSolutions(Given(goal, solved.checked(first), solved)) { replies.replied { reply -> site.next(first.run, reply) } }
         }
 
     /** The statements for [query], Prolog text, labelled in, out and und (rejected if the evaluation halts) */
     fun answer(query: String): Promise<Answer> = replies.replied<AnswerResponse> { site.answer(query, it) }.then { solved.answer(it) }
 
     /** The graph of each labelling of the theory (rejected if the evaluation halts) */
-    fun graphs(): Promise<Array<Graph>> = solve("buildLabelSetsSilent").then { graphsOf(it, emptyArray()) }.flattened()
+    fun graphs(): Promise<Array<Graph>> = solve(LABELLINGS).then { graphsOf(it, emptyArray()) }.flattened()
 
     /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
     fun graph(): Graph = solved.graph
@@ -66,37 +68,26 @@ class AsyncClusterSolver internal constructor(
             Promise.resolve(found)
         } else {
             solutions
-                .next()
-                .then { solution ->
-                    if (solution.isHalt) throw Arg2pException(solution.error ?: solution.toString())
-                    graphsOf(solutions, if (solution.isYes) found + solved.graph else found)
-                }.flattened()
+                .nextSolution()
+                .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + solved.graph else found) }
+                .flattened()
         }
 }
 
 /** The solutions of a goal, given one at a time as they are asked for */
 @JsExport
 class AsyncSolutions internal constructor(
-    private val goal: String,
-    first: SolutionResponse,
-    private val solved: Solved,
+    private val given: Given,
     private val asked: () -> Promise<SolutionResponse>,
 ) {
-    private var pending: SolutionResponse? = first
-    private var more = true
-
     /** Whether the goal has another solution */
-    fun hasNext(): Boolean = pending != null || more
+    fun hasNext(): Boolean = given.hasNext()
 
     /** The next solution, the graph of its resolution then given by the graph() of the solver */
-    fun next(): Promise<Solution> {
-        val response = pending?.let { Promise.resolve(it) } ?: asked()
-        pending = null
-        return response.then {
-            more = it.hasNext
-            solutionOf(solved.given(it, goal))
-        }
-    }
+    fun next(): Promise<Solution> = nextSolution().then { solutionOf(it) }
+
+    // The next solution, as the solver of the theory gives it
+    internal fun nextSolution(): Promise<LogicSolution> = (given.first()?.let { Promise.resolve(it) } ?: asked()).then { given.given(it) }
 
     /** The solutions left, at most [limit] of them, each asked for once the one before it is given */
     fun toArray(limit: Int = Int.MAX_VALUE): Promise<Array<Solution>> =
