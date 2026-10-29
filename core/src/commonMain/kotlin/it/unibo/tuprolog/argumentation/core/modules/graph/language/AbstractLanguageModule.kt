@@ -1,26 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
-import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.TheoryClause
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
+import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractNotationModule
 
 /**
  * The language of Dung frameworks (module `abstractLanguage`, the graphLanguage of the profile abstract): arguments
  * and attacks alone, which the module abstractGraph reads. It adds no premise nor conflict; it checks the theory has
  * none of the notations of the structured profiles, which an abstract framework would drop.
  */
-object AbstractLanguageModule : PrologModule("prolog.argumentation.language.abstract", "abstractLanguage") {
-    // the operators of the notation, for the clauses below
-    override val theoryOperators: OperatorSet
-        get() = super.theoryOperators + Profiles.ABSTRACT.operators
-
-    // the clauses of the notation are read as data: ->/2 cannot be called
-    override val primitives: Map<Signature, Primitive>
-        get() = mapOf(TheoryClause.signature to TheoryClause)
-
+internal object AbstractLanguageModule : AbstractNotationModule("prolog.argumentation.language.abstract", "abstractLanguage") {
     override val prologRawTheory: String =
         // language=Prolog
         """
