@@ -1,3 +1,69 @@
+## [0.23.0](https://github.com/tuProlog/arg2p-kt/compare/0.22.0...0.23.0) (2026-10-29)
+
+### Features
+
+* arg2p::solve(In, Out, Und), the query the interfaces solve by default, and the engine told by it ([b2d5202](https://github.com/tuProlog/arg2p-kt/commit/b2d52023f3b5bed8fd497ac0652264c5a9a2fe99))
+* **core:** arg2p::solve/3, the statements of the whole theory labelled IN, OUT and UND ([2cc9580](https://github.com/tuProlog/arg2p-kt/commit/2cc9580122b961bd754f147190cd9953c3d2be08))
+* **core:** the conflict model as a set of parts, negation, deontic, preference and declared ([4ba48a3](https://github.com/tuProlog/arg2p-kt/commit/4ba48a32e90a3964e48886dc319ee03f21c81459))
+* **python:** the parts of the conflict model, several of them set at once ([f6c7fc9](https://github.com/tuProlog/arg2p-kt/commit/f6c7fc9b8b3224d726bff183fb9fcb017f76ba5b))
+* the second review, arg2p::solve(In, Out, Und), the conflict model as a checklist, and a faster CI ([#563](https://github.com/tuProlog/arg2p-kt/issues/563)) ([03aca34](https://github.com/tuProlog/arg2p-kt/commit/03aca341e201cdfd2479520215c47021907b5399))
+* the second review, arg2p::solve(In, Out, Und), the conflict model as a checklist, and a faster CI ([#565](https://github.com/tuProlog/arg2p-kt/issues/565)) ([9b100da](https://github.com/tuProlog/arg2p-kt/commit/9b100da200a8c38846effdd6722ddd01403e82ec))
+* **vscode:** the parts of the conflict model highlighted ([74bb401](https://github.com/tuProlog/arg2p-kt/commit/74bb401342492e2d511f42a6ab93ec0074d50948))
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.3.3 ([#564](https://github.com/tuProlog/arg2p-kt/issues/564)) ([31b1461](https://github.com/tuProlog/arg2p-kt/commit/31b14617245008cd4e612c434eb12a7256ecde46))
+
+### Bug Fixes
+
+* **actor:** parallel::solve answers or raises an error, and leaving a cluster keeps it for the others ([ffa7f45](https://github.com/tuProlog/arg2p-kt/commit/ffa7f4506b5f2401cb07050fddd683fabd9f7f06))
+* **causality:** no second cache, and the solver of the analysis built at its first test, printing where asked ([22159c7](https://github.com/tuProlog/arg2p-kt/commit/22159c748bf31d2f2fa2c7582a30489f31848923))
+* **causality:** the analysis prints where the solver testing causality does ([69643af](https://github.com/tuProlog/arg2p-kt/commit/69643af657bd6e40ae02729b08720ffec9fbf23c))
+* **core:** Arg2pSolverFactory.evaluate raises an error when the evaluation halts ([6867012](https://github.com/tuProlog/arg2p-kt/commit/686701293bbf42a363cce4b9fd48bde4d7419d6e))
+* **core:** call_module resolves its modules as paths and reads them with the operators of arg2p ([ad7e98e](https://github.com/tuProlog/arg2p-kt/commit/ad7e98edadf49694ef1d930b6ecb782ac057a3ad))
+* **core:** quoted atoms, canonical terms, interruptions and the templates of naturalTerms ([0deb3ab](https://github.com/tuProlog/arg2p-kt/commit/0deb3ab6f4485abe04d21767fa4d6857550fe102))
+* **core:** the flags of a builder written as those of Flags, and the text of flags read as facts alone ([5a37206](https://github.com/tuProlog/arg2p-kt/commit/5a372065b99dbf7c9d9545d18a651e339f0c3e1e))
+* **lsp:** the MCP server ends with its client, and a run out of time says so wherever it runs ([f315fc5](https://github.com/tuProlog/arg2p-kt/commit/f315fc55d155d1a2c1cc2817da8874e9c66d8176))
+* **parallel:** nothing read on a link before its site is admitted, codes and tokens proven rather than sent ([d1ffaad](https://github.com/tuProlog/arg2p-kt/commit/d1ffaad6b171cf8691b3ee1de658cfbd77b5b3e2))
+* **parallel:** the clusters fail their callers as documented, on common bases ([780d9a9](https://github.com/tuProlog/arg2p-kt/commit/780d9a91ebf5d806b632f6b6067d19cdc624723a))
+* **python:** arg2p mcp leaves no Java behind, and the errors of Solutions and of the command line are told ([1181458](https://github.com/tuProlog/arg2p-kt/commit/11814588109711304ff17a1b4f93400a3024e620))
+* **vscode:** a server stopped fails what the page waited for, the checks of the editors too ([9411fc1](https://github.com/tuProlog/arg2p-kt/commit/9411fc116939ea1e3c5216600ccfde978e96a667))
+* **vscode:** the defaults of the extension in one module ([2f01120](https://github.com/tuProlog/arg2p-kt/commit/2f01120b2a8d189412e3430f6c9c9179f8dc5c7b))
+* **vscode:** the Federation view running again after a crash, and a restart past a server that does not stop ([8928328](https://github.com/tuProlog/arg2p-kt/commit/892832886a2828198f99fe9ff018906c6eba063f))
+* **vscode:** the nonce of the pages of the webviews from crypto ([21380d7](https://github.com/tuProlog/arg2p-kt/commit/21380d79b54e42ae3177c32415f544d02b143cf3))
+
+### Documentation
+
+* the actor solver's host and timeout, call_module's locations and errors, the Java floor of Python ([23dcc2e](https://github.com/tuProlog/arg2p-kt/commit/23dcc2ee6a24decedd32acb8b9c2e7b4620346b2))
+* the conflict model as its parts, and how none of them is stated ([bfa75f1](https://github.com/tuProlog/arg2p-kt/commit/bfa75f15ea502391a39f78404823cb9a8b33e288))
+* the README a pitch, its install commands and links, the tools of the MCP server in two places ([307938d](https://github.com/tuProlog/arg2p-kt/commit/307938d7af1d5b138aaa587c7daef6844efffe46))
+* the version and the Java of the site from the build alone ([ed95ac1](https://github.com/tuProlog/arg2p-kt/commit/ed95ac18d1a486fb09f77b2a16e5f47b9afb5774))
+* transposition and the restricted rebut under aspic too, and the declarations arg2p.d.mts ([9529cd1](https://github.com/tuProlog/arg2p-kt/commit/9529cd1eb66ed72cf0977e8618718f8b1a0a6519))
+
+### Tests
+
+* **parallel:** the scratch probes no longer among the tests ([b8de2d6](https://github.com/tuProlog/arg2p-kt/commit/b8de2d6255a444bb260b676f3aa861fbd8d046c4))
+
+### Build and continuous integration
+
+* @tuprolog/arg2p-ui 0.3.3 in the version catalog, as the extension has it ([45fcd10](https://github.com/tuProlog/arg2p-kt/commit/45fcd10da79c5f102ab3d6af5a7ba3d4cd7ea917))
+* a release built before any of it is published, failing on a failed upload ([e3a3f72](https://github.com/tuProlog/arg2p-kt/commit/e3a3f72ec679e5933e64df01ff296f3ca1ea47b5))
+* **actor:** Logback a dependency of the tests alone ([8f539eb](https://github.com/tuProlog/arg2p-kt/commit/8f539eb31cb5a551ed3d294a170dd3d599445b53))
+* **deps:** update dependency python to 3.15 ([#528](https://github.com/tuProlog/arg2p-kt/issues/528)) ([01b08a4](https://github.com/tuProlog/arg2p-kt/commit/01b08a4d0d799c0b98b0dcd06e93d6653795d6d5))
+* every push runs, so that a pull request always gets its checks ([5cbf018](https://github.com/tuProlog/arg2p-kt/commit/5cbf018a147b4183b220e9b6312e3c9e6ab2297e))
+* no stale configuration, the GitLab CI and the GitHub Packages repository ([d9629fc](https://github.com/tuProlog/arg2p-kt/commit/d9629fc067b8f1eba5e56b77e7d7af06b22159ee))
+* **plugins:** the manifests of the plugin written from plugins/arg2p/plugin.json ([021e14e](https://github.com/tuProlog/arg2p-kt/commit/021e14e4b15d4e16443f87b5c9bb824311c1b61f))
+* the build cache and parallel projects on, and the coverage the site publishes in one task ([2ef6456](https://github.com/tuProlog/arg2p-kt/commit/2ef645678ce745491ab9b557711dcec1d9f9e856))
+* the site of the release, least privilege, safer publishing, and faster runs ([2a05ac6](https://github.com/tuProlog/arg2p-kt/commit/2a05ac684c183a984d63c5259846a0ac15015cda))
+* the version of @tuprolog/arg2p-ui in the version catalog ([951a27e](https://github.com/tuProlog/arg2p-kt/commit/951a27e731eb9bcf607a6f1d6d0ee701c6eca379))
+
+### Refactoring
+
+* **core:** the internals of the core internal to it ([e864eef](https://github.com/tuProlog/arg2p-kt/commit/e864eef974720ef51d6aef3ac1b4048862786f2d))
+* **core:** the modules of the abstract notation share their operators and theoryClause/2 ([b4c2f86](https://github.com/tuProlog/arg2p-kt/commit/b4c2f867b5cfca7121f377224ba855df02385a92))
+* **lsp:** the federated resolution beside the local one, and the pages' helpers shared ([8fd3603](https://github.com/tuProlog/arg2p-kt/commit/8fd3603bdff4127fe4260adcb47dfddf15ad424c))
+* the name of the host written once, and the NESS condition told in full ([8d9bf7f](https://github.com/tuProlog/arg2p-kt/commit/8d9bf7fcad800958fcc478cbe376d0e2640e9f15))
+
 ## [0.22.0](https://github.com/tuProlog/arg2p-kt/compare/0.21.1...0.22.0) (2026-10-29)
 
 ### Features
