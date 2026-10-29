@@ -40,11 +40,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.commands.registerCommand('arg2p.restartServer', () => languageServer.restart()),
         vscode.window.registerWebviewViewProvider(FederationView.ID, new FederationView(context, languageServer)),
         vscode.commands.registerCommand('arg2p.federation', () => vscode.commands.executeCommand(`${FederationView.ID}.focus`)),
-        vscode.workspace.onDidChangeConfiguration(async event => {
-            if (event.affectsConfiguration('arg2p.java')) {
-                await languageServer.restart();
-                changed.fire();
-            }
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (!event.affectsConfiguration('arg2p.java')) return;
+            // the MCP server runs on the java of the settings too, whether the language server starts on it or not
+            changed.fire();
+            void languageServer.restart();
         }),
         changed,
         // the MCP server of arg2p, for the AI assistants of VS Code: the same jar, on the same java, with --mcp

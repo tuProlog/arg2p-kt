@@ -4,9 +4,9 @@ import { LanguageServer, type Client } from '../src/server.js';
 
 const { deepEqual, equal } = assert;
 
-// A client as vscode-languageclient has it: one that refuses to stop unless it runs, and whose start fails with [java]
-// missing; what happens to it goes to [log]
-function client(log: string[], name: string, starts = true) {
+// A client as vscode-languageclient has it: one that refuses to stop unless it runs, whose start fails with [java]
+// missing, and whose stop fails with its server [stuck]; what happens to it goes to [log]
+function client(log: string[], name: string, starts = true, stuck = false) {
     let state: 'initial' | 'running' | 'failed' | 'stopped' = 'initial';
     const changed = new Emitter<unknown>();
     const become = (next: typeof state) => {
@@ -22,6 +22,8 @@ function client(log: string[], name: string, starts = true) {
         stop: async () => {
             if (state !== 'running') throw new Error(`Client is not running and can't be stopped. It's current state is: ${state}`);
             log.push(`stop ${name}`);
+            // a server that does not answer the shutdown: the client gives up, still running
+            if (stuck) throw new Error(`Stopping the server timed out`);
             become('stopped');
         },
         dispose: async () => {
@@ -66,19 +68,36 @@ describe('LanguageServer', function () {
             () => undefined,
         );
         let stops = 0;
+        let starts = 0;
         server.onDidStop(() => stops++);
+        server.onDidStart(() => starts++);
         await server.start();
+        equal(starts, 1);
+        // the client restarts the server that crashed: it is told started again (the federation view asks its state)
         first.crash();
-        equal(stops, 1);
+        deepEqual([stops, starts], [1, 2]);
         await server.restart();
-        equal(stops, 2);
+        deepEqual([stops, starts], [2, 3]);
         await server.stop();
-        equal(stops, 3);
+        deepEqual([stops, starts], [3, 3]);
         deepEqual(log, ['start first', 'stop first', 'start second', 'stop second']);
         await server.request('arg2p/engine', {}).then(
             () => assert.fail('a server stopped answers nothing'),
             error => equal(error.message, 'The language server of Arg2P is not running.'),
         );
+    });
+
+    it('should start afresh when the server running does not stop, disposing of its client', async function () {
+        const log: string[] = [];
+        const clients = [client(log, 'stuck', true, true), client(log, 'java')];
+        const server = new LanguageServer(
+            () => clients.shift() as unknown as Client,
+            () => undefined,
+        );
+        await server.start();
+        await server.restart();
+        deepEqual(log, ['start stuck', 'stop stuck', 'dispose stuck', 'start java']);
+        equal(await server.request('arg2p/engine', {}), 'java: arg2p/engine');
     });
 
     it('should start and stop one at a time', async function () {
