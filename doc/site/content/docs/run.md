@@ -153,6 +153,11 @@ browse its solutions, their argument graphs and stages, the drawing of an abstra
 again. Everywhere, its result links the [web playground](https://tuprolog.github.io/arg2p-kt-web/) with the same
 theory, query and flags.
 
+Where the MCP server does not run but the assistant runs code (claude.ai with code execution), the skills install the
+Python package and make the page of a run with `arg2p page` (see [Python]({{% ref "/docs/api/python#the-recorded-page" %}})):
+an HTML file showing the solutions, their graphs, the flags in effect and the theory, which claude.ai shows in the
+conversation. It shows the run as it was solved: another query is solved again, in a new page.
+
 ### The plugin and its skills
 
 The plugin `arg2p` bundles the MCP server with **skills**, the know-how of Arg2P for an assistant: `arg2p-formalize`

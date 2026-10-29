@@ -6,74 +6,7 @@
         <meta name="color-scheme" content="light dark" />
         <title>Arg2P</title>
         <style>
-            /* The colours of the components (--arg2p-*): those of the host where it gives them, else the playground's */
-            :root {
-                --arg2p-surface: var(--color-background-primary, #ffffff);
-                --arg2p-surface-2: var(--color-background-secondary, #f7f7f8);
-                --arg2p-hover: #eef6f6;
-                --arg2p-border: var(--color-border-primary, #dedfe2);
-                --arg2p-text: var(--color-text-primary, #212529);
-                --arg2p-muted: var(--color-text-secondary, #6c727a);
-                --arg2p-accent: #008080;
-                --arg2p-error: #b00020;
-                --arg2p-atom: #800000;
-                --arg2p-functor: #6a1b9a;
-                --arg2p-comment: #808080;
-                --arg2p-font: var(--font-sans, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
-                --arg2p-mono: var(--font-mono, ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace);
-                color-scheme: light;
-            }
-            :root[data-theme='dark'] {
-                --arg2p-surface: var(--color-background-primary, #1f2125);
-                --arg2p-surface-2: var(--color-background-secondary, #25282d);
-                --arg2p-hover: #26353a;
-                --arg2p-border: var(--color-border-primary, #383c43);
-                --arg2p-text: var(--color-text-primary, #e3e5e8);
-                --arg2p-muted: var(--color-text-secondary, #9aa0a8);
-                --arg2p-accent: #3fb0ac;
-                --arg2p-error: #ff6b81;
-                --arg2p-atom: #f08c7a;
-                --arg2p-functor: #c792ea;
-                --arg2p-comment: #8b9096;
-                color-scheme: dark;
-            }
-            html,
-            body {
-                margin: 0;
-                background: var(--arg2p-surface);
-            }
-            /* the solver, in a frame of its height (the whole screen, in full screen); narrow, as high as it is long */
-            arg2p-solver {
-                height: 560px;
-                padding: 10px 12px;
-            }
-            @media (max-width: 640px) {
-                arg2p-solver {
-                    height: auto;
-                }
-            }
-            :root[data-display-mode='fullscreen'] arg2p-solver {
-                height: 100vh;
-            }
-            .loading {
-                padding: 16px;
-                color: var(--arg2p-muted);
-                font-family: var(--arg2p-font);
-                font-size: 14px;
-            }
-            /* the actions of the page, at the end of the bar of the tabs */
-            [slot='actions'] {
-                font: inherit;
-                color: var(--arg2p-accent);
-                background: none;
-                border: none;
-                border-radius: 6px;
-                padding: 3px 10px;
-                cursor: pointer;
-            }
-            [slot='actions']:hover {
-                background: var(--arg2p-hover);
-            }
+{{style}}
         </style>
     </head>
     <body>

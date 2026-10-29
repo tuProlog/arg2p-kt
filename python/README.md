@@ -39,6 +39,13 @@ plugin with the skills of Arg2P.
 
 <!-- mcp-name: io.github.tuProlog/arg2p -->
 
+## The recorded page
+
+`arg2p page theory.pl -q "flies(X)"` writes an HTML page showing the query solved on the theory, with the solver of
+the playground: the solutions, their argument graphs, the flags in effect and the theory (`arg2p.page(...)` gives the
+HTML). It solves nothing, and so opens where no solver runs, as in the sandboxes of AI assistants; see
+[the recorded page](https://tuprolog.github.io/arg2p-kt/docs/api/python/#the-recorded-page).
+
 ## Building
 
 The package is a project of the Gradle build of Arg2P, which gives it its jars, its version and its Java runtime:
