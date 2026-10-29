@@ -155,7 +155,6 @@
     "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "4.1.0",
     "esbuild": "0.28.2",
-    "lit": "3.3.3",
     "typescript": "7.0.2",
     "vitest": "5.0.5",
     "vscode-jsonrpc": "10.0.0",
