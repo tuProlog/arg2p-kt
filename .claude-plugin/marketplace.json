@@ -12,7 +12,7 @@
       "name": "arg2p",
       "source": "./plugins/arg2p",
       "description": "Structured argumentation with Arg2P: formalize problems as theories, solve them, and explore the results in its solver.",
-      "version": "0.21.0",
+      "version": "0.21.1",
       "category": "reasoning",
       "keywords": [
         "argumentation",

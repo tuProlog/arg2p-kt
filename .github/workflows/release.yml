@@ -8,7 +8,22 @@ on:
         value: ${{ jobs.release.outputs.version }}
 
 jobs:
+  python:
+    # The Python of the workflows installs what the package needs, from wheels alone: checked first, in seconds, so that
+    # a Python they have none for yet (as an update Renovate proposes) fails here, before the tests take any runner
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.14'
+      - name: Resolve the dependencies of the package
+        run: |
+          python -c "import tomllib; print('\n'.join(tomllib.load(open('python/pyproject.toml', 'rb'))['project']['dependencies']))" > dependencies.txt
+          python -m pip install --dry-run --only-binary=:all: -r dependencies.txt
   lint:
+    needs:
+      - python
     runs-on: ubuntu-26.04
     steps:
       - name: Checkout
@@ -23,6 +38,8 @@ jobs:
   test:
     # Renovate merges on master were already tested on their (up-to-date) PR branch
     if: github.ref_name != 'master' || github.event.commits[0].author.name != 'renovate[bot]'
+    needs:
+      - python
     uses: ./.github/workflows/test.yml
   release:
     # Run even when tests were skipped (see above), but never after a failure
@@ -33,6 +50,7 @@ jobs:
       packages: write
       id-token: write  # Required for OIDC (trusted publishing) on npmjs
     needs:
+      - python
       - lint
       - test
     runs-on: ubuntu-26.04
