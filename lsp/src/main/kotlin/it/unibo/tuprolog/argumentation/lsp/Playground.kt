@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.lsp
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.Deflater
-import java.util.zip.Inflater
 
 /**
  * Links to the web playground opening a theory, as the playground shares them: the JSON array `[2, flags, theory,
@@ -16,8 +15,8 @@ internal object Playground {
 
     private const val VERSION = 2
 
-    // The dictionary of the version 2 of the links of the playground, byte for byte: never to be edited
-    private val DICTIONARY =
+    /** The dictionary of the version 2 of the links of the playground, byte for byte: never to be edited */
+    val DICTIONARY =
         listOf(
             "[2,\"",
             "buildLabelSets(In, Out, Und)",
@@ -61,25 +60,5 @@ internal object Playground {
                 deflater.end()
             }
         return URL + "?s=" + Base64.getUrlEncoder().withoutPadding().encodeToString(packed)
-    }
-
-    /** The state [packed] in the parameter `s` of a link, as its JSON (`[2, flags, theory, query]`) */
-    fun state(packed: String): String {
-        val inflater = Inflater(true)
-        return try {
-            inflater.setInput(Base64.getUrlDecoder().decode(packed))
-            // a raw stream, with no header asking for its dictionary
-            inflater.setDictionary(DICTIONARY)
-            val bytes = ByteArrayOutputStream()
-            val buffer = ByteArray(4096)
-            while (!inflater.finished()) {
-                val read = inflater.inflate(buffer)
-                if (read == 0 && inflater.needsInput()) error("A link of the playground cut short")
-                bytes.write(buffer, 0, read)
-            }
-            bytes.toString(Charsets.UTF_8)
-        } finally {
-            inflater.end()
-        }
     }
 }

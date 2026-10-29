@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.lsp
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.PipedInputStream
@@ -15,25 +14,30 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** The MCP server as an assistant speaks to it: one JSON-RPC message a line */
 class McpServerTest {
-    // The answers of the server to [messages], by their id, once the client closed its input
-    private fun session(vararg messages: String): Map<Int, JsonObject> {
-        val output = ByteArrayOutputStream()
-        McpServer(ByteArrayInputStream(messages.joinToString("\n").toByteArray()), output).run()
-        return output
-            .toString(Charsets.UTF_8)
-            .lines()
-            .filter { it.isNotBlank() }
-            .map { JsonParser.parseString(it).asJsonObject }
-            .associateBy { it.get("id").takeUnless { id -> id.isJsonNull }?.asInt ?: 0 }
+    // The answers of the server to [messages], by their id (0 for none), once it answered each of them that it answers;
+    // the client closes its input then
+    private fun session(vararg messages: String): Map<Int, JsonObject> =
+        Live().use { live ->
+            messages.forEach(live::send)
+            List(messages.count(::answered)) { assertNotNull(live.answer(), "An answer missing") }
+                .associateBy { it.get("id").takeUnless { id -> id.isJsonNull }?.asInt ?: 0 }
+        }
+
+    // Whether the server answers [message]: all but the notifications (a method, and no id) and the responses (no method)
+    private fun answered(message: String): Boolean {
+        val request = runCatching { JsonParser.parseString(message) }.getOrNull() as? JsonObject ?: return true
+        return request.has("method") && request.get("id")?.isJsonNull == false
     }
 
     // A server running, its answers read as they come
     private class Live : AutoCloseable {
         private val client = PipedOutputStream()
         private val answers = LinkedBlockingQueue<JsonObject>()
+        private val solving = Solving("test")
         val server =
             McpServer(
                 PipedInputStream(client, 1 shl 20),
@@ -49,6 +53,7 @@ class McpServerTest {
                         }
                     }
                 },
+                solving,
             )
         private val running = Thread { server.run() }.apply { start() }
 
@@ -63,8 +68,8 @@ class McpServerTest {
         // Whether the server ends solving within [seconds]
         fun idle(seconds: Long = 10): Boolean {
             val until = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds)
-            while (server.busy > 0 && System.nanoTime() < until) Thread.sleep(50)
-            return server.busy == 0
+            while (solving.busy > 0 && System.nanoTime() < until) Thread.sleep(50)
+            return solving.busy == 0
         }
 
         override fun close() {
@@ -80,6 +85,19 @@ class McpServerTest {
     ) = """{"jsonrpc":"2.0","id":$id,"method":"tools/call","params":{"name":"$tool","arguments":$arguments}}"""
 
     private fun ping(id: Int) = """{"jsonrpc":"2.0","id":$id,"method":"ping"}"""
+
+    private fun cancelled(id: Int) = """{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":$id}}"""
+
+    // A request of the page of [session] to its engine, through the tool engine
+    private fun engine(
+        id: Int,
+        session: String,
+        request: String,
+        timeoutSeconds: Int? = null,
+    ) = call(id, "engine", """{"session":"$session","request":$request${timeoutSeconds?.let { ",\"timeoutSeconds\":$it" } ?: ""}}""")
+
+    // The answers of the engine in [answer], an answer of the tool engine
+    private fun answersOf(answer: JsonObject) = answer.content().getAsJsonArray("answers").map { it.asJsonObject }
 
     private fun initialize(capabilities: String) =
         """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":$capabilities}}"""
@@ -159,7 +177,7 @@ class McpServerTest {
                 .getAsJsonArray("contents")[0]
                 .asJsonObject
         val html = page.get("text").asString
-        assertTrue(html.contains("@tuprolog/arg2p-ui@${McpApp.UI_VERSION}/solver?bundle"))
+        assertTrue(html.contains("@tuprolog/arg2p-ui@${Pages.UI_VERSION}/solver?bundle"))
         assertTrue(html.contains("const DEFAULT_QUERY = \"${Solvers.DEFAULT_QUERY}\";"))
         assertFalse(html.contains("{{"))
         assertEquals(
@@ -238,11 +256,15 @@ class McpServerTest {
                 call(7, "solve", """{"theory":{"rules":[]}}"""),
                 call(8, "engine", """{"session":"page","request":{"type":"jump"}}"""),
                 ping(9),
+                // numbers that are not
+                call(10, "solve", """{"theory":"a.","timeoutSeconds":NaN}"""),
+                call(11, "solve", """{"theory":"a.","timeoutSeconds":1e99999999999}"""),
             )
         (1..8).forEach { id -> assertTrue(answers.getValue(id).isError(), "$id: ${answers.getValue(id)}") }
         assertTrue(answers.getValue(1).text().contains("text is missing"))
         assertTrue(answers.getValue(3).text().contains("timeoutSeconds is not an integer"))
         assertNotNull(answers.getValue(9).result())
+        (10..11).forEach { id -> assertTrue(answers.getValue(id).text().contains("timeoutSeconds is not an integer"), "$id") }
     }
 
     @Test
@@ -314,10 +336,24 @@ class McpServerTest {
             live.send(ping(2))
             assertEquals(2, assertNotNull(live.answer(10)).get("id").asInt)
             // the client gives the query up: it stops, unanswered
-            live.send("""{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":1}}""")
+            live.send(cancelled(1))
             assertTrue(live.idle())
             assertNull(live.answer(1))
         }
+    }
+
+    @Test
+    fun theToolsUnderWayStopOnceTheClientIsGone() {
+        val live = Live()
+        live.send(call(1, "solve", """{"theory":"loop :- loop.","query":"loop","timeoutSeconds":600}"""))
+        // read, as the messages before it
+        live.send(ping(2))
+        assertEquals(2, assertNotNull(live.answer(10)).get("id").asInt)
+        val closed = System.nanoTime()
+        live.close()
+        assertTrue(System.nanoTime() - closed < TimeUnit.SECONDS.toNanos(10))
+        assertTrue(live.idle())
+        assertNull(live.answer(1))
     }
 
     @Test
@@ -342,11 +378,6 @@ class McpServerTest {
 
     @Test
     fun eachSolverShownSolvesOnTheEngineOfItsOwn() {
-        fun engine(
-            id: Int,
-            session: String,
-            request: String,
-        ) = call(id, "engine", """{"session":"$session","request":$request}""")
         val answers =
             session(
                 engine(1, "one", """{"type":"solve","id":1,"theory":"$tweety","query":"flies(tweety)","flags":"queryMode."}"""),
@@ -357,12 +388,7 @@ class McpServerTest {
                 engine(6, "three", """{"type":"next","id":1}"""),
             )
 
-        fun answersOf(id: Int) =
-            answers
-                .getValue(id)
-                .content()
-                .getAsJsonArray("answers")
-                .map { it.asJsonObject }
+        fun answersOf(id: Int) = answersOf(answers.getValue(id))
         assertEquals("started", answersOf(1).single().get("type").asString)
         val one = answersOf(3).single { it.get("type").asString == "solution" }
         assertEquals("flies(tweety)", one.getAsJsonObject("solution").get("query").asString)
@@ -372,5 +398,43 @@ class McpServerTest {
         assertEquals(7, checked.get("reqId").asInt)
         assertEquals(1, checked.getAsJsonObject("problem").get("line").asInt)
         assertEquals("failed", answersOf(6).single().get("type").asString)
+    }
+
+    @Test
+    fun theSolverShownSolvesWithinTheTimeoutOfExplore() {
+        val explored = session(initialize(apps), call(2, "explore", """{"theory":"$tweety","timeoutSeconds":1}""")).getValue(2)
+        assertEquals(1, explored.content().get("timeoutSeconds").asInt)
+        assertEquals(
+            McpServer.DEFAULT_TIMEOUT,
+            session(call(1, "explore", """{"theory":"$tweety"}"""))
+                .getValue(1)
+                .content()
+                .get("timeoutSeconds")
+                .asLong,
+        )
+        // the page asks with the timeout of explore: its query out of time fails, saying so
+        val answers =
+            session(
+                engine(1, "page", """{"type":"solve","id":1,"theory":"loop :- loop.","query":"loop","flags":""}""", timeoutSeconds = 1),
+                engine(2, "page", """{"type":"next","id":1}""", timeoutSeconds = 1),
+            )
+        assertEquals("started", answersOf(answers.getValue(1)).single().get("type").asString)
+        val failed = answersOf(answers.getValue(2)).single()
+        assertEquals("failed", failed.get("type").asString)
+        assertEquals(TimedOut(1.seconds).message, failed.getAsJsonObject("error").get("message").asString)
+    }
+
+    @Test
+    fun aRequestOfTheSolverShownGivenUpStops() {
+        Live().use { live ->
+            live.send(engine(1, "page", """{"type":"solve","id":1,"theory":"loop :- loop.","query":"loop","flags":""}"""))
+            assertEquals("started", answersOf(assertNotNull(live.answer())).single().get("type").asString)
+            live.send(engine(2, "page", """{"type":"next","id":1}"""))
+            live.send(ping(3))
+            assertEquals(3, assertNotNull(live.answer(10)).get("id").asInt)
+            live.send(cancelled(2))
+            assertTrue(live.idle())
+            assertNull(live.answer(1))
+        }
     }
 }

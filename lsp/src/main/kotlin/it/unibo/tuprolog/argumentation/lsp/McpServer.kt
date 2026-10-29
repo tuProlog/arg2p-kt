@@ -16,9 +16,7 @@ import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.PrintStream
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -29,45 +27,39 @@ import kotlin.time.Duration.Companion.seconds
  * notifications/cancelled stops the request it names. A tool that fails (a theory that does not parse, a profile
  * refusing it, arguments it does not take, a query taking longer than its timeout, which stops it) answers with its
  * error, as MCP tools do, rather than failing the request; a message that is not a request of the server, or not well
- * formed, is answered with the error of JSON-RPC.
+ * formed, is answered with the error of JSON-RPC. Once the client closes the input, the tools under way are stopped,
+ * unanswered, and the server ends.
  *
  * The theories are written by an AI model: they are solved within their timeout.
  *
  * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the client declares it
  * shows them, and as a link to the web playground everywhere.
+ *
+ * The tools are solved on the threads of [solving], which the server closes once its client is gone.
  */
 internal class McpServer(
     input: InputStream,
     output: OutputStream,
+    private val solving: Solving = Solving("arg2p-mcp"),
 ) {
-    // What a tool found, and the text telling it (its JSON otherwise)
+    // What a tool found, and the text telling it (its JSON otherwise); whether it is what it found until it ran out of
+    // time, which it answers with rather than failing
     private class Found(
         val content: Map<String, Any?>,
         val text: String = json.toJson(content),
+        val outOfTime: Boolean = false,
     )
-
-    // A tool that ran out of time
-    private class TimedOut(
-        seconds: Long,
-    ) : Exception("No answer within $seconds seconds: the theory may not terminate, or need a larger timeoutSeconds.")
 
     private val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
     private val writer = PrintStream(output, true, Charsets.UTF_8)
-    private val solving = Solving("arg2p-mcp")
-    private val pages = PageEngine(solving, limit = DEFAULT_TIMEOUT.seconds)
+    private val pages = PageEngine(solving)
 
-    // the tools under way, by the id of their request: notifications/cancelled stops them
+    // the tools under way, by the id of their request: notifications/cancelled stops them, as the end of the input does
     private val requests = ConcurrentHashMap<JsonElement, CompletableFuture<*>>()
-
-    // their answers, until written
-    private val answering = ConcurrentHashMap.newKeySet<CompletableFuture<*>>()
 
     // whether the client shows MCP Apps, as it declares in initialize
     @Volatile
     private var apps = false
-
-    /** How many tools are being solved */
-    val busy: Int get() = solving.busy
 
     /** Answers the messages of the client until it closes the input */
     fun run() {
@@ -83,8 +75,8 @@ internal class McpServer(
                 }
             receive(message)
         }
-        // the client is gone: what it asked is answered, within its timeout
-        answering.toList().forEach { runCatching { it.get(MAX_TIMEOUT + 1, TimeUnit.SECONDS) } }
+        // the client is gone: what it asked is no longer answered, and stops at once
+        requests.values.forEach { it.cancel(true) }
         pages.close()
         solving.close()
     }
@@ -162,8 +154,8 @@ internal class McpServer(
         }
     }
 
-    // A tool called: its arguments read at once, it is solved on a thread of its own and answered from there, as MCP
-    // gives the result of a tool (its JSON as text and as structured content), or its error
+    // A tool called: its arguments read at once, it is solved on a thread of its own within its timeout and answered from
+    // there, as MCP gives the result of a tool (its JSON as text and as structured content), or its error
     private fun call(
         id: JsonElement,
         params: JsonObject,
@@ -172,50 +164,39 @@ internal class McpServer(
         val arguments = params.obj("arguments") ?: JsonObject()
         val work =
             try {
+                val timeout = (arguments.integer("timeoutSeconds") ?: DEFAULT_TIMEOUT).coerceIn(1, MAX_TIMEOUT)
                 if (name == "engine") {
                     val session = arguments.requiredText("session")
                     val request = arguments.obj("request") ?: throw InvalidParams("request is missing")
-                    pages.handle(session, request).handling { answers, failure -> Found(mapOf("answers" to (answers ?: throw failure!!))) }
+                    // the page of explore asks within the timeout explore was given
+                    pages.handle(session, request, timeout.seconds).handling { answers, failure ->
+                        Found(mapOf("answers" to (answers ?: throw failure!!)))
+                    }
                 } else {
-                    val tool = toolOf(name, arguments)
-                    val timeout = (arguments.integer("timeoutSeconds") ?: DEFAULT_TIMEOUT).coerceIn(1, MAX_TIMEOUT)
-                    solving.submit { timed(timeout, tool) }
+                    val tool = toolOf(name, arguments, timeout)
+                    solving.submit { Deadline.timed(timeout.seconds, Found::outOfTime, tool) }
                 }
             } catch (failure: InvalidParams) {
                 if (name !in TOOL_NAMES) throw InvalidParams("Unknown tool: $name")
                 return respond(id, failure("Invalid arguments of $name: ${failure.message}"))
             }
         requests[id] = work
-        val answered =
-            work.handle { found, failure ->
-                // a request the client cancelled is not answered
-                if (!work.isCancelled) {
-                    val cause = (failure as? CompletionException)?.cause ?: failure
-                    respond(id, if (cause == null) result(found!!) else failure(cause.message ?: cause.toString()))
-                }
-                requests.remove(id, work)
+        work.handle { found, failure ->
+            // a request the client cancelled is not answered
+            if (!work.isCancelled) {
+                val cause = failure?.unwrapped()
+                respond(id, if (cause == null) result(found!!) else failure(cause.message ?: cause.toString()))
             }
-        answering += answered
-        answered.whenComplete { _, _ -> answering -= answered }
+            requests.remove(id, work)
+        }
     }
 
-    // [tool] within [timeout] seconds: an error if it runs out of time, unless it answers with what it found so far
-    private fun timed(
-        timeout: Long,
-        tool: (Deadline) -> Found,
-    ): Found =
-        Deadline.within(timeout.seconds) { deadline ->
-            try {
-                tool(deadline)
-            } catch (failure: Exception) {
-                throw if (deadline.expired) TimedOut(timeout) else failure
-            }
-        }
-
-    // The work of the tool [name] on [arguments], read at once: an InvalidParams if they are not those it takes
+    // The work of the tool [name] on [arguments], read at once (an InvalidParams if they are not those it takes), run
+    // within [timeout] seconds: a TimedOut past it, unless it answers with what it found until then (see Deadline.timed)
     private fun toolOf(
         name: String,
         arguments: JsonObject,
+        timeout: Long,
     ): (Deadline) -> Found =
         when (name) {
             "solve" -> {
@@ -253,7 +234,7 @@ internal class McpServer(
                 val theory = arguments.requiredText("theory")
                 val query = arguments.text("query") ?: Solvers.DEFAULT_QUERY
                 val flags = flagsOf(arguments)
-                tool { explore(theory, query, flags) }
+                tool { explore(theory, query, flags, timeout) }
             }
             else -> throw InvalidParams("Unknown tool: $name")
         }
@@ -289,19 +270,18 @@ internal class McpServer(
                     }
             }
         }
-        // nothing found in time: an error (see timed)
+        // nothing found in time: an error (see Deadline.timed)
         if (deadline.expired && found.isEmpty()) error("No solution in time")
         val content =
             mapOf(
                 "profile" to profile,
-                "solutions" to
-                    found.map { mapOf("result" to it.result, "query" to it.query, "bindings" to BindingData.of(it), "error" to it.error) },
+                "solutions" to found.map(SolvedData::of),
                 "more" to (deadline.expired || solutions.hasNext()),
                 "timedOut" to deadline.expired,
                 "graph" to graph,
             )
         return if (deadline.expired) {
-            Found(content, "Out of time: the solutions found until then. " + json.toJson(content))
+            Found(content, "Out of time: the solutions found until then. " + json.toJson(content), outOfTime = true)
         } else {
             Found(content)
         }
@@ -322,11 +302,13 @@ internal class McpServer(
         )
     }
 
-    // What the solver is shown with: the theory, if it parses, its query, its flags, and the link to the playground
+    // What the solver is shown with: the theory, if it parses, its query, its flags, the link to the playground, and how
+    // long each request of the page waits, [timeout] seconds (see call)
     private fun explore(
         theory: String,
         query: String,
         flags: String,
+        timeout: Long,
     ): Found {
         parsing(theory)
         val playground = Playground.link(theory, query, flags)
@@ -337,6 +319,7 @@ internal class McpServer(
                 "flags" to flags,
                 "profile" to Solvers.profileOf(Solvers.of(theory, Flags.parse(flags))),
                 "playground" to playground,
+                "timeoutSeconds" to timeout,
             )
         val text =
             if (apps) {
@@ -447,6 +430,8 @@ internal class McpServer(
                 "eager|naive|stage|cf2|stage2|...), statementLabellingMode(statement), queryMode, graphBuildMode(...), " +
                 "... Default: grounded semantics, standard statement labelling, query mode."
         private const val TIMEOUT = "How long to wait, in seconds (default $DEFAULT_TIMEOUT, at most $MAX_TIMEOUT)"
+        private const val RUN_TIMEOUT =
+            "How long each run of the solver shown waits, in seconds (default $DEFAULT_TIMEOUT, at most $MAX_TIMEOUT)"
 
         private val INSTRUCTIONS =
             "Arg2P solves structured argumentation theories (ASPIC+, ABA, abstract frameworks) in Prolog. Use `check` to " +
@@ -548,7 +533,7 @@ internal class McpServer(
                             "theory" to text(THEORY),
                             "query" to text("The query run first (default: ${Solvers.DEFAULT_QUERY})"),
                             "flags" to text(FLAGS),
-                            "timeoutSeconds" to integer(TIMEOUT),
+                            "timeoutSeconds" to integer(RUN_TIMEOUT),
                             required = listOf("theory"),
                         ),
                 ),
@@ -578,6 +563,7 @@ internal class McpServer(
                             mapOf(
                                 "session" to text("The solver asking"),
                                 "request" to mapOf("type" to "object", "description" to "A message of the solver to its engine"),
+                                "timeoutSeconds" to integer("The timeoutSeconds of explore, which showed the solver"),
                             ),
                         "required" to listOf("session", "request"),
                     ),

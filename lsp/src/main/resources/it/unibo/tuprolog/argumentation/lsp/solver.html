@@ -94,6 +94,8 @@
             // --- the engine: the tool engine of the server --------------------------------------------------------
 
             const session = crypto.randomUUID();
+            // how long each request waits, in seconds: the timeoutSeconds explore was given (the server's default before)
+            let timeoutSeconds;
             // the query solved when none is given, and the graph of none, as the server has them
             const DEFAULT_QUERY = {{query}};
             const EMPTY_GRAPH = {{emptyGraph}};
@@ -117,7 +119,8 @@
             }
 
             function call(message) {
-                return request('tools/call', { name: 'engine', arguments: { session, request: message } }).then(
+                const limit = timeoutSeconds === undefined ? {} : { timeoutSeconds };
+                return request('tools/call', { name: 'engine', arguments: { session, request: message, ...limit } }).then(
                     result => (result?.isError ? unanswered(message, result.content?.[0]?.text ?? 'The engine failed.') : (result?.structuredContent?.answers ?? [])),
                     error => unanswered(message, error.message ?? String(error)),
                 );
@@ -154,10 +157,11 @@
 
             /**
              * What the server tells of it, solved at once: the theory, the query and the flags it is solved with (the
-             * defaults of the server for those the assistant left out), and its link to the playground
+             * defaults of the server for those the assistant left out), how long it waits, and its link to the playground
              */
             function opened(result) {
                 if (result === null) return;
+                timeoutSeconds = result.timeoutSeconds ?? timeoutSeconds;
                 solver.theory = result.theory ?? solver.theory;
                 solver.query = result.query ?? solver.query;
                 solver.flags = result.flags ?? solver.flags;
