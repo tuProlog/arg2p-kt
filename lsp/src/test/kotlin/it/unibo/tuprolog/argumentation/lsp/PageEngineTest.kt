@@ -194,7 +194,7 @@ class PageEngineTest {
                 .asString,
         )
         assertEquals(
-            PageEngine.NO_LONGER_RUNNING,
+            Resolution.NO_LONGER_RUNNING,
             next(session = "three")
                 .of("failed")
                 .getAsJsonObject("error")
@@ -218,7 +218,7 @@ class PageEngineTest {
         Thread.sleep(500)
         assertTrue(ask("""{"type":"stop"}""").isEmpty())
         val stopped = answered(endless).of("failed").getAsJsonObject("error")
-        assertEquals(PageEngine.STOPPED, stopped.get("message").asString)
+        assertEquals(Resolution.STOPPED, stopped.get("message").asString)
         assertIdle()
         // the page is still there: it solves its next query
         solve(tweety, "buildLabelSets", id = 2)

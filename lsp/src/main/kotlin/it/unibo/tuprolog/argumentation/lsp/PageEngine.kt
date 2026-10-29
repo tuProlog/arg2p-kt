@@ -5,7 +5,6 @@ import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -34,16 +33,15 @@ import kotlin.time.Duration.Companion.minutes
  * stop or a close stops, answered with a failure. A session idle for [idle] is forgotten, the least recently used past
  * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past [limit], if there is one.
  *
- * A query solved with `parallel` is solved by the cluster of [federation] (on the threads of the server, and on the
- * sites it is federated with), on the same theory with the same flags, as by the solver of the page otherwise; with no
- * federation, by the solver of the page. The cluster keeps the graph of the last stage of a resolution alone: the
- * stages before it cannot be read back.
+ * A query solved with `parallel` is resolved by [parallel] (the cluster of the federation of the language server, on its
+ * threads and on the sites it is federated with, see [Resolution.Federated]), on the same theory with the same flags,
+ * as by the solver of the page otherwise; with none, by the solver of the page.
  */
 internal class PageEngine(
     private val solving: Solving,
     private val idle: Duration = IDLE,
     private val limit: Duration = Duration.INFINITE,
-    private val federation: Federation? = null,
+    private val parallel: Resolution.Factory? = null,
 ) : AutoCloseable {
     // A query of a page, solved one solution at a time (one request at a time: a solver has no lock of its own),
     // what it prints kept until it is told
@@ -107,14 +105,14 @@ internal class PageEngine(
                 val theory = request.text("theory") ?: ""
                 val query = request.text("query") ?: ""
                 val flags = request.text("flags") ?: ""
-                val parallel = request.flag("parallel") ?: false
-                solving(page, id, replacing = true) { start(page, id, theory, query, flags, parallel) }
+                val inParallel = request.flag("parallel") ?: false
+                solving(page, id, replacing = true) { start(page, id, theory, query, flags, inParallel) }
             }
             "next" -> {
                 val id = request.requiredInteger("id")
                 solving(page, id, replacing = false) {
                     runOf(page, id)?.let(::next)
-                        ?: listOf(failed(id, ErrorData("Error", NO_LONGER_RUNNING)))
+                        ?: listOf(failed(id, ErrorData("Error", Resolution.NO_LONGER_RUNNING)))
                 }
             }
             "graphAt" -> {
@@ -178,7 +176,7 @@ internal class PageEngine(
                         try {
                             request.get()
                         } catch (_: InterruptedException) {
-                            throw CancellationException(STOPPED)
+                            throw CancellationException(Resolution.STOPPED)
                         } catch (_: Exception) {
                             // its failure is its own
                         }
@@ -189,9 +187,9 @@ internal class PageEngine(
         // the server giving up the request (its client cancelled it) stops it too
         return solved.handling { answers, failure ->
             synchronized(sessions) { page.solving.remove(solved) }
-            when (val cause = (failure as? CompletionException)?.cause ?: failure) {
+            when (val cause = failure?.unwrapped()) {
                 null -> answers.orEmpty()
-                is CancellationException -> listOf(failed(id, ErrorData("Stopped", STOPPED)))
+                is CancellationException -> listOf(failed(id, ErrorData("Stopped", Resolution.STOPPED)))
                 else -> listOf(failed(id, ErrorData("Error", cause.message ?: cause.toString())))
             }
         }
@@ -201,15 +199,15 @@ internal class PageEngine(
     private fun <T> submit(work: () -> T): CompletableFuture<T> =
         solving.submit { if (limit.isInfinite()) work() else Deadline.within(limit) { work() } }
 
-    // Starts solving the query of [page], by the cluster of the federation if [parallel]: its run replaces the one before,
-    // only if it is still the request of the page
+    // Starts solving the query of [page], resolved in parallel if [inParallel]: its run replaces the one before, only if
+    // it is still the request of the page
     private fun start(
         page: Session,
         id: Long,
         theory: String,
         query: String,
         flags: String,
-        parallel: Boolean,
+        inParallel: Boolean,
     ): List<Answer> {
         synchronized(sessions) { page.run = null }
         if (query.isBlank()) return listOf(failed(id, ErrorData("Query error", "Query is a mandatory field.")))
@@ -229,7 +227,7 @@ internal class PageEngine(
             // the query read (where it does not parse), its solutions computed only as they are asked for
             val solutions = solver.solve(written)
             val resolution =
-                federation?.takeIf { parallel }?.resolve(theory, parsed, written, profile, print)
+                parallel?.takeIf { inParallel }?.resolve(theory, parsed, written, profile, print)
                     ?: Resolution.Local(solver, profile, solutions)
             val run = Run(id, resolution, printed)
             synchronized(sessions) { if (!Thread.currentThread().isInterrupted) page.run = run }
@@ -279,12 +277,6 @@ internal class PageEngine(
 
         /** How long a page is kept without asking anything */
         val IDLE = 30.minutes
-
-        /** What a request of a query no longer running fails with */
-        const val NO_LONGER_RUNNING = "This query is no longer running."
-
-        /** What a request that was stopped fails with */
-        const val STOPPED = "The query was stopped."
 
         private fun answer(
             type: String,

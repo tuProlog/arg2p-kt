@@ -27,8 +27,8 @@ object RecordedPage {
     /** How many solutions are recorded by default */
     const val DEFAULT_SOLUTIONS = 20
 
-    /** How long the run is recorded by default, in seconds */
-    const val DEFAULT_TIMEOUT = 60
+    /** How long the run is recorded by default, in seconds: as long as a tool of the MCP server runs by default */
+    const val DEFAULT_TIMEOUT = McpServer.DEFAULT_TIMEOUT.toInt()
 
     // The page the run is recorded as, and its query
     private const val SESSION = "recorded"
@@ -54,7 +54,7 @@ object RecordedPage {
                 "ui" to Pages.UI_VERSION,
                 "title" to escaped("Arg2P · $query"),
                 "playground" to escaped(Playground.link(theory, query, flags)),
-                "recording" to embedded(recording),
+                "recording" to Pages.script(recording),
             ),
         )
     }
@@ -124,15 +124,6 @@ object RecordedPage {
                 )
             }
         }
-
-    // [recording] as JSON within a script of the page: no <, > or & in it, which could close the script (</script>) or
-    // open a comment (<!--); escaped in the texts of the JSON, the only place they can be, they read the same
-    private fun embedded(recording: Recording): String =
-        json
-            .toJson(recording)
-            .replace("<", "\\u003c")
-            .replace(">", "\\u003e")
-            .replace("&", "\\u0026")
 
     // [text] within the text or an attribute of the page
     private fun escaped(text: String): String =

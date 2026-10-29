@@ -112,6 +112,19 @@ internal data class ProblemData(
     }
 }
 
+/** A solution as the tool solve of the MCP server gives it: with no graph, the tool giving the one of the last yes alone */
+internal data class SolvedData(
+    val result: String,
+    val query: String,
+    val bindings: List<BindingData>,
+    val error: String?,
+) {
+    companion object {
+        fun of(solution: Solution) = SolvedData(solution.result, solution.query, BindingData.of(solution), solution.error)
+    }
+}
+
+/** A solution as the pages read it: the [SolvedData] of the solution, with the graph of its stage */
 internal data class SolutionData(
     val result: String,
     val query: String,
@@ -126,7 +139,7 @@ internal data class SolutionData(
             solution: Solution,
             graph: GraphData,
             branch: Int,
-        ) = SolutionData(solution.result, solution.query, BindingData.of(solution), solution.error, graph, branch)
+        ) = SolvedData.of(solution).let { SolutionData(it.result, it.query, it.bindings, it.error, graph, branch) }
 
         /** A solution that could not be computed, for [error] */
         fun halted(error: Exception) = SolutionData("halt", "", emptyList(), error.message ?: error.toString(), GraphData.EMPTY, 0)

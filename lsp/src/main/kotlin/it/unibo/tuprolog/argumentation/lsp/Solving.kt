@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.lsp
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ThreadPoolExecutor
@@ -53,6 +54,9 @@ internal class Solving(
 /** What [handler] makes of the result of this future, or of its failure: cancelling what it makes cancels this future */
 internal fun <T, R> CompletableFuture<T>.handling(handler: (T?, Throwable?) -> R): CompletableFuture<R> =
     handle(handler).also { handled -> handled.whenComplete { _, _ -> if (handled.isCancelled) cancel(true) } }
+
+/** The failure of a future (as [handling] is given it) as its work threw it: out of the CompletionException wrapping it */
+internal fun Throwable.unwrapped(): Throwable = (this as? CompletionException)?.cause ?: this
 
 /**
  * The time limit of a work, on the thread it runs on: past it, the thread is interrupted, which stops the resolution

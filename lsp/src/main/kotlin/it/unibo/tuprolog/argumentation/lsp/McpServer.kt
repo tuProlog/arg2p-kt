@@ -16,7 +16,6 @@ import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.PrintStream
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -35,10 +34,13 @@ import kotlin.time.Duration.Companion.seconds
  *
  * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the client declares it
  * shows them, and as a link to the web playground everywhere.
+ *
+ * The tools are solved on the threads of [solving], which the server closes once its client is gone.
  */
 internal class McpServer(
     input: InputStream,
     output: OutputStream,
+    private val solving: Solving = Solving("arg2p-mcp"),
 ) {
     // What a tool found, and the text telling it (its JSON otherwise)
     private class Found(
@@ -53,7 +55,6 @@ internal class McpServer(
 
     private val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
     private val writer = PrintStream(output, true, Charsets.UTF_8)
-    private val solving = Solving("arg2p-mcp")
     private val pages = PageEngine(solving, limit = DEFAULT_TIMEOUT.seconds)
 
     // the tools under way, by the id of their request: notifications/cancelled stops them
@@ -65,9 +66,6 @@ internal class McpServer(
     // whether the client shows MCP Apps, as it declares in initialize
     @Volatile
     private var apps = false
-
-    /** How many tools are being solved */
-    val busy: Int get() = solving.busy
 
     /** Answers the messages of the client until it closes the input */
     fun run() {
@@ -190,7 +188,7 @@ internal class McpServer(
             work.handle { found, failure ->
                 // a request the client cancelled is not answered
                 if (!work.isCancelled) {
-                    val cause = (failure as? CompletionException)?.cause ?: failure
+                    val cause = failure?.unwrapped()
                     respond(id, if (cause == null) result(found!!) else failure(cause.message ?: cause.toString()))
                 }
                 requests.remove(id, work)
@@ -294,8 +292,7 @@ internal class McpServer(
         val content =
             mapOf(
                 "profile" to profile,
-                "solutions" to
-                    found.map { mapOf("result" to it.result, "query" to it.query, "bindings" to BindingData.of(it), "error" to it.error) },
+                "solutions" to found.map(SolvedData::of),
                 "more" to (deadline.expired || solutions.hasNext()),
                 "timedOut" to deadline.expired,
                 "graph" to graph,

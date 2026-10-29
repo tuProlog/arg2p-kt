@@ -34,6 +34,7 @@ class McpServerTest {
     private class Live : AutoCloseable {
         private val client = PipedOutputStream()
         private val answers = LinkedBlockingQueue<JsonObject>()
+        private val solving = Solving("test")
         val server =
             McpServer(
                 PipedInputStream(client, 1 shl 20),
@@ -49,6 +50,7 @@ class McpServerTest {
                         }
                     }
                 },
+                solving,
             )
         private val running = Thread { server.run() }.apply { start() }
 
@@ -63,8 +65,8 @@ class McpServerTest {
         // Whether the server ends solving within [seconds]
         fun idle(seconds: Long = 10): Boolean {
             val until = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds)
-            while (server.busy > 0 && System.nanoTime() < until) Thread.sleep(50)
-            return server.busy == 0
+            while (solving.busy > 0 && System.nanoTime() < until) Thread.sleep(50)
+            return solving.busy == 0
         }
 
         override fun close() {
@@ -159,7 +161,7 @@ class McpServerTest {
                 .getAsJsonArray("contents")[0]
                 .asJsonObject
         val html = page.get("text").asString
-        assertTrue(html.contains("@tuprolog/arg2p-ui@${McpApp.UI_VERSION}/solver?bundle"))
+        assertTrue(html.contains("@tuprolog/arg2p-ui@${Pages.UI_VERSION}/solver?bundle"))
         assertTrue(html.contains("const DEFAULT_QUERY = \"${Solvers.DEFAULT_QUERY}\";"))
         assertFalse(html.contains("{{"))
         assertEquals(

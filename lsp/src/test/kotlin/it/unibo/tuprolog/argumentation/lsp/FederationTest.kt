@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.lsp
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import it.unibo.tuprolog.argumentation.Arg2pException
+import java.net.ServerSocket
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -15,7 +16,6 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -28,11 +28,14 @@ class FederationTest {
     private val solving = Solving("test")
     private val federations = mutableListOf<Federation>()
 
-    private fun federation(changed: (FederationState) -> Unit = {}) =
-        Federation(solving, beaconPort, threads = 2, changed).also {
-            federations +=
-                it
-        }
+    // A federation, listening on [port] once enabled (any free one for 0)
+    private fun federation(
+        port: Int = 0,
+        changed: (FederationState) -> Unit = {},
+    ) = Federation(solving, beaconPort, threads = 2, port = port, changed = changed).also { federations += it }
+
+    // A port no one listens on
+    private fun freePort() = ServerSocket(0).use { it.localPort }
 
     @AfterTest
     fun close() {
@@ -43,7 +46,8 @@ class FederationTest {
     @Test
     fun aFederationIsEnabledWithACodeAndALinkToJoinIt() {
         val changes = AtomicInteger()
-        val federation = federation { changes.incrementAndGet() }
+        val port = freePort()
+        val federation = federation(port) { changes.incrementAndGet() }
         assertEquals(false, federation.state.enabled)
         assertNull(federation.state.code)
         assertNull(federation.state.joinUrl)
@@ -51,7 +55,6 @@ class FederationTest {
         val state = federation.state
         assertTrue(state.enabled)
         assertTrue(Regex("""\d{4}""").matches(state.code!!))
-        val port = assertNotNull(federation.listening)
         // a link on the local network, if the host has an address there
         state.joinUrl?.let { assertTrue(Regex("""http://\d+\.\d+\.\d+\.\d+:$port/""").matches(it), it) }
         assertEquals(2, state.workers)
@@ -62,7 +65,7 @@ class FederationTest {
         assertTrue(changes.get() >= 5)
         federation.enable(false)
         assertNull(federation.state.code)
-        assertNull(federation.listening)
+        assertNull(federation.state.joinUrl)
         assertEquals("desk", federation.state.name)
     }
 
@@ -86,11 +89,12 @@ class FederationTest {
 
     @Test
     fun theJoinPageIsServedOnThePortOfTheFederation() {
-        val federation = federation().apply { enable(true) }
+        val port = freePort()
+        federation(port).enable(true)
         val client = HttpClient.newHttpClient()
         val get = { path: String ->
             client.send(
-                HttpRequest.newBuilder(URI("http://127.0.0.1:${federation.listening}$path")).build(),
+                HttpRequest.newBuilder(URI("http://127.0.0.1:$port$path")).build(),
                 HttpResponse.BodyHandlers.ofString(),
             )
         }
@@ -108,7 +112,7 @@ class FederationTest {
 
     @Test
     fun aParallelQueryHasTheSolutionsOfTheSolverOfThePage() {
-        val engine = PageEngine(solving, federation = federation())
+        val engine = PageEngine(solving, parallel = federation())
         try {
             listOf("buildLabelSets(In, Out, Und)", "answerQuery(flies(tweety), In, Out, Und)").forEach { query ->
                 assertEquals(solutions(engine, tweety, query, parallel = false), solutions(engine, tweety, query, parallel = true), query)
@@ -125,7 +129,7 @@ class FederationTest {
 
     @Test
     fun theParallelQueriesOfPagesOnOtherTheoriesDoNotMix() {
-        val engine = PageEngine(solving, federation = federation())
+        val engine = PageEngine(solving, parallel = federation())
         try {
             ask(engine, solve(tweety, "buildLabelSets", parallel = true), "one")
             ask(engine, solve(conflict, "buildLabelSets", parallel = true), "two")
@@ -151,14 +155,14 @@ class FederationTest {
 
     @Test
     fun aParallelQueryIsStopped() {
-        val engine = PageEngine(solving, federation = federation())
+        val engine = PageEngine(solving, parallel = federation())
         try {
             val slow = """slow :- between(1, 100000000, _), fail.\nslow.\n"""
             val started = engine.handle("page", JsonParser.parseString(solve(slow, "slow", parallel = true)).asJsonObject)
             Thread.sleep(1_000)
             ask(engine, """{"type":"stop"}""")
             val stopped = answers(started).single { it.get("type").asString == "failed" }
-            assertEquals(PageEngine.STOPPED, stopped.getAsJsonObject("error").get("message").asString)
+            assertEquals(Resolution.STOPPED, stopped.getAsJsonObject("error").get("message").asString)
             // the next query solved as before
             assertEquals(solutions(engine, conflict, "a", parallel = false), solutions(engine, conflict, "a", parallel = true))
         } finally {
@@ -168,7 +172,7 @@ class FederationTest {
 
     @Test
     fun aWrongParallelQueryTellsWhereItDoesNotParse() {
-        val engine = PageEngine(solving, federation = federation())
+        val engine = PageEngine(solving, parallel = federation())
         try {
             val error = ask(engine, solve(tweety, "flies(", parallel = true)).single().getAsJsonObject("error")
             assertEquals("Query error", error.get("name").asString)

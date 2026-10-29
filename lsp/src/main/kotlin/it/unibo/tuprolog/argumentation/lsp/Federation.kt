@@ -20,21 +20,23 @@ import kotlin.concurrent.withLock
 /**
  * The federation of the language server with the others of the local network (the editors of other devices) and the
  * browsers joining it: a cluster of the parallel solver ([ThreadedCluster]), its workers on [threads] threads of the
- * server, which solves the queries of the pages run in parallel (see [resolve]).
+ * server, which solves the queries of the pages run in parallel (see [Resolution.Federated]).
  *
- * Enabled, the cluster listens, and its beacons go to [beaconPort] (see [Beacons]): the clusters nearby see each
- * other, and are linked only once paired by the code of one of them ([pair]), linked again with no code while they
- * run. The port it listens on serves the page a browser joins it from (a phone scanning the link of the page, see
- * [FederationState.joinUrl]): the page asks for the code, and lends the workers of its Web Workers. Disabled, the
- * cluster neither listens nor is heard, and solves on the threads of the server alone. [changed] is told the state of
- * the federation whenever it changes.
+ * Enabled, the cluster listens on [port] (any free one by default), and its beacons go to [beaconPort] (see
+ * [Beacons]): the clusters nearby see each other, and are linked only once paired by the code of one of them ([pair]),
+ * linked again with no code while they run. The port it listens on serves the page a browser joins it from (a phone
+ * scanning the link of the page, see [FederationState.joinUrl]): the page asks for the code, and lends the workers of
+ * its Web Workers. Disabled, the cluster neither listens nor is heard, and solves on the threads of the server alone.
+ * [changed] is told the state of the federation whenever it changes.
  */
 internal class Federation(
     private val solving: Solving,
     private val beaconPort: Int = Beacons.PORT,
     private val threads: Int = ThreadedCluster.processors,
+    private val port: Int = 0,
     private val changed: (FederationState) -> Unit = {},
-) : AutoCloseable {
+) : Resolution.Factory,
+    AutoCloseable {
     // the cluster, one request of it at a time (a cluster has one theory), and its changes
     private val lock = ReentrantLock()
 
@@ -43,21 +45,16 @@ internal class Federation(
     // the theory and the flags the cluster holds, as text, if it was given any
     private var loaded: Pair<String, String>? = null
 
-    // the port the cluster listens on, and the link of the page joining it, while enabled
-    @Volatile private var port: Int? = null
-
+    // the link of the page joining the cluster, while enabled
     @Volatile private var joinUrl: String? = null
 
-    // the name given to the site, if any (the name of the host otherwise), and the names of the sites heard
+    // the name given to the site, if any (see named), and the names of the sites heard
     @Volatile private var name: String? = null
     private val names = ConcurrentHashMap<String, String>()
 
     /** Whether the federation is enabled: the cluster heard on the local network, linked to the clusters paired */
     @Volatile var enabled: Boolean = false
         private set
-
-    /** The port the cluster listens on, while enabled */
-    val listening: Int? get() = port
 
     /** What the federation is now */
     val state: FederationState
@@ -66,7 +63,7 @@ internal class Federation(
             val stats = running?.stats
             return FederationState(
                 enabled = enabled,
-                name = running?.name ?: name ?: hostName(),
+                name = running?.name ?: named(),
                 code = running?.code,
                 joinUrl = joinUrl.takeIf { running != null },
                 workers = threads,
@@ -106,7 +103,7 @@ internal class Federation(
     /** Names the site [name], as the sites nearby are told (blank: the name of the host) */
     fun rename(name: String) {
         this.name = name.trim().ifEmpty { null }
-        cluster?.name = this.name ?: hostName()
+        cluster?.name = named()
         notifyChanged()
     }
 
@@ -134,40 +131,13 @@ internal class Federation(
         }
     }
 
-    /**
-     * The resolution of [query] on [theory] with [flags] by the cluster, of [profile], what it prints going to [output]:
-     * its first solution computed at once. A [CancellationException] if the thread asking is interrupted, which stops
-     * what the cluster computes.
-     */
-    fun resolve(
+    override fun resolve(
         theory: String,
         flags: Flags,
         query: String,
         profile: String,
         output: (String) -> Unit,
-    ): Resolution =
-        object : Resolution {
-            // the cluster solving it: the solutions are no longer computed once the federation made another one
-            private lateinit var owner: ThreadedCluster
-            private val solutions =
-                request(theory, flags, output) {
-                    owner = it
-                    it.solver.solve(query)
-                }
-
-            // the graph of the last solution, the only stage the cluster keeps
-            @Volatile private var last = GraphData.EMPTY
-
-            override fun next(): Pair<SolutionData, Boolean> =
-                request(theory, flags, output) { running ->
-                    check(running === owner) { PageEngine.NO_LONGER_RUNNING }
-                    val found = solutions.next()
-                    last = GraphData.of(running.solver.graph(), profile)
-                    SolutionData.of(found, last, 0) to solutions.hasNext()
-                }
-
-            override fun graphAt(branch: Int): GraphData = last
-        }
+    ): Resolution = Resolution.Federated(this, theory, flags, query, profile, output)
 
     /** Closes the links of the cluster, and stops it */
     override fun close() {
@@ -175,10 +145,13 @@ internal class Federation(
         lock.withLock { discard() }
     }
 
-    // [work] on the cluster holding [theory] with [flags], what its solver prints going to [output]: the theory and
-    // the flags given again if another request changed them since (the solutions given are then computed again, and left
-    // out). Waited for on a thread of its own: an interruption of the thread asking stops it.
-    private fun <T> request(
+    /**
+     * [work] on the cluster holding [theory] with [flags], one request at a time, what its solver prints going to
+     * [output]: the theory and the flags given again if another request changed them since (the solutions given are
+     * then computed again, and left out). Waited for on a thread of its own: an interruption of the thread asking stops
+     * it, a CancellationException ([Resolution.STOPPED]).
+     */
+    fun <T> request(
         theory: String,
         flags: Flags,
         output: (String) -> Unit,
@@ -208,7 +181,7 @@ internal class Federation(
                     running.solver.stop()
                     runCatching { asked.get(STOPPING, TimeUnit.MILLISECONDS) }
                 }
-                throw CancellationException(PageEngine.STOPPED)
+                throw CancellationException(Resolution.STOPPED)
             }
         } finally {
             lock.unlock()
@@ -219,7 +192,7 @@ internal class Federation(
     private fun made(): ThreadedCluster {
         val made = ThreadedCluster(threads)
         try {
-            made.name = name ?: hostName()
+            made.name = named()
             made.onPeersChanged = ::notifyChanged
             made.onNearbyChanged = {
                 made.nearby.forEach { names[it.id] = it.name }
@@ -229,9 +202,8 @@ internal class Federation(
                 // the code required before the first link
                 made.requiresCode = true
                 made.serve(::page)
-                val listened = made.listen()
+                val listened = made.listen(port)
                 made.discover(beaconPort, requireCode = true)
-                port = listened
                 joinUrl = lanAddress()?.let { "http://$it:$listened/" }
             }
             return made
@@ -246,11 +218,13 @@ internal class Federation(
         cluster?.close()
         cluster = null
         loaded = null
-        port = null
         joinUrl = null
     }
 
     private fun notifyChanged() = changed(state)
+
+    // The name of the site: the one given, or else the name of the host, as the cluster names its site by default
+    private fun named(): String = name ?: HOST
 
     companion object {
         /** Where the page joining a cluster loads arg2p from: the npm package of the version of the server */
@@ -267,13 +241,8 @@ internal class Federation(
 
         // The page joining a cluster, and the script of its Web Workers, with the module of arg2p they load
         private val pages: Map<String, StaticContent> by lazy {
-            fun resource(name: String) =
-                Federation::class.java
-                    .getResourceAsStream(name)
-                    ?.use { it.readBytes().toString(Charsets.UTF_8) }
-                    ?: error("The page $name is missing from the jar")
             mapOf(
-                "/" to StaticContent(resource("join.html").replace("{{module}}", MODULE).toByteArray(), "text/html; charset=utf-8"),
+                "/" to StaticContent(Pages.render("join.html", mapOf("module" to MODULE)).toByteArray(), "text/html; charset=utf-8"),
                 "/worker.js" to
                     StaticContent(
                         "import { startWebWorker } from '$MODULE';\nstartWebWorker();\n".toByteArray(),
@@ -282,18 +251,16 @@ internal class Federation(
             )
         }
 
-        /** The page served at [path] (its query left out): the page joining the cluster, or the script of its workers */
-        fun page(path: String): StaticContent? = pages[path.substringBefore('?')]
+        // The page served at [path] (its query left out): the page joining the cluster, or the script of its workers
+        private fun page(path: String): StaticContent? = pages[path.substringBefore('?')]
 
-        // The name of this host, if it has one
-        private fun hostName(): String = runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("")
+        // The name of this host, if it has one, looked up once
+        private val HOST: String by lazy { runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("") }
 
-        /**
-         * The address of this host on the local network, as a phone on it reaches it: that of the route out of the host
-         * (opened without sending anything), or else the first one of an interface up that is not virtual; none if
-         * there is no site-local IPv4 address
-         */
-        fun lanAddress(): String? {
+        // The address of this host on the local network, as a phone on it reaches it: that of the route out of the host
+        // (opened without sending anything), or else the first one of an interface up that is not virtual; none if there
+        // is no site-local IPv4 address
+        private fun lanAddress(): String? {
             val routed =
                 runCatching {
                     DatagramSocket().use {
