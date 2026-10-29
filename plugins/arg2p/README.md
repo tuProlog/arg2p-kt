@@ -8,9 +8,9 @@ abstract frameworks) solved by its engine, not guessed. The plugin bundles:
     proof into a theory, with its profile and flags;
   - `arg2p-solve`: solving it, reading the labellings, checking them, reporting back;
   - `arg2p-explore`: showing the user the solver of the theory, to explore the results themselves;
-- the **MCP server** of Arg2P, which the skills solve with: the tools `check`, `answer`, `solve`, `settings` and
-  `explore`. It runs from the Python package of Arg2P with [uv](https://docs.astral.sh/uv/) (`uvx arg2p mcp`), on the
-  Java runtime the package bundles.
+- the **MCP server** of Arg2P, which the skills solve with (its
+  [tools](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp)). It runs from the Python package of Arg2P
+  with [uv](https://docs.astral.sh/uv/) (`uvx arg2p mcp`), on the Java runtime the package bundles.
 
 Where the client shows MCP Apps (Claude, ChatGPT, VS Code), `explore` shows the solver in the conversation: the
 solutions of the query, their argument graphs and stages, the drawing of an abstract framework, the flags. Everywhere,

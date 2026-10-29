@@ -136,16 +136,17 @@ solved on it with `parallel: true`.
 The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
 with it rather than guessing what they conclude. Its tools:
 
-| Tool | |
-| --- | --- |
-| `solve` | The solutions of a query (default `buildLabelSets(In, Out, Und)`) on a theory, with their bindings and the argument graph: every argument with its conclusion, top rule and label, every attack with its type |
-| `answer` | The statements matching a literal (`flies(X)`) labelled in, out and und |
-| `check` | Whether a theory or a query parses, and where it does not (line, column, token) |
-| `settings` | The value in effect of every flag for a theory: its profile, its semantics, ... |
-| `explore` | Shows the user the solver of a theory, to explore its results themselves |
+| Tool | Takes | Gives |
+| --- | --- | --- |
+| `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | The solutions of a query (default `buildLabelSets(In, Out, Und)`) on a theory, with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
+| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | The statements matching a literal (`flies(X)`, `-guilty`) labelled in, out and und |
+| `check` | `text`, `kind` (`theory`, the default, or `query`) | Whether the text parses, and where it does not (line, column, token) |
+| `settings` | `theory`, `flags`, `timeoutSeconds` | The value in effect of every flag for a theory: its profile, its semantics, ... |
+| `explore` | `theory`, `query`, `flags`, `timeoutSeconds` | Shows the user the solver of a theory, to explore its results themselves |
 
-A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is stopped after
-`timeoutSeconds` (60 by default).
+The `theory` is text, the `flags` Prolog facts; `theory`, and the `query` of `answer`, are required (and the `text` of
+`check`). A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is
+stopped after `timeoutSeconds` (60 by default).
 
 `explore` is an [MCP App](https://modelcontextprotocol.io/docs/extensions/apps): in the clients that show them
 (Claude, ChatGPT, VS Code), the solver of the playground appears in the conversation, runs the query, and lets the user
@@ -192,7 +193,7 @@ In clients configured by JSON (Claude Desktop, Cursor, ...):
 ```
 
 It is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.tuProlog/arg2p`. With Java
-21 or later instead, download `arg2p-lsp-{{< version >}}-redist.jar` from the
+{{< java >}} or later instead, download `arg2p-lsp-{{< version >}}-redist.jar` from the
 [latest release](https://github.com/tuProlog/arg2p-kt/releases/latest) and run `java -jar
 arg2p-lsp-{{< version >}}-redist.jar --mcp`.
 

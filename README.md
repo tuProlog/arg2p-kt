@@ -13,148 +13,35 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/tuProlog/arg2p-kt" alt="License"></a>
 </p>
 
-Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation.
-Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine, it runs on the JVM, in JavaScript
-(Node.js and browsers) and in Python, with the same API.
+Arg2P is an implementation of the ASPIC<sup>+</sup> framework for structured argumentation, which reads assumption-based
+and abstract frameworks as well. Built on top of the [tuProlog](https://apice.unibo.it/xwiki/bin/view/Tuprolog/) engine,
+it runs on the JVM, in JavaScript (Node.js and browsers) and in Python, with the same API; its solver runs in the
+browser, in VS Code, and for AI assistants.
 
-More details are available on the [official wiki](https://tuprolog.github.io/arg2p-kt/).
+The [documentation](https://tuprolog.github.io/arg2p-kt/) starts from
+[Getting Started](https://tuprolog.github.io/arg2p-kt/docs/getting-started/).
 
----
-
-## Getting Started
-
-Arg2p is available as a [2P-Kt](https://github.com/tuProlog/2p-kt/) library.
-
-#### JVM Library - Gradle
-
-To import the Arg2p module into your Kotlin-based Gradle project, declare the dependency in your `build.gradle(.kts)` file
-(`<VERSION>` is the latest release, shown by the Maven Central badge above):
- ```kotlin
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:<VERSION>")
-}
- ```
-
-#### Usage Example
-
-```kotlin
-import it.unibo.tuprolog.argumentation.Arg2p
-
-fun main() {
-    val (graph) =
-        Arg2p.of(
-            """
-            f1 :=> d.
-            f2 :=> -d.
-            """.trimIndent(),
-        ).graphs()
-
-    graph.labellings.forEach {
-        println("${it.label} : ${it.argument.conclusion}")
-    }
-}
-```
-
-For a complete example, check out the [GitHub demo](https://github.com/Gilbocc/arg2p-kt-demo).
-
-#### NPM Library
-
-The Arg2P software is available on NPM as a JavaScript library as well. It can be found under the [`@tuprolog` organization](https://www.npmjs.com/org/tuprolog).
-To use the library, add the dependency to your `package.json` (`<VERSION>` is the latest release, shown by the npm
-badge above):
-
-```json
-{
-  "dependencies": {
-    "@tuprolog/arg2p": "<VERSION>"
-  }
-}
-```
-
-#### Usage Example
-
-```js
-import { Arg2p } from '@tuprolog/arg2p'
-
-const [graph] = Arg2p.of(`
-    f1 :=> d.
-    f2 :=> -d.`).graphs()
-
-graph.labellings.forEach(it => console.log(`${it.label} : ${it.argument.descriptor}`))
-```
-
-For a complete example, see the [repository](https://github.com/tuProlog/arg2p-kt-web).
-
-
-#### Python Library
-
-The same API, in snake case, is on PyPI: `pip install arg2p` (the wheel bundles a Java runtime).
-
-```python
-from arg2p import Arg2p
-
-(graph,) = Arg2p.of("f1 :=> d.\nf2 :=> -d.").graphs()
-for labelled in graph.labellings:
-    print(f"{labelled.label} : {labelled.argument.conclusion}")
-```
+![The playground](doc/site/assets/playground.png)
 
 ---
 
-## Arg2p Playground
+## Installing
 
-Try Arg2P directly in your browser using the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/).
+| | |
+| --- | --- |
+| JVM (Gradle, Maven Central) | `implementation("it.unibo.tuprolog.argumentation:arg2p-jvm:<VERSION>")` |
+| JavaScript (npm) | `npm install @tuprolog/arg2p` |
+| Python (PyPI) | `pip install arg2p` (the wheel bundles a Java runtime) |
+| Browser | the [Web Playground](https://tuprolog.github.io/arg2p-kt-web/): nothing to install |
+| VS Code | the [extension](https://marketplace.visualstudio.com/items?itemName=GiuseppePisano.arg2p) |
+| Claude Code | `/plugin install arg2p --marketplace tuProlog/arg2p-kt` |
+| Codex | `codex plugin marketplace add tuProlog/arg2p-kt`, then install `arg2p` from `/plugins` |
 
-![Web Playground](./imgs/playground.png)
+`<VERSION>` is the latest release, shown by the Maven Central badge above. See
+[Execution](https://tuprolog.github.io/arg2p-kt/docs/run/) for a first program on each platform, the playground, the
+extension of VS Code, and the plugin and MCP server of Arg2P for AI assistants (the other clients, and the server alone).
 
-No installation required: the solver runs in the browser. Write a theory, solve a query one solution at a time, and
-browse the argument graph of each solution and the stages of its computation. The profile a theory states
-(`graphBuildMode(aba).`, say) tells the framework it is read in, and the _Flags_ panel sets the semantics and every
-other flag, with the value in effect and where it comes from.
-
-An abstract framework is a theory too (`graphBuildMode(abstract).`, arguments `a.` and attacks `a -> b.`): it is
-drawn, and the drawing edits the theory. Arguments and attacks are added, renamed and deleted by drawing, the
-labelling of the solution colours them, and hovering or tapping an argument tells its label, what attacks it and what
-it attacks. Frameworks are imported from APX, TGF and ICCMA'23 files, and exported to APX and TGF.
-
-![An abstract framework, drawn](./imgs/playground-drawing.png)
-
-Theories are kept in tabs in the browser, shared as links, opened from and saved to files; the playground works
-offline once installed as an app, on desktops, tablets and phones. Its components are on npm as
-[`@tuprolog/arg2p-ui`](https://www.npmjs.com/package/@tuprolog/arg2p-ui), to embed the solver in other pages.
-
----
-
-## Arg2p for VS Code
-
-The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=GiuseppePisano.arg2p) edits theories as
-`.arg2p` files: their syntax is highlighted and their syntax errors show as they are typed. **Arg2P: Open the Solver**
-opens the solver of the playground beside a theory, running on the JVM: its solutions, their graphs, the drawing of an
-abstract framework and the flags.
-
-![Arg2P in VS Code](./imgs/vscode.png)
-
-The extension bundles the language server of Arg2P and the Java runtime it runs on; see its
-[README](./vscode/README.md) for its settings.
-
----
-
-## Arg2p for AI assistants (MCP)
-
-The language server of Arg2P is also an [MCP](https://modelcontextprotocol.io/) server: AI assistants solve theories
-with it (the tools `solve`, `answer`, `check`, `settings` and `explore`) rather than guessing what they conclude. The
-plugin `arg2p` bundles it with the **skills** of Arg2P, to formalize problems as theories, solve them and explore their
-results. In Claude Code:
-
-```text
-/plugin install arg2p --marketplace tuProlog/arg2p-kt
-```
-
-See [AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp) for its tools, the other clients
-and the server alone (`uvx arg2p mcp`), and the [plugin](./plugins/arg2p/README.md).
+![Arg2P in VS Code](doc/site/assets/vscode.png)
 
 ---
 
