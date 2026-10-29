@@ -164,3 +164,34 @@ arg2p theory.pl -p aba -s preferred
 `arg2p mcp` runs the [MCP server]({{% ref "/docs/run#ai-assistants-mcp" %}}) of arg2p instead, over the standard
 input and output, until its client closes them: `uvx arg2p mcp` with [uv](https://docs.astral.sh/uv/), installing
 nothing first. A theory in a file named `mcp` is `arg2p ./mcp`.
+
+### The recorded page
+
+`arg2p page` writes an HTML page showing a query solved on a theory, with the solver of the
+[playground](https://tuprolog.github.io/arg2p-kt-web/): its solutions, the argument graph of each, the flags in
+effect and the theory, and a link opening them in the playground. The page solves nothing: it shows the run as it was
+solved, which is why it opens where no solver runs beside it (the sandboxes of AI assistants: claude.ai shows the file
+live in the conversation). Another query, an edited theory or other flags are solved again, in a new page or in the
+playground.
+
+```sh
+arg2p page theory.pl                                     # writes arg2p-theory.html, and prints its path
+arg2p page theory.pl -q "flies(X)" -f "argumentLabellingMode(complete).\nqueryMode." -o explore.html
+arg2p page - --max-solutions 50 --timeout 120 < theory.pl
+```
+
+The query is `buildLabelSets(In, Out, Und)` by default, the flags (Prolog facts, `\n` a new line) those of arg2p.
+The page keeps the first 20 solutions (`--max-solutions`), those found within 60 seconds (`--timeout`), and tells
+when there were more or the time ran out. A theory that does not parse is shown with its error.
+
+From Python, `page` gives the HTML:
+
+```python
+from arg2p import Flags, Semantics, page
+
+html = page(theory, "buildLabelSets(In, Out, Und)", Flags.defaults().argument_labelling_mode(Semantics.COMPLETE))
+html = page(theory, flags="argumentLabellingMode(complete).", max_solutions=50, timeout=120)
+```
+
+Its components come from [jsDelivr](https://www.jsdelivr.com/package/npm/@tuprolog/arg2p-ui): the page needs the
+network to show them.

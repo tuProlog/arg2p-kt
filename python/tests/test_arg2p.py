@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import subprocess
@@ -22,6 +23,7 @@ from arg2p import (
     Struct,
     SyntaxProblem,
     Var,
+    page,
 )
 from arg2p import _jvm
 from arg2p.__main__ import main
@@ -185,7 +187,9 @@ def test_the_command_line_tells_of_the_mcp_server(capsys):
     with pytest.raises(SystemExit) as done:
         main(["--help"])
     assert done.value.code == 0
-    assert "arg2p mcp" in capsys.readouterr().out
+    out = " ".join(capsys.readouterr().out.split())
+    assert "arg2p mcp" in out
+    assert "arg2p page" in out
 
 
 def test_arg2p_mcp_runs_the_server_and_a_theory_named_mcp_is_dot_slash_mcp(tmp_path, monkeypatch, capsys):
@@ -200,6 +204,43 @@ def test_arg2p_mcp_runs_the_server_and_a_theory_named_mcp_is_dot_slash_mcp(tmp_p
     assert main(["./mcp", "-q", "a"]) == 0
     assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
     assert len(commands) == 1
+
+
+TWEETY = "f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety)."
+
+
+def _recording(html):
+    script = '<script type="application/json" id="recording">'
+    return json.loads(html.split(script, 1)[1].split("</script>", 1)[0])
+
+
+def test_the_recorded_page_of_a_run():
+    html = page(TWEETY, "buildLabelSets(In, Out, Und)", Flags.parse("argumentLabellingMode(grounded)."))
+    recording = _recording(html)
+    assert recording["theory"] == TWEETY
+    assert recording["solve"][-1]["type"] == "started"
+    (solution,) = [it["solution"] for answers in recording["next"] for it in answers if it["type"] == "solution"]
+    labels = {it["conclusion"]: it["label"] for it in solution["graph"]["arguments"]}
+    assert labels["-flies(tweety)"] == "in" and labels["flies(tweety)"] == "out"
+    assert recording["settings"]["argumentLabellingMode"] == ["grounded"]
+    assert "<title>Arg2P · buildLabelSets(In, Out, Und)</title>" in html
+    # a theory that does not parse is recorded as such
+    assert _recording(page("f1 :=> bird(tweety"))["solve"][-1]["type"] == "failed"
+
+
+def test_arg2p_page_writes_the_page(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "tweety.pl").write_text(TWEETY)
+    flags = "argumentLabellingMode(complete).\\nqueryMode."  # \n a new line, as typed
+    assert main(["page", "tweety.pl", "-q", "flies(X)", "-f", flags, "--max-solutions", "1"]) == 0
+    written = tmp_path / "arg2p-tweety.html"
+    assert capsys.readouterr().out.strip() == str(written)
+    recording = _recording(written.read_text(encoding="utf-8"))
+    assert (recording["query"], recording["flags"]) == ("flies(X)", "argumentLabellingMode(complete).\nqueryMode.")
+    assert recording["solve"][-1]["type"] == "started"
+    monkeypatch.setattr(sys, "stdin", io.StringIO(TWEETY))
+    assert main(["page", "-", "-o", "explore.html"]) == 0
+    assert _recording((tmp_path / "explore.html").read_text(encoding="utf-8"))["theory"] == TWEETY
 
 
 def test_the_jvm_takes_the_options_of_the_environment(monkeypatch):

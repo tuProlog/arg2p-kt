@@ -64,7 +64,8 @@ To install the MCP server itself, see <https://tuprolog.github.io/arg2p-kt/docs/
    - a value the theory computes: `solve` with a query on it (`answer(V)`), reading the bindings.
 4. **Read the graph** of `solve` to justify the result: which argument attacks which, which attack succeeds.
 5. **Offer to explore**: when the result is worth looking at (a conflict, several labellings, a surprise), offer the
-   user the solver (`explore`, or without the MCP server a link to the web playground: see `arg2p-explore`).
+   user the solver (`explore`; without the MCP server, the page of `arg2p page` in a code sandbox, or else a link to
+   the web playground: see `arg2p-explore`).
 
 ## Semantics with several labellings
 
