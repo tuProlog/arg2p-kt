@@ -1,3 +1,4 @@
+import type { SyntaxProblem } from '@tuprolog/arg2p-ui/data';
 import * as vscode from 'vscode';
 import { Bridge } from './bridge.js';
 import type { FromPage, ToPage } from './protocol.js';
@@ -90,7 +91,18 @@ export class SolverPanel {
                 return;
             case 'state':
                 void this.context.workspaceState.update(this.key, { query: message.query, flags: message.flags } satisfies Saved);
+                return;
+            case 'problem':
+                void this.reveal(message.problem);
         }
+    }
+
+    // Where the theory does not parse, in the document: its problem is there (the language server reports it)
+    private async reveal(problem: SyntaxProblem): Promise<void> {
+        const at = new vscode.Position(problem.line - 1, problem.column - 1);
+        const shown = vscode.window.visibleTextEditors.find(it => it.document === this.document);
+        await vscode.window.showTextDocument(this.document, { viewColumn: shown?.viewColumn, selection: new vscode.Range(at, at.translate(0, problem.length)) });
+        void vscode.window.showWarningMessage(`The theory does not parse at line ${problem.line}: see the problems of the document.`);
     }
 
     // The theory drawn, written into the document

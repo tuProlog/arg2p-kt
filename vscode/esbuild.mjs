@@ -23,8 +23,6 @@ const contexts = await Promise.all([
         ...common,
         entryPoints: ['webview/main.ts'],
         outfile: 'dist/webview.js',
-        // one Lit, the page's, for the components too
-        alias: { lit: './node_modules/lit' },
         platform: 'browser',
         format: 'esm',
         target: 'es2022',

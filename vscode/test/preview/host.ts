@@ -30,5 +30,7 @@ let theory = preview.theory;
             theory = message.theory;
             toPage({ type: 'theory', theory });
         }
+        // the extension shows it in the document, which the preview has not
+        else if (message.type === 'problem') console.warn(`The theory does not parse at line ${message.problem.line}: ${message.problem.message}`);
     },
 });
