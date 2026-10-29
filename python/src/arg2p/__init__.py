@@ -33,6 +33,7 @@ from .parallel import (
     ThreadedCluster,
     WorkerStats,
 )
+from .recorded import page
 from .values import Struct, Value, Var
 
 try:
@@ -78,4 +79,5 @@ __all__ = [
     "Var",
     "WorkerStats",
     "__version__",
+    "page",
 ]
