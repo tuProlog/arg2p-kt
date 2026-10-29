@@ -83,17 +83,17 @@ internal object MessageCodec {
 
     private fun TextWriter.attacks(values: List<DirectAttack>) = list(values) { text(it.type).text(it.attacker).text(it.target) }
 
-    private fun TextReader.responses() = List(number()) { Response(text(), texts()) }
+    private fun TextReader.responses() = list { Response(text(), texts()) }
 
     private fun TextReader.term() = Term.parse(text(), operators)
 
-    private fun TextReader.terms() = List(number()) { term() }
+    private fun TextReader.terms() = list { term() }
 
-    private fun TextReader.shared() = List(number()) { SharedArgument(text(), term(), texts()) }
+    private fun TextReader.shared() = list { SharedArgument(text(), term(), texts()) }
 
-    private fun TextReader.interests() = List(number()) { Interest(number(), terms(), terms()) }
+    private fun TextReader.interests() = list { Interest(number(), terms(), terms()) }
 
-    private fun TextReader.attacks() = List(number()) { DirectAttack(text(), text(), text()) }
+    private fun TextReader.attacks() = list { DirectAttack(text(), text(), text()) }
 
     private val operators: OperatorSet get() = TermValues.operators
 }
@@ -119,7 +119,10 @@ internal class TextWriter {
     override fun toString() = builder.toString()
 }
 
-/** Fields read back from the text of a [TextWriter], in the order they were written */
+/**
+ * Fields read back from the text of a [TextWriter], in the order they were written: an IllegalArgumentException for a
+ * text that is not one (as one from another site may be), whose lists are no longer than the text left can hold
+ */
 internal class TextReader(
     private val source: String,
 ) {
@@ -127,11 +130,20 @@ internal class TextReader(
 
     fun text(): String {
         val colon = source.indexOf(':', position)
-        val length = source.substring(position, colon).toInt()
+        val length = if (colon < 0) null else source.substring(position, colon).toIntOrNull()
+        require(length != null && length >= 0 && length <= source.length - colon - 1) { "Malformed text at $position" }
         return source.substring(colon + 1, colon + 1 + length).also { position = colon + 1 + length }
     }
 
-    fun number() = text().toInt()
+    fun number() = text().let { requireNotNull(it.toIntOrNull()) { "Not a number: $it" } }
 
-    fun texts() = List(number()) { text() }
+    fun texts() = list { text() }
+
+    // The elements of a list, read by [read]: each takes two characters at least ("0:"), hence a count of more than
+    // the text left can hold is refused before any is read
+    fun <T> list(read: TextReader.() -> T): List<T> {
+        val count = number()
+        require(count in 0..(source.length - position) / 2) { "A list of $count elements in ${source.length - position} characters" }
+        return List(count) { read() }
+    }
 }

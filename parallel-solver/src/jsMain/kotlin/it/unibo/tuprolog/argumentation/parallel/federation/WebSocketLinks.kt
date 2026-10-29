@@ -5,7 +5,11 @@ import kotlin.js.Promise
 /**
  * The links of [site] over WebSockets, to sites on any platform (JVM, Node.js, browsers): the links it accepts once
  * it [listen]s (on Node.js, through the package ws), and those it opens ([connect], with the WebSocket of the
- * runtime). Each frame is a text message; those of a link arrive in order.
+ * runtime). Each frame is a text message; those of a link arrive in order, and one longer than a few tens of megabytes
+ * closes a link it accepted (the WebSocket of a browser bounds none). The failures of a link, and those of the handling
+ * of its frames, are reported on the console.
+ *
+ * Unlike the links of the JVM, the port listened on serves no pages: a plain HTTP request is refused (426, by ws).
  */
 class WebSocketLinks(
     private val site: LinkListener,
@@ -23,6 +27,7 @@ class WebSocketLinks(
             val options: dynamic = js("({})")
             options.port = port
             options.host = host
+            options.maxPayload = LONGEST_FRAME
             val constructor = nodeModule("ws").WebSocketServer
             val started = js("new constructor(options)")
             started.on("listening") { _: dynamic ->
@@ -39,18 +44,20 @@ class WebSocketLinks(
                     sockets.remove(socket)
                     handled { site.closed(link) }
                 }
-                socket.on("error") { _: dynamic -> Unit }
+                socket.on("error") { error: dynamic -> console.error(error) }
                 handled { site.opened(link) }
             }
         }
 
     /**
-     * Opens a link to the site listening at [url] (ws://host:port): [code] presented if given (see
-     * [Site.requiresCode]), and the link given to [opening] before it opens
+     * Opens a link to the site listening at [url] (ws://host:port), waiting for it at most [timeoutMillis]: [code]
+     * proven if given (see [Site.requiresCode]), and the link given to [opening] before it opens; rejected if it does
+     * not open in time
      */
     fun connect(
         url: String,
         code: String? = null,
+        timeoutMillis: Int = 10_000,
         opening: (Link) -> Unit = {},
     ): Promise<Unit> =
         Promise { resolve, reject ->
@@ -59,6 +66,8 @@ class WebSocketLinks(
             val link = SocketLink(socket, outgoing = true, code = code)
             opening(link)
             var open = false
+            // not open in time: closed, which rejects
+            later(timeoutMillis) { if (!open) socket.close() }
             socket.onopen = { _: dynamic ->
                 open = true
                 sockets.add(socket)
@@ -74,7 +83,8 @@ class WebSocketLinks(
                     reject(IllegalStateException("No site at $url"))
                 }
             }
-            socket.onerror = { _: dynamic -> Unit }
+            // an error closes the socket (onclose follows); not one of a site gone, or not there
+            socket.onerror = { error: dynamic -> if (open) console.error(error) }
         }
 
     /** Closes every link, and stops listening */
@@ -101,5 +111,12 @@ class WebSocketLinks(
     }
 }
 
-// A frame whose handling fails is skipped, as an actor resumed on a failure does
-internal fun handled(block: () -> Unit) = runCatching(block).onFailure { console.error(it) }
+// [task] run in [millis] milliseconds: the timer does not keep Node.js running
+internal fun later(
+    millis: Int,
+    task: () -> Unit,
+) {
+    val timer = js("setTimeout(task, millis)")
+    // a number in browsers, a Timeout in Node.js
+    if (jsTypeOf(timer.unref) == "function") timer.unref()
+}

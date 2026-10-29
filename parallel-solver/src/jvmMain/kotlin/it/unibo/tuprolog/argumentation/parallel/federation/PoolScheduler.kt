@@ -47,7 +47,7 @@ class PoolScheduler(
                 while (true) {
                     val task = tasks.poll() ?: break
                     synchronized(lock) { running = Thread.currentThread() }
-                    runCatching(task).onFailure { it.printStackTrace() }
+                    handled(task)
                     // an interruption of the task not left to the next ones on the thread, of any queue
                     synchronized(lock) {
                         running = null
