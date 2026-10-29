@@ -3,7 +3,7 @@
   "displayName": "Arg2P",
   "description": "Structured argumentation in Prolog: write theories (ASPIC+, ABA, abstract frameworks), see their errors as you type, solve queries and browse their argument graphs.",
   "version": "0.0.0",
-  "publisher": "tuprolog",
+  "publisher": "GiuseppePisano",
   "license": "MIT",
   "author": "Giuseppe Pisano",
   "icon": "media/icon.png",

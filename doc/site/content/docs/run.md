@@ -98,7 +98,7 @@ and works offline once installed as an app. Its components are on npm as
 
 ## VS Code
 
-The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p) edits theories as
+The [extension of VS Code](https://marketplace.visualstudio.com/items?itemName=GiuseppePisano.arg2p) edits theories as
 `.arg2p` files: their syntax errors show as they are typed, and **Arg2P: Open the Solver** opens the solver of the
 playground beside a theory, on the JVM. It bundles the language server of Arg2P and the Java runtime it runs on.
 
