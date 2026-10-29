@@ -7,14 +7,14 @@ import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.solve.MutableSolver
 
-data class HelpWorker(
+internal data class HelpWorker(
     val id: String,
     val ref: EntityRef<KbMessage>,
     val theory: MutableSolver,
     val rules: MutableList<String>,
 )
 
-data class EvaluationCache(
+internal data class EvaluationCache(
     val id: String,
     val query: String,
     val expected: ExpectedResponseCount,
@@ -22,7 +22,7 @@ data class EvaluationCache(
     val responses: MutableList<EvalResponse> = mutableListOf(),
 )
 
-data class ActiveQuery(
+internal data class ActiveQuery(
     val type: Int,
     val id: String,
     val query: String,
@@ -35,7 +35,7 @@ data class ActiveQuery(
 )
 
 // The responses to a request broadcast to the workers: each worker tells how many it sends (one at least), then sends them
-class ExpectedResponseCount(
+internal class ExpectedResponseCount(
     var workers: Int = -1,
 ) {
     private var reported = 0

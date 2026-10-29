@@ -15,7 +15,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * tracking, every resolution step visits the terms of the goal it belongs to, so the list would make every step
  * as costly as it is long. Goal runs in this module: other modules are called through ::.
  */
-object ForEach : Primitive {
+internal object ForEach : Primitive {
     val signature: Signature = Signature("forEach", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

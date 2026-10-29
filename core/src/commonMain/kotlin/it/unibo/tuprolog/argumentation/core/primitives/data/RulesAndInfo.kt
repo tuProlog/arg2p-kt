@@ -20,7 +20,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * Fails if RuleId already occurs among the rules of the sub-arguments, or if it is none and not strict.
  * SortedRules: RuleId and the rules, as sort/2. Info: [LastDefRules, DefRules, DefPremises], each as sortDistinct/2.
  */
-object RulesAndInfo : Primitive {
+internal object RulesAndInfo : Primitive {
     val signature: Signature = Signature("rulesAndInfo", 5)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

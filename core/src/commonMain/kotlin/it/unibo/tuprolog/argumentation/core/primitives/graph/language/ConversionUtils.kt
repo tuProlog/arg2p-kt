@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
 import it.unibo.tuprolog.solve.primitive.Solve
 
-object ConversionUtils {
+internal object ConversionUtils {
     fun modifiers(
         target: Clause,
         context: Solve.Request<ExecutionContext>,

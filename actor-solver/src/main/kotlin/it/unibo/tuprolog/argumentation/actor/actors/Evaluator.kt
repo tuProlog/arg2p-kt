@@ -15,6 +15,7 @@ import it.unibo.tuprolog.argumentation.actor.message.ExpectedResponses
 import it.unibo.tuprolog.argumentation.actor.message.FindAttacker
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.actor.message.Label
+import it.unibo.tuprolog.argumentation.actor.message.Stop
 import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
@@ -27,7 +28,7 @@ import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import kotlin.random.Random
 
-class Evaluator private constructor(
+internal class Evaluator private constructor(
     context: ActorContext<KbMessage>,
     private val master: ActorRef<KbMessage>,
     private val entityId: String,
@@ -138,6 +139,9 @@ class Evaluator private constructor(
                     conclude(active)
                 }
                 this
+            }.onMessage(Stop::class.java) {
+                // its rules given to another worker, or dropped with the knowledge base: its solver freed
+                Behaviors.stopped()
             }.build()
 
     // The label of the argument of a query, once every worker has sent its responses: in when no attacker is in or

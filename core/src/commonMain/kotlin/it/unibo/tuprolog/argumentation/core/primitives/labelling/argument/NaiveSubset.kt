@@ -14,7 +14,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * every argument of Args left out either attacks itself or conflicts with an argument of Set or In (already IN).
  * An argument left out that no later argument can conflict with prunes the search.
  */
-object NaiveSubset : Primitive {
+internal object NaiveSubset : Primitive {
     val signature: Signature = Signature("naiveSubset", 4)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

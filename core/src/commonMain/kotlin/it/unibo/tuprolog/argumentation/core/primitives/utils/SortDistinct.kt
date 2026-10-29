@@ -10,7 +10,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * sortDistinct(+List, ?Sorted): reverse standard order of terms, duplicates removed (deduplicate/2, then sort/2)
  */
-object SortDistinct : BinaryRelation.WithoutSideEffects<ExecutionContext>("sortDistinct") {
+internal object SortDistinct : BinaryRelation.WithoutSideEffects<ExecutionContext>("sortDistinct") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * admissibleSet(+Ids): every attacker of an IN argument, or of an argument in Ids, is attacked by one of them other
  * than itself (the arguments in Ids taken as IN).
  */
-class AdmissibleSet(
+internal class AdmissibleSet(
     arity: Int,
 ) : Primitive {
     val signature: Signature = Signature("admissibleSet", arity)

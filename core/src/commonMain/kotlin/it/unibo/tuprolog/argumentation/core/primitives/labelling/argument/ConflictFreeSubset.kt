@@ -14,7 +14,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * one (itself included), each once. The search only adds arguments compatible with those already chosen, so every
  * branch ends in a solution: the cost grows with the number of sets, not with the subsets of Args.
  */
-object ConflictFreeSubset : Primitive {
+internal object ConflictFreeSubset : Primitive {
     val signature: Signature = Signature("conflictFreeSubset", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

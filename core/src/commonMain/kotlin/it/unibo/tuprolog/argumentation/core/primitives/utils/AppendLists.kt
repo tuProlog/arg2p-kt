@@ -10,7 +10,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /** appendLists(Lists, Result): Result is the concatenation of the lists in Lists */
-object AppendLists : Primitive {
+internal object AppendLists : Primitive {
     val signature: Signature = Signature("appendLists", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

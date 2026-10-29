@@ -24,7 +24,7 @@ import it.unibo.tuprolog.core.operators.Specifier
  * with the [operators] of its notation. The flags the theory or the solver state override it (see Settings),
  * the flags the profile does not preset keep those of the solver.
  */
-class Profile internal constructor(
+internal class Profile(
     /** The value of graphBuildMode naming the profile */
     val name: String,
     /** What the profile reads a theory as */
@@ -41,7 +41,7 @@ class Profile internal constructor(
  * The profiles of arg2p (see [Profile]), ASPIC+ the default. The operators of all the profiles are those of every
  * theory, none conflicting with another: each profile reads the clauses written with them its own way.
  */
-object Profiles {
+internal object Profiles {
     private fun on(flag: ArgsFlag<*, *>) = flag to listOf<Term>(Truth.TRUE)
 
     private fun off(flag: ArgsFlag<*, *>) = flag to emptyList<Term>()

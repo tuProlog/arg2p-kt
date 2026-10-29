@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.currentTimeInstant
+import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.TimeOutException
 
 /**
@@ -12,9 +13,10 @@ import it.unibo.tuprolog.solve.exception.TimeOutException
  * concrete state has to implement `SolveOptions.timeout` handling itself.
  *
  * [next] first compares [executionTime] against [PrologExecutionContext.startTime]/[PrologExecutionContext.maxDuration];
- * if the budget is exceeded, or the thread of the resolution was interrupted (arg2p: on the JVM, its caller stopping
- * it, see [resolutionInterrupted]), it short-circuits straight to an [EndState] (`StateHalt`) carrying a
- * [TimeOutException], bypassing any pending `catch/3` (resource exhaustion is treated as unrecoverable);
+ * if the budget is exceeded it short-circuits straight to an [EndState] (`StateHalt`) carrying a [TimeOutException],
+ * bypassing any pending `catch/3` (resource exhaustion is treated as unrecoverable), and so it does with a
+ * [ResolutionException] telling so if the thread of the resolution was interrupted (arg2p: on the JVM, its caller
+ * stopping it, see [resolutionInterrupted]);
  * otherwise it delegates to [computeNext], the actual per-state transition logic.
  */
 abstract class AbstractState(
@@ -38,17 +40,14 @@ abstract class AbstractState(
         get() = context.maxDuration != TimeDuration.MAX_VALUE && executionTime - context.startTime > context.maxDuration
 
     override fun next(): State =
-        if (isTimeout || resolutionInterrupted()) {
-            StateHalt(
-                TimeOutException(
-                    exceededDuration = context.maxDuration,
-                    context = context,
-                ),
-                context.copy(step = nextStep()),
-            )
-        } else {
-            computeNext()
+        when {
+            isTimeout -> halt(TimeOutException(exceededDuration = context.maxDuration, context = context))
+            resolutionInterrupted() -> halt(ResolutionException(INTERRUPTED, context = context))
+            else -> computeNext()
         }
+
+    // The resolution stopped by [exception], uncaught
+    private fun halt(exception: ResolutionException): State = StateHalt(exception, context.copy(step = nextStep()))
 
     /** The actual, state-specific transition logic, invoked by [next] once the timeout check has passed. */
     protected abstract fun computeNext(): State
@@ -56,6 +55,11 @@ abstract class AbstractState(
     protected fun currentTime(): TimeInstant = currentTimeInstant()
 
     protected fun nextStep(): Long = context.step + 1
+
+    private companion object {
+        // The message of the halt of a resolution its caller interrupted
+        const val INTERRUPTED = "The resolution was interrupted by its caller"
+    }
 }
 
 /**

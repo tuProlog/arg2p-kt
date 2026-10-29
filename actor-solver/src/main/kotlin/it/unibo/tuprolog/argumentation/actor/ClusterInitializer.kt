@@ -16,12 +16,19 @@ import it.unibo.tuprolog.argumentation.actor.actors.Evaluator
 import it.unibo.tuprolog.argumentation.actor.actors.KbDistributor
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 
-object ClusterInitializer {
-    private fun createConfiguration(port: String) =
-        ConfigFactory.load(
-            ConfigFactory
-                .parseString(
-                    """
+// The node of the cluster of the actor solver on this JVM: the distributor of the knowledge base a singleton of the
+// cluster, the workers sharded entities
+internal object ClusterInitializer {
+    /** The address the nodes bind to unless told otherwise: the local one, for a cluster on a single machine */
+    const val LOCAL_HOSTNAME = "127.0.0.1"
+
+    private fun createConfiguration(
+        hostname: String,
+        port: String,
+    ) = ConfigFactory.load(
+        ConfigFactory
+            .parseString(
+                """
          akka {
             actor {
                 provider = "cluster"
@@ -35,7 +42,7 @@ object ClusterInitializer {
             }
             remote.artery {
                 canonical {
-                    hostname = "127.0.0.1"
+                    hostname = "$hostname"
                     port = $port
                 }
             }
@@ -49,15 +56,20 @@ object ClusterInitializer {
             }
         }
         """,
-                ).withFallback(ConfigFactory.load()),
-        )
+            ).withFallback(ConfigFactory.load()),
+    )
 
+    /**
+     * A node of the cluster of the seed node at [seedAddress] (host:port), at [localPort] of [hostname] (the address the
+     * other nodes reach it at): its actor system, and the distributor of the knowledge base
+     */
     fun joinCluster(
         seedAddress: String,
         localPort: String,
+        hostname: String = LOCAL_HOSTNAME,
     ): Pair<ActorSystem<KbMessage>, ActorRef<KbMessage>> {
         val actorSystem: ActorSystem<KbMessage> =
-            ActorSystem.create(Behaviors.empty(), "actor_solver", createConfiguration(localPort))
+            ActorSystem.create(Behaviors.empty(), "actor_solver", createConfiguration(hostname, localPort))
 
         Cluster.get(actorSystem).join(AddressFromURIString.parse("akka://actor_solver@${seedAddress.replace("'", "")}"))
 

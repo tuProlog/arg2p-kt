@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.UnaryPredicate
  * prologPremises(-Premises): the Prolog facts of the theory with an identifier (see [RuleAnnotations]) as
  * defeasible premises, `[Id, Fact]`, with prologStrictCompatibility on (none otherwise)
  */
-object PrologPremises : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologPremises") {
+internal object PrologPremises : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologPremises") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses

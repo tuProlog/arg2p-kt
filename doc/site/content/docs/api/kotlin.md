@@ -174,8 +174,9 @@ The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}
 ## Earlier entry points
 
 `Arg2pSolverFactory.evaluate(theory, flags)` (package `it.unibo.tuprolog.argumentation.core`), the graph of each
-labelling of a theory with the flags of a `FlagsBuilder`, is still there, as `FlagsBuilder` is, for the 2P-Kt
-integration below: `Flags.of(builder)` are the flags of a builder.
+labelling of a theory with the flags of a `FlagsBuilder` (an `Arg2pException` if the evaluation halts, as for a
+theory its profile refuses), is still there, as `FlagsBuilder` is, for the 2P-Kt integration below:
+`Flags.of(builder)` are the flags of a builder.
 
 ---
 
