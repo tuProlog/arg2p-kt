@@ -85,6 +85,16 @@ class ThreadedCluster
         /** Federates the cluster with the site listening at [uri] (ws://host:port) */
         fun connect(uri: String) = links().connect(uri)
 
+        /**
+         * The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
+         * built anew, the links and the peers of the cluster kept
+         */
+        var flags: Flags
+            get() = site.flags
+            set(value) {
+                site.flags = value
+            }
+
         /** Replaces the theory with [theory], as Prolog text */
         fun load(theory: String) = site.load(theory)
 

@@ -23,6 +23,9 @@ class StatisticsTest {
         // the lending site offers the workers of its delegates, as one site
         assertEquals(listOf(evaluating.site.id to 0, lending.site.id to 2), evaluating.stats.sites.map { it.id to it.workers })
         val known = lending.stats.sites.associateBy { it.id }
+        // a site counts the workers of its delegates as its own, as the others do; the delegates have theirs
+        assertEquals(2, known.getValue(lending.site.id).workers)
+        assertTrue(delegates.all { known.getValue(it.site.id).workers == 1 })
         assertEquals(setOf(lending.site.id, evaluating.site.id) + delegates.map { it.site.id }, known.keys)
         assertTrue(delegates.all { known.getValue(it.site.id).delegate })
         assertTrue(known.values.all { it.via == null })
@@ -68,5 +71,25 @@ class StatisticsTest {
         cluster.solver.solve("buildLabelSets(In, Out, Und)").next()
         assertEquals("whole_graph", cluster.stats.evaluation!!.locality)
         assertEquals(5, cluster.stats.evaluation!!.added)
+        // a goal using no graph leaves them as they are
+        val evaluation = cluster.stats.evaluation
+        cluster.solver.solve("member(X, [1, 2])").next()
+        assertTrue(evaluation === cluster.stats.evaluation)
+    }
+
+    // a graph the catalog builds alone: an abstract framework, with no worker
+    @Test
+    fun aGraphOfTheCatalog() {
+        val cluster = LocalCluster(parts = 2)
+        cluster.load(theory)
+        cluster.solve("b")
+        cluster.load("graphBuildMode(abstract).\na <-> b.\nb -> c.\n")
+        cluster.solver.solve("buildLabelSets(In, Out, Und)").next()
+        val evaluation = cluster.stats.evaluation!!
+        assertEquals("catalog", evaluation.locality)
+        assertEquals(3, evaluation.arguments)
+        assertEquals(3, evaluation.attacks)
+        assertEquals(0, evaluation.added)
+        assertTrue(evaluation.workers.isEmpty())
     }
 }

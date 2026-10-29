@@ -21,10 +21,11 @@ data class FederationStats(
 }
 
 /**
- * A site of a federation: its identifier, the workers it offers (its delegates' included; null for no limit, or for a
- * site reached through another, whose workers are not known), whether it is a [delegate] of the site knowing it (a
- * thread or a Web Worker of it), and the site through which it is reached ([via]: null for the site itself and those
- * linked to it)
+ * A site of a federation: its identifier, the workers it offers (its delegates' included, for the site knowing it as
+ * for the others; null for no limit, or for a site reached through another, whose workers are not known), whether it
+ * is a [delegate] of the site knowing it (a thread or a Web Worker of it, listed as well, with its own workers: the
+ * workers of a federation are those of the sites that are not delegates), and the site through which it is reached
+ * ([via]: null for the site itself and those linked to it)
  */
 @JsExport
 data class SiteStats(
@@ -35,8 +36,9 @@ data class SiteStats(
 )
 
 /**
- * An evaluation answered by the catalog of a site (a statement evaluated, or a goal solved on the graph): the part of
- * the graph it was answered on ([locality]: directional or connected in query mode, whole_graph otherwise), the
+ * An evaluation answered by the catalog of a site (a statement evaluated, or a goal labelling or reading a graph): the
+ * part of the graph it was answered on ([locality]: directional or connected in query mode, whole_graph otherwise, or
+ * catalog for a graph the catalog builds alone, as an abstract framework, with no worker), the
  * arguments and the attacks of the graph labelled (those the catalog derives from the others included), the arguments
  * the workers built for it ([added]: all of them for a graph built anew, those explored further in query mode, none
  * for an evaluation answered on the graph as it was), what each worker of the graph built ([workers], one for each

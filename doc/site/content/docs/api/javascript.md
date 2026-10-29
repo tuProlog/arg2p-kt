@@ -160,6 +160,8 @@ const solution = await solutions.next()
 solution.text('In')                 // as for Arg2p
 cluster.solver.graph()              // the Graph of the solution
 cluster.stats.evaluation?.workers   // what each worker built
+cluster.solver.stop()               // the goal being solved stopped: its next solution a halt
+cluster.flags = Flags.defaults().queryMode(false)   // for the next evaluations
 ```
 
 ---

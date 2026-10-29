@@ -84,6 +84,17 @@ internal data object Reset : KbMessage
 internal data object Rebuild : KbMessage
 
 /**
+ * To the catalog: the evaluations of the clients were stopped (they were told already), give up the graph being built
+ * for them; nothing to do if none was
+ */
+internal data object Stop : KbMessage
+
+/** To the catalog: the flags of the solver, as Prolog facts, for the evaluations from now on (the graph built anew) */
+internal data class Configure(
+    val flags: String,
+) : KbMessage
+
+/**
  * To the catalog: the whole theory, as Prolog text, partitioned among the workers (see TheoryPartitioner); to a
  * worker: its part of the theory, replacing the one it had, and the [flags] of the solver, as Prolog facts
  */
@@ -143,7 +154,8 @@ internal data class RequireAnswer(
 /**
  * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, whether the goal
  * has more solutions, and what the solver printed computing it; or the [error] that kept it from one (a goal that
- * cannot be read, a theory that cannot be read). Only for the clients of the site of the catalog: never written.
+ * cannot be read, a theory that cannot be read); or, [stopped], none as the evaluation was stopped. Only for the
+ * clients of the site of the catalog: never written.
  */
 internal data class SolutionResponse(
     val run: String,
@@ -152,7 +164,14 @@ internal data class SolutionResponse(
     val hasNext: Boolean,
     val output: String,
     val error: String? = null,
+    val stopped: Boolean = false,
 ) : KbMessage
+
+/** The graph of a solution that labels none */
+internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
+
+/** Why an evaluation stopped by its client has no answer */
+internal const val STOPPED = "The evaluation was stopped"
 
 /** To a client: the [answer] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
 internal data class AnswerResponse(

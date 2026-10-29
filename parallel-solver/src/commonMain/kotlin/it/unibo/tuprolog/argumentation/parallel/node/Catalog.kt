@@ -20,12 +20,14 @@ import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Attack
 import it.unibo.tuprolog.argumentation.parallel.message.AttacksFound
 import it.unibo.tuprolog.argumentation.parallel.message.Build
+import it.unibo.tuprolog.argumentation.parallel.message.Configure
 import it.unibo.tuprolog.argumentation.parallel.message.DirectAttack
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Explore
 import it.unibo.tuprolog.argumentation.parallel.message.Interest
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
+import it.unibo.tuprolog.argumentation.parallel.message.NO_GRAPH
 import it.unibo.tuprolog.argumentation.parallel.message.Publish
 import it.unibo.tuprolog.argumentation.parallel.message.Rebuild
 import it.unibo.tuprolog.argumentation.parallel.message.RequireAnswer
@@ -34,6 +36,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.RequireSolution
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
 import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.Partitioning
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
@@ -78,13 +81,14 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * mode the statements it explores) is solved again from its start once they built it, as is a goal whose solutions are
  * asked for after the solver solved another one; an evaluation of a statement reads the labels of the arguments for it
  * (see answerQuery/4). The graph is built again when the theory changes, when the network loses some of the workers of a
- * graph being built ([Rebuild]), and when a goal needs a graph of the other kind (whole, or in query mode); in query
- * mode, it grows as later goals need more of it.
+ * graph being built ([Rebuild]), when the flags change ([Configure]), and when a goal needs a graph of the other kind
+ * (whole, or in query mode); in query mode, it grows as later goals need more of it. The evaluations stopped by their
+ * clients give up the graph being built for them ([Stop]).
  */
 internal class Catalog(
     private val network: Network,
     private val parts: Int? = null,
-    private val flags: Flags = Flags.defaults(),
+    private var flags: Flags = Flags.defaults(),
 ) : Node {
     private val theory = StringBuilder()
     private var changed = true
@@ -151,18 +155,11 @@ internal class Catalog(
     private val printed = StringBuilder()
 
     // Whether the solver holds the labels of the graph built (an evaluation of a statement labelled it, and no goal was
-    // solved since), whether the job done used the graph built, and the arguments of the graph last reported (see
-    // EvaluationStats)
+    // solved since), and the arguments of the graph last reported (see EvaluationStats)
     private var labelled = false
-    private var used = false
     private var argumentsReported = 0
 
-    private val solver =
-        Arg2pSolverFactory.solverOf(
-            Arg2pSolver.of(listOf(Arg2pModule, flags.library()), graphModules(Built())),
-            "",
-            output = OutputChannel.of { printed.append(it) },
-        )
+    private var solver = newSolver()
     private val unificator = Unificator.default
 
     // The arguments for a statement read, by label, and the size of the graph labelled
@@ -194,6 +191,12 @@ internal class Catalog(
             // (its workers are those of a site that left)
             Rebuild -> if (stage != Stage.READY) start(explored.toList(), whole = locality == null) else built = false
             is Load -> change { theory.clear().append(message.theory).append('\n') }
+            is Configure ->
+                change {
+                    flags = Flags.parse(message.flags)
+                    solver = newSolver()
+                }
+            Stop -> if (stage != Stage.READY) stop()
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation ->
                 try {
@@ -253,6 +256,25 @@ internal class Catalog(
         changed = true
     }
 
+    // The solver of the catalog, with the flags: its theory given before the first job (see prepare)
+    private fun newSolver() =
+        Arg2pSolverFactory.solverOf(
+            Arg2pSolver.of(listOf(Arg2pModule, flags.library()), graphModules(Built())),
+            "",
+            output = OutputChannel.of { printed.append(it) },
+        )
+
+    // The jobs waiting dropped (their clients were told they stopped), and the graph being built for them given up: a
+    // session of its own, with no worker, so that nothing more of it reaches the catalog
+    private fun stop() {
+        jobs.clear()
+        need = null
+        current = null
+        network.building(0)
+        forget()
+        stage = Stage.READY
+    }
+
     private fun enqueue(job: Job) {
         jobs += job
         work()
@@ -264,6 +286,8 @@ internal class Catalog(
         while (stage == Stage.READY && jobs.isNotEmpty()) {
             if (changed) prepare()
             val job = jobs.first()
+            // a goal solved from its start: the context marked, as a goal labelling a graph resets it
+            if (current !== job.run) solver.solveOnce("context_assert($MARK)")
             val answer =
                 try {
                     job.shortcut() ?: next(job.run).let { solution ->
@@ -275,9 +299,8 @@ internal class Catalog(
                     job.failed(error.message ?: error.toString())
                 }
             jobs.removeFirst()
-            // the statistics of a job using the graph, known by its client once answered
-            if (used || job is Evaluating) evaluated(job.since)
-            used = false
+            // the statistics of a job labelling or reading a graph, known by its client once answered
+            if (job is Evaluating || !solver.holds("context_check($MARK)")) evaluated(job.since)
             network.send(job.replyTo, answer)
         }
     }
@@ -311,8 +334,10 @@ internal class Catalog(
         return true
     }
 
-    // The solver given the theory, changed: the part of the catalog (see TheoryPartitioner), and how it builds the graph
+    // The solver given the theory, changed: the part of the catalog (see TheoryPartitioner), and how it builds the graph;
+    // the graph of the theory before forgotten
     private fun prepare() {
+        forget()
         val partitioning = partitioning()
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
@@ -321,7 +346,6 @@ internal class Catalog(
         centralAttacks = central || solver.holds("setting(metaConflicts)")
         partial = if (central) null else locality()
         changed = false
-        built = false
         labelled = false
         current = null
     }
@@ -372,19 +396,25 @@ internal class Catalog(
         val count = if (central) 0 else partitioning.partitions.size
         network.building(count)
         repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it), flags.toString())) }
+        forget()
         workers = count
+        if (locality != null) pending += goals
+        if (workers == 0) return published()
+        stage = Stage.SUBSCRIBING
+        awaited = workers
+    }
+
+    // The graph built forgotten: its workers, what they told and built
+    private fun forget() {
+        workers = 0
         built = false
         interests.clear()
         explored.clear()
         pending.clear()
-        if (locality != null) pending += goals
         arguments.clear()
         supports.clear()
         directAttacks.clear()
         argumentsReported = 0
-        if (workers == 0) return published()
-        stage = Stage.SUBSCRIBING
-        awaited = workers
     }
 
     // The part of the graph the labels of the arguments for a statement depend on, as the semantics declares it (see
@@ -452,7 +482,7 @@ internal class Catalog(
         argumentsReported = arguments.size
         network.evaluated(
             EvaluationStats(
-                locality ?: "whole_graph",
+                if (central) "catalog" else locality ?: "whole_graph",
                 graphArguments,
                 graphAttacks,
                 added,
@@ -480,7 +510,6 @@ internal class Catalog(
                 this@Catalog.need = wanted
                 return null
             }
-            used = true
             return saved
         }
 
@@ -591,7 +620,8 @@ internal class Catalog(
         // The goals of the clients kept, to give their next solutions
         const val MAX_RUNS = 16
 
-        val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
+        // The fact marking the context of the solver before a goal: gone after it if the goal labelled a graph
+        const val MARK = "catalog_mark"
 
         // A query, Prolog text, read as the standard solver reads it
         fun term(

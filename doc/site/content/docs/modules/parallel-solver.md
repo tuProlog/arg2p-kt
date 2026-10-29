@@ -35,7 +35,9 @@ The catalog and the workers are the same on every runtime; only the way their me
 
 All of them take the number of partitions of the theory (`parts`, by default as many as the threads), and the flags
 of the solver (`Flags`, as for the [API]({{% ref "/docs/api/kotlin" %}})), which the flags written in the theory
-complete, as for the standard solver. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
+complete, as for the standard solver. The flags can be changed at any time (`flags`, a property of every cluster):
+the next evaluation uses them, the catalog and the workers given them and the graph built anew, as when the theory
+changes; the links and the peers of the cluster are kept. They are in the aggregate packages (`arg2p`, the npm package `@tuprolog/arg2p`,
 the Python package `arg2p`) as well.
 
 ---
@@ -105,6 +107,7 @@ solver.graphs()                      // the graph of each labelling
 | `answer(query)` | The statements for the query labelled in, out and und (`Answer`), as `Arg2p.answer` |
 | `graphs()` | The graph of each labelling of the theory, as `Arg2p.graphs` |
 | `output` | Where what the solver prints goes, as the solutions are given (the standard output by default) |
+| `stop()` | Stops the goal being solved (see below); nothing is done if none is |
 
 The clusters of JavaScript running their workers on threads (`WorkerCluster`, `WebWorkerCluster`) promise what the
 workers compute: their `solver` (`AsyncClusterSolver`) gives a promise of the solutions (`AsyncSolutions`, whose
@@ -136,6 +139,13 @@ How the goals are solved:
   solver, in an order of their own (that of the arguments the workers built);
 - the stages of a resolution (`graphAt`, `activeBranch` of `Arg2p`) are not kept: `graph()` is the last one.
 
+`stop()` stops the goal being solved (on the JVM, from another thread): the solution waited for is at once a halt,
+whose error is `The evaluation was stopped`, as the other halts of a goal (in JavaScript, the promise of the next
+solution is fulfilled with it, as for any halt); so do the statements being evaluated with `solve`, and the answers
+raise it. The graph being built for them is given up: what the workers still compute for it reaches no later
+evaluation (a graph is built in a session of its own), and a resolution of the catalog on the JVM is interrupted. The
+next goals are solved as before. A Prolog check of a worker still running ends on its own, its result dropped.
+
 ---
 
 ## Statistics
@@ -146,10 +156,15 @@ How the goals are solved:
 | --- | --- |
 | `site` | The identifier of the site of the cluster |
 | `sites` | The sites it knows, itself first (`SiteStats`): `id`, `workers` it offers (null for no limit, or not known), `delegate` (one of its threads or Web Workers), `via` (the site it is reached through, null if linked directly) |
-| `evaluation` | The last evaluation it answered, a statement or a goal using the graph (`EvaluationStats`), null before the first |
+| `evaluation` | The last evaluation it answered, a statement or a goal labelling or reading a graph (`EvaluationStats`), null before the first; a goal using no graph (a Prolog predicate) leaves it as it is |
+
+The `workers` of a site are those it offers the federation, its threads or Web Workers included, for the cluster
+itself as for the others: a `WebWorkerCluster` of four Web Workers reports 4 for itself, and lists its Web Workers as
+well, as delegates with 1 each. The workers of the federation are those of the sites that are not delegates.
 
 An `EvaluationStats` has the part of the graph it was answered on (`locality`: `directional` or `connected` in query
-mode, `whole_graph` otherwise), the `arguments` and the `attacks` of the graph labelled, the arguments the workers
+mode, `whole_graph` otherwise, `catalog` for a graph the catalog builds alone, as an abstract framework, with no
+worker), the `arguments` and the `attacks` of the graph labelled, the arguments the workers
 built for it (`added`: all of them for a graph built anew, those explored further in query mode, none for an
 evaluation answered on the graph as it was), how many each worker built (`workers`: its `partition`, its `site`, its
 `arguments` and the direct `attacks` it found), and how long it took (`milliseconds`).

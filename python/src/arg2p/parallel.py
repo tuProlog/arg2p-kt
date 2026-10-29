@@ -148,6 +148,13 @@ class ClusterSolver:
         """Gives what the solver prints to [consumer], as the solutions are given (the standard output otherwise)."""
         self._solver.setOutput(_jvm.function1(lambda printed: consumer(str(printed))))
 
+    def stop(self) -> None:
+        """
+        Stops the goal being solved, from another thread: its solution waited for is a halt, at once ("The evaluation
+        was stopped"), and the work of the cluster for it is given up; nothing is done if no goal is being solved.
+        """
+        self._solver.stop()
+
 
 def _arguments(*given: Any, defaults: tuple[Any, ...]) -> list[Any]:
     """
@@ -162,16 +169,10 @@ def _parts(parts: Optional[int]) -> Any:
     return None if parts is None else _jvm.jclass("java.lang.Integer").valueOf(parts)
 
 
-class LocalCluster:
-    """
-    A distributed solver whose nodes run in turn, on the thread of the caller: the same messages as on a cluster, in a
-    deterministic order. The theory is split into at most [parts] partitions if given, one for each group of rules
-    supporting one another otherwise; the graph is labelled as the standard solver does with [flags].
-    """
+class _Cluster:
+    """What every cluster does: its theory, its flags, its evaluations, its solver and its statistics."""
 
-    def __init__(self, parts: Optional[int] = None, flags: Optional[Flags] = None) -> None:
-        arguments = _arguments(_parts(parts), flags and flags.jvm(), defaults=(None, None))
-        self._cluster = call(lambda: _jvm.jclass(f"{_CLUSTER}.LocalCluster")(*arguments))
+    _cluster: Any
 
     def load(self, theory: str) -> None:
         """Replaces the theory with [theory], as Prolog text."""
@@ -196,11 +197,36 @@ class LocalCluster:
 
     @property
     def stats(self) -> FederationStats:
-        """What the cluster does: its site, and the last evaluation it answered."""
+        """What the federation does, as the cluster knows it: the sites, and the last evaluation it answered."""
         return _stats(self._cluster.getStats())
 
+    @property
+    def flags(self) -> Flags:
+        """
+        The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
+        built anew, the links and the peers of the cluster kept.
+        """
+        return Flags(self._cluster.getFlags())
 
-class ThreadedCluster:
+    @flags.setter
+    def flags(self, flags: Flags) -> None:
+        call(lambda: self._cluster.setFlags(flags.jvm()))
+
+
+class LocalCluster(_Cluster):
+    """
+    A distributed solver whose nodes run in turn, on the thread of the caller: the same messages as on a cluster, in a
+    deterministic order. The theory is split into at most [parts] partitions if given, one for each group of rules
+    supporting one another otherwise; the graph is labelled as the standard solver does with [flags].
+    """
+
+    def __init__(self, parts: Optional[int] = None, flags: Optional[Flags] = None) -> None:
+        arguments = _arguments(_parts(parts), flags and flags.jvm(), defaults=(None, None))
+        self._cluster = call(lambda: _jvm.jclass(f"{_CLUSTER}.LocalCluster")(*arguments))
+
+
+
+class ThreadedCluster(_Cluster):
     """
     A distributed solver on the threads of the JVM: each node handles its messages one at a time, the nodes in parallel
     on [threads] threads (as many as the processors by default). The theory is split into at most [parts] partitions
@@ -251,31 +277,6 @@ class ThreadedCluster:
         """Federates the cluster with the site listening at [uri] (ws://host:port)."""
         call(lambda: self._cluster.connect(uri))
 
-    def load(self, theory: str) -> None:
-        """Replaces the theory with [theory], as Prolog text."""
-        call(lambda: self._cluster.load(theory))
-
-    def add(self, clause: str) -> None:
-        """Adds [clause], as Prolog text, to the theory."""
-        call(lambda: self._cluster.add(clause))
-
-    def reset(self) -> None:
-        """Forgets the theory."""
-        call(self._cluster.reset)
-
-    def solve(self, statement: str) -> EvaluationResponse:
-        """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
-        return call(lambda: _response(self._cluster.solve(statement)))
-
-    @property
-    def solver(self) -> ClusterSolver:
-        """The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries."""
-        return ClusterSolver(self._cluster.getSolver())
-
-    @property
-    def stats(self) -> FederationStats:
-        """What the federation does, as the cluster knows it: the sites, and the last evaluation it answered."""
-        return _stats(self._cluster.getStats())
 
     def close(self) -> None:
         """Closes the links to the other sites, and stops the threads."""

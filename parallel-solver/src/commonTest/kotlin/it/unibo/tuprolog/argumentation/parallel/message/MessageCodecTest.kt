@@ -20,6 +20,8 @@ class MessageCodecTest {
         val messages =
             listOf(
                 Reset,
+                Stop,
+                Configure("queryMode.\n"),
                 Load(text),
                 Load(text, "queryMode.\n"),
                 Add(text),
