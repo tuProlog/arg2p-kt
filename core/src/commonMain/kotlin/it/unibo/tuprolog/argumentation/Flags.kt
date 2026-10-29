@@ -105,11 +105,14 @@ class Flags private constructor(
             override val alias = ALIAS
 
             override val baseContent: Library
-                get() = Library.of(alias = ALIAS, clauses = Theory.parse(this@Flags.toString(), TermValues.operators))
+                get() = Library.of(alias = ALIAS, clauses = theory())
 
             override val baseFlags: Iterable<ArgsFlag<*, *>>
                 get() = emptyList()
         }
+
+    /** The facts stating the flags, as a theory */
+    internal fun theory(): Theory = Theory.parse(toString(), TermValues.operators)
 
     private fun value(
         flag: ArgsFlag<*, *>,
@@ -134,7 +137,10 @@ class Flags private constructor(
         @JsStatic
         fun defaults(): Flags = of(FlagsBuilder())
 
-        /** No flags: the solver has only those the theory states, the others are the defaults of their modules */
+        /**
+         * No flags: the solver has only those the theory states, and those its profile presets (graphBuildMode, ASPIC+
+         * when the theory names none); the other flags take their defaults, the switches are off
+         */
         @JvmStatic
         @JsStatic
         fun none(): Flags = Flags(linkedMapOf())
@@ -150,7 +156,8 @@ class Flags private constructor(
                 SyntaxProblem
                     .parsing("Flags") { Theory.parse(text, TermValues.operators) }
                     .clauses
-                    .groupBy({ it.head!!.functor }, { TermValues.format(it.head!!) })
+                    .map { clause -> clause.takeIf { it.isFact }?.castToFact() ?: throw Arg2pException("Flags: not a fact: $clause") }
+                    .groupBy({ it.head.functor }, { TermValues.format(it.head) })
                     .toMutableMap(),
             )
 
@@ -161,13 +168,24 @@ class Flags private constructor(
             if (builder.emptyBuilder) {
                 none()
             } else {
-                Flags(
-                    FlagsBuilder
-                        .setupSolver(builder)
-                        .clauses
-                        .groupBy({ it.head!!.functor }, { TermValues.format(it.head!!) })
-                        .toMutableMap(),
-                )
+                with(builder) {
+                    Flags(linkedMapOf())
+                        // the builder lists the extensions in the order they apply, which is the reverse of the order
+                        // they are stated in (modifyGraph applies the last stated first)
+                        .values(GraphExtensionFlag, graphExtensions.toList().asReversed().ifEmpty { listOf("none") })
+                        .switch(QueryMode, queryMode)
+                        .switch(AutoTransposition, autoTransposition)
+                        .switch(PrologStrictCompatibility, prologStrictCompatibility)
+                        .switch(MetaConflicts, metaConflicts)
+                        .switch(MetaRules, metaRules)
+                        .value(GraphBuildMode, graphBuildMode)
+                        .value(GraphBuilderFlag, graphBuilder)
+                        .value(ArgumentLabellingMode, argumentLabellingMode)
+                        .value(StatementLabellingMode, statementLabellingMode)
+                        .value(OrderingPrincipleFlag, orderingPrinciple)
+                        .value(OrderingComparatorFlag, orderingComparator)
+                        .value(ModulesPath, modulesPath)
+                }
             }
     }
 }

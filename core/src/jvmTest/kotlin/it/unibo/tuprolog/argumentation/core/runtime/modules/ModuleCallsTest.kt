@@ -21,7 +21,7 @@ class ModuleCallsTest {
     private fun solverWithModulesIn(path: String): MutableSolver =
         Arg2pSolverFactory.default(
             theory = "",
-            settings = FlagsBuilder(modulesPath = "'$path'").create(),
+            settings = FlagsBuilder(modulesPath = path).create(),
         )
 
     private fun temporaryModule(): String {
