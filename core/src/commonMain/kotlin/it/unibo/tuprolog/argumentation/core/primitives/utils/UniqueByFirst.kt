@@ -11,7 +11,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * uniqueByFirst(+Lists, ?Unique): Lists keeping, among the lists with the same first element, only the last one
  * (in their order)
  */
-object UniqueByFirst : BinaryRelation.WithoutSideEffects<ExecutionContext>("uniqueByFirst") {
+internal object UniqueByFirst : BinaryRelation.WithoutSideEffects<ExecutionContext>("uniqueByFirst") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

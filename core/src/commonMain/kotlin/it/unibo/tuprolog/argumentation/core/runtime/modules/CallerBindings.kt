@@ -15,7 +15,7 @@ import it.unibo.tuprolog.solve.Solver
  * be lost (and with them, for instance, the bindings a module makes inside the terms it is given). They are
  * renamed for the query, and bound back in each solution.
  */
-fun Solver.solveForCaller(
+internal fun Solver.solveForCaller(
     goal: Struct,
     options: SolveOptions,
 ): Sequence<Solution> {

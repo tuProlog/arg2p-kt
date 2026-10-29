@@ -14,7 +14,7 @@ import kotlin.collections.List as KList
  * ruleToClauseNatural(+Rules, -Clauses): as ruleToClause/2, with naturalTerms: the statements written as text
  * are turned into terms, the words in upper case and in brackets becoming their arguments
  */
-object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("ruleToClauseNatural") {
+internal object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("ruleToClauseNatural") {
     class TemplateExtractor {
         private val upperRegex = Regex("""\b[A-Z][a-zA-Z]*\b""")
         private val bracketRegex = Regex("""\[([^\]]+)\]""")

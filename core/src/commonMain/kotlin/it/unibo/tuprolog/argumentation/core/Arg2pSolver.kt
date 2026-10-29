@@ -38,7 +38,7 @@ interface Arg2pSolver {
             staticLibs: Iterable<ArgLibrary>,
             dynamicLibs: Iterable<ArgLibrary>,
         ) = object : Arg2pSolver {
-            override val loader = DynamicLoader(this)
+            override val loader: ArgLoader = DynamicLoader(this)
             override val context: ArgContext = Context()
             override val cache = Cache()
             override val settings = Settings(this)

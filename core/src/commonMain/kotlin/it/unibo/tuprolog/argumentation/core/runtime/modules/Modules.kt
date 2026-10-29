@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * The modules of an arg2p solver (its dynamic libraries), loaded on their first call: each solves its goals against
  * the libraries of the solver, but for the other modules, and its own.
  */
-class Modules(
+internal class Modules(
     private val solver: Arg2pSolver,
 ) {
     private val loaded = HashMap<String, Module>()

@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * containsAny(+Elements, +List): an element of List matches one of Elements (without binding them)
  */
-object ContainsAny : Primitive {
+internal object ContainsAny : Primitive {
     val signature: Signature = Signature("containsAny", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
