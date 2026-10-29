@@ -31,7 +31,7 @@ f2 :=> -flies(tweety).
 - the flags, the profile first, each with the value in effect and where it comes from;
 - what the theory prints.
 
-The solver keeps the query and the flags of each theory.
+Solving a theory that does not parse takes to where it does not, in its editor. The solver keeps the query and the flags of each theory.
 
 ## The language server
 
