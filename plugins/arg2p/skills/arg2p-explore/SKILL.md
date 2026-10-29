@@ -32,6 +32,26 @@ Call `explore` with the same `theory`, `query` and `flags` you solved with:
 
 A theory that does not parse, or that its profile refuses, is an error: fix it first (see `arg2p-solve`).
 
+## Without the MCP server
+
+When there is no `explore` tool (the skills installed alone, or a client without the MCP server), give the user a link
+to the web playground opening the same theory, query and flags. The playground reads them from the plain parameters
+of the link, URL-encoded:
+
+```text
+https://tuprolog.github.io/arg2p-kt-web/?theory=<theory>&query=<query>&flags=<flags>
+```
+
+Where you can run code, `scripts/playground_link.py` makes it exactly (Python 3, nothing to install):
+
+```bash
+python scripts/playground_link.py theory.arg2p --query "buildLabelSets(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
+```
+
+Otherwise encode each value yourself (spaces as `%20` or `+`, new lines as `%0A`, `(` `)` `,` `:` `=` `>` `<` `%` `&`
+`#` percent-encoded), and leave out what you do not set. The playground opens the theory in a tab of its own, and the
+user runs it there.
+
 ## After
 
 Where the client lets it, the solver tells you when the user solves something other than what you gave it (another
