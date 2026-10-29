@@ -41,6 +41,16 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: (?<currentValue>\\S+)"
       ]
+    },
+    {
+      "customType": "regex",
+      "description": "The versions of the catalog that no dependency of Gradle carries, as a comment above each tells (# renovate: datasource=... depName=...)",
+      "managerFilePatterns": [
+        "/^gradle/libs\\.versions\\.toml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+ = \"(?<currentValue>[^\"]+)\""
+      ]
     }
   ],
   "automerge": true,

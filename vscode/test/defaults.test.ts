@@ -29,4 +29,8 @@ describe('The defaults of the extension', function () {
         ok(manifest.contributes.configuration.properties['arg2p.java.path'].markdownDescription.includes(`(${JAVA} or later)`));
         ok(readFileSync(join(__dirname, '..', 'README.md'), 'utf8').includes(`(${JAVA} or later)`));
     });
+
+    it('should build with the components of the solver page the language server loads', function () {
+        equal(manifest.devDependencies['@tuprolog/arg2p-ui'], catalog('arg2pUi'));
+    });
 });
