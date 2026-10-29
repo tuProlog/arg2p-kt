@@ -163,7 +163,8 @@ arg2p theory.pl -p aba -s preferred
 
 `arg2p mcp` runs the [MCP server]({{% ref "/docs/run#ai-assistants-mcp" %}}) of arg2p instead, over the standard
 input and output, until its client closes them: `uvx arg2p mcp` with [uv](https://docs.astral.sh/uv/), installing
-nothing first. A theory in a file named `mcp` is `arg2p ./mcp`.
+nothing first. A theory in a file named `mcp` is `arg2p ./mcp`. On Linux and macOS the server takes the place of the
+`arg2p` process, signals included; on Windows it runs as its child, and ends with it.
 
 ### The recorded page
 
@@ -180,9 +181,10 @@ arg2p page theory.pl -q "flies(X)" -f "argumentLabellingMode(complete).\nqueryMo
 arg2p page - --max-solutions 50 --timeout 120 < theory.pl
 ```
 
-The query is `buildLabelSets(In, Out, Und)` by default, the flags (Prolog facts, `\n` a new line) those of arg2p.
-The page keeps the first 20 solutions (`--max-solutions`), those found within 60 seconds (`--timeout`), and tells
-when there were more or the time ran out. A theory that does not parse is shown with its error.
+By default the query gives the statements labelled in, out and und, and the flags (Prolog facts, `\n` a new line) are
+those of arg2p. The page keeps the first solutions (`--max-solutions`) found within a time limit (`--timeout`), and
+tells when there were more or the time ran out; `arg2p page --help` tells the defaults, as `arg2p.recorded.defaults()`
+gives them. A theory that does not parse is shown with its error.
 
 From Python, `page` gives the HTML:
 

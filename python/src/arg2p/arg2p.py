@@ -156,27 +156,30 @@ class Solution:
 
 
 class Solutions:
-    """The solutions of a goal, computed one at a time as they are asked for: with has_next and next, or iterated."""
+    """
+    The solutions of a goal, computed one at a time as they are asked for: with has_next and next, or iterated. An
+    exception of arg2p computing one is raised as an Arg2pError.
+    """
 
     def __init__(self, solutions: Any) -> None:
         self._solutions = solutions
 
     def has_next(self) -> bool:
-        return bool(_jvm.run(self._solutions.hasNext))
+        return bool(call(self._solutions.hasNext))
 
     def next(self) -> Solution:
-        return Solution(_jvm.run(self._solutions.next))
+        return Solution(call(self._solutions.next))
 
     def to_list(self, limit: Optional[int] = None) -> list[Solution]:
         """The solutions left, at most [limit] of them."""
-        return [Solution(it) for it in _jvm.run(lambda: self._solutions.toList(2**31 - 1 if limit is None else limit))]
+        return [Solution(it) for it in call(lambda: self._solutions.toList(2**31 - 1 if limit is None else limit))]
 
     def __iter__(self) -> Iterator[Solution]:
         return self
 
     def __next__(self) -> Solution:
         # the next solution, if there is one, in a single call
-        found = _jvm.run(lambda: self._solutions.next() if self._solutions.hasNext() else None)
+        found = call(lambda: self._solutions.next() if self._solutions.hasNext() else None)
         if found is None:
             raise StopIteration
         return Solution(found)
