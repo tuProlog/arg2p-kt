@@ -41,7 +41,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `graphBuildMode(Mode)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free`: see [profiles]({{% ref "/docs/profiles" %}}) |
 | `graphBuilder(Mode)` | `ruleGraph` | `ruleGraph`, `abstractGraph`; set by the profile |
 | `graphLanguage(Mode)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`; set by the profile |
-| `conflictModel(Mode)` | `builtin` | `builtin`, `declared` |
+| `conflictModel(Part)` | all the parts (`builtin`) | `negation`, `deontic`, `preference`, `declared` (several), `builtin` for all of them |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
 | `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
 | `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` |
@@ -83,10 +83,30 @@ The languages the parser reads beyond the one of arg2p, each also checking the t
 rules only), `defeasibleLanguage` (defeasible rules only) and `abstractLanguage` (arguments and attacks only). The
 profile sets them.
 
-### `conflictModel(Mode)`
+### `conflictModel(Part)`
 
-`builtin` adds the built-in conflicts to those the theory declares: a literal and its negation, obligations and
-permissions. `declared` keeps the declared ones only, as ABA does.
+The conflicts between statements beyond those of the languages of the theory (the contraries of ABA, say, which
+always hold). Like `graphExtension`, the flag **may appear several times**, each occurrence adding a part:
+
+| Part | Conflicts |
+| --- | --- |
+| `negation` | A literal and its negation: `a` and `-a`. |
+| `deontic` | Obligations and permissions: `o(a)` and `o(-a)`, `p(a)` and `o(-a)`, `o(a)` and `p(-a)`, `o(a)` and `-p(a)`. |
+| `preference` | A superiority and its converse: `sup(r1, r2)` and `sup(r2, r1)`. |
+| `declared` | Those the theory declares, `conflict/2` and `conflict/3` (see [conflicts]({{% ref "/docs/syntax" %}})). |
+
+By default all of them hold. `conflictModel(builtin).` stands for all of them, and `conflictModel(declared).`
+alone keeps the declared conflicts only, as the ABA profiles do:
+
+```prolog
+conflictModel(negation).    % a and -a conflict, and so do the conflicts declared,
+conflictModel(declared).    % but not obligations and permissions, nor superiorities
+```
+
+`conflictModel(none).` states no part: the only conflicts are then those of the languages of the theory. The
+settings tell the parts in effect, `builtin` as the four of them: `setting("conflictModel")` gives
+`[negation, deontic, preference, declared]` by default. With [`metaConflicts`]({{% ref "/docs/modules/meta" %}}),
+the conflicts are those the arguments conclude, whatever the parts.
 
 ### `graphExtension(Mode)`
 

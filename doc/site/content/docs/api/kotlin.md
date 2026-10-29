@@ -68,7 +68,8 @@ val flags =
 | `statementLabellingMode` | `StatementLabelling` |
 | `orderingPrinciple`, `orderingComparator` | `OrderingPrinciple`, `OrderingComparator` |
 | `graphExtensions`, `graphLanguage` | `GraphExtension`, `GraphLanguage` (several) |
-| `graphBuilder`, `conflictModel` | `GraphBuilder`, `ConflictModel` |
+| `conflictModel` | `ConflictModel` (several): `NEGATION`, `DEONTIC`, `PREFERENCE`, `DECLARED`, or `BUILTIN` for all of them; none: no argument |
+| `graphBuilder` | `GraphBuilder` |
 | `modulesPath` | a path |
 | `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `debug` | on or off |
 

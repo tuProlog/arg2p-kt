@@ -65,6 +65,13 @@ Flags.defaults()
     .queryMode(false)
 ```
 
+`conflictModel` takes a part of the conflicts (`ConflictModel.DECLARED`, or `ConflictModel.BUILTIN` for all of
+them), `conflictModels` several, an array (`[]` for none but those of the languages of the theory):
+
+```js
+Flags.defaults().conflictModels([ConflictModel.NEGATION, ConflictModel.DECLARED])
+```
+
 ---
 
 ## Answers and graphs

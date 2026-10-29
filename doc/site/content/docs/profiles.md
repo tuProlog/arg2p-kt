@@ -22,7 +22,7 @@ turns off a switch it turns on.
 | `aspic` | ASPIC<sup>+</sup> with no preferences | `rebutRestriction`, `autoTransposition`, well-formed contraries |
 | `aspic_defeasible` | the defeasible part of ASPIC<sup>+</sup> | `standardPref`, `orderingPrinciple(last)`, `orderingComparator(normal)`, defeasible rules only |
 | `meta` | ASPIC<sup>+</sup> reasoning about its rules and conflicts | `defeasiblePref`, `metaRules`, `metaConflicts` |
-| `aba` | flat ABA | assumptions and contraries, strict rules only, declared conflicts only |
+| `aba` | flat ABA | assumptions and contraries, strict rules only, declared conflicts only (`conflictModel(declared)`) |
 | `aba_plus` | flat ABA<sup>+</sup> under Weak Contraposition | as `aba`, with `abaPref` |
 | `abstract` | Dung frameworks | arguments and attacks |
 | `free` | nothing in particular | none: every flag as the solver and the theory state it |
@@ -90,7 +90,10 @@ r1 : b -> x.
 r2 : a -> y.
 ```
 
-Rules are strict. A contrary attacks one way only, and there is no other conflict, not even negation.
+Rules are strict. A contrary attacks one way only, and there is no other conflict, not even negation: the profile
+presets `conflictModel(declared)`. A theory stating other parts of the [conflict model]({{% ref "/docs/api/flags#conflictmodelpart" %}})
+has those conflicts as well (`conflictModel(negation).` makes `d` and `-d` conflict); the contraries hold whatever
+the parts.
 
 `aba_plus` adds preferences between assumptions, `sup(Stronger, Weaker)`, as in ABA<sup>+</sup> (Čyras and
 Toni). An attack from an argument resting on an assumption weaker than the one it attacks is **reversed**: the

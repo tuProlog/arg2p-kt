@@ -12,7 +12,7 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
 | `orderingPrinciple(P)` | `last` | `last`, `weakest` |
 | `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
-| `conflictModel(M)` | `builtin` | `builtin`, `declared` (only the declared conflicts, as ABA) |
+| `conflictModel(M)` (may repeat) | all four parts (`declared` alone under `aba`, `aba_plus`) | `negation` (`a` vs `-a`), `deontic` (`o`/`p` pairs), `preference` (`sup(X, Y)` vs `sup(Y, X)`), `declared` (`conflict/2,3`); `builtin` for all four, `conflictModel(none).` for none (only the contraries of the languages) |
 | `queryMode` | on with no flags given | present or absent |
 | `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |

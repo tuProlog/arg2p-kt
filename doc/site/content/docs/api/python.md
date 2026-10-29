@@ -53,13 +53,14 @@ solver; each flag has a method, taking a value of its enumeration (`Profile`, `S
 boolean:
 
 ```python
-from arg2p import GraphExtension, Profile
+from arg2p import ConflictModel, GraphExtension, Profile
 
 flags = (
     Flags.defaults()
     .graph_build_mode(Profile.ABA)
     .argument_labelling_mode(Semantics.PREFERRED)
     .graph_extensions(GraphExtension.STANDARD_PREF)   # no argument: none
+    .conflict_model(ConflictModel.NEGATION, ConflictModel.DECLARED)   # no argument: none
     .query_mode(False)
 )
 ```
