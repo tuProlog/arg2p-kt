@@ -1,7 +1,8 @@
-{{- /* Latest released Arg2P version, injected by the Gradle build (see doc/build.gradle.kts).
-       Falls back to the value in hugo.toml when the site is built without Gradle. */ -}}
+{{- /* The latest release of Arg2P, which the build of the site states (data/arg2p.json, see doc/build.gradle.kts):
+       <VERSION> when the site is built without it (hugo server alone) */ -}}
 {{- with hugo.Data.arg2p -}}
 {{- .version -}}
 {{- else -}}
-{{- site.Params.arg2pVersion -}}
+{{- warnf "The version of Arg2P is not stated: build the site with ./gradlew :doc:hugoBuild (or :doc:hugoServer)" -}}
+&lt;VERSION&gt;
 {{- end -}}

@@ -29,7 +29,7 @@ The build uses the Gradle wrapper, so no local Gradle installation is needed. Th
 | `./gradlew ktlintCheck` | Check the code style |
 | `./gradlew dokkaGeneratePublicationHtml` | Generate the API documentation |
 
-The JVM tests target Java 21 by default; pass `-PtestJvm=<version>` to use a different one.
+The JVM tests target Java {{< java >}} by default; pass `-PtestJvm=<version>` to use a different one.
 
 ### Working on this site
 
