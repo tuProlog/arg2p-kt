@@ -157,6 +157,7 @@ next goals are solved as before. A Prolog check of a worker still running ends o
 | `site` | The identifier of the site of the cluster |
 | `sites` | The sites it knows, itself first (`SiteStats`): `id`, `workers` it offers (null for no limit, or not known), `delegate` (one of its threads or Web Workers), `via` (the site it is reached through, null if linked directly) |
 | `evaluation` | The last evaluation it answered, a statement or a goal labelling or reading a graph (`EvaluationStats`), null before the first; a goal using no graph (a Prolog predicate) leaves it as it is |
+| `nearby` | The sites heard on the local network that are not peers (`NearbySite`, see [With a code](#with-a-code)) |
 
 The `workers` of a site are those it offers the federation, its threads or Web Workers included, for the cluster
 itself as for the others: a `WebWorkerCluster` of four Web Workers reports 4 for itself, and lists its Web Workers as
@@ -219,6 +220,54 @@ ThreadedCluster(threads = 8).discover()
 await new WorkerCluster(4).discover()
 ```
 
+### With a code
+
+An instance can require a code of the instances linking to it (`requiresCode`): its `code`, four random digits
+(`newCode()` makes another, the one before refused from then on). An instance links to it presenting the code
+(`connect(url, code)`, on the JVM, on Node.js and in browsers); one presenting no code or a wrong one is refused, and
+after three wrong codes from an address its codes are refused for a while, a second after the third, twice as long
+after each one more (up to a quarter of an hour). The instance that presented the right code is paired with it: the
+two are given a token of their own, presented in place of the code from then on, so that they link again with no code
+after a link drops, while they both run. The instances an instance requiring a code opens links to itself, and its
+own threads, are not checked.
+
+Discovering with a code required (`discover(requireCode = true)`), an instance links to no instance it hears, but to
+those it is paired with: the instances heard are `nearby` (`NearbySite`: `id`, `name`, `address`, `requiresCode`), as
+long as their beacons come, and `onNearbyChanged` is called as they come and go. The name of an instance is that of
+its host, unless it is given another (`name`). `pair(site, code)` links to a nearby instance with its code, as read on
+it: once it admits the code, the two are paired, and federated as any two instances.
+
+```kotlin
+val cluster = ThreadedCluster(threads = 8)
+cluster.discover(requireCode = true)
+cluster.code                        // 4831: told to whom pairs with this instance
+cluster.onNearbyChanged = { println(cluster.nearby.map { it.name }) }
+cluster.pair(cluster.nearby.first().id, "2716")   // the code read on the other: an Arg2pException if refused
+```
+
+```javascript
+const cluster = new WorkerCluster(4)
+await cluster.discover(undefined, true)
+await cluster.pair(cluster.nearby[0].id, '2716')
+await new WebWorkerCluster(4, '/arg2p-worker.js').connect('ws://hub-host:9431', '4831')
+```
+
+The instances that require no code link to those that do not either, as before, and to none that does but those they
+are paired with. `stats.nearby` lists the instances heard that are not peers, with the peers in `stats.sites`.
+
+### Pages on the port of an instance
+
+A JVM instance answers the plain HTTP requests on the port it listens on as well, with the pages it is given
+(`serve`): a page joining the federation from a phone, say, on the same address as the WebSockets.
+
+```kotlin
+cluster.serve { path -> if (path == "/join") StaticContent(page, "text/html; charset=utf-8") else null }
+cluster.listen(9431)                // http://host:9431/join, and ws://host:9431 for the instances
+```
+
+A GET of a path is answered with its page (`StaticContent`: the bytes and their media type), any other request with
+404; the requests opening a WebSocket are those of the instances, as before.
+
 ### In a browser
 
 `WebWorkerCluster` runs the workers on Web Workers, each running a module of yours that calls `startWebWorker()` (an
@@ -262,7 +311,7 @@ asked for it, and needs the others only when its theory changes.
 
 > [!WARNING]
 > A federated instance runs the theories its peers send it, and sends them its own. Listen only on networks you
-> trust.
+> trust, or require a code.
 
 ---
 

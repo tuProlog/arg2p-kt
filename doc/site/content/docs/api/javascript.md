@@ -162,6 +162,7 @@ cluster.solver.graph()              // the Graph of the solution
 cluster.stats.evaluation?.workers   // what each worker built
 cluster.solver.stop()               // the goal being solved stopped: its next solution a halt
 cluster.flags = Flags.defaults().queryMode(false)   // for the next evaluations
+await cluster.connect('ws://hub-host:9431', '4831')  // presenting the code of an instance requiring one
 ```
 
 ---
