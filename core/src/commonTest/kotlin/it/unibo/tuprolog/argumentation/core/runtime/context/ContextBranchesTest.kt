@@ -54,4 +54,12 @@ class ContextBranchesTest {
         assertTrue(solve("context_check(a, p(_))").startsWith("error"))
         assertTrue(solve("context_drop_after(0, [a])").startsWith("error"))
     }
+
+    // the copies of a term differing in the names of their variables share an identifier, which a term with an atom in
+    // place of a variable does not
+    @Test
+    fun theIdentifiersOfTermsWithVariables() {
+        assertEquals("yes", solve("context_id(p(X, Y), I), context_id(p(A, B), I), context_id(p(A, A), J), I \\== J"))
+        assertEquals("yes", solve("context_id(p(X), I), context_id(p('_V0'), J), I \\== J"))
+    }
 }
