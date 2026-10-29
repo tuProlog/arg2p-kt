@@ -80,6 +80,12 @@
         "command": "arg2p.restartServer",
         "title": "Restart the Language Server",
         "category": "Arg2P"
+      },
+      {
+        "command": "arg2p.federation",
+        "title": "Show the Federation",
+        "category": "Arg2P",
+        "icon": "$(broadcast)"
       }
     ],
     "menus": {
@@ -134,8 +140,32 @@
           ],
           "default": "beside",
           "markdownDescription": "Where **Arg2P: Open the Solver** opens the solver of a theory."
+        },
+        "arg2p.federation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "machine",
+          "markdownDescription": "Whether the language server federates with those of the devices nearby (the VS Code of the same local network) and lets phones join: each device shows its name and a 4-digit code, and links to another once its code is typed (see the view **Arg2P Federation**). Disabled, it neither listens nor is heard, and **Parallel** solves on the workers of this device alone."
+        },
+        "arg2p.federation.name": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "The name of this device, as the devices nearby see it. Empty: the name of the host."
         }
       }
+    },
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "arg2p.federation",
+          "name": "Arg2P Federation",
+          "when": "arg2p.active",
+          "visibility": "collapsed",
+          "icon": "$(broadcast)"
+        }
+      ]
     }
   },
   "scripts": {
@@ -156,6 +186,7 @@
     "@vscode/vsce": "4.1.0",
     "esbuild": "0.28.2",
     "typescript": "7.0.2",
+    "uqr": "0.1.3",
     "vitest": "5.0.5",
     "vscode-jsonrpc": "10.0.0",
     "vscode-languageclient": "11.0.0"

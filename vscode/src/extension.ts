@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
+import { FederationView } from './federationView.js';
 import { argumentsOf, javaOf } from './java.js';
 import { SolverPanel } from './panel.js';
 import { LanguageServer } from './server.js';
 
-// The extension of Arg2P: the language arg2p (*.arg2p), its errors as it is typed, and the solver of a theory, both
-// from the language server of arg2p, which runs on the JVM
+// The extension of Arg2P: the language arg2p (*.arg2p), its errors as it is typed, the solver of a theory, and the
+// federation of the devices nearby solving in parallel, from the language server of arg2p, which runs on the JVM
 
 let server: LanguageServer | null = null;
 
@@ -13,7 +14,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const languageServer = new LanguageServer(
         () => {
             const { java, args } = command(context);
-            return new LanguageClient('arg2p', 'Arg2P', { command: java, args }, { documentSelector: [{ language: 'arg2p' }] });
+            return new LanguageClient(
+                'arg2p',
+                'Arg2P',
+                { command: java, args },
+                { documentSelector: [{ language: 'arg2p' }], initializationOptions: { federation: FederationView.settings() } },
+            );
         },
         error =>
             void vscode.window.showErrorMessage(
@@ -32,6 +38,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             void SolverPanel.show(context, languageServer, editor);
         }),
         vscode.commands.registerCommand('arg2p.restartServer', () => languageServer.restart()),
+        vscode.window.registerWebviewViewProvider(FederationView.ID, new FederationView(context, languageServer)),
+        vscode.commands.registerCommand('arg2p.federation', () => vscode.commands.executeCommand(`${FederationView.ID}.focus`)),
         vscode.workspace.onDidChangeConfiguration(async event => {
             if (event.affectsConfiguration('arg2p.java')) {
                 await languageServer.restart();
@@ -48,6 +56,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             },
         }),
     );
+    // the view of the federation shows in the explorer once the extension runs
+    void vscode.commands.executeCommand('setContext', 'arg2p.active', true);
     await languageServer.start();
 }
 

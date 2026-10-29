@@ -4,7 +4,8 @@ import type { EngineRequest } from './protocol.js';
 
 // The engine of the solver page, on the language server: the page speaks to its engine as the browser does to the
 // worker of its solver (the messages of @tuprolog/arg2p-ui/js), and the bridge passes them on to the server
-// (arg2p/engine), in a session of the page's own, so that the runs of a page never mix with those of another.
+// (arg2p/engine), in a session of the page's own, so that the runs of a page never mix with those of another. A query
+// is solved on the federation of the server if the page asks for it (parallel).
 
 /** The language server, as the bridge asks it */
 export interface Server {
@@ -15,6 +16,9 @@ export class Bridge {
     private session = sessionId();
     private disposed = false;
 
+    /** Whether the queries are solved in parallel, on the federation of the server */
+    parallel = false;
+
     constructor(
         private readonly server: Server,
         private readonly post: (answer: Answer) => void,
@@ -23,7 +27,8 @@ export class Bridge {
     /** Answers [request] of the page, through the server */
     async handle(request: EngineRequest): Promise<void> {
         const session = this.session;
-        const answers = await this.server.request<{ answers: Answer[] }>('arg2p/engine', { session, request }).then(
+        const sent = request.type === 'solve' ? { ...request, parallel: this.parallel } : request;
+        const answers = await this.server.request<{ answers: Answer[] }>('arg2p/engine', { session, request: sent }).then(
             it => it.answers,
             error => unanswered(request, error),
         );
