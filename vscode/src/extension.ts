@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
+import { JAVA } from './defaults.js';
 import { FederationView } from './federationView.js';
 import { argumentsOf, javaOf } from './java.js';
 import { SolverPanel } from './panel.js';
@@ -24,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         error =>
             void vscode.window.showErrorMessage(
                 `The language server of Arg2P did not start (${command(context).java}): ${error instanceof Error ? error.message : String(error)}. ` +
-                    'Set arg2p.java.path to a Java 21 or later.',
+                    `Set arg2p.java.path to a Java ${JAVA} or later.`,
             ),
     );
     server = languageServer;
