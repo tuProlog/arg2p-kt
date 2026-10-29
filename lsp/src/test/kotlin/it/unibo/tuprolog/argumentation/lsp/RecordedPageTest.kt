@@ -101,6 +101,14 @@ class RecordedPageTest {
     }
 
     @Test
+    fun theSolutionsFoundBeforeTheTimeRanOutAreRecorded() {
+        val recording = RecordedPage.record("a.\na :- loop.\nloop :- loop.\n", "a", "", 5, 2.seconds)
+        assertTrue(recording.timedOut)
+        assertTrue(recording.more)
+        assertEquals(1, recording.next.flatten().count { it["type"] == "solution" })
+    }
+
+    @Test
     fun theRecordingCannotCloseItsScript() {
         val theory = "% </script><!-- & -->\nf1 :=> a.\n"
         val page = RecordedPage.page(theory, "a")

@@ -145,7 +145,8 @@ with it rather than guessing what they conclude. Its tools:
 | `explore` | Shows the user the solver of a theory, to explore its results themselves |
 
 A theory that does not parse, or that its profile refuses, is an error of the tool saying why; a query is stopped after
-`timeoutSeconds` (60 by default).
+`timeoutSeconds` (60 by default), and so is each run of the solver `explore` shows, within the `timeoutSeconds` of
+`explore`. Once the client closes the input of the server, the tools under way stop and the server ends.
 
 `explore` is an [MCP App](https://modelcontextprotocol.io/docs/extensions/apps): in the clients that show them
 (Claude, ChatGPT, VS Code), the solver of the playground appears in the conversation, runs the query, and lets the user

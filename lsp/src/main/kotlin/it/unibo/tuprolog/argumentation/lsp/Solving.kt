@@ -58,6 +58,11 @@ internal fun <T, R> CompletableFuture<T>.handling(handler: (T?, Throwable?) -> R
 /** The failure of a future (as [handling] is given it) as its work threw it: out of the CompletionException wrapping it */
 internal fun Throwable.unwrapped(): Throwable = (this as? CompletionException)?.cause ?: this
 
+/** A work that ran out of its time, [timeout]: what it fails with wherever it runs (see [Deadline.timed]) */
+internal class TimedOut(
+    timeout: Duration,
+) : Exception("No answer within ${timeout.inWholeSeconds} seconds: the theory may not terminate, or need more time.")
+
 /**
  * The time limit of a work, on the thread it runs on: past it, the thread is interrupted, which stops the resolution
  * under way (it halts); the work tells by [expired] that it ran out of time, to answer with what it found so far.
@@ -103,5 +108,26 @@ internal class Deadline private constructor(
                 deadline.end()
             }
         }
+
+        /**
+         * [work], on the current thread, within [timeout]: a [TimedOut] if it runs out of it, whether it fails then or
+         * ends (a work interrupted may end as if it found nothing: the settings of a solver stopped read as none), unless
+         * what it ends with is [answered], what it found until then
+         */
+        fun <T> timed(
+            timeout: Duration,
+            answered: (T) -> Boolean = { false },
+            work: (Deadline) -> T,
+        ): T =
+            within(timeout) { deadline ->
+                val done =
+                    try {
+                        work(deadline)
+                    } catch (failure: Exception) {
+                        throw if (deadline.expired) TimedOut(timeout) else failure
+                    }
+                if (deadline.expired && !answered(done)) throw TimedOut(timeout)
+                done
+            }
     }
 }

@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * The federation of the language server with the others of the local network (the editors of other devices) and the
@@ -83,9 +82,11 @@ internal class Federation(
      * an exception if it cannot listen, the federation disabled
      */
     fun enable(enabled: Boolean) {
+        // already so: the query the cluster solves goes on
         if (enabled == this.enabled) return
-        cluster?.solver?.stop()
-        lock.withLock {
+        exclusively {
+            // made so meanwhile, by another call
+            if (enabled == this.enabled) return@exclusively
             this.enabled = enabled
             discard()
             try {
@@ -140,9 +141,19 @@ internal class Federation(
     ): Resolution = Resolution.Federated(this, theory, flags, query, profile, output)
 
     /** Closes the links of the cluster, and stops it */
-    override fun close() {
-        cluster?.solver?.stop()
-        lock.withLock { discard() }
+    override fun close() = exclusively { discard() }
+
+    // [change] of the cluster, holding its lock: the query it solves, holding it meanwhile, stopped until it lets it go
+    private fun exclusively(change: () -> Unit) {
+        while (!lock.tryLock()) {
+            cluster?.solver?.stop()
+            if (lock.tryLock(STOPPING, TimeUnit.MILLISECONDS)) break
+        }
+        try {
+            change()
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**

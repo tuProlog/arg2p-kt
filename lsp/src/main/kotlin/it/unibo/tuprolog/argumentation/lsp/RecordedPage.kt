@@ -103,7 +103,7 @@ object RecordedPage {
                 val settings = ask("type" to "settings", "reqId" to ID, "theory" to theory, "flags" to flags)
                 val solve =
                     ask("type" to "solve", "id" to ID, "theory" to theory, "query" to query, "flags" to flags)
-                        ?: listOf(PageEngine.failed(ID, ErrorData("Error", "No answer within ${timeout.inWholeSeconds} seconds.")))
+                        ?: listOf(PageEngine.failed(ID, ErrorData("Error", TimedOut(timeout).message!!)))
                 val next = mutableListOf<List<Answer>>()
                 var more = solve.any { it["type"] == "started" }
                 while (more && next.size < most) {

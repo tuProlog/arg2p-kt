@@ -9,7 +9,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** The engine of the pages, as the pages speak to it */
 class PageEngineTest {
@@ -24,12 +26,13 @@ class PageEngineTest {
         solving.close()
     }
 
-    // The request of [session], as JSON, sent
+    // The request of [session], as JSON, sent, to be answered within [limit]
     private fun send(
         request: String,
         session: String = "page",
         engine: PageEngine = this.engine,
-    ): CompletableFuture<List<Answer>> = engine.handle(session, JsonParser.parseString(request).asJsonObject)
+        limit: Duration = Duration.INFINITE,
+    ): CompletableFuture<List<Answer>> = engine.handle(session, JsonParser.parseString(request).asJsonObject, limit)
 
     // The answers to [request] of [session], as JSON
     private fun ask(
@@ -264,6 +267,25 @@ class PageEngineTest {
         Thread.sleep(500)
         endless.cancel(true)
         assertIdle()
+        // and the page no longer counts it among the requests solving its query
+        awaitUntil { solvingOf("page") == 0 }
+    }
+
+    @Test
+    fun aRequestPastItsLimitFailsAsOutOfTime() {
+        val limit = 1.seconds
+        assertEquals(
+            "started",
+            answered(
+                send("""{"type":"solve","id":1,"theory":"loop :- loop.","query":"loop","flags":""}""", limit = limit),
+            ).single().get("type").asString,
+        )
+        val started = System.nanoTime()
+        val failed = answered(send("""{"type":"next","id":1}""", limit = limit)).of("failed")
+        assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(20))
+        assertEquals(TimedOut(limit).message, failed.getAsJsonObject("error").get("message").asString)
+        assertIdle()
+        awaitUntil { solvingOf("page") == 0 }
     }
 
     @Test
@@ -304,6 +326,32 @@ class PageEngineTest {
         assertFailsWith<InvalidParams> { send("""{"id":1}""") }
         assertFailsWith<InvalidParams> { send("""{"type":"next","id":"one"}""") }
         assertFailsWith<InvalidParams> { send("""{"type":"graphAt","id":1,"reqId":1}""") }
+    }
+
+    // How many requests solve the query of the page [session], as the engine counts them
+    private fun solvingOf(session: String): Int {
+        val sessions =
+            PageEngine::class.java
+                .getDeclaredField("sessions")
+                .apply { isAccessible = true }
+                .get(engine) as Map<*, *>
+        val page = sessions[session] ?: return 0
+        return synchronized(sessions) {
+            (
+                page.javaClass
+                    .getDeclaredField("solving")
+                    .apply { isAccessible = true }
+                    .get(page) as List<*>
+            ).size
+        }
+    }
+
+    private fun awaitUntil(condition: () -> Boolean) {
+        val until = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+        while (!condition()) {
+            check(System.nanoTime() < until) { "Not in time" }
+            Thread.sleep(50)
+        }
     }
 
     // No thread is left solving

@@ -9,8 +9,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 import kotlin.random.Random
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -18,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** The federation of the language server: its state, its pairings by code, its page, and the queries solved on it */
 class FederationTest {
@@ -171,6 +174,55 @@ class FederationTest {
     }
 
     @Test
+    fun aParallelQueryPastItsLimitFailsAsOutOfTime() {
+        val engine = PageEngine(solving, parallel = federation())
+        try {
+            val slow = """slow :- between(1, 100000000, _), fail.\nslow.\n"""
+            val request = JsonParser.parseString(solve(slow, "slow", parallel = true)).asJsonObject
+            val failed = answers(engine.handle("page", request, 1.seconds)).single { it.get("type").asString == "failed" }
+            assertEquals(TimedOut(1.seconds).message, failed.getAsJsonObject("error").get("message").asString)
+            assertEquals(solutions(engine, conflict, "a", parallel = false), solutions(engine, conflict, "a", parallel = true))
+        } finally {
+            engine.close()
+        }
+    }
+
+    @Test
+    fun aFederationEnabledByManyAtOnceIsEnabledOnce() {
+        val changes = AtomicInteger()
+        val federation = federation { changes.incrementAndGet() }
+        val engine = PageEngine(solving, parallel = federation)
+        try {
+            // a query solved on the cluster, which holds it: the calls enabling it wait for it together
+            val slow = """slow :- between(1, 100000000, _), fail.
+slow.
+"""
+            val solved = engine.handle("page", JsonParser.parseString(solve(slow, "slow", parallel = true)).asJsonObject)
+            Thread.sleep(1_000)
+            val ready = CyclicBarrier(THREADS)
+            val enabling =
+                List(THREADS) {
+                    thread {
+                        ready.await()
+                        federation.enable(true)
+                    }
+                }
+            enabling.forEach { it.join(30_000) }
+            // the query stopped by the first of them
+            answers(solved)
+            assertTrue(federation.state.enabled)
+            // one cluster made, told once
+            assertEquals(1, changes.get())
+            val code = federation.state.code
+            federation.enable(true)
+            assertEquals(code, federation.state.code)
+            assertEquals(1, changes.get())
+        } finally {
+            engine.close()
+        }
+    }
+
+    @Test
     fun aWrongParallelQueryTellsWhereItDoesNotParse() {
         val engine = PageEngine(solving, parallel = federation())
         try {
@@ -232,5 +284,10 @@ class FederationTest {
             check(System.currentTimeMillis() < deadline) { "Not in time" }
             Thread.sleep(50)
         }
+    }
+
+    private companion object {
+        // How many enable the federation at once
+        const val THREADS = 8
     }
 }

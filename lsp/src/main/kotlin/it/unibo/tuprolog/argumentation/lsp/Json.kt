@@ -39,14 +39,20 @@ internal fun JsonObject.requiredText(name: String): String = text(name) ?: throw
 /** The integer [name], which is required */
 internal fun JsonObject.requiredInteger(name: String): Long = integer(name) ?: throw InvalidParams("$name is missing")
 
-// The primitive [name] when it is what [kind] tells
+// The primitive [name] when it is what [kind] tells (a number that is not one, as NaN, is not)
 private fun JsonObject.field(
     name: String,
     kind: String,
     valid: (JsonPrimitive) -> Boolean,
 ): JsonPrimitive? =
     get(name)?.takeUnless { it.isJsonNull }?.let { value ->
-        (value as? JsonPrimitive)?.takeIf(valid) ?: invalid(name, kind)
+        (value as? JsonPrimitive)?.takeIf {
+            try {
+                valid(it)
+            } catch (_: NumberFormatException) {
+                false
+            }
+        } ?: invalid(name, kind)
     }
 
 private fun invalid(

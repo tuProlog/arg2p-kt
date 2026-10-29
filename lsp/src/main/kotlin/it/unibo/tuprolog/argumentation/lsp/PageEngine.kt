@@ -31,7 +31,8 @@ import kotlin.time.Duration.Companion.minutes
  * Each page is a session of its own, by the name it gives: its query (the last one alone, as in the browser), and the
  * requests solving it (solve and next, one at a time in their order, as the worker solves them), which a new query, a
  * stop or a close stops, answered with a failure. A session idle for [idle] is forgotten, the least recently used past
- * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past [limit], if there is one.
+ * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past the time limit its server gives
+ * it, if any (see [handle]): it fails then with a [TimedOut], whatever it was doing.
  *
  * A query solved with `parallel` is resolved by [parallel] (the cluster of the federation of the language server, on its
  * threads and on the sites it is federated with, see [Resolution.Federated]), on the same theory with the same flags,
@@ -40,7 +41,6 @@ import kotlin.time.Duration.Companion.minutes
 internal class PageEngine(
     private val solving: Solving,
     private val idle: Duration = IDLE,
-    private val limit: Duration = Duration.INFINITE,
     private val parallel: Resolution.Factory? = null,
 ) : AutoCloseable {
     // A query of a page, solved one solution at a time (one request at a time: a solver has no lock of its own),
@@ -84,12 +84,13 @@ internal class PageEngine(
 
     /**
      * The answers to [request], a message of the page of [session] to its engine: stop and close are done at once,
-     * the others solved on threads of their own (cancelling the result of one stops it). An [InvalidParams] for a
-     * request that is not one of the engine.
+     * the others solved on threads of their own (cancelling the result of one stops it), within [limit]. An
+     * [InvalidParams] for a request that is not one of the engine.
      */
     fun handle(
         session: String,
         request: JsonObject,
+        limit: Duration = Duration.INFINITE,
     ): CompletableFuture<List<Answer>> {
         expire()
         val type = request.requiredText("type")
@@ -106,11 +107,11 @@ internal class PageEngine(
                 val query = request.text("query") ?: ""
                 val flags = request.text("flags") ?: ""
                 val inParallel = request.flag("parallel") ?: false
-                solving(page, id, replacing = true) { start(page, id, theory, query, flags, inParallel) }
+                solving(page, id, replacing = true, limit) { start(page, id, theory, query, flags, inParallel) }
             }
             "next" -> {
                 val id = request.requiredInteger("id")
-                solving(page, id, replacing = false) {
+                solving(page, id, replacing = false, limit) {
                     runOf(page, id)?.let(::next)
                         ?: listOf(failed(id, ErrorData("Error", Resolution.NO_LONGER_RUNNING)))
                 }
@@ -119,19 +120,19 @@ internal class PageEngine(
                 val id = request.requiredInteger("id")
                 val branch = request.requiredInteger("branch").toInt()
                 val reqId = request.requiredInteger("reqId")
-                submit { listOf(answer("graph", "reqId" to reqId, "graph" to graphAt(runOf(page, id), branch))) }
+                submit(limit) { listOf(answer("graph", "reqId" to reqId, "graph" to graphAt(runOf(page, id), branch))) }
             }
             "check" -> {
                 val reqId = request.requiredInteger("reqId")
                 val text = request.text("text") ?: ""
                 val kind = request.text("kind") ?: "theory"
-                submit { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
+                submit(limit) { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
             }
             "settings" -> {
                 val reqId = request.requiredInteger("reqId")
                 val theory = request.text("theory") ?: ""
                 val flags = request.text("flags") ?: ""
-                submit { listOf(answer("settings", "reqId" to reqId, "settings" to Solvers.settings(theory, flags))) }
+                submit(limit) { listOf(answer("settings", "reqId" to reqId, "settings" to Solvers.settings(theory, flags))) }
             }
             "stop" -> {
                 synchronized(sessions) { page.stop() }
@@ -159,19 +160,20 @@ internal class PageEngine(
             session
         }
 
-    // The request of [page] solving its query, [work], after those before it ([replacing] them, it stops them):
-    // answered with a failure if it is stopped or fails
+    // The request of [page] solving its query, [work], after those before it ([replacing] them, it stops them), within
+    // [limit]: answered with a failure if it is stopped or fails
     private fun solving(
         page: Session,
         id: Long,
         replacing: Boolean,
+        limit: Duration,
         work: () -> List<Answer>,
     ): CompletableFuture<List<Answer>> {
         val solved =
             synchronized(sessions) {
                 if (replacing) page.stop()
                 val before = page.solving.toList()
-                submit {
+                submit(limit) {
                     before.forEach { request ->
                         try {
                             request.get()
@@ -184,9 +186,10 @@ internal class PageEngine(
                     work()
                 }.also { page.solving += it }
             }
+        // no longer solving once done, however it ends: stopped by the page, or given up by the server
+        solved.whenComplete { _, _ -> synchronized(sessions) { page.solving.remove(solved) } }
         // the server giving up the request (its client cancelled it) stops it too
         return solved.handling { answers, failure ->
-            synchronized(sessions) { page.solving.remove(solved) }
             when (val cause = failure?.unwrapped()) {
                 null -> answers.orEmpty()
                 is CancellationException -> listOf(failed(id, ErrorData("Stopped", Resolution.STOPPED)))
@@ -195,9 +198,11 @@ internal class PageEngine(
         }
     }
 
-    // [work] solved on a thread of its own, within the limit
-    private fun <T> submit(work: () -> T): CompletableFuture<T> =
-        solving.submit { if (limit.isInfinite()) work() else Deadline.within(limit) { work() } }
+    // [work] solved on a thread of its own, within [limit]: a TimedOut past it
+    private fun <T> submit(
+        limit: Duration,
+        work: () -> T,
+    ): CompletableFuture<T> = solving.submit { if (limit.isInfinite()) work() else Deadline.timed(limit) { work() } }
 
     // Starts solving the query of [page], resolved in parallel if [inParallel]: its run replaces the one before, only if
     // it is still the request of the page
