@@ -34,9 +34,26 @@ A theory that does not parse, or that its profile refuses, is an error: fix it f
 
 ## Without the MCP server
 
-When there is no `explore` tool (the skills installed alone, or a client without the MCP server), give the user a link
-to the web playground opening the same theory, query and flags. The playground reads them from the plain parameters
-of the link, URL-encoded:
+When there is no `explore` tool (the skills installed alone, or a client without the MCP server, as claude.ai), and
+you run code in a sandbox the user's browser cannot reach (claude.ai with code execution, others), make the page of
+the solver with the Python package and give the user the HTML file:
+
+```bash
+pip install arg2p
+arg2p page theory.arg2p --query "buildLabelSets(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
+```
+
+It prints the path of the page it wrote (`-o` names it; `-` reads the theory from the standard input). Use the same
+theory, query and flags you solved with. claude.ai shows the file live in the conversation: the solutions, the
+argument graph of each, the flags in effect and the theory, and a link to the web playground.
+
+The page shows the run as it was solved, and does not solve again: for another query, an edited theory or other
+flags, solve them and make a new page. A note tells when the solutions were cut short (`--max-solutions`, 20 by
+default) or ran out of time (`--timeout`, 60 seconds).
+
+Otherwise (no code runs, or it runs on the user's machine), give the user a link to the web playground opening the
+same theory, query and flags, to solve them live. The playground reads them from the plain parameters of the link,
+URL-encoded:
 
 ```text
 https://tuprolog.github.io/arg2p-kt-web/?theory=<theory>&query=<query>&flags=<flags>
