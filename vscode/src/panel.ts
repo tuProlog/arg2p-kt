@@ -1,6 +1,7 @@
 import type { SyntaxProblem } from '@tuprolog/arg2p-ui/data';
 import * as vscode from 'vscode';
 import { Bridge } from './bridge.js';
+import { QUERY } from './defaults.js';
 import { page } from './page.js';
 import type { FromPage, ToPage } from './protocol.js';
 import type { LanguageServer } from './server.js';
@@ -124,7 +125,7 @@ export class SolverPanel {
 
     private saved(): Saved {
         const flags = vscode.workspace.getConfiguration('arg2p').get<string>('flags') ?? '';
-        return this.context.workspaceState.get<Saved>(this.key) ?? { query: 'buildLabelSets(In, Out, Und)', flags };
+        return this.context.workspaceState.get<Saved>(this.key) ?? { query: QUERY, flags };
     }
 
     private get key(): string {

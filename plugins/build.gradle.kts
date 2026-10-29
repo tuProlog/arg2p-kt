@@ -8,6 +8,23 @@ plugins {
 
 val skills = layout.projectDirectory.dir("arg2p/skills")
 
+// The Node.js of the build of Kotlin/JS, which runs version.mjs
+val nodeJs = the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>()
+
+// The manifests of the plugin and of its MCP server, each as its client reads it: those plugins/arg2p/plugin.json states
+// (see version.mjs, which writes them from it)
+val checkManifests =
+    tasks.register<Exec>("checkManifests") {
+        group = "verification"
+        description = "Checks that the manifests of the plugin and of the MCP Registry state what plugins/arg2p/plugin.json does"
+        dependsOn("kotlinNodeJsSetup")
+        workingDir = rootDir
+        executable(nodeJs.executable.get())
+        args("plugins/version.mjs", "--check")
+    }
+
+tasks.check { dependsOn(checkManifests) }
+
 val skillPackages =
     skills.asFile
         .listFiles { file -> file.resolve("SKILL.md").isFile }
@@ -31,6 +48,6 @@ val pluginPackage by tasks.registering(Zip::class) {
 
 tasks.register("pluginPackages") {
     group = "plugins"
-    description = "Packs the skills and the plugin of Arg2P (build/distributions)"
-    dependsOn(skillPackages, pluginPackage)
+    description = "Packs the skills and the plugin of Arg2P (build/distributions), their manifests checked"
+    dependsOn(checkManifests, skillPackages, pluginPackage)
 }

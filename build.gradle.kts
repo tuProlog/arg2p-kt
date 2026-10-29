@@ -301,7 +301,8 @@ afterEvaluate {
 
 // The coverage of the Kotlin code by the tests on the JVM (Kover), with -Pcoverage alone, as it instruments them: the
 // code of core, of the causality and the parallel solver and of the API (commonMain is the code of JavaScript as
-// well), in one report (build/reports/kover), and its total for a badge (koverBadge)
+// well), in one report (build/reports/kover), and its total for a badge (koverBadge); with the coverage of the Prolog
+// modules, as the documentation site publishes them (coverageReports)
 val coverage = findProperty("coverage") != null
 val covered = listOf(":core", ":causality-solver", ":parallel-solver")
 
@@ -338,6 +339,20 @@ if (coverage) {
             )
         }
     }
+
+    tasks.register<Sync>("coverageReports") {
+        group = "verification"
+        description = "Gathers the coverage of the tests as the documentation site publishes it (build/reports/coverage)"
+        dependsOn("koverHtmlReport", "koverBadge", ":core:jvmPrologCoverage")
+        from(layout.buildDirectory.dir("reports/kover/html")) { into("kotlin") }
+        from(layout.buildDirectory.file("reports/kover/badge.json")) { rename { "kotlin.json" } }
+        from(project(":core").layout.buildDirectory.dir("reports/prolog-coverage")) {
+            include("coverage.md", "badge.json")
+            rename("coverage.md", "prolog.md")
+            rename("badge.json", "prolog.json")
+        }
+        into(layout.buildDirectory.dir("reports/coverage"))
+    }
 }
 
 // The Kotlin & JS reference in the style of the documentation site
@@ -358,11 +373,6 @@ dependencies {
     "dokka"(project(":causality-solver"))
     "dokka"(project(":parallel-solver"))
 }
-
-// project.findProperty("nodeVersion")?.toString()?.takeIf { it.isNotBlank() }?.let {
-//    nodeVersion(it)
-//    log("override NodeJS version: $it", LogLevel.LIFECYCLE)
-// }
 
 afterEvaluate {
     subprojects {

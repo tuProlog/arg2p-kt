@@ -9,12 +9,12 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `graphBuildMode(P)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free` |
 | `argumentLabellingMode(S)` | `grounded` | `grounded`, `complete`, `preferred`, `stable`, `semistable`, `ideal`, `eager`, `naive`, `stage`, `cf2`, `stage2`, `conflictfree`, `admissible`, `stronglyadmissible`, `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete` |
 | `statementLabellingMode(M)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
+| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
 | `orderingPrinciple(P)` | `last` | `last`, `weakest` |
 | `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
 | `conflictModel(M)` | `builtin` | `builtin`, `declared` (only the declared conflicts, as ABA) |
 | `queryMode` | on with no flags given | present or absent |
-| `autoTransposition` | on under `aspic_plus` | present, or `autoTransposition(off).` |
+| `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
 | `metaRules`, `metaConflicts` | off (on under `meta`) | present: rules fire only when argued `applicable(Rule)`, conflicts only when argued `conflict(A, B)` |
 | `graphBuilder(B)` | `ruleGraph` | `ruleGraph`, `abstractGraph`: set by the profile |

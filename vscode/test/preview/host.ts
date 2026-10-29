@@ -1,4 +1,5 @@
 import { Bridge } from '../../src/bridge.js';
+import { FLAGS, QUERY } from '../../src/defaults.js';
 import type { FromPage, ToPage } from '../../src/protocol.js';
 
 // The extension, as the page of the solver sees it, played in a browser: the bridge of the extension, asking the
@@ -6,7 +7,6 @@ import type { FromPage, ToPage } from '../../src/protocol.js';
 
 interface Preview {
     theory: string;
-    flags: string;
 }
 
 const preview = (window as unknown as { ARG2P_PREVIEW: Preview }).ARG2P_PREVIEW;
@@ -24,7 +24,7 @@ const bridge = new Bridge({ request: rpc }, answer => toPage({ type: 'engine', a
 let theory = preview.theory;
 (window as unknown as { acquireVsCodeApi: () => unknown }).acquireVsCodeApi = () => ({
     postMessage(message: FromPage) {
-        if (message.type === 'ready') toPage({ type: 'document', name: 'preview.arg2p', theory, query: 'buildLabelSets(In, Out, Und)', flags: preview.flags, parallel: false });
+        if (message.type === 'ready') toPage({ type: 'document', name: 'preview.arg2p', theory, query: QUERY, flags: FLAGS, parallel: false });
         else if (message.type === 'engine') void bridge.handle(message.request);
         // the switch Parallel, as the panel takes it
         else if (message.type === 'state') bridge.parallel = message.parallel;

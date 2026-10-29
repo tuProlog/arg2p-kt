@@ -1,0 +1,8 @@
+{{- /* The oldest Java Arg2P runs on, the JVM it targets (jvm in gradle/libs.versions.toml), as the build of the site
+       states it (data/arg2p.json, see doc/build.gradle.kts) */ -}}
+{{- with hugo.Data.arg2p -}}
+{{- .java -}}
+{{- else -}}
+{{- warnf "The Java of Arg2P is not stated: build the site with ./gradlew :doc:hugoBuild (or :doc:hugoServer)" -}}
+&lt;JAVA&gt;
+{{- end -}}

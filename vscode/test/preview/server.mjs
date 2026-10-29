@@ -3,9 +3,8 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node';
-import { argumentsOf, javaOf } from '../../src/java.ts';
 
 // The page of the solver in a browser, on the language server (npm run preview): http://localhost:5400, the theory of
 // the file given (Tweety otherwise). It needs the bundles and the server (npm run build, ./gradlew :vscode:vscodeServer).
@@ -22,6 +21,16 @@ await esbuild.build({
     format: 'esm',
     logLevel: 'warning',
 });
+// the java of the extension (src/java.ts), for Node.js, with the defaults it reads
+await esbuild.build({
+    entryPoints: [join(extension, 'src', 'java.ts')],
+    outfile: join(extension, 'dist-test', 'java.mjs'),
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    logLevel: 'warning',
+});
+const { argumentsOf, javaOf } = await import(pathToFileURL(join(extension, 'dist-test', 'java.mjs')).href);
 
 const jar = join(extension, 'server', 'arg2p-lsp.jar');
 if (!existsSync(jar)) throw new Error(`No server: build it with ./gradlew :vscode:vscodeServer (${jar})`);
@@ -41,7 +50,7 @@ const page = `<!doctype html>
     --vscode-list-hoverBackground: #2a2d2e; --vscode-font-family: system-ui, sans-serif; --vscode-editor-font-family: Consolas, monospace;
     --vscode-font-size: 13px; }
 </style>
-<script>window.ARG2P_PREVIEW = ${JSON.stringify({ theory, flags: 'argumentLabellingMode(grounded).\nstatementLabellingMode(statement).\nqueryMode.\n' })};</script>
+<script>window.ARG2P_PREVIEW = ${JSON.stringify({ theory })};</script>
 <script type="module" src="/preview.js"></script>
 <script type="module" src="/webview.js"></script>
 </head><body><arg2p-solver></arg2p-solver></body></html>`;

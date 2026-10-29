@@ -21,8 +21,8 @@ Use the tools of the **Arg2P MCP server** when they are there (`solve`, `answer`
 | `check` | `text`, `kind` (`theory`, the default, or `query`) | whether the text parses, and where it does not (line, column, token) |
 | `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und` |
 | `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | the solutions of any query (default `buildLabelSets(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
-| `settings` | `theory`, `flags` | the value in effect of every flag for the theory: its profile, its semantics, ... |
-| `explore` | `theory`, `query`, `flags` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
+| `settings` | `theory`, `flags`, `timeoutSeconds` | the value in effect of every flag for the theory: its profile, its semantics, ... |
+| `explore` | `theory`, `query`, `flags`, `timeoutSeconds` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
 
 The `theory` is text, the `flags` Prolog facts (see `arg2p-formalize`); `theory`, and the `query` of `answer`, are
 required (and the `text` of `check`). `timeoutSeconds` is 60 by default.
