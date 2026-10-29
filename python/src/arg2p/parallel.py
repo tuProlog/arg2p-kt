@@ -83,12 +83,33 @@ class EvaluationStats:
 
 
 @dataclass(frozen=True)
+class NearbySite:
+    """
+    A site heard on the local network: its identifier, its name (the name of its host, or the one it was given), its
+    address (ws://host:port), and whether it requires a code of the sites linking to it (it waits to be paired).
+    """
+
+    id: str
+    name: str
+    address: str
+    requires_code: bool
+
+
+@dataclass(frozen=True)
 class FederationStats:
-    """What a federation does, as one of its sites knows it: the sites it knows (itself first), and its last evaluation."""
+    """
+    What a federation does, as one of its sites knows it: the sites it knows (itself first), its last evaluation, and
+    the sites heard on the local network that are not its peers.
+    """
 
     site: str
     sites: list[SiteStats]
     evaluation: Optional[EvaluationStats]
+    nearby: list[NearbySite] = field(default_factory=list)
+
+
+def _nearby(of: Any) -> NearbySite:
+    return NearbySite(str(of.getId()), str(of.getName()), str(of.getAddress()), bool(of.getRequiresCode()))
 
 
 def _stats(stats: Any) -> FederationStats:
@@ -114,6 +135,7 @@ def _stats(stats: Any) -> FederationStats:
             [worker(it) for it in evaluation.getWorkers()],
             float(evaluation.getMilliseconds()),
         ),
+        [_nearby(it) for it in stats.getNearby()],
     )
 
 
@@ -269,13 +291,56 @@ class ThreadedCluster(_Cluster):
         """Accepts the links of other sites over WebSockets, on [port] of [host] (an ephemeral port for 0): the port."""
         return int(call(lambda: self._cluster.listen(port, host)))
 
-    def discover(self) -> None:
-        """Federates the cluster with the clusters of the local network that discover the others as well."""
-        call(self._cluster.discover)
+    def discover(self, require_code: bool = False) -> None:
+        """
+        Federates the cluster with the clusters of the local network that discover the others as well; with
+        [require_code], the clusters heard are nearby alone, linked to once paired by hand (see pair).
+        """
+        port = _jvm.jclass("it.unibo.tuprolog.argumentation.parallel.federation.Beacons").PORT
+        call(lambda: self._cluster.discover(port, require_code))
 
-    def connect(self, uri: str) -> None:
-        """Federates the cluster with the site listening at [uri] (ws://host:port)."""
-        call(lambda: self._cluster.connect(uri))
+    def connect(self, uri: str, code: Optional[str] = None) -> None:
+        """Federates the cluster with the site listening at [uri] (ws://host:port), presenting [code] if it requires one."""
+        call(lambda: self._cluster.connect(uri, code))
+
+    @property
+    def name(self) -> str:
+        """The name of the cluster, as its beacons tell the clusters nearby: the name of its host by default."""
+        return str(self._cluster.getName())
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self._cluster.setName(name)
+
+    @property
+    def requires_code(self) -> bool:
+        """Whether the clusters linking to this one must present its code, or a pairing made with it."""
+        return bool(self._cluster.getRequiresCode())
+
+    @requires_code.setter
+    def requires_code(self, required: bool) -> None:
+        self._cluster.setRequiresCode(required)
+
+    @property
+    def code(self) -> str:
+        """The code the clusters linking to this one present, if it requires one: four digits, random."""
+        return str(self._cluster.getCode())
+
+    def new_code(self) -> str:
+        """A new code, the one before refused from now on (the pairings made stay)."""
+        return str(self._cluster.newCode())
+
+    @property
+    def nearby(self) -> list[NearbySite]:
+        """The clusters heard on the local network, not linked to this one."""
+        return [_nearby(it) for it in self._cluster.getNearby()]
+
+    def pair(self, site: str, code: str) -> None:
+        """
+        Links this cluster to [site], nearby, presenting [code]: the two paired, linked again with no code while they
+        run (Arg2pError if it refuses the code).
+        """
+        call(lambda: self._cluster.pair(site, code))
 
 
     def close(self) -> None:
