@@ -25,7 +25,7 @@ written in. It refuses a theory written outside it, with an error saying why.
 | `aspic_defeasible` | everything is defeasible, facts are rules with no premise (`r : [] => a.`) | strict rules, axioms, premises |
 | `aba`, `aba_plus` | the problem is assumptions and their contraries (assumption-based argumentation); `aba_plus` adds preferences between assumptions | defeasible rules, ordinary premises, a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition |
 | `abstract` | only who attacks whom matters: a debate, a thread of objections, a graph given as such | rules, premises, axioms; preferences, conflicts, burdens (`sup/2`, `conflict/2`, `bp/N`) |
-| `meta` | the rules, conflicts and preferences are themselves argued (see `references/syntax.md`) | |
+| `meta` | the rules, conflicts and preferences are themselves argued, as the readings of an ambiguous text are (step 3, and `references/syntax.md`) | |
 | `free` | every flag is set by hand, with no preset | nothing |
 
 What each profile presets and checks: <https://tuprolog.github.io/arg2p-kt/docs/profiles/>.
@@ -84,9 +84,12 @@ longer than a few rules, write a ledger of the points where the text underdeterm
 - **Quantifier scope**: "a student who X": any one, or all?
 - **Ties**: two applicable rules with no stated priority: the cheapest, the most specific, the first listed?
 
-For each entry, record the readings, the one chosen and why. **When a reading changes the answer, encode both**,
-solve both, and report whether the verdict flips: a flipped verdict is interpretation-bound, say so. If the person who
-gave the text is reachable, ask them: the entry is already phrased as the question.
+For each entry, record the readings, the one chosen and why. **When a reading changes the answer, encode both in
+the theory**, with the profile `meta` ("Readings of an ambiguous clause" in `references/syntax.md`): each reading
+argues the rules it applies, and the readings exclude each other. Solved under `preferred`, each labelling is one
+reading; under `grounded`, what depends on the reading is und. A verdict that differs between the readings is
+interpretation-bound: say so. The reading chosen is argued preferred (`sup/2`), and the other stays in the graph. If
+the person who gave the text is reachable, ask them: the entry is already phrased as the question.
 
 ## Step 4: write the theory
 
@@ -137,7 +140,7 @@ Write the theory to a `.arg2p` file (or keep it in the conversation for a short 
 3. **The flags**, as Prolog facts, and why.
 4. **The query**: a statement to label (`guilty`, `flies(X)`), a value the theory computes (`answer(V)`), or the whole
    graph (`buildLabelSets(In, Out, Und)`, the default).
-5. **The interpretation ledger**, with the variant theories for material ambiguities.
+5. **The interpretation ledger**, with the readings encoded for material ambiguities.
 6. **The fidelity check**, last: re-read every premise and axiom of the finished theory against the source and
    confirm it quotes a stated fact. Delete any you cannot point to.
 

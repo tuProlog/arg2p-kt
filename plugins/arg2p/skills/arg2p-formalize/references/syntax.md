@@ -138,3 +138,24 @@ r2 : alibi => -guilty.
 f1 :=> evidence.
 f2 :=> alibi.     % guilty out, instead of und
 ```
+
+**Readings of an ambiguous clause** (with `graphBuildMode(meta).`). "The first item is free": by position, or to the
+buyer's best advantage? Each reading argues its rule applicable, and the readings exclude each other.
+
+```prolog
+reading_position :=> applicable(r_position).
+reading_optimal :=> applicable(r_optimal).
+c1 :=> conflict(applicable(r_position), applicable(r_optimal)).
+c2 :=> conflict(applicable(r_optimal), applicable(r_position)).
+r_position : bought(a), first(a) => free(a).
+r_optimal : bought(a), cheapest(a) => -free(a).
+f1 :=> bought(a).
+f2 :=> first(a).
+f3 :=> cheapest(a).
+% grounded: both readings und, free(a) and -free(a) und (the verdict depends on the reading);
+% preferred: two labellings, free(a) in one, -free(a) in the other;
+% with p1 :=> sup(reading_position, reading_optimal). added: free(a) in, -free(a) out
+```
+
+Under `meta` every rule fires only when argued applicable, and statements conflict only when argued to: give each
+rule no reading disputes its `applicable(Rule)` premise, and each conflict the theory needs its `conflict/2` premises.
