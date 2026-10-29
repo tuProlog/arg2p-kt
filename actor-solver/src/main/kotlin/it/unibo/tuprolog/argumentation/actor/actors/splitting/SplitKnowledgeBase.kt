@@ -2,13 +2,29 @@ package it.unibo.tuprolog.argumentation.actor.actors.splitting
 
 import it.unibo.tuprolog.argumentation.actor.actors.HelpWorker
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
+import it.unibo.tuprolog.argumentation.actor.message.Stop
 
-class SplitKnowledgeBase {
-    val workers: MutableList<HelpWorker> = mutableListOf()
+// The knowledge base split among the workers, each with its rules: a worker removed is stopped, since its evaluator,
+// never passivated, would keep its solver otherwise
+internal class SplitKnowledgeBase {
+    private val split: MutableList<HelpWorker> = mutableListOf()
 
-    fun reset() = workers.clear()
+    /** The workers of the knowledge base */
+    val workers: List<HelpWorker> get() = split
 
-    fun broadcast(msg: KbMessage) = workers.forEach { it.ref.tell(msg) }
+    fun add(worker: HelpWorker) {
+        split += worker
+    }
 
-    fun splitsNumber() = workers.count()
+    /** The [retired] workers removed and stopped */
+    fun remove(retired: List<HelpWorker>) {
+        retired.forEach { it.ref.tell(Stop) }
+        split.removeAll(retired)
+    }
+
+    fun reset() = remove(split.toList())
+
+    fun broadcast(msg: KbMessage) = split.forEach { it.ref.tell(msg) }
+
+    fun splitsNumber() = split.count()
 }

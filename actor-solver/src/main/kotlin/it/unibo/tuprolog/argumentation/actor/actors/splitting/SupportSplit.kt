@@ -19,7 +19,7 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.random.Random
 
-object SupportSplit : SplittingPrinciple {
+internal object SupportSplit : SplittingPrinciple {
     override fun updateWorkers(
         rule: String,
         kb: SplitKnowledgeBase,
@@ -42,9 +42,9 @@ object SupportSplit : SplittingPrinciple {
                                 .any()
                         }
                     when (selected.count()) {
-                        0 -> createSolver(rule, kb.workers, context)
+                        0 -> createSolver(rule, kb, context)
                         1 -> updateSolverKnowledge(rule, selected.first(), context)
-                        else -> mergeSolvers(rule, selected, kb.workers, context)
+                        else -> mergeSolvers(rule, selected, kb, context)
                     }
                 }
         }
@@ -71,16 +71,11 @@ object SupportSplit : SplittingPrinciple {
 
     private fun createSolver(
         rule: String,
-        workers: MutableList<HelpWorker>,
+        kb: SplitKnowledgeBase,
         context: ActorContext<KbMessage>,
     ) {
         context.log.info("Creating $rule")
-        workers.add(
-            createWorker(
-                mutableListOf(rule),
-                context,
-            ),
-        )
+        kb.add(createWorker(mutableListOf(rule), context))
     }
 
     private fun updateSolverKnowledge(
@@ -95,20 +90,16 @@ object SupportSplit : SplittingPrinciple {
         worker.ref.tell(Add(rule))
     }
 
+    // The workers whose rules chain with [rule] replaced by one with all of them
     private fun mergeSolvers(
         rule: String,
         oldWorkers: List<HelpWorker>,
-        workers: MutableList<HelpWorker>,
+        kb: SplitKnowledgeBase,
         context: ActorContext<KbMessage>,
     ) {
         context.log.info("Merging $rule")
-        workers.removeAll(oldWorkers)
-        workers.add(
-            createWorker(
-                oldWorkers.flatMap { it.rules }.toMutableList().also { it.add(rule) },
-                context,
-            ),
-        )
+        kb.remove(oldWorkers)
+        kb.add(createWorker(oldWorkers.flatMap { it.rules }.toMutableList().also { it.add(rule) }, context))
     }
 
     private fun solver() =

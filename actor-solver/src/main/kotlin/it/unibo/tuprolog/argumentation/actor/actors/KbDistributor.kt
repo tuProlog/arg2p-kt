@@ -11,6 +11,7 @@ import it.unibo.tuprolog.argumentation.actor.actors.splitting.SupportSplit
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.Eval
 import it.unibo.tuprolog.argumentation.actor.message.EvalResponse
+import it.unibo.tuprolog.argumentation.actor.message.EvaluationAborted
 import it.unibo.tuprolog.argumentation.actor.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.actor.message.ExpectedResponses
 import it.unibo.tuprolog.argumentation.actor.message.FindAttacker
@@ -22,7 +23,7 @@ import it.unibo.tuprolog.argumentation.actor.message.Response
 import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import kotlin.random.Random
 
-class KbDistributor private constructor(
+internal class KbDistributor private constructor(
     context: ActorContext<KbMessage>,
 ) : AbstractBehavior<KbMessage>(context) {
     private val kb: SplitKnowledgeBase = SplitKnowledgeBase()
@@ -32,8 +33,14 @@ class KbDistributor private constructor(
         newReceiveBuilder()
             .onMessage(Reset::class.java) {
                 context.log.info("Resetting")
-                kb.reset()
+                // the evaluations under way have no answer: those waiting for them are told
+                evaluationCache.forEach {
+                    it.caller.tell(
+                        EvaluationAborted("The knowledge base was reset during the evaluation of ${it.query}"),
+                    )
+                }
                 evaluationCache.clear()
+                kb.reset()
                 this
             }.onMessage(Add::class.java) { command ->
                 context.log.info("Adding ${command.elem}")

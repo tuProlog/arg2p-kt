@@ -2,6 +2,7 @@ package it.unibo.tuprologo.argumentation.actor
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import it.unibo.tuprolog.argumentation.actor.ClusterException
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
@@ -14,6 +15,7 @@ import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.exception.error.SystemError
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
@@ -21,8 +23,11 @@ import it.unibo.tuprolog.theory.parsing.parse
 import org.junit.Ignore
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.time.Duration
 
-val cluster = ClusterInitializer.joinCluster("127.0.0.1:2552", "2552")
+private val cluster = ClusterInitializer.joinCluster("127.0.0.1:2552", "2552")
 
 internal fun withActorSystem(execute: (ActorSystem<KbMessage>, ActorRef<KbMessage>) -> Unit) =
     cluster.let {
@@ -164,6 +169,35 @@ class BasicTest {
                     )
                     it.solve(Struct.parse("leave")).first()
                 }
+        }
+    }
+
+    // With no cluster joined, or after leaving it, the predicates but join and leave are errors, as no answer in time is
+    @Test
+    fun withNoClusterThePredicatesAreErrors() {
+        arg2pScope {
+            Arg2pPrologSolverFactory
+                .mutableSolverWithDefaultBuiltins(
+                    otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
+                    flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
+                ).also {
+                    it.loadStaticKb(Theory.parse("r0 :=> a.", it.operators))
+                    listOf("load", "reset").forEach { goal ->
+                        assertTrue(it.solve(Struct.parse(goal)).first().exception is SystemError, goal)
+                    }
+                    assertTrue(it.solve("solve"("a", X, Y, Z)).first().exception is SystemError)
+                    it.solve("join"(2554) and "leave").first()
+                    assertTrue(it.solve(Struct.parse("load")).first().exception is SystemError)
+                    assertTrue(it.solve(Struct.parse("leave")).first().isYes)
+                }
+        }
+    }
+
+    @Test
+    fun noAnswerInTimeIsAnError() {
+        withActorSystem { system, master ->
+            master.tell(Add("r1 :=> b"))
+            assertFailsWith<ClusterException> { ResponseConsumer.getResponse("b", system, master, Duration.ZERO) }
         }
     }
 
