@@ -1,10 +1,8 @@
 name: CI/CD
 on:
+  # every push runs, whatever it changes: a push the paths left out would report no check at all (a merge changing no
+  # file, say), and its pull request would wait for one forever; what a push tests is told by the changes job
   push:
-    paths-ignore:
-      - '.gitignore'
-      - 'LICENSE'
-      - 'README.md'
   pull_request:
   workflow_dispatch:
 
