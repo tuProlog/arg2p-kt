@@ -16,7 +16,7 @@ pip install arg2p
 ```
 
 The wheels of Windows (x86-64), Linux (x86-64, ARM64) and macOS (ARM64, x86-64) bundle a Java runtime; on another
-platform the package runs on the Java of the system (21 or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
+platform the package runs on the Java of the system ({{< java >}} or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
 the JVM to run on (`arg2p mcp` runs the `java` of its runtime), `ARG2P_CLASSPATH` other jars, put before those of the
 package: their classes are the ones loaded, and the package gives those they lack.
 
