@@ -19,18 +19,15 @@ internal object McpApp {
     /** Where the page loads its components and their dependencies from */
     const val CDN = "https://esm.sh"
 
-    /** The version of @tuprolog/arg2p-ui the page loads (see [Pages.UI_VERSION]) */
-    val UI_VERSION: String get() = Pages.UI_VERSION
-
     /** The page of the solver */
     val page: String by lazy {
         Pages.render(
             "solver.html",
             mapOf(
-                "ui" to UI_VERSION,
+                "ui" to Pages.UI_VERSION,
                 "cdn" to CDN,
-                "query" to json.toJson(Solvers.DEFAULT_QUERY),
-                "emptyGraph" to json.toJson(GraphData.EMPTY),
+                "query" to Pages.script(Solvers.DEFAULT_QUERY),
+                "emptyGraph" to Pages.script(GraphData.EMPTY),
             ),
         )
     }

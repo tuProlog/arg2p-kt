@@ -7,6 +7,15 @@ on:
         description: The version released, empty if nothing was
         value: ${{ jobs.release.outputs.version }}
 
+# Read alone, but for the release (as far as the caller grants it)
+permissions:
+  contents: read
+
+env:
+  # The JDK the builds run on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties)
+  # renovate: datasource=java-version depName=java-jdk
+  JAVA_VERSION: 25.0.5+8.0.LTS
+
 jobs:
   python:
     # The Python of the workflows installs what the package needs, from wheels alone: checked first, in seconds, so that
@@ -16,11 +25,61 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.14'
+          python-version-file: .python-version
       - name: Resolve the dependencies of the package
         run: |
           python -c "import tomllib; print('\n'.join(tomllib.load(open('python/pyproject.toml', 'rb'))['project']['dependencies']))" > dependencies.txt
           python -m pip install --dry-run --only-binary=:all: -r dependencies.txt
+  changes:
+    # What the tests run on. Master, a run by hand and a pull request (from a fork) test everything; a branch, what it
+    # changes from the branch it merges into (develop, or master for develop and the branches of Renovate): nothing for
+    # the documentation, the plugins and the release alone (lint checks the build and the plugins), the Python package or
+    # the extension for their own changes (the language server for both, and the JVM), every test otherwise. Develop,
+    # master and the branches of Renovate, which merge into master, test on every platform, other branches on Linux alone.
+    runs-on: ubuntu-26.04
+    outputs:
+      full: ${{ steps.changes.outputs.full }}
+      jvm: ${{ steps.changes.outputs.jvm }}
+      js: ${{ steps.changes.outputs.js }}
+      python: ${{ steps.changes.outputs.python }}
+      vscode: ${{ steps.changes.outputs.vscode }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          full=true
+          base=''
+          if [ "$EVENT" = push ]; then
+            case "$BRANCH" in
+              master) ;;
+              develop|renovate/*) base=origin/master ;;
+              *) base=origin/develop; full=false ;;
+            esac
+          fi
+          # the files changed, one a line; all of them when there is nothing to compare with
+          if [ -n "$base" ] && fork="$(git merge-base "$base" HEAD)"; then
+            changed="$(git diff --name-only "$fork" HEAD)"
+          else
+            changed='*'
+          fi
+          echo "$changed"
+          # the files changed but those the tests do not read, and those of a part on its own
+          code="$(grep -vE '^(doc|imgs|plugins|\.claude-plugin|\.agents)/|^[^/]+\.md$|^(LICENSE|CONTRIBUTORS|\.gitignore|\.gitmodules|server\.json|renovate\.json|release\.config\.mjs|package(-lock)?\.json)$' <<< "$changed" || true)"
+          others="$(grep -vE '^(python|vscode|lsp)/' <<< "$code" || true)"
+          any() { [ -n "$1" ] && echo true || echo false; }
+          {
+            echo "full=$full"
+            echo "jvm=$(any "$others$(grep -E '^lsp/' <<< "$code" || true)")"
+            echo "js=$(any "$others")"
+            echo "python=$(any "$others$(grep -E '^(python|lsp)/' <<< "$code" || true)")"
+            echo "vscode=$(any "$others$(grep -E '^(vscode|lsp)/' <<< "$code" || true)")"
+          } | tee -a "$GITHUB_OUTPUT"
   lint:
     needs:
       - python
@@ -28,29 +87,39 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
-      - name: Check style (ktlint)
+      - name: Check style (ktlint) and the manifests of the plugins
         uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
+          java-version: ${{ env.JAVA_VERSION }}
           retries-on-failure: '2'
           build-command: true
-          check-command: ./gradlew ktlintCheck --parallel --continue
+          check-command: ./gradlew ktlintCheck :plugins:checkManifests --continue
           should-run-codecov: false
   test:
     # Renovate merges on master were already tested on their (up-to-date) PR branch
     if: github.ref_name != 'master' || github.event.commits[0].author.name != 'renovate[bot]'
     needs:
       - python
+      - changes
     uses: ./.github/workflows/test.yml
+    with:
+      full: ${{ needs.changes.outputs.full == 'true' }}
+      jvm: ${{ needs.changes.outputs.jvm == 'true' }}
+      js: ${{ needs.changes.outputs.js == 'true' }}
+      python: ${{ needs.changes.outputs.python == 'true' }}
+      vscode: ${{ needs.changes.outputs.vscode == 'true' }}
+      # the coverage the documentation site publishes, deployed from master (push.yml)
+      coverage: ${{ github.ref_name == 'master' }}
   release:
-    # Run even when tests were skipped (see above), but never after a failure
-    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
+    # From master alone. Run even when tests were skipped (see above), but never after a failure
+    if: github.ref_name == 'master' && always() && !cancelled() && !contains(needs.*.result, 'failure')
     environment: release_env
     permissions:
       contents: write
-      packages: write
       id-token: write  # Required for OIDC (trusted publishing) on npmjs
     needs:
       - python
+      - changes
       - lint
       - test
     runs-on: ubuntu-26.04
@@ -68,6 +137,7 @@ jobs:
         uses: actions/setup-node@v7.1.0
         with:
           node-version-file: package.json
+          cache: npm
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
           retries-on-failure: '1'
@@ -84,33 +154,33 @@ jobs:
           maven-central-password: ${{ secrets.MAVEN_PASSWORD }}
           signing-key: ${{ secrets.SIGNING_KEY }}
           signing-password: ${{ secrets.SIGNING_PASSWORD }}
-          java-version: '25'
+          java-version: ${{ env.JAVA_VERSION }}
       - name: The version released
         id: released
         run: |
           if [ -f .released-version ]; then echo "version=$(cat .released-version)" >> "$GITHUB_OUTPUT"; fi
-      - name: Back-merge the release into develop
+      - name: Back-merge master into develop
+        # Whenever master moves, released or not (a merge of Renovate releasing nothing, say), so that develop never
+        # lacks a commit of master
         if: github.ref_name == 'master'
         # A back-merge problem must never fail an otherwise successful release.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.CI_TOKEN }}
+          VERSION: ${{ steps.released.outputs.version }}
         run: |
           set -euo pipefail
-          # .released-version is written by semantic-release's successCmd, so it
-          # exists only when a release was actually published. Checked here in
-          # the shell rather than in an `if:` expression, because hashFiles() is
-          # not reliable in that position and an invalid expression makes the
-          # whole reusable workflow unloadable.
-          if [ ! -f .released-version ]; then
-            echo "::notice::nothing was released, so there is nothing to back-merge"
-            exit 0
-          fi
-          version="$(cat .released-version)"
-          branch="sync/master-to-develop-${version}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch --tags origin develop master
+          # after the release, or else at the commit master is at
+          if [ -n "$VERSION" ]; then
+            what="after ${VERSION}" name="$VERSION" title="release ${VERSION}"
+          else
+            commit="$(git rev-parse --short origin/master)"
+            what="at ${commit}" name="$commit" title="master at ${commit}"
+          fi
+          branch="sync/master-to-develop-${name}"
           git switch -C "$branch" origin/develop
           if git merge-base --is-ancestor origin/master HEAD; then
             echo "::notice::develop already contains master, nothing to back-merge"
@@ -119,16 +189,19 @@ jobs:
           # --no-ff guarantees a commit that is not tagged [skip ci]. The release
           # commit itself is, so on its own it would never produce the checks
           # develop requires and the PR could never auto-merge.
-          git merge --no-ff origin/master -m "chore: merge master into develop after ${version}"
+          git merge --no-ff origin/master -m "chore: merge master into develop ${what}"
           git push --force origin "$branch"
           gh pr create --base develop --head "$branch" \
-            --title "chore: back-merge release ${version} into develop" \
-            --body "Automated back-merge of the ${version} release commit from master into develop. Auto-merge is enabled; this lands as soon as the required checks pass." \
+            --title "chore: back-merge ${title} into develop" \
+            --body "Automated back-merge of master (${what}) into develop. Auto-merge is enabled; this lands as soon as the required checks pass." \
             || echo "::notice::a PR already exists for ${branch}"
           gh pr merge "$branch" --auto --merge
   success:
     runs-on: ubuntu-26.04
+    # Every job: one skipped because another failed fails this as well, through the failure of the other
     needs:
+      - python
+      - changes
       - lint
       - test
       - release

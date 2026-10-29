@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.parallel.federation
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.EquivalenceScenarios
-import it.unibo.tuprolog.argumentation.parallel.cluster.LocalCluster
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 
 // The scenarios on three sites linked as a star: the two running the workers have no link between them, their
@@ -13,9 +12,9 @@ class RelayedLocalClusterTest : EquivalenceScenarios() {
         flags: Flags,
     ): (String) -> EvaluationResponse {
         val scheduler = SequentialScheduler()
-        val evaluating = LocalCluster(parts = 0, flags = flags, scheduler = scheduler)
-        val first = LocalCluster(parts = 2, scheduler = scheduler)
-        val second = LocalCluster(parts = 1, scheduler = scheduler)
+        val evaluating = LocalSite(0, scheduler, flags)
+        val first = LocalSite(2, scheduler)
+        val second = LocalSite(1, scheduler)
         MemoryLinks.connect(evaluating.site, first.site, scheduler)
         MemoryLinks.connect(evaluating.site, second.site, scheduler)
         evaluating.load(theory)

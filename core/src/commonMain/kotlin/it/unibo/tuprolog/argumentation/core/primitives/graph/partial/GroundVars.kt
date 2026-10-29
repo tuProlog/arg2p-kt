@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * groundVars(+Term, ?Grounded): Term with each of its variables replaced by an atom of its own (`$var_0`, ...):
  * a term (with none of these atoms) unifies with Grounded if and only if it generalises Term
  */
-object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>("groundVars") {
+internal object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>("groundVars") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

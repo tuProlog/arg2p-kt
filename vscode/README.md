@@ -4,7 +4,7 @@ Structured argumentation in Prolog with [Arg2P](https://tuprolog.github.io/arg2p
 ABA, abstract frameworks), see where they do not parse as you type, solve queries and browse their argument graphs,
 in the editor.
 
-![A theory and its solver](https://raw.githubusercontent.com/tuProlog/arg2p-kt/master/imgs/vscode.png)
+![A theory and its solver](https://raw.githubusercontent.com/tuProlog/arg2p-kt/master/doc/site/assets/vscode.png)
 
 ## Theories
 
@@ -57,18 +57,8 @@ user settings alone: a workspace cannot set them. **Arg2P: Restart the Language 
 
 The language server is also the MCP server of Arg2P, which the extension registers for the assistants of VS Code
 (Copilot agent mode, VS Code 1.101 or later): they solve theories with its tools rather than guessing what they
-conclude.
-
-| Tool | |
-| --- | --- |
-| `solve` | The solutions of a query on a theory, with their bindings and the argument graph |
-| `answer` | The statements of a query labelled in, out and und |
-| `check` | Whether a theory or a query parses, and where it does not |
-| `settings` | The profile and the flags in effect for a theory |
-| `explore` | Shows the solver of a theory in the chat, to explore its results there |
-
-It runs on the Java of the language server. For other assistants, see
-[Execution](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp).
+conclude; `explore` shows the solver of a theory in the chat. It runs on the Java of the language server. Its tools, and
+the other assistants: see [AI assistants](https://tuprolog.github.io/arg2p-kt/docs/run/#ai-assistants-mcp).
 
 ## Settings
 

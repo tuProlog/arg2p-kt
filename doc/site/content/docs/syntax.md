@@ -187,8 +187,9 @@ by rules ([defeasible preferences]({{% ref "/docs/modules/meta" %}})) are closed
 
 ## Custom conflicts
 
-Beyond the built-in conflicts — a statement against its strong negation, and the deontic pairs — a theory can
-declare its own:
+Beyond the built-in conflicts — a statement against its strong negation, the deontic pairs, and a superiority
+against its converse — a theory can declare its own (the flag [`conflictModel`]({{% ref "/docs/api/flags#conflictmodelpart" %}})
+chooses which of these parts hold):
 
 ```prolog
 conflict([a], [b]).                 % a and b are incompatible

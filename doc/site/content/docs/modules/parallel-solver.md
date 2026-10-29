@@ -86,14 +86,14 @@ offers the same methods on the calling thread, with `solve` returning the answer
 ## As a solver of arg2p
 
 Every cluster is also a solver of arg2p with the interface of `Arg2p` (see the [API]({{% ref "/docs/api/kotlin" %}})),
-on its theory and its flags: `solver` solves any goal as the standard solver does (`buildLabelSets(In, Out, Und)`,
+on its theory and its flags: `solver` solves any goal as the standard solver does (`arg2p::solve(In, Out, Und)`,
 `answerQuery/4`, the Prolog predicates of the theory, ...), one solution at a time, and gives the graph of each
 solution and the answers of queries, in the types of the API (`Solutions`, `Solution`, `Answer`, `Graph`). The graph a
 goal needs is built by the workers, the rest is the standard solver of the catalog.
 
 ```kotlin
 val solver = ThreadedCluster(threads = 8).apply { load(theory) }.solver
-val solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+val solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                  // [[a], [c]]
 solver.graph()                       // the graph of the solution: arguments, labels, attacks, supports
 solver.answer("a").inStatements      // [a]
@@ -115,7 +115,7 @@ workers compute: their `solver` (`AsyncClusterSolver`) gives a promise of the so
 solution last given. A `LocalCluster` answers at once, in JavaScript as well.
 
 ```javascript
-const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+const solutions = await cluster.solver.solve('arg2p::solve(In, Out, Und)')
 while (solutions.hasNext()) {
   const solution = await solutions.next()
   console.log(solution.text('In'), cluster.solver.graph().labellings.map(it => it.label))
@@ -129,8 +129,8 @@ How the goals are solved:
   solver derives the other arguments, applies the graph extensions and labels the graph, every semantics as the
   standard solver does;
 - a goal needing a graph the workers did not build pauses: the workers build it (the whole graph for
-  `buildLabelSets`, the part the statements explored depend on for `answerQuery` in query mode, explored further by
-  the later goals), then the goal is solved again from its start. So is a goal whose next solution is asked for after
+  `arg2p::solve(In, Out, Und)`, the part the statements explored depend on for `arg2p::solve(Goal, Res)` in query
+  mode, explored further by the later goals), then the goal is solved again from its start. So is a goal whose next solution is asked for after
   the catalog solved another one; the solutions given already are left out. What the goal does besides (asserting
   facts, printing) is done again: what was printed is given once;
 - the catalog has the theory but its rules, which the workers have: a goal reading the rules themselves (the modules
@@ -360,5 +360,5 @@ query mode (see `solver.graph()`) is thus the part built so far: that of its sta
 before.
 
 The whole graph is built with no query mode, for a semantics whose labels depend on all of it (`stable`), and for a
-goal asking for it in query mode as well (`buildLabelSets`, as the standard solver): an evaluation in query mode after
+goal asking for it in query mode as well (`arg2p::solve(In, Out, Und)`, as the standard solver): an evaluation in query mode after
 it builds the graph of its statements anew.

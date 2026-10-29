@@ -17,7 +17,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * sccs(+Ids, -Sccs): strongly connected components of the subgraph of the arguments in Ids, as lists of argument
  * identifiers, in topological order.
  */
-class Sccs(
+internal class Sccs(
     arity: Int,
 ) : Primitive {
     val signature: Signature = Signature("sccs", arity)

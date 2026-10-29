@@ -5,12 +5,14 @@ import it.unibo.tuprolog.argumentation.core.flags.ConflictModel
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
- * The conflicts between statements (module `conflict`). Without metaConflicts they are the built-in ones (a literal
- * and its negation, and those between obligations and permissions) and those the theory declares (conflict/2,3);
- * with metaConflicts they are only those concluded by an argument for `conflict(A, B)` or `conflict(A, B, Guard)`.
+ * The conflicts between statements (module `conflict`). Without metaConflicts they are those of the parts of the
+ * conflict model stated (conflictModel, all of them by default): negation (a literal and its negation), deontic (the
+ * obligations and permissions in conflict), preference (a superiority and its converse) and declared (those the
+ * theory declares, conflict/2,3); with metaConflicts they are only those concluded by an argument for
+ * `conflict(A, B)` or `conflict(A, B, Guard)`.
  *
- * The conflicts the languages of the theory state (graphLanguage) are kept in the context by the parser; with the
- * conflict model declared (conflictModel), the built-in ones do not hold.
+ * The conflicts the languages of the theory state (graphLanguage) are kept in the context by the parser, and hold
+ * whatever the parts: with none of them (`conflictModel(none)`), they are the only ones.
  *
  * Statements are written as in the conclusions of arguments, `[Claim]`. A conflict may hold only under a guard, a
  * Prolog goal (or a term true or false) checked when the conflict is used.
@@ -43,9 +45,10 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             Statement = [A], Other = [B],
             graphStore::argumentFor([conflict(A, B, Guard)], _).
         guarded(Statement, Other, Guard) :-
-            setting(conflictModel, builtin),
-            builtin(Statement, Other, Guard).
+            setting(conflictModel, Part),
+            builtin(Part, Statement, Other, Guard).
         guarded(Statement, Other, Guard) :-
+            setting(conflictModel, declared),
             conflict(Statement, Other, Guard).
 
         %! unguarded(?Statement, ?Other)
@@ -54,6 +57,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             Statement = [A], Other = [B],
             graphStore::argumentFor([conflict(A, B)], _).
         unguarded(Statement, Other) :-
+            setting(conflictModel, declared),
             conflict(Statement, Other).
         unguarded(Statement, Other) :-
             context_check(conflict(Statement, Other)).
@@ -63,18 +67,22 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
         statement([A], [B], conflict(A, B, _)) :- setting(metaConflicts).
         statement([A], [B], conflict(A, B)) :- setting(metaConflicts).
 
-        % The conflicts between a literal and its negation, and between obligations (o/1) and permissions (p/1)
-        builtin([Atom], [-Atom], (Atom \= -_)).
-        builtin([-Atom], [Atom], true).
-        builtin([o(Atom)], [o(-Atom)], (Atom \= -_)).                   % O(x) <-> O(-x)
-        builtin([o(-Atom)], [o(Atom)], true).
-        builtin([p(Atom)], [o(-Atom)], (Atom \= -_)).                   % P(x) <-> O(-x)
-        builtin([o(-Atom)], [p(Atom)], true).
-        builtin([o(Atom)], [p(-Atom)], (Atom \= -_)).                   % O(x) <-> P(-x)
-        builtin([p(-Atom)], [o(Atom)], true).
-        builtin([o(Atom)], [-p(Atom)], true).                           % O(x) <-> O(-x) (-P(x))
-        builtin([-p(Atom)], [o(Atom)], true).
-        builtin([sup(X, Y)], [sup(Y, X)], true).
+        %! builtin(?Part, ?Statement, ?Other, -Guard)
+        %  Statement conflicts with Other when Guard holds, a conflict of the part Part of the conflict model.
+        % negation: a literal and its negation
+        builtin(negation, [Atom], [-Atom], (Atom \= -_)).
+        builtin(negation, [-Atom], [Atom], true).
+        % deontic: obligations (o/1) and permissions (p/1)
+        builtin(deontic, [o(Atom)], [o(-Atom)], (Atom \= -_)).          % O(x) <-> O(-x)
+        builtin(deontic, [o(-Atom)], [o(Atom)], true).
+        builtin(deontic, [p(Atom)], [o(-Atom)], (Atom \= -_)).          % P(x) <-> O(-x)
+        builtin(deontic, [o(-Atom)], [p(Atom)], true).
+        builtin(deontic, [o(Atom)], [p(-Atom)], (Atom \= -_)).          % O(x) <-> P(-x)
+        builtin(deontic, [p(-Atom)], [o(Atom)], true).
+        builtin(deontic, [o(Atom)], [-p(Atom)], true).                  % O(x) <-> O(-x) (-P(x))
+        builtin(deontic, [-p(Atom)], [o(Atom)], true).
+        % preference: a superiority and its converse
+        builtin(preference, [sup(X, Y)], [sup(Y, X)], true).
 
         % A guard holds: a goal that succeeds, or the term true
         holds(Guard) :- callable(Guard), !, call(Guard).

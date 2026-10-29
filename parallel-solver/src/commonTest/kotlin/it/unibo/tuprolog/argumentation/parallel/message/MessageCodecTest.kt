@@ -5,6 +5,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class MessageCodecTest {
     // texts with the characters of the encoding itself, digits and colons, and lines
@@ -44,5 +45,13 @@ class MessageCodecTest {
                 AttacksFound(3, listOf(DirectAttack("rebut", "0:1", "3:12"))),
             )
         messages.forEach { assertEquals(it, MessageCodec.decode(MessageCodec.encode(it))) }
+    }
+
+    // the text of another site may be anything: what is not a message is refused before anything is made of it, a
+    // list of a billion elements in a few characters (as one exhausting the memory of a site) as well
+    @Test
+    fun whatIsNoMessageIsRefused() {
+        listOf("", "Reset", "x:Reset", "-1:", "3:Add", "9:Unknown", "7:Explore1:010:1000000000", "7:Explore1:01:3")
+            .forEach { assertFailsWith<IllegalArgumentException>(it) { MessageCodec.decode(it) } }
     }
 }

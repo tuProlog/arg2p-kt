@@ -27,7 +27,7 @@ import { Arg2p, Flags, Value, Semantics, Profile, GraphExtension } from '@tuprol
 The package is an ES module (Node.js, bundlers, Deno, browsers), every declaration of the API exported by its name.
 
 `Arg2p.version()` is the version of the package. Every list of the API is an array in JavaScript.
-The package declares its API for TypeScript (`arg2p.d.ts`): the classes, their methods and the enumerations are typed
+The package declares its API for TypeScript (`arg2p.d.mts`): the classes, their methods and the enumerations are typed
 in the editor.
 
 ---
@@ -63,6 +63,13 @@ Flags.defaults()
     .graphBuildMode(Profile.ABA)
     .graphExtensions([GraphExtension.STANDARD_PREF, GraphExtension.BP])   // [] for none
     .queryMode(false)
+```
+
+`conflictModel` takes a part of the conflicts (`ConflictModel.DECLARED`, or `ConflictModel.BUILTIN` for all of
+them), `conflictModels` several, an array (`[]` for none but those of the languages of the theory):
+
+```js
+Flags.defaults().conflictModels([ConflictModel.NEGATION, ConflictModel.DECLARED])
 ```
 
 ---
@@ -155,7 +162,7 @@ federation does.
 ```js
 const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
 cluster.load(theory)
-const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+const solutions = await cluster.solver.solve('arg2p::solve(In, Out, Und)')
 const solution = await solutions.next()
 solution.text('In')                 // as for Arg2p
 cluster.solver.graph()              // the Graph of the solution

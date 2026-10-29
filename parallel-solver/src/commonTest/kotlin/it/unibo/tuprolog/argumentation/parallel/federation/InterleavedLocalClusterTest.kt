@@ -49,17 +49,13 @@ abstract class InterleavedLocalClusterTest(
         flags: Flags,
     ): (String) -> EvaluationResponse {
         val scheduler = InterleavedScheduler(seed)
-        val evaluating = Site(scheduler, 1, flags = flags)
-        val first = Site(scheduler, 2)
-        val second = Site(scheduler, 2)
-        MemoryLinks.connect(evaluating, first, scheduler.queue())
-        MemoryLinks.connect(evaluating, second, scheduler.queue())
+        val evaluating = LocalSite(1, scheduler, flags)
+        val first = LocalSite(2, scheduler)
+        val second = LocalSite(2, scheduler)
+        MemoryLinks.connect(evaluating.site, first.site, scheduler.queue())
+        MemoryLinks.connect(evaluating.site, second.site, scheduler.queue())
         evaluating.load(theory)
-        return { statement ->
-            var response: EvaluationResponse? = null
-            evaluating.solve(statement) { response = it }
-            response ?: error("No response for $statement")
-        }
+        return evaluating::solve
     }
 }
 

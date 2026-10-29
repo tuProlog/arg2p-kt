@@ -1,36 +1,39 @@
 package it.unibo.tuprolog.argumentation.core.primitives.extra
 
+import it.unibo.tuprolog.argumentation.SyntaxProblem
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.dsl.theory.logicProgramming
+import it.unibo.tuprolog.core.exception.TuPrologException
+import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
+import it.unibo.tuprolog.solve.exception.error.SyntaxError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
 
 /**
- * call_module(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is the
- * name of a file in the modules path (flag `modulesPath`), or a location, a URL or a path with `.pl`. An error raised
- * within the modules is raised by the call.
+ * call_module(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is an
+ * atom: a location, a URL or the path of a file ending in `.pl` (relative to the working directory), or else the name
+ * of a file in the modules path (flag `modulesPath`, the working directory if there is none), `.pl` left out. A module
+ * that cannot be read raises an existence error, one that does not parse a syntax error; an error raised within the
+ * modules is raised by the call.
  */
-object CallModule : Primitive {
+internal object CallModule : Primitive {
     val signature = Signature("call_module", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
@@ -38,98 +41,88 @@ object CallModule : Primitive {
         val goal: Term = request.arguments[1]
 
         if (modules !is List) {
-            throw TypeError.forGoal(
-                request.context,
-                request.signature,
-                TypeError.Expected.LIST,
-                modules,
-            )
+            throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.LIST, modules, 0)
         }
-
         if (goal !is Struct) {
-            throw TypeError.forGoal(
-                request.context,
-                request.signature,
-                TypeError.Expected.CALLABLE,
-                goal,
-            )
+            throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.CALLABLE, goal, 1)
         }
+        val names =
+            modules.toList().map {
+                it as? Atom ?: throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.ATOM, it, 0)
+            }
 
-        val solver = getCleanSolver(request.context, mineModulesPath(request.context), modules.toList().map { it.toString() })
-        return sequence {
-            yieldAll(
-                solver.solveForCaller(goal, SolveOptions.allLazily()).map {
-                    when (it) {
-                        is Solution.Yes -> request.replySuccess(it.substitution)
-                        // An error inside the module must surface: collapsing it into a failure
-                        // turns a broken call into a silently empty result.
-                        is Solution.Halt -> throw it.exception
-                        else -> request.replyFail()
-                    }
-                },
-            )
+        val base = modulesPath(request.context)
+        val solver = solverOf(request.context, names.map { locationOf(it.value, base) })
+        return solver.solveForCaller(goal, SolveOptions.allLazily()).map {
+            when (it) {
+                is Solution.Yes -> request.replySuccess(it.substitution)
+                // an error inside the modules surfaces: a failure would turn a broken call into an empty result
+                is Solution.Halt -> throw it.exception
+                else -> request.replyFail()
+            }
         }
     }
 
-    // The modules path of the settings (empty if there is none)
-    private fun mineModulesPath(context: ExecutionContext): String {
-        val paths = Settings.of(context)?.valuesOf(ModulesPath, context).orEmpty()
-        return paths.firstOrNull()?.toString() ?: ""
-    }
+    // The modules path of the settings, if there is one
+    private fun modulesPath(context: ExecutionContext): String? =
+        Settings
+            .of(context)
+            ?.valuesOf(ModulesPath, context)
+            ?.firstOrNull()
+            ?.let { (it as? Atom)?.value ?: it.toString() }
 
-    private fun getCleanSolver(
+    // The location of the module [name]: a URL, or a path ending in .pl, as it is; else the file of the module in [base]
+    private fun locationOf(
+        name: String,
+        base: String?,
+    ): String =
+        when {
+            isUrl(name) || name.endsWith(".pl") -> name
+            base == null -> "$name.pl"
+            else -> "${base.trimEnd('/', '\\')}/$name.pl"
+        }
+
+    // A location carrying a scheme (http://, file://): the others are paths of files
+    private fun isUrl(location: String) = location.contains("://")
+
+    // The text of the module at [location]: an existence error if it cannot be read
+    private fun read(
         context: ExecutionContext,
-        modulesPath: String,
-        modules: Iterable<String>,
-    ): Solver {
-        val module = { mod: String ->
-            // Module names arrive as terms, so an atom that needs quoting still carries its quotes here.
-            val name = mod.removeSurrounding("'")
-            // Anything carrying a scheme, or naming a file, is a location: everything else is a module
-            // name to be resolved against modulesPath.
-            val isLocation = name.contains("://") || name.contains(".pl")
-            asFileUrl(
-                if (isLocation) name else "${modulesPath.removeSurrounding("'")}/$name.pl",
+        location: String,
+    ): String =
+        try {
+            (if (isUrl(location)) Url.of(location) else Url.file(location)).readAsText()
+        } catch (e: TuPrologException) {
+            throw ExistenceError.of(
+                context,
+                ExistenceError.ObjectType.SOURCE_SINK,
+                Atom.of(location),
+                "No module can be read at `$location`: ${e.message}",
             )
         }
-        // With IOLib, which is not part of the argumentation runtime, for the modules using its predicates.
-        // Built from the calling context so that its flags travel with it: the argumentation theories rely
-        // on unknown predicates failing rather than raising, which the default flag set does not provide.
-        return logicProgramming {
-            context
-                .createMutableSolver(
-                    libraries = context.libraries + IOLib,
-                    // The module is evaluated on its own content, without the surrounding theory.
-                    staticKb = Theory.empty(),
-                ).also { solver: MutableSolver ->
-                    modules.forEach { mod ->
-                        val target = module(mod)
-                        // Read and parse the module here rather than through consult/1: the latter parses
-                        // with the operators of the calling context, which do not include the arg2p ones
-                        // when the primitive is reached through the :: dispatch, so a theory written in
-                        // arg2p syntax would fail to load.
-                        val theory =
-                            runCatching {
-                                RuleAnnotations.parse(
-                                    Url.of(target).readAsText(),
-                                    ParserModule.operators().plus(OperatorSet.DEFAULT),
-                                )
-                            }.getOrNull() ?: throw ExistenceError.forSourceSink(context, target)
-                        // appended: each module adds its clauses to those of the modules before it
-                        solver.appendStaticKb(theory)
-                    }
-                }
+
+    // The theory of the module at [location], read with the operators of every theory of arg2p (those of the module
+    // calls, ::, among them): a syntax error if it does not parse
+    private fun theoryOf(
+        context: ExecutionContext,
+        location: String,
+    ): Theory {
+        val text = read(context, location)
+        return try {
+            RuleAnnotations.parse(text, TermValues.operators)
+        } catch (e: ParseException) {
+            throw SyntaxError.of(context, "$location: ${SyntaxProblem.of(e)}")
         }
     }
 
-    // consult/1 resolves its argument as a URL: a bare filesystem path is rejected, and on Windows it is
-    // read as a URI whose scheme is the drive letter. Absolute paths therefore need an explicit file scheme.
-    private fun asFileUrl(path: String): String {
-        val normalized = path.replace('\\', '/')
-        return when {
-            normalized.contains("://") -> normalized
-            normalized.startsWith("/") -> "file://$normalized"
-            else -> "file:///$normalized"
-        }
-    }
+    // A solver of the modules at [locations], each adding its clauses to those before it, with the libraries and the
+    // flags of the calling context (the theories of arg2p rely on unknown predicates failing, which the default flags
+    // do not give), and IOLib, for the modules using its predicates: the theory of the caller is left out
+    private fun solverOf(
+        context: ExecutionContext,
+        locations: kotlin.collections.List<String>,
+    ): Solver =
+        context
+            .createMutableSolver(libraries = context.libraries + IOLib, staticKb = Theory.empty())
+            .also { solver -> locations.forEach { solver.appendStaticKb(theoryOf(context, it)) } }
 }

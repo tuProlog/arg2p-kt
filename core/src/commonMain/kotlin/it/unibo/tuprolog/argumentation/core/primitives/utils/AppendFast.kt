@@ -13,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * appendFast(+List1, +List2, -List): List is List1 followed by List2, in one step
  */
-object AppendFast : Primitive {
+internal object AppendFast : Primitive {
     val signature: Signature = Signature("appendFast", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

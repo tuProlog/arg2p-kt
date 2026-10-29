@@ -1,9 +1,10 @@
+@file:Suppress("NON_EXPORTABLE_TYPE")
+
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
-import it.unibo.tuprolog.argumentation.parallel.federation.FederationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.LanDiscovery
 import it.unibo.tuprolog.argumentation.parallel.federation.Link
 import it.unibo.tuprolog.argumentation.parallel.federation.NearbySite
@@ -11,6 +12,7 @@ import it.unibo.tuprolog.argumentation.parallel.federation.SequentialScheduler
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.federation.WebSocketLinks
 import it.unibo.tuprolog.argumentation.parallel.federation.handled
+import it.unibo.tuprolog.argumentation.parallel.federation.later
 import it.unibo.tuprolog.argumentation.parallel.federation.nodeModule
 import it.unibo.tuprolog.argumentation.parallel.federation.thisModule
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
@@ -21,50 +23,28 @@ import kotlin.js.Promise
  * A distributed solver on the threads of Node.js (worker_threads): the catalog on the calling thread, the workers on
  * [threads] threads, each loading this module ([module], this very file by default) and running a site of its own,
  * a delegate of the one of the calling thread (see [Site.delegate]), over the messages between threads: the cluster
- * lends the workers of its threads to the sites it is federated with. The theory is split into at most
- * [parts] partitions if given, as many as the workers of the threads and of the sites it is federated with otherwise
- * (see [listen] and [connect]); the graph is labelled as the standard solver does with [flags]. The threads keep Node.js running only while an evaluation is pending; [close] stops
- * them.
+ * lends the workers of its threads to the sites it is federated with. The theory is split into at most [parts]
+ * partitions if given, as many as the workers of the threads and of the sites it is federated with otherwise (see
+ * [listen] and [connect]); the graph is labelled as the standard solver does with [flags]. The threads keep Node.js
+ * running only while an evaluation is pending; [close] stops them.
  */
 @JsExport
 class WorkerCluster(
-    private val threads: Int,
+    threads: Int,
     parts: Int? = null,
     flags: Flags = Flags.defaults(),
     module: String? = null,
-) {
-    // the catalog here, every worker on a thread
-    private val site =
-        Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags).apply {
-            name =
-                nodeModule("os").hostname() as String
-        }
+) : DiscoveringCluster(
+        // the catalog here, every worker on a thread
+        Site(SequentialScheduler(), workers = 0, parts = parts, flags = flags).apply { name = nodeModule("os").hostname() as String },
+    ) {
     private val links = WebSocketLinks(site)
     private var port: Int? = null
     private var discovery: LanDiscovery? = null
 
-    // the evaluations asked before every thread greeted the site wait for them
-    private val waiting = mutableListOf<() -> Unit>()
-    private var greeted = 0
-    private var pending = 0
-    private val workers: List<dynamic> = List(threads) { spawn(module ?: thisModule()) }
-
     // The replies of the site, asked for once every thread greeted it: the threads keep Node.js running until they come
-    private val replies =
-        object : AsyncReplies {
-            override fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T> =
-                Promise { resolve, _ ->
-                    pending++
-                    referenced(true)
-                    val evaluate = {
-                        ask {
-                            resolve(it)
-                            if (--pending == 0) referenced(false)
-                        }
-                    }
-                    if (greeted == threads) evaluate() else waiting += evaluate
-                }
-        }
+    private val replies = ThreadReplies(threads) { on -> referenced(on) }
+    private val workers: List<dynamic> = List(threads) { spawn(module ?: thisModule()) }
 
     init {
         referenced(false)
@@ -97,108 +77,63 @@ class WorkerCluster(
             }, reject)
         }
 
-    /** Federates the cluster with the site listening at [url] (ws://host:port), presenting [code] if it requires one */
+    /**
+     * Federates the cluster with the site listening at [url] (ws://host:port), proving it knows [code] if it requires
+     * one: rejected if no site answers in a few seconds
+     */
     fun connect(
         url: String,
         code: String? = null,
     ): Promise<Unit> = links.connect(url, code)
 
-    /** The name of the site of the cluster, as its beacons tell the sites nearby: the name of its host by default */
-    var name: String
-        get() = site.name
-        set(value) {
-            site.name = value
-        }
-
-    /**
-     * Whether the sites linking to this cluster must present its [code], or the token of a pairing made with it:
-     * refused otherwise, and after a few wrong codes from an address its codes are refused for a while
-     */
-    var requiresCode: Boolean
-        get() = site.requiresCode
-        set(value) {
-            site.requiresCode = value
-        }
-
-    /** The code the sites linking to this cluster present, if it requires one: four digits, random */
-    val code: String get() = site.code
-
-    /** A new [code], the one before refused from now on (the pairings made stay) */
-    fun newCode(): String = site.newCode()
-
     /** The sites heard on the local network, not linked to this cluster (see [discover]) */
     val nearby: Array<NearbySite> get() = site.nearby.toTypedArray()
 
-    /** Called whenever the sites heard on the local network change */
-    var onNearbyChanged: (() -> Unit)?
-        get() = site.onNearbyChanged
-        set(value) {
-            site.onNearbyChanged = value
-        }
-
     /**
-     * Links this cluster to [site], nearby, presenting [code]: the two paired, linked again with no code while they
-     * run; rejected if it refuses the code (or no site nearby is [site])
+     * Links this cluster to [site], nearby, proving it knows its [code]: the two paired, linked again with no code
+     * while they run; rejected if it refuses the code, does not prove it knows it as well (a site claiming the
+     * identifier of another), does not answer in a few seconds, or if no site nearby is [site]
      */
     fun pair(
         site: String,
         code: String,
     ): Promise<Unit> =
         Promise { resolve, reject ->
-            val nearby = this.site.nearby.find { it.id == site } ?: return@Promise reject(Arg2pException("No site $site nearby"))
-            val greeted = { refusal: String? ->
-                if (refusal ==
-                    null
-                ) {
-                    resolve(Unit)
-                } else {
-                    reject(Arg2pException("$site refused the link: $refusal"))
+            val nearby = runCatching { nearbySite(site) }.getOrElse { return@Promise reject(it) }
+            var opened: Link? = null
+            var done = false
+            // the link greeted, refused or closed, or not in time: the greeting no longer waited for then
+            val settle = { refusal: String? ->
+                if (!done) {
+                    done = true
+                    opened?.let { this.site.forgetGreeting(it) }
+                    if (refusal == null) resolve(Unit) else reject(Arg2pException(refusal))
                 }
             }
-            links.connect(nearby.address, code) { this.site.greeting(it, greeted) }.catch { reject(it) }
+            later(PAIRING) {
+                if (!done) opened?.close()
+                settle("$site did not answer in time")
+            }
+            links
+                .connect(nearby.address, code, PAIRING) { link ->
+                    opened = link
+                    this.site.greeting(link) { refusal -> settle(refusal?.let { "$site refused the link: $it" }) }
+                }.catch { settle("$site cannot be reached: ${it.message}") }
         }
 
     /** The sites the cluster is federated with, its threads included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
-    /** Called whenever a site joins or leaves the peers of the cluster, its threads included */
-    var onPeersChanged: (() -> Unit)?
-        get() = site.onPeersChanged
-        set(value) {
-            site.onPeersChanged = value
-        }
-
-    /** What the federation does, as the cluster knows it: the sites, and the last evaluation it answered (see [Site.stats]) */
-    val stats: FederationStats get() = site.stats
-
-    /**
-     * The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
-     * built anew, the links and the peers of the cluster kept
-     */
-    var flags: Flags
-        get() = site.flags
-        set(value) {
-            site.flags = value
-        }
-
-    /** Replaces the theory with [theory], as Prolog text */
-    fun load(theory: String) = site.load(theory)
-
-    /** Adds [clause], as Prolog text, to the theory */
-    fun add(clause: String) = site.add(clause)
-
-    /** Forgets the theory */
-    fun reset() = site.reset()
-
-    /** The arguments for [statement], as Prolog text, by label */
+    /** The arguments for [statement], as Prolog text, by label (rejected if the cluster closes meanwhile) */
     fun solve(statement: String): Promise<EvaluationResponse> =
         replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
 
     /** The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries */
     val solver: AsyncClusterSolver = AsyncClusterSolver(site, replies)
 
-    /** Closes the links to the other sites, and stops the threads */
+    /** Closes the links to the other sites, and stops the threads: the evaluations pending are rejected */
     fun close() {
+        replies.close()
         discovery?.close()
         links.close()
         workers.forEach { it.terminate() }
@@ -216,15 +151,8 @@ class WorkerCluster(
         val thread = workerThreads().Worker
         val worker = js("new thread(code, options)")
         val link = PortLink(worker) { worker.terminate() }
-        var first = true
-        worker.on("message") { frame: dynamic ->
-            handled { site.received(link, frame as String) }
-            // its first frame greets the site
-            if (first) {
-                first = false
-                if (++greeted == threads) waiting.toList().also { waiting.clear() }.forEach { it() }
-            }
-        }
+        val received = replies.receiver(site, link)
+        worker.on("message") { frame: dynamic -> received(frame as String) }
         worker.on("exit") { _: dynamic -> site.closed(link) }
         worker.on("error") { error: dynamic -> console.error(error) }
         site.delegate(link)
@@ -233,6 +161,11 @@ class WorkerCluster(
 
     // The threads keep Node.js running while an evaluation waits for them, not otherwise
     private fun referenced(on: Boolean) = workers.forEach { if (on) it.ref() else it.unref() }
+
+    private companion object {
+        // How long a pairing waits for the other site, in milliseconds
+        const val PAIRING = 10_000
+    }
 }
 
 /** The loop of a thread of [WorkerCluster]: a site running a worker for the site of the thread that started it */

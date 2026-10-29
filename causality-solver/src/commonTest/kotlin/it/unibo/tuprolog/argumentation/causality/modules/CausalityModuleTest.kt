@@ -4,14 +4,16 @@ import it.unibo.tuprolog.argumentation.causality.causality
 import it.unibo.tuprolog.argumentation.causality.isButForCause
 import it.unibo.tuprolog.argumentation.causality.isNessCause
 import it.unibo.tuprolog.argumentation.causality.isNessOriginalCause
+import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
-import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.channel.OutputChannel
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CausalityModuleTest {
     private fun values(
@@ -58,7 +60,7 @@ class CausalityModuleTest {
             Arg2pSolverFactory.of(
                 "a. % f1\nb :- a. % r1",
                 FlagsBuilder(prologStrictCompatibility = true).create(),
-                listOf(CausalityModule(), Cache()),
+                listOf(CausalityModule()),
                 ModuleRegistry.all,
             )
         isButForCause(solver, "a", "b")
@@ -69,5 +71,19 @@ class CausalityModuleTest {
     fun theGraphExtensionsOfTheSolverApply() {
         val solver = Arg2pSolverFactory.causality("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).\nr3 : a => b.")
         isButForCause(solver, "a", "b")
+    }
+
+    // The solver of the analysis prints where the solver testing does: a hook of the theory, which the graphs call
+    @Test
+    fun theAnalysisPrintsToTheOutputOfTheSolverTesting() {
+        val output = StringBuilder()
+        val solver =
+            Arg2pSolverFactory.solverOf(
+                Arg2pSolver.default(listOf(FlagsBuilder().create()), listOf(CausalityModule())),
+                "r1 :=> a.\nr2 : a => b.\nconflict(_, _) :- write(hook), fail.",
+                output = OutputChannel.of { output.append(it) },
+            )
+        assertEquals(true, solver.solve(Struct.parse("causality::but_for(a, b)", solver.operators)).first().isYes)
+        assertTrue("hook" in output, "expected the hook to print to the output of the solver, got '$output'")
     }
 }

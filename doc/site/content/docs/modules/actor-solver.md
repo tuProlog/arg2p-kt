@@ -35,6 +35,9 @@ val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
 )
 ```
 
+`parallel(hostname, timeout)` takes the host name the node is reached at (`127.0.0.1` by default: a cluster spanning
+several machines needs one the others can reach) and how long `solve` waits for its answer (60 seconds by default).
+
 ---
 
 ## Predicates
@@ -46,9 +49,9 @@ The module is registered under the identifier `parallel` and provides:
 | `join(Port)` | Starts or joins a cluster on the local machine at the given port (a cluster joined before is left first). |
 | `join(Port, Seed)` | Joins an existing cluster, where `Seed` is the `host:port` of a seed node. |
 | `load` | Sends every clause of the static knowledge base to the cluster. |
-| `solve(Goal, In, Out, Und)` | Evaluates the goal across the cluster, binding the three lists of labelled claims. |
-| `reset` | Clears the distributed knowledge base. |
-| `leave` | Clears the knowledge base, leaves the cluster and stops the actor system, freeing its port. |
+| `solve(Goal, In, Out, Und)` | Evaluates the goal across the cluster, binding the three lists of labelled claims; an error past the timeout. |
+| `reset` | Clears the distributed knowledge base; the evaluations under way end with an error. |
+| `leave` | Leaves the cluster and stops the actor system, freeing its port: the knowledge base stays with the nodes that remain. |
 
 ---
 
@@ -66,6 +69,8 @@ println(answer.substitution)
 
 solver.solve(Struct.parse("leave")).first()
 ```
+
+`load`, `reset` and `solve` raise an error when no cluster is joined (before `join`, or after `leave`).
 
 > [!WARNING]
 > Always call `leave` when you are done. The cluster runs non-daemon threads, and a program that does not leave

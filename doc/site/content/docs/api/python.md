@@ -16,7 +16,7 @@ pip install arg2p
 ```
 
 The wheels of Windows (x86-64), Linux (x86-64, ARM64) and macOS (ARM64, x86-64) bundle a Java runtime; on another
-platform the package runs on the Java of the system (21 or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
+platform the package runs on the Java of the system ({{< java >}} or later, `JAVA_HOME`). `ARG2P_JVM` names another library of
 the JVM to run on (`arg2p mcp` runs the `java` of its runtime), `ARG2P_CLASSPATH` other jars, put before those of the
 package: their classes are the ones loaded, and the package gives those they lack.
 
@@ -53,13 +53,14 @@ solver; each flag has a method, taking a value of its enumeration (`Profile`, `S
 boolean:
 
 ```python
-from arg2p import GraphExtension, Profile
+from arg2p import ConflictModel, GraphExtension, Profile
 
 flags = (
     Flags.defaults()
     .graph_build_mode(Profile.ABA)
     .argument_labelling_mode(Semantics.PREFERRED)
     .graph_extensions(GraphExtension.STANDARD_PREF)   # no argument: none
+    .conflict_model(ConflictModel.NEGATION, ConflictModel.DECLARED)   # no argument: none
     .query_mode(False)
 )
 ```
@@ -138,7 +139,7 @@ federation does:
 
 ```python
 solver = evaluating.solver
-solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                          # as for Arg2p
 solver.graph()                               # the Graph of the solution
 solver.answer("a").in_statements             # as Arg2p.answer
@@ -163,7 +164,8 @@ arg2p theory.pl -p aba -s preferred
 
 `arg2p mcp` runs the [MCP server]({{% ref "/docs/run#ai-assistants-mcp" %}}) of arg2p instead, over the standard
 input and output, until its client closes them: `uvx arg2p mcp` with [uv](https://docs.astral.sh/uv/), installing
-nothing first. A theory in a file named `mcp` is `arg2p ./mcp`.
+nothing first. A theory in a file named `mcp` is `arg2p ./mcp`. On Linux and macOS the server takes the place of the
+`arg2p` process, signals included; on Windows it runs as its child, and ends with it.
 
 ### The recorded page
 
@@ -180,16 +182,17 @@ arg2p page theory.pl -q "flies(X)" -f "argumentLabellingMode(complete).\nqueryMo
 arg2p page - --max-solutions 50 --timeout 120 < theory.pl
 ```
 
-The query is `buildLabelSets(In, Out, Und)` by default, the flags (Prolog facts, `\n` a new line) those of arg2p.
-The page keeps the first 20 solutions (`--max-solutions`), those found within 60 seconds (`--timeout`), and tells
-when there were more or the time ran out. A theory that does not parse is shown with its error.
+By default the query gives the statements labelled in, out and und, and the flags (Prolog facts, `\n` a new line) are
+those of arg2p. The page keeps the first solutions (`--max-solutions`) found within a time limit (`--timeout`), and
+tells when there were more or the time ran out; `arg2p page --help` tells the defaults, as `arg2p.recorded.defaults()`
+gives them. A theory that does not parse is shown with its error.
 
 From Python, `page` gives the HTML:
 
 ```python
 from arg2p import Flags, Semantics, page
 
-html = page(theory, "buildLabelSets(In, Out, Und)", Flags.defaults().argument_labelling_mode(Semantics.COMPLETE))
+html = page(theory, "arg2p::solve(In, Out, Und)", Flags.defaults().argument_labelling_mode(Semantics.COMPLETE))
 html = page(theory, flags="argumentLabellingMode(complete).", max_solutions=50, timeout=120)
 ```
 

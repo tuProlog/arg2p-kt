@@ -68,7 +68,8 @@ val flags =
 | `statementLabellingMode` | `StatementLabelling` |
 | `orderingPrinciple`, `orderingComparator` | `OrderingPrinciple`, `OrderingComparator` |
 | `graphExtensions`, `graphLanguage` | `GraphExtension`, `GraphLanguage` (several) |
-| `graphBuilder`, `conflictModel` | `GraphBuilder`, `ConflictModel` |
+| `conflictModel` | `ConflictModel` (several): `NEGATION`, `DEONTIC`, `PREFERENCE`, `DECLARED`, or `BUILTIN` for all of them; none: no argument |
+| `graphBuilder` | `GraphBuilder` |
 | `modulesPath` | a path |
 | `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `debug` | on or off |
 
@@ -174,8 +175,9 @@ The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}
 ## Earlier entry points
 
 `Arg2pSolverFactory.evaluate(theory, flags)` (package `it.unibo.tuprolog.argumentation.core`), the graph of each
-labelling of a theory with the flags of a `FlagsBuilder`, is still there, as `FlagsBuilder` is, for the 2P-Kt
-integration below: `Flags.of(builder)` are the flags of a builder.
+labelling of a theory with the flags of a `FlagsBuilder` (an `Arg2pException` if the evaluation halts, as for a
+theory its profile refuses), is still there, as `FlagsBuilder` is, for the 2P-Kt integration below:
+`Flags.of(builder)` are the flags of a builder.
 
 ---
 
@@ -209,7 +211,7 @@ The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality 
 You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
 ```kotlin
-solver.solve(Struct.parse("arg2p::buildLabelSets(SIn, SOut, SUnd)", solver.operators)).first()
+solver.solve(Struct.parse("arg2p::solve(SIn, SOut, SUnd)", solver.operators)).first()
 ```
 
 Pass `solver.operators` to `Struct.parse`: the module-call operator `::` is defined by Arg2P, and a goal using

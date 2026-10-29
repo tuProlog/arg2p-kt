@@ -21,7 +21,7 @@ export class LanguageServer implements Server {
     /** The server that ran stopped: it was stopped, restarted or it crashed (and the client restarts it) */
     readonly onDidStop: Event<void> = this.stopped.event;
 
-    /** A server started */
+    /** A server started: started at first, restarted, or restarted by the client after it crashed */
     readonly onDidStart: Event<void> = this.started.event;
 
     /** The federation of the server changed: its state now */
@@ -59,27 +59,40 @@ export class LanguageServer implements Server {
         return done;
     }
 
+    // A client started, its errors reported: the server is told started and stopped as it comes to run and stops running,
+    // its first start as its restarts by the client after a crash
     private async launch(): Promise<void> {
-        const client = this.spawn();
+        let client: Client;
+        try {
+            client = this.spawn();
+        } catch (error) {
+            this.report(error);
+            return;
+        }
         this.client = client;
         let running = false;
         client.onDidChangeState(() => {
-            if (running && !client.isRunning()) this.stopped.fire();
-            running = client.isRunning();
+            const now = client.isRunning();
+            if (now !== running) (now ? this.started : this.stopped).fire();
+            running = now;
         });
         client.onNotification('arg2p/federationChanged', (state: FederationState) => this.federation.fire(state));
-        await client.start().then(
-            () => this.started.fire(),
-            error => this.report(error),
-        );
+        await client.start().catch(error => this.report(error));
     }
 
-    // A client that is not running (its start failed) cannot be stopped: it is disposed of
+    // A client running is stopped, and disposed of if it does not stop (in time, as when its server hangs); one that is not
+    // running (its start failed) cannot be stopped: it is disposed of. Either way it is gone, and the next one can start.
     private async halt(): Promise<void> {
         const client = this.client;
         this.client = null;
         if (client === null) return;
-        if (client.isRunning()) await client.stop();
-        else await client.dispose().catch(() => undefined);
+        if (client.isRunning()) {
+            const stopped = await client.stop().then(
+                () => true,
+                () => false,
+            );
+            if (stopped) return;
+        }
+        await client.dispose().catch(() => undefined);
     }
 }

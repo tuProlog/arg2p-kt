@@ -19,8 +19,9 @@ object TermValues {
 
     private val formatter by lazy { TermFormatter.prettyExpressions(operators) }
 
-    // a prefix negation as arg2p writes it (-a, ~a), rather than - a: at the start, or after an opening or a separator
-    private val negation = Regex("""(^|[(\[,|]\s*)([-~]) (?=\S)""")
+    // a prefix negation as arg2p writes it (-a, ~a), rather than - a: at the start, or after an opening or a separator;
+    // a quoted atom or string is matched whole, to be left as it is
+    private val negation = Regex("""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(^|[(\[,|]\s*)([-~]) (?=\S)""")
 
     /** The term written in [text], a goal or a value (its final dot left out), read with [operators] */
     fun term(
@@ -29,7 +30,10 @@ object TermValues {
     ): Term = Term.parse(text.trim().removeSuffix("."), operators)
 
     /** [term] as Prolog text, written with the operators of arg2p */
-    fun format(term: Term): String = negation.replace(formatter.format(term), "$1$2")
+    fun format(term: Term): String =
+        negation.replace(formatter.format(term)) { match ->
+            match.groups[1]?.value ?: (match.groupValues[2] + match.groupValues[3])
+        }
 
     /** The value of [term] */
     fun of(term: Term): Value =

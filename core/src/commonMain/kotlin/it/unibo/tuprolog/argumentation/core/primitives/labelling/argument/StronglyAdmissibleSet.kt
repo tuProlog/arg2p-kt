@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * stronglyAdmissibleSet: every IN argument is reachable from the unattacked ones, iteratively adding the IN
  * arguments whose attackers are all attacked by those added so far
  */
-object StronglyAdmissibleSet : Primitive {
+internal object StronglyAdmissibleSet : Primitive {
     val signature: Signature = Signature("stronglyAdmissibleSet", 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

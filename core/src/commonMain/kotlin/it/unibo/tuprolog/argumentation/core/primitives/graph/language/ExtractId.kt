@@ -11,7 +11,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
 /**
  * extractId(+Rules, -Ids): `strict(Id)` for the identifier of each of Rules (lists starting with it)
  */
-object ExtractId : BinaryRelation.WithoutSideEffects<ExecutionContext>("extractId") {
+internal object ExtractId : BinaryRelation.WithoutSideEffects<ExecutionContext>("extractId") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

@@ -115,7 +115,8 @@ not weaker than its target, so some attacks disappear. The outcome also depends 
 
 ## Rationality postulates are not satisfied
 
-Closure under transposition is off by default. Some postulates require it:
+Closure under transposition is on under the profiles `aspic_plus` (the default) and `aspic`, and off under the others,
+or where the theory or the flags turn it off (`autoTransposition(off).`). Some postulates require it:
 
 ```prolog
 autoTransposition.

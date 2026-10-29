@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.UnaryPredicate
  * prologAxioms(-Axioms): the Prolog facts of the theory with no identifier (see [RuleAnnotations]) as axioms,
  * `[Id, Fact]`, with prologStrictCompatibility on (none otherwise)
  */
-object PrologAxioms : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologAxioms") {
+internal object PrologAxioms : UnaryPredicate.WithoutSideEffects<ExecutionContext>("prologAxioms") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(first: Term): Sequence<Substitution> =
         ConversionUtils.commonMap(this, first) { clauses, prologScope ->
             clauses

@@ -34,7 +34,7 @@ import it.unibo.tuprolog.solve.library.Runtime
  * backtracking, which the context_* primitives change and read (see the files of the primitives of the context, on
  * branches, assertions and lookups).
  */
-class Context :
+internal class Context :
     ArgLibrary,
     ArgContext {
     private val branches = ContextBranches()

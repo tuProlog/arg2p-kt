@@ -58,6 +58,32 @@ internal class Solved {
     fun answer(response: AnswerResponse): Answer = response.answer ?: throw Arg2pException(response.error ?: "No answer")
 }
 
+/**
+ * The solutions of [goal] (Prolog text), from the [first] reply of the site, as [solved] gives them: the first one,
+ * then each asked for in the [run] of the goal, until the last one says there is no other
+ */
+internal class Given(
+    private val goal: String,
+    first: SolutionResponse,
+    private val solved: Solved,
+) {
+    val run: String = first.run
+    private var pending: SolutionResponse? = first
+    private var more = true
+
+    /** Whether the goal has another solution */
+    fun hasNext(): Boolean = pending != null || more
+
+    /** The first reply, if not given yet: null once it is, the next ones asked for */
+    fun first(): SolutionResponse? = pending.also { pending = null }
+
+    /** The solution of [response], the next reply */
+    fun given(response: SolutionResponse): LogicSolution {
+        more = response.hasNext
+        return solved.given(response, goal)
+    }
+}
+
 // The goal of a halt, as Prolog text: as the solver reads it, or an atom if it cannot
 private fun term(goal: String): Struct =
     try {

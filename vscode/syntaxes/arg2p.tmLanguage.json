@@ -6,6 +6,7 @@
     { "include": "#comments" },
     { "include": "#rule-label" },
     { "include": "#arrows" },
+    { "include": "#conflict-model" },
     { "include": "#flags" },
     { "include": "#strings" },
     { "include": "#numbers" },
@@ -30,6 +31,14 @@
       "comment": "The arrows of rules (=>, ->), premises and axioms (:=>, :->), clauses (:-) and abstract attacks (->, <->)",
       "name": "keyword.operator.arrow.arg2p",
       "match": ":=>|:->|<->|=>|->|:-|\\?-"
+    },
+    "conflict-model": {
+      "comment": "The parts of the conflict model, conflictModel(negation), ... (builtin for all of them, none for none)",
+      "match": "\\b(conflictModel)\\s*\\(\\s*(negation|deontic|preference|declared|builtin|none)\\s*\\)",
+      "captures": {
+        "1": { "name": "support.constant.flag.arg2p" },
+        "2": { "name": "support.constant.flag-value.arg2p" }
+      }
     },
     "flags": {
       "comment": "The flags of arg2p, stated as facts",

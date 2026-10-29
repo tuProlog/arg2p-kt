@@ -16,7 +16,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 
-class DynamicLoader(
+internal class DynamicLoader(
     solver: Arg2pSolver,
 ) : ArgLibrary,
     ArgLoader {

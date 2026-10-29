@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import kotlin.js.Promise
 
 /**
@@ -10,7 +11,9 @@ import kotlin.js.Promise
  *
  * Two sites with no site in common can be paired by hand instead, with no server: one [invite]s, the other [accept]s
  * the invitation, and the first [complete]s the pairing with the reply. The codes carry all the two need to connect
- * (their whole descriptions, the candidates included), compressed if the browser can.
+ * (their whole descriptions, the candidates included), compressed if the browser can. Each step may be given an
+ * AbortSignal: once it aborts, the pairing is abandoned (its connection closed, with its link if it opened) and the
+ * promise of the step, if still pending, rejected.
  *
  * The frames are sent in chunks of at most [CHUNK] characters, as data channels bound the size of a message.
  */
@@ -40,30 +43,43 @@ class RtcLinks(
         invited.clear()
     }
 
-    /** An invitation to pair with this site by hand, for another site to [accept] */
-    fun invite(): Promise<String> {
+    /** An invitation to pair with this site by hand, for another site to [accept]: abandoned once [signal] aborts, if given */
+    fun invite(signal: dynamic = null): Promise<String> {
+        if (aborted(signal)) return Promise.reject(abandoned())
         val invitation = "${site.id}#${pairings++}"
         val connection = peerConnection()
         invited[invitation] = connection
         val options: dynamic = js("({})")
         options.ordered = true
-        attach(connection.createDataChannel("arg2p", options), null) { opening.remove(invitation)?.invoke() }
+        attach(connection.createDataChannel("arg2p", options), null) {
+            linked += invitation
+            opening.remove(invitation)?.invoke()
+        }
         val code: Promise<String> =
             connection
                 .createOffer()
                 .then { offer: dynamic -> connection.setLocalDescription(offer) }
                 .then { _: dynamic -> gathered(connection) }
                 .then { _: dynamic -> pack(invitation, connection.localDescription) }
-        return code
+        return abandonable(signal, code) { invitation }
     }
 
-    /** The reply to [invitation] (see [invite]), for the inviting site to [complete] the pairing */
-    fun accept(invitation: String): Promise<String> =
-        unpack(invitation)
-            .then { (id, offer) ->
+    /**
+     * The reply to [invitation] (see [invite]), for the inviting site to [complete] the pairing: abandoned once [signal]
+     * aborts, if given
+     */
+    fun accept(
+        invitation: String,
+        signal: dynamic = null,
+    ): Promise<String> {
+        var pairing: String? = null
+        val answered =
+            unpack(invitation).then { (id, offer) ->
+                if (aborted(signal)) throw abandoned()
+                pairing = id
                 val connection = peerConnection()
                 paired[id] = connection
-                connection.ondatachannel = { event: dynamic -> attach(event.channel, null) }
+                connection.ondatachannel = { event: dynamic -> attach(event.channel, null) { linked += id } }
                 val reply: Promise<String> =
                     connection
                         .setRemoteDescription(offer)
@@ -72,23 +88,67 @@ class RtcLinks(
                         .then { _: dynamic -> gathered(connection) }
                         .then { _: dynamic -> pack(id, connection.localDescription) }
                 reply
-            }.unsafeCast<Promise<String>>()
+            }
+        return abandonable(signal, answered.unsafeCast<Promise<String>>()) { pairing }
+    }
 
-    /** The pairing [invite]d completed with the [reply] of the other site: once the link is open */
-    fun complete(reply: String): Promise<Unit> =
-        unpack(reply)
-            .then { (id, answer) ->
+    /**
+     * The pairing [invite]d completed with the [reply] of the other site: once the link is open; abandoned once [signal]
+     * aborts, if given (as when the other site does not answer in time)
+     */
+    fun complete(
+        reply: String,
+        signal: dynamic = null,
+    ): Promise<Unit> {
+        var pairing: String? = null
+        val completed =
+            unpack(reply).then { (id, answer) ->
+                if (aborted(signal)) throw abandoned()
                 val connection = invited.remove(id) ?: throw IllegalStateException("No invitation $id")
+                pairing = id
                 paired[id] = connection
                 Promise<Unit> { resolve, reject ->
                     opening[id] = { resolve(Unit) }
                     connection.setRemoteDescription(answer).catch { error: dynamic -> reject(error as Throwable) }
                 }
-            }.unsafeCast<Promise<Unit>>()
+            }
+        return abandonable(signal, completed.unsafeCast<Promise<Unit>>()) { pairing }
+    }
 
-    // The pairings invited so far, and those whose opening someone waits for
+    // [promised], rejected once [signal] aborts (if given), the pairing then [pairing] (if known) abandoned unless its
+    // link opened: its connection closed (its data channel with it), and nothing waiting for it to open
+    private fun <T> abandonable(
+        signal: dynamic,
+        promised: Promise<T>,
+        pairing: () -> String?,
+    ): Promise<T> =
+        if (signal == null) {
+            promised
+        } else {
+            Promise { resolve, reject ->
+                promised.then({ resolve(it) }, { reject(it) })
+                val abandon = { _: dynamic ->
+                    pairing()?.takeIf { it !in linked }?.let { id ->
+                        opening.remove(id)
+                        invited.remove(id)?.close()
+                        paired.remove(id)?.close()
+                    }
+                    reject(abandoned())
+                }
+                if (aborted(signal)) {
+                    abandon(null)
+                } else {
+                    val options: dynamic = js("({})")
+                    options.once = true
+                    signal.addEventListener("abort", abandon, options)
+                }
+            }
+        }
+
+    // The pairings invited so far, those whose opening someone waits for, and those whose link opened
     private var pairings = 0
     private val opening = mutableMapOf<String, () -> Unit>()
+    private val linked = mutableSetOf<String>()
 
     private fun peerConnection(): dynamic {
         val configuration: dynamic = js("({})")
@@ -200,7 +260,7 @@ class RtcLinks(
     ) : Link {
         override fun send(frame: String) {
             if (channel.readyState != "open") return
-            val chunks = frame.chunked(CHUNK).ifEmpty { listOf("") }
+            val chunks = chunked(frame, CHUNK)
             chunks.forEachIndexed { index, chunk -> channel.send("${if (index == chunks.lastIndex) LAST else MORE}$chunk") }
         }
 
@@ -212,6 +272,11 @@ class RtcLinks(
     companion object {
         /** The largest chunk of a frame sent in a message */
         const val CHUNK: Int = 16_000
+
+        // Whether [signal], an AbortSignal if given, aborted
+        private fun aborted(signal: dynamic): Boolean = signal != null && signal.aborted == true
+
+        private fun abandoned() = Arg2pException("The pairing was abandoned")
 
         private const val MORE = '+'
         private const val LAST = '.'
@@ -281,13 +346,6 @@ class RtcLinks(
             val bytes = js("new Uint8Array(binary.length)")
             for (index in binary.indices) bytes[index] = binary[index].code
             return bytes
-        }
-
-        private fun later(
-            millis: Int,
-            task: () -> Unit,
-        ) {
-            js("setTimeout(task, millis)")
         }
     }
 }

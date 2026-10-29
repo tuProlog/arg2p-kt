@@ -166,8 +166,9 @@ modulesPath('https://example.org/theories').
 ?- module::call_module(['https://example.org/theories/greetings.pl'], hello(X)).
 ```
 
-A URL does not need to end in `.pl`: anything carrying a scheme is treated as a location rather than as a
-module name.
+A URL does not need to end in `.pl`: anything carrying a scheme (`https://...`) is treated as a location rather than
+as a module name, and so is a path ending in `.pl`. With no `modulesPath`, module names are resolved in the working
+directory.
 
 > [!WARNING]
 > A remote module is fetched and loaded as part of your theory, so it is executed with the same trust as the
@@ -175,8 +176,9 @@ module name.
 > fetched over plain `http` can be substituted in transit.
 
 The modules are loaded into a separate solver, so their clauses do not pollute the theory under evaluation.
-A module that cannot be found raises an existence error naming it; an error raised within the module is raised
-as it is.
+A module is read with the operators of Arg2P (`::` and `:::` included). A module that cannot be found or read raises
+an existence error naming it and saying why, one that does not parse a syntax error; an error raised within the module
+is raised as it is.
 
 ### What a module sees
 

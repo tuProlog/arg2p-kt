@@ -8,76 +8,67 @@ aliases:
 ## Engine Interface
 
 All the predicates below belong to the `arg2p` module, and the recommended way to call them is through the
-module prefix — `arg2p::solve(Goal, Res)`, `arg2p::buildLabelSets(...)` and so on. The unqualified form works
-too where `arg2p` is a static library, as in the solvers of `Arg2pSolver.default()`, but the qualified one states where the predicate comes from and keeps working if your own theory defines
-a predicate with the same name.
+module prefix: `arg2p::solve(In, Out, Und)`, `arg2p::solve(Goal, Res)` and so on. The unqualified form works too
+where `arg2p` is a static library, as in the solvers of `Arg2pSolver.default()`, but the qualified one states where
+the predicate comes from and keeps working if your own theory defines a predicate with the same name.
 
-The engine can be queried in two ways:
+`arg2p::solve` is the entry point of the engine. The labelling of the whole theory:
+
+```prolog
+arg2p::solve(In, Out, Und).
+```
+
+binds the statements labelled _IN, OUT and UND_, one solution for each labelling of the semantics.
+
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.%0Asup%28f1%2C%20f2%29.&query=arg2p%3A%3Asolve%28In%2C%20Out%2C%20Und%29)
+— a small theory evaluated with `arg2p::solve/3`.
+
+The labels of the statements unifying with a goal (with `queryMode`, only the part of the graph they depend on is
+built):
+
+```prolog
+arg2p::solve(Goal, Res).
+```
+
+collects them as a list of `in/1`, `out/1` or `und/1` terms, and
+
+```prolog
+arg2p::solve(Goal).
+```
+
+succeeds only if _Goal_ is labelled IN: use `arg2p::solve/2` to learn the label of a goal that is not.
+
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.&query=arg2p%3A%3Asolve%28d%2C%20Res%29)
+
+```prolog
+arg2p::solve.
+```
+
+builds the labelling of the whole theory without binding anything, to read it programmatically afterwards.
+
+## Older forms
+
+The predicates `arg2p::solve` is made of are available too, as they were before it:
+
+```prolog
+buildLabelSets(StatementIN, StatementOUT, StatementUND).   % as solve/3
+buildLabelSets([StatementIN, StatementOUT, StatementUND], [ArgumentIN, ArgumentOUT, ArgumentUND]).
+buildLabelSetsSilent.                                       % as solve/0
+answerQuery(Goal, In, Out, Und).                            % the labels of Goal in three lists
+answerQuery(Goal, Res).                                     % as solve/2
+answerQuery(Goal).                                          % as solve/1
+```
+
+`buildLabelSets/2` gives the arguments labelled as well as the statements, and
 
 ```prolog
 buildLabelSets.
 ```
 
-build and prints (in the output and graph tabs) both the argument and statement labellings according to the provided theory.
-This predicate is also available in two others versions:
-
-```prolog
-buildLabelSets(StatementIN, StatementOUT, StatementUND).
-```
-
-returning the statements labelling divided in the three sets _IN, OUT and UND_;
-
-```prolog
-buildLabelSets([StatementIN, StatementOUT, StatementUND], [ArgumentIN, ArgumentOUT, ArgumentUND]).
-```
-
-returning both the statements and arguments labelling divided in the three sets _IN, OUT and UND_;
-
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.%0Asup%28f1%2C%20f2%29.&query=arg2p%3A%3AbuildLabelSets%28SIn%2C%20SOut%2C%20SUnd%29)
-— a small theory evaluated with `buildLabelSets/3`.
-
-Alternatively, the framework can be queried with:
-
-```prolog
-answerQuery(Goal, In, Out, Und).
-```
-
-allowing to query the engine about a given _Goal_. The result are collected in the _In, Out, Und_ lists respectively.
-
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.&query=arg2p%3A%3AanswerQuery%28d%2C%20In%2C%20Out%2C%20Und%29)
-
-Two shorter forms are available as well:
-
-```prolog
-answerQuery(Goal, Res).
-```
-
-collecting the outcome as a list of `in/1`, `out/1` or `und/1` terms, and
-
-```prolog
-answerQuery(Goal).
-```
-
-which runs the evaluation for _Goal_ and succeeds only if _Goal_ is labelled IN: use `answerQuery/2` or
-`answerQuery/4` to learn the label of a goal that is not.
+builds and prints (in the output and graph tabs) both the argument and statement labellings of the theory.
+`buildLabelSetsSilent` is the predicate used by the Kotlin [`evaluate`]({{% ref "/docs/api/kotlin" %}}) helper.
 
 ## Other entry points
-
-```prolog
-buildLabelSetsSilent.
-```
-
-performs a complete evaluation without printing anything. This is the predicate used by the Kotlin
-[`evaluate`]({{% ref "/docs/api/kotlin" %}}) helper, and the one to use when the results are read
-programmatically rather than displayed.
-
-```prolog
-solve.            % same as buildLabelSetsSilent
-solve(Goal).      % same as answerQuery(Goal)
-solve(Goal, Res). % same as answerQuery(Goal, Res)
-```
-
-are shorthands for the predicates above.
 
 ```prolog
 argTuProlog.

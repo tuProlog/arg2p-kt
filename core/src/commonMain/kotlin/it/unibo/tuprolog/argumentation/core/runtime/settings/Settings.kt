@@ -29,7 +29,8 @@ import it.unibo.tuprolog.theory.Theory
  * and those of the theory, through the profile of the theory (graphBuildMode, see [Profiles]): for each flag, the
  * theory states its values, or else the settings of the solver if they differ from the default of the flag, or else
  * the profile, or else the settings of the solver. A flag is stated with no value by `Flag(none)` (no graph
- * extension, say), a switch stated off by `Switch(off)`: so a theory clears what its profile presets.
+ * extension, say), a switch stated off by `Switch(off)`: so a theory clears what its profile presets. A value
+ * standing for others ([ArgsFlag.aliases], the builtin of conflictModel) states those, and the values tell them.
  */
 class Settings(
     private val solver: Arg2pSolver,
@@ -88,13 +89,15 @@ class Settings(
                 flags.mapValues { (name, flag) ->
                     // a switch of the solver is off with no fact, another flag has no value stated
                     val stated = solver.getValue(name)
-                    val explicit = (flag.isSwitch || stated.isNotEmpty()) && stated.map { it.toString() } != defaultOf(flag)
+                    // the values of the default in any order (those of a set of parts, as conflictModel)
+                    val explicit = (flag.isSwitch || stated.isNotEmpty()) && stated.map { it.toString() }.toSet() != defaultOf(flag).toSet()
+                    val preset = presets[name]?.let { expanded(flag, it) }
                     val values =
                         when {
                             theory.getValue(name).isNotEmpty() -> theory.getValue(name)
                             explicit -> stated
-                            flag.isSwitch -> presets[name] ?: stated
-                            else -> presets[name] ?: stated.ifEmpty { defaultOf(flag).map { Atom.of(it) } }
+                            flag.isSwitch -> preset ?: stated
+                            else -> preset ?: stated.ifEmpty { defaultOf(flag).map { Atom.of(it) } }
                         }
                     values.filter { it != NONE && it != OFF }
                 }
@@ -109,9 +112,20 @@ class Settings(
         theory: Theory,
     ): List<Term> {
         val valued = theory[Struct.of(flag.predicate(), Var.of("Value"))].filter { it.isFact }.map { it.head[0] }
-        if (!flag.isSwitch) return valued.toList()
+        if (!flag.isSwitch) return expanded(flag, valued.toList())
         return theory[Atom.of(flag.predicate())].filter { it.isFact }.map { Truth.TRUE }.toList() + valued.filter { it == OFF }
     }
+
+    // The values of a flag, those standing for others replaced by them (see ArgsFlag.aliases), each once
+    private fun expanded(
+        flag: ArgsFlag<*, *>,
+        values: List<Term>,
+    ): List<Term> =
+        if (flag.aliases.isEmpty()) {
+            values
+        } else {
+            values.flatMap { value -> flag.aliases[(value as? Atom)?.value]?.map { Atom.of(it) } ?: listOf(value) }.distinct()
+        }
 
     // The default values of a flag, as text
     private fun defaultOf(flag: ArgsFlag<*, *>): List<String> =

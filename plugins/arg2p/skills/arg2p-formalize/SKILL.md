@@ -139,7 +139,7 @@ Write the theory to a `.arg2p` file (or keep it in the conversation for a short 
 2. **The glossary**: every term and rule name, and its meaning.
 3. **The flags**, as Prolog facts, and why.
 4. **The query**: a statement to label (`guilty`, `flies(X)`), a value the theory computes (`answer(V)`), or the whole
-   graph (`buildLabelSets(In, Out, Und)`, the default).
+   graph (`arg2p::solve(In, Out, Und)`, the default).
 5. **The interpretation ledger**, with the readings encoded for material ambiguities.
 6. **The fidelity check**, last: re-read every premise and axiom of the finished theory against the source and
    confirm it quotes a stated fact. Delete any you cannot point to.

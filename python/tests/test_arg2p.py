@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -19,13 +20,14 @@ from arg2p import (
     OrderingPrinciple,
     Profile,
     Semantics,
+    Solutions,
     StatementLabelling,
     Struct,
     SyntaxProblem,
     Var,
     page,
 )
-from arg2p import _jvm
+from arg2p import _jvm, recorded
 from arg2p.__main__ import main
 
 CONFLICT = "r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2)."
@@ -78,6 +80,30 @@ def test_the_solutions_of_a_goal_bind_its_variables():
     assert len(Arg2p.of().solve("member(X, [a, b, c])").to_list(limit=2)) == 2
 
 
+class _Failing:
+    """Solutions of the JVM whose every step fails with an exception of arg2p, as those of a cluster may"""
+
+    def __init__(self, exception):
+        self.exception = exception
+
+    def hasNext(self):  # noqa: N802 - the name of the JVM
+        raise self.exception
+
+    def next(self):
+        raise self.exception
+
+    def toList(self, limit):  # noqa: N802 - the name of the JVM
+        raise self.exception
+
+
+def test_an_exception_of_arg2p_computing_a_solution_is_an_arg2p_error():
+    exception = _jvm.jclass("it.unibo.tuprolog.argumentation.Arg2pException")("The evaluation failed")
+    solutions = Solutions(_Failing(exception))
+    for step in (solutions.has_next, solutions.next, solutions.to_list, lambda: next(solutions)):
+        with pytest.raises(Arg2pError, match="The evaluation failed"):
+            step()
+
+
 def test_an_error_halts_the_solution_and_is_raised_by_an_answer():
     # a rule concludes an assumption: the theory is not flat ABA
     non_flat = "assumption(a).\nassumption(b).\ncontrary(a, x).\ncontrary(b, y).\nr0 : b -> a."
@@ -123,6 +149,23 @@ def test_flags_are_facts():
     assert "graphBuildMode(aspic_plus)." in str(Flags.defaults())
 
 
+def test_the_conflict_model_takes_several_parts():
+    parts = Flags.none().conflict_model(ConflictModel.NEGATION, ConflictModel.DECLARED)
+    assert str(parts) == "conflictModel(negation).\nconflictModel(declared).\n"
+    assert str(Flags.none().conflict_model()) == "conflictModel(none).\n"
+    assert str(Flags.none().conflict_model(ConflictModel.DECLARED)) == "conflictModel(declared).\n"
+    assert Arg2p.of("", parts).setting("conflictModel") == ["negation", "declared"]
+    # builtin stands for all the parts, and the settings tell them
+    all_parts = ["negation", "deontic", "preference", "declared"]
+    assert Arg2p.of("").setting("conflictModel") == all_parts
+    assert Arg2p.of("", Flags.defaults().conflict_model(ConflictModel.BUILTIN)).setting("conflictModel") == all_parts
+    assert Arg2p.of("conflictModel(declared).").setting("conflictModel") == ["declared"]
+    # a negation conflicts with the part negation alone
+    theory = "f1 :=> d.\nf2 :=> -d.\n"
+    assert Arg2p.of(theory + "conflictModel(negation).").answer("d").und_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(declared).").answer("d").in_statements == ["d"]
+
+
 @pytest.mark.parametrize(
     "values",
     [Profile, Semantics, StatementLabelling, OrderingPrinciple, OrderingComparator, GraphExtension, GraphLanguage,
@@ -162,25 +205,75 @@ def test_the_command_line(tmp_path, capsys):
     assert "in: a" in capsys.readouterr().out
 
 
+def test_a_file_the_command_line_cannot_read_or_write_is_told(tmp_path, capsys):
+    missing = str(tmp_path / "none.pl")
+    for command in ([missing], ["page", missing]):
+        assert main(command) == 1
+        assert capsys.readouterr().err.startswith(f"arg2p: cannot read {missing}: ")
+    (tmp_path / "latin.pl").write_bytes("f1 :=> caf\xe9.".encode("latin-1"))
+    assert main([str(tmp_path / "latin.pl")]) == 1
+    assert "not UTF-8" in capsys.readouterr().err
+    theory = tmp_path / "theory.pl"
+    theory.write_text(CONFLICT)
+    unwritable = str(tmp_path / "no" / "such" / "page.html")
+    assert main(["page", str(theory), "-o", unwritable]) == 1
+    assert capsys.readouterr().err.startswith(f"arg2p: cannot write {unwritable}: ")
+
+
 def test_the_mcp_server():
-    # as an assistant runs it: one JSON-RPC message a line, the answers too
+    # as an assistant runs it: one JSON-RPC message a line, the answers too; the input closed once they are answered
     messages = [
         {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}}},
         {"jsonrpc": "2.0", "method": "notifications/initialized"},
         {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "answer", "arguments": {"theory": CONFLICT, "query": "a"}}},
     ]
-    done = subprocess.run(
+    server = subprocess.Popen(
         [sys.executable, "-m", "arg2p", "mcp"],
-        input="".join(json.dumps(it) + "\n" for it in messages),
-        capture_output=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
         text=True,
         encoding="utf-8",
-        timeout=120,
     )
-    assert done.returncode == 0, done.stderr
-    answers = {it["id"]: it for it in map(json.loads, done.stdout.splitlines())}
+    try:
+        server.stdin.write("".join(json.dumps(it) + "\n" for it in messages))
+        server.stdin.flush()
+        answers = {}
+        while len(answers) < 2:
+            answer = json.loads(server.stdout.readline())
+            answers[answer["id"]] = answer
+        server.stdin.close()
+        assert server.wait(timeout=60) == 0
+    finally:
+        server.kill()
     assert answers[1]["result"]["serverInfo"]["name"] == "arg2p"
     assert answers[2]["result"]["structuredContent"]["in"] == ["a"]
+
+
+def test_a_command_run_by_the_command_line_gives_its_exit_status():
+    # in place of the process on POSIX: in a process of its own
+    command = [sys.executable, "-c", "import sys; sys.exit(3)"]
+    script = f"import sys; from arg2p.__main__ import _run; sys.exit(_run({command!r}))"
+    assert subprocess.run([sys.executable, "-c", script], timeout=60).returncode == 3
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="on POSIX, the command is the process itself")
+def test_a_command_run_by_the_command_line_is_killed_with_it_on_windows():
+    # the command tells its process, then waits: killing the command line kills it too
+    command = [sys.executable, "-c", "import os, time; print(os.getpid(), flush=True); time.sleep(120)"]
+    script = f"import sys; from arg2p.__main__ import _run; sys.exit(_run({command!r}))"
+    wrapper = subprocess.Popen([sys.executable, "-c", script], stdout=subprocess.PIPE, text=True)
+    child = int(wrapper.stdout.readline())
+    wrapper.kill()
+    wrapper.wait(timeout=60)
+
+    def running():
+        listed = subprocess.run(["tasklist", "/FI", f"PID eq {child}", "/NH"], capture_output=True, text=True).stdout
+        return str(child) in listed
+
+    deadline = time.monotonic() + 30
+    while running() and time.monotonic() < deadline:
+        time.sleep(0.2)
+    assert not running()
 
 
 def test_the_command_line_tells_of_the_mcp_server(capsys):
@@ -195,8 +288,10 @@ def test_the_command_line_tells_of_the_mcp_server(capsys):
 def test_arg2p_mcp_runs_the_server_and_a_theory_named_mcp_is_dot_slash_mcp(tmp_path, monkeypatch, capsys):
     from arg2p._version import MCP_SERVER
 
+    import arg2p.__main__ as command_line
+
     commands = []
-    monkeypatch.setattr(subprocess, "call", lambda command: commands.append(command) or 0)
+    monkeypatch.setattr(command_line, "_run", lambda command: commands.append(command) or 0)
     assert main(["mcp"]) == 0
     assert commands == [[_jvm.java(), *_jvm.options(), "-cp", os.pathsep.join(_jvm.classpath()), MCP_SERVER, "--mcp"]]
     monkeypatch.chdir(tmp_path)
@@ -226,6 +321,21 @@ def test_the_recorded_page_of_a_run():
     assert "<title>Arg2P · buildLabelSets(In, Out, Und)</title>" in html
     # a theory that does not parse is recorded as such
     assert _recording(page("f1 :=> bird(tweety"))["solve"][-1]["type"] == "failed"
+
+
+def test_the_help_of_arg2p_page_tells_the_defaults_of_the_recorded_page(capsys):
+    with pytest.raises(SystemExit):
+        main(["page", "--help"])
+    # argparse wraps the lines, a long text anywhere: compared without their blanks
+    out = "".join(capsys.readouterr().out.split())
+    defaults = recorded.defaults()
+    for expected in (
+        f"(default: {defaults['query']})",
+        f"(default: {defaults['flags']})".replace("\n", "\\n"),
+        f"how many solutions at most (default: {defaults['max_solutions']})",
+        f"how long to solve, in seconds (default: {defaults['timeout']})",
+    ):
+        assert "".join(expected.split()) in out
 
 
 def test_arg2p_page_writes_the_page(tmp_path, monkeypatch, capsys):

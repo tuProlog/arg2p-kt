@@ -104,10 +104,21 @@ class GraphBuilder(_FlagValue):
 
 
 class ConflictModel(_FlagValue):
-    """The conflicts beyond those a theory declares (conflictModel)."""
+    """
+    A part of the conflicts beyond those of the languages of a theory (conflictModel): the flag takes any of them, all
+    by default.
+    """
 
-    BUILTIN = "builtin"
+    NEGATION = "negation"
+    """A literal and its negation."""
+    DEONTIC = "deontic"
+    """The obligations and permissions in conflict: o(a) and o(-a), p(a) and o(-a), o(a) and p(-a), o(a) and -p(a)."""
+    PREFERENCE = "preference"
+    """A superiority and its converse: sup(X, Y) and sup(Y, X)."""
     DECLARED = "declared"
+    """Those the theory declares (conflict/2,3): alone, as the contraries of ABA."""
+    BUILTIN = "builtin"
+    """All the parts, those built in and those declared: the default."""
 
 
 def _array(cls: type, values: tuple) -> Any:
@@ -175,9 +186,12 @@ class Flags:
         """The module building the graph."""
         return self._set(self._flags.graphBuilder(builder.jvm()))
 
-    def conflict_model(self, model: ConflictModel) -> Flags:
-        """The conflicts beyond those the theory declares."""
-        return self._set(self._flags.conflictModel(model.jvm()))
+    def conflict_model(self, *models: ConflictModel) -> Flags:
+        """
+        The conflicts beyond those of the languages of the theory: the parts of them (builtin for all of them), none for
+        none but those of the languages.
+        """
+        return self._set(self._flags.conflictModel(_array(ConflictModel, models)))
 
     def modules_path(self, path: str) -> Flags:
         """Where the modules loaded by name are looked for."""

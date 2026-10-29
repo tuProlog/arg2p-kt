@@ -21,7 +21,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * changed (those attacked by the arguments just labelled), rather than at all the unlabelled ones, which made a
  * chain of attacks quadratic. The labels of a round are asserted in the order of the arguments.
  */
-object GroundedFixpoint : Primitive {
+internal object GroundedFixpoint : Primitive {
     val signature: Signature = Signature("groundedFixpoint", 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
