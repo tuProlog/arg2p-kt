@@ -10,7 +10,6 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
@@ -18,13 +17,11 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * Sartor, Liepina; ICAIL 2025) and revised, the revised one asking as well that an argument for the cause be IN in the
  * grounded labelling of the theory, and the but-for test, on the grounded labelling of the theory and of its
  * interventions. Unlike the modules of arg2p, each instance has a state of its own, the analysis computing the graphs
- * (and caching them): a solver is given a new one. What the theories print while they are analysed goes to [output]
- * (the standard output by default), and the solver of the analysis is built at its first test.
+ * (and caching them): a solver is given a new one. The solver of the analysis is built at the first test, and prints
+ * where the solver testing does.
  */
-class CausalityModule(
-    output: OutputChannel<String> = OutputChannel.stdOut(),
-) : PrologModule("prolog.argumentation.causality.solver", "causality") {
-    private val analysis = CausalityAnalysis(output)
+class CausalityModule : PrologModule("prolog.argumentation.causality.solver", "causality") {
+    private val analysis = CausalityAnalysis()
 
     override val primitives: Map<Signature, Primitive>
         get() =

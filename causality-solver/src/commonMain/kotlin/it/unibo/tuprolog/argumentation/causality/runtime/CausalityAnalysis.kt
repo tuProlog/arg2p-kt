@@ -18,8 +18,8 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
-import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -31,18 +31,25 @@ private const val GRAPH_CACHE_SIZE = 256
 /**
  * The causal analysis of a theory, for the primitives of the causality module: the graphs of the theory and of its
  * interventions, labelled by a solver of its own with grounded semantics (the other flags those of the solver asking),
- * built at the first of them and printing to [output], and the NESS and but-for checks on them. The theory is the
- * static knowledge base of the solver asking ([Solve.Request]).
+ * and the NESS and but-for checks on them. The theory is the static knowledge base of the solver asking
+ * ([Solve.Request]); what it prints goes to the standard output of that solver.
  */
-internal class CausalityAnalysis(
-    private val output: OutputChannel<String>,
-) {
-    private val solver by lazy {
-        Arg2pSolverFactory.solverOf(
-            Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create())),
-            theory = "",
-            output = output,
-        )
+internal class CausalityAnalysis {
+    // The solver labelling the graphs, built at the first of them: a solver of arg2p not testing causality pays nothing
+    private var labelling: MutableSolver? = null
+
+    // The solver labelling the graphs, printing where the solver asking does
+    private fun solverFor(request: Solve.Request<ExecutionContext>): MutableSolver {
+        val output = request.context.standardOutput
+        val solver =
+            labelling ?: Arg2pSolverFactory
+                .solverOf(
+                    Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create())),
+                    theory = "",
+                    output = output,
+                ).also { labelling = it }
+        if (solver.standardOutput !== output) solver.setStandardOutput(output)
+        return solver
     }
 
     // The same theory is solved over and over (the base theory, or the same intervention in different checks): the
@@ -51,6 +58,7 @@ internal class CausalityAnalysis(
 
     /** The graph of [theory] for [query], labelled */
     private fun graphOf(
+        request: Solve.Request<ExecutionContext>,
         theory: Theory,
         query: Term,
     ): Graph {
@@ -59,6 +67,7 @@ internal class CausalityAnalysis(
         val key = text to query.toString()
         graphCache[key]?.let { return it }
         if (graphCache.size >= GRAPH_CACHE_SIZE) graphCache.clear()
+        val solver = solverFor(request)
         solver.resetStaticKb()
         // the theory as it is, not parsed again from its text: its clauses keep their tags
         solver.loadStaticKb(theory)
@@ -138,12 +147,12 @@ internal class CausalityAnalysis(
     fun isAccepted(
         request: Solve.Request<ExecutionContext>,
         statement: Term,
-    ): Boolean = graphOf(theory(request), statement).labellings.any { it.label == "in" && concludes(it.argument, statement) }
+    ): Boolean = graphOf(request, theory(request), statement).labellings.any { it.label == "in" && concludes(it.argument, statement) }
 
     private fun baseSupports(
         request: Solve.Request<ExecutionContext>,
         effect: Term,
-    ): List<Term> = supports(graphOf(theory(request), effect), effect).map { it.termRepresentation() }.toList()
+    ): List<Term> = supports(graphOf(request, theory(request), effect), effect).map { it.termRepresentation() }.toList()
 
     // The IN attackers, after intervention, of the supports of effect it makes OUT or UND
     private fun interventionAttackers(
@@ -152,7 +161,7 @@ internal class CausalityAnalysis(
         supports: List<Term>,
         effect: Term,
     ): List<Argument> =
-        graphOf(intervened(request, intervention), effect).let { graph ->
+        graphOf(request, intervened(request, intervention), effect).let { graph ->
             graph.labellings
                 .filter { it.label == "out" || it.label == "und" }
                 .filter { a -> supports.any { b -> Unificator.default.match(a.argument.termRepresentation(), b) } }
@@ -181,7 +190,7 @@ internal class CausalityAnalysis(
     ): Sequence<PlList> {
         val rules =
             PlList.of(
-                graphOf(theory(request), effect)
+                graphOf(request, theory(request), effect)
                     .arguments
                     .map { it.topRule }
                     .filter { it != "none" }
@@ -243,7 +252,7 @@ internal class CausalityAnalysis(
         effect: Term,
     ): Boolean =
         isAccepted(request, effect) &&
-            graphOf(intervened(request, intervention), effect).labellings.none {
+            graphOf(request, intervened(request, intervention), effect).labellings.none {
                 it.label == "in" && concludes(it.argument, effect)
             }
 }
