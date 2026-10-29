@@ -6,8 +6,9 @@ import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Solutions
 import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
-import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
+import it.unibo.tuprolog.argumentation.parallel.graphsOf
 import it.unibo.tuprolog.argumentation.solutionsOf
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -40,7 +41,7 @@ class ClusterSolver internal constructor(
      *
      * @throws Arg2pException for a goal that cannot be read
      */
-    fun solve(goal: String): Solutions = solutionsOf(Given(goal, solved.checked(replies.replied { site.query(goal, it) })))
+    fun solve(goal: String): Solutions = solutionsOf(solutions(goal))
 
     /**
      * The statements for [query], Prolog text, labelled in, out and und (see answerQuery/4)
@@ -57,14 +58,7 @@ class ClusterSolver internal constructor(
      */
     @JsExport.Ignore
     @JsName("graphsList")
-    fun graphs(): List<Graph> =
-        solve("buildLabelSetsSilent")
-            .iterator()
-            .asSequence()
-            .mapNotNull { solution ->
-                if (solution.isHalt) throw Arg2pException(solution.error ?: solution.toString())
-                if (solution.isYes) graph() else null
-            }.toList()
+    fun graphs(): List<Graph> = graphsOf(solutions(LABELLINGS), ::graph)
 
     /** The graph of each labelling of the theory (an array in JavaScript) */
     @JsName("graphs")
@@ -80,22 +74,13 @@ class ClusterSolver internal constructor(
      */
     fun stop() = site.stop()
 
-    // The solutions of [goal], from the [first] reply of the site
-    private inner class Given(
-        private val goal: String,
-        first: SolutionResponse,
-    ) : Iterator<LogicSolution> {
-        private val run = first.run
-        private var pending: SolutionResponse? = first
-        private var more = true
+    // The solutions of [goal], Prolog text, each reply waited for as it is asked for
+    private fun solutions(goal: String): Iterator<LogicSolution> {
+        val given = Given(goal, solved.checked(replies.replied { site.query(goal, it) }), solved)
+        return object : Iterator<LogicSolution> {
+            override fun hasNext(): Boolean = given.hasNext()
 
-        override fun hasNext(): Boolean = pending != null || more
-
-        override fun next(): LogicSolution {
-            val response = pending ?: replies.replied { site.next(run, it) }
-            pending = null
-            more = response.hasNext
-            return solved.given(response, goal)
+            override fun next(): LogicSolution = given.given(given.first() ?: replies.replied { site.next(given.run, it) })
         }
     }
 }

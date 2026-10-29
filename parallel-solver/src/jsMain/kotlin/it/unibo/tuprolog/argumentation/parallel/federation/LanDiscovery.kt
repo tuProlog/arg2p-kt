@@ -15,8 +15,15 @@ class LanDiscovery(
     private val group: String = Beacons.GROUP,
     private val interval: Int = 2_000,
 ) {
+    // The addresses of this machine, whose beacons reach it from each of them
+    private val local: Set<String> =
+        js("Object.values")(nodeModule("os").networkInterfaces())
+            .unsafeCast<Array<Array<dynamic>>>()
+            .flatMap { addresses -> addresses.map { it.address as String } }
+            .toSet()
+
     private val beacons =
-        Beacons(site, wsPort, interval.toLong()) { url, code, done ->
+        Beacons(site, wsPort, interval.toLong(), { it in local }) { url, code, done ->
             links.connect(url, code).then({ done() }, { done() })
         }
     private var socket: dynamic = null

@@ -22,8 +22,10 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The links of [site] over WebSockets, to sites on any platform (JVM, Node.js, browsers): the links it accepts once
- * it [listen]s, and those it opens ([connect]). Each frame is a text message; those of a link arrive in order. The port
- * listened on answers the plain HTTP requests for the [pages] it serves as well.
+ * it [listen]s, and those it opens ([connect]). Each frame is a text message; those of a link arrive in order, and one
+ * longer than a few tens of megabytes closes the link. The port listened on answers the plain HTTP requests for the
+ * [pages] it serves as well. The failures of a link, and those of the handling of its frames, are reported on the
+ * standard error.
  */
 class WebSocketLinks(
     private val site: LinkListener,
@@ -94,7 +96,7 @@ class WebSocketLinks(
     // requests opening a WebSocket are left to the draft of the WebSockets
     private inner class Pages(
         private var page: StaticContent? = null,
-    ) : Draft_6455() {
+    ) : Draft_6455(emptyList(), LONGEST_FRAME) {
         override fun acceptHandshakeAsServer(handshake: ClientHandshake): HandshakeState {
             // a WebSocket, unlike other upgrades (h2c), which are ignored
             if (handshake.getFieldValue("Upgrade").equals("websocket", ignoreCase = true)) return HandshakeState.NOT_MATCHED
@@ -130,7 +132,7 @@ class WebSocketLinks(
 
     private inner class Server(
         address: InetSocketAddress,
-    ) : WebSocketServer(address, listOf(Pages(), Draft_6455())) {
+    ) : WebSocketServer(address, listOf(Pages(), Draft_6455(emptyList(), LONGEST_FRAME))) {
         val started = CountDownLatch(1)
         var failure: Exception? = null
         private val links = ConcurrentHashMap<WebSocket, SocketLink>()
@@ -154,7 +156,7 @@ class WebSocketLinks(
         override fun onMessage(
             socket: WebSocket,
             message: String,
-        ) = links[socket]?.let { site.received(it, message) } ?: Unit
+        ) = links[socket]?.let { handled { site.received(it, message) } } ?: Unit
 
         override fun onClose(
             socket: WebSocket,
@@ -171,6 +173,8 @@ class WebSocketLinks(
             if (socket == null) {
                 failure = error
                 started.countDown()
+            } else {
+                report(error)
             }
         }
     }
@@ -178,7 +182,7 @@ class WebSocketLinks(
     private inner class Client(
         uri: URI,
         code: String?,
-    ) : WebSocketClient(uri) {
+    ) : WebSocketClient(uri, Draft_6455(emptyList(), LONGEST_FRAME)) {
         val link: Link = SocketLink(this, outgoing = true, code = code)
 
         @Volatile var opened = false
@@ -188,7 +192,7 @@ class WebSocketLinks(
             site.opened(link)
         }
 
-        override fun onMessage(message: String) = site.received(link, message)
+        override fun onMessage(message: String) = handled { site.received(link, message) }
 
         override fun onClose(
             code: Int,
@@ -199,7 +203,10 @@ class WebSocketLinks(
             site.closed(link)
         }
 
-        override fun onError(error: Exception) = Unit
+        // an error closes the link (onClose follows); not one of a site gone, or not there
+        override fun onError(error: Exception) {
+            if (opened) report(error)
+        }
     }
 }
 
