@@ -97,12 +97,15 @@ export class SolverPanel {
         }
     }
 
-    // Where the theory does not parse, in the document: its problem is there (the language server reports it)
+    // Where the theory does not parse: told, and shown in the document if asked (its problem is there, the language
+    // server reports it), the focus left where it is otherwise
     private async reveal(problem: SyntaxProblem): Promise<void> {
+        const go = 'Go to the error';
+        const asked = await vscode.window.showWarningMessage(`The theory does not parse at line ${problem.line}.`, go);
+        if (asked !== go) return;
         const at = new vscode.Position(problem.line - 1, problem.column - 1);
         const shown = vscode.window.visibleTextEditors.find(it => it.document === this.document);
         await vscode.window.showTextDocument(this.document, { viewColumn: shown?.viewColumn, selection: new vscode.Range(at, at.translate(0, problem.length)) });
-        void vscode.window.showWarningMessage(`The theory does not parse at line ${problem.line}: see the problems of the document.`);
     }
 
     // The theory drawn, written into the document
