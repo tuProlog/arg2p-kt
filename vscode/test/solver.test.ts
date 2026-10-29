@@ -1,7 +1,7 @@
 import type { EngineError } from '@tuprolog/arg2p-ui/data';
 import { assert, describe, it } from 'vitest';
 import type { FromPage, ToPage } from '../src/protocol.js';
-import { connect, type Solver } from '../webview/solver.js';
+import { connect, type Solver, type Switch } from '../webview/solver.js';
 
 const { deepEqual, equal } = assert;
 
@@ -24,37 +24,41 @@ function page() {
     const solver = new FakeSolver();
     const posted: FromPage[] = [];
     const window = new EventTarget();
-    const engine = connect(solver, { postMessage: message => posted.push(message) }, window);
+    const parallel: Switch = Object.assign(new EventTarget(), { checked: false });
+    const engine = connect(solver, { postMessage: message => posted.push(message) }, window, parallel);
     const send = (message: ToPage) => window.dispatchEvent(new MessageEvent('message', { data: message }));
-    return { solver, posted, send, engine };
+    return { solver, posted, send, engine, parallel };
 }
 
 describe('The page of the solver', function () {
     it('should be ready, and solve the document the extension sends, as it changes', function () {
-        const { solver, posted, send, engine } = page();
+        const { solver, posted, send, engine, parallel } = page();
         deepEqual(posted, [{ type: 'ready' }]);
         equal(solver.engine, engine);
-        send({ type: 'document', name: 'tweety.arg2p', theory: 'f :=> a.', query: 'a', flags: 'queryMode.' });
+        send({ type: 'document', name: 'tweety.arg2p', theory: 'f :=> a.', query: 'a', flags: 'queryMode.', parallel: true });
         deepEqual(
-            { fileName: solver.fileName, theory: solver.theory, query: solver.query, flags: solver.flags },
-            { fileName: 'tweety', theory: 'f :=> a.', query: 'a', flags: 'queryMode.' },
+            { fileName: solver.fileName, theory: solver.theory, query: solver.query, flags: solver.flags, parallel: parallel.checked },
+            { fileName: 'tweety', theory: 'f :=> a.', query: 'a', flags: 'queryMode.', parallel: true },
         );
         send({ type: 'theory', theory: 'f :=> b.' });
         equal(solver.theory, 'f :=> b.');
     });
 
-    it('should tell the extension the theory drawn, the query and flags edited, and where the theory does not parse', function () {
-        const { solver, posted } = page();
+    it('should tell the extension the theory drawn, the query, flags and switch Parallel changed, and where the theory does not parse', function () {
+        const { solver, posted, parallel } = page();
         solver.tell('arg2p-theory-change', { theory: 'a.' });
         solver.tell('arg2p-query-change', { query: 'b' });
         solver.tell('arg2p-flags-change', { flags: 'queryMode.' });
         const problem = { line: 2, column: 3, length: 1, message: 'unexpected' };
         solver.tell('arg2p-theory-error', { problem });
+        parallel.checked = true;
+        parallel.dispatchEvent(new Event('change'));
         deepEqual(posted.slice(1), [
             { type: 'edit', theory: 'a.' },
-            { type: 'state', query: 'b', flags: '' },
-            { type: 'state', query: 'b', flags: 'queryMode.' },
+            { type: 'state', query: 'b', flags: '', parallel: false },
+            { type: 'state', query: 'b', flags: 'queryMode.', parallel: false },
             { type: 'problem', problem },
+            { type: 'state', query: 'b', flags: 'queryMode.', parallel: true },
         ]);
     });
 

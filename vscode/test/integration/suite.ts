@@ -42,5 +42,9 @@ export async function run(): Promise<void> {
     const theory = vscode.window.tabGroups.all.find(group => group.tabs.some(tab => tab.label === 'broken.arg2p'));
     assert.notStrictEqual(solver, theory);
     assert.strictEqual(vscode.window.activeTextEditor?.document, document);
-    console.log('[arg2p] integration: diagnostics, edits and the solver panel work');
+
+    // the federation shows in its view, enabled by default
+    assert.strictEqual(vscode.workspace.getConfiguration('arg2p.federation').get('enabled'), true);
+    await vscode.commands.executeCommand('arg2p.federation');
+    console.log('[arg2p] integration: diagnostics, edits, the solver panel and the federation view work');
 }

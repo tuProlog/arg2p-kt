@@ -63,6 +63,20 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
         await engine('one', { type: 'close' });
     });
 
+    it('should solve a query in parallel as it does on its own, and tell its federation', async function () {
+        const labels = async (session: string, parallel: boolean) => {
+            const theory = 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).';
+            await engine(session, { type: 'solve', id: 1, theory, query: 'buildLabelSets', flags: 'queryMode.', parallel });
+            const answer = (await engine(session, { type: 'next', id: 1 })).find(it => it.type === 'solution');
+            return answer.solution.graph.arguments.map((it: { conclusion: string; label: string }) => `${it.conclusion} ${it.label}`).sort();
+        };
+        deepEqual(await labels('parallel', true), await labels('local', false));
+        // not enabled by the editor: the federation is that of this device alone
+        const federation = await connection.sendRequest<{ enabled: boolean; workers: number; code?: string | null }>('arg2p/federation');
+        deepEqual([federation.enabled, federation.code ?? null], [false, null]);
+        ok(federation.workers > 0);
+    });
+
     it('should check texts and give the settings in effect', async function () {
         const [checked] = await engine('one', { type: 'check', reqId: 1, text: 'a :=> b.\nc :=> d(.', kind: 'theory' });
         deepEqual([checked.problem?.line, checked.problem?.column], [2, 9]);

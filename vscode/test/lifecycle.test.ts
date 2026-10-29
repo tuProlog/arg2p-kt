@@ -31,6 +31,7 @@ function client(log: string[], name: string, starts = true) {
         isRunning: () => state === 'running',
         sendRequest: async (method: string) => `${name}: ${method}`,
         onDidChangeState: changed.event,
+        onNotification: () => ({ dispose: () => undefined }),
         // the server crashed, and the client restarts it
         crash: () => {
             become('stopped');
