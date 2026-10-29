@@ -17,14 +17,30 @@
       "semanticCommitType": "ci"
     },
     {
-      "description": "A major version of Node.js runs the release (semantic-release) only once it is shown to work there: Node.js 26 broke the upload of the release assets (@semantic-release/github 12.0.2)",
+      "description": "Node.js stays on 24 for now: on Node.js 26 the release (the GitHub plugin of semantic-release) cannot upload its assets",
       "matchPackageNames": [
         "node"
       ],
-      "matchUpdateTypes": [
-        "major"
+      "allowedVersions": "<25"
+    },
+    {
+      "description": "The types of VS Code are those of the oldest VS Code the extension runs on (engines.vscode in vscode/package.json): vsce refuses newer ones, so they move with engines.vscode, by hand",
+      "matchPackageNames": [
+        "@types/vscode"
       ],
-      "automerge": false
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The tools the workflows install by their version, as a comment above it tells (# renovate: datasource=... depName=...)",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: (?<currentValue>\\S+)"
+      ]
     }
   ],
   "automerge": true,

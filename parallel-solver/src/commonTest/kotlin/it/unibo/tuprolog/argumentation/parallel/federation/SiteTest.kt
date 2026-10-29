@@ -126,6 +126,8 @@ class SiteTest {
                 Frame.Lost("site-1#3"),
                 Frame.Forget("site-2"),
                 Frame.Hello("site-3", Site.VERSION, 1, true, introducible = true),
+                Frame.Hello("site-4", Site.VERSION, 2, true, code = "0042"),
+                Frame.Refused("Wrong code"),
                 Frame.Introduce("site-3"),
                 Frame.Signal("site-3", "site-1", "{\"description\": 1}"),
                 Frame.Deliver("site-1#3", "worker_1", "3:Ack2:-1"),

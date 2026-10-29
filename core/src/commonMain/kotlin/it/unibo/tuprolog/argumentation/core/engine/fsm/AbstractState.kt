@@ -12,7 +12,8 @@ import it.unibo.tuprolog.solve.exception.TimeOutException
  * concrete state has to implement `SolveOptions.timeout` handling itself.
  *
  * [next] first compares [executionTime] against [PrologExecutionContext.startTime]/[PrologExecutionContext.maxDuration];
- * if the budget is exceeded it short-circuits straight to an [EndState] (`StateHalt`) carrying a
+ * if the budget is exceeded, or the thread of the resolution was interrupted (arg2p: on the JVM, its caller stopping
+ * it, see [resolutionInterrupted]), it short-circuits straight to an [EndState] (`StateHalt`) carrying a
  * [TimeOutException], bypassing any pending `catch/3` (resource exhaustion is treated as unrecoverable);
  * otherwise it delegates to [computeNext], the actual per-state transition logic.
  */
@@ -37,7 +38,7 @@ abstract class AbstractState(
         get() = context.maxDuration != TimeDuration.MAX_VALUE && executionTime - context.startTime > context.maxDuration
 
     override fun next(): State =
-        if (isTimeout) {
+        if (isTimeout || resolutionInterrupted()) {
             StateHalt(
                 TimeOutException(
                     exceededDuration = context.maxDuration,
@@ -56,3 +57,9 @@ abstract class AbstractState(
 
     protected fun nextStep(): Long = context.step + 1
 }
+
+/**
+ * Whether the resolution running on this thread was interrupted by its caller, which stops it: on the JVM, the
+ * interruption of its thread (Thread.interrupt, Future.cancel(true)); never in JavaScript
+ */
+internal expect fun resolutionInterrupted(): Boolean

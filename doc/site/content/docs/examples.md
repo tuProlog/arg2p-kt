@@ -5,7 +5,7 @@ weight: 38
 
 ## Examples
 
-Complete theories you can paste into the [IDE or the Playground]({{% ref "/docs/getting-started" %}}) and run
+Complete theories you can paste into the [Playground or VS Code]({{% ref "/docs/getting-started" %}}) and run
 as they are. Each one isolates a single feature of the framework.
 
 Most of them carry a **Try it** link that opens the example already loaded in the

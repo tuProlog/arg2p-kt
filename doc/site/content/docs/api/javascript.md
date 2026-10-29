@@ -145,6 +145,28 @@ causality.butFor('a', 'b')         // true
 
 ---
 
+## The parallel solver
+
+The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) are solvers of arg2p as well: the
+`solver` of a `WorkerCluster` (Node.js) or a `WebWorkerCluster` (browsers) solves any goal with the workers of the
+cluster and of its federation, its solutions, answers and graphs promised in the types above; `stats` tells what the
+federation does.
+
+```js
+const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
+cluster.load(theory)
+const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+const solution = await solutions.next()
+solution.text('In')                 // as for Arg2p
+cluster.solver.graph()              // the Graph of the solution
+cluster.stats.evaluation?.workers   // what each worker built
+cluster.solver.stop()               // the goal being solved stopped: its next solution a halt
+cluster.flags = Flags.defaults().queryMode(false)   // for the next evaluations
+await cluster.connect('ws://hub-host:9431', '4831')  // presenting the code of an instance requiring one
+```
+
+---
+
 ## From earlier versions
 
 Earlier versions exposed the solver of tuProlog through the `js` packages (`JsArg2p`, `JsSolverBuilder`, ...), and

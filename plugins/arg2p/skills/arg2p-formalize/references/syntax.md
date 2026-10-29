@@ -85,7 +85,9 @@ that cannot be established is out, instead of undecided. A burden open to argume
 ## Other frameworks
 
 **Abstract** (`graphBuildMode(abstract).`): `a.` an argument, `a -> b.` an attack, `a <-> b.` a mutual one; Prolog
-clauses may derive them (`X -> Y :- beats(X, Y).`).
+clauses may derive them (`X -> Y :- beats(X, Y).`). Only an atom fact is an argument (`beats(x, y).` is data); an
+argument of another shape is stated with `arg(f(x)).` or `att(f(x), b).`. Rules, premises, axioms, `sup/2`,
+`conflict/2` and `bp/N` are refused: an abstract framework has none.
 
 **ABA** (`graphBuildMode(aba).`): assumptions, their contraries, strict rules.
 
@@ -98,8 +100,9 @@ contrary(a, x).     % an argument for x attacks every argument resting on a
 r1 : b -> x.
 ```
 
-`aba_plus` adds preferences between assumptions, `sup(Stronger, Weaker)`. Both refuse non-flat theories (a rule
-concluding an assumption).
+`aba_plus` adds preferences between assumptions, `sup(Stronger, Weaker)`. Both refuse defeasible rules, ordinary
+premises and non-flat theories (a rule concluding an assumption); `aba_plus` refuses a theory without Weak
+Contraposition as well (<https://tuprolog.github.io/arg2p-kt/docs/profiles/#limits>).
 
 **Meta-argumentation** (`graphBuildMode(meta).`): a rule fires only when an argument concludes `applicable(Rule)`, two
 statements conflict only when an argument concludes `conflict(A, B)` (even `a` and `-a`), and the preferences are the

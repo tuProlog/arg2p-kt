@@ -16,8 +16,8 @@ class LanDiscovery(
     private val interval: Int = 2_000,
 ) {
     private val beacons =
-        Beacons(site, wsPort, interval.toLong()) { url, done ->
-            links.connect(url).then({ done() }, { done() })
+        Beacons(site, wsPort, interval.toLong()) { url, code, done ->
+            links.connect(url, code).then({ done() }, { done() })
         }
     private var socket: dynamic = null
     private var timer: dynamic = null

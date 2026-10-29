@@ -1,3 +1,89 @@
+## [0.21.0](https://github.com/tuProlog/arg2p-kt/compare/0.20.0...0.21.0) (2026-10-29)
+
+### Features
+
+* **api:** a sandboxed solver, for theories that are not trusted ([acc93eb](https://github.com/tuProlog/arg2p-kt/commit/acc93eb21039b982eabaca57f310d14be94fdd97))
+* **lsp:** one engine for every page of the solver, servers that stop what they solve ([6b09dbd](https://github.com/tuProlog/arg2p-kt/commit/6b09dbdb92c698f31e07ac3b05f1de0750a51e99))
+* **lsp:** the language server federated on the local network, its pages solving in parallel on it ([e4af3f8](https://github.com/tuProlog/arg2p-kt/commit/e4af3f85073058646b6da3fac6c7f48945e89aef))
+* **parallel:** every cluster a solver of arg2p, and the statistics of its federation ([3828460](https://github.com/tuProlog/arg2p-kt/commit/3828460b51beef6d547d418db82b895e18b4d924))
+* **parallel:** sites linked with a code, paired by hand on the local network, and pages served on their port ([cdb0ab1](https://github.com/tuProlog/arg2p-kt/commit/cdb0ab12c4bd3615dc0d02a85ceec0a42603c6ac))
+* **parallel:** the flags of a cluster settable, its goals stoppable ([863ee12](https://github.com/tuProlog/arg2p-kt/commit/863ee129bd760e098ec2141c1df3932b5837859c))
+* **plugins:** without the MCP server, the skills explore through a link to the playground ([0eb930a](https://github.com/tuProlog/arg2p-kt/commit/0eb930afafa93ee4b8de43495d3a13cb2cbdfacf))
+* **python:** clusters linked with a code, and paired with the clusters nearby ([f6ed6b3](https://github.com/tuProlog/arg2p-kt/commit/f6ed6b36563b5d91ddb7a5c510bacbf01da31534))
+* **python:** the flags of a cluster and the stop of its solver ([c8dd517](https://github.com/tuProlog/arg2p-kt/commit/c8dd51778784e74a56bd1601f4ff3a5c7faabf71))
+* **python:** the solver and the statistics of a cluster ([a6b982c](https://github.com/tuProlog/arg2p-kt/commit/a6b982cc60845853bbfd5eb8941e802afa4b5f19))
+* the review fixes, the cluster as a parallel solver, and federation in VS Code ([#553](https://github.com/tuProlog/arg2p-kt/issues/553)) ([23a096b](https://github.com/tuProlog/arg2p-kt/commit/23a096b928ff8c6d90ccbbe279b10c94cdb20c9b))
+* **vscode:** the federation of the devices nearby in a view of its own, and the switch Parallel of the solver ([a7ceca0](https://github.com/tuProlog/arg2p-kt/commit/a7ceca04517cb0aef4861cd15a8f22af04dfcf35))
+
+### Bug Fixes
+
+* **core:** a resolution stops once its thread is interrupted ([f3b75c1](https://github.com/tuProlog/arg2p-kt/commit/f3b75c187cdcdcbfb6d863053e53d93c5660ff40))
+* **core:** an argument of an abstract theory may be named bp ([06a80e3](https://github.com/tuProlog/arg2p-kt/commit/06a80e348d09912db581f7c658cfc615e190906d))
+* **core:** the abstract profile checks its theory in query mode too ([c6a485a](https://github.com/tuProlog/arg2p-kt/commit/c6a485a09bcfba19710ade191fea1295184e9939))
+* **lsp:** the MCP App solves what the server tells, with the versions of the build ([fa22b7b](https://github.com/tuProlog/arg2p-kt/commit/fa22b7b79c0b17def4c93eb06697ee53735d1c68))
+* **python:** arg2p mcp runs the java and the jars of the package ([ba7050c](https://github.com/tuProlog/arg2p-kt/commit/ba7050cf658273cf753037c07155653f04c6e776))
+* **vscode:** a session of the language server for each solver panel ([13ea1af](https://github.com/tuProlog/arg2p-kt/commit/13ea1af8f3b2bf17c04bf2b4b6b3df24ff972eca))
+* **vscode:** a theory that does not parse is told, and shown in the document when asked ([292b138](https://github.com/tuProlog/arg2p-kt/commit/292b138589a19712847d24fd0d34bab73a824733))
+* **vscode:** the java of the language server is a setting of the user alone ([238022e](https://github.com/tuProlog/arg2p-kt/commit/238022e8e9f0392557f59191ddefd06ac9aa7179))
+
+### Documentation
+
+* **parallel:** sites linked with a code, paired on the local network, and pages served on their port ([bdd4f21](https://github.com/tuProlog/arg2p-kt/commit/bdd4f21c8bd68aa1e813ed66c1cf6d63b232ca0f))
+* **parallel:** the clusters as solvers of arg2p, and the statistics of a federation ([d0850d5](https://github.com/tuProlog/arg2p-kt/commit/d0850d5340437be80b607026594f57b4de35a28e))
+* **parallel:** the flags of a cluster, the stop of its goals, how its statistics read ([cae03be](https://github.com/tuProlog/arg2p-kt/commit/cae03be9aa7eafbdbafe8e0fa08dc720c6cd3fb0))
+* **plugins:** the skills state the tools, profiles and flags as they are ([13f388b](https://github.com/tuProlog/arg2p-kt/commit/13f388b1aba1094cfc28bfa9c793cd53679b929e))
+* the playground and the extension of VS Code in place of the desktop IDE ([8b80511](https://github.com/tuProlog/arg2p-kt/commit/8b80511bbf583f7dedfefcd3d3e084542e491e94))
+* the tools and the installs of the MCP server in one place ([6bc6256](https://github.com/tuProlog/arg2p-kt/commit/6bc6256cb289ea04cd87b97eef85ec96ca75f60c))
+* **vscode:** the federation of the devices nearby, phones joining by a QR code, and the switch Parallel ([7f1f7c7](https://github.com/tuProlog/arg2p-kt/commit/7f1f7c755ca8e4cb481e3c63f81f75b39690fdfe))
+* **vscode:** the java of the settings first, and Stop stops the query alone ([1005010](https://github.com/tuProlog/arg2p-kt/commit/1005010cdac583a14abbfab713621460f082748d))
+
+### Revert previous changes
+
+* the sandboxed solver, until the security of the servers is decided ([05d3834](https://github.com/tuProlog/arg2p-kt/commit/05d3834257a146b84c2b8012fb68390b73ff1daa))
+
+### Tests
+
+* **lsp:** federations paired by code, the join page served, parallel queries solved and stopped ([074ed8e](https://github.com/tuProlog/arg2p-kt/commit/074ed8ecfff536292278d287f473a45290a01aba))
+* **lsp:** the links to the playground, against one the playground made ([3a9ff77](https://github.com/tuProlog/arg2p-kt/commit/3a9ff77acd9f71a45a93e920c4f8f26446813274))
+* **parallel:** flags changed between goals, goals stopped, the statistics of every evaluation ([5b27b4b](https://github.com/tuProlog/arg2p-kt/commit/5b27b4b03700e777cde084101fe5b8bde18461d8))
+* **parallel:** sites paired by code, connections presenting it, wrong codes refused, pages served ([a221104](https://github.com/tuProlog/arg2p-kt/commit/a221104116d0a39939851c9bf0741b4887f35c18))
+* **parallel:** the clusters solve goals as Arg2p, and count the sites and workers of a federation ([29f8cc0](https://github.com/tuProlog/arg2p-kt/commit/29f8cc01a2ace24a6d3795a272cf78383cc3604a))
+* **vscode:** the federation asked and shown, the switch Parallel saved and passed on, parallel queries on the server ([bb42174](https://github.com/tuProlog/arg2p-kt/commit/bb421744d7d833e4011c453f77cee9f00d5a5abb))
+* **vscode:** the unit tests cover the lifecycle of the server too ([1047763](https://github.com/tuProlog/arg2p-kt/commit/10477632e6292f49998e2a40889516bce9b575e9))
+
+### Build and continuous integration
+
+* one Java runtime of arg2p, for the Python package and the extension ([3f24277](https://github.com/tuProlog/arg2p-kt/commit/3f2427795fe29eb360d79faa86366095e1bea4ab))
+* remove the desktop IDE ([b3e6357](https://github.com/tuProlog/arg2p-kt/commit/b3e635759eadbc7c0252c4c0624cd3a0cd151cf9))
+* the actions and the publisher of the MCP Registry at their latest versions ([37d02ff](https://github.com/tuProlog/arg2p-kt/commit/37d02ff52f3b41dafc126eb30fd738c40759b7a3))
+* the files stating the version of a release, listed once ([a200f31](https://github.com/tuProlog/arg2p-kt/commit/a200f31d1e66d445dc30197ec229d99c819b22d9))
+* the release attaches the jar of the language server, and Renovate proposes what can be taken ([d1312bd](https://github.com/tuProlog/arg2p-kt/commit/d1312bda8e20f89aefd69012b5369c723b84e855))
+* the wheels and the extension of a release, each published on its own ([ba99df5](https://github.com/tuProlog/arg2p-kt/commit/ba99df567dcb58f83fcb796e91fd8ad8d841f247))
+* **vscode:** a package carries the Java runtime of its platform alone ([54b3d66](https://github.com/tuProlog/arg2p-kt/commit/54b3d66a7d3a9ebabaed4aba1fbbdab940f9146f))
+* **vscode:** the extension in VS Code and its package, on every change ([b3ccb0f](https://github.com/tuProlog/arg2p-kt/commit/b3ccb0f9e1447e7e32bb31ae0a6e477938b50518))
+* **vscode:** the lock of @tuprolog/arg2p-ui 0.3.0 as published ([5aeef6e](https://github.com/tuProlog/arg2p-kt/commit/5aeef6e84a0f358139a915e4185cedb09755dd62))
+* **vscode:** vsce 4.1.0, whose OIDC publishing the Marketplace accepts, and the latest dependencies ([9dcedd7](https://github.com/tuProlog/arg2p-kt/commit/9dcedd76880efe0b26ae07907725bc39062b1301)), closes [#545](https://github.com/tuProlog/arg2p-kt/issues/545) [#546](https://github.com/tuProlog/arg2p-kt/issues/546) [#549](https://github.com/tuProlog/arg2p-kt/issues/549) [#550](https://github.com/tuProlog/arg2p-kt/issues/550) [#551](https://github.com/tuProlog/arg2p-kt/issues/551)
+
+### General maintenance
+
+* merge fix/parallel-api into fix/review ([419c3f6](https://github.com/tuProlog/arg2p-kt/commit/419c3f673b9dcc90ebf20fb50dd104e138195034))
+* merge fix/parallel-api into fix/review ([61a766b](https://github.com/tuProlog/arg2p-kt/commit/61a766b3a4d8a5cf4d9d7cb062ca748e9b24bb6c))
+* merge fix/parallel-api into fix/review ([b4cde08](https://github.com/tuProlog/arg2p-kt/commit/b4cde085698700c7f424c9325d92a3b56c5a6421))
+* merge fix/python-docs into fix/review ([b8747d5](https://github.com/tuProlog/arg2p-kt/commit/b8747d596e6e321a33b9a7b00f4b5b2e2b758059))
+* merge fix/server into fix/review ([607f487](https://github.com/tuProlog/arg2p-kt/commit/607f487e8e141406c14fc5fb2d9285121fe01dc5))
+* merge fix/solver-pages into fix/review ([00d0861](https://github.com/tuProlog/arg2p-kt/commit/00d086133ff1ae4525c237b58dc35a8fc89c4046))
+* merge fix/vscode-ci into fix/review ([0d1123f](https://github.com/tuProlog/arg2p-kt/commit/0d1123f0cc4b6c5f38e597e49c10595363fd8f58))
+* merge fix/vscode-federation into fix/review ([d6f6713](https://github.com/tuProlog/arg2p-kt/commit/d6f67136e593947c8469172047b90b9689be14a6))
+* merge master into fix/review ([1f15347](https://github.com/tuProlog/arg2p-kt/commit/1f1534769a79c1090d8e5e446ab7d408f5ed8d69))
+
+### Refactoring
+
+* **api:** one reading of theories and goals, one map of the flags ([262585d](https://github.com/tuProlog/arg2p-kt/commit/262585d498905933fadc3f87b360b1c9379eb5c1))
+* **core:** the solutions and the answers of the API in core ([c99eb38](https://github.com/tuProlog/arg2p-kt/commit/c99eb38ffd8e018b57bef19998c84d8e33a06f0a))
+* **lsp:** the idle pages measured as nanoTime asks ([283e4fc](https://github.com/tuProlog/arg2p-kt/commit/283e4fcb3d9b3e0eeef6f26ac54800c14d7cd687))
+* **lsp:** the MCP App is the solver of @tuprolog/arg2p-ui, its theory edited in its tab ([1d92fb2](https://github.com/tuProlog/arg2p-kt/commit/1d92fb2408e3ede1d04d2fc22a712c4b98c23019))
+* **vscode:** the solver panel is the solver of @tuprolog/arg2p-ui 0.3.0, bound to its document ([adaef11](https://github.com/tuProlog/arg2p-kt/commit/adaef11d10ef24285778cd9a42f48085cbef4aa1))
+
 ## [0.20.0](https://github.com/tuProlog/arg2p-kt/compare/0.19.2...0.20.0) (2026-10-28)
 
 ### Features

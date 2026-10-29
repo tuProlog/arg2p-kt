@@ -42,27 +42,60 @@
                 margin: 0;
                 background: var(--arg2p-surface);
             }
+            /* the solver, in a frame of its height (the whole screen, in full screen); narrow, as high as it is long */
+            arg2p-solver {
+                height: 560px;
+                padding: 10px 12px;
+            }
+            @media (max-width: 640px) {
+                arg2p-solver {
+                    height: auto;
+                }
+            }
+            :root[data-display-mode='fullscreen'] arg2p-solver {
+                height: 100vh;
+            }
             .loading {
                 padding: 16px;
                 color: var(--arg2p-muted);
                 font-family: var(--arg2p-font);
                 font-size: 14px;
             }
+            /* the actions of the page, at the end of the bar of the tabs */
+            [slot='actions'] {
+                font: inherit;
+                color: var(--arg2p-accent);
+                background: none;
+                border: none;
+                border-radius: 6px;
+                padding: 3px 10px;
+                cursor: pointer;
+            }
+            [slot='actions']:hover {
+                background: var(--arg2p-hover);
+            }
         </style>
     </head>
     <body>
-        <arg2p-explorer><p class="loading">Loading the solver of Arg2P…</p></arg2p-explorer>
+        <arg2p-solver theory-tab>
+            <p class="loading">Loading the solver of Arg2P…</p>
+            <button type="button" slot="actions" id="playground" title="Open this theory in the web playground" hidden>Playground ↗</button>
+            <button type="button" slot="actions" id="fullscreen" hidden>Full screen</button>
+        </arg2p-solver>
         <script type="module">
             // The solver of a theory, in the conversation with an AI assistant: an MCP App of the MCP server of Arg2P.
-            // The components of @tuprolog/arg2p-ui, on an engine that is the server: the page speaks to it as the
-            // solver of the browser does to its worker, each message through the tool engine of the server.
+            // <arg2p-solver> of @tuprolog/arg2p-ui, the theory edited in a tab of its own, on an engine that is the
+            // server: the page speaks to it as the solver of the browser does to its worker, each message through the
+            // tool engine of the server.
             //
             // Each module is bundled with its dependencies by the CDN (?bundle): the editors need a single copy of
             // CodeMirror, which modules resolved one by one do not give.
-            import '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}?bundle';
+            import '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}/solver?bundle';
             import { JsEngine } from '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}/js?bundle';
-            import { DEFAULT_PROFILE, profileInfo, statedProfile } from '{{cdn}}/@tuprolog/arg2p-ui@{{ui}}/data?bundle';
-            import { LitElement, css, html, nothing } from '{{cdn}}/lit@3.3.3?bundle';
+
+            const solver = document.querySelector('arg2p-solver');
+            const playground = document.getElementById('playground');
+            const fullscreen = document.getElementById('fullscreen');
 
             // --- the host: JSON-RPC over postMessage (MCP Apps) ---------------------------------------------------
 
@@ -77,9 +110,6 @@
                 });
             const notify = (method, params) => send(params === undefined ? { method } : { method, params });
 
-            // what the host tells before the solver is there
-            const told = { input: null, result: null };
-            let explorer = null;
             let context = {};
 
             window.addEventListener('message', event => {
@@ -96,12 +126,10 @@
                 }
                 switch (message.method) {
                     case 'ui/notifications/tool-input':
-                        told.input = message.params?.arguments ?? {};
-                        explorer?.open(told.input);
+                        open(message.params?.arguments ?? {});
                         break;
                     case 'ui/notifications/tool-result':
-                        told.result = message.params?.structuredContent ?? null;
-                        explorer?.opened(told.result);
+                        opened(message.params?.structuredContent ?? null);
                         break;
                     case 'ui/notifications/host-context-changed':
                         applyContext(message.params);
@@ -118,20 +146,24 @@
                 }
             });
 
-            // The theme of the host: light or dark, and its colours and fonts where it gives them
+            // The theme of the host: light or dark, and its colours and fonts where it gives them; and its display modes
             function applyContext(changed = {}) {
                 context = { ...context, ...changed };
                 if (context.theme) document.documentElement.dataset.theme = context.theme;
                 Object.entries(context.styles?.variables ?? {}).forEach(([name, value]) => {
                     if (value) document.documentElement.style.setProperty(name, value);
                 });
-                explorer?.contextChanged(context);
+                solver.restyle();
+                fullscreen.hidden = !(context.availableDisplayModes ?? []).includes('fullscreen');
+                display(context.displayMode);
             }
 
             // --- the engine: the tool engine of the server --------------------------------------------------------
 
             const session = crypto.randomUUID();
-            const EMPTY_GRAPH = { profile: '', arguments: [], attacks: [] };
+            // the query solved when none is given, and the graph of none, as the server has them
+            const DEFAULT_QUERY = {{query}};
+            const EMPTY_GRAPH = {{emptyGraph}};
 
             // What a request is answered with when the server could not answer it
             function unanswered(message, text) {
@@ -166,7 +198,7 @@
                 const opened = {
                     onmessage: null,
                     postMessage: message => call(message).then(answers => answers.forEach(answer => opened.onmessage?.({ data: answer }))),
-                    // a resolution under way goes on on the server until its timeout: its answers are dropped
+                    // the page forgotten by the server, the resolution under way stops there
                     terminate: close,
                 };
                 return opened;
@@ -174,381 +206,58 @@
 
             // --- the solver ---------------------------------------------------------------------------------------
 
-            class Arg2pExplorer extends LitElement {
-                static properties = {
-                    theory: { state: true },
-                    query: { state: true },
-                    flags: { state: true },
-                    panel: { state: true },
-                    busy: { state: true },
-                    output: { state: true },
-                    notice: { state: true },
-                    positions: { state: true },
-                    playground: { state: true },
-                    fullscreen: { state: true },
-                    canFullscreen: { state: true },
-                };
+            solver.engine = engine;
+            solver.query = DEFAULT_QUERY;
+            // the theory, query and flags as the assistant gave them: told the assistant once changed
+            let given = null;
 
-                constructor() {
-                    super();
-                    this.theory = '';
-                    this.query = 'buildLabelSets(In, Out, Und)';
-                    this.flags = '';
-                    this.panel = 'results';
-                    this.busy = false;
-                    this.output = '';
-                    this.notice = null;
-                    this.positions = null;
-                    this.playground = null;
-                    this.fullscreen = false;
-                    this.canFullscreen = false;
-                    this.runs = 0;
-                    this.fitted = 0;
-                    // the theory, query and flags as the assistant gave them: told the assistant once changed
-                    this.given = null;
-                }
-
-                connectedCallback() {
-                    super.connectedCallback();
-                    explorer = this;
-                    this.contextChanged(context);
-                    if (told.input !== null) this.open(told.input);
-                    if (told.result !== null) this.opened(told.result);
-                }
-
-                /** The theory the assistant explores, solved at once */
-                open(input) {
-                    this.theory = input.theory ?? '';
-                    if (input.query) this.query = input.query;
-                    if (input.flags) this.flags = input.flags;
-                    this.given = { theory: this.theory, query: this.query, flags: this.flags };
-                    this.positions = null;
-                    this.updateComplete.then(() => this.run());
-                }
-
-                /** What the server tells of it: the flags it is solved with, and its link to the playground */
-                opened(result) {
-                    if (result === null) return;
-                    if (result.flags && this.flags === '') this.flags = result.flags;
-                    this.playground = result.playground ?? null;
-                }
-
-                contextChanged(changed) {
-                    this.canFullscreen = (changed.availableDisplayModes ?? []).includes('fullscreen');
-                    this.fullscreen = changed.displayMode === 'fullscreen';
-                    this.renderRoot?.querySelector?.('arg2p-graph')?.restyle?.();
-                }
-
-                get profile() {
-                    return statedProfile(this.theory) ?? statedProfile(this.flags) ?? DEFAULT_PROFILE;
-                }
-
-                get abstract() {
-                    return this.profile === 'abstract';
-                }
-
-                find(selector) {
-                    return this.renderRoot.querySelector(selector);
-                }
-
-                async run() {
-                    const run = ++this.runs;
-                    const solutions = this.find('arg2p-solutions');
-                    this.output = '';
-                    this.notice = null;
-                    this.panel = 'results';
-                    this.find('arg2p-graph')?.clear();
-                    const drawing = this.find('arg2p-framework');
-                    if (drawing !== null) drawing.graph = null;
-                    this.busy = true;
-                    this.tell();
-                    try {
-                        const started = await engine.solve({ theory: this.theory, query: this.query, flags: this.flags }, text => {
-                            if (run === this.runs) this.output += text;
-                        });
-                        if (run === this.runs) await solutions.start(started);
-                    } catch (error) {
-                        if (run === this.runs) solutions.fail(error);
-                    } finally {
-                        if (run === this.runs) this.busy = solutions.busy;
-                    }
-                }
-
-                // The assistant knows what the user solves here, once it is not what it gave
-                tell() {
-                    const given = this.given;
-                    if (given === null || (given.theory === this.theory && given.query === this.query && given.flags === this.flags)) return;
-                    const text =
-                        `In the solver of Arg2P, the user solved the query ${this.query} on this theory:\n\n${this.theory}\n\n` +
-                        `with the flags:\n\n${this.flags || '(the defaults)'}`;
-                    request('ui/update-model-context', { content: [{ type: 'text', text }] }).catch(() => {});
-                }
-
-                show(solution, run) {
-                    this.find('arg2p-graph')?.showSolution(solution, run);
-                    const drawing = this.find('arg2p-framework');
-                    if (drawing === null) return;
-                    drawing.graph = solution.graph;
-                    // what the first solution derives is drawn in the room there is
-                    if (this.fitted !== this.runs) drawing.updateComplete.then(() => drawing.fit());
-                    this.fitted = this.runs;
-                }
-
-                reveal(error) {
-                    const syntax = error.syntax;
-                    if (syntax?.where === 'query') this.find('#query')?.report(syntax);
-                    else if (syntax?.where === 'flags') {
-                        this.panel = 'flags';
-                        this.updateComplete.then(() => this.find('#flags')?.report(syntax));
-                    } else if (syntax) {
-                        this.panel = 'theory';
-                        this.updateComplete.then(() => this.find('#theory')?.report(syntax));
-                    }
-                }
-
-                openPlayground() {
-                    if (this.playground === null) return;
-                    request('ui/open-link', { url: this.playground }).catch(() => window.open(this.playground, '_blank', 'noopener'));
-                }
-
-                toggleFullscreen() {
-                    request('ui/request-display-mode', { mode: this.fullscreen ? 'inline' : 'fullscreen' })
-                        .then(result => (this.fullscreen = result?.mode === 'fullscreen'))
-                        .catch(() => {});
-                }
-
-                render() {
-                    const tab = (panel, text) =>
-                        html`<button type="button" role="tab" class=${this.panel === panel ? 'active' : ''} aria-selected=${this.panel === panel} @click=${() => (this.panel = panel)}>${text}</button>`;
-                    const info = profileInfo(this.profile);
-                    return html`
-                        <div class="query">
-                            <span class="prompt">?-</span>
-                            <arg2p-editor
-                                id="query"
-                                kind="query"
-                                label="Query"
-                                placeholder="buildLabelSets(In, Out, Und)"
-                                .engine=${engine}
-                                .value=${this.query}
-                                @arg2p-change=${e => (this.query = e.detail.value)}
-                                @arg2p-submit=${() => this.run()}
-                            ></arg2p-editor>
-                            ${this.busy
-                                ? html`<button type="button" class="stop" @click=${() => engine.stop()}>Stop</button>`
-                                : html`<button type="button" class="run" title="Solve the query (Enter)" @click=${() => this.run()}>Run</button>`}
-                        </div>
-                        <div class="tabs" role="tablist">
-                            ${tab('results', 'Solutions')} ${tab('theory', 'Theory')} ${tab('flags', 'Flags')}
-                            ${tab('console', this.output === '' ? 'Console' : 'Console •')}
-                            <span class="profile" title=${info?.help ?? ''}>${info?.label ?? this.profile}</span>
-                            <span class="spacer"></span>
-                            ${this.playground === null
-                                ? nothing
-                                : html`<button type="button" class="link" title="Open this theory in the web playground" @click=${() => this.openPlayground()}>Playground ↗</button>`}
-                            ${this.canFullscreen
-                                ? html`<button type="button" class="link" @click=${() => this.toggleFullscreen()}>${this.fullscreen ? 'Exit full screen' : 'Full screen'}</button>`
-                                : nothing}
-                        </div>
-                        ${this.notice === null ? nothing : html`<div class="notice">${this.notice}</div>`}
-                        <div class="panel results" ?hidden=${this.panel !== 'results'}>
-                            <arg2p-solutions
-                                ?hide-exhausted-no=${this.abstract}
-                                @arg2p-solution=${e => this.show(e.detail.solution, e.detail.run)}
-                                @arg2p-busy=${e => (this.busy = e.detail.busy)}
-                                @arg2p-failure=${e => (this.notice = e.detail.error.stopped ? 'Stopped.' : e.detail.error.message)}
-                                @arg2p-error-select=${e => this.reveal(e.detail.error)}
-                            ></arg2p-solutions>
-                            <div class="view">
-                                <arg2p-graph ?hidden=${this.abstract} file-name="theory"></arg2p-graph>
-                                <arg2p-framework
-                                    ?hidden=${!this.abstract}
-                                    file-name="theory"
-                                    .theory=${this.theory}
-                                    .positions=${this.positions}
-                                    @arg2p-positions=${e => (this.positions = e.detail.positions)}
-                                    @arg2p-theory-change=${e => (this.theory = e.detail.theory)}
-                                ></arg2p-framework>
-                            </div>
-                        </div>
-                        <div class="panel theory" ?hidden=${this.panel !== 'theory'}>
-                            <arg2p-editor
-                                id="theory"
-                                kind="theory"
-                                label="Theory"
-                                .engine=${engine}
-                                .value=${this.theory}
-                                @arg2p-change=${e => (this.theory = e.detail.value)}
-                            ></arg2p-editor>
-                        </div>
-                        <div class="panel flags" ?hidden=${this.panel !== 'flags'}>
-                            <arg2p-flags .engine=${engine} .flags=${this.flags} .theory=${this.theory} @arg2p-flags-change=${e => (this.flags = e.detail.flags)}></arg2p-flags>
-                        </div>
-                        <div class="panel console" ?hidden=${this.panel !== 'console'}>
-                            ${this.output === '' ? html`<p class="hint">What the theory and the query print shows here.</p>` : html`<pre>${this.output}</pre>`}
-                        </div>
-                    `;
-                }
-
-                static styles = css`
-                    :host {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 8px;
-                        height: 560px;
-                        padding: 10px 12px;
-                        box-sizing: border-box;
-                        color: var(--arg2p-text);
-                        background: var(--arg2p-surface);
-                        font-family: var(--arg2p-font);
-                        font-size: 13px;
-                    }
-                    :host([fullscreen]) {
-                        height: 100vh;
-                    }
-                    [hidden] {
-                        display: none !important;
-                    }
-                    button {
-                        font: inherit;
-                        color: var(--arg2p-text);
-                        background: transparent;
-                        border: 1px solid var(--arg2p-border);
-                        border-radius: 6px;
-                        padding: 3px 10px;
-                        cursor: pointer;
-                    }
-                    .query {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                    }
-                    .prompt {
-                        font-family: var(--arg2p-mono);
-                        color: var(--arg2p-muted);
-                    }
-                    #query {
-                        flex: 1;
-                    }
-                    .run {
-                        color: #ffffff;
-                        background: var(--arg2p-accent);
-                        border-color: var(--arg2p-accent);
-                        font-weight: 600;
-                    }
-                    .stop {
-                        color: var(--arg2p-error);
-                        border-color: var(--arg2p-error);
-                    }
-                    .tabs {
-                        display: flex;
-                        align-items: center;
-                        flex-wrap: wrap;
-                        gap: 4px;
-                        border-bottom: 1px solid var(--arg2p-border);
-                    }
-                    .tabs > button[role='tab'] {
-                        border: none;
-                        border-bottom: 2px solid transparent;
-                        border-radius: 0;
-                        color: var(--arg2p-muted);
-                    }
-                    .tabs > button.active {
-                        color: var(--arg2p-text);
-                        border-bottom-color: var(--arg2p-accent);
-                    }
-                    .tabs .link {
-                        border: none;
-                        color: var(--arg2p-accent);
-                    }
-                    .spacer {
-                        flex: 1;
-                    }
-                    .profile {
-                        font-size: 11px;
-                        padding: 0 6px;
-                        border-radius: 8px;
-                        border: 1px solid var(--arg2p-accent);
-                        color: var(--arg2p-accent);
-                    }
-                    .notice {
-                        padding: 4px 8px;
-                        border: 1px solid var(--arg2p-error);
-                        border-radius: 6px;
-                        color: var(--arg2p-error);
-                    }
-                    .panel {
-                        flex: 1;
-                        min-height: 0;
-                    }
-                    .results {
-                        display: grid;
-                        grid-template-columns: minmax(180px, 1fr) 2.5fr;
-                        gap: 8px;
-                    }
-                    arg2p-solutions {
-                        overflow: auto;
-                    }
-                    .view {
-                        display: flex;
-                        min-height: 0;
-                    }
-                    .view > * {
-                        flex: 1;
-                        min-width: 0;
-                        border: 1px solid var(--arg2p-border);
-                        border-radius: 6px;
-                    }
-                    .results:has(arg2p-graph[empty]:not([hidden])) {
-                        grid-template-columns: 1fr;
-                    }
-                    .results:has(arg2p-graph[empty]:not([hidden])) .view {
-                        display: none;
-                    }
-                    .theory {
-                        display: flex;
-                    }
-                    #theory {
-                        flex: 1;
-                    }
-                    .flags,
-                    .console {
-                        overflow: auto;
-                    }
-                    pre {
-                        margin: 0;
-                        font-family: var(--arg2p-mono);
-                        white-space: pre-wrap;
-                    }
-                    .hint {
-                        color: var(--arg2p-muted);
-                    }
-                    @media (max-width: 640px) {
-                        :host {
-                            height: auto;
-                        }
-                        .results {
-                            grid-template-columns: 1fr;
-                        }
-                        .view {
-                            height: 420px;
-                        }
-                        #theory {
-                            height: 360px;
-                        }
-                    }
-                `;
-
-                updated(changed) {
-                    if (changed.has('fullscreen')) this.toggleAttribute('fullscreen', this.fullscreen);
-                    if (changed.has('panel') || changed.has('fullscreen')) {
-                        this.find('arg2p-graph')?.fit();
-                        this.find('arg2p-framework')?.fit();
-                    }
-                }
+            /** The theory the assistant explores, shown until the server tells how it is solved */
+            function open(input) {
+                solver.theory = input.theory ?? '';
+                if (input.query) solver.query = input.query;
+                if (input.flags) solver.flags = input.flags;
+                solver.clear();
             }
 
-            customElements.define('arg2p-explorer', Arg2pExplorer);
+            /**
+             * What the server tells of it, solved at once: the theory, the query and the flags it is solved with (the
+             * defaults of the server for those the assistant left out), and its link to the playground
+             */
+            function opened(result) {
+                if (result === null) return;
+                solver.theory = result.theory ?? solver.theory;
+                solver.query = result.query ?? solver.query;
+                solver.flags = result.flags ?? solver.flags;
+                given = { theory: solver.theory, query: solver.query, flags: solver.flags };
+                playground.hidden = !result.playground;
+                playground.onclick = () => request('ui/open-link', { url: result.playground }).catch(() => window.open(result.playground, '_blank', 'noopener'));
+                solver.clear();
+                solver.run();
+            }
+
+            // The assistant knows what the user solves here, once it is not what it gave
+            solver.addEventListener('arg2p-run', ({ detail: { theory, query, flags } }) => {
+                if (given === null || (given.theory === theory && given.query === query && given.flags === flags)) return;
+                const text =
+                    `In the solver of Arg2P, the user solved the query ${query} on this theory:\n\n${theory}\n\n` +
+                    `with the flags:\n\n${flags || '(the defaults)'}`;
+                request('ui/update-model-context', { content: [{ type: 'text', text }] }).catch(() => {});
+            });
+
+            // The page inline, or the whole screen: the graph fitted to the room it has then
+            function display(mode) {
+                const full = mode === 'fullscreen';
+                document.documentElement.dataset.displayMode = full ? 'fullscreen' : 'inline';
+                fullscreen.textContent = full ? 'Exit full screen' : 'Full screen';
+                requestAnimationFrame(() => solver.fit());
+            }
+
+            fullscreen.addEventListener('click', () => {
+                const mode = document.documentElement.dataset.displayMode === 'fullscreen' ? 'inline' : 'fullscreen';
+                request('ui/request-display-mode', { mode })
+                    .then(result => display(result?.mode))
+                    .catch(() => {});
+            });
 
             // --- the handshake: the solver tells the host its size as it changes ------------------------------------
 

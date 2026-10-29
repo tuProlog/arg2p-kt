@@ -143,7 +143,8 @@ object Profiles {
     /**
      * Dung frameworks: the arguments, `a.` (or arg(a)), and the attacks, `a -> b.` (or att(a, b)), and `a <-> b.` for
      * a mutual one, stated or derived by Prolog clauses (`X -> Y :- beats(X, Y).`); an argument attacking or attacked
-     * is an argument as well
+     * is an argument as well. A theory with the rules, premises, preferences or conflicts of the structured profiles is
+     * refused.
      */
     val ABSTRACT =
         Profile(
@@ -151,6 +152,7 @@ object Profiles {
             "Dung frameworks: arguments (a.), attacks (a -> b.) and mutual attacks (a <-> b.), stated or derived",
             listOf(
                 values(GraphBuilder, "abstractGraph"),
+                values(GraphLanguage, "abstractLanguage"),
                 values(GraphExtension),
                 off(QueryMode),
                 off(AutoTransposition),

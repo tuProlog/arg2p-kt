@@ -1,59 +1,72 @@
-import type { EngineError, SolutionData } from '@tuprolog/arg2p-ui/data';
+import { EMPTY_GRAPH, type SolutionData } from '@tuprolog/arg2p-ui/data';
 import type { Answer } from '@tuprolog/arg2p-ui/js';
 import { assert, describe, it } from 'vitest';
 import { Bridge, type Server } from '../src/bridge.js';
+import type { EngineRequest } from '../src/protocol.js';
 
-const { deepEqual, equal } = assert;
+const { deepEqual, equal, notEqual } = assert;
 
-// A server answering the requests of arg2p with [answers] (by method), and remembering what it was told
-function server(answers: Record<string, (params: any) => unknown>) {
-    const asked: { method: string; params: unknown }[] = [];
-    const told: { method: string; params: unknown }[] = [];
+interface Asked {
+    session: string;
+    request: EngineRequest | { type: 'close' };
+}
+
+// A server answering arg2p/engine with [answers] (by the type of the request), and remembering what it was asked
+function server(answers: Partial<Record<string, (request: any) => Answer[]>>) {
+    const asked: Asked[] = [];
     const fake: Server = {
         request: <T>(method: string, params: unknown) => {
-            asked.push({ method, params });
-            const answer = answers[method];
-            return answer === undefined ? Promise.reject(new Error(`no ${method}`)) : Promise.resolve(answer(params) as T);
+            equal(method, 'arg2p/engine');
+            const { session, request } = params as Asked;
+            asked.push({ session, request });
+            const answer = answers[request.type];
+            return answer === undefined ? Promise.reject(new Error(`no ${request.type}`)) : Promise.resolve({ answers: answer(request) } as T);
         },
-        notify: (method, params) => void told.push({ method, params }),
     };
-    return { fake, asked, told };
+    return { fake, asked };
 }
 
 const solution: SolutionData = { result: 'yes', query: 'a', bindings: [], error: null, graph: { profile: 'aspic_plus', arguments: [], attacks: [] }, branch: 2 };
 
 describe('Bridge', function () {
-    it('should run the queries of the page on the server, under the ids the page gives them', async function () {
+    it('should pass the requests of the page on to the server, in a session of its own, and the answers back', async function () {
         const { fake, asked } = server({
-            'arg2p/solve': () => ({ id: 41, query: 'a' }),
-            'arg2p/next': () => ({ solution, hasNext: false }),
-            'arg2p/graphAt': () => solution.graph,
+            solve: ({ id }) => [
+                { type: 'output', id, text: 'hi' },
+                { type: 'started', id, query: 'a' },
+            ],
+            next: ({ id }) => [{ type: 'solution', id, solution, hasNext: false }],
         });
         const posted: Answer[] = [];
         const bridge = new Bridge(fake, answer => posted.push(answer));
-        await bridge.handle({ type: 'solve', id: 1, theory: 'f :=> a.', query: 'a.', flags: '' });
+        const solve: EngineRequest = { type: 'solve', id: 1, theory: 'f :=> a.', query: 'a.', flags: '' };
+        await bridge.handle(solve);
         await bridge.handle({ type: 'next', id: 1 });
-        await bridge.handle({ type: 'graphAt', id: 1, branch: 2, reqId: 7 });
         deepEqual(posted, [
+            { type: 'output', id: 1, text: 'hi' },
             { type: 'started', id: 1, query: 'a' },
             { type: 'solution', id: 1, solution, hasNext: false },
-            { type: 'graph', reqId: 7, graph: solution.graph },
         ]);
-        deepEqual(asked.map(it => it.params), [{ theory: 'f :=> a.', query: 'a.', flags: '' }, { id: 41 }, { id: 41, branch: 2 }]);
+        deepEqual<object>(asked[0].request, { ...solve, parallel: false });
+        equal(asked[0].session, asked[1].session);
+        const other = server({ solve: () => [] });
+        await new Bridge(other.fake, () => undefined).handle(solve);
+        notEqual(other.asked[0].session, asked[0].session);
     });
 
-    it('should tell the failures, and forget the runs of the page', async function () {
-        const error: EngineError = { name: 'Theory error', message: 'm', syntax: { line: 2, column: 9, length: 1, message: 'x', where: 'theory' } };
-        const { fake, told } = server({ 'arg2p/solve': () => ({ id: 5, error }) });
-        const posted: Answer[] = [];
-        const bridge = new Bridge(fake, answer => posted.push(answer));
-        await bridge.handle({ type: 'solve', id: 1, theory: 'a :=> b(.', query: 'q', flags: '' });
-        await bridge.handle({ type: 'next', id: 9 });
-        equal(posted[0].type, 'failed');
-        deepEqual((posted[0] as Extract<Answer, { type: 'failed' }>).error, error);
-        equal((posted[1] as Extract<Answer, { type: 'failed' }>).error.message, 'This query is no longer running.');
-        bridge.dispose();
-        deepEqual(told, [{ method: 'arg2p/close', params: { id: 5 } }]);
+    it('should ask the server to solve the queries in parallel, as the page says', async function () {
+        const { fake, asked } = server({ solve: () => [], next: () => [] });
+        const bridge = new Bridge(fake, () => undefined);
+        bridge.parallel = true;
+        await bridge.handle({ type: 'solve', id: 1, theory: 'f :=> a.', query: 'a', flags: '' });
+        await bridge.handle({ type: 'next', id: 1 });
+        deepEqual<object[]>(
+            asked.map(it => it.request),
+            [
+                { type: 'solve', id: 1, theory: 'f :=> a.', query: 'a', flags: '', parallel: true },
+                { type: 'next', id: 1 },
+            ],
+        );
     });
 
     it('should keep answering when the server does not', async function () {
@@ -62,23 +75,67 @@ describe('Bridge', function () {
         const bridge = new Bridge(fake, answer => posted.push(answer));
         await bridge.handle({ type: 'warmUp' });
         await bridge.handle({ type: 'solve', id: 1, theory: '', query: 'a', flags: '' });
+        await bridge.handle({ type: 'graphAt', id: 1, branch: 0, reqId: 2 });
         await bridge.handle({ type: 'check', reqId: 3, text: 'a.', kind: 'theory' });
         await bridge.handle({ type: 'settings', reqId: 4, theory: '', flags: '' });
-        deepEqual(
-            posted.map(it => it.type),
-            ['warm', 'failed', 'checked', 'settings'],
-        );
-        equal((posted[1] as Extract<Answer, { type: 'failed' }>).error.name, 'Solver error');
+        await bridge.handle({ type: 'stop' });
+        deepEqual(posted, [
+            { type: 'warm' },
+            { type: 'failed', id: 1, error: { name: 'Solver error', message: 'no solve', syntax: null } },
+            { type: 'graph', reqId: 2, graph: EMPTY_GRAPH },
+            { type: 'checked', reqId: 3, problem: null },
+            { type: 'settings', reqId: 4, settings: {} },
+        ]);
     });
 
-    it('should pass on what a run prints to the page that started it', async function () {
-        const { fake } = server({ 'arg2p/solve': () => ({ id: 12, query: 'write(hi)' }) });
+    it('should start a session afresh once the server stopped, and drop the answers of the one before', async function () {
+        let answer: (answers: { answers: Answer[] }) => void = () => undefined;
+        const asked: Asked[] = [];
         const posted: Answer[] = [];
-        const bridge = new Bridge(fake, answer => posted.push(answer));
-        await bridge.handle({ type: 'solve', id: 3, theory: '', query: 'write(hi)', flags: '' });
-        bridge.output({ id: 12, text: 'hi' });
-        bridge.output({ id: 99, text: 'not mine' });
-        deepEqual(posted.at(-1), { type: 'output', id: 3, text: 'hi' });
-        equal(posted.filter(it => it.type === 'output').length, 1);
+        const bridge = new Bridge(
+            {
+                request: <T>(_: string, params: unknown) => {
+                    asked.push(params as Asked);
+                    return new Promise<T>(resolve => (answer = resolve as typeof answer));
+                },
+            },
+            it => posted.push(it),
+        );
+        const solving = bridge.handle({ type: 'solve', id: 1, theory: '', query: 'a', flags: '' });
+        bridge.renew();
+        answer({ answers: [{ type: 'started', id: 1, query: 'a' }] });
+        await solving;
+        deepEqual(posted, []);
+        const next = bridge.handle({ type: 'next', id: 1 });
+        answer({ answers: [{ type: 'failed', id: 1, error: { name: 'Error', message: 'gone', syntax: null } }] });
+        await next;
+        equal(posted.length, 1);
+        notEqual(asked[1].session, asked[0].session);
+    });
+
+    it('should stop and close its session as the page closes, a run the server starts afterwards too', async function () {
+        let started: (answers: { answers: Answer[] }) => void = () => undefined;
+        const asked: Asked[] = [];
+        const posted: Answer[] = [];
+        const bridge = new Bridge(
+            {
+                request: <T>(_: string, params: unknown) => {
+                    asked.push(params as Asked);
+                    if ((params as Asked).request.type !== 'solve') return Promise.resolve({ answers: [] } as T);
+                    return new Promise<T>(resolve => (started = resolve as typeof started));
+                },
+            },
+            it => posted.push(it),
+        );
+        const solving = bridge.handle({ type: 'solve', id: 1, theory: '', query: 'a', flags: '' });
+        bridge.dispose();
+        started({ answers: [{ type: 'started', id: 1, query: 'a' }] });
+        await solving;
+        deepEqual(posted, []);
+        deepEqual(
+            asked.map(it => it.request.type),
+            ['solve', 'stop', 'close', 'stop', 'close'],
+        );
+        equal(new Set(asked.map(it => it.session)).size, 1);
     });
 });

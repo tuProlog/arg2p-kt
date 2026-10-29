@@ -23,6 +23,15 @@ class ProfilesTest {
         return solver.solve(Struct.parse("buildLabelSets(I, O, U), L = [I, O, U]", solver.operators)).first()
     }
 
+    // The first solution of answerQuery for Goal, in query mode
+    private fun answer(
+        theory: String,
+        goal: String,
+    ): Solution {
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().queryMode(true).create())
+        return solver.solve(Struct.parse("answerQuery($goal, I, O, U), L = [I, O, U]", solver.operators)).first()
+    }
+
     // The statements labelled in, out and und
     private fun labels(
         theory: String,
@@ -171,5 +180,35 @@ class ProfilesTest {
         // the notation of the profile, its Prolog clauses and its arguments of any shape are not
         assertEquals("[[[f(x)]], [[g(y)]], []]", labels("graphBuildMode(abstract).\nf(x) -> g(y).\n"))
         assertEquals("[[[b], [a]], [], []]", labels("graphBuildMode(abstract).\nthing(a).\nthing(b).\narg(X) :- thing(X).\n"))
+    }
+
+    @Test
+    fun anAbstractTheoryIsCheckedAndLabelledInQueryMode() {
+        // query mode builds the graph through no builder of the profile: its language checks the theory
+        for (theory in listOf("queryMode.\nf1 :=> d.\n", "f1 :=> d.\n")) {
+            val refused = answer("graphBuildMode(abstract).\n$theory", "d")
+            assertTrue(refused.isHalt, "$theory: $refused")
+            assertTrue(refused.exception.toString().contains("abstract"), refused.exception.toString())
+        }
+        // and labelled as in the whole graph
+        val theory = "graphBuildMode(abstract).\nqueryMode.\na -> b.\nb -> c.\n"
+        assertEquals("[[c], [], []]", answer(theory, "c").substitution.getByName("L").toString())
+        assertEquals("[[], [b], []]", answer(theory, "b").substitution.getByName("L").toString())
+    }
+
+    @Test
+    fun anAbstractTheoryHasNoPreferenceConflictNorBurden() {
+        // arg2p reads them in every theory, and an abstract framework would drop them
+        for (theory in listOf("sup(a, b).\n", "conflict([a], [b]).\n", "conflict([a], [b], true).\n", "bp(a).\n")) {
+            val refused = labelling("graphBuildMode(abstract).\na.\nb.\n$theory")
+            assertTrue(refused.isHalt, "$theory: $refused")
+        }
+        // other facts are data for the clauses: they state no argument (an atom or arg/1 does)
+        assertEquals("[[[a]], [[b]], []]", labels("graphBuildMode(abstract).\no(a).\nwins(a, b).\nX -> Y :- wins(X, Y).\n"))
+        // arg/1 and att/2 take arguments of any shape; in the notation, a list reads as the premises of a rule
+        assertEquals("[[[[a]]], [[b]], []]", labels("graphBuildMode(abstract).\natt([a], b).\n"))
+        assertTrue(labelling("graphBuildMode(abstract).\n[a] -> b.\n").isHalt)
+        // an argument may have the name of a burden or of a preference
+        assertEquals("[[[bp]], [[sup]], []]", labels("graphBuildMode(abstract).\nbp -> sup.\n"))
     }
 }

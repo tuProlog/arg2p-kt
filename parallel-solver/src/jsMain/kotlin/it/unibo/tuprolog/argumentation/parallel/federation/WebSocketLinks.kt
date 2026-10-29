@@ -30,8 +30,8 @@ class WebSocketLinks(
                 resolve(started.address().port as Int)
             }
             started.on("error") { error: dynamic -> reject(error as Throwable) }
-            started.on("connection") { socket: dynamic ->
-                val link = SocketLink(socket)
+            started.on("connection") { socket: dynamic, request: dynamic ->
+                val link = SocketLink(socket, address = request.socket.remoteAddress as String?)
                 sockets.add(socket)
                 // the text of the Buffer itself (Kotlin's toString would write its bytes)
                 socket.on("message") { data: dynamic -> handled { site.received(link, data.toString("utf8") as String) } }
@@ -44,12 +44,20 @@ class WebSocketLinks(
             }
         }
 
-    /** Opens a link to the site listening at [url] (ws://host:port) */
-    fun connect(url: String): Promise<Unit> =
+    /**
+     * Opens a link to the site listening at [url] (ws://host:port): [code] presented if given (see
+     * [Site.requiresCode]), and the link given to [opening] before it opens
+     */
+    fun connect(
+        url: String,
+        code: String? = null,
+        opening: (Link) -> Unit = {},
+    ): Promise<Unit> =
         Promise { resolve, reject ->
             val constructor = js("globalThis.WebSocket") ?: nodeModule("ws").WebSocket
             val socket = js("new constructor(url)")
-            val link = SocketLink(socket)
+            val link = SocketLink(socket, outgoing = true, code = code)
+            opening(link)
             var open = false
             socket.onopen = { _: dynamic ->
                 open = true
@@ -79,6 +87,9 @@ class WebSocketLinks(
     // A link on a WebSocket, of the runtime or of the package ws: frames sent while it is open
     private class SocketLink(
         private val socket: dynamic,
+        override val outgoing: Boolean = false,
+        override val code: String? = null,
+        override val address: String? = null,
     ) : Link {
         override fun send(frame: String) {
             if (socket.readyState == 1) socket.send(frame)

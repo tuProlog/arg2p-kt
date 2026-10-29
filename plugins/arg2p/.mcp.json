@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "uvx",
       "args": [
-        "arg2p@0.20.0",
+        "arg2p@0.21.0",
         "mcp"
       ]
     }

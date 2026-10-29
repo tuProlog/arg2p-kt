@@ -1,7 +1,7 @@
 var publishCmd = `
 ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication || exit 1
 ./gradlew publishJsPackageToNpmjsRegistry --continue || echo "::error title=npm publication failed::Some packages were not published on npmjs, see the publishJsPackageToNpmjsRegistry tasks output"
-./gradlew :plugins:pluginPackages || exit 1
+./gradlew :plugins:pluginPackages :lsp:shadowJar || exit 1
 `
 
 // The version of the release, where the plugins for AI assistants and the MCP Registry state it (committed with the
@@ -14,6 +14,7 @@ var prepareCmd = 'node plugins/version.mjs ${nextRelease.version}'
 var successCmd = 'echo "${nextRelease.version}" > .released-version'
 
 import config from 'semantic-release-preconfigured-conventional-commits'  with { type: "json" };
+import { files as versioned } from './plugins/version.mjs';
 
 config.plugins.push(
     [
@@ -27,8 +28,10 @@ config.plugins.push(
     [
         "@semantic-release/github",
         {
+            // the packages of the extension of VS Code are attached as they are built, after the release (push.yml)
             "assets": [
-                { "path": "**/build/**/*redist*.jar" },
+                // the language server and MCP server of arg2p, a jar with every dependency in it (java -jar)
+                { "path": "lsp/build/libs/arg2p-lsp-*-redist.jar" },
                 // the skills and the plugin for AI assistants, for the clients that take them uploaded
                 { "path": "plugins/build/distributions/*.zip" }
             ]
@@ -37,18 +40,13 @@ config.plugins.push(
     [
         "@semantic-release/git",
         {
-            // those of the plugin by default, and the versions of the plugins and of the MCP Registry
+            // those of the plugin by default, and the files stating the version of the plugins and of the MCP Registry
             "assets": [
                 "CHANGELOG.md",
                 "package.json",
                 "package-lock.json",
                 "npm-shrinkwrap.json",
-                ".claude-plugin/marketplace.json",
-                "plugins/arg2p/.claude-plugin/plugin.json",
-                "plugins/arg2p/plugin.json",
-                "plugins/arg2p/.mcp.json",
-                "plugins/arg2p/mcp.json",
-                "server.json",
+                ...versioned,
             ]
         }
     ],

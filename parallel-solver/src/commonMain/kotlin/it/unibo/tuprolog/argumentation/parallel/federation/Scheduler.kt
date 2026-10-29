@@ -3,6 +3,12 @@ package it.unibo.tuprolog.argumentation.parallel.federation
 /** Tasks run one at a time, in the order they were posted */
 fun interface TaskQueue {
     fun post(task: () -> Unit)
+
+    /**
+     * The task running now interrupted, where it can be (a thread of the JVM: a resolution halts at its next step),
+     * none otherwise
+     */
+    fun interrupt() = Unit
 }
 
 /** Where the nodes of a site run: each node has a queue of its own, and the queues may run in parallel */

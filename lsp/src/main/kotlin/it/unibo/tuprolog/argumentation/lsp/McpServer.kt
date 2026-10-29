@@ -1,50 +1,73 @@
 package it.unibo.tuprolog.argumentation.lsp
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import it.unibo.tuprolog.argumentation.Arg2p
-import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.Solution
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.PrintStream
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The MCP server of arg2p: the tools an AI assistant solves theories with (solve, answer, check, settings), over the
  * standard input and output, one JSON-RPC message a line (the transport stdio of the Model Context Protocol).
  *
- * A tool that fails (a theory that does not parse, a profile refusing it, a query taking longer than its timeout)
- * answers with its error, as MCP tools do, rather than failing the request.
+ * The tools are solved on threads of their own while the server goes on reading: a ping is answered meanwhile, and
+ * notifications/cancelled stops the request it names. A tool that fails (a theory that does not parse, a profile
+ * refusing it, arguments it does not take, a query taking longer than its timeout, which stops it) answers with its
+ * error, as MCP tools do, rather than failing the request; a message that is not a request of the server, or not well
+ * formed, is answered with the error of JSON-RPC.
  *
- * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the host shows them,
- * and as a link to the web playground everywhere.
+ * The theories are written by an AI model: they are solved within their timeout.
+ *
+ * The tool explore shows the solver of a theory to the user: as an MCP App (see [McpApp]) where the client declares it
+ * shows them, and as a link to the web playground everywhere.
  */
-class McpServer(
+internal class McpServer(
     input: InputStream,
     output: OutputStream,
 ) {
+    // What a tool found, and the text telling it (its JSON otherwise)
+    private class Found(
+        val content: Map<String, Any?>,
+        val text: String = json.toJson(content),
+    )
+
+    // A tool that ran out of time
+    private class TimedOut(
+        seconds: Long,
+    ) : Exception("No answer within $seconds seconds: the theory may not terminate, or need a larger timeoutSeconds.")
+
     private val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
     private val writer = PrintStream(output, true, Charsets.UTF_8)
-    private val gson: Gson = GsonBuilder().serializeNulls().create()
-    private val app = McpApp()
-    private val solving =
-        Executors.newCachedThreadPool {
-            Thread(null, it, "arg2p-mcp", Arg2pLanguageServer.STACK_SIZE).apply {
-                isDaemon =
-                    true
-            }
-        }
+    private val solving = Solving("arg2p-mcp")
+    private val pages = PageEngine(solving, limit = DEFAULT_TIMEOUT.seconds)
+
+    // the tools under way, by the id of their request: notifications/cancelled stops them
+    private val requests = ConcurrentHashMap<JsonElement, CompletableFuture<*>>()
+
+    // their answers, until written
+    private val answering = ConcurrentHashMap.newKeySet<CompletableFuture<*>>()
+
+    // whether the client shows MCP Apps, as it declares in initialize
+    @Volatile
+    private var apps = false
+
+    /** How many tools are being solved */
+    val busy: Int get() = solving.busy
 
     /** Answers the messages of the client until it closes the input */
     fun run() {
@@ -53,40 +76,71 @@ class McpServer(
             if (line.isBlank()) continue
             val message =
                 try {
-                    JsonParser.parseString(line).asJsonObject
-                } catch (_: Exception) {
-                    respond(JsonNull.INSTANCE, error = error(-32700, "Parse error"))
+                    JsonParser.parseString(line)
+                } catch (_: JsonParseException) {
+                    respond(JsonNull.INSTANCE, error = error(PARSE_ERROR, "Parse error"))
                     continue
                 }
-            handle(message)
+            receive(message)
         }
-        solving.shutdownNow()
+        // the client is gone: what it asked is answered, within its timeout
+        answering.toList().forEach { runCatching { it.get(MAX_TIMEOUT + 1, TimeUnit.SECONDS) } }
+        pages.close()
+        solving.close()
     }
 
-    private fun handle(message: JsonObject) {
-        val id = message.get("id") ?: return // a notification (notifications/initialized, ...): nothing to answer
-        val params = message.getAsJsonObject("params") ?: JsonObject()
-        when (val method = message.get("method")?.asString) {
-            "initialize" -> respond(id, initialize(params))
-            "ping" -> respond(id, JsonObject())
-            "tools/list" -> respond(id, JsonObject().apply { add("tools", gson.toJsonTree(TOOLS)) })
-            "tools/call" -> respond(id, call(params))
-            "resources/list" -> respond(id, JsonObject().apply { add("resources", gson.toJsonTree(listOf(RESOURCE))) })
-            "resources/templates/list" -> respond(id, JsonObject().apply { add("resourceTemplates", JsonArray()) })
-            "resources/read" -> {
-                val uri = params.get("uri")?.asString
-                if (uri == McpApp.URI) {
-                    respond(id, JsonObject().apply { add("contents", gson.toJsonTree(listOf(RESOURCE + ("text" to McpApp.page)))) })
-                } else {
-                    respond(id, error = error(-32002, "Resource not found: $uri"))
-                }
-            }
-            else -> respond(id, error = error(-32601, "Method not found: $method"))
+    // A message of the client: a request, answered, or a notification (a response, the server asking nothing, is not
+    // one it waits for)
+    private fun receive(message: JsonElement) {
+        val request = message as? JsonObject ?: return respond(JsonNull.INSTANCE, error = error(INVALID_REQUEST, "Not a JSON-RPC message"))
+        val id = request.get("id")?.takeUnless { it.isJsonNull }
+        if (!request.has("method")) return
+        val method =
+            (request.get("method") as? JsonPrimitive)?.takeIf { it.isString }?.asString
+                ?: return respond(id ?: JsonNull.INSTANCE, error = error(INVALID_REQUEST, "The method is not a text"))
+        try {
+            val params = request.obj("params") ?: JsonObject()
+            if (id == null) notified(method, params) else answer(id, method, params)
+        } catch (failure: InvalidParams) {
+            if (id != null) respond(id, error = error(INVALID_PARAMS, failure.message ?: "Invalid params"))
+        } catch (failure: Exception) {
+            if (id != null) respond(id, error = error(INTERNAL_ERROR, failure.message ?: failure.toString()))
         }
+    }
+
+    private fun notified(
+        method: String,
+        params: JsonObject,
+    ) {
+        // the client gave up the request: its work stops, unanswered
+        if (method == "notifications/cancelled") params.get("requestId")?.let { requests[it]?.cancel(true) }
+    }
+
+    private fun answer(
+        id: JsonElement,
+        method: String,
+        params: JsonObject,
+    ) = when (method) {
+        "initialize" -> respond(id, initialize(params))
+        "ping" -> respond(id, JsonObject())
+        "tools/list" -> respond(id, JsonObject().apply { add("tools", json.toJsonTree(tools())) })
+        "tools/call" -> call(id, params)
+        "resources/list" -> respond(id, JsonObject().apply { add("resources", json.toJsonTree(listOf(RESOURCE))) })
+        "resources/templates/list" -> respond(id, JsonObject().apply { add("resourceTemplates", JsonArray()) })
+        "resources/read" -> {
+            val uri = params.requiredText("uri")
+            if (uri == McpApp.URI) {
+                respond(id, JsonObject().apply { add("contents", json.toJsonTree(listOf(RESOURCE + ("text" to McpApp.page)))) })
+            } else {
+                respond(id, error = error(RESOURCE_NOT_FOUND, "Resource not found: $uri"))
+            }
+        }
+        else -> respond(id, error = error(METHOD_NOT_FOUND, "Method not found: $method"))
     }
 
     private fun initialize(params: JsonObject): JsonObject {
-        val asked = params.get("protocolVersion")?.asString
+        val asked = params.get("protocolVersion")?.takeIf { it.isJsonPrimitive }?.asString
+        apps = (params.get("capabilities") as? JsonObject)?.let { (it.get("extensions") as? JsonObject)?.has(McpApp.EXTENSION) } == true
         return JsonObject().apply {
             addProperty("protocolVersion", if (asked in PROTOCOL_VERSIONS) asked else PROTOCOL_VERSIONS.first())
             add(
@@ -108,126 +162,223 @@ class McpServer(
         }
     }
 
-    // The result of a tool, as MCP gives it: its JSON as text and as structured content, or its error
-    private fun call(params: JsonObject): JsonObject {
-        val name = params.get("name")?.asString
-        val arguments = params.getAsJsonObject("arguments") ?: JsonObject()
-        val timeout = arguments.get("timeoutSeconds")?.asLong ?: DEFAULT_TIMEOUT
-        val future =
-            solving.submit<Any?> {
-                when (name) {
-                    "solve" -> solve(arguments)
-                    "answer" -> answer(arguments)
-                    "check" -> check(arguments)
-                    "settings" -> settings(arguments)
-                    "explore" -> explore(arguments)
-                    "engine" ->
-                        mapOf(
-                            "answers" to app.handle(arguments.text("session") ?: "", arguments.getAsJsonObject("request") ?: JsonObject()),
-                        )
-                    else -> throw IllegalArgumentException("Unknown tool: $name")
+    // A tool called: its arguments read at once, it is solved on a thread of its own and answered from there, as MCP
+    // gives the result of a tool (its JSON as text and as structured content), or its error
+    private fun call(
+        id: JsonElement,
+        params: JsonObject,
+    ) {
+        val name = params.requiredText("name")
+        val arguments = params.obj("arguments") ?: JsonObject()
+        val work =
+            try {
+                if (name == "engine") {
+                    val session = arguments.requiredText("session")
+                    val request = arguments.obj("request") ?: throw InvalidParams("request is missing")
+                    pages.handle(session, request).handling { answers, failure -> Found(mapOf("answers" to (answers ?: throw failure!!))) }
+                } else {
+                    val tool = toolOf(name, arguments)
+                    val timeout = (arguments.integer("timeoutSeconds") ?: DEFAULT_TIMEOUT).coerceIn(1, MAX_TIMEOUT)
+                    solving.submit { timed(timeout, tool) }
+                }
+            } catch (failure: InvalidParams) {
+                if (name !in TOOL_NAMES) throw InvalidParams("Unknown tool: $name")
+                return respond(id, failure("Invalid arguments of $name: ${failure.message}"))
+            }
+        requests[id] = work
+        val answered =
+            work.handle { found, failure ->
+                // a request the client cancelled is not answered
+                if (!work.isCancelled) {
+                    val cause = (failure as? CompletionException)?.cause ?: failure
+                    respond(id, if (cause == null) result(found!!) else failure(cause.message ?: cause.toString()))
+                }
+                requests.remove(id, work)
+            }
+        answering += answered
+        answered.whenComplete { _, _ -> answering -= answered }
+    }
+
+    // [tool] within [timeout] seconds: an error if it runs out of time, unless it answers with what it found so far
+    private fun timed(
+        timeout: Long,
+        tool: (Deadline) -> Found,
+    ): Found =
+        Deadline.within(timeout.seconds) { deadline ->
+            try {
+                tool(deadline)
+            } catch (failure: Exception) {
+                throw if (deadline.expired) TimedOut(timeout) else failure
+            }
+        }
+
+    // The work of the tool [name] on [arguments], read at once: an InvalidParams if they are not those it takes
+    private fun toolOf(
+        name: String,
+        arguments: JsonObject,
+    ): (Deadline) -> Found =
+        when (name) {
+            "solve" -> {
+                val theory = arguments.requiredText("theory")
+                val query = arguments.text("query") ?: Solvers.DEFAULT_QUERY
+                val flags = flagsOf(arguments)
+                val most = (arguments.integer("maxSolutions") ?: DEFAULT_SOLUTIONS).coerceIn(1, MAX_SOLUTIONS).toInt()
+                tool { deadline -> solve(theory, query, flags, most, deadline) }
+            }
+            "answer" -> {
+                val theory = arguments.requiredText("theory")
+                val query = arguments.requiredText("query")
+                val flags = flagsOf(arguments)
+                tool { answer(theory, query, flags) }
+            }
+            "check" -> {
+                val text = arguments.requiredText("text")
+                val kind = arguments.text("kind") ?: "theory"
+                if (kind !in KINDS) throw InvalidParams("kind is not one of ${KINDS.joinToString()}")
+                tool {
+                    val problem = Solvers.check(text, kind)
+                    Found(mapOf("parses" to (problem == null), "problem" to problem))
                 }
             }
-        return try {
-            val result = gson.toJsonTree(future.get(timeout, TimeUnit.SECONDS))
-            JsonObject().apply {
-                add("content", content(if (name == "explore") explored(result.asJsonObject) else gson.toJson(result)))
-                if (result.isJsonObject) add("structuredContent", result)
-                addProperty("isError", false)
+            "settings" -> {
+                val theory = arguments.requiredText("theory")
+                val flags = flagsOf(arguments)
+                tool {
+                    parsing(theory)
+                    Flags.parse(flags)
+                    Found(Solvers.settings(theory, flags))
+                }
             }
-        } catch (_: TimeoutException) {
-            future.cancel(true)
-            failure("No answer within $timeout seconds: the theory may not terminate, or need a larger timeoutSeconds.")
-        } catch (failed: ExecutionException) {
-            val cause = failed.cause ?: failed
-            val syntax = (cause as? Arg2pException)?.syntax?.let { " (line ${it.line}, column ${it.column})" } ?: ""
-            failure((cause.message ?: cause.toString()) + syntax)
+            "explore" -> {
+                val theory = arguments.requiredText("theory")
+                val query = arguments.text("query") ?: Solvers.DEFAULT_QUERY
+                val flags = flagsOf(arguments)
+                tool { explore(theory, query, flags) }
+            }
+            else -> throw InvalidParams("Unknown tool: $name")
         }
-    }
 
-    private fun solve(arguments: JsonObject): Map<String, Any?> {
-        val solver = solver(arguments)
-        val query = arguments.text("query") ?: DEFAULT_QUERY
-        val most = arguments.get("maxSolutions")?.asInt ?: DEFAULT_SOLUTIONS
+    // The work of a tool, as it is written
+    private fun tool(work: (Deadline) -> Found) = work
+
+    // The first solutions of [query], those found in time if it runs out of it, and the graph of the last yes
+    private fun solve(
+        theory: String,
+        query: String,
+        flags: String,
+        most: Int,
+        deadline: Deadline,
+    ): Found {
+        val solver = Solvers.of(theory, Flags.parse(flags))
+        val profile = Solvers.profileOf(solver)
         val solutions = solver.solve(query)
-        val found = mutableListOf<Map<String, Any?>>()
+        val found = mutableListOf<Solution>()
         var graph = GraphData.EMPTY
-        val profile = solver.setting("graphBuildMode").firstOrNull() ?: ""
+        // the solutions asked for, no more: whether there may be others is known without looking for them
         while (found.size < most && solutions.hasNext()) {
             val solution = solutions.next()
-            found +=
-                mapOf(
-                    "result" to
-                        if (solution.isYes) {
-                            "yes"
-                        } else if (solution.isNo) {
-                            "no"
-                        } else {
-                            "halt"
-                        },
-                    "query" to solution.query,
-                    "bindings" to solution.variables.associateWith { solution.text(it) },
-                    "error" to solution.error,
-                )
-            if (solution.isYes) graph = Engine.graphData(solver.graph(), profile)
+            // out of time, the resolution halts
+            if (solution.isHalt && deadline.expired) break
+            found += solution
+            if (solution.isYes) {
+                graph =
+                    try {
+                        GraphData.of(solver.graph(), profile)
+                    } catch (failure: Exception) {
+                        if (deadline.expired) break else throw failure
+                    }
+            }
         }
-        return mapOf(
-            "profile" to profile,
-            "solutions" to found,
-            "more" to solutions.hasNext(),
-            "graph" to graph,
+        // nothing found in time: an error (see timed)
+        if (deadline.expired && found.isEmpty()) error("No solution in time")
+        val content =
+            mapOf(
+                "profile" to profile,
+                "solutions" to
+                    found.map { mapOf("result" to it.result, "query" to it.query, "bindings" to BindingData.of(it), "error" to it.error) },
+                "more" to (deadline.expired || solutions.hasNext()),
+                "timedOut" to deadline.expired,
+                "graph" to graph,
+            )
+        return if (deadline.expired) {
+            Found(content, "Out of time: the solutions found until then. " + json.toJson(content))
+        } else {
+            Found(content)
+        }
+    }
+
+    private fun answer(
+        theory: String,
+        query: String,
+        flags: String,
+    ): Found {
+        val answer = Solvers.of(theory, Flags.parse(flags)).answer(query)
+        return Found(
+            mapOf(
+                "in" to answer.inStatements.map { it.toString() },
+                "out" to answer.outStatements.map { it.toString() },
+                "und" to answer.undStatements.map { it.toString() },
+            ),
         )
     }
-
-    private fun answer(arguments: JsonObject): Map<String, Any?> {
-        val answer = solver(arguments).answer(arguments.text("query") ?: throw IllegalArgumentException("A query is needed"))
-        return mapOf(
-            "in" to answer.inStatements.map { it.toString() },
-            "out" to answer.outStatements.map { it.toString() },
-            "und" to answer.undStatements.map { it.toString() },
-        )
-    }
-
-    private fun check(arguments: JsonObject): Map<String, Any?> {
-        val problem = Engine.check(arguments.text("text") ?: "", arguments.text("kind") ?: "theory")
-        return mapOf("parses" to (problem == null), "problem" to problem)
-    }
-
-    private fun settings(arguments: JsonObject): Map<String, Any?> = Engine.settings(arguments.text("theory") ?: "", flagsText(arguments))
 
     // What the solver is shown with: the theory, if it parses, its query, its flags, and the link to the playground
-    private fun explore(arguments: JsonObject): Map<String, Any?> {
-        val theory = arguments.text("theory") ?: ""
-        Engine.check(theory, "theory")?.let {
-            throw IllegalArgumentException("The theory does not parse at line ${it.line}, column ${it.column}: ${it.message}")
-        }
-        val query = arguments.text("query") ?: DEFAULT_QUERY
-        val flags = flagsText(arguments)
-        return mapOf(
-            "theory" to theory,
-            "query" to query,
-            "flags" to flags,
-            "profile" to (Engine.settings(theory, flags)["graphBuildMode"]?.firstOrNull() ?: ""),
-            "playground" to Playground.link(theory, query, flags),
-        )
+    private fun explore(
+        theory: String,
+        query: String,
+        flags: String,
+    ): Found {
+        parsing(theory)
+        val playground = Playground.link(theory, query, flags)
+        val content =
+            mapOf(
+                "theory" to theory,
+                "query" to query,
+                "flags" to flags,
+                "profile" to Solvers.profileOf(Solvers.of(theory, Flags.parse(flags))),
+                "playground" to playground,
+            )
+        val text =
+            if (apps) {
+                "The solver of the theory is shown to the user in the conversation: they can run the query ($query), " +
+                    "browse its solutions, their argument graphs and stages, and change the flags. The same theory opens " +
+                    "in the web playground: $playground"
+            } else {
+                "The theory opens in the web playground, for the user to run the query ($query), browse its solutions, " +
+                    "their argument graphs and stages, and change the flags: $playground"
+            }
+        return Found(content, text)
     }
 
-    private fun explored(result: JsonObject): String =
-        "The solver of the theory is shown to the user, where this client shows MCP Apps: they can run the query " +
-            "(${result.text("query")}), browse its solutions, their argument graphs and stages, and change the flags. " +
-            "The same theory opens in the web playground: ${result.text("playground")}"
+    // [theory], refused if it does not parse
+    private fun parsing(theory: String) {
+        Solvers.check(theory, "theory")?.let {
+            throw InvalidParams("The theory does not parse at line ${it.line}, column ${it.column}: ${it.message}")
+        }
+    }
 
-    private fun solver(arguments: JsonObject): Arg2p =
-        Arg2p
-            .builder()
-            .theory(arguments.text("theory") ?: "")
-            .flags(Flags.parse(flagsText(arguments)))
-            .output { }
-            .build()
+    private fun flagsOf(arguments: JsonObject): String = arguments.text("flags") ?: Solvers.DEFAULT_FLAGS
 
-    private fun flagsText(arguments: JsonObject): String = arguments.text("flags") ?: DEFAULT_FLAGS
+    // The tools, as the client is shown them: the engine of the page and the page of explore only to a client of MCP Apps
+    private fun tools(): List<Map<String, Any>> =
+        if (apps) {
+            TOOLS.map { if (it["name"] == "explore") it + ("_meta" to EXPLORE_META) else it } + ENGINE
+        } else {
+            TOOLS
+        }
 
-    private fun JsonObject.text(name: String): String? = get(name)?.takeUnless { it.isJsonNull }?.asString
+    private fun result(found: Found): JsonObject =
+        JsonObject().apply {
+            add("content", content(found.text))
+            add("structuredContent", json.toJsonTree(found.content))
+            addProperty("isError", false)
+        }
+
+    private fun failure(message: String): JsonObject =
+        JsonObject().apply {
+            add("content", content(message))
+            addProperty("isError", true)
+        }
 
     private fun content(text: String): JsonArray =
         JsonArray().apply {
@@ -237,12 +388,6 @@ class McpServer(
                     addProperty("text", text)
                 },
             )
-        }
-
-    private fun failure(message: String): JsonObject =
-        JsonObject().apply {
-            add("content", content(message))
-            addProperty("isError", true)
         }
 
     private fun error(
@@ -266,17 +411,30 @@ class McpServer(
                 add("id", id)
                 if (error != null) add("error", error) else add("result", result ?: JsonObject())
             }
-        writer.println(gson.toJson(response))
+        writer.println(json.toJson(response))
     }
 
     companion object {
         /** The versions of the protocol the server speaks, the latest first */
         val PROTOCOL_VERSIONS = listOf("2025-06-18", "2025-03-26", "2024-11-05")
 
-        const val DEFAULT_QUERY = "buildLabelSets(In, Out, Und)"
-        const val DEFAULT_FLAGS = "argumentLabellingMode(grounded).\nstatementLabellingMode(statement).\nqueryMode.\n"
-        const val DEFAULT_SOLUTIONS = 5
+        const val DEFAULT_SOLUTIONS = 5L
+        const val MAX_SOLUTIONS = 100L
+
+        /** How long a tool runs by default, and at most, in seconds */
         const val DEFAULT_TIMEOUT = 60L
+        const val MAX_TIMEOUT = 600L
+
+        // The errors of JSON-RPC, and of MCP
+        private const val PARSE_ERROR = -32700
+        private const val INVALID_REQUEST = -32600
+        private const val METHOD_NOT_FOUND = -32601
+        private const val INVALID_PARAMS = -32602
+        private const val INTERNAL_ERROR = -32603
+        private const val RESOURCE_NOT_FOUND = -32002
+
+        // What a text to check is
+        private val KINDS = listOf("theory", "query")
 
         private const val THEORY =
             "The theory, in the language of arg2p: rules `r1 : bird(X) => flies(X).` (defeasible) and `r2 : a -> b.` " +
@@ -288,6 +446,7 @@ class McpServer(
             "The flags, as Prolog facts: argumentLabellingMode(grounded|complete|preferred|stable|semistable|ideal|" +
                 "eager|naive|stage|cf2|stage2|...), statementLabellingMode(statement), queryMode, graphBuildMode(...), " +
                 "... Default: grounded semantics, standard statement labelling, query mode."
+        private const val TIMEOUT = "How long to wait, in seconds (default $DEFAULT_TIMEOUT, at most $MAX_TIMEOUT)"
 
         private val INSTRUCTIONS =
             "Arg2P solves structured argumentation theories (ASPIC+, ABA, abstract frameworks) in Prolog. Use `check` to " +
@@ -307,7 +466,7 @@ class McpServer(
 
         private fun integer(description: String) = mapOf("type" to "integer", "description" to description)
 
-        private val TOOLS =
+        private val TOOLS: List<Map<String, Any>> =
             listOf(
                 mapOf(
                     "name" to "solve",
@@ -315,15 +474,17 @@ class McpServer(
                     "description" to
                         "Solves a query on a theory of arg2p: its first solutions (yes, no, or halt with an error), with " +
                         "their bindings, and the argument graph of the last yes (every argument with its conclusion, top " +
-                        "rule, sub-arguments and label in, out or und; every attack with its type). The default query, " +
-                        "buildLabelSets(In, Out, Und), gives the statements labelled in, out and und.",
+                        "rule, sub-arguments and label in, out or und; every attack with its type); more tells whether the " +
+                        "search has alternatives left (they may give other solutions, or no). The default query, " +
+                        "buildLabelSets(In, Out, Und), gives the statements labelled in, out and und. Out of time, it gives " +
+                        "the solutions found until then (timedOut).",
                     "inputSchema" to
                         schema(
                             "theory" to text(THEORY),
-                            "query" to text("A Prolog goal on the theory (default: $DEFAULT_QUERY)"),
+                            "query" to text("A Prolog goal on the theory (default: ${Solvers.DEFAULT_QUERY})"),
                             "flags" to text(FLAGS),
-                            "maxSolutions" to integer("How many solutions at most (default $DEFAULT_SOLUTIONS)"),
-                            "timeoutSeconds" to integer("How long to wait (default $DEFAULT_TIMEOUT)"),
+                            "maxSolutions" to integer("How many solutions at most (default $DEFAULT_SOLUTIONS, at most $MAX_SOLUTIONS)"),
+                            "timeoutSeconds" to integer(TIMEOUT),
                             required = listOf("theory"),
                         ),
                 ),
@@ -338,7 +499,7 @@ class McpServer(
                             "theory" to text(THEORY),
                             "query" to text("A literal, as flies(tweety) or flies(X)"),
                             "flags" to text(FLAGS),
-                            "timeoutSeconds" to integer("How long to wait (default $DEFAULT_TIMEOUT)"),
+                            "timeoutSeconds" to integer(TIMEOUT),
                             required = listOf("theory", "query"),
                         ),
                 ),
@@ -352,7 +513,7 @@ class McpServer(
                             "kind" to
                                 mapOf(
                                     "type" to "string",
-                                    "enum" to listOf("theory", "query"),
+                                    "enum" to KINDS,
                                     "description" to "What the text is (default theory)",
                                 ),
                             required = listOf("text"),
@@ -363,8 +524,15 @@ class McpServer(
                     "title" to "The settings in effect",
                     "description" to
                         "The value in effect of every flag for a theory: its profile (graphBuildMode), the semantics, the " +
-                        "graph extensions, ... as the theory, the flags and the profile set them.",
-                    "inputSchema" to schema("theory" to text(THEORY), "flags" to text(FLAGS), required = listOf("theory")),
+                        "graph extensions, ... as the theory, the flags and the profile set them. A theory that does not " +
+                        "parse is refused.",
+                    "inputSchema" to
+                        schema(
+                            "theory" to text(THEORY),
+                            "flags" to text(FLAGS),
+                            "timeoutSeconds" to integer(TIMEOUT),
+                            required = listOf("theory"),
+                        ),
                 ),
                 mapOf(
                     "name" to "explore",
@@ -373,37 +541,47 @@ class McpServer(
                         "Shows the user the solver of a theory, to explore its results themselves: the query run, its " +
                         "solutions, the argument graph of each and the stages of its computation, the drawing of an " +
                         "abstract framework, the flags. Hosts of MCP Apps show it in the conversation; the result links the " +
-                        "same theory in the web playground too. Use it when the user wants to see or explore the results.",
+                        "same theory in the web playground, for every host. Use it when the user wants to see or explore " +
+                        "the results.",
                     "inputSchema" to
                         schema(
                             "theory" to text(THEORY),
-                            "query" to text("The query run first (default: $DEFAULT_QUERY)"),
+                            "query" to text("The query run first (default: ${Solvers.DEFAULT_QUERY})"),
                             "flags" to text(FLAGS),
+                            "timeoutSeconds" to integer(TIMEOUT),
                             required = listOf("theory"),
                         ),
-                    "_meta" to
-                        mapOf(
-                            "ui" to mapOf("resourceUri" to McpApp.URI, "visibility" to listOf("model", "app")),
-                            // the key of the first hosts of MCP Apps
-                            "ui/resourceUri" to McpApp.URI,
-                        ),
                 ),
-                mapOf(
-                    "name" to "engine",
-                    "title" to "The engine of the solver",
-                    "description" to "The engine the solver shown by explore runs on: for that solver only, not to be called otherwise.",
-                    "inputSchema" to
-                        mapOf(
-                            "type" to "object",
-                            "properties" to
-                                mapOf(
-                                    "session" to text("The solver asking"),
-                                    "request" to mapOf("type" to "object", "description" to "A message of the solver to its engine"),
-                                ),
-                            "required" to listOf("session", "request"),
-                        ),
-                    "_meta" to mapOf("ui" to mapOf("visibility" to listOf("app"))),
-                ),
+            )
+
+        // The names of the tools, the engine of the page too
+        private val TOOL_NAMES = TOOLS.map { it["name"] } + "engine"
+
+        // The page of explore, for the hosts of MCP Apps
+        private val EXPLORE_META =
+            mapOf(
+                "ui" to mapOf("resourceUri" to McpApp.URI, "visibility" to listOf("model", "app")),
+                // the key of the first hosts of MCP Apps
+                "ui/resourceUri" to McpApp.URI,
+            )
+
+        // The engine of the page of the solver, which only the page calls
+        private val ENGINE: Map<String, Any> =
+            mapOf(
+                "name" to "engine",
+                "title" to "The engine of the solver",
+                "description" to "The engine the solver shown by explore runs on: for that solver only, not to be called otherwise.",
+                "inputSchema" to
+                    mapOf(
+                        "type" to "object",
+                        "properties" to
+                            mapOf(
+                                "session" to text("The solver asking"),
+                                "request" to mapOf("type" to "object", "description" to "A message of the solver to its engine"),
+                            ),
+                        "required" to listOf("session", "request"),
+                    ),
+                "_meta" to mapOf("ui" to mapOf("visibility" to listOf("app"))),
             )
 
         /** The page of the solver, as a resource (its text added when read) */

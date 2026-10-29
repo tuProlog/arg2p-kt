@@ -29,28 +29,25 @@ def main(argv: Optional[list[str]] = None) -> int:
 def mcp(argv: list[str]) -> int:
     """Runs the MCP server of arg2p until its client closes the standard input (a theory named mcp: ./mcp)"""
     argparse.ArgumentParser(prog="arg2p mcp", description="Runs the MCP server of arg2p, for AI assistants.").parse_args(argv)
-    command = [java(), *_jvm.options(), "-cp", os.pathsep.join(_jvm.classpath()), MCP_SERVER, "--mcp"]
+    try:
+        from ._version import MCP_SERVER
+    except ImportError:  # a package built without Gradle, or before the server was written into it
+        print("arg2p: no MCP server in the package: write it with ./gradlew :python:pythonVersion", file=sys.stderr)
+        return 1
+    command = [_jvm.java(), *_jvm.options(), "-cp", os.pathsep.join(_jvm.classpath()), MCP_SERVER, "--mcp"]
     try:
         return subprocess.call(command)
     except KeyboardInterrupt:
         return 130
 
 
-#: The main class of the language server of arg2p, which is its MCP server with --mcp
-MCP_SERVER = "it.unibo.tuprolog.argumentation.lsp.MainKt"
-
-
-def java() -> str:
-    """The java of the runtime the package bundles, or of JAVA_HOME, or the one on the path"""
-    executable = "java.exe" if sys.platform == "win32" else "java"
-    for home in (_jvm.RUNTIME, os.environ.get("JAVA_HOME")):
-        if home and os.path.exists(os.path.join(home, "bin", executable)):
-            return os.path.join(home, "bin", executable)
-    return "java"
-
-
 def evaluate(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="arg2p", description="Evaluates a theory of arg2p.")
+    parser = argparse.ArgumentParser(
+        prog="arg2p",
+        description="Evaluates a theory of arg2p.",
+        epilog="arg2p mcp runs the MCP server of arg2p instead, for AI assistants (see arg2p mcp --help); a theory in a "
+        "file named mcp is ./mcp.",
+    )
     parser.add_argument("theory", help="the file of the theory (- for the standard input)")
     parser.add_argument("-q", "--query", action="append", help="a statement to evaluate (all of them by default)")
     parser.add_argument("-p", "--profile", choices=[it.value for it in Profile], help="the profile of the theory")
