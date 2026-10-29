@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
@@ -18,6 +19,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -29,16 +31,19 @@ private const val GRAPH_CACHE_SIZE = 256
 /**
  * The causal analysis of a theory, for the primitives of the causality module: the graphs of the theory and of its
  * interventions, labelled by a solver of its own with grounded semantics (the other flags those of the solver asking),
- * and the NESS and but-for checks on them. The theory is the static knowledge base of the solver asking
- * ([Solve.Request]).
+ * built at the first of them and printing to [output], and the NESS and but-for checks on them. The theory is the
+ * static knowledge base of the solver asking ([Solve.Request]).
  */
-internal class CausalityAnalysis {
-    private val solver =
-        Arg2pSolverFactory.default(
-            settings = FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create(),
+internal class CausalityAnalysis(
+    private val output: OutputChannel<String>,
+) {
+    private val solver by lazy {
+        Arg2pSolverFactory.solverOf(
+            Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create())),
+            theory = "",
+            output = output,
         )
-
-    private val operators = Arg2pSolver.default().operators()
+    }
 
     // The same theory is solved over and over (the base theory, or the same intervention in different checks): the
     // graphs are only read afterwards, hence they are shared
@@ -66,7 +71,7 @@ internal class CausalityAnalysis {
     private fun concludes(
         argument: Argument,
         statement: Term,
-    ) = Unificator.default.match(Term.parse(argument.conclusion, operators), statement)
+    ) = Unificator.default.match(Term.parse(argument.conclusion, TermValues.operators), statement)
 
     private fun attackers(
         argument: Argument,
@@ -180,7 +185,7 @@ internal class CausalityAnalysis {
                     .arguments
                     .map { it.topRule }
                     .filter { it != "none" }
-                    .map { Term.parse(it, operators) },
+                    .map { Term.parse(it, TermValues.operators) },
             )
         return arg2pScope {
             request

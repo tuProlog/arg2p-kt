@@ -6,7 +6,6 @@ import it.unibo.tuprolog.argumentation.causality.isNessCause
 import it.unibo.tuprolog.argumentation.causality.isNessOriginalCause
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
-import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -58,7 +57,7 @@ class CausalityModuleTest {
             Arg2pSolverFactory.of(
                 "a. % f1\nb :- a. % r1",
                 FlagsBuilder(prologStrictCompatibility = true).create(),
-                listOf(CausalityModule(), Cache()),
+                listOf(CausalityModule()),
                 ModuleRegistry.all,
             )
         isButForCause(solver, "a", "b")
