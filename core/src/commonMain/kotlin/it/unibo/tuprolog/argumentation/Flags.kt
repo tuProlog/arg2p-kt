@@ -20,6 +20,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.js.JsStatic
 import kotlin.jvm.JvmStatic
 import it.unibo.tuprolog.argumentation.core.flags.ConflictModel as ConflictModelFlag
@@ -66,8 +67,15 @@ class Flags private constructor(
     /** The module building the graph */
     fun graphBuilder(builder: GraphBuilder): Flags = value(GraphBuilderFlag, builder.value)
 
-    /** The conflicts beyond those the theory declares */
+    /** The conflicts beyond those of the languages of the theory: a part of them, or all of them (builtin) */
     fun conflictModel(model: ConflictModel): Flags = value(ConflictModelFlag, model.value)
+
+    /**
+     * The conflicts beyond those of the languages of the theory: the parts of them, none for none but those of the
+     * languages (an array in JavaScript, conflictModels)
+     */
+    @JsName("conflictModels")
+    fun conflictModel(vararg models: ConflictModel): Flags = values(ConflictModelFlag, models.map { it.value }.ifEmpty { listOf("none") })
 
     /** Where the modules loaded by name are looked for */
     fun modulesPath(path: String): Flags = value(ModulesPath, path)

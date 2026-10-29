@@ -7,8 +7,9 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * `r : a, b -> c`, the rules concluding a contradictory of each premise from a contradictory of the conclusion and
  * the other premises (`r_i : -c, b -> -a`, `r_ii : -c, a -> -b`). The contradictories of a statement are its
  * negation, and the statements the theory declares in conflict with it both ways, with no guard
- * (`conflict([c], [d])` and `conflict([d], [c])`): the transpositions through those are named
- * transposed(Id, [ConclusionContradictory, PremiseContradictory]), Id the name of the one through negations.
+ * (`conflict([c], [d])` and `conflict([d], [c])`, the declared conflicts being part of the conflict model): the
+ * transpositions through those are named transposed(Id, [ConclusionContradictory, PremiseContradictory]), Id the
+ * name of the one through negations.
  */
 object TranspositionModule : PrologModule("prolog.argumentation.language.transposition", "transposition") {
     override val prologRawTheory: String =
@@ -64,9 +65,10 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         contradictory(X, Other) :- bothWays(X, Other).
 
         % X and Other declared in conflict both ways by the theory, with no guard (not with metaConflicts, where the
-        % conflicts are those arguments conclude)
+        % conflicts are those arguments conclude, nor without the declared conflicts in the conflict model)
         bothWays(X, Other) :-
             \+ setting(metaConflicts),
+            setting(conflictModel, declared),
             catch(conflict([X], [Other]), error(existence_error(_, _), _), fail),
             catch(conflict([Other], [X]), error(existence_error(_, _), _), fail).
 

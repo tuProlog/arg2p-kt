@@ -103,6 +103,24 @@ class Arg2pTest {
     }
 
     @Test
+    fun theConflictModelInEffectIsToldByItsParts() {
+        val all = listOf("negation", "deontic", "preference", "declared")
+        assertEquals(all, Arg2p.of("r1 : [] => a.").setting("conflictModel"))
+        assertEquals(all, Arg2p.of("conflictModel(builtin).").setting("conflictModel"))
+        assertEquals(listOf("declared"), Arg2p.of("conflictModel(declared).").setting("conflictModel"))
+        assertEquals(emptyList(), Arg2p.of("conflictModel(none).").setting("conflictModel"))
+        // the flags of the solver: several parts, none, or all of them, which leave the profile its own (ABA)
+        val parts = Flags.none().conflictModel(ConflictModel.NEGATION, ConflictModel.PREFERENCE)
+        assertEquals("conflictModel(negation).\nconflictModel(preference).\n", parts.toString())
+        assertEquals(listOf("negation", "preference"), Arg2p.of("", parts).setting("conflictModel"))
+        assertEquals(emptyList(), Arg2p.of("", Flags.none().conflictModel()).setting("conflictModel"))
+        val aba = { flags: Flags -> Arg2p.of("graphBuildMode(aba).", flags).setting("conflictModel") }
+        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(ConflictModel.BUILTIN)))
+        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(*ConflictModel.entries.toTypedArray())))
+        assertEquals(listOf("negation"), aba(Flags.defaults().conflictModel(ConflictModel.NEGATION)))
+    }
+
+    @Test
     fun textsThatDoNotParseTellWhere() {
         val failure = assertFailsWith<Arg2pException> { Arg2p.of("a :=> b.\nc :=> d(.") }
         assertEquals("Theory: Unexpected token '.'; expected term at 2:9", failure.message)

@@ -154,6 +154,26 @@ class ProfilesTest {
     }
 
     @Test
+    fun theContrariesOfAbaHoldWhateverTheConflictModel() {
+        // the profile presets the declared conflicts alone; the contraries hold with no part, or all of them
+        val module = ModuleTesting(aba)
+        assertEquals(listOf("declared"), module.values("setting(conflictModel, X)", "X"))
+        assertEquals("[[[x], [b]], [[y], [a]], []]", labels(aba + "conflictModel(none).\n"))
+        assertEquals("[[[x], [b]], [[y], [a]], []]", labels(aba + "conflictModel(builtin).\n"))
+        // a negation conflicts when the theory states the part
+        val negated = "graphBuildMode(aba).\nassumption(b).\nr1 : [] -> -b.\n"
+        assertEquals("[[['-'(b)]], [[b]], []]", labels(negated + "conflictModel(negation).\n"))
+    }
+
+    @Test
+    fun theConflictModelDecidesWhetherANegationConflicts() {
+        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "conflictModel(negation).\n"))
+        assertEquals("[[['-'(a)], [a]], [], []]", labels(preferred + "conflictModel(declared).\n"))
+        assertEquals("[[['-'(a)], [a]], [], []]", labels(preferred + "conflictModel(none).\n"))
+        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "conflictModel(builtin).\n"))
+    }
+
+    @Test
     fun anAbaTheoryIsFlatWithStrictRulesOnly() {
         val defeasible = labelling("$aba\nr3 : b => z.\n")
         assertTrue(defeasible.isHalt, defeasible.toString())

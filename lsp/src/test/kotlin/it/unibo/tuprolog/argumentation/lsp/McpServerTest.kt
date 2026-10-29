@@ -243,6 +243,24 @@ class McpServerTest {
     }
 
     @Test
+    fun theSettingsTellThePartsOfTheConflictModel() {
+        val answers =
+            session(
+                call(1, "settings", """{"theory":"conflictModel(builtin).\na :=> b."}"""),
+                call(2, "settings", """{"theory":"graphBuildMode(aba).\nassumption(a)."}"""),
+            )
+        val parts = { id: Int ->
+            answers
+                .getValue(id)
+                .content()
+                .getAsJsonArray("conflictModel")
+                .map { it.asString }
+        }
+        assertEquals(listOf("negation", "deontic", "preference", "declared"), parts(1))
+        assertEquals(listOf("declared"), parts(2))
+    }
+
+    @Test
     fun argumentsAToolDoesNotTakeAreItsErrors() {
         val answers =
             session(
