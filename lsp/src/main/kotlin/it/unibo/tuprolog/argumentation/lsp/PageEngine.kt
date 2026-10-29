@@ -1,10 +1,8 @@
 package it.unibo.tuprolog.argumentation.lsp
 
 import com.google.gson.JsonObject
-import it.unibo.tuprolog.argumentation.Arg2p
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.Solutions
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -21,8 +19,8 @@ import kotlin.time.Duration.Companion.minutes
  *
  * ```
  * { type: 'warmUp' }                                -> { type: 'warm' }
- * { type: 'solve', id, theory, query, flags }       -> { type: 'started', id, query } or { type: 'failed', id, error },
- *                                                      after { type: 'output', id, text } if it printed
+ * { type: 'solve', id, theory, query, flags,       -> { type: 'started', id, query } or { type: 'failed', id, error },
+ *   parallel? }                                        after { type: 'output', id, text } if it printed
  * { type: 'next', id }                              -> { type: 'solution', id, solution, hasNext }, after its output
  * { type: 'graphAt', id, branch, reqId }            -> { type: 'graph', reqId, graph }
  * { type: 'check', reqId, text, kind }              -> { type: 'checked', reqId, problem }
@@ -35,19 +33,23 @@ import kotlin.time.Duration.Companion.minutes
  * requests solving it (solve and next, one at a time in their order, as the worker solves them), which a new query, a
  * stop or a close stops, answered with a failure. A session idle for [idle] is forgotten, the least recently used past
  * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past [limit], if there is one.
+ *
+ * A query solved with `parallel` is solved by the cluster of [federation] (on the threads of the server, and on the
+ * sites it is federated with), on the same theory with the same flags, as by the solver of the page otherwise; with no
+ * federation, by the solver of the page. The cluster keeps the graph of the last stage of a resolution alone: the
+ * stages before it cannot be read back.
  */
 internal class PageEngine(
     private val solving: Solving,
     private val idle: Duration = IDLE,
     private val limit: Duration = Duration.INFINITE,
+    private val federation: Federation? = null,
 ) : AutoCloseable {
-    // A query of a page, solved one solution at a time (one request at a time: the solver has no lock of its own),
+    // A query of a page, solved one solution at a time (one request at a time: a solver has no lock of its own),
     // what it prints kept until it is told
     private class Run(
         val id: Long,
-        val solver: Arg2p,
-        val profile: String,
-        val solutions: Solutions,
+        val resolution: Resolution,
         val printed: StringBuilder,
     ) {
         // What it printed since last asked
@@ -105,7 +107,8 @@ internal class PageEngine(
                 val theory = request.text("theory") ?: ""
                 val query = request.text("query") ?: ""
                 val flags = request.text("flags") ?: ""
-                solving(page, id, replacing = true) { start(page, id, theory, query, flags) }
+                val parallel = request.flag("parallel") ?: false
+                solving(page, id, replacing = true) { start(page, id, theory, query, flags, parallel) }
             }
             "next" -> {
                 val id = request.requiredInteger("id")
@@ -198,13 +201,15 @@ internal class PageEngine(
     private fun <T> submit(work: () -> T): CompletableFuture<T> =
         solving.submit { if (limit.isInfinite()) work() else Deadline.within(limit) { work() } }
 
-    // Starts solving the query of [page]: its run replaces the one before, only if it is still the request of the page
+    // Starts solving the query of [page], by the cluster of the federation if [parallel]: its run replaces the one before,
+    // only if it is still the request of the page
     private fun start(
         page: Session,
         id: Long,
         theory: String,
         query: String,
         flags: String,
+        parallel: Boolean,
     ): List<Answer> {
         synchronized(sessions) { page.run = null }
         if (query.isBlank()) return listOf(failed(id, ErrorData("Query error", "Query is a mandatory field.")))
@@ -214,12 +219,19 @@ internal class PageEngine(
             val parsed = Flags.parse(flags)
             reading = "theory"
             val printed = StringBuilder()
-            val solver = Solvers.of(theory, parsed) { text -> synchronized(printed) { printed.append(text) } }
+            val print: (String) -> Unit = { text -> synchronized(printed) { printed.append(text) } }
+            // the theory read by the solver of the page in either case: where it does not parse, and its profile
+            val solver = Solvers.of(theory, parsed, print)
             // asked before the query: the setting does not change the context of the solver
             val profile = Solvers.profileOf(solver)
             reading = "query"
             val written = query.trim().removeSuffix(".")
-            val run = Run(id, solver, profile, solver.solve(written), printed)
+            // the query read (where it does not parse), its solutions computed only as they are asked for
+            val solutions = solver.solve(written)
+            val resolution =
+                federation?.takeIf { parallel }?.resolve(theory, parsed, written, profile, print)
+                    ?: Resolution.Local(solver, profile, solutions)
+            val run = Run(id, resolution, printed)
             synchronized(sessions) { if (!Thread.currentThread().isInterrupted) page.run = run }
             run.output() + answer("started", "id" to id, "query" to written)
         } catch (error: Arg2pException) {
@@ -232,21 +244,11 @@ internal class PageEngine(
     // The next solution of [run], with the graph of its stage, and whether there may be another one
     private fun next(run: Run): List<Answer> =
         synchronized(run) {
-            var hasNext = false
-            val solution =
+            val (solution, hasNext) =
                 try {
-                    val found = run.solutions.next()
-                    val (graph, branch) =
-                        try {
-                            run.solver.activeBranch.let { GraphData.of(run.solver.graphAt(it), run.profile) to it }
-                        } catch (_: Exception) {
-                            // no graph: a plain Prolog goal builds none
-                            GraphData.EMPTY to 0
-                        }
-                    hasNext = run.solutions.hasNext()
-                    SolutionData.of(found, graph, branch)
+                    run.resolution.next()
                 } catch (error: Exception) {
-                    SolutionData.halted(error)
+                    SolutionData.halted(error) to false
                 }
             run.output() + answer("solution", "id" to run.id, "solution" to solution, "hasNext" to hasNext)
         }
@@ -255,16 +257,7 @@ internal class PageEngine(
     private fun graphAt(
         run: Run?,
         branch: Int,
-    ): GraphData =
-        run?.let {
-            synchronized(it) {
-                try {
-                    GraphData.of(it.solver.graphAt(branch), it.profile)
-                } catch (_: Exception) {
-                    GraphData.EMPTY
-                }
-            }
-        } ?: GraphData.EMPTY
+    ): GraphData = run?.let { synchronized(it) { it.resolution.graphAt(branch) } } ?: GraphData.EMPTY
 
     // The run of [page], if it is the query [id]
     private fun runOf(

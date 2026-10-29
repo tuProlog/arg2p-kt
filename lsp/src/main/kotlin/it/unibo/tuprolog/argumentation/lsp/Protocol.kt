@@ -10,20 +10,52 @@ import com.google.gson.stream.JsonWriter
 import it.unibo.tuprolog.argumentation.Solution
 import it.unibo.tuprolog.argumentation.SyntaxProblem
 import it.unibo.tuprolog.argumentation.core.model.Graph
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment
+import org.eclipse.lsp4j.services.LanguageClient
 import java.util.concurrent.CompletableFuture
 
 // What the servers tell of theories, as plain data: the messages of the pages of the solver to their engine (see
 // PageEngine), as the components of @tuprolog/arg2p-ui read them (see engine.ts there), and the results of the tools of
 // the MCP server.
 
-/** The requests of arg2p beyond those of the protocol of language servers, under arg2p/ */
+/**
+ * The requests of arg2p beyond those of the protocol of language servers, under arg2p/: the engine of the pages, and
+ * the federation of the server (see [Federation]), whose requests answer with its state
+ */
 @JsonSegment("arg2p")
 internal interface Arg2pService {
     /** The answers of the engine of the pages to a request of a page (see [PageEngine]) */
     @JsonRequest
     fun engine(params: EngineParams): CompletableFuture<EngineAnswers>
+
+    /** The state of the federation */
+    @JsonRequest
+    fun federation(): CompletableFuture<FederationState>
+
+    /** The site paired with the site { site, code } nearby, presenting its code: an error if it refuses it */
+    @JsonRequest("federation/pair")
+    fun pair(params: JsonObject?): CompletableFuture<FederationState>
+
+    /** A new code of the site, the one before refused from now on */
+    @JsonRequest("federation/newCode")
+    fun newCode(): CompletableFuture<FederationState>
+
+    /** The site named { name } (blank: the name of the host) */
+    @JsonRequest("federation/rename")
+    fun rename(params: JsonObject?): CompletableFuture<FederationState>
+
+    /** The federation enabled, or disabled { enabled } */
+    @JsonRequest("federation/enable")
+    fun enable(params: JsonObject?): CompletableFuture<FederationState>
+}
+
+/** The editor, as the server of arg2p tells it beyond the protocol of language servers */
+internal interface Arg2pClient : LanguageClient {
+    /** The federation changed: its state now */
+    @JsonNotification("arg2p/federationChanged")
+    fun federationChanged(state: FederationState)
 }
 
 /** A request of the page of [session] to its engine */

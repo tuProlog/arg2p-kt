@@ -23,6 +23,9 @@ internal fun JsonObject.text(name: String): String? = field(name, "a text") { it
 internal fun JsonObject.integer(name: String): Long? =
     field(name, "an integer") { it.isNumber && it.asBigDecimal.stripTrailingZeros().scale() <= 0 }?.asLong
 
+/** The boolean [name]: null if it is missing */
+internal fun JsonObject.flag(name: String): Boolean? = field(name, "a boolean") { it.isBoolean }?.asBoolean
+
 /** The object [name]: null if it is missing */
 internal fun JsonObject.obj(name: String): JsonObject? =
     get(name)?.takeUnless { it.isJsonNull }?.let {
