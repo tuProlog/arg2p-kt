@@ -31,7 +31,20 @@ f2 :=> -flies(tweety).
 - the flags, the profile first, each with the value in effect and where it comes from;
 - what the theory prints.
 
-Solving a theory that does not parse takes to where it does not, in its editor. The solver keeps the query and the flags of each theory.
+Solving a theory that does not parse takes to where it does not, in its editor. The solver keeps the query, the flags
+and the switch **Parallel** of each theory.
+
+## Parallel solving and the federation
+
+**Parallel**, among the actions of the solver, solves the query on the parallel solver of Arg2P: any theory, flags and
+query, on the workers of this device and of the devices linked to it (on this device alone, concurrently, with none).
+The graph of a solution is that of the last stage of its computation.
+
+The view **Arg2P Federation** (in the explorer, or **Arg2P: Show the Federation**) shows the name of this device and
+its 4-digit code, and the devices of the same local network running the extension: type the code shown on one to link
+to it. It lists the devices linked with their workers, and shows a QR code for phones: scanned on the same network,
+its page asks for the code, and the phone lends its workers while the page stays open (the page loads Arg2P from
+jsDelivr). `arg2p.federation.enabled` turns it off: the language server then neither listens nor is heard.
 
 ## The language server
 
@@ -65,3 +78,5 @@ It runs on the Java of the language server. For other assistants, see
 | `arg2p.java.options` | The options of the JVM running it (`-Xss512m`, user settings) |
 | `arg2p.flags` | The flags a theory is first solved with |
 | `arg2p.solver.position` | Where the solver opens: beside the theory (`beside`) or under it (`below`) |
+| `arg2p.federation.enabled` | Whether the devices nearby see this one, and phones join it (`true`, user settings) |
+| `arg2p.federation.name` | The name of this device, as the others see it (the name of the host by default, user settings) |
