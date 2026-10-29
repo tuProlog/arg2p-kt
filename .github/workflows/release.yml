@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - name: Resolve the dependencies of the package
         run: |
           python -c "import tomllib; print('\n'.join(tomllib.load(open('python/pyproject.toml', 'rb'))['project']['dependencies']))" > dependencies.txt

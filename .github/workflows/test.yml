@@ -70,7 +70,7 @@ jobs:
         uses: DanySK/action-checkout@0.2.31
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - uses: DanySK/build-check-deploy-gradle-action@4.0.50
         with:
           # the package as a wheel bundles it: its jars, its version, its Java runtime
