@@ -6,19 +6,38 @@ import kotlin.js.JsExport
 import kotlin.js.JsName
 
 /**
- * What a federation does, as one of its sites ([site]) knows it: the [sites] it knows, itself first, and the last
- * evaluation it answered ([evaluation], none before the first)
+ * What a federation does, as one of its sites ([site]) knows it: the [sites] it knows, itself first, the last
+ * evaluation it answered ([evaluation], none before the first), and the sites heard on the local network that are not
+ * its peers ([nearby], see [Beacons])
  */
 @JsExport
 data class FederationStats(
     val site: String,
     @JsExport.Ignore @JsName("sitesList") val sites: List<SiteStats>,
     val evaluation: EvaluationStats?,
+    @JsExport.Ignore @JsName("nearbyList") val nearby: List<NearbySite> = emptyList(),
 ) {
     /** The sites known, itself first (an array in JavaScript) */
     @JsName("sites")
     val siteArray: Array<SiteStats> get() = sites.toTypedArray()
+
+    /** The sites heard nearby, not peers (an array in JavaScript) */
+    @JsName("nearby")
+    val nearbyArray: Array<NearbySite> get() = nearby.toTypedArray()
 }
+
+/**
+ * A site heard on the local network (see [Beacons]): its identifier, its [name] (the name of its host, or the one it
+ * was given), its [address] (ws://host:port) and whether it requires a code of the sites linking to it
+ * ([requiresCode]: it waits to be paired)
+ */
+@JsExport
+data class NearbySite(
+    val id: String,
+    val name: String,
+    val address: String,
+    val requiresCode: Boolean,
+)
 
 /**
  * A site of a federation: its identifier, the workers it offers (its delegates' included, for the site knowing it as
