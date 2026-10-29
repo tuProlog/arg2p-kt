@@ -6,7 +6,8 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 
 /**
  * The entry points of arg2p (module `arg2p`, loaded by every solver): the labels of the statements of the theory,
- * of the whole graph or of a query.
+ * of the whole graph or of a query. solve/0,1,2,3 are the entry points; buildLabelSets/0,2,3 and answerQuery/1,2,4,
+ * which they call, the older forms.
  */
 object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
     // The operators of the rules of a theory, for the theory of the interface and the solvers using it
@@ -32,6 +33,9 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         %! solve(+Query, -Result)
         %  answerQuery/2.
         solve(Query, Res) :- answerQuery(Query, Res).
+        %! solve(-StatIn, -StatOut, -StatUnd)
+        %  The statements of the theory labelled IN, OUT and UND, one solution for each labelling (buildLabelSets/3).
+        solve(StatIn, StatOut, StatUnd) :- buildLabelSets(StatIn, StatOut, StatUnd).
 
         %! buildLabelSets(-StatementLabels, -ArgumentLabels)
         %  The statements and the arguments of the theory labelled IN, OUT and UND, as [In, Out, Und] lists.
