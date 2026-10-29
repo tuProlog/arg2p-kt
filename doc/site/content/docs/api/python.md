@@ -139,6 +139,8 @@ solution.text("In")                          # as for Arg2p
 solver.graph()                               # the Graph of the solution
 solver.answer("a").in_statements             # as Arg2p.answer
 evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
+evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations, the peers kept
+solver.stop()                                # from another thread: the goal being solved ends as a halt
 ```
 
 ---
