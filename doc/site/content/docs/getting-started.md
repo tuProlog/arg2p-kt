@@ -15,7 +15,7 @@ start with the [Web Playground](#try-it-without-installing-anything) — it need
 Ready-made environments run Arg2P without any configuration:
 
 - the **[Web Playground](https://tuprolog.github.io/arg2p-kt-web/)**, which runs entirely in your browser;
-- the **[extension of VS Code](https://marketplace.visualstudio.com/items?itemName=tuprolog.arg2p)**, which edits
+- the **[extension of VS Code](https://marketplace.visualstudio.com/items?itemName=GiuseppePisano.arg2p)**, which edits
   theories as `.arg2p` files and solves them beside the editor.
 
 Both accept a theory, run queries against it, draw the resulting argumentation graph and let you change the

@@ -1,3 +1,16 @@
+## [0.21.1](https://github.com/tuProlog/arg2p-kt/compare/0.21.0...0.21.1) (2026-10-29)
+
+### Bug Fixes
+
+* **vscode:** @tuprolog/arg2p-ui 0.3.1, the flags with the language abstractLanguage ([87f7c31](https://github.com/tuProlog/arg2p-kt/commit/87f7c3185318cf36e01280f3a7eab084c7da8219))
+* **vscode:** the extension published by GiuseppePisano, the publisher of the Marketplace ([8483b60](https://github.com/tuProlog/arg2p-kt/commit/8483b60b59126395b432225fe738cfaff3ae100c))
+* **vscode:** the extension published by GiuseppePisano, the publisher of the Marketplace ([#556](https://github.com/tuProlog/arg2p-kt/issues/556)) ([6f1c82c](https://github.com/tuProlog/arg2p-kt/commit/6f1c82c6cc776caef8670ceb93c6ede49a5ce7c1))
+
+### Build and continuous integration
+
+* **deps:** update node.js to v26 ([#544](https://github.com/tuProlog/arg2p-kt/issues/544)) ([41c41f1](https://github.com/tuProlog/arg2p-kt/commit/41c41f13a1bacd0d8d24573e84c8c7a255e92df2))
+* the Python of the workflows checked first, in seconds, before the tests take any runner ([1a7b665](https://github.com/tuProlog/arg2p-kt/commit/1a7b665a7f63b8f38be882cffc4260a35fefbaa3))
+
 ## [0.21.0](https://github.com/tuProlog/arg2p-kt/compare/0.20.0...0.21.0) (2026-10-29)
 
 ### Features
