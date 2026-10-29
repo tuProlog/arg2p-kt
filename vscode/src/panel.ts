@@ -1,16 +1,19 @@
 import type { SyntaxProblem } from '@tuprolog/arg2p-ui/data';
 import * as vscode from 'vscode';
 import { Bridge } from './bridge.js';
+import { page } from './page.js';
 import type { FromPage, ToPage } from './protocol.js';
 import type { LanguageServer } from './server.js';
 
 // The solver of a theory: a panel beside its document, with the query, the solutions, the graph (and the drawing of an
-// abstract framework) and the flags, the components of @tuprolog/arg2p-ui on the language server. The theory is the
-// text of the document: the panel follows it as it is edited, and the drawing edits it.
+// abstract framework) and the flags, the components of @tuprolog/arg2p-ui on the language server, which solves the
+// queries in parallel on its federation if the switch Parallel says so. The theory is the text of the document: the
+// panel follows it as it is edited, and the drawing edits it.
 
 interface Saved {
     query: string;
     flags: string;
+    parallel?: boolean;
 }
 
 export class SolverPanel {
@@ -61,7 +64,7 @@ export class SolverPanel {
             null,
             this.subscriptions,
         );
-        this.panel.webview.html = page(this.panel.webview, media);
+        this.panel.webview.html = page(this.panel.webview, media, 'webview.js', '<arg2p-solver></arg2p-solver>');
         this.panel.webview.onDidReceiveMessage((message: FromPage) => this.receive(message), null, this.subscriptions);
         vscode.workspace.onDidChangeTextDocument(
             event => {
@@ -81,7 +84,8 @@ export class SolverPanel {
         switch (message.type) {
             case 'ready': {
                 const saved = this.saved();
-                return this.send({ type: 'document', name: baseName(this.document.uri), theory: this.document.getText(), ...saved });
+                this.bridge.parallel = saved.parallel ?? false;
+                return this.send({ type: 'document', name: baseName(this.document.uri), theory: this.document.getText(), ...saved, parallel: this.bridge.parallel });
             }
             case 'engine':
                 void this.bridge.handle(message.request);
@@ -90,7 +94,8 @@ export class SolverPanel {
                 void this.edit(message.theory);
                 return;
             case 'state':
-                void this.context.workspaceState.update(this.key, { query: message.query, flags: message.flags } satisfies Saved);
+                this.bridge.parallel = message.parallel;
+                void this.context.workspaceState.update(this.key, { query: message.query, flags: message.flags, parallel: message.parallel } satisfies Saved);
                 return;
             case 'problem':
                 void this.reveal(message.problem);
@@ -139,30 +144,4 @@ export class SolverPanel {
 
 function baseName(uri: vscode.Uri): string {
     return uri.path.split('/').pop() ?? 'theory';
-}
-
-// The page: the bundle of the webview, under a policy letting nothing else run
-function page(webview: vscode.Webview, media: vscode.Uri): string {
-    const script = webview.asWebviewUri(vscode.Uri.joinPath(media, 'webview.js'));
-    const nonce = Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
-    const policy = [
-        "default-src 'none'",
-        `script-src 'nonce-${nonce}'`,
-        `style-src ${webview.cspSource} 'unsafe-inline'`,
-        `img-src ${webview.cspSource} data:`,
-        `font-src ${webview.cspSource}`,
-    ].join('; ');
-    return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="${policy}">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Arg2P</title>
-</head>
-<body>
-<arg2p-solver></arg2p-solver>
-<script type="module" nonce="${nonce}" src="${script}"></script>
-</body>
-</html>`;
 }

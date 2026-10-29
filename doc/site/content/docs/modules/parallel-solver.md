@@ -255,6 +255,9 @@ await new WebWorkerCluster(4, '/arg2p-worker.js').connect('ws://hub-host:9431', 
 The instances that require no code link to those that do not either, as before, and to none that does but those they
 are paired with. `stats.nearby` lists the instances heard that are not peers, with the peers in `stats.sites`.
 
+The extension of VS Code federates its language servers this way, and lets phones join them: see
+[VS Code]({{% ref "/docs/run#federation-and-parallel-solving" %}}).
+
 ### Pages on the port of an instance
 
 A JVM instance answers the plain HTTP requests on the port it listens on as well, with the pages it is given

@@ -24,8 +24,10 @@ const bridge = new Bridge({ request: rpc }, answer => toPage({ type: 'engine', a
 let theory = preview.theory;
 (window as unknown as { acquireVsCodeApi: () => unknown }).acquireVsCodeApi = () => ({
     postMessage(message: FromPage) {
-        if (message.type === 'ready') toPage({ type: 'document', name: 'preview.arg2p', theory, query: 'buildLabelSets(In, Out, Und)', flags: preview.flags });
+        if (message.type === 'ready') toPage({ type: 'document', name: 'preview.arg2p', theory, query: 'buildLabelSets(In, Out, Und)', flags: preview.flags, parallel: false });
         else if (message.type === 'engine') void bridge.handle(message.request);
+        // the switch Parallel, as the panel takes it
+        else if (message.type === 'state') bridge.parallel = message.parallel;
         else if (message.type === 'edit') {
             theory = message.theory;
             toPage({ type: 'theory', theory });

@@ -1,21 +1,31 @@
 import { Emitter, type Event } from 'vscode-jsonrpc';
 import type { LanguageClient } from 'vscode-languageclient/node';
 import type { Server } from './bridge.js';
+import type { FederationState } from './protocol.js';
 
 // The language server of arg2p, as the extension runs it: started, stopped, and started afresh (when the java of the
-// settings changes, say). What ran on a server is gone with it: the sessions of the solver panels, see onDidStop.
+// settings changes, say). What ran on a server is gone with it: the sessions of the solver panels, see onDidStop. It
+// tells how its federation changes (arg2p/federationChanged).
 
 /** The client of a language server, as vscode-languageclient makes it */
-export type Client = Pick<LanguageClient, 'start' | 'stop' | 'dispose' | 'isRunning' | 'sendRequest' | 'onDidChangeState'>;
+export type Client = Pick<LanguageClient, 'start' | 'stop' | 'dispose' | 'isRunning' | 'sendRequest' | 'onDidChangeState' | 'onNotification'>;
 
 export class LanguageServer implements Server {
     private client: Client | null = null;
     // the starts and the stops, one after the other: a client is stopped once its start is over
     private operations: Promise<void> = Promise.resolve();
     private readonly stopped = new Emitter<void>();
+    private readonly started = new Emitter<void>();
+    private readonly federation = new Emitter<FederationState>();
 
     /** The server that ran stopped: it was stopped, restarted or it crashed (and the client restarts it) */
     readonly onDidStop: Event<void> = this.stopped.event;
+
+    /** A server started */
+    readonly onDidStart: Event<void> = this.started.event;
+
+    /** The federation of the server changed: its state now */
+    readonly onFederationChanged: Event<FederationState> = this.federation.event;
 
     constructor(
         // a client of the server, as the settings tell it now
@@ -57,7 +67,11 @@ export class LanguageServer implements Server {
             if (running && !client.isRunning()) this.stopped.fire();
             running = client.isRunning();
         });
-        await client.start().catch(error => this.report(error));
+        client.onNotification('arg2p/federationChanged', (state: FederationState) => this.federation.fire(state));
+        await client.start().then(
+            () => this.started.fire(),
+            error => this.report(error),
+        );
     }
 
     // A client that is not running (its start failed) cannot be stopped: it is disposed of

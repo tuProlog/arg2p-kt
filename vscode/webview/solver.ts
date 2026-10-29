@@ -7,6 +7,7 @@ import type { FromPage, ToPage } from '../src/protocol.js';
 // of the engine on, see bridge.ts), its theory the document the panel belongs to. The extension sends the theory as it
 // changes, and is told what the solver changes: the theory drawn, which it writes into the document, the query and the
 // flags, which it remembers for the document, and where the theory does not parse, which it shows in the document.
+// The switch Parallel tells whether the queries are solved on the federation of the server, remembered with them.
 
 /** The extension, as the page speaks to it */
 export interface VsCode {
@@ -16,8 +17,14 @@ export interface VsCode {
 /** The solver, as the extension fills it and is told of it */
 export type Solver = Pick<Arg2pSolver, 'engine' | 'theory' | 'query' | 'flags' | 'fileName'> & EventTarget;
 
-/** Binds [solver] to [vscode], whose messages come to [page]: the engine of the solver, on the language server */
-export function connect(solver: Solver, vscode: VsCode, page: EventTarget): JsEngine {
+/** A switch, as the extension sets it and is told of it */
+export type Switch = { checked: boolean } & EventTarget;
+
+/**
+ * Binds [solver] to [vscode], whose messages come to [page]: the engine of the solver, on the language server, solving
+ * in parallel as [parallel] says
+ */
+export function connect(solver: Solver, vscode: VsCode, page: EventTarget, parallel: Switch): JsEngine {
     // The channel of the engine: to the extension, and back from it
     let channel: Channel | null = null;
     const engine = new JsEngine(() => {
@@ -43,13 +50,15 @@ export function connect(solver: Solver, vscode: VsCode, page: EventTarget): JsEn
             solver.theory = message.theory;
             solver.query = message.query;
             solver.flags = message.flags;
+            parallel.checked = message.parallel;
         }
     });
 
     const on = <T>(type: string, action: (detail: T) => void) => solver.addEventListener(type, event => action((event as CustomEvent<T>).detail));
-    const remember = () => vscode.postMessage({ type: 'state', query: solver.query, flags: solver.flags });
+    const remember = () => vscode.postMessage({ type: 'state', query: solver.query, flags: solver.flags, parallel: parallel.checked });
     on('arg2p-query-change', remember);
     on('arg2p-flags-change', remember);
+    parallel.addEventListener('change', remember);
     on<{ theory: string }>('arg2p-theory-change', ({ theory }) => vscode.postMessage({ type: 'edit', theory }));
     on<{ problem: SyntaxProblem }>('arg2p-theory-error', ({ problem }) => vscode.postMessage({ type: 'problem', problem }));
 

@@ -47,11 +47,26 @@ describe('Bridge', function () {
             { type: 'started', id: 1, query: 'a' },
             { type: 'solution', id: 1, solution, hasNext: false },
         ]);
-        deepEqual(asked[0].request, solve);
+        deepEqual<object>(asked[0].request, { ...solve, parallel: false });
         equal(asked[0].session, asked[1].session);
         const other = server({ solve: () => [] });
         await new Bridge(other.fake, () => undefined).handle(solve);
         notEqual(other.asked[0].session, asked[0].session);
+    });
+
+    it('should ask the server to solve the queries in parallel, as the page says', async function () {
+        const { fake, asked } = server({ solve: () => [], next: () => [] });
+        const bridge = new Bridge(fake, () => undefined);
+        bridge.parallel = true;
+        await bridge.handle({ type: 'solve', id: 1, theory: 'f :=> a.', query: 'a', flags: '' });
+        await bridge.handle({ type: 'next', id: 1 });
+        deepEqual<object[]>(
+            asked.map(it => it.request),
+            [
+                { type: 'solve', id: 1, theory: 'f :=> a.', query: 'a', flags: '', parallel: true },
+                { type: 'next', id: 1 },
+            ],
+        );
     });
 
     it('should keep answering when the server does not', async function () {

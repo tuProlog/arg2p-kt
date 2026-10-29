@@ -2,12 +2,21 @@ import '@tuprolog/arg2p-ui/solver';
 import { connect, type VsCode } from './solver.js';
 
 // The solver of a theory, in the webview of VS Code: <arg2p-solver> of @tuprolog/arg2p-ui, the whole height of the
-// webview, in the colours of the theme of VS Code, bound to the extension (see solver.ts).
+// webview, in the colours of the theme of VS Code, bound to the extension (see solver.ts), with the switch Parallel
+// among its actions.
 
 declare function acquireVsCodeApi(): VsCode;
 
 const solver = document.querySelector('arg2p-solver')!;
-connect(solver, acquireVsCodeApi(), window);
+const parallel = document.createElement('label');
+parallel.slot = 'actions';
+parallel.className = 'parallel';
+parallel.title = 'Solve on the federation: the workers of this device, and of the devices linked to it (see the view Arg2P Federation)';
+const toggle = document.createElement('input');
+toggle.type = 'checkbox';
+parallel.append(toggle, 'Parallel');
+solver.append(parallel);
+connect(solver, acquireVsCodeApi(), window, toggle);
 
 // The colours of the components, those of the theme of VS Code
 const theme = document.createElement('style');
@@ -31,6 +40,15 @@ theme.textContent = `
         margin: 0;
         padding: 0;
         background: var(--vscode-editor-background);
+    }
+    .parallel {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0 8px;
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        user-select: none;
     }
     arg2p-solver {
         height: 100vh;

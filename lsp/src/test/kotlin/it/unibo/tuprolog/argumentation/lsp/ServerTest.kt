@@ -16,7 +16,6 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
-import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
@@ -24,11 +23,13 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The server as an editor speaks to it: JSON-RPC over a pair of pipes */
@@ -38,9 +39,14 @@ class ServerTest {
         LanguageServer,
         Arg2pService
 
-    // the editor, receiving the diagnostics
-    private class Editor : LanguageClient {
+    // the editor, receiving the diagnostics and the states of the federation
+    private class Editor : Arg2pClient {
         val diagnostics = LinkedBlockingQueue<PublishDiagnosticsParams>()
+        val federation = LinkedBlockingQueue<FederationState>()
+
+        override fun federationChanged(state: FederationState) {
+            federation.put(state)
+        }
 
         override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams) {
             this.diagnostics.put(diagnostics)
@@ -60,7 +66,9 @@ class ServerTest {
     private val toEditor = PipedOutputStream()
     private val editor = Editor()
     private val server =
-        launcherOf(Arg2pLanguageServer(), PipedInputStream(toServer, BUFFER), toEditor).also { it.startListening() }
+        launcherOf(Arg2pLanguageServer(Random.nextInt(50_000, 60_000)), PipedInputStream(toServer, BUFFER), toEditor).also {
+            it.startListening()
+        }
     private val remote: Remote =
         Launcher
             .Builder<Remote>()
@@ -200,6 +208,32 @@ class ServerTest {
         assertEquals(ResponseErrorCode.InvalidParams.value, (failure as ResponseErrorException).responseError.code)
         assertFailsWith<ExecutionException> { remote.engine(EngineParams(null, JsonObject())).done() }
     }
+
+    @Test
+    fun theFederationIsEnabledByTheEditorAndToldAsItChanges() {
+        val options = JsonParser.parseString("""{"federation":{"enabled":true,"name":"desk"}}""")
+        remote.initialize(InitializeParams().apply { initializationOptions = options }).done()
+        val enabled = generateSequence { editor.federation.poll(60, TimeUnit.SECONDS)!! }.first { it.enabled }
+        assertEquals("desk", enabled.name)
+        assertEquals(enabled.code, remote.federation().done().code)
+        assertEquals("lab", remote.rename(json("""{"name":"lab"}""")).done().name)
+        assertTrue(Regex("""\d{4}""").matches(remote.newCode().done().code!!))
+        // a site not nearby refuses, as parameters that are not those of the request are invalid
+        assertEquals(ResponseErrorCode.RequestFailed.value, failure { remote.pair(json("""{"site":"site-none","code":"1234"}""")) })
+        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.pair(json("""{"site":"site-none"}""")) })
+        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.pair(null) })
+        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.enable(json("""{"enabled":"yes"}""")) })
+        val disabled = remote.enable(json("""{"enabled":false}""")).done()
+        assertEquals(false, disabled.enabled)
+        assertNull(disabled.code)
+        remote.shutdown().done()
+    }
+
+    private fun json(text: String) = JsonParser.parseString(text).asJsonObject
+
+    // The code of the error a request fails with
+    private fun failure(request: () -> CompletableFuture<*>): Int =
+        (assertFailsWith<ExecutionException> { request().done() }.cause as ResponseErrorException).responseError.code
 
     private companion object {
         const val BUFFER = 1 shl 20
