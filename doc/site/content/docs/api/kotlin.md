@@ -210,7 +210,7 @@ The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality 
 You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
 ```kotlin
-solver.solve(Struct.parse("arg2p::buildLabelSets(SIn, SOut, SUnd)", solver.operators)).first()
+solver.solve(Struct.parse("arg2p::solve(SIn, SOut, SUnd)", solver.operators)).first()
 ```
 
 Pass `solver.operators` to `Struct.parse`: the module-call operator `::` is defined by Arg2P, and a goal using

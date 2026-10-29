@@ -138,7 +138,7 @@ federation does:
 
 ```python
 solver = evaluating.solver
-solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                          # as for Arg2p
 solver.graph()                               # the Graph of the solution
 solver.answer("a").in_statements             # as Arg2p.answer
@@ -191,7 +191,7 @@ From Python, `page` gives the HTML:
 ```python
 from arg2p import Flags, Semantics, page
 
-html = page(theory, "buildLabelSets(In, Out, Und)", Flags.defaults().argument_labelling_mode(Semantics.COMPLETE))
+html = page(theory, "arg2p::solve(In, Out, Und)", Flags.defaults().argument_labelling_mode(Semantics.COMPLETE))
 html = page(theory, flags="argumentLabellingMode(complete).", max_solutions=50, timeout=120)
 ```
 

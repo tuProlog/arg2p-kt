@@ -461,7 +461,7 @@ internal class McpServer(
                         "their bindings, and the argument graph of the last yes (every argument with its conclusion, top " +
                         "rule, sub-arguments and label in, out or und; every attack with its type); more tells whether the " +
                         "search has alternatives left (they may give other solutions, or no). The default query, " +
-                        "buildLabelSets(In, Out, Und), gives the statements labelled in, out and und. Out of time, it gives " +
+                        "arg2p::solve(In, Out, Und), gives the statements labelled in, out and und. Out of time, it gives " +
                         "the solutions found until then (timedOut).",
                     "inputSchema" to
                         schema(

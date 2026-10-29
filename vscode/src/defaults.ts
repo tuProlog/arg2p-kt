@@ -12,7 +12,7 @@ export const FLAGS: string = settings['arg2p.flags'].default;
 export const STACK: string = settings['arg2p.java.options'].default.find(it => it.startsWith('-Xss'))!;
 
 /** The query a theory is first solved with */
-export const QUERY = 'buildLabelSets(In, Out, Und)';
+export const QUERY = 'arg2p::solve(In, Out, Und)';
 
 /** The oldest Java the language server runs on: the JVM arg2p targets (jvm in gradle/libs.versions.toml) */
 export const JAVA = 21;

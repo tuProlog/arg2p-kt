@@ -20,7 +20,7 @@ Use the tools of the **Arg2P MCP server** when they are there (`solve`, `answer`
 | --- | --- | --- |
 | `check` | `text`, `kind` (`theory`, the default, or `query`) | whether the text parses, and where it does not (line, column, token) |
 | `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und` |
-| `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | the solutions of any query (default `buildLabelSets(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
+| `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | the solutions of any query (default `arg2p::solve(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
 | `settings` | `theory`, `flags`, `timeoutSeconds` | the value in effect of every flag for the theory: its profile, its semantics, ... |
 | `explore` | `theory`, `query`, `flags`, `timeoutSeconds` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
 
@@ -59,7 +59,7 @@ To install the MCP server itself, see <https://tuprolog.github.io/arg2p-kt/docs/
    error saying why: read the error, and fix the theory or the profile.
 3. **Solve**:
    - one statement, or the statements matching a literal: `answer` with the literal;
-   - the whole labelling, or several labellings: `solve` with `buildLabelSets(In, Out, Und)`, and `maxSolutions` high
+   - the whole labelling, or several labellings: `solve` with `arg2p::solve(In, Out, Und)`, and `maxSolutions` high
      enough to see them all (each labelling is a solution; a final `no` means there are no more);
    - a value the theory computes: `solve` with a query on it (`answer(V)`), reading the bindings.
 4. **Read the graph** of `solve` to justify the result: which argument attacks which, which attack succeeds.

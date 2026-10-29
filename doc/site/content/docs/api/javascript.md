@@ -155,7 +155,7 @@ federation does.
 ```js
 const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
 cluster.load(theory)
-const solutions = await cluster.solver.solve('buildLabelSets(In, Out, Und)')
+const solutions = await cluster.solver.solve('arg2p::solve(In, Out, Und)')
 const solution = await solutions.next()
 solution.text('In')                 // as for Arg2p
 cluster.solver.graph()              // the Graph of the solution

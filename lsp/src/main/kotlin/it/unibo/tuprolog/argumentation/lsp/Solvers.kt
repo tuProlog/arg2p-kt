@@ -14,7 +14,7 @@ import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
  */
 internal object Solvers {
     /** The query solved when none is given: the statements labelled in, out and und */
-    const val DEFAULT_QUERY = "buildLabelSets(In, Out, Und)"
+    const val DEFAULT_QUERY = "arg2p::solve(In, Out, Und)"
 
     // The flags of the default ones a theory is solved with, when none are given
     private val SHOWN = listOf(ArgumentLabellingMode, StatementLabellingMode, QueryMode).map { it.predicate() }

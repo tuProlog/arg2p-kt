@@ -23,7 +23,7 @@ the theory prints. The user can change the query, the theory or the flags there 
 Call `explore` with the same `theory`, `query` and `flags` you solved with:
 
 ```json
-{ "theory": "f1 :=> a.\nf2 :=> -a.\nsup(f1, f2).", "query": "buildLabelSets(In, Out, Und)", "flags": "argumentLabellingMode(grounded).\nqueryMode." }
+{ "theory": "f1 :=> a.\nf2 :=> -a.\nsup(f1, f2).", "query": "arg2p::solve(In, Out, Und)", "flags": "argumentLabellingMode(grounded).\nqueryMode." }
 ```
 
 - In clients that show MCP Apps (Claude, ChatGPT, VS Code), the solver appears in the conversation and runs the query.
@@ -40,7 +40,7 @@ the solver with the Python package and give the user the HTML file:
 
 ```bash
 pip install arg2p
-arg2p page theory.arg2p --query "buildLabelSets(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
+arg2p page theory.arg2p --query "arg2p::solve(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
 ```
 
 It prints the path of the page it wrote (`-o` names it; `-` reads the theory from the standard input). Use the same
@@ -62,7 +62,7 @@ https://tuprolog.github.io/arg2p-kt-web/?theory=<theory>&query=<query>&flags=<fl
 Where you can run code, `scripts/playground_link.py` makes it exactly (Python 3, nothing to install):
 
 ```bash
-python scripts/playground_link.py theory.arg2p --query "buildLabelSets(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
+python scripts/playground_link.py theory.arg2p --query "arg2p::solve(In, Out, Und)" --flags "argumentLabellingMode(grounded).\nqueryMode."
 ```
 
 Otherwise encode each value yourself (spaces as `%20` or `+`, new lines as `%0A`, `(` `)` `,` `:` `=` `>` `<` `%` `&`
