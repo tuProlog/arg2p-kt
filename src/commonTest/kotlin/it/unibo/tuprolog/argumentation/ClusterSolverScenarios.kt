@@ -18,6 +18,9 @@ abstract class ClusterSolverScenarios {
         flags: Flags,
     ): ClusterSolver
 
+    /** The flags of the last cluster made set to [flags] */
+    abstract fun configure(flags: Flags)
+
     // The solutions of a goal and the graph of each, as text up to the names of the variables: the arguments with
     // their labels, the attacks
     private data class Solved(
@@ -124,6 +127,24 @@ abstract class ClusterSolverScenarios {
         val graphs = cluster(theory, flags).graphs()
         assertEquals(2, graphs.size)
         assertEquals(expected, graphs.map(::labelled).toSet())
+    }
+
+    // the flags changed between goals: the next ones are solved with them, the graph built anew
+    @Test
+    fun flagsChangedBetweenGoals() {
+        val theory = "r1 : [] => a.\nr2 : [] => -a.\nr3 : a => b.\nsup(r1, r2).\n"
+        val cluster = cluster(theory, Flags.defaults())
+        listOf(
+            Flags.defaults().graphExtensions(),
+            Flags.defaults().queryMode(false).argumentLabellingMode(Semantics.COMPLETE),
+            Flags.defaults(),
+        ).forEach { flags ->
+            configure(flags)
+            listOf("answerQuery(b, In, Out, Und)", "buildLabelSets(In, Out, Und)").forEach { goal ->
+                val arg2p = Arg2p.of(theory, flags)
+                assertEquals(solved(arg2p.solve(goal), arg2p::graph), solved(cluster.solve(goal), cluster::graph), "$goal with $flags")
+            }
+        }
     }
 
     @Test
