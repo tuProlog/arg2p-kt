@@ -143,7 +143,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
 
         supportPremise(slot(Premise, Result)) :-
             parser::prolog([Premise], Term), !,
-            (callable(Term) -> call(Term); Term),
+            (callable(Term) -> user::call(Term); user::Term),
             Result = check.
         supportPremise(slot(Premise, Result)) :-
             parser::contrary([Premise], _), !,

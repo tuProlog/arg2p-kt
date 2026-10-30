@@ -15,12 +15,12 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
         %! premises(-Premises)
         %  The assumptions, as ordinary premises [asm(Assumption), Assumption].
         premises(Premises) :-
-            catch(findall([asm(A), A], assumption(A), Premises), error(existence_error(_, _), _), Premises = []).
+            catch(findall([asm(A), A], user::assumption(A), Premises), error(existence_error(_, _), _), Premises = []).
 
         %! conflicts(-Conflicts)
         %  The contraries, as the conflicts conflict([Contrary], [Assumption]).
         conflicts(Conflicts) :-
-            catch(findall(conflict([C], [A]), contrary(A, C), Conflicts), error(existence_error(_, _), _), Conflicts = []).
+            catch(findall(conflict([C], [A]), user::contrary(A, C), Conflicts), error(existence_error(_, _), _), Conflicts = []).
 
         %! check
         %  The theory is flat ABA: no defeasible rule, no ordinary premise (its premises are its assumptions, its facts

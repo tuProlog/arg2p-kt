@@ -110,6 +110,14 @@ class ProfilesTest {
         assertTrue(labelling(strict + "conflict([d], [c]).\ngraphBuildMode(free).\n").isYes)
     }
 
+    // Predicates of the theory named as the helpers of the check, or of the guards of the conflicts, change neither
+    @Test
+    fun thePredicatesOfTheTheoryLeaveTheChecksAsTheyAre() {
+        val strict = "f1 :-> b.\ns1 : b -> c.\nr1 : [] => d.\n"
+        assertTrue(labelling(strict + "contrary(d, c).\ndeclared(d, c).\nstrictly(c).\n").isYes)
+        assertTrue(labelling(strict + "holds(x).\nconflict([d], [e], fail).\nr2 : [] => e.\n").isYes)
+    }
+
     @Test
     fun theSettingsOfTheSolverOverrideTheProfile() {
         val solver = Arg2pSolverFactory.default(theory = "", settings = FlagsBuilder().metaRules(true).create())

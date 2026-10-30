@@ -26,15 +26,20 @@ internal object DelegationStates {
             is Sourcing -> sourced(delegation, frame)
         }
 
-    // The goal solved as any goal, against the libraries of the inlining
+    // The goal solved as any goal, against the libraries of the inlining, seeing the theory of the user as it says
     private fun inlined(
         inlining: Inlining,
         frame: PrologExecutionContext,
     ): State =
         StateGoalSelection(
             frame
-                .copy(goals = inlining.goal.toGoals(), libraries = inlining.libraries, inlined = true, scoped = true)
-                .appendRulesAndChoicePoints(Cursor.empty()),
+                .copy(
+                    goals = inlining.goal.toGoals(),
+                    libraries = inlining.libraries,
+                    theoryVisible = inlining.theory,
+                    inlined = true,
+                    scoped = true,
+                ).appendRulesAndChoicePoints(Cursor.empty()),
         )
 
     // A goal of a predicate of the program (neither a control construct nor a primitive), resolved with a single
@@ -52,7 +57,7 @@ internal object DelegationStates {
                 ControlConstructs.of(goal) != null ||
                 inlining.libraries.hasPrimitive(goal.extractSignature())
         if (solvedOtherwise) return null
-        val clauses = ProgramClauses.of(caller, inlining.libraries).clausesFor(goal, caller.unificator)
+        val clauses = ProgramClauses.of(caller, inlining.libraries, inlining.theory).clausesFor(goal, caller.unificator)
         return FactResolution.of(caller, goal, clauses, step)
     }
 

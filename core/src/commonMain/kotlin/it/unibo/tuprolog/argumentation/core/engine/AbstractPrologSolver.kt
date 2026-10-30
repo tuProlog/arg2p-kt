@@ -136,6 +136,7 @@ abstract class AbstractPrologSolver(
                 outputChannels = outputChannels,
                 customData = currentContext.customData,
                 theoryIndexes = currentContext.theoryIndexes,
+                theoryVisible = theoryVisible,
                 startTime = currentTimeInstant(),
                 maxDuration = options.timeout,
             )
@@ -165,7 +166,7 @@ abstract class AbstractPrologSolver(
         // call, which only apply to its goal: the solver keeps those of the whole resolution, the root's
         currentContext =
             if (destination is EndState && context.scoped) {
-                context.copy(libraries = context.pathToRoot.last().libraries)
+                context.pathToRoot.last().let { context.copy(libraries = it.libraries, theoryVisible = it.theoryVisible) }
             } else {
                 context
             }
@@ -182,6 +183,12 @@ abstract class AbstractPrologSolver(
     internal fun shareTheoryIndexes(indexes: TheoryIndexes) {
         currentContext = currentContext.copy(theoryIndexes = indexes)
     }
+
+    /**
+     * Whether the resolutions of this solver see the theory of the user (arg2p, see
+     * [PrologExecutionContext.theoryVisible]): a solver created within a module call (for findall/3, say) does not
+     */
+    internal var theoryVisible: Boolean = true
 
     abstract override fun copy(
         unificator: Unificator,

@@ -34,8 +34,8 @@ object AspicLanguageModule : PrologModule("prolog.argumentation.language.aspic",
             declared(Contrary, Statement),
             \+ declared(Statement, Contrary).
 
-        declared(X, Y) :- catch(conflict([X], [Y]), error(existence_error(_, _), _), fail).
-        declared(X, Y) :- catch(conflict([X], [Y], _), error(existence_error(_, _), _), fail).
+        declared(X, Y) :- catch(user::conflict([X], [Y]), error(existence_error(_, _), _), fail).
+        declared(X, Y) :- catch(user::conflict([X], [Y], _), error(existence_error(_, _), _), fail).
 
         % Statement is an axiom, or the conclusion of a strict rule
         strictly(Statement) :- parser::premise(Id, [Statement]), parser::checkStrict(Id).

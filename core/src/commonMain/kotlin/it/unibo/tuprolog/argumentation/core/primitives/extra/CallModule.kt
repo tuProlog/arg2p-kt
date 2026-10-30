@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.extra
 
 import it.unibo.tuprolog.argumentation.SyntaxProblem
+import it.unibo.tuprolog.argumentation.core.engine.AbstractPrologSolver
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
@@ -125,4 +126,6 @@ internal object CallModule : Primitive {
         context
             .createMutableSolver(libraries = context.libraries + IOLib, staticKb = Theory.empty())
             .also { solver -> locations.forEach { solver.appendStaticKb(theoryOf(context, it)) } }
+            // the theory of the solver is the one of the modules, which its goals see wherever call_module/2 is called
+            .also { solver -> (solver as? AbstractPrologSolver)?.theoryVisible = true }
 }

@@ -48,6 +48,8 @@ class ModuleRegistryTest {
     fun everyModuleCallIsDefined() {
         val undefined =
             calls
+                // user:: calls reach the theory of the user, whatever it defines
+                .filter { (_, name, _) -> name != "user" }
                 .filter { (_, name, signature) -> definitions[name]?.contains(signature) != true }
                 .map { (caller, name, signature) -> "$caller: $name::${signature.toIndicator()}" }
                 .distinct()

@@ -71,8 +71,8 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         bothWays(X, Other) :-
             \+ setting(metaConflicts),
             setting(conflictModel, declared),
-            catch(conflict([X], [Other]), error(existence_error(_, _), _), fail),
-            catch(conflict([Other], [X]), error(existence_error(_, _), _), fail).
+            catch(user::conflict([X], [Other]), error(existence_error(_, _), _), fail),
+            catch(user::conflict([Other], [X]), error(existence_error(_, _), _), fail).
 
         % The name of a transposition: through negations, the one of the rule with its suffix
         named(negation, Id, _, Id).

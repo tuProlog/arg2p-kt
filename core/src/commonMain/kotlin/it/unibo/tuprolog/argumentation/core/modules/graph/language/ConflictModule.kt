@@ -49,7 +49,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             builtin(Part, Statement, Other, Guard).
         guarded(Statement, Other, Guard) :-
             setting(conflictModel, declared),
-            conflict(Statement, Other, Guard).
+            user::conflict(Statement, Other, Guard).
 
         %! unguarded(?Statement, ?Other)
         %  Statement conflicts with Other, whatever holds.
@@ -58,7 +58,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             graphStore::argumentFor([conflict(A, B)], _).
         unguarded(Statement, Other) :-
             setting(conflictModel, declared),
-            conflict(Statement, Other).
+            user::conflict(Statement, Other).
         unguarded(Statement, Other) :-
             context_check(conflict(Statement, Other)).
 
@@ -85,7 +85,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
         builtin(preference, [sup(X, Y)], [sup(Y, X)], true).
 
         % A guard holds: a goal that succeeds, or the term true
-        holds(Guard) :- callable(Guard), !, call(Guard).
-        holds(Guard) :- Guard.
+        holds(Guard) :- callable(Guard), !, user::call(Guard).
+        holds(Guard) :- user::Guard.
         """.trimIndent()
 }

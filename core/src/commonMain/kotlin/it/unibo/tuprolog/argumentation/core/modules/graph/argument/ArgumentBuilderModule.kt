@@ -101,7 +101,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
-            (callable(Check) -> call(Check); Check),
+            (callable(Check) -> user::call(Check); user::Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
             Acc = [All, LastDef, Def, Prem],

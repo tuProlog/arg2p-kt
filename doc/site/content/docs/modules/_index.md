@@ -46,6 +46,18 @@ This is how multi-extension semantics work: `preferred`, `stable`, `cf2` and `st
 extensions by branching with `:::`, each branch holding one labelling. When you iterate over the solutions of
 such a query, you are iterating over those branches.
 
+### The theory is the module `user`
+
+The theory you write is a module of its own, `user`, and its predicates are its own: the modules of Arg2P keep
+theirs inside, so a theory can define any predicate (`member/2`, `holds/1`, `contrary/2`, ...) without changing
+how the engine works, and a predicate the theory defines is the one its goals call, whatever a library names the
+same way. The modules reach the theory only through `user::Goal`, the way they read its rules, preferences and
+conflicts, and run its `prolog/1` checks:
+
+```prolog
+?- user::findall(X, member(X, [a, b]), L).
+```
+
 ---
 
 ## The pipeline

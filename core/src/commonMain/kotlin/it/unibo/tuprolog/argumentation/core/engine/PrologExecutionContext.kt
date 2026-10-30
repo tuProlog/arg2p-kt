@@ -58,6 +58,8 @@ import kotlin.collections.Set as KtSet
  *   [isVariableInteresting]); [trimmedSize] is the size of the substitution when it was last trimmed.
  * - [inlined]: whether this frame solves the goal of an [Inlining], against libraries of its own; [scoped]: whether
  *   this frame or one above does (so that its libraries are not the ones of the whole resolution).
+ * - [theoryVisible]: whether the goals of this frame see the theory of the user (its static and dynamic knowledge
+ *   base): they do outside module calls and in `user::` calls; the modules see it only through `user::`.
  * - [theoryIndexes]: the indexes of the immutable theories, kept by the solver and shared with the solvers the
  *   resolution creates (see [TheoryIndexes]).
  *
@@ -90,6 +92,7 @@ data class PrologExecutionContext(
     val trimmedSize: Int = 0,
     val inlined: Boolean = false,
     val scoped: Boolean = false,
+    val theoryVisible: Boolean = true,
     val theoryIndexes: TheoryIndexes = TheoryIndexes(),
 ) : ExecutionContext {
     init {
@@ -190,7 +193,10 @@ data class PrologExecutionContext(
             inputChannels,
             outputChannels,
             trustKb = true,
-        ).also { it.shareTheoryIndexes(theoryIndexes) }
+        ).also {
+            it.shareTheoryIndexes(theoryIndexes)
+            it.theoryVisible = theoryVisible
+        }
 
     override fun createMutableSolver(
         unificator: Unificator,
@@ -210,7 +216,10 @@ data class PrologExecutionContext(
             inputChannels,
             outputChannels,
             trustKb = true,
-        ).also { it.shareTheoryIndexes(theoryIndexes) }
+        ).also {
+            it.shareTheoryIndexes(theoryIndexes)
+            it.theoryVisible = theoryVisible
+        }
 
     override fun update(
         unificator: Unificator,

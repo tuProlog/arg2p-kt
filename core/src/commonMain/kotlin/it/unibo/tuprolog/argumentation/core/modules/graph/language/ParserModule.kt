@@ -78,7 +78,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
-            findall(sup(X, Y), sup(X, Y), Stated),
+            findall(sup(X, Y), user::sup(X, Y), Stated),
             supClosure(Stated, Sup),
             languageConflicts(Conflicts),
             utils::appendLists([Clauses, MappedIds, Sup, SpecialRules, Conflicts], ArgRules),
@@ -99,11 +99,11 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             (Fresh == [] -> Closed = Sup ; utils::appendFast(Sup, Fresh, Next), supClosure(Next, Closed)).
 
         naturalRules(Rules, Clauses, StrictIds, MappedIds) :-
-            naturalTerms,
+            user::naturalTerms,
             ruleToClauseNatural(Rules, Clauses),
             mapIds(Rules, Clauses, StrictIds, MappedIds).
         naturalRules(Rules, Clauses, StrictIds, StrictIds) :-
-            \+ naturalTerms,
+            \+ user::naturalTerms,
             ruleToClause(Rules, Clauses).
 
         recoverId(Head :- Body, Id) :- rule::rule(Id, _, _, Head, Body).
@@ -121,14 +121,14 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             mapIds(T, TT, Ids, RR).
 
         defeasibleRules(DefeasibleRules) :-
-            findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions => Effect), DefeasibleRulesOld),
             prologDefeasibleRules(DefeasibleRulesNew),
             utils::appendFast(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
 
         % The strict rules with their transpositions, whose names are none of those of the rules and premises of the
         % theory (Others are the other rules and premises)
         strictRules(Others, CtrRules, Ids) :-
-            findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesOld),
             prologStrictRules(StrictRulesNew),
             utils::appendFast(StrictRulesOld, StrictRulesNew, StrictRules),
             findall(Id, (member([Id|_], StrictRules) ; member([Id|_], Others)), Taken),
@@ -136,7 +136,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             extractId(CtrRules, Ids).
 
         ordinaryPremises(Premises) :-
-            findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
+            findall([RuleName, Effect], (user::(RuleName :=> Effect), atom(RuleName)), PremisesOld),
             prologPremises(PremisesNew),
             languagePremises(PremisesLanguages),
             utils::appendLists([PremisesOld, PremisesNew, PremisesLanguages], Premises).
@@ -160,7 +160,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::forEach(L, Languages, L:::check).
 
         axiomPremises(Axioms, Ids) :-
-            findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
+            findall([RuleName, Effect], (user::(RuleName :-> Effect), atom(RuleName)), AxiomsOld),
             prologAxioms(AxiomsNew),
             utils::appendFast(AxiomsOld, AxiomsNew, Axioms),
             extractId(Axioms, Ids).

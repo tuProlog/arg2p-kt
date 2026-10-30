@@ -49,22 +49,22 @@ object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice"
             call(member(A, B)).
         
         solve(\+(A), [not(A)]) :- !,
-            call(\+(A)).
+            user::call(\+(A)).
         
         solve((A)\=(B), [doNotUnify(A, B)]) :- !,
             call((A)\=(B)).
         
         solve(A, [system_predicate]) :-
-            catch(clause(A, _), B, true),
+            catch(user::clause(A, _), B, true),
             \+ var(B), !,
-            call(A).
+            user::call(A).
         
         solve(A, [A]) :-
-            \+ clause(A, B), !,
-            call(A).
+            \+ user::clause(A, B), !,
+            user::call(A).
         
         solve(A, [A|[Res]]) :-
-            clause(A, B),
+            user::clause(A, B),
             solve(B, Res).
         
         %! is_list(?Term)
@@ -77,9 +77,9 @@ object InterpreterModule : PrologModule("prolog.argumentation.meta.crossjustice"
         %  Facts are the facts of the user supporting the argument for Conclusion, from argument/1 and support/2
         %  facts on arguments written as [Rules, TopRule, Conclusion].
         fetch_argument_facts(Conclusion, Facts) :-
-            argument([R, TR, [Conclusion]]),
+            user::argument([R, TR, [Conclusion]]),
             findall(user_fact(Fact), 
-                support([_, _, [user_fact(Fact)]], [R, TR, [Conclusion]]),
+                user::support([_, _, [user_fact(Fact)]], [R, TR, [Conclusion]]),
             Facts).
         """.trimIndent()
 }

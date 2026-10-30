@@ -19,12 +19,14 @@ interface DelegatedCall : Primitive {
 sealed interface Delegation
 
 /**
- * The goal solved in place, against the [libraries] given: when the frame is left, the caller goes on with its own
- * libraries (module calls)
+ * The goal solved in place, against the [libraries] given, and the theory of the user only if [theory] (see
+ * [PrologExecutionContext.theoryVisible]): when the frame is left, the caller goes on with its own libraries and view
+ * of the theory (module calls, `user::` calls)
  */
 data class Inlining(
     val goal: Struct,
     val libraries: Runtime,
+    val theory: Boolean = false,
 ) : Delegation
 
 /**

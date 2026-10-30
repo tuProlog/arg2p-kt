@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
-import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -17,7 +16,7 @@ import it.unibo.tuprolog.unify.Unificator
  */
 internal class IndexedTheoryClauses(
     theory: Theory,
-) : ClauseSource {
+) : TheoryClauseSource {
     // By functor, then by arity: looked up without building the signature (or the indicator) of the goal
     private val byFunctor: Map<String, Map<Int, FirstArgumentIndex>> =
         theory.clauses
@@ -36,6 +35,8 @@ internal class IndexedTheoryClauses(
         val candidates = byFunctor[goal.functor]?.get(goal.arity)?.candidates(goal) ?: return emptyList()
         return if (candidates.size == 1) candidates else candidates.filter { unificator.match(goal, it.head!!) }
     }
+
+    override fun defines(goal: Struct): Boolean = byFunctor[goal.functor]?.containsKey(goal.arity) == true
 }
 
 /**
