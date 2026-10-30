@@ -223,7 +223,7 @@ jobs:
       contents: read
     env:
       # renovate: datasource=github-releases depName=modelcontextprotocol/registry
-      MCP_PUBLISHER_VERSION: v1.8.6
+      MCP_PUBLISHER_VERSION: v1.8.7
     steps:
       - uses: actions/checkout@v7.0.1
         with:
