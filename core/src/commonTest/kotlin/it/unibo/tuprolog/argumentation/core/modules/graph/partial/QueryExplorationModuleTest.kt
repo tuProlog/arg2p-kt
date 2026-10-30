@@ -69,4 +69,49 @@ class QueryExplorationModuleTest {
         val statIn = module.value("answerQuery(t(X, Y), I, _, _)", "I")!!
         assertTrue("t(a, a)" in statIn && "t(a, b)" in statIn, statIn)
     }
+
+    // The check of ac needs D, which its conclusion alone binds: after(D) explored unbound finds nothing, and does not
+    // cover after(date(1986, 1, 1)), which vb asks for once born(rita, D) binds D; va waits for born(P, D) as well, so
+    // both rules conclude t(rita), whatever their order
+    @Test
+    fun aStatementExploredUnboundCoversOnlyItselfWhenACheckNeedsItsBindings() {
+        val rules =
+            listOf(
+                "va(P, D) : after(D), born(P, D) -> t(P).",
+                "vb(P, D) : born(P, D), after(D) -> t(P).",
+            )
+        listOf(rules, rules.reversed()).forEach { ordered ->
+            val module =
+                ModuleTesting(
+                    "a0 :-> commencement(date(1983, 1, 1)).\na1 :-> born(rita, date(1986, 1, 1)).\n" +
+                        "ac : commencement(F), prolog(D @>= F) -> after(D).\n" + ordered.joinToString("\n") +
+                        "\nqueryMode.\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).",
+                )
+            val statIn = module.value("answerQuery(t(rita), I, _, _)", "I")!!
+            assertTrue("t(rita)" in statIn, statIn)
+            assertEquals(2, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
+        }
+    }
+
+    // late(D) has no check of its own, but needs D through after(D): the need goes up the rules
+    @Test
+    fun aRuleNeedsTheVariablesItsPremisesNeed() {
+        val rules =
+            listOf(
+                "va(P, D) : late(D), born(P, D) -> t(P).",
+                "vb(P, D) : born(P, D), late(D) -> t(P).",
+            )
+        listOf(rules, rules.reversed()).forEach { ordered ->
+            val module =
+                ModuleTesting(
+                    "a0 :-> commencement(date(1983, 1, 1)).\na1 :-> born(rita, date(1986, 1, 1)).\n" +
+                        "ac : commencement(F), prolog(D @>= F) -> after(D).\nml(D) : after(D) -> late(D).\n" +
+                        ordered.joinToString("\n") +
+                        "\nqueryMode.\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).",
+                )
+            val statIn = module.value("answerQuery(t(rita), I, _, _)", "I")!!
+            assertTrue("t(rita)" in statIn, statIn)
+            assertEquals(2, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
+        }
+    }
 }

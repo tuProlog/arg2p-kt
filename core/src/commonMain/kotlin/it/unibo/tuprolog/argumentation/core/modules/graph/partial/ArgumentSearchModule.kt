@@ -20,22 +20,33 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         %! findSingleArgument(+Conclusion, -Argument, -Supports)
         %  Argument is an argument for Conclusion, Supports its sub-arguments, saved.
         findSingleArgument(Conclusion, Argument, Supports) :-
-            findArgument(Conclusion, found(Body, TopRule, Rules, Info, Supports)),
+            findSingleArgument(Conclusion, all, Argument, Supports).
+
+        %! findSingleArgument(+Conclusion, +Scope, -Argument, -Supports)
+        %  As findSingleArgument/3, from the premises and rules of Scope: all of them, or the rules needing bindings
+        %  (needing, see parser::needing/1), the only ones that may make arguments for Conclusion that the exploration of
+        %  a statement generalising it missed.
+        findSingleArgument(Conclusion, Scope, Argument, Supports) :-
+            findArgument(Conclusion, Scope, found(Body, TopRule, Rules, Info, Supports)),
             argument::new(Rules, TopRule, Conclusion, Body, Info, Argument).
 
         % From a premise
-        findArgument(Conclusion, Found) :-
+        findArgument(Conclusion, all, Found) :-
             parser::classicRule(Id, Conclusion),
             premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
 
         % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise)
-        findArgument(Conclusion, Found) :-
+        findArgument(Conclusion, Scope, Found) :-
             parser::classicRule(Id, Premises, Conclusion),
+            inScope(Scope, Id),
             findPremises(Premises, premises(Parts, Supports)),
             ruleStrictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
             Found = found(Premises, Id, Rules, Info, Supports).
+
+        inScope(all, _).
+        inScope(needing, Id) :- parser::needing(Id).
 
         % The premises of a rule are supported one at a time, most selective first (see nextPremise/2): with the
         % bindings of the conclusion and of the premises supported so far, rather than in the order they are written,
@@ -59,12 +70,15 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
 
         % The next premise to support: a Prolog check as soon as the ordinary premises written before it are supported
         % (with the bindings the graph builder gives it, as it may bind variables for the premises after it) or it is
-        % ground (when it can only discard); otherwise the premise concluded by the fewest rules; the contrary premises,
-        % which are only recorded, last
+        % ground (when it can only discard); otherwise the premise concluded by the fewest rules, but for those waiting
+        % for another to bind the variables their arguments need (see waits/2); the contrary premises, which are only
+        % recorded, last
         nextPremise(Slots, Slot) :-
             readyCheck(Slots, true, Slot), !.
         nextPremise(Slots, Slot) :-
-            mostSelective(Slots, none, best(Slot, _)), !.
+            mostSelective(Slots, notWaiting(Slots), none, best(Slot, _)), !.
+        nextPremise(Slots, Slot) :-
+            mostSelective(Slots, any, none, best(Slot, _)), !.
         nextPremise(Slots, Slot) :-
             member(Slot, Slots),
             Slot = slot(_, Result),
@@ -81,18 +95,40 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             (var(Result), ordinaryPremise(Premise) -> Next = false ; Next = Supported),
             readyCheck(Slots, Next, Slot).
 
-        % The pending ordinary premise concluded by the fewest rules: each count stops at the best one so far
-        mostSelective([], Best, Best).
-        mostSelective([Slot|Slots], Best, Selected) :-
+        % The pending ordinary premise concluded by the fewest rules, among those Filter admits: each count stops at the
+        % best one so far
+        mostSelective([], _, Best, Best).
+        mostSelective([Slot|Slots], Filter, Best, Selected) :-
             Slot = slot(Premise, Result),
             var(Result),
-            ordinaryPremise(Premise), !,
+            ordinaryPremise(Premise),
+            admitted(Filter, Premise), !,
             countLimit(Best, Limit),
             parser::candidates(Premise, Limit, Count),
             selective(Slot, Count, Best, Next),
-            mostSelective(Slots, Next, Selected).
-        mostSelective([_|Slots], Best, Selected) :-
-            mostSelective(Slots, Best, Selected).
+            mostSelective(Slots, Filter, Next, Selected).
+        mostSelective([_|Slots], Filter, Best, Selected) :-
+            mostSelective(Slots, Filter, Best, Selected).
+
+        admitted(any, _).
+        admitted(notWaiting(Slots), Premise) :- \+ waits(Premise, Slots).
+
+        % waits(+Premise, +Slots): a rule concluding Premise needs variables it leaves unbound (parser::complete/1), which
+        % another pending premise may bind: supported first, Premise would get the arguments found without them alone
+        waits(Premise, Slots) :-
+            parser::neededBy(Premise, Vars),
+            member(slot(Other, Result), Slots),
+            var(Result),
+            Other \== Premise,
+            ordinaryPremise(Other),
+            sharesVariable(Vars, Other), !.
+
+        % sharesVariable(+Vars, +Term): a variable of Vars occurs in Term
+        sharesVariable(Vars, Term) :- var(Vars), !, occurs(Vars, Term).
+        sharesVariable(Vars, Term) :- compound(Vars), Vars =.. [_|Args], member(A, Args), sharesVariable(A, Term), !.
+
+        occurs(V, Term) :- var(Term), !, V == Term.
+        occurs(V, Term) :- compound(Term), Term =.. [_|Args], member(A, Args), occurs(V, A), !.
 
         countLimit(none, none).
         countLimit(best(_, Count), Count).

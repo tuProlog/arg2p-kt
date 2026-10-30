@@ -9,6 +9,8 @@ import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
+import it.unibo.tuprolog.argumentation.core.primitives.graph.language.NeedsIndex
+import it.unibo.tuprolog.argumentation.core.primitives.graph.language.OccursFreeUnify
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
@@ -36,6 +38,8 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 PrologPremises::descriptionPair.get(),
                 PrologDefeasibleRules::descriptionPair.get(),
                 ExtractId::descriptionPair.get(),
+                NeedsIndex::descriptionPair.get(),
+                OccursFreeUnify::descriptionPair.get(),
                 RuleToClause::descriptionPair.get(),
                 RuleToClauseNatural::descriptionPair.get(),
             )
@@ -66,9 +70,10 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1 clauses, strict/1, sup/2, abstractBp/1), asserted; Rules are what was asserted.
         convertAllRules(ArgRules) :-
             defeasibleRules(DefeasibleRules),
-            strictRules(StrictRules, RulesIds),
             ordinaryPremises(Premises),
             axiomPremises(Axioms, AxiomsIds),
+            utils::appendLists([DefeasibleRules, Premises, Axioms], Others),
+            strictRules(Others, StrictRules, RulesIds),
             specialRules(SpecialRules),
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
@@ -120,11 +125,14 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             prologDefeasibleRules(DefeasibleRulesNew),
             utils::appendFast(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
 
-        strictRules(CtrRules, Ids) :-
+        % The strict rules with their transpositions, whose names are none of those of the rules and premises of the
+        % theory (Others are the other rules and premises)
+        strictRules(Others, CtrRules, Ids) :-
             findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
             prologStrictRules(StrictRulesNew),
             utils::appendFast(StrictRulesOld, StrictRulesNew, StrictRules),
-            transposition::transpose(StrictRules, StrictRules, CtrRules),
+            findall(Id, (member([Id|_], StrictRules) ; member([Id|_], Others)), Taken),
+            transposition::transpose(StrictRules, StrictRules, Taken, CtrRules),
             extractId(CtrRules, Ids).
 
         ordinaryPremises(Premises) :-
@@ -239,5 +247,37 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         assertFromLast([Fact|Facts]) :-
             assertFromLast(Facts),
             context_assert(Fact).
+
+        %! complete(+Statement)
+        %  The arguments for Statement found with the bindings it has include those for every statement it generalises:
+        %  no rule concluding it needs a variable of its conclusion that Statement leaves unbound (see checksIndexed).
+        complete(Statement) :-
+            \+ neededBy(Statement, _).
+
+        %! neededBy(+Statement, -Vars)
+        %  A rule concluding Statement needs Vars bound, which Statement leaves unbound (in part, at least).
+        neededBy(Statement, Vars) :-
+            checksIndexed,
+            functor(Statement, Name, Arity),
+            functor(Conclusion, Name, Arity),
+            context_check(checkNeeds(Conclusion, Vars)),
+            occursFreeUnify(Conclusion, Statement),
+            \+ ground(Vars).
+
+        %! needing(?Id)
+        %  The rule Id needs variables of its conclusion bound by the statement asked for (see complete/1): the arguments
+        %  it makes for a statement may be missing from those found for a statement generalising it.
+        needing(Id) :-
+            checksIndexed,
+            context_check(needingRule(Id)).
+
+        % The index: checkNeeds(Conclusion, Vars) and needingRule(Id) for each rule Id needing the variables Vars of its
+        % conclusion bound by the statement asked for (see needsIndex/2), built once in the active context
+        checksIndexed :- context_check(checksIndexed), !.
+        checksIndexed :-
+            findall(rule(Id, C, Premises), classicRule(Id, Premises, [C]), Rules),
+            needsIndex(Rules, Index),
+            assertFromLast(Index),
+            context_assert(checksIndexed).
         """.trimIndent()
 }
