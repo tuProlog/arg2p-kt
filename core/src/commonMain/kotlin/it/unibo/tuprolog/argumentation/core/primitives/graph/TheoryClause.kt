@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -22,7 +23,7 @@ internal object TheoryClause : PrimitiveWithSignature {
             .asSequence()
             .filter { it.head != null && settings?.states(it) != true }
             .mapNotNull { clause ->
-                val copy = clause.freshCopy()
+                val copy = clause.renamedCopy()
                 request.context.unificator
                     .mgu(wanted, Struct.of("clause", copy.head!!, copy.body))
                     .takeIf { it.isSuccess }

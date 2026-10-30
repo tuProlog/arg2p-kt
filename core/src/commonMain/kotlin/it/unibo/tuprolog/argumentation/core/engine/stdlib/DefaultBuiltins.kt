@@ -1,6 +1,8 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine.stdlib
 
+import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.CopyTerm
+import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.FindAll
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Length
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call
@@ -8,7 +10,9 @@ import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Comma
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Cut
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.NegationAsFailure
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.impl.ExtensionLibrary
+import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper
 import it.unibo.tuprolog.solve.rule.RuleWrapper
 import it.unibo.tuprolog.solve.stdlib.CommonBuiltins
@@ -30,6 +34,12 @@ import it.unibo.tuprolog.solve.stdlib.CommonBuiltins
  * exception propagation) at the FSM level.
  */
 object DefaultBuiltins : ExtensionLibrary(CommonBuiltins) {
+    // copy_term/2 and findall/3 of the engine in place of those of 2p-kt, which copy terms by the names of their
+    // variables (see CopyTerm): the library refuses to add a predicate it has, so they replace them here
+    override val primitives: Map<Signature, Primitive> by lazy {
+        super.primitives + listOf(CopyTerm, FindAll).map { it.descriptionPair }
+    }
+
     override val additionalPrimitives: Iterable<PrimitiveWrapper<*>>
         get() =
             listOf(

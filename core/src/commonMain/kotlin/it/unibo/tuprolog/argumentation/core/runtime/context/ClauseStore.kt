@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.context
 
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Fact
@@ -53,7 +54,7 @@ internal class ClauseStore private constructor(
         val headStruct = head.asStruct() ?: return
         val matching =
             data.candidates(headStruct).filter { stored ->
-                val fresh = stored.clause.freshCopy()
+                val fresh = stored.clause.renamedCopy()
                 val unifier = Arg2pUnificator.mgu(headStruct, fresh.head!!)
                 unifier.isSuccess && (body == null || Arg2pUnificator.mgu(body.apply(unifier), fresh.body.apply(unifier)).isSuccess)
             }
@@ -101,7 +102,7 @@ internal class ClauseStore private constructor(
         val headStruct = head.asStruct() ?: return emptySequence()
         val variables = body.variables.toSet()
         return data.candidates(headStruct).asSequence().mapNotNull { stored ->
-            val fresh = stored.clause.freshCopy()
+            val fresh = stored.clause.renamedCopy()
             if (!Arg2pUnificator.mgu(headStruct, fresh.head!!).isSuccess) return@mapNotNull null
             Arg2pUnificator
                 .mgu(body, fresh.body)
@@ -117,7 +118,7 @@ internal class ClauseStore private constructor(
         val headStruct = head.asStruct() ?: return emptySequence()
         val query = Struct.of("clause", headStruct, body)
         return data.candidates(headStruct).asSequence().mapNotNull { stored ->
-            val fresh = stored.clause.freshCopy()
+            val fresh = stored.clause.renamedCopy()
             Arg2pUnificator
                 .mgu(query, Struct.of("clause", fresh.head!!, fresh.body))
                 .takeIf { it.isSuccess }
@@ -137,7 +138,7 @@ internal class ClauseStore private constructor(
         }
         check(depth < MAX_DEPTH) { "Context rules nested too deeply while solving $goal" }
         return data.candidates(struct).asSequence().flatMap { stored ->
-            val fresh = stored.clause.freshCopy()
+            val fresh = stored.clause.renamedCopy()
             val step = Arg2pUnificator.mgu(struct, fresh.head!!)
             if (!step.isSuccess) {
                 emptySequence()

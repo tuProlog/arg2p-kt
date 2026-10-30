@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -19,7 +20,7 @@ private fun Solve.Request<ExecutionContext>.answers(
 ): Sequence<Solve.Response> {
     val goal = Struct.of("t", arguments)
     return candidates.mapNotNull { values ->
-        Arg2pUnificator.mgu(goal, Struct.of("t", values).freshCopy()).takeIf { it.isSuccess }?.let { replyWith(it) }
+        Arg2pUnificator.mgu(goal, Struct.of("t", values).renamedCopy()).takeIf { it.isSuccess }?.let { replyWith(it) }
     }
 }
 

@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -26,7 +27,7 @@ internal object ForEach : Primitive {
         // the iterations are solved one after the other, by the same solver
         val solver = request.subSolver()
         list.toList().forEach { item ->
-            val iteration = Tuple.of(request.arguments[0], request.arguments[2]).freshCopy()
+            val iteration = Tuple.of(request.arguments[0], request.arguments[2]).renamedCopy()
             val unifier = Arg2pUnificator.mgu(iteration[0], item)
             if (unifier.isSuccess) {
                 solver.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }

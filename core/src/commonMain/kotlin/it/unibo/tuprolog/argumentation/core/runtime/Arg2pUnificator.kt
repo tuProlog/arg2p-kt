@@ -42,7 +42,7 @@ object Arg2pUnificator : Unificator by Unificator.default {
             val first = dereference(term1)
             val second = dereference(term2)
             return when {
-                first is Var && second is Var -> first == second || bind(first, second)
+                first is Var && second is Var -> first == second || bindVariables(first, second)
                 first is Var -> bind(first, second)
                 second is Var -> bind(second, first)
                 first.isConstant || second.isConstant -> first == second
@@ -53,6 +53,19 @@ object Arg2pUnificator : Unificator by Unificator.default {
                 else -> first == second
             }
         }
+
+        // Two variables meeting: the left one bound to the right one, but an anonymous one (`_`) bound to a named one,
+        // and two anonymous ones to a named one: a copy of a term (copy_term/2, findall/3) gives each occurrence of an
+        // anonymous variable a variable of its own, which would part the places a binding makes it stand for
+        private fun bindVariables(
+            first: Var,
+            second: Var,
+        ): Boolean =
+            when {
+                !second.isAnonymous -> bind(first, second)
+                !first.isAnonymous -> bind(second, first)
+                else -> Var.of("_N").let { bind(first, it) && bind(second, it) }
+            }
 
         private fun bind(
             variable: Var,

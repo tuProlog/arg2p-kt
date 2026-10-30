@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -50,7 +51,7 @@ internal class RenamingClauseResolver(
         rule: Rule,
         goal: Term,
     ): Resolution? {
-        val renamed = rule.freshCopy()
+        val renamed = rule.renamedCopy()
         val substitution = unificator.mgu(renamed.head, goal)
         if (!substitution.isSuccess) return null
         val unifier = substitution.castToUnifier()
