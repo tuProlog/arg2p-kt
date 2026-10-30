@@ -39,7 +39,7 @@ object TemporalModule : PrologModule("prolog.argumentation.language.temporal", "
             [t_opens(E, U, T1, T2), (started(U, T1), happens(E, T2), terminates(E, U), prolog(T1 < T2)), -t_before(E, U, T2)],
             % a start while an earlier start still holds (no end in between) is no new start
             [t_already(E, U, T0, T), (started(U, T0), happens(E, T), initiates(E, U), prolog(T0 < T)), -t_start(E, U, T)],
-            [t_still(E, U, T0, T, Te), (started(U, T0), ended(U, Te), prolog((T0 < Te, Te =< T))), -t_already(E, U, T0, T)]
+            [t_still(E, U, T0, T, Te), (started(U, T0), ended(U, Te), happens(E, T), initiates(E, U), prolog((T0 < Te, Te =< T))), -t_already(E, U, T0, T)]
         ]).
         """.trimIndent()
 }

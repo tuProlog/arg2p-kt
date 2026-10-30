@@ -6,8 +6,9 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-// The axioms of time (temporal), asked in query mode
+// The axioms of time (temporal), asked in query mode, and on the whole graph
 class TemporalModuleTest {
     // f starts at 1, and the theory states it does not hold at 7
     private val interrupted = "f1 :=> happens(e1, 1).\nf2 :=> initiates(e1, f).\nc1 :=> -holdsAt(f, 7).\n"
@@ -24,6 +25,11 @@ class TemporalModuleTest {
     private val declared =
         "f11 :=> happens(birth, 0).\nf12 :=> initiates(birth, alive).\nf13 :=> happens(shot, 3).\n" +
             "f14 :=> initiates(shot, dead).\nconflict([dead], [alive]).\n"
+
+    // f started twice (at 1, and again at 3 while it holds), the second start derived in a later round
+    private val restarted =
+        "f15 :=> happens(e1, 1).\nf16 :=> initiates(e1, f).\nf17 :=> happens(e2, 3).\nf18 :=> x.\n" +
+            "r1 : x => initiates(e2, f).\n"
 
     // The label of each statement: in, out, und, or none when no argument concludes it
     private fun labels(
@@ -80,5 +86,23 @@ class TemporalModuleTest {
                 "holdsAt(h, 7)",
             ),
         )
+    }
+
+    // The whole graph has the periods of the starts derived in later rounds: no axiom leaves a check to a binding a
+    // query would give (t_still binds the start it is about)
+    @Test
+    fun theWholeGraphHasThePeriods() {
+        val solver = Arg2pSolverFactory.default(theory = "temporal.\n$restarted", settings = FlagsBuilder().queryMode(false).create())
+        val solution = solver.solve(Struct.parse("buildLabelSets(I, O, U)", solver.operators)).first()
+        assertTrue(solution.isYes, solution.toString())
+        val statements =
+            solution.substitution
+                .getByName("I")!!
+                .castToList()
+                .toList()
+                .map { it.toString() }
+        assertTrue(statements.any { it.startsWith("[holdsAt(f, ") }, statements.toString())
+        // the second start is no new start (t_already, which t_still would undercut after an end)
+        assertTrue("[started(f, 1)]" in statements && statements.any { "t_start(e2, f, 3)" in it }, statements.toString())
     }
 }
