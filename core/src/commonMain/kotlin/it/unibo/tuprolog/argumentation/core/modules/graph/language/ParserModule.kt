@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.flags.MetaRules
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BoundByQuery
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
@@ -37,6 +38,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 PrologPremises::descriptionPair.get(),
                 PrologDefeasibleRules::descriptionPair.get(),
                 ExtractId::descriptionPair.get(),
+                BoundByQuery::descriptionPair.get(),
                 RuleToClause::descriptionPair.get(),
                 RuleToClauseNatural::descriptionPair.get(),
             )
@@ -245,6 +247,21 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             findall(premiseOf(P, C), (classicRule(_, Premises, [C]), member(P, Premises)), Index),
             assertFromLast(Index),
             context_assert(premisesIndexed).
+
+        %! boundByQuery(?Id)
+        %  A query could bind the arguments of the rule Id otherwise than the whole graph derives them: its conclusion,
+        %  or a Prolog check, has a variable its ordinary premises written before leave unbound (see boundByQuery/2).
+        boundByQuery(Id) :-
+            boundByQueryIndexed,
+            context_check(boundByQueryRule(Id)).
+
+        % The index: boundByQueryRule/1 facts, built once in the active context
+        boundByQueryIndexed :- context_check(boundByQueryIndexed), !.
+        boundByQueryIndexed :-
+            findall(rule(Id, Premises, C), classicRule(Id, Premises, [C]), Rules),
+            boundByQuery(Rules, Ids),
+            findall(_, (member(Id, Ids), context_assert(boundByQueryRule(Id))), _),
+            context_assert(boundByQueryIndexed).
 
         assertFromLast([]).
         assertFromLast([Fact|Facts]) :-

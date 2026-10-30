@@ -36,19 +36,27 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             Found = found([], none, [Id], Info, []).
 
         % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise), and the rule
-        % derives Conclusion from the arguments supporting its premises, in the order they are written (see derived/3)
+        % derives Conclusion from the arguments supporting its premises (see derivable/3)
         findArgument([Claim], Found) :-
-            functor(Claim, Name, Arity),
-            functor(General, Name, Arity),
-            parser::classicRule(Id, Premises, [General]),
-            copy_term(rule(Id, Premises, General), Rule),
-            General = Claim,
+            parser::classicRule(Id, Premises, [Claim]),
             findPremises(Premises, premises(Parts, Supports)),
-            derived(Rule, Supports, rule(Id, Claim)),
+            derivable(Id, Claim, Supports),
             ruleStrictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
             constraint::extend(Premises, Supports, Body),
             Found = found(Body, Id, Rules, Info, Supports).
+
+        % derivable(+Id, +Claim, +Supports): the rule Id derives Claim from Supports alone. The search steered by the query
+        % finds that for most rules; a rule a query could bind otherwise (parser::boundByQuery/1) is taken again as
+        % written (a rule whose identifier unifies with Id, concluding a statement with the functor of Claim) and its
+        % conclusion derived from the claims of Supports
+        derivable(Id, _, _) :- \+ parser::boundByQuery(Id), !.
+        derivable(Id, Claim, Supports) :-
+            functor(Claim, Name, Arity),
+            functor(General, Name, Arity),
+            parser::classicRule(Written, Premises, [General]),
+            \+ \+ Written = Id,
+            derived(rule(Written, Premises, General), Supports, rule(Id, Claim)).
 
         % derived(+Rule, +Supports, ?Derived): Rule, a copy of the rule as written, derives its conclusion from the claims of
         % Supports alone, its checks run in their order; the conclusion is concludable, and only then the one of Derived
