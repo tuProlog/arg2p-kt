@@ -15,6 +15,7 @@ import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxio
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologStrictRules
+import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClause
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClauseNatural
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
@@ -39,6 +40,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 PrologDefeasibleRules::descriptionPair.get(),
                 ExtractId::descriptionPair.get(),
                 BoundByQuery::descriptionPair.get(),
+                RuleIds::descriptionPair.get(),
                 RuleToClause::descriptionPair.get(),
                 RuleToClauseNatural::descriptionPair.get(),
             )
@@ -81,7 +83,21 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             supClosure(Stated, Sup),
             languageConflicts(Conflicts),
             utils::appendLists([Clauses, MappedIds, Sup, SpecialRules, Conflicts], ArgRules),
-            utils::assertAll(ArgRules), !.
+            utils::assertAll(ArgRules),
+            boundByQuery(Rules, BoundIds, Constraints),
+            indexRules(BoundIds, Constraints), !.
+
+        % indexRules(+BoundIds, +Constraints): those of the rules and premises as written that a query could bind
+        % (boundByQuery/1), and whether the theory may have constraints (constrained/0), kept in the context with the
+        % rules: computed by a single native visit of them in convertAllRules/1 (see boundByQuery/3)
+        indexRules(BoundIds, Constraints) :-
+            assertIds(BoundIds),
+            context_assert(boundByQueryIndexed),
+            (instances -> Kind = yes ; Kind = Constraints),
+            context_assert(theoryKind(constrained, Kind)).
+
+        assertIds([]).
+        assertIds([Id|Ids]) :- context_assert(boundByQueryRule(Id)), assertIds(Ids).
 
         %! supClosure(+Stated, -Closed)
         %  The preferences stated, closed transitively: the ordering of rules and premises is a strict partial order
@@ -135,7 +151,9 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesOld),
             prologStrictRules(StrictRulesNew),
             utils::appendFast(StrictRulesOld, StrictRulesNew, StrictRules),
-            findall(Id, (member([Id|_], StrictRules) ; member([Id|_], Others)), Taken),
+            ruleIds(StrictRules, StrictIds),
+            ruleIds(Others, OtherIds),
+            utils::appendFast(StrictIds, OtherIds, Taken),
             transposition::transpose(StrictRules, StrictRules, Taken, CtrRules),
             extractId(CtrRules, Ids).
 
@@ -201,11 +219,14 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %  Premise, as [prolog(Goal)], is a Prolog check.
         prolog([prolog(Term)], Term).
         %! argued(+Premise)
-        %  Premise, of a rule, is supported by an argument: neither a Prolog check nor a contrary.
+        %  Premise, of a rule, is supported by an argument: neither a Prolog check, nor a contrary, nor a constraint.
         argued(Premise) :-
             \+ prolog([Premise], _),
             \+ contrary([Premise], _),
-            \+ constraint::premise(Premise, _).
+            \+ constraint([Premise], _).
+        %! constraint(?Premise, ?Constraint)
+        %  Premise, as [{ Constraint }], is a constraint (see the module constraint).
+        constraint(['{}'(Constraint)], Constraint).
         %! contrary(?Premise, ?Statement)
         %  Premise, as [~(Statement)], is a contrary premise.
         contrary([~(Term)], Term).
@@ -249,18 +270,21 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             context_assert(premisesIndexed).
 
         %! boundByQuery(?Id)
-        %  A query could bind the arguments of the rule Id otherwise than the whole graph derives them: its conclusion,
-        %  or a Prolog check, has a variable its ordinary premises written before leave unbound (see boundByQuery/2).
+        %  A query could bind the arguments of the rule or premise Id otherwise than the whole graph derives them: its
+        %  conclusion, or a Prolog check, has a variable its ordinary premises written before leave unbound (see
+        %  boundByQuery/3).
         boundByQuery(Id) :-
             boundByQueryIndexed,
             context_check(boundByQueryRule(Id)).
 
-        % The index: boundByQueryRule/1 facts, built once in the active context
+        % The index: boundByQueryRule/1 facts, built with the rules (indexRules/2), or else once in the active context
         boundByQueryIndexed :- context_check(boundByQueryIndexed), !.
         boundByQueryIndexed :-
-            findall(rule(Id, Premises, C), classicRule(Id, Premises, [C]), Rules),
-            boundByQuery(Rules, Ids),
-            findall(_, (member(Id, Ids), context_assert(boundByQueryRule(Id))), _),
+            findall([Id, Premises, C], classicRule(Id, Premises, [C]), Rules),
+            findall([Id, C], classicRule(Id, [C]), Facts),
+            utils::appendLists([Rules, Facts], All),
+            boundByQuery(All, Ids, _),
+            assertIds(Ids),
             context_assert(boundByQueryIndexed).
 
         assertFromLast([]).
@@ -271,7 +295,20 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %! instances
         %  The arguments holding for sets of values get their instances (see the module constraints): with the graph
         %  extension constraints, or with temporal.
-        instances :- setting(graphExtension, constraints), !.
-        instances :- setting(temporal).
+        instances :- context_check(theoryKind(instances, Kind)), !, Kind == yes.
+        instances :-
+            (setting(graphExtension, constraints) -> Kind = yes ; setting(temporal) -> Kind = yes ; Kind = no),
+            context_assert(theoryKind(instances, Kind)),
+            Kind == yes.
+
+        %! constrained
+        %  An argument may have open conclusions or constraints to keep: with instances, or a rule with a { } premise.
+        %  Otherwise every argument concludes a ground statement, and the builders leave the constraints aside.
+        constrained :- context_check(theoryKind(constrained, Kind)), !, Kind == yes.
+        % (without indexRules/2)
+        constrained :-
+            (instances -> Kind = yes ; classicRule(_, Premises, _), member(P, Premises), constraint([P], _) -> Kind = yes ; Kind = no),
+            context_assert(theoryKind(constrained, Kind)),
+            Kind == yes.
         """.trimIndent()
 }

@@ -16,9 +16,12 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         %  does): those on the arguments built on the attacked one follow from them (see the module graphStore). Loops
         %  over the graph go through its copy by identifiers.
         buildAttacks :-
-            findall(_, buildDirectAttack, _).
+            (parser::constrained -> Constrained = yes ; Constrained = no),
+            findall(_, buildDirectAttack(Constrained), _).
 
-        buildDirectAttack :-
+        % (Constrained: the theory may have constraints, which the two arguments must satisfy together with the
+        % bindings of their conflict, see constraint::compatible/2)
+        buildDirectAttack(Constrained) :-
             graphStore::argumentById(IdA, A),
             attackCandidates::possibleAttackers(IdA, A, Conflict),
             findAttacker(Conflict, B),
@@ -27,11 +30,11 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             % binding their variables would change their identifiers (see context_id)
             copy_term(B-A, CB-CA),
             attackRelation::attacks(T, CB, CA),
-            constraint::compatible(CB, CA),
+            (Constrained == yes -> constraint::compatible(CB, CA) ; true),
             graphStore::argumentId(B, IdB),
             graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
             fail.
-        buildDirectAttack.
+        buildDirectAttack(_).
 
         % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
         findAttacker([Head], B) :- !,

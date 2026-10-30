@@ -125,7 +125,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             queryExploration::explore(Statement),
             graphStore::argumentFor([Statement], Attacker),
             attackRelation::attacks(Type, Attacker, On),
-            constraint::compatible(Attacker, On).
+            (parser::constrained -> constraint::compatible(Attacker, On) ; true).
 
         % The sub-arguments of an argument built by this solver
         subArguments(Argument, SubArguments) :-

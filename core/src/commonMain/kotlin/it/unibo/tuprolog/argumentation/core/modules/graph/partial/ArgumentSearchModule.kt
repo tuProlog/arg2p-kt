@@ -27,11 +27,10 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         % and an argument concludes what its premises and rule derive, which may not be open (a statement with free
         % variables, but with the graph extension constraints) whatever Conclusion binds.
 
-        % From a premise, as written
+        % From a premise: one with variables (parser::boundByQuery/1) concludes an open statement, with instances alone
         findArgument(Conclusion, Found) :-
             parser::classicRule(Id, Conclusion),
-            parser::classicRule(Id, Written),
-            constraint::concludable(Written),
+            (parser::boundByQuery(Id) -> parser::instances ; true),
             premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
 
@@ -43,7 +42,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             derivable(Id, Claim, Supports),
             ruleStrictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
-            constraint::extend(Premises, Supports, Body),
+            (parser::constrained -> constraint::extend(Premises, Supports, Body) ; Body = Premises),
             Found = found(Body, Id, Rules, Info, Supports).
 
         % derivable(+Id, +Claim, +Supports): the rule Id derives Claim from Supports alone. The search steered by the query
@@ -142,10 +141,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         selective(Slot, Count, best(_, Min), best(Slot, Count)) :- Count < Min, !.
         selective(_, _, Best, Best).
 
-        ordinaryPremise(Premise) :-
-            \+ parser::prolog([Premise], _),
-            \+ parser::contrary([Premise], _),
-            \+ constraint::premise(Premise, _).
+        ordinaryPremise(Premise) :- parser::argued(Premise).
 
         supportPremise(slot(Premise, Result)) :-
             parser::prolog([Premise], Term), !,
@@ -155,7 +151,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             parser::contrary([Premise], _), !,
             Result = contrary.
         supportPremise(slot(Premise, Result)) :-
-            constraint::premise(Premise, _), !,
+            parser::constraint([Premise], _), !,
             Result = constraint.
         supportPremise(slot(Premise, Result)) :-
             argument::claim(Sub, _),
