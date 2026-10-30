@@ -25,9 +25,10 @@ f4 :=> terminates(e2, f).     % e2 ends f
 | `holdsAt(f, between(1, 5))` | f holds after 1 up to 5: a start and a later end, with no end in between |
 | `holdsAt(f, 3)` | f holds at 3: a time within one of the regions |
 
-A fact holds after the event that starts it, up to and including the event that ends it. Starting a fact ends its
-complement (`initiates(e, -f)` ends `f`), and a start while the fact still holds starts nothing new: the earlier
-start keeps its period (as a late shot does not cause a death already caused).
+A fact holds after the event that starts it, up to and including the event that ends it. Starting a fact ends what
+it conflicts with, as the [conflict model]({{% ref "/docs/api/flags" %}}) says (`initiates(e, -f)` ends `f`, and with
+`conflict([dead], [alive]).` a start of `dead` ends `alive`), and a start while the fact still holds starts nothing
+new: the earlier start keeps its period (as a late shot does not cause a death already caused).
 
 Each region is one argument, whatever its length: no argument is built for each time, and no horizon is set. A
 time asked for, by a query or by a rule (`r : happens(thirst, T), holdsAt(empty, T) => ...`), is answered by the
@@ -78,7 +79,7 @@ other rule.
 
 | Rule | Concludes |
 | --- | --- |
-| `t_start(E, U, T)`, `t_stop(E, U, T)`, `t_ends(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of its complement) |
+| `t_start(E, U, T)`, `t_stop(E, U, T)`, `t_ends(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of what conflicts with it) |
 | `t_after(U, T1)` | `holdsAt(U, from(T1))` |
 | `t_before(E, U, T2)` | `holdsAt(U, until(T2))` |
 | `t_period(U, T1, T2)` | `holdsAt(U, between(T1, T2))` |
