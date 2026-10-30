@@ -107,6 +107,21 @@ class TranspositionModuleTest {
         assertTrue("e" in solution.substitution.getByName("I").toString())
     }
 
+    // The premises other than the one transposed keep their order: the check of r1 comes after l(L), which binds L
+    @Test
+    fun theOtherPremisesKeepTheirOrder() {
+        val module = ModuleTesting("autoTransposition.")
+        val rules = "[[r1, (l(L), prolog(member(Y, L)), d(Y)), c(Y)]]"
+        val transposed =
+            module
+                .value("transposition::transpose($rules, $rules, [], T)", "T")!!
+                .let { Term.parse(it, module.solver.operators) }
+                .castToList()
+                .toList()
+        val forD = transposed.map { it.castToList().toList() }.single { it[2].toString().contains("d(") }
+        assertEquals("('-'(c(Y)), l(L), prolog(member(Y, L)))", forD[1].toString().replace(Regex("_[A-Za-z0-9_]+"), "").let { it })
+    }
+
     @Test
     fun withoutAutoTranspositionTheRulesStayAsTheyAre() {
         // on in the profile aspic_plus, the default

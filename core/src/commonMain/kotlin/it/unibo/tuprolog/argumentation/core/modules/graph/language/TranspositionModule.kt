@@ -47,7 +47,10 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
             transpositionSequential(LPrec, T, Effect, Id, Taken, [H|Skipped], NewPrec, XNegated, NewId).
         transpositionSequential(LPrec, [X|T], Effect, Id, Taken, Skipped, NewPrec, XNegated, NewId) :-
             prologEscape(X),
-            utils::appendFast(Skipped, T, CleanedPrec),
+            % the premises before X in the order they are written (Skipped has them reversed): a Prolog check among them
+            % comes after the premises binding its variables, as in the rule
+            reverse(Skipped, Before),
+            utils::appendFast(Before, T, CleanedPrec),
             contradictories(X, Effect, XNegated, EffectNegated, Kind),
             listToTuple([EffectNegated|CleanedPrec], NewPrec),
             newIdentifier(Skipped, Id, Taken, BaseId),
