@@ -37,7 +37,7 @@ object ConstraintsModule : PrologModule("prolog.argumentation.graph.constraints"
 
         %! active
         %  The extension is in effect.
-        active :- setting(graphExtension, constraints), !.
+        active :- parser::regions, !.
 
         %! restriction(+Tag, +Statement, -Restriction)
         %  Restriction, saved under Tag, is an argument for Statement restricting a saved argument for a region: where

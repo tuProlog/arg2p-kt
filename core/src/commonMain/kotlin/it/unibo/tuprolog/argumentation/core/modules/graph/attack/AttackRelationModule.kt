@@ -79,7 +79,7 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             argument::conclusion(Argument, Conclusion),
             conflict::between(Conclusion, Statement).
         conflictsWith(Argument, Statement) :-
-            setting(graphExtension, constraints),
+            parser::regions,
             argument::conclusion(Argument, Conclusion),
             constraints::overlapConflict(Conclusion, Statement).
         """.trimIndent()

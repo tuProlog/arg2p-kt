@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
+import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
@@ -52,7 +53,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         get() = super.theoryOperators.plus(operators())
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage)
+        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage, Temporal)
 
     fun operators() =
         OperatorSet(
@@ -123,7 +124,12 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         defeasibleRules(DefeasibleRules) :-
             findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions => Effect), DefeasibleRulesOld),
             prologDefeasibleRules(DefeasibleRulesNew),
-            utils::appendFast(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
+            temporalRules(TemporalRules),
+            utils::appendLists([DefeasibleRulesOld, DefeasibleRulesNew, TemporalRules], DefeasibleRules).
+
+        % The axioms of the module temporal, with temporal
+        temporalRules(Rules) :- setting(temporal), !, temporal::rules(Rules).
+        temporalRules([]).
 
         % The strict rules with their transpositions, whose names are none of those of the rules and premises of the
         % theory (Others are the other rules and premises)
@@ -247,6 +253,11 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         assertFromLast([Fact|Facts]) :-
             assertFromLast(Facts),
             context_assert(Fact).
+
+        %! regions
+        %  Statements may hold over regions of numbers: with the graph extension constraints, or with temporal.
+        regions :- setting(graphExtension, constraints), !.
+        regions :- setting(temporal).
 
         %! complete(+Statement)
         %  The arguments for Statement found with the bindings it has include those for every statement it generalises:

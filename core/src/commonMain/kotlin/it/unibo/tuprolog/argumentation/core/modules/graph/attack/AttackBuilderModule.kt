@@ -37,7 +37,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             graphStore::argumentUnifiable([Head], B).
         findAttacker([Head], B) :- !,
             % (constraints) an argument for a region overlapping the one of Head
-            setting(graphExtension, constraints),
+            parser::regions,
             constraints::generalized(Head, General),
             graphStore::argumentUnifiable([General], B),
             \+ graphStore::argumentUnifiable([Head], B).

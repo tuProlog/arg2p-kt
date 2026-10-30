@@ -33,6 +33,7 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.language.AspicLanguage
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConflictModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.DefeasibleLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.TemporalModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.TranspositionModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.partial.ArgumentSearchModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.partial.QueryExplorationModule
@@ -71,6 +72,7 @@ object ModuleRegistry {
         listOf(
             ParserModule,
             TranspositionModule,
+            TemporalModule,
             ConflictModule,
             AspicLanguageModule,
             AbaLanguageModule,

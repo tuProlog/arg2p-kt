@@ -28,7 +28,7 @@ object RuleGraphModule : PrologModule("prolog.argumentation.graph", "ruleGraph")
         %  of the regions to the statements in conflict with an argument.
         buildAdditionalArguments :-
             conflictArguments::buildAdditionalArguments,
-            (setting(graphExtension, constraints) -> constraints::buildConflictRestrictions ; true).
+            (parser::regions -> constraints::buildConflictRestrictions ; true).
 
         %! buildAttacks
         %  The attacks between the saved arguments.

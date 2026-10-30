@@ -102,4 +102,54 @@ class TemporalExamplesTest {
                 isNessIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
             }
     }
+
+    // The same examples with the axioms of time (temporal): what holds is a region after an event (holdsAt(dead(ge),
+    // from(2))), and no persistence argument is built for each time step, nor a horizon set
+    @Test
+    fun doubleShootingWithTheAxiomsOfTime(): Unit =
+        Arg2p
+            .of(
+                """
+                temporal.
+                r2(X, Y, T) : causesE(X, Y), happens(X, T), prolog(T1 is T + 1) => happens(Y, T1).
+                r1(X, Y) : causesF(X, Y) => initiates(X, Y).
+                d1 :=> causesE(sh(X, Y), hit(X, Y)).
+                d2 :=> causesF(hit(X, Y), dead(Y)).
+                f_1 :=> happens(sh(bu, ge), 1).
+                f_2 :=> happens(sh(dl, ge), 3).
+                """.trimIndent(),
+            ).let { solver ->
+                isNessOriginalIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
+                isNessOriginalIntervention(solver, "[-happens(sh(dl, ge), 3)]", "holdsAt(dead(ge), 5)", false)
+                isNessIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
+                isNessIntervention(solver, "[-happens(sh(dl, ge), 3)]", "holdsAt(dead(ge), 5)", false)
+            }
+
+    @Test
+    fun poisoningWithTheAxiomsOfTime() {
+        Arg2p
+            .of(
+                """
+                temporal.
+                r2(X, Y, T) : happens(X, T), causesE(X, Y, T), prolog(T1 is T + 1) => happens(Y, T1).
+                r1(X, Y) : causesF(X, Y) => initiates(X, Y).
+                c1 :=> causesF(empties, empty).
+                c2 :=> causesF(poisons, poisoned).
+                c3(T) : holdsAt(-empty, T), holdsAt(poisoned, T) => causesE(thirst, drinksPoison, T).
+                c4(T) : holdsAt(empty, T) => causesE(thirst, dehydration, T).
+                c5 :=> causesF(drinksPoison, dead).
+                c6 :=> causesF(dehydration, dead).
+                f_0 :=> happens(start, 0).
+                f_1 :=> initiates(start, -empty).
+                f_2 :=> happens(poisons, 1).
+                f_3 :=> happens(empties, 2).
+                f_4 :=> happens(thirst, 4).
+                """.trimIndent(),
+            ).let { solver ->
+                isNessOriginalIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 6)", false)
+                isNessOriginalIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 6)")
+                isNessIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 6)", false)
+                isNessIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 6)")
+            }
+    }
 }

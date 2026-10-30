@@ -78,7 +78,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
 
         % A premise of Body is one of the conclusions N, or (constraints) within the region of one of them
         usesAny(Body, N) :- utils::containsAny(Body, N), !.
-        usesAny(Body, N) :- setting(graphExtension, constraints), constraints::triggered(Body, N).
+        usesAny(Body, N) :- parser::regions, constraints::triggered(Body, N).
 
         nextRound(Tn) :-
             otherTag(Tn, Tx),
@@ -110,7 +110,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % An argument for Statement: one saved for it, or (constraints) the restriction of one for a region containing it
         supportFor(Statement, Support) :- graphStore::argumentFor([Statement], Support).
         supportFor(Statement, Support) :-
-            setting(graphExtension, constraints),
+            parser::regions,
             constraints::restriction(restriction, Statement, Support).
 
         ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-

@@ -13,6 +13,7 @@ import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
@@ -94,6 +95,9 @@ class Flags private constructor(
 
     /** Whether the rules are arguments as well */
     fun metaRules(on: Boolean): Flags = switch(MetaRules, on)
+
+    /** Whether the theory has the temporal axioms (the module temporal), over regions of time */
+    fun temporal(on: Boolean): Flags = switch(Temporal, on)
 
     /** Whether the modules print their debug output */
     fun debug(on: Boolean): Flags = switch(DebugOutput, on)

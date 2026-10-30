@@ -107,7 +107,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             exploreStatement(Query, premise),
             graphStore::argumentFor([Query], Argument).
         buildSubGraph(Query, Argument) :-
-            setting(graphExtension, constraints),
+            parser::regions,
             constraints::queryArgument(Query, Argument).
 
         %! exploreGeneral(+Statement)
@@ -146,7 +146,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         queryArgument(Query, Scope, Argument, Supports) :-
             argumentSearch::findSingleArgument([Query], Scope, Argument, Supports).
         queryArgument(Query, _, Argument, []) :-
-            setting(graphExtension, constraints),
+            parser::regions,
             constraints::queryArgument(Query, Argument).
 
         % A statement explored covers the statements it generalises when its exploration finds their arguments as well

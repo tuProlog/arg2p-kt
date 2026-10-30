@@ -52,6 +52,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
+| `temporal` | disabled | the fact is present or absent: the [axioms of time]({{% ref "/docs/modules/temporal" %}}), over regions of time |
 | `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
 

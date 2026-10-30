@@ -218,6 +218,10 @@ class Flags:
         """Whether the rules are arguments as well."""
         return self._set(self._flags.metaRules(on))
 
+    def temporal(self, on: bool) -> Flags:
+        """Whether the theory has the temporal axioms (the module temporal), over regions of time."""
+        return self._set(self._flags.temporal(on))
+
     def debug(self, on: bool) -> Flags:
         """Whether the modules print their debug output."""
         return self._set(self._flags.debug(on))

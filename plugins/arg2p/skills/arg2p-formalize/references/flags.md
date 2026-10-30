@@ -17,6 +17,7 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
 | `metaRules`, `metaConflicts` | off (on under `meta`) | present: rules fire only when argued `applicable(Rule)`, conflicts only when argued `conflict(A, B)` |
+| `temporal` | off | present: the axioms of time over `happens(E, T)`, `initiates(E, U)`, `terminates(E, U)`; concludes `holdsAt(U, from(T1))`, `holdsAt(U, until(T2))`, `holdsAt(U, between(T1, T2))`, and answers `holdsAt(U, T)` by the region containing T |
 | `graphBuilder(B)` | `ruleGraph` | `ruleGraph`, `abstractGraph`: set by the profile |
 | `graphLanguage(L)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`: set by the profile |
 | `debug` | off | present: `bp_grounded_partial` writes the steps of its labelling |
