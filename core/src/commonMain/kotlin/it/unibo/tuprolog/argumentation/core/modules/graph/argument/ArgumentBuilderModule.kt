@@ -67,7 +67,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         buildArgumentsFromRules(N, Tn) :-
             findall(_, (
                 context_check(graphRule([Id, Body, Conc])),
-                utils::containsAny(Body, N),
+                usesAny(Body, N),
                 buildArgumentsFromRule(Tn, [Id, Body, Conc])
             ), _),
             (graphStore::newConclusion(Tn, _) -> nextRound(Tn) ; true).
@@ -75,6 +75,10 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         buildArgumentsFromRule(Tn, [RuleID, RuleBody, RuleHead]) :-
             ruleBodyIsSupported(RuleBody, rule(RuleID, RuleHead, RuleBody), [[], [], [], []], Argument),
             graphStore::saveArgument(Tn, RuleHead, Argument).
+
+        % A premise of Body is one of the conclusions N, or (constraints) within the region of one of them
+        usesAny(Body, N) :- utils::containsAny(Body, N), !.
+        usesAny(Body, N) :- setting(graphExtension, constraints), constraints::triggered(Body, N).
 
         nextRound(Tn) :-
             otherTag(Tn, Tx),
@@ -103,9 +107,15 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
             (callable(Check) -> user::call(Check); user::Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
+        % An argument for Statement: one saved for it, or (constraints) the restriction of one for a region containing it
+        supportFor(Statement, Support) :- graphStore::argumentFor([Statement], Support).
+        supportFor(Statement, Support) :-
+            setting(graphExtension, constraints),
+            constraints::restriction(restriction, Statement, Support).
+
         ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
             Acc = [All, LastDef, Def, Prem],
-            graphStore::argumentFor([Statement], Support),
+            supportFor(Statement, Support),
             argument::rules(Support, Rules),
             argument::info(Support, Info),
             argument::infoParts(Info, SupportLastDef, SupportDef, SupportPrem),

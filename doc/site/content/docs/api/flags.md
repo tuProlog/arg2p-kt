@@ -44,7 +44,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `conflictModel(Part)` | all the parts (`builtin`) | `negation`, `deontic`, `preference`, `declared` (several), `builtin` for all of them |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
 | `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` |
+| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`, `constraints` |
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
@@ -120,6 +120,7 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 | `defeasibleAllPref` | The richer model, which also supports comparators that need several superiorities at once. |
 | `rebutRestriction` | Applies the *restricted rebut* constraint: an argument cannot rebut a conclusion drawn by a strict rule. |
 | `abaPref` | The preferences between assumptions of ABA<sup>+</sup>, `sup(Stronger, Weaker)`: an attack from a weaker assumption is reversed. See [profiles]({{% ref "/docs/profiles#aba" %}}). |
+| `constraints` | Statements over regions of numbers, `from(T)`, `until(T)`, `between(A, B)`: a region stands for each of its numbers, restricted to the ones a rule or a query asks for. See [Constraints]({{% ref "/docs/modules/constraints" %}}). |
 | `bp` | Makes the burden of persuasion arguable: the burden is concluded by a rule, e.g. `r : [] => bp(something).`, instead of being declared as a fact. See [Meta-argumentation]({{% ref "/docs/modules/meta" %}}). |
 
 The defeasible preference models and the meta-argumentation treatment of the burden of persuasion are

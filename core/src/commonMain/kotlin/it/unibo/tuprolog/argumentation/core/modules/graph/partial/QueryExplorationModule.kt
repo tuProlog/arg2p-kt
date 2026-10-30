@@ -101,10 +101,19 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             findall(_, (member(Query, Queries), explore(Query)), _).
 
         %! buildSubGraph(+Query, ?Argument)
-        %  Argument is each argument for Query, a premise, once explored.
+        %  Argument is each argument for Query, a premise, once explored: (constraints) the restrictions of the arguments
+        %  for a region containing it as well.
         buildSubGraph(Query, Argument) :-
             exploreStatement(Query, premise),
             graphStore::argumentFor([Query], Argument).
+        buildSubGraph(Query, Argument) :-
+            setting(graphExtension, constraints),
+            constraints::queryArgument(Query, Argument).
+
+        %! exploreGeneral(+Statement)
+        %  Statement, which generalises a statement asked for (see the module constraints), explored as a premise.
+        exploreGeneral(Statement) :-
+            exploreStatement(Statement, premise).
 
         % exploreStatement(+Query, +Use): builds the arguments for Query, and those their labels may depend on (see
         % dependency/3), recursively, unless it is explored (once, or once more for each round of explore/1): an
@@ -119,7 +128,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             cover(Query, Normalized),
             context_assert(exploring(Normalized, Query)),
             findall(_, (
-                argumentSearch::findSingleArgument([Query], Scope, Argument, Supports),
+                queryArgument(Query, Scope, Argument, Supports),
                 recordArgument(Query, Argument, Supports),
                 graphStore::argumentId(Argument, Id),
                 dependency(Id, Argument, Statement),
@@ -131,6 +140,14 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             context_check(exploring(_, Normalized)), !,
             (context_absent(cycle) -> context_assert(cycle) ; true).
         exploreStatement(_, _).
+
+        % The arguments for Query: those its rules and premises make, and (constraints) the restrictions of those for a
+        % region containing it
+        queryArgument(Query, Scope, Argument, Supports) :-
+            argumentSearch::findSingleArgument([Query], Scope, Argument, Supports).
+        queryArgument(Query, _, Argument, []) :-
+            setting(graphExtension, constraints),
+            constraints::queryArgument(Query, Argument).
 
         % A statement explored covers the statements it generalises when its exploration finds their arguments as well
         % (parser::complete/1): a rule checking a variable it leaves unbound decides the check without the binding a

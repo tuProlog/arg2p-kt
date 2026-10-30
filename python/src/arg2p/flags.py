@@ -85,6 +85,7 @@ class GraphExtension(_FlagValue):
     DEFEASIBLE_PREF = "defeasiblePref"
     DEFEASIBLE_ALL_PREF = "defeasibleAllPref"
     ABA_PREF = "abaPref"
+    CONSTRAINTS = "constraints"
 
 
 class GraphLanguage(_FlagValue):
