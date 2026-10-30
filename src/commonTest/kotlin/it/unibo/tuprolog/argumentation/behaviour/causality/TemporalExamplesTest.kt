@@ -17,6 +17,10 @@ class TemporalExamplesTest {
         """.trimIndent()
     }
 
+    // Facts with variables (d1, c1) conclude open statements: their instances, as the rules use them, need the graph
+    // extension constraints
+    private val schemata = "\ngraphExtension(standardPref).\ngraphExtension(rebutRestriction).\ngraphExtension(constraints).\n"
+
     @Test
     fun doubleShootingTemporal(): Unit =
         Arg2p
@@ -57,7 +61,7 @@ class TemporalExamplesTest {
                 f_1 :=> happens(sh(bu, ge), 1).
                 f_2 :=> happens(sh(dl, ge), 3).
                 
-                """.trimIndent() + temporalDomain(5),
+                """.trimIndent() + temporalDomain(5) + schemata,
             ).let { solver ->
                 isNessOriginalIntervention(solver, "[-happens(sh(bu, ge), 1)]", "holdsAt(dead(ge), 5)")
                 isNessOriginalIntervention(solver, "[-happens(sh(bu, ge), 3)]", "holdsAt(dead(ge), 5)", false)
@@ -93,7 +97,7 @@ class TemporalExamplesTest {
                 f_3 :=> happens(empties, 2).
                 f_4 :=> happens(thirst, 4).
                 
-                """.trimIndent() + temporalDomain(5),
+                """.trimIndent() + temporalDomain(5) + schemata,
             ).let { solver ->
                 isNessOriginalIntervention(solver, "[-happens(poisons, 1)]", "holdsAt(dead, 5)", false)
                 isNessOriginalIntervention(solver, "[-happens(empties, 2)]", "holdsAt(dead, 5)")
@@ -103,8 +107,8 @@ class TemporalExamplesTest {
             }
     }
 
-    // The same examples with the axioms of time (temporal): what holds is a region after an event (holdsAt(dead(ge),
-    // from(2))), and no persistence argument is built for each time step, nor a horizon set
+    // The same examples with the axioms of time (temporal): what holds is a period after an event (holdsAt(dead(ge), T)
+    // for every T after 2), and no persistence argument is built for each time step, nor a horizon set
     @Test
     fun doubleShootingWithTheAxiomsOfTime(): Unit =
         Arg2p

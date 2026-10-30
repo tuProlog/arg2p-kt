@@ -41,8 +41,19 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  Argument, for Conclusion, is saved under Tag, unless it already is.
         saveArgument(Tag, Conclusion, Argument) :-
             context_absent(clause(conc(Conclusion), argument(Argument))),
-            context_assert(newConc(Tag, Conclusion)),
             context_id(argument(Argument), Id),
+            store(Tag, Conclusion, Argument, Id).
+
+        %! saveInstance(+Tag, +Conclusion, +Argument)
+        %  As saveArgument/3, unless an argument with the identifier of Argument is saved: Argument is saved even when an
+        %  argument it is an instance of (for more values, see the module constraints) is.
+        saveInstance(Tag, Conclusion, Argument) :-
+            context_id(argument(Argument), Id),
+            context_absent(clause(arg(Id), _)),
+            store(Tag, Conclusion, Argument, Id).
+
+        store(Tag, Conclusion, Argument, Id) :-
+            context_assert(newConc(Tag, Conclusion)),
             context_assert(argument(Argument)),
             context_assert(conc(Conclusion) :- argument(Argument)),
             context_assert(arg(Id) :- argument(Argument)),
@@ -129,13 +140,14 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %--------------------------------------------------------------------------
 
         %! saveSupport(+Supporter, +Supported)
-        %  Supporter, a sub-argument of Supported, is saved as supporting it, unless it already is.
+        %  Supporter, a sub-argument of Supported, is saved as supporting it, unless it already is: by their identifiers,
+        %  as the support of an instance of Supported by one of Supporter (for fewer values) is another one.
         saveSupport(Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_absent(Support),
-            context_assert(Support),
             context_id(argument(Supporter), IdSupporter),
             context_id(argument(Supported), IdSupported),
+            context_absent(supportId(IdSupporter, IdSupported)),
+            support::new(Supporter, Supported, Support),
+            context_assert(Support),
             context_assert(supportId(IdSupporter, IdSupported)).
 
         %! saveSupports(+Supports)
@@ -153,6 +165,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  Supports are the (Supporter, Supported) pairs saved.
         supports(Supports) :-
             findall((Supporter, Supported), support(Supporter, Supported), Supports).
+
+        %! supportersOf(+Argument, -Supporters)
+        %  Supporters are the saved arguments supporting Argument directly, by their identifiers.
+        supportersOf(Argument, Supporters) :-
+            context_id(argument(Argument), Id),
+            findall(S, (context_check(supportId(IdS, Id)), argumentById(IdS, S)), Supporters).
 
         %! supportedById(+Id, -SuperId)
         %  The argument with identifier SuperId is supported by the one with identifier Id, directly or not.

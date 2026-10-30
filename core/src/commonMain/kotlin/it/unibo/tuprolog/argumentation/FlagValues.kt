@@ -105,7 +105,7 @@ enum class GraphExtension(
     /** The preferences of ABA+, reversing attacks */
     ABA_PREF("abaPref"),
 
-    /** Statements over regions of numbers (from(T), until(T), between(A, B)), restricted to the numbers within them */
+    /** The instances of the arguments holding for sets of values (free variables, { } constraints), for the values used */
     CONSTRAINTS("constraints"),
 }
 

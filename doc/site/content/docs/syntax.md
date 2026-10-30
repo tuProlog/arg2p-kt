@@ -235,7 +235,13 @@ If the goal fails, no argument is built from that rule at all.
 
 A `prolog/1` goal is solved with the bindings of the premises written before it — like `X` above, from the
 `age/1` premise — both on the whole graph and under `queryMode`: write it after the premises binding its
-variables (`prolog(X >= 18), age(X)` raises an instantiation error).
+variables (`prolog(X >= 18), age(X)` raises an instantiation error). A query never binds them for it: under
+`queryMode` an argument is the one the whole graph has.
+
+A conclusion is ground: a rule whose premises leave a variable of its conclusion unbound (`r : q => p(X).`, or a
+fact `f :=> p(X).`) concludes nothing, whatever value a query asks for. With the graph extension
+[`constraints`]({{% ref "/docs/modules/constraints" %}}) it holds for every value, and `{ }` premises constrain them
+(`r : s, {T > 1} => holdsAt(f, T).`).
 
 ## Theories in plain Prolog
 

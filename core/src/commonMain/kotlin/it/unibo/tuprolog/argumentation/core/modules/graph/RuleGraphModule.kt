@@ -24,11 +24,11 @@ object RuleGraphModule : PrologModule("prolog.argumentation.graph", "ruleGraph")
             argumentBuilder::buildArguments.
 
         %! buildAdditionalArguments
-        %  The arguments derived from the others (see the module conflictArguments), and (constraints) the restrictions
-        %  of the regions to the statements in conflict with an argument.
+        %  The arguments derived from the others: (constraints) the instances of those holding for sets of values, then
+        %  (conflictArguments) the copies for the conflicts.
         buildAdditionalArguments :-
-            conflictArguments::buildAdditionalArguments,
-            (parser::regions -> constraints::buildConflictRestrictions ; true).
+            (parser::instances -> constraints::buildAdditionalArguments ; true),
+            conflictArguments::buildAdditionalArguments.
 
         %! buildAttacks
         %  The attacks between the saved arguments.

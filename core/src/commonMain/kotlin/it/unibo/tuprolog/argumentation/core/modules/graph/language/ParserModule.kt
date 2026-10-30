@@ -10,8 +10,6 @@ import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.NeedsIndex
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.OccursFreeUnify
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
@@ -39,8 +37,6 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 PrologPremises::descriptionPair.get(),
                 PrologDefeasibleRules::descriptionPair.get(),
                 ExtractId::descriptionPair.get(),
-                NeedsIndex::descriptionPair.get(),
-                OccursFreeUnify::descriptionPair.get(),
                 RuleToClause::descriptionPair.get(),
                 RuleToClauseNatural::descriptionPair.get(),
             )
@@ -206,7 +202,8 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %  Premise, of a rule, is supported by an argument: neither a Prolog check nor a contrary.
         argued(Premise) :-
             \+ prolog([Premise], _),
-            \+ contrary([Premise], _).
+            \+ contrary([Premise], _),
+            \+ constraint::premise(Premise, _).
         %! contrary(?Premise, ?Statement)
         %  Premise, as [~(Statement)], is a contrary premise.
         contrary([~(Term)], Term).
@@ -254,41 +251,10 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             assertFromLast(Facts),
             context_assert(Fact).
 
-        %! regions
-        %  Statements may hold over regions of numbers: with the graph extension constraints, or with temporal.
-        regions :- setting(graphExtension, constraints), !.
-        regions :- setting(temporal).
-
-        %! complete(+Statement)
-        %  The arguments for Statement found with the bindings it has include those for every statement it generalises:
-        %  no rule concluding it needs a variable of its conclusion that Statement leaves unbound (see checksIndexed).
-        complete(Statement) :-
-            \+ neededBy(Statement, _).
-
-        %! neededBy(+Statement, -Vars)
-        %  A rule concluding Statement needs Vars bound, which Statement leaves unbound (in part, at least).
-        neededBy(Statement, Vars) :-
-            checksIndexed,
-            functor(Statement, Name, Arity),
-            functor(Conclusion, Name, Arity),
-            context_check(checkNeeds(Conclusion, Vars)),
-            occursFreeUnify(Conclusion, Statement),
-            \+ ground(Vars).
-
-        %! needing(?Id)
-        %  The rule Id needs variables of its conclusion bound by the statement asked for (see complete/1): the arguments
-        %  it makes for a statement may be missing from those found for a statement generalising it.
-        needing(Id) :-
-            checksIndexed,
-            context_check(needingRule(Id)).
-
-        % The index: checkNeeds(Conclusion, Vars) and needingRule(Id) for each rule Id needing the variables Vars of its
-        % conclusion bound by the statement asked for (see needsIndex/2), built once in the active context
-        checksIndexed :- context_check(checksIndexed), !.
-        checksIndexed :-
-            findall(rule(Id, C, Premises), classicRule(Id, Premises, [C]), Rules),
-            needsIndex(Rules, Index),
-            assertFromLast(Index),
-            context_assert(checksIndexed).
+        %! instances
+        %  The arguments holding for sets of values get their instances (see the module constraints): with the graph
+        %  extension constraints, or with temporal.
+        instances :- setting(graphExtension, constraints), !.
+        instances :- setting(temporal).
         """.trimIndent()
 }

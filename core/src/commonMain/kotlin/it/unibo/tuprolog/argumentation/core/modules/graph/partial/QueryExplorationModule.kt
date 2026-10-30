@@ -27,7 +27,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             context_retract(cycle),
             exploreStatement(Query, dependency),
             (context_check(cycle), graphStore::newConclusion(query, _) ->
-                forgetExplorations,
+                context_retract(explored(_)),
                 explore(Query)
             ;
                 true
@@ -41,14 +41,14 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         %  them as premises, directly or through other statements, explored again, the others left as they are.
         resume(Statements) :-
             builtOn(Statements, [], Affected),
-            findall(_, (member(S, Affected), forgetExplored(S)), _),
+            findall(_, (member(S, Affected), context_retract(explored(S))), _),
             findall(_, (member(S, Affected), explore(S)), _).
 
         %! restart
         %  The exploration forgotten, not the arguments it built: exploring again finds all that the arguments saved
         %  since support or make possible attackers (with metaConflicts, those for conflicts).
         restart :-
-            forgetExplorations,
+            context_retract(explored(_)),
             context_retract(expanded(_)),
             attackCandidates::forgetPossibleAttackers.
 
@@ -101,34 +101,23 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             findall(_, (member(Query, Queries), explore(Query)), _).
 
         %! buildSubGraph(+Query, ?Argument)
-        %  Argument is each argument for Query, a premise, once explored: (constraints) the restrictions of the arguments
-        %  for a region containing it as well.
+        %  Argument is each argument for Query, a premise, once explored.
         buildSubGraph(Query, Argument) :-
             exploreStatement(Query, premise),
             graphStore::argumentFor([Query], Argument).
-        buildSubGraph(Query, Argument) :-
-            parser::regions,
-            constraints::queryArgument(Query, Argument).
-
-        %! exploreGeneral(+Statement)
-        %  Statement, which generalises a statement asked for (see the module constraints), explored as a premise.
-        exploreGeneral(Statement) :-
-            exploreStatement(Statement, premise).
 
         % exploreStatement(+Query, +Use): builds the arguments for Query, and those their labels may depend on (see
-        % dependency/3), recursively, unless it is explored (once, or once more for each round of explore/1): an
-        % exploration covers the statements Query generalises, or Query alone (see cover/2). A statement met again while it is being explored only
+        % dependency/3), recursively, unless it is explored (once, or once more for each round of explore/1):
+        % explored(Query) covers the statements Query generalises. A statement met again while it is being explored only
         % has the arguments built so far: needed as a premise (Use), that is a cycle; needed as a dependency, its
         % exploration under way builds them all.
         exploreStatement(Query, _) :-
             groundVars(Query, Normalized),
-            \+ covered(Normalized), !,
-            scope(Normalized, Scope),
+            context_absent(explored(Normalized)), !,
             context_assert(explored(Query)),
-            cover(Query, Normalized),
             context_assert(exploring(Normalized, Query)),
             findall(_, (
-                queryArgument(Query, Scope, Argument, Supports),
+                argumentSearch::findSingleArgument([Query], Argument, Supports),
                 recordArgument(Query, Argument, Supports),
                 graphStore::argumentId(Argument, Id),
                 dependency(Id, Argument, Statement),
@@ -140,39 +129,6 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             context_check(exploring(_, Normalized)), !,
             (context_absent(cycle) -> context_assert(cycle) ; true).
         exploreStatement(_, _).
-
-        % The arguments for Query: those its rules and premises make, and (constraints) the restrictions of those for a
-        % region containing it
-        queryArgument(Query, Scope, Argument, Supports) :-
-            argumentSearch::findSingleArgument([Query], Scope, Argument, Supports).
-        queryArgument(Query, _, Argument, []) :-
-            parser::regions,
-            constraints::queryArgument(Query, Argument).
-
-        % A statement explored covers the statements it generalises when its exploration finds their arguments as well
-        % (parser::complete/1): a rule checking a variable it leaves unbound decides the check without the binding a
-        % more specific statement gives, so such an exploration covers only the statement itself (its variants).
-        cover(Query, _) :- parser::complete(Query), !, context_assert(coversAll(Query)).
-        cover(_, Normalized) :- context_assert(coversOnly(Normalized)).
-
-        covered(Normalized) :- context_check(coversAll(Normalized)), !.
-        covered(Normalized) :- context_check(coversOnly(Normalized)).
-
-        % The rules to explore a statement with: once a statement generalising it is explored, which covered it but for
-        % the rules needing bindings, only those (see argumentSearch::findSingleArgument/4)
-        scope(Normalized, needing) :- context_check(explored(Normalized)), !.
-        scope(_, all).
-
-        forgetExplorations :-
-            context_retract(explored(_)),
-            context_retract(coversAll(_)),
-            context_retract(coversOnly(_)).
-
-        forgetExplored(Statement) :-
-            context_retract(explored(Statement)),
-            context_retract(coversAll(Statement)),
-            groundVars(Statement, Normalized),
-            context_retract(coversOnly(Normalized)).
 
         % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
         % it): those that make others conflict with it (metaConflicts), those of its possible attackers, and those the
@@ -213,8 +169,10 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             saveSupports(Argument, Supports).
         recordArgument(_, _, _).
 
+        % The supports saved: (constraints) an argument for more values than the premise it supports binds, by its instance
         saveSupports(_, []).
         saveSupports(Argument, [Support|Supports]) :-
+            (parser::instances -> constraints::realize(Support) ; true),
             graphStore::saveSupport(Support, Argument),
             saveSupports(Argument, Supports).
         """.trimIndent()

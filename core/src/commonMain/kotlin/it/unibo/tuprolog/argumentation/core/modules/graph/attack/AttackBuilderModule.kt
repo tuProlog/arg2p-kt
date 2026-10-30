@@ -27,20 +27,15 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             % binding their variables would change their identifiers (see context_id)
             copy_term(B-A, CB-CA),
             attackRelation::attacks(T, CB, CA),
+            constraint::compatible(CB, CA),
             graphStore::argumentId(B, IdB),
             graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
             fail.
         buildDirectAttack.
 
         % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
-        findAttacker([Head], B) :-
-            graphStore::argumentUnifiable([Head], B).
         findAttacker([Head], B) :- !,
-            % (constraints) an argument for a region overlapping the one of Head
-            parser::regions,
-            constraints::generalized(Head, General),
-            graphStore::argumentUnifiable([General], B),
-            \+ graphStore::argumentUnifiable([Head], B).
+            graphStore::argumentUnifiable([Head], B).
         findAttacker(Conclusion, B) :-
             graphStore::argumentFor(Conclusion, B).
         """.trimIndent()

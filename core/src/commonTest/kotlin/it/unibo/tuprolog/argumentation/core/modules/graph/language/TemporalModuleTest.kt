@@ -47,8 +47,8 @@ class TemporalModuleTest {
     @Test
     fun aStatedTimeInterruptsAPeriodThere() {
         assertEquals(
-            listOf("none", "in", "out", "in", "out"),
-            labels(interrupted, "holdsAt(f, 1)", "holdsAt(f, 5)", "holdsAt(f, 7)", "holdsAt(f, 9)", "holdsAt(f, from(1))"),
+            listOf("none", "in", "out", "in"),
+            labels(interrupted, "holdsAt(f, 1)", "holdsAt(f, 5)", "holdsAt(f, 7)", "holdsAt(f, 9)"),
         )
     }
 
@@ -66,7 +66,7 @@ class TemporalModuleTest {
         )
     }
 
-    // h holds over (0, 6], so over (0, 4] as well: a region holds for each of its times, it is no period of its own
+    // h holds over (0, 6]: the period (0, 4] is not one, its end defeated, and 4 is a time of the longer one
     @Test
     fun aDefeatedEndEndsNoPeriod() {
         assertEquals(
@@ -74,8 +74,8 @@ class TemporalModuleTest {
             labels(
                 defeatedEnd,
                 "ended(h, 4)",
-                "holdsAt(h, between(0, 6))",
-                "holdsAt(h, between(0, 4))",
+                "holdsAt(h, 6)",
+                "holdsAt(h, 4)",
                 "holdsAt(h, 5)",
                 "holdsAt(h, 7)",
             ),

@@ -3,49 +3,57 @@ title: Constraints
 weight: 40
 ---
 
-## Statements over regions
+## Arguments for sets of values
 
-With the graph extension `constraints`, a statement may hold for a **region** of numbers in place of a number:
-
-| Term | Region |
-| --- | --- |
-| `from(T)` | the numbers after `T` |
-| `until(T)` | the numbers up to `T`, `T` included |
-| `between(A, B)` | the numbers after `A` up to `B`, `B` included |
-| a number `N` | `N` alone |
-
-A region stands for each of its numbers, with no argument built for each of them: `holdsAt(dead, from(2))` is one
-argument, for every time after 2.
+An argument concludes a ground statement: a rule whose conclusion keeps a variable that its premises leave unbound
+(`r : q => p(X).`) concludes nothing, on the whole graph and under `queryMode` alike, whatever value a query asks
+for. With the graph extension `constraints`, such an **open** conclusion holds for every value of its variables, and
+`{ }` premises constrain them:
 
 ```prolog
 graphExtension(standardPref).
 graphExtension(constraints).
 
-f1 :=> holdsAt(f, from(1)).
+f1 :=> s.
+r0 : s, {T > 1} => holdsAt(f, T).    % f holds at every time after 1
 r1 : holdsAt(f, 5) => ok.
 c1 :=> -holdsAt(f, 7).
 ```
 
-`ok` is accepted: the argument for the region supports `holdsAt(f, 5)`. `-holdsAt(f, 7)` contests the region at 7
-alone, not at 5.
+`holdsAt(f, T)` is one argument, for every T after 1: no argument is built for each value. `ok` is accepted, and
+`-holdsAt(f, 7)` contests the argument at 7 alone, not at 5.
 
 ---
 
-## How it works
+## Constraints
 
-- **Restrictions.** An argument for a region supports a statement for a number or a region within it through its
-  *restriction*: the same argument (rules, premises, preferences) concluding the narrower statement, built when a
-  premise or a query needs it. Where the region came from a sub-argument (`r : holdsAt(f, T) => g(T).` concludes
-  `g(from(1))`), the sub-argument is restricted as well, so a restriction rests on what holds at its numbers alone.
-- **Conflicts.** Two statements conflict as they would for a number in common when their regions overlap:
-  `-holdsAt(f, 7)` attacks the argument for `holdsAt(f, from(1))` and its restriction to 7, not the restrictions to
-  5 or 9. In the whole graph, the conflict shows with the region restricted to it (`holdsAt(f, 7)`).
-- **Where the regions are.** A statement has a region where it has a region term; a number against a number is
-  compared as any term, so numbers used as data are unaffected.
+A premise `{ C }` is checked as `prolog(C)` once its variables are bound, and kept on the argument while they are
+not. An argument keeps the constraints of its sub-arguments still open, and a binding (a premise, a conflict, a
+query) is admitted only while they may all hold together.
 
-A region can flow through a rule by unification (`T` bound to `from(1)` above). A `prolog/1` check on such a
-variable needs a number: write the premise binding it to one first.
+| Constraint | Holds for |
+| --- | --- |
+| `X > 1`, `X >= 1`, `X < 5`, `X =< 5`, `X =:= 3`, `X =\= 3` | the numbers so compared (a dense domain: `{X > 1, X < 2}` has values) |
+| `member(X, [a, b])` | the terms listed |
+| `X = a`, `X \= a` | the term, or any other |
+| `C1, C2` | both |
 
-This is the treatment of constrained arguments of Constrained ABA (De Angelis, Fioravanti, Meo, Pettorossi, Proietti,
-Toni, 2026), where an argument stands for its instances, inside the theory: a restriction is an instance, built when
-needed, rather than a split of the argument by the semantics.
+A constraint relating two unbound variables waits until one of them is bound; any other goal is checked as by
+`prolog/1` once ground.
+
+---
+
+## Instances
+
+The **instance** of an argument for some of its values is an argument of its own, made of the same rules and
+premises, its sub-arguments instantiated alike where the values flow:
+
+- **Supports.** A rule using an open argument for some values (`r1` above, for 5) rests on its instance, saved in the
+  graph, so the attacks on those values (and on them alone) reach it. Through a rule (`r : holdsAt(f, T) => g(T).`),
+  the instance of `g(T)` for 5 rests on the instance of `holdsAt(f, T)` for 5.
+- **Conflicts.** Two arguments conflict when their conclusions unify and their constraints hold together:
+  `-holdsAt(f, 7)` attacks the argument for every time after 1 (it states them all), and the instance for 7, which the
+  graph shows. The instances for 5 or 9 are not attacked: each instance stands or falls on its own values.
+
+The extension adds arguments and attacks; it removes nothing. With the [flag]({{% ref "/docs/api/flags" %}})
+`temporal`, it is on as well.

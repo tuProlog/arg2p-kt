@@ -72,6 +72,10 @@ A `prolog/1` premise is a computation, never attacked. Write it **after** the pr
 if-then-else. Recursive counting or summing rules make argument construction stall after a few levels: prefer
 closed-form indices and one flat sum.
 
+A conclusion must be ground: a rule (or a fact) leaving a variable of its conclusion unbound by its premises
+concludes nothing, even when a query asks for a value. With `graphExtension(constraints).` it holds for every value,
+constrained by `{ }` premises: `r : s, {T > 1} => holdsAt(f, T).`
+
 ## Burden of persuasion
 
 ```prolog

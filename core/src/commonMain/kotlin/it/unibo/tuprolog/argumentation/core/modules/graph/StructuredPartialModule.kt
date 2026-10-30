@@ -62,18 +62,28 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             structuredWhole:::buildStatementLabelling.
 
         mineResults(Goal, YesResult, NoResult, UndResult) :-
-            findall(Goal, graphStore::statementLabel(in, [Goal]), In),
-            findall(Goal, graphStore::statementLabel(out, [Goal]), Out),
-            findall(Goal, graphStore::statementLabel(und, [Goal]), Und),
+            findall(Goal, answer(in, Goal), In),
+            findall(Goal, answer(out, Goal), Out),
+            findall(Goal, answer(und, Goal), Und),
             utils::sort(In, YesResult),
             utils::sort(Out, NoResult),
             utils::sort(Und, UndResult).
 
         mineResults(Goal, Result) :-
-            findall(in(Goal), graphStore::statementLabel(in, [Goal]), In),
-            findall(out(Goal), graphStore::statementLabel(out, [Goal]), Out),
-            findall(und(Goal), graphStore::statementLabel(und, [Goal]), Und),
+            findall(in(Goal), answer(in, Goal), In),
+            findall(out(Goal), answer(out, Goal), Out),
+            findall(und(Goal), answer(und, Goal), Und),
             utils::appendLists([In, Out, Und], Result).
+
+        % A statement labelled Label answering Goal: one unifying with it, or (constraints) one of its instances, as an
+        % argument holding for more values than Goal asks about says nothing of them alone (its instance for Goal does)
+        answer(Label, Goal) :-
+            parser::instances, !,
+            graphStore::statementLabel(Label, [Statement]),
+            constraint::subsumes(Goal, Statement),
+            Goal = Statement.
+        answer(Label, Goal) :-
+            graphStore::statementLabel(Label, [Goal]).
 
         % The graph explored one argument at a time, for the solvers that label it themselves (the actor solver
         % distributes the rules among its workers, each solver looking for the arguments and the attackers it can build
@@ -114,7 +124,8 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             member(Statement, Candidates),
             queryExploration::explore(Statement),
             graphStore::argumentFor([Statement], Attacker),
-            attackRelation::attacks(Type, Attacker, On).
+            attackRelation::attacks(Type, Attacker, On),
+            constraint::compatible(Attacker, On).
 
         % The sub-arguments of an argument built by this solver
         subArguments(Argument, SubArguments) :-

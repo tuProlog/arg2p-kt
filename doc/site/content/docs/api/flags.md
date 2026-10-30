@@ -52,7 +52,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
-| `temporal` | disabled | the fact is present or absent: the [axioms of time]({{% ref "/docs/modules/temporal" %}}), over regions of time |
+| `temporal` | disabled | the fact is present or absent: the [axioms of time]({{% ref "/docs/modules/temporal" %}}), concluding what holds for the times of a period (with the graph extension `constraints`) |
 | `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
 
@@ -121,7 +121,7 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 | `defeasibleAllPref` | The richer model, which also supports comparators that need several superiorities at once. |
 | `rebutRestriction` | Applies the *restricted rebut* constraint: an argument cannot rebut a conclusion drawn by a strict rule. |
 | `abaPref` | The preferences between assumptions of ABA<sup>+</sup>, `sup(Stronger, Weaker)`: an attack from a weaker assumption is reversed. See [profiles]({{% ref "/docs/profiles#aba" %}}). |
-| `constraints` | Statements over regions of numbers, `from(T)`, `until(T)`, `between(A, B)`: a region stands for each of its numbers, restricted to the ones a rule or a query asks for. See [Constraints]({{% ref "/docs/modules/constraints" %}}). |
+| `constraints` | Open conclusions (with free variables, constrained by `{ }` premises) hold for every value of their variables; the instances a rule uses, or a conflict binds, are arguments of their own. See [Constraints]({{% ref "/docs/modules/constraints" %}}). |
 | `bp` | Makes the burden of persuasion arguable: the burden is concluded by a rule, e.g. `r : [] => bp(something).`, instead of being declared as a fact. See [Meta-argumentation]({{% ref "/docs/modules/meta" %}}). |
 
 The defeasible preference models and the meta-argumentation treatment of the burden of persuasion are

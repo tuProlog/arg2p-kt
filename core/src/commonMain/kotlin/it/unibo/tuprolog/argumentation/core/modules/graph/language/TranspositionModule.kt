@@ -104,7 +104,7 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         negate(X, -(X)).
 
         % The premises transposed: neither Prolog goals, contraries, nor the body true of a fact
-        prologEscape(X) :- X \== true, \+ functor(X, 'prolog', _), \+ functor(X, '~', _).
+        prologEscape(X) :- X \== true, \+ functor(X, 'prolog', _), \+ functor(X, '~', _), \+ functor(X, '{}', _).
 
         listToTuple([H], (H)) :- !.
         listToTuple([H|T], (H,TT)) :- listToTuple(T,TT).

@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.modules.graph.partial
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class QueryExplorationModuleTest {
@@ -70,11 +71,10 @@ class QueryExplorationModuleTest {
         assertTrue("t(a, a)" in statIn && "t(a, b)" in statIn, statIn)
     }
 
-    // The check of ac needs D, which its conclusion alone binds: after(D) explored unbound finds nothing, and does not
-    // cover after(date(1986, 1, 1)), which vb asks for once born(rita, D) binds D; va waits for born(P, D) as well, so
-    // both rules conclude t(rita), whatever their order
+    // A query derives what the whole graph does: ac checks D before anything binds it, so after(D) is derived for no
+    // date, the one t(rita) asks for included, whatever the order of the rules
     @Test
-    fun aStatementExploredUnboundCoversOnlyItselfWhenACheckNeedsItsBindings() {
+    fun aQueryDoesNotBindWhatARuleChecks() {
         val rules =
             listOf(
                 "va(P, D) : after(D), born(P, D) -> t(P).",
@@ -88,30 +88,21 @@ class QueryExplorationModuleTest {
                         "\nqueryMode.\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).",
                 )
             val statIn = module.value("answerQuery(t(rita), I, _, _)", "I")!!
-            assertTrue("t(rita)" in statIn, statIn)
-            assertEquals(2, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
+            assertFalse("t(rita)" in statIn, statIn)
+            assertEquals(0, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
         }
     }
 
-    // late(D) has no check of its own, but needs D through after(D): the need goes up the rules
+    // r concludes p(X) for no X in particular: an open conclusion, which a rule derives only with the graph extension
+    // constraints, whatever value the query asks for
     @Test
-    fun aRuleNeedsTheVariablesItsPremisesNeed() {
-        val rules =
-            listOf(
-                "va(P, D) : late(D), born(P, D) -> t(P).",
-                "vb(P, D) : born(P, D), late(D) -> t(P).",
+    fun aQueryDoesNotBindAnOpenConclusion() {
+        val module =
+            ModuleTesting(
+                "f1 :=> q.\nr : q => p(X).\ns : p(a) => t.\nqueryMode.\nstatementLabellingMode(statement).\n" +
+                    "argumentLabellingMode(grounded).",
             )
-        listOf(rules, rules.reversed()).forEach { ordered ->
-            val module =
-                ModuleTesting(
-                    "a0 :-> commencement(date(1983, 1, 1)).\na1 :-> born(rita, date(1986, 1, 1)).\n" +
-                        "ac : commencement(F), prolog(D @>= F) -> after(D).\nml(D) : after(D) -> late(D).\n" +
-                        ordered.joinToString("\n") +
-                        "\nqueryMode.\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).",
-                )
-            val statIn = module.value("answerQuery(t(rita), I, _, _)", "I")!!
-            assertTrue("t(rita)" in statIn, statIn)
-            assertEquals(2, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
-        }
+        assertEquals("[]", module.value("answerQuery(t, I, _, _)", "I"))
+        assertEquals("[]", module.value("answerQuery(p(a), I, _, _)", "I"))
     }
 }
