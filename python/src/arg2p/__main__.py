@@ -195,11 +195,11 @@ def evaluate(argv: list[str]) -> int:
                     f"und {text(answer.und_statements)}"
                 )
     else:
-        for index, graph in enumerate(arg2p.graphs()):
+        for index, solution in enumerate(arg2p.solve("arg2p::solve(In, Out, Und)")):
             if index:
                 print()
-            for label in ("in", "out", "und"):
-                print(f"{label}: {', '.join(sorted(graph.conclusions(label)))}")
+            for label, name in (("in", "In"), ("out", "Out"), ("und", "Und")):
+                print(f"{label}: {', '.join(sorted(str(statement) for statement in solution.value(name).items))}")
     return 0
 
 

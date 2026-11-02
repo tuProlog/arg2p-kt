@@ -69,8 +69,9 @@ To install the MCP server itself, see <https://tuprolog.github.io/arg2p-kt/docs/
 
 ## Semantics with several labellings
 
-`answer` gives the **first labelling** only. Under `preferred`, `stable`, `complete` and the other semantics with
-several labellings, use `solve` and read every solution:
+Under `preferred`, `stable`, `complete` and the other semantics with several labellings, `answer` gives one answer
+for each labelling, or one across them all with the flag `answerMode(credulous)` or `answerMode(skeptical)`; with
+`solve`, read every solution:
 
 - a statement **in in every labelling** is skeptically accepted;
 - **in in at least one** is credulously accepted;

@@ -80,5 +80,37 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
 
         contained([], _).
         contained([A|As], Others) :- member(A, Others), !, contained(As, Others).
+
+        %==============================================================================
+        % QUERY MODE
+        %==============================================================================
+
+        %! queryRelations
+        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
+        %  queryExploration::extend/1.
+        queryRelations.
+
+        %! queryDependencies(+Argument, -Statement)
+        %  An argument resting on an assumption weaker than another, Beta, may attack Beta through its contrary, and
+        %  have that attack reversed onto every argument resting on what it rests on, Argument among them: Argument
+        %  depends on the arguments for Beta and for its contraries.
+        queryDependencies(Argument, Statement) :-
+            support(Argument, Support),
+            member(Weaker, Support),
+            context_check(sup(Beta, Weaker)),
+            (Statement = Beta ; contrary(Beta, Statement)).
+
+        %! queryDependants(+Argument, -Statement)
+        %  The argument for an assumption attacks, by a reversal, the arguments resting on the assumptions weaker than
+        %  it: those for the statements their rules conclude depend on it.
+        queryDependants(Argument, Statement) :-
+            argument::rules(Argument, [asm(Beta)]),
+            context_check(sup(Beta, Weaker)),
+            (Statement = Weaker ; parser::ruleUsing(Weaker, Statement)).
+
+        % Contrary is a contrary of the assumption Beta: the arguments for it attack the argument for Beta
+        contrary(Beta, Contrary) :-
+            (conflict::guarded([Contrary], [Beta], _) ; conflict::unguarded([Contrary], [Beta])),
+            nonvar(Contrary).
         """.trimIndent()
 }

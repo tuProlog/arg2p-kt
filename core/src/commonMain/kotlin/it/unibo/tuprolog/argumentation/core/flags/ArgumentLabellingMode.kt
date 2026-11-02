@@ -5,6 +5,8 @@ object ArgumentLabellingMode : ArgsFlag<String, Iterable<String>> {
 
     override fun default(): String = "grounded"
 
+    override val isOpen: Boolean = true
+
     override fun values(): Iterable<String> =
         listOf(
             "conflictfree",

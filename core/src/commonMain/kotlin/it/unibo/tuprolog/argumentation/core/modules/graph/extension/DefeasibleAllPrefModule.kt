@@ -5,7 +5,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 /**
  * The preferences between rules as conclusions of the theory, taken together (module `defeasibleAllPref`, a
  * graphExtension): as defeasiblePref, but the attack argument is attacked by an argument for all the preferences
- * invalidating it, `preference(Preferences)`, supported by the arguments for each of them.
+ * invalidating it, `preference(Preferences)`, supported by one argument for each of them: one such argument for each
+ * choice of those arguments, each standing or falling with its own.
  */
 object DefeasibleAllPrefModule : PrologModule(
     "prolog.argumentation.graph.preferences.defeasible.generic",
@@ -26,19 +27,22 @@ object DefeasibleAllPrefModule : PrologModule(
         buildPrefAttacks :-
             defeasiblePref::attackArgument(Attack, T, A, B, C),
             defeasiblePref::invalid(T, A, B, C, Preferences),
-            createSuperiorityArgument(Preferences, Argument),
+            argumentsFor(Preferences, Supports),
+            createSuperiorityArgument(Preferences, Supports, Argument),
             graphStore::saveAttack(pref, Argument, Attack, Attack),
             fail.
         buildPrefAttacks.
 
-        % The argument for preference(Preferences), supported by the arguments for each of the preferences, and so
-        % attacked as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
-        createSuperiorityArgument(Preferences, Argument) :-
-            findall(Support, (
-                member(X, Preferences),
-                argument::claim(Support, X),
-                graphStore::argument(Support)
-            ), Supports),
+        % Supports is each choice of one argument for each of Preferences, in their order
+        argumentsFor([], []).
+        argumentsFor([X|Xs], [Support|Supports]) :-
+            argument::claim(Support, X),
+            graphStore::argument(Support),
+            argumentsFor(Xs, Supports).
+
+        % The argument for preference(Preferences) supported by Supports, one argument for each of them, and so attacked
+        % as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
+        createSuperiorityArgument(Preferences, Supports, Argument) :-
             mergeIds(Supports, MergedId),
             argument::infoParts(Info, [pref], MergedId, []),
             argument::new(MergedId, pref, [preference(Preferences)], [], Info, Argument),

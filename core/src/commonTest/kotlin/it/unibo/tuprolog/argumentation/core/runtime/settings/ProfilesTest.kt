@@ -268,4 +268,17 @@ class ProfilesTest {
         // an argument may have the name of a burden or of a preference
         assertEquals("[[[bp]], [[sup]], []]", labels("graphBuildMode(abstract).\nbp -> sup.\n"))
     }
+
+    // The flags of ASPIC+ and those of ABA do not mix: a preference mode between rules, or the meta-argumentation,
+    // on an ABA theory is refused
+    @Test
+    fun theFlagsOfAspicAndOfAbaAreExclusive() {
+        val aba = "graphBuildMode(aba).\nassumption(a).\ncontrary(a, na).\nr1 : [] -> na.\n"
+        assertEquals("[[[na]], [[a]], []]", labels(aba))
+        listOf("graphExtension(standardPref).", "graphExtension(defeasiblePref).", "metaConflicts.", "metaRules.").forEach {
+            val refused = labelling("$aba$it\n")
+            assertTrue(refused.isHalt, "$it: $refused")
+            assertTrue(refused.exception.toString().contains("aba"), "$it: ${refused.exception}")
+        }
+    }
 }

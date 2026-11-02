@@ -45,7 +45,7 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             bpLabelling(NewArguments).
         bpLabelling(Arguments) :-
             context_active(Branch),
-            mostGroundedBpUnd(Arguments, A),
+            mostGroundedBpUnd(Arguments, A), !,
             context_branch(Branch, _),
             graphStore::labelArgument(out, A),
             utils::subtract(Arguments, [A], NewArguments),

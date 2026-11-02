@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.modules.graph.language
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ParserModuleTest {
     private fun module() =
@@ -37,5 +38,12 @@ class ParserModuleTest {
             setOf("r1, r2", "r2, r3", "r3, r4", "r1, r3", "r2, r4", "r1, r4", "s1, s2", "s2, s1").map { "sup($it)" }.toSet(),
             module.values("S = sup(_, _), context_check(S)", "S").toSet(),
         )
+    }
+
+    // A premise or an axiom named by a compound term, as a rule may be: an argument each
+    @Test
+    fun premisesAndAxiomsMayHaveCompoundNames() {
+        val statIn = ModuleTesting("f(x) :=> p(x).\ng(y) :-> q(y).\n").value("buildLabelSets(I, _, _)", "I")!!
+        assertTrue("[p(x)]" in statIn && "[q(y)]" in statIn, statIn)
     }
 }

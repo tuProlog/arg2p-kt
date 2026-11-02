@@ -52,9 +52,10 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         builder(ruleGraph).
 
         %! checkProfile
-        %  The theory is written in the languages of its profile (see parser::checkLanguages), and its graph extensions
-        %  go together: one preference mode at most (see preferenceMode/1), abaPref only for ABA+ (the profile
-        %  aba_plus).
+        %  The theory is written in the languages of its profile (see parser::checkLanguages), and its flags go
+        %  together: one preference mode at most (see preferenceMode/1); abaPref only for ABA+ (the profile aba_plus),
+        %  and an ABA theory (the language abaLanguage) with no other preference mode, nor the meta-argumentation of
+        %  ASPIC+ (metaConflicts, metaRules).
         checkProfile :-
             parser::checkLanguages,
             checkExtensions.
@@ -68,6 +69,16 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             ),
             (setting(graphExtension, abaPref), \+ setting(graphBuildMode, aba_plus) ->
                 throw(error(domain_error(aba_plus_theory, abaPref), 'graphExtension: abaPref is the preference mode of ABA+ alone (graphBuildMode(aba_plus))'))
+            ;
+                true
+            ),
+            (setting(graphLanguage, abaLanguage), member(M, Modes), M \== abaPref ->
+                throw(error(domain_error(aba_theory, M), 'graphExtension: an ABA theory has no preferences between rules (standardPref, defeasiblePref, defeasibleAllPref): abaPref for ABA+'))
+            ;
+                true
+            ),
+            (setting(graphLanguage, abaLanguage), (setting(metaConflicts) -> Meta = metaConflicts ; setting(metaRules) -> Meta = metaRules) ->
+                throw(error(domain_error(aba_theory, Meta), 'aba: the meta-argumentation of ASPIC+ (metaConflicts, metaRules) does not apply to an ABA theory'))
             ;
                 true
             ).

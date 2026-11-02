@@ -227,12 +227,12 @@ considerably faster on large theories. It is **enabled** in `Flags.defaults()`.
 
 ### `answerMode(Mode)`
 
-How a query (`answerQuery/4`, `answer` and `answers` in the APIs) is answered under a semantics with several
+How a query (`answerQuery/4`, `answer` in the APIs) is answered under a semantics with several
 labellings (`preferred`, `stable`, ...); with one labelling the three modes agree.
 
 | Value | Answer |
 | --- | --- |
-| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `answerQuery/4` has a solution for each, `answers` lists them, `answer` gives the first. |
+| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `answerQuery/4` has a solution for each, `answer` lists them. |
 | `credulous` | One answer: in the statements in in some labelling, out those out in every one, und the others. |
 | `skeptical` | One answer: in the statements in in every labelling, out those out in some, und the others. |
 

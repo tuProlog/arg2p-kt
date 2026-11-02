@@ -98,4 +98,14 @@ class SettingsTest {
         assertTrue(solve("setting(graphBuildMode)").startsWith("error"))
         assertTrue(solve("setting(_)").startsWith("error"))
     }
+
+    // A value a closed flag does not declare, or a profile with no such name, is an error, not silently nothing
+    @Test
+    fun aValueAFlagDoesNotDeclareIsAnError() {
+        val flags = FlagsBuilder().empty(true)
+        assertTrue(solve("setting(orderingComparator, X)", "orderingComparator(elitst).", flags).startsWith("error"))
+        assertTrue(solve("setting(graphExtension, X)", "graphBuildMode(aspic_plsu).", flags).startsWith("error"))
+        // the modules of a user are values of the open flags
+        assertEquals("[mine]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(mine).", flags))
+    }
 }

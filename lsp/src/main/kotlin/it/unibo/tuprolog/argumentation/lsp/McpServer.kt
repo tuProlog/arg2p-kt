@@ -8,6 +8,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import it.unibo.tuprolog.argumentation.Arg2p
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.Solution
 import java.io.BufferedReader
@@ -258,8 +259,9 @@ internal class McpServer(
         // the solutions asked for, no more: whether there may be others is known without looking for them
         while (found.size < most && solutions.hasNext()) {
             val solution = solutions.next()
-            // out of time, the resolution halts
+            // out of time, the resolution halts; halted otherwise, an error of the tool
             if (solution.isHalt && deadline.expired) break
+            if (solution.isHalt) throw Arg2pException(solution.error ?: solution.toString())
             found += solution
             if (solution.isYes) {
                 graph =

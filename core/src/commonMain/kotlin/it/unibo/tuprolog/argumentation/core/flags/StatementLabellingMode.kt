@@ -5,5 +5,7 @@ object StatementLabellingMode : ArgsFlag<String, Iterable<String>> {
 
     override fun default(): String = "statement"
 
+    override val isOpen: Boolean = true
+
     override fun values(): Iterable<String> = listOf("statement", "statement_pass_through", "statement_binary")
 }

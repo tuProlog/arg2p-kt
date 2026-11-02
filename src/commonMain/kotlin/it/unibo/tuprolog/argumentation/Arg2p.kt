@@ -138,7 +138,7 @@ class Arg2p private constructor(
     @JsName("setting")
     fun settingArray(flag: String): Array<String> = setting(flag).toTypedArray()
 
-    private val declaredFlags get() = arg2p.settings.flags
+    private val declaredFlags get() = arg2p.settings.flags.filterValues { !it.isInternal }
 
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
     fun solve(goal: String): Solutions = solutionsOf(solver.solve(struct(goal)).iterator())

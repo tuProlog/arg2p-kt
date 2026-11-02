@@ -166,7 +166,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             extractId(CtrRules, Ids).
 
         ordinaryPremises(Premises) :-
-            findall([RuleName, Effect], (user::(RuleName :=> Effect), atom(RuleName)), PremisesOld),
+            findall([RuleName, Effect], user::(RuleName :=> Effect), PremisesOld),
             prologPremises(PremisesNew),
             languagePremises(PremisesLanguages),
             utils::appendLists([PremisesOld, PremisesNew, PremisesLanguages], Premises).
@@ -190,7 +190,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::forEach(L, Languages, L:::check).
 
         axiomPremises(Axioms, Ids) :-
-            findall([RuleName, Effect], (user::(RuleName :-> Effect), atom(RuleName)), AxiomsOld),
+            findall([RuleName, Effect], user::(RuleName :-> Effect), AxiomsOld),
             prologAxioms(AxiomsNew),
             utils::appendFast(AxiomsOld, AxiomsNew, Axioms),
             extractId(Axioms, Ids).

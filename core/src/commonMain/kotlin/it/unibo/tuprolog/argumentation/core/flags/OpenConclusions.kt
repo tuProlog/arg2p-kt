@@ -8,6 +8,8 @@ object OpenConclusions : ArgsFlag<Boolean, Unit> {
 
     override val isSwitch: Boolean = true
 
+    override val isInternal: Boolean = true
+
     override fun default(): Boolean = false
 
     override fun values() {}

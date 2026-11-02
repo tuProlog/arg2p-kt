@@ -11,5 +11,7 @@ object GraphLanguage : ArgsFlag<Iterable<String>, Iterable<String>> {
 
     override fun default(): Iterable<String> = emptyList()
 
+    override val isOpen: Boolean = true
+
     override fun values(): Iterable<String> = listOf("aspicLanguage", "abaLanguage", "defeasibleLanguage", "abstractLanguage")
 }

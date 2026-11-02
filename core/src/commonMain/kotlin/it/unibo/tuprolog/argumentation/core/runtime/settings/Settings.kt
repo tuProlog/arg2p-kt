@@ -67,7 +67,12 @@ class Settings(
         except: Set<String> = emptySet(),
     ): List<Fact> =
         flags.filterKeys { it !in except }.flatMap { (name, flag) ->
-            valuesOf(flag, context).map { value -> Fact.of(if (flag.isSwitch) Atom.of(name) else Struct.of(name, value)) }
+            val values = valuesOf(flag, context)
+            when {
+                flag.isSwitch -> listOf(Fact.of(if (values.isEmpty()) Struct.of(name, OFF) else Atom.of(name)))
+                values.isEmpty() -> listOf(Fact.of(Struct.of(name, NONE)))
+                else -> values.map { value -> Fact.of(Struct.of(name, value)) }
+            }
         }
 
     /** Whether [clause] is a fact stating a flag */
@@ -83,7 +88,15 @@ class Settings(
             val theory = flags.mapValues { (_, flag) -> stated(flag, context.staticKb) }
             val solver = flags.mapValues { (_, flag) -> stated(flag, libraries) }
             val mode = theory[GraphBuildMode.predicate()].orEmpty().ifEmpty { solver[GraphBuildMode.predicate()].orEmpty() }
-            val profile = if (mode.isEmpty()) Profiles.default else Profiles.named((mode.first() as? Atom)?.value)
+            val profile =
+                if (mode.isEmpty()) {
+                    Profiles.default
+                } else {
+                    Profiles.named((mode.first() as? Atom)?.value)
+                        ?: throw IllegalArgumentException(
+                            "graphBuildMode: no profile ${mode.first()} (${Profiles.all.joinToString { it.name }})",
+                        )
+                }
             val presets = profile?.presets.orEmpty()
             view =
                 flags.mapValues { (name, flag) ->
@@ -99,11 +112,24 @@ class Settings(
                             flag.isSwitch -> preset ?: stated
                             else -> preset ?: stated.ifEmpty { defaultOf(flag).map { Atom.of(it) } }
                         }
-                    values.filter { it != NONE && it != OFF }
+                    values.filter { it != NONE && it != OFF }.also { checked(flag, it) }
                 }
             viewOf = context.staticKb
         }
         return view
+    }
+
+    // The values of a closed flag are among those it declares (see ArgsFlag.isOpen)
+    private fun checked(
+        flag: ArgsFlag<*, *>,
+        values: List<Term>,
+    ) {
+        if (flag.isOpen) return
+        val declared = (flag.values() as? Iterable<*>)?.map { it.toString() }?.takeIf { it.isNotEmpty() } ?: return
+        val unknown = values.filter { it.toString() !in declared && it.toString() !in flag.aliases.keys }
+        if (unknown.isNotEmpty()) {
+            throw IllegalArgumentException("${flag.predicate()}: no value ${unknown.joinToString()} (${declared.joinToString()})")
+        }
     }
 
     // The values of a flag stated by the facts of a theory: none or off for one stated with no value
