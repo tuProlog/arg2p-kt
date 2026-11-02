@@ -5,6 +5,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 /**
  * The grounded labelling with burdens of persuasion (module `bp_grounded`, an argumentLabellingMode, ICAIL): as the
  * grounded one, but an argument for a statement under a burden of persuasion that is not IN is OUT rather than UND.
+ * Part of the semantics, it changes the graph it labels: a rebut or undermine by an argument under a burden of
+ * persuasion fails unless the argument is superior to the one attacked (see filterBpDefeats/0).
  */
 object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpgrounded", "bp_grounded") {
     override val prologRawTheory: String =
@@ -20,7 +22,8 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         locality(connected).
 
         %! argumentLabelling
-        %  The labelling, in the active context, the burdens of persuasion (abstractBp/1) reified first.
+        %  The labelling, in the active context, the burdens of persuasion (abstractBp/1) reified first, and the
+        %  attacks failing for them removed (see filterBpDefeats/0).
         argumentLabelling :-
             reifyBurdenOfProofs,
             filterBpDefeats,
@@ -109,6 +112,9 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             argument::conclusion(Argument, Conclusion),
             isInBurdenOfProof(Conclusion).
 
+        %! filterBpDefeats
+        %  The rebuts and undermines by an argument under a burden of persuasion removed from the graph, unless it is
+        %  superior to the argument attacked: a burden is met by winning, not by drawing.
         filterBpDefeats :-
             findall(_, (
                 graphStore::attack(T, A, B, C),

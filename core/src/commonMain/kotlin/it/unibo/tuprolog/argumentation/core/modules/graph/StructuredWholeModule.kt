@@ -84,7 +84,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         %  flags state them in: first those adding the arguments derived from the others, each with their attacks (the
         %  instances of constraints, also with temporal, then the copies of metaConflicts), then those changing the
         %  attacks (rebutRestriction, the preference mode, bp). Any other graph extension (a module of the user) comes
-        %  last, the last stated first.
+        %  last, in the order stated.
         modifyGraph :-
             steps(Steps),
             applySteps(Steps),
@@ -141,8 +141,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
 
         modifyGraph([]).
         modifyGraph([X|Ext]) :-
-            modifyGraph(Ext),
-            X:::modifyArgumentationGraph.
+            X:::modifyArgumentationGraph,
+            modifyGraph(Ext).
 
         %! buildArgumentLabelling
         %  The labelling of the arguments, by the semantics of argumentLabellingMode.

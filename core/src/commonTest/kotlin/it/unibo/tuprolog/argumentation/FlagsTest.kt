@@ -22,9 +22,9 @@ class FlagsTest {
     }
 
     @Test
-    fun aBuilderStatesItsExtensionsLastFirst() {
+    fun aBuilderStatesItsExtensionsInOrder() {
         val flags = Flags.of(FlagsBuilder(graphExtensions = listOf("standardPref", "bp"))).toString()
-        assertTrue(flags.indexOf("graphExtension(bp)") < flags.indexOf("graphExtension(standardPref)"), flags)
+        assertTrue(flags.indexOf("graphExtension(standardPref)") < flags.indexOf("graphExtension(bp)"), flags)
     }
 
     @Test

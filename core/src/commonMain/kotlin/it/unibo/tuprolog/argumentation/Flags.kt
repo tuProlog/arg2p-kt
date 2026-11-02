@@ -182,9 +182,9 @@ class Flags private constructor(
             } else {
                 with(builder) {
                     Flags(linkedMapOf())
-                        // the builder lists the extensions in the order they apply, which is the reverse of the order
-                        // they are stated in: so modifyGraph applies those of a user (its own come in a fixed order)
-                        .values(GraphExtensionFlag, graphExtensions.toList().asReversed().ifEmpty { listOf("none") })
+                        // in the order the builder lists them, the order the graph extensions of a user apply in (those
+                        // of arg2p come in a fixed order, see structuredWhole::modifyGraph/0)
+                        .values(GraphExtensionFlag, graphExtensions.toList().ifEmpty { listOf("none") })
                         .switch(QueryMode, queryMode)
                         .switch(AutoTransposition, autoTransposition)
                         .switch(PrologStrictCompatibility, prologStrictCompatibility)
