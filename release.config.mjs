@@ -70,7 +70,6 @@ config.plugins.push(
                 "CHANGELOG.md",
                 "package.json",
                 "package-lock.json",
-                "npm-shrinkwrap.json",
                 ...versioned,
             ]
         }

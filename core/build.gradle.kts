@@ -1,9 +1,4 @@
-import org.gradle.kotlin.dsl.assign
-import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-
-val jvmStackSize: String = property("jvmStackSize").toString()
-val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 
 plugins {
     id(
@@ -14,18 +9,6 @@ plugins {
 }
 
 kotlin {
-    js {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions.freeCompilerArgs
-                    .add("-Xir-minimized-member-names=false")
-            }
-        }
-        binaries.library()
-        // ES modules, as the npm package of arg2p (the aggregate project, which alone is published on npm)
-        useEsModules()
-    }
-
     sourceSets {
         commonMain {
             dependencies {
@@ -46,11 +29,6 @@ kotlin {
             }
         }
     }
-}
-
-tasks.withType<KotlinJvmTest> {
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
 }
 
 // Timing benchmarks live with the JVM tests but only run through jvmBenchmark (-Pbenchmark.* options)
@@ -86,8 +64,6 @@ tasks.register<Test>("jvmPrologCoverage") {
             },
         )
     filter.includeTestsMatching(coverageTests)
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }
 }
@@ -116,14 +92,7 @@ tasks.register<Test>("jvmBenchmark") {
     testClassesDirs = jvmTest.testClassesDirs
     classpath = jvmTest.classpath
     filter.includeTestsMatching(benchmarkTests)
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
     systemProperties(project.properties.filterKeys { it.startsWith("benchmark.") })
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }
-}
-
-// The description of the module in the Kotlin & JS reference of the documentation site
-extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-    dokkaSourceSets.configureEach { includes.from("Module.md") }
 }

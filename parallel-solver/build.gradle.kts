@@ -1,8 +1,3 @@
-import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-
-val jvmStackSize: String = property("jvmStackSize").toString()
-val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
-
 plugins {
     id(
         libs.plugins.ktMpp.mavenPublish
@@ -33,18 +28,6 @@ val generateVersion =
     }
 
 kotlin {
-
-    js {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
-            }
-        }
-        binaries.library()
-        // ES modules, as the npm package of arg2p (the aggregate project, which alone is published on npm)
-        useEsModules()
-    }
-
     sourceSets {
         commonMain {
             kotlin.srcDir(generateVersion)
@@ -65,14 +48,4 @@ kotlin {
             }
         }
     }
-}
-
-tasks.withType<KotlinJvmTest> {
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
-}
-
-// The description of the module in the Kotlin & JS reference of the documentation site
-extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-    dokkaSourceSets.configureEach { includes.from("Module.md") }
 }

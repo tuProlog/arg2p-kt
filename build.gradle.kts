@@ -76,13 +76,32 @@ allprojects {
     }
 
     // Gradle itself runs on the JDK set in gradle/gradle-daemon-jvm.properties,
-    // while artifacts target (and tests run on) the JVM version from the catalog, unless -PtestJvm is provided
+    // while artifacts target (and tests run on) the JVM version from the catalog, unless -PtestJvm is provided.
+    // The tests run the solvers of arg2p: resolution goes deep (the stack), the graphs are large (the heap)
     tasks.withType<Test>().configureEach {
         javaLauncher.set(
             project.extensions.getByType<JavaToolchainService>().launcherFor {
                 languageVersion.set(JavaLanguageVersion.of(project.findProperty("testJvm")?.toString() ?: jvmVersion))
             },
         )
+        maxHeapSize = property("jvmMaxHeapSize").toString()
+        jvmArgs("-Xss${property("jvmStackSize")}")
+    }
+
+    // The JavaScript of every library of arg2p: ES modules (as bundlers, Node.js and Deno import them), the names of
+    // the members kept (the npm package, the aggregate project, alone is published)
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            js {
+                compilations.all {
+                    compileTaskProvider.configure {
+                        compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
+                    }
+                }
+                binaries.library()
+                useEsModules()
+            }
+        }
     }
     tasks.withType<JavaCompile>().configureEach {
         options.release.set(jvmVersion.toInt())
@@ -121,7 +140,7 @@ multiProjectHelper {
     ktProjects(rootProject.path, ":core", ":causality-solver", ":parallel-solver")
     jvmProjects(":actor-solver", ":lsp")
     // jsProjects()
-    otherProjects(":doc", ":python", ":vscode")
+    otherProjects(":doc", ":python", ":vscode", ":plugins")
 
     val baseProjectTemplate =
         buildSet {
@@ -180,18 +199,9 @@ val generateVersion =
     }
 
 kotlin {
-
     js {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions.freeCompilerArgs.add("-Xir-minimized-member-names=false")
-            }
-        }
-        binaries.library()
         // the declarations of the exported API for TypeScript (.d.ts), next to the JavaScript
         generateTypeScriptDefinitions()
-        // ES modules, as bundlers, Node.js and Deno import them
-        useEsModules()
     }
 
     sourceSets {
@@ -204,15 +214,6 @@ kotlin {
             }
         }
     }
-}
-
-// The tests of the API run the solvers of arg2p, as those of the modules
-val jvmStackSize: String = property("jvmStackSize").toString()
-val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
-
-tasks.withType<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest> {
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
 }
 
 // The modules of the Java runtime of arg2p: jdeps on its jars and those of its servers (:lsp), with those the
@@ -355,7 +356,7 @@ if (coverage) {
     }
 }
 
-// The Kotlin & JS reference in the style of the documentation site
+// The Kotlin & JS reference in the style of the documentation site, each library described by its Module.md
 allprojects {
     plugins.withId("org.jetbrains.dokka") {
         extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
@@ -363,6 +364,7 @@ allprojects {
                 customStyleSheets.from(rootProject.file("doc/dokka/site.css"))
                 footerMessage.set("arg2p")
             }
+            if (file("Module.md").exists()) dokkaSourceSets.configureEach { includes.from("Module.md") }
         }
     }
 }
