@@ -41,21 +41,26 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         %! locality(-Locality)
         %  The part of the graph the labels of the arguments for the query depend on, as the semantics declares it
         %  (locality/1): the arguments they depend on (directional), those connected to them in either direction
-        %  (connected), or the whole graph (whole_graph, also for a semantics that does not declare it)
+        %  (connected), or the whole graph (whole_graph, also for a semantics that does not declare it). Only rules are
+        %  explored: a graph built otherwise (a graphBuilder other than ruleGraph, as for an abstract theory) is whole.
         locality(Locality) :-
+            structuredWhole::builder(X),
+            (X == ruleGraph -> semanticsLocality(Locality) ; Locality = whole_graph).
+
+        semanticsLocality(Locality) :-
             setting(argumentLabellingMode, Semantics),
             Semantics::locality(L), !,
             Locality = L.
-        locality(whole_graph).
+        semanticsLocality(whole_graph).
 
+        % The part of the graph explored, its attacks, then changed and labelled as the whole graph is (see the module
+        % structuredWhole)
         queryAcceptance(whole_graph, _) :- !,
             structuredWhole:::computeGlobalAcceptance.
         queryAcceptance(Locality, Goal) :-
-            queryExploration::explore(Goal, Locality),
             structuredWhole::checkProfile,
-            structuredWhole::builder(X),
-            X:::buildAdditionalArguments,
-            X:::buildAttacks,
+            queryExploration::explore(Goal, Locality),
+            ruleGraph:::buildAttacks,
             structuredWhole:::modifyGraph,
             structuredWhole:::buildArgumentLabelling,
             structuredWhole:::buildStatementLabelling.
@@ -87,7 +92,8 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
 
         % The graph explored one argument at a time, for the solvers that label it themselves (the actor solver
         % distributes the rules among its workers, each solver looking for the arguments and the attackers it can build
-        % with its own). The graph extensions do not apply.
+        % with its own). The steps changing the graph do not apply: their query relations are explored all the same (see
+        % queryExploration::extend/1), so that the conflicts of metaConflicts make their attackers found.
 
         %! buildArgument(+Query, -Argument, -SubArguments)
         %  Argument is each argument for Query, saved with those its label may depend on, and SubArguments are its

@@ -63,10 +63,6 @@ private class RuleGraph(
         buildArguments :-
             built(whole).
 
-        %! buildAdditionalArguments
-        %  None, in query mode: the arguments derived from the others are added when the graph is changed.
-        buildAdditionalArguments.
-
         %! buildAttacks
         %  The attacks between the saved arguments: the direct ones the workers found, extended by the graph store.
         buildAttacks :-

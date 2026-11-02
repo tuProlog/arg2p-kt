@@ -69,12 +69,6 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
         open([C|Cs], ['{}'(C)|Os]) :- \+ ground(C), !, open(Cs, Os).
         open([_|Cs], Os) :- open(Cs, Os).
 
-        %! admitted(+Argument)
-        %  The constraints of Argument, with the bindings it has, may hold together.
-        admitted(Argument) :-
-            store(Argument, Constraints),
-            satisfiable(Constraints).
-
         %! compatible(+A, +B)
         %  The constraints of A and B, with the bindings they have (those of a conflict between them), may hold together.
         compatible(A, B) :-

@@ -24,12 +24,10 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             buildPrefAttacks.
 
         %! assertAllSup
-        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority): the
-        %  superiorities computed with the previous ones are forgotten.
+        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority), in
+        %  place of those the theory states: only the concluded ones count.
         assertAllSup :-
             context_retract(sup(_, _)),
-            context_retract(superior(_, _, _, _)),
-            context_retract(justified(_, _, _)),
             findall(_, (
                 argument::claim(Argument, sup(RuleOne, RuleTwo)),
                 graphStore::argument(Argument),

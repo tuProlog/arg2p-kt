@@ -251,7 +251,6 @@ class PrologReference(
     private val dispatched =
         setOf(
             Signature("buildArgumentationGraph", 0),
-            Signature("buildAdditionalArguments", 0),
             Signature("buildAttacks", 0),
             Signature("modifyArgumentationGraph", 0),
             Signature("argumentLabelling", 0),

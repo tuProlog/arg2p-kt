@@ -23,13 +23,9 @@ object RuleGraphModule : PrologModule("prolog.argumentation.graph", "ruleGraph")
         buildArguments :-
             argumentBuilder::buildArguments.
 
-        %! buildAdditionalArguments
-        %  None, in query mode: the exploration builds the arguments of the rules, and those derived from them are added
-        %  when the graph is changed (see structuredWhole::modifyGraph/0).
-        buildAdditionalArguments.
-
         %! buildAttacks
-        %  The attacks between the saved arguments.
+        %  The attacks between the saved arguments: all of them, or, in query mode, those explored (see the module
+        %  structuredPartial).
         buildAttacks :-
             attackBuilder::buildAttacks.
         """.trimIndent()

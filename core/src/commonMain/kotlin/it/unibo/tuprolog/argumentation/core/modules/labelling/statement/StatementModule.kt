@@ -12,8 +12,8 @@ object StatementModule : PrologModule("prolog.argumentation.graph.labelling.stat
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, then OUT those
-        %  with an argument OUT, then UND those with an argument UND. With the instances of the graph extension constraints,
-        %  a statement with variables and its instances are labelled each on its own (see graphStore::statementLabelled/2).
+        %  with an argument OUT, then UND those with an argument UND. With instances (see parser::instances/0), a
+        %  statement with variables and its instances are labelled each on its own (see graphStore::statementLabelled/2).
         statementLabelling :-
             parser::instances, !,
             findall(_, (

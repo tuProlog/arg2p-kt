@@ -30,7 +30,6 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             findall(_, buildCopy, _).
 
         buildCopy :-
-            setting(metaConflicts),
             conflictArgument(Conclusion, ConflictArgument),
             argument::claim(ConflictArgument, Conflict),
             graphStore::argumentId(ConflictArgument, ConflictId),

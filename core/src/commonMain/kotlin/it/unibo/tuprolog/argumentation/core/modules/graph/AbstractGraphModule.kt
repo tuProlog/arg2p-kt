@@ -27,19 +27,6 @@ internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentati
                 graphStore::saveAttack(abstract, XX, YY, YY)
             )).
 
-        %! buildArguments
-        %  As buildArgumentationGraph: an abstract theory has its attacks with its arguments.
-        buildArguments :- buildArgumentationGraph.
-
-        %! buildAdditionalArguments
-        %  As buildArgumentationGraph, in query mode: exploring the query finds no argument in an abstract theory, which
-        %  has no rule, so the graph is the whole one.
-        buildAdditionalArguments :- buildArgumentationGraph.
-
-        %! buildAttacks
-        %  None more: the attacks are saved with the arguments.
-        buildAttacks.
-
         % The arguments and the attacks the theory states or derives, in either notation
         arguments(Arguments) :-
             catch(findall(A, user::arg(A), Stated), error(existence_error(_, _), _), Stated = []),

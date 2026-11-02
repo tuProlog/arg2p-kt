@@ -14,7 +14,11 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         %! buildAttacks
         %  The direct attacks between the saved arguments, an argument attacking itself included (as r : a => undercut(r)
         %  does): those on the arguments built on the attacked one follow from them (see the module graphStore). Loops
-        %  over the graph go through its copy by identifiers.
+        %  over the graph go through its copy by identifiers. None when the conflicts are arguments (see
+        %  conflict::argued/0): only their copies attack, added when the graph is changed (see the module
+        %  conflictArguments).
+        buildAttacks :-
+            conflict::argued, !.
         buildAttacks :-
             (parser::constrained -> Constrained = yes ; Constrained = no),
             findall(_, buildDirectAttack(Constrained), _).

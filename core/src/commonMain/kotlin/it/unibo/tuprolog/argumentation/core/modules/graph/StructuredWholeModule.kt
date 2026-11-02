@@ -10,9 +10,10 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The whole argumentation graph of a theory and its labellings, as the flags select them (module `structuredWhole`): the graph
- * builder (graphBuildMode), the graph extensions (graphExtension), the semantics (argumentLabellingMode) and the
- * statement labelling (statementLabellingMode). Query mode builds only a part of the graph (see the module structuredPartial),
- * then changes and labels it through this module as well.
+ * builder (graphBuilder, which graphBuildMode sets), the steps changing the graph (constraints with that graphExtension
+ * or temporal, the copies of metaConflicts, the other graph extensions; see modifyGraph/0), the semantics
+ * (argumentLabellingMode) and the statement labelling (statementLabellingMode). Query mode builds only a part of the
+ * graph (see the module structuredPartial), then changes and labels it through this module as well.
  */
 object StructuredWholeModule : PrologModule("prolog.argumentation.structured.whole", "structuredWhole") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
@@ -22,7 +23,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         // language=Prolog
         """
         %! computeGlobalAcceptance
-        %  The graph of the theory, changed by the extensions, and its argument and statement labellings, in the context.
+        %  The graph of the theory, changed by the steps the flags select, and its argument and statement labellings, in
+        %  the context.
         computeGlobalAcceptance :-
             buildGraph,
             modifyGraph,
@@ -113,8 +115,10 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         step(Step) :- steps(Steps), member(Step, Steps).
 
         %! active(+Step)
-        %  Step applies: constraints with that graph extension or temporal, conflictArguments with metaConflicts, the
-        %  others when they are graph extensions; any other graph extension is (see others/1).
+        %  Step applies: constraints with the instances of the theory (as parser::instances/0), conflictArguments when
+        %  its conflicts are arguments (as conflict::argued/0), the others when they are graph extensions; any other
+        %  graph extension is (see others/1). The settings are read here rather than through those modules: the graph
+        %  is changed once it is built, when a call to another module costs as much as the graph.
         active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal)).
         active(conflictArguments) :- !, setting(metaConflicts).
         active(Step) :- setting(graphExtension, Step).

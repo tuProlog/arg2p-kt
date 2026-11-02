@@ -172,11 +172,6 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Argument), Id),
             findall(S, (context_check(supportId(IdS, Id)), argumentById(IdS, S)), Supporters).
 
-        %! supportedById(+Id, -SuperId)
-        %  The argument with identifier SuperId is supported by the one with identifier Id, directly or not.
-        supportedById(Id, SuperId) :-
-            context_closure(supportId, Id, SuperId).
-
         %--------------------------------------------------------------------------
         % Attacks
         %--------------------------------------------------------------------------

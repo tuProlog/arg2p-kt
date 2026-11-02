@@ -129,7 +129,7 @@ internal class Worker(
                 engaged(Address.CATALOG) {
                     workers = message.interests.size
                     locality = message.locality
-                    metaConflicts = solver.holds("setting(metaConflicts)")
+                    metaConflicts = solver.holds("conflict::argued")
                     message.interests.filter { it.worker != index }.forEach {
                         conclusionsOf[it.worker] = it.conclusions
                         // on the whole graph, the others need the arguments for their premises; in query mode, those

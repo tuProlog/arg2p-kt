@@ -22,9 +22,8 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
             \+ rebutRestriction(T, A, B, C),
             graphStore::removeAttack(T, A, B, C).
 
-        % The attack types the restriction does not apply to. Everything else is restricted, including the attack
-        % types introduced by other extensions: an unknown attack type is subject to the restriction rather than
-        % dropped, so that the result does not depend on the order in which the extensions run.
+        % The attack types the restriction does not apply to. Everything else is restricted: rebuts, and the attacks
+        % of a graph extension of the user.
         rebutRestriction(undermine, _, _, _).
         rebutRestriction(contrary_rebut, _, _, _).
         rebutRestriction(contrary_undermine, _, _, _).

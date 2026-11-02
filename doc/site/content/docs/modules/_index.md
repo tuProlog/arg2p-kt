@@ -94,7 +94,7 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
+| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`constraints`, `conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |

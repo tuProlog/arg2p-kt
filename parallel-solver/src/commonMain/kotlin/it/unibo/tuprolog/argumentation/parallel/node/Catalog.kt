@@ -428,8 +428,7 @@ internal class Catalog(
     private fun locality(): String? =
         solver
             .solveOnce(
-                "setting(queryMode), structuredWhole::builder(B), B == ruleGraph, setting(argumentLabellingMode, S), " +
-                    "S::locality(L), L \\== whole_graph",
+                "setting(queryMode), structuredPartial::locality(L), L \\== whole_graph",
             ).takeIf { it.isYes }
             ?.substitution
             ?.getByName("L")

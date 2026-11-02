@@ -27,9 +27,8 @@ object StandardPrefModule : PrologModule("prolog.argumentation.graph.preferences
             graphStore::argumentById(IdC, C),
             graphStore::removeAttack(T, A, B, C).
 
-        % The attack types preferences do not apply to. Everything else is weighed against the preference order,
-        % including the attack types introduced by other extensions: an unknown attack type is compared rather than
-        % dropped, so that the result does not depend on the order in which the extensions run.
+        % The attack types preferences do not apply to. Everything else is weighed against the preference order: rebuts
+        % and undermines, and the attacks of a graph extension of the user.
         standardPreferences(contrary_rebut, _, _) :- !.
         standardPreferences(contrary_undermine, _, _) :- !.
         standardPreferences(undercut, _, _) :- !.
