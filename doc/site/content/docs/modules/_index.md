@@ -69,7 +69,7 @@ implementation exists.
 | --- | --- | --- |
 | Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
-| Apply graph extensions (preferences, restrictions) | one per extension | `graphExtension` |
+| Change the graph: add the arguments derived from the others (the instances of `constraints`, the copies of `metaConflicts`) with their attacks, then apply the graph extensions (preferences, restrictions) | `constraints`, `conflictArguments`, one per extension | `graphExtension`, `temporal`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
@@ -112,8 +112,10 @@ one per value of `statementLabellingMode`. They all expose the same entry point,
 
 ### Graph extension modules
 
-`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp` and `abaPref` all expose
-`modifyArgumentationGraph/0`, and are applied after the graph has been built.
+`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` and `constraints` all
+expose `modifyArgumentationGraph/0`, and are applied after the graph has been built: `constraints` (on with
+`temporal` as well) first, and `conflictArguments` after it with `metaConflicts`, as they add arguments whose attacks
+the others change.
 
 ---
 

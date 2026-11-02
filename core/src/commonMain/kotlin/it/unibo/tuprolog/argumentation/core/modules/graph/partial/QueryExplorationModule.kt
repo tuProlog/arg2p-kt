@@ -169,17 +169,9 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             saveSupports(Argument, Supports).
         recordArgument(_, _, _).
 
-        % The supports saved: (constraints) an argument for more values than the premise it supports binds, by its instance
-        saveSupports(Argument, Supports) :-
-            (parser::instances -> realizeAll(Supports) ; true),
-            saveEach(Argument, Supports).
-
-        realizeAll([]).
-        realizeAll([Support|Supports]) :- constraints::realize(Support), realizeAll(Supports).
-
-        saveEach(_, []).
-        saveEach(Argument, [Support|Supports]) :-
+        saveSupports(_, []).
+        saveSupports(Argument, [Support|Supports]) :-
             graphStore::saveSupport(Support, Argument),
-            saveEach(Argument, Supports).
+            saveSupports(Argument, Supports).
         """.trimIndent()
 }

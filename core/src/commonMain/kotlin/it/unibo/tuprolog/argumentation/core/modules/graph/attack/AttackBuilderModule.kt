@@ -36,6 +36,30 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             fail.
         buildDirectAttack(_).
 
+        %! buildAttacksOf(+Ids)
+        %  The direct attacks on and by the saved arguments with identifiers Ids, added to a graph with its attacks
+        %  (those between the others are saved already).
+        buildAttacksOf([]) :- !.
+        buildAttacksOf(Ids) :-
+            findall(_, (member(Id, Ids), context_assert(addedArgument(Id))), _),
+            (parser::constrained -> Constrained = yes ; Constrained = no),
+            findall(_, buildAddedAttack(Constrained), _),
+            context_retract(addedArgument(_)).
+
+        buildAddedAttack(Constrained) :-
+            graphStore::argumentById(IdA, A),
+            attackCandidates::possibleAttackers(IdA, A, Conflict),
+            findAttacker(Conflict, B),
+            graphStore::argumentId(B, IdB),
+            (context_check(addedArgument(IdA)) -> true ; context_check(addedArgument(IdB))),
+            conflictArguments::canAttack(B),
+            copy_term(B-A, CB-CA),
+            attackRelation::attacks(T, CB, CA),
+            (Constrained == yes -> constraint::compatible(CB, CA) ; true),
+            graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
+            fail.
+        buildAddedAttack(_).
+
         % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
         findAttacker([Head], B) :- !,
             graphStore::argumentUnifiable([Head], B).

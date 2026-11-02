@@ -54,10 +54,23 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         checkProfile :- parser::checkLanguages.
 
         %! modifyGraph
-        %  The graph changed by each graph extension, the last stated first.
+        %  The graph changed: the arguments derived from the others added, with their attacks (see addArguments/0), then
+        %  by each graph extension, the last stated first.
         modifyGraph :-
-            findall(X, setting(graphExtension, X), Ext),
+            addArguments,
+            findall(X, (setting(graphExtension, X), \+ adding(X)), Ext),
             modifyGraph(Ext).
+
+        % The arguments derived from the others, added before the extensions change the attacks, whatever the order they
+        % are stated in, so that they change those of the arguments added as well: the instances of the arguments for
+        % sets of values (constraints, also with temporal, see parser::instances/0), then the copies for the conflicts
+        % (metaConflicts). The settings are read here, as a call to another module costs as much as the graph it is
+        % made over.
+        addArguments :-
+            ((setting(graphExtension, constraints) ; setting(temporal)) -> constraints:::modifyArgumentationGraph ; true),
+            (setting(metaConflicts) -> conflictArguments:::modifyArgumentationGraph ; true).
+
+        adding(constraints).
 
         modifyGraph([]).
         modifyGraph([X|Ext]) :-

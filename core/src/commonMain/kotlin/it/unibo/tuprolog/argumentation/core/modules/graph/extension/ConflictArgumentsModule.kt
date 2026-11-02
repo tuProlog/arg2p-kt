@@ -16,6 +16,14 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
     override val prologRawTheory: String =
         // language=Prolog
         """
+        %! modifyArgumentationGraph
+        %  With metaConflicts, the copies (see buildAdditionalArguments/0) and their attacks, the only ones.
+        modifyArgumentationGraph :-
+            buildAdditionalArguments,
+            findall(Id, context_check(conflictCopy(Id)), Ids),
+            context_retract(conflictCopy(_)),
+            attackBuilder::buildAttacksOf(Ids).
+
         %! buildAdditionalArguments
         %  With metaConflicts, the copies of the saved arguments for each argument for a conflict on their conclusion.
         buildAdditionalArguments :-
@@ -31,6 +39,8 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             argument::rules(Argument, Rules),
             argument::withRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
             graphStore::saveArgument(a, Conclusion, Copy),
+            graphStore::argumentId(Copy, Id),
+            context_assert(conflictCopy(Id)),
             graphStore::saveSupport(ConflictArgument, Copy),
             cloneSupports(Argument, Copy),
             fail.

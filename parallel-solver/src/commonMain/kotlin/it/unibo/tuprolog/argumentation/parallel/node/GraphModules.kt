@@ -40,9 +40,9 @@ internal fun graphModules(graph: BuiltGraph): List<ArgLibrary> {
 }
 
 // The graph builder of the rules: the arguments the workers built (a graph not built yet stops the resolution, see
-// built/1), those derived from them (conflictArguments), and the attacks, those the workers found, which the graph
-// store extends to the arguments built on the attacked ones, or all of them, by the module attackBuilder, if they
-// find none
+// built/1), and the attacks, those the workers found, which the graph store extends to the arguments built on the
+// attacked ones, or all of them, by the module attackBuilder, if they find none (the arguments derived from them are
+// added when the graph is changed, see structuredWhole::modifyGraph/0)
 private class RuleGraph(
     private val graph: BuiltGraph,
 ) : PrologModule("prolog.argumentation.parallel.graph", "ruleGraph") {
@@ -53,10 +53,9 @@ private class RuleGraph(
         // language=Prolog
         """
         %! buildArgumentationGraph
-        %  The arguments the workers built, those derived from them, and the attacks between them.
+        %  The arguments the workers built and the attacks between them.
         buildArgumentationGraph :-
             buildArguments,
-            buildAdditionalArguments,
             buildAttacks.
 
         %! buildArguments
@@ -65,9 +64,8 @@ private class RuleGraph(
             built(whole).
 
         %! buildAdditionalArguments
-        %  The arguments derived from the others (see the module conflictArguments).
-        buildAdditionalArguments :-
-            conflictArguments::buildAdditionalArguments.
+        %  None, in query mode: the arguments derived from the others are added when the graph is changed.
+        buildAdditionalArguments.
 
         %! buildAttacks
         %  The attacks between the saved arguments: the direct ones the workers found, extended by the graph store.

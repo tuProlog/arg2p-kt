@@ -150,7 +150,8 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % ruleBodyIsSupported/4 in a theory with constraints, collecting the supports as well: the constraints of the rule
         % ({ } premises) and of the supports, with their bindings, must hold together, and those still open are kept in
         % the body of Argument (see the module constraint); with instances (Instances yes) its conclusion may be open, and
-        % a support used for fewer values than it has is saved as its instance (see the module constraints).
+        % a support used for fewer values than it has is saved as bound (its instance, which the module constraints adds
+        % when the graph is changed).
         constrainedBodyIsSupported([], Rule, Acc, Supports, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody, Instances),
             concludable(constrained(Instances), RuleHead),
@@ -173,8 +174,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             argument::info(Support, Info),
             argument::infoParts(Info, SupportLastDef, SupportDef, SupportPrem),
             constrainedBodyIsSupported(Others, Rule, [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]], [Support|Supports], Argument),
-            Rule = rule(_, _, _, Instances),
-            (Instances == yes -> constraints::realize(Support) ; true),
             graphStore::saveSupport(Support, Argument).
         """.trimIndent()
 }

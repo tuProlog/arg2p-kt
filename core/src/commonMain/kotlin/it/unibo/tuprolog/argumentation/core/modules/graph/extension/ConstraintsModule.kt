@@ -8,7 +8,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * take (constrained by its `{ }` premises, see the module constraint): `holdsAt(f, T)` with `{ T > 1 }` holds for every
  * T after 1. Its instance for some of them is an argument of its own, made of the same rules, its sub-arguments
  * instantiated alike where the values flow:
- * - an argument using it for some values (`alarm(5)` from `holdsAt(f, 5)`) rests on its instance for them;
+ * - an argument using it for some values (`alarm(5)` from `holdsAt(f, 5)`) rests on its instance for them, saved
+ *   when the graph is changed (the builder saves the support as bound);
  * - a conflict binding its variables (`-holdsAt(f, 7)`) attacks it, and its instance for those values, which the graph
  *   shows.
  *
@@ -20,8 +21,21 @@ object ConstraintsModule : PrologModule("prolog.argumentation.graph.constraints"
         // language=Prolog
         """
         %! modifyArgumentationGraph
-        %  Nothing to change: the instances are added with the arguments (see buildAdditionalArguments/0).
-        modifyArgumentationGraph.
+        %  The instances the arguments rest on (see supportInstances/0) and those a conflict binds (see
+        %  buildAdditionalArguments/0), with their attacks.
+        modifyArgumentationGraph :-
+            supportInstances,
+            buildAdditionalArguments,
+            findall(Id, context_check(addedInstance(Id)), Ids),
+            context_retract(addedInstance(_)),
+            attackBuilder::buildAttacksOf(Ids).
+
+        %! supportInstances
+        %  The instances the saved arguments rest on: a support used for fewer values than it has is saved by the builder
+        %  as bound by the premise it supports, the argument it is an instance of saved alone.
+        supportInstances :-
+            findall(S, (graphStore::support(S, _), graphStore::argumentId(S, Id), \+ graphStore::argumentById(Id, _)), Instances),
+            findall(_, (member(Instance, Instances), realize(Instance)), _).
 
         %! buildAdditionalArguments
         %  The instances where a conflict binds the variables of an argument.
@@ -58,6 +72,8 @@ object ConstraintsModule : PrologModule("prolog.argumentation.graph.constraints"
             argument::body(Instance, Bound),
             argument::conclusion(Instance, Conclusion),
             graphStore::saveInstance(instance, Conclusion, Instance),
+            graphStore::argumentId(Instance, Id),
+            context_assert(addedInstance(Id)),
             findall(_, (member(Sub, Supporters), realizeSupport(Sub, Body, Bound, Instance)), _).
         realize(_).
 
