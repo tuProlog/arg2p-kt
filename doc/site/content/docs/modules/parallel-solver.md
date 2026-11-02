@@ -328,12 +328,13 @@ asked for it, and needs the others only when its theory changes.
 2. Each worker builds the arguments of its rules and sends every new argument directly to the workers that need its
    conclusion, which build on it in turn, and publishes it to the catalog.
 3. Once every argument is built, each worker asks the others for the arguments that could attack its own, and checks
-   each such pair once. Only the direct attacks are sent to the catalog: the graph store extends them to the
-   arguments built on the attacked ones.
-4. The catalog labels the graph with the settings of the solver, as the standard solver does: its graph builder and
-   query mode save the arguments and the attacks the workers built (see [above](#as-a-solver-of-arg2p)).
-
-With `metaConflicts`, where conflicts are themselves arguments, the catalog finds the attacks itself.
+   each such pair once, with the check of the graph builder (`attackBuilder::directAttack/3`). Only the direct attacks
+   are sent to the catalog: the graph store extends them to the arguments built on the attacked ones.
+4. The catalog changes the graph and labels it with the settings of the solver, as the standard solver does: its
+   graph builder and query mode save the arguments and the attacks the workers built (see
+   [above](#as-a-solver-of-arg2p)), then the steps changing the graph add the arguments derived from them, with
+   their attacks (the instances of `constraints`, the copies of `metaConflicts`, which alone attack then), and change
+   the attacks.
 
 ### Query mode
 

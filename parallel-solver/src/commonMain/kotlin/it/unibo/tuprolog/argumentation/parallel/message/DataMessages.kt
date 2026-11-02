@@ -25,12 +25,15 @@ data class Response(
 
 /**
  * An argument, by its global identifier ([id], the worker that built it and its identifier there), with the identifiers
- * of the arguments it rests on directly ([supports], from a worker to the catalog only)
+ * of the arguments it rests on directly ([supports]) and those it rests on for fewer values than they hold for, bound
+ * as it uses them ([bound], with constraints: their instances, which the catalog adds when it changes the graph), from
+ * a worker to the catalog only
  */
 internal data class SharedArgument(
     val id: String,
     val argument: Term,
     val supports: List<String> = emptyList(),
+    val bound: List<Term> = emptyList(),
 )
 
 /** The premises of the rules of [worker], and their conclusions */

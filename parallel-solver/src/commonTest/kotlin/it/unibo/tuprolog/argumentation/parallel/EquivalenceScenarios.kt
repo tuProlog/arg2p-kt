@@ -179,4 +179,49 @@ abstract class EquivalenceScenarios {
             "guilty",
             "-guilty",
         )
+
+    // The instances of the arguments for sets of values, which the catalog adds as the standard solver does: those the
+    // workers' arguments rest on, and those a conflict binds; on the whole graph, and in query mode each statement on a
+    // graph of its own (that of a distributed solver grows with the statements evaluated before)
+    private fun bothModes(
+        flags: Flags,
+        theory: String,
+        vararg statements: String,
+    ) {
+        assertSameLabels(flags.queryMode(false), theory, *statements)
+        statements.forEach { assertSameLabels(flags.queryMode(true), theory, it) }
+    }
+
+    @Test
+    fun constraints() =
+        bothModes(
+            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.CONSTRAINTS),
+            "f1 :=> s.\nr0 : s, {T > 1} => holdsAt(f, T).\nr1 : holdsAt(f, 5) => ok.\nc1 :=> -holdsAt(f, 7).\nc2 :=> -holdsAt(f, 0).",
+            "ok",
+            "holdsAt(f, 7)",
+            "holdsAt(f, 5)",
+            "holdsAt(f, 0)",
+        )
+
+    @Test
+    fun temporal() =
+        bothModes(
+            Flags.defaults().temporal(true),
+            "e1 :=> happens(load, 1).\ne2 :=> happens(shoot, 4).\ni1 :=> initiates(load, loaded).\n" +
+                "t1 :=> terminates(shoot, loaded).\nq1 : holdsAt(loaded, 3) => canShoot.\nq2 : holdsAt(loaded, 6) => stillLoaded.",
+            "canShoot",
+            "stillLoaded",
+            "holdsAt(loaded, 3)",
+            "holdsAt(loaded, 6)",
+        )
+
+    @Test
+    fun conflictsArguedOnInstances() =
+        bothModes(
+            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.CONSTRAINTS).metaConflicts(true),
+            "r0 : [] => conflict(p(7), q).\nf1 :=> s.\nr1 : s, {T > 1} => p(T).\nf2 :=> q.\nr2 : p(5) => ok.",
+            "ok",
+            "q",
+            "p(7)",
+        )
 }

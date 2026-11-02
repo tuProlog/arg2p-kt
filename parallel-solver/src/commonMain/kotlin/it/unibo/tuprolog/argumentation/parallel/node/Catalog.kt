@@ -70,7 +70,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  *    of the statements a goal evaluates depend on, as the semantics declares (directional or connected), explored from
  *    the workers that conclude them;
  * 3. once every Build and Explore is acknowledged, the arguments are all published: the workers find the direct attacks
- *    on their own (with metaConflicts, where the conflicts are arguments as well, the solver of the catalog finds them);
+ *    on their own, as the graph builder does (none with metaConflicts: only the copies attack, added with the graph);
  * 4. the goal is solved as the standard solver solves it, but for the graph: the graph builder of the rules and query
  *    mode of the solver (see [graphModules]) save the arguments and the attacks the workers built, the graph store
  *    extends the attacks to the arguments built on the attacked ones, and the solver derives the other arguments,
@@ -95,12 +95,11 @@ internal class Catalog(
     private var workers = 0
 
     // The theory split for as many workers as the network ran when it was split, and how the solver builds the graph:
-    // by the catalog alone (a graph not built from rules), the attacks by the solver (with metaConflicts), and the
-    // locality query mode explores (null for the whole graph)
+    // by the catalog alone (a graph not built from rules), and the locality query mode explores (null for the whole
+    // graph)
     private var partitioning: Partitioning? = null
     private var partitionedFor: Int? = null
     private var central = false
-    private var centralAttacks = false
     private var partial: String? = null
 
     // The graph built: whether it is (complete, for the theory as it is), its locality (null for the whole graph), and
@@ -129,11 +128,14 @@ internal class Catalog(
     internal val graphArguments: List<Term> get() = solver.arguments(solver.activeBranch()).map { it.termRepresentation() }
     private val supports = mutableListOf<Pair<String, String>>()
 
+    // The supports bound as the arguments use them (with constraints), not arguments themselves, and the arguments
+    private val boundSupports = mutableListOf<Pair<Term, String>>()
+
     // The direct attacks the workers found
     private val directAttacks = mutableListOf<DirectAttack>()
 
-    // The graph built, as the modules of the solver save it: the arguments and their supports, the attacks (none if the
-    // workers do not find them); and what the goal solved needs that is not built yet
+    // The graph built, as the modules of the solver save it: the arguments and their supports, the attacks; and what
+    // the goal solved needs that is not built yet
     private var saved: Pair<Term, Term>? = null
     private var savedAttacks: Term? = null
     private var need: Need? = null
@@ -162,8 +164,10 @@ internal class Catalog(
     private var solver = newSolver()
     private val unificator = Unificator.default
 
-    // The arguments for a statement read, by label, and the size of the graph labelled
-    private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), argument::claim(A, S)", solver.operators)
+    // The arguments for a statement read, by label, as they are (an argument for an open statement, holdsAt(f, T), not
+    // bound by the statement asked, holdsAt(f, 7), which would show it as its instance), and the size of the graph
+    // labelled
+    private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), \\+ \\+ argument::claim(A, S)", solver.operators)
     private val size =
         Goal(
             "graphStore::argumentIds(Ids), length(Ids, Arguments), findall(T, graphStore::attackById(T, _, _, _), Ts), " +
@@ -238,6 +242,7 @@ internal class Catalog(
                     // saved as the argument builder saves them, the last premise first: the graph store gives them
                     // back in the order of the worker
                     argument.supports.asReversed().forEach { supports += it to argument.id }
+                    argument.bound.forEach { boundSupports += it to argument.id }
                     arguments[argument.id] = argument.argument
                 }
                 network.send(Address.worker(message.worker), Ack(-1))
@@ -343,7 +348,6 @@ internal class Catalog(
         solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
         solver.solveOnce("context_reset, parser:::convertAllRules(_)")
         central = !solver.holds("structuredWhole::builder(B), B == ruleGraph")
-        centralAttacks = central || solver.holds("setting(metaConflicts)")
         partial = if (central) null else locality()
         changed = false
         labelled = false
@@ -413,6 +417,7 @@ internal class Catalog(
         pending.clear()
         arguments.clear()
         supports.clear()
+        boundSupports.clear()
         directAttacks.clear()
         argumentsReported = 0
     }
@@ -442,29 +447,29 @@ internal class Catalog(
         }
     }
 
-    // The arguments all published: the workers find the attacks, but with metaConflicts
+    // The arguments all published: the workers find the attacks
     private fun published() {
         directAttacks.clear()
-        if (workers == 0 || centralAttacks) return finished()
+        if (workers == 0) return finished()
         stage = Stage.ATTACKING
         awaited = workers
         repeat(workers) { network.send(Address.worker(it), Attack) }
     }
 
-    // The graph built, kept as the modules of the solver save it (the attacks as attackBuilder saves them, none if the
-    // workers did not find them): the jobs waiting are done on it
+    // The graph built, kept as the modules of the solver save it (the attacks as attackBuilder saves them): the jobs
+    // waiting are done on it
     private fun finished() {
         val supported =
             supports.map { (support, argument) ->
                 Struct.of("support", arguments.getValue(support), arguments.getValue(argument))
-            }
+            } + boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument)) }
         val attacks =
             directAttacks.distinct().map { (type, attacker, target) ->
                 val attacked = arguments.getValue(target)
                 Struct.of("attack", Atom.of(type), arguments.getValue(attacker), attacked, attacked)
             }
         saved = PlList.of(arguments.values) to PlList.of(supported)
-        savedAttacks = PlList.of(attacks).takeUnless { centralAttacks }
+        savedAttacks = PlList.of(attacks)
         built = true
         labelled = false
         stage = Stage.READY

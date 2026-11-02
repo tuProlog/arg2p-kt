@@ -105,10 +105,17 @@ internal class Worker(
             "graphStore::forgetNewConclusions(a), graphStore::forgetNewConclusions(b), graphStore::forgetNewConclusions(f), " +
                 "argumentBuilder::buildArgumentsFromRules(N, a)",
         )
+
+    // the arguments built since L, with the identifiers of their supports, and the supports bound as they use them
+    // (with constraints, the instances of saved arguments, not saved themselves: see the module constraints)
     private val built =
-        goal("graphStore::argumentById(Id, A), Id > L, findall(SId, (graphStore::support(S, A), graphStore::argumentId(S, SId)), Ss)")
+        goal(
+            "graphStore::argumentById(Id, A), Id > L, " +
+                "findall(SId, (graphStore::support(S, A), graphStore::argumentId(S, SId), graphStore::argumentById(SId, _)), Ss), " +
+                "findall(S, (graphStore::support(S, A), graphStore::argumentId(S, SId), \\+ graphStore::argumentById(SId, _)), Bs)",
+        )
     private val conflicts = goal("attackCandidates::findPossibleAttackers(X, Conflict), member(S, Conflict)")
-    private val attack = goal("attackRelation::attacks(T, B, X)")
+    private val attack = goal("attackBuilder::directAttack(T, B, X)")
 
     override fun receive(message: KbMessage) {
         when (message) {
@@ -298,7 +305,7 @@ internal class Worker(
                     it.getValue("Ss").castToList().toList().map { support ->
                         globalIds.getValue((support as Integer).intValue.toInt())
                     }
-                id to SharedArgument(globalIds.getValue(id), it.getValue("A"), supports)
+                id to SharedArgument(globalIds.getValue(id), it.getValue("A"), supports, it.getValue("Bs").castToList().toList())
             }
         if (mine.isEmpty()) return
         send(Address.CATALOG, Publish(index, mine.map { it.second }))

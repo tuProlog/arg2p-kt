@@ -24,7 +24,7 @@ internal interface BuiltGraph {
      */
     fun arguments(need: Term): Pair<Term, Term>?
 
-    /** The direct attacks the workers found, as a list of attack/4 terms: none if they find none (with metaConflicts) */
+    /** The direct attacks the workers found, as a list of attack/4 terms (none with metaConflicts) */
     val attacks: Term?
 }
 
@@ -40,9 +40,9 @@ internal fun graphModules(graph: BuiltGraph): List<ArgLibrary> {
 }
 
 // The graph builder of the rules: the arguments the workers built (a graph not built yet stops the resolution, see
-// built/1), and the attacks, those the workers found, which the graph store extends to the arguments built on the
-// attacked ones, or all of them, by the module attackBuilder, if they find none (the arguments derived from them are
-// added when the graph is changed, see structuredWhole::modifyGraph/0)
+// built/1), and the attacks, those the workers found as the module attackBuilder does, which the graph store extends to
+// the arguments built on the attacked ones (the arguments derived from them are added when the graph is changed, see
+// structuredWhole::modifyGraph/0)
 private class RuleGraph(
     private val graph: BuiltGraph,
 ) : PrologModule("prolog.argumentation.parallel.graph", "ruleGraph") {
@@ -70,10 +70,8 @@ private class RuleGraph(
         %! buildAttacks
         %  The attacks between the saved arguments: the direct ones the workers found, extended by the graph store.
         buildAttacks :-
-            builtAttacks(Attacks), !,
+            builtAttacks(Attacks),
             graphStore::saveAttacks(Attacks).
-        buildAttacks :-
-            attackBuilder::buildAttacks.
 
         %! built(+Need)
         %  The arguments Need asks for (whole, or explore(Statement)) and their supports, saved as the workers built

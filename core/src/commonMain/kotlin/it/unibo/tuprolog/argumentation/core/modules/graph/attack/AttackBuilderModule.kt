@@ -25,12 +25,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             graphStore::argumentById(IdA, A),
             attackCandidates::possibleAttackers(IdA, A, Conflict),
             findAttacker(Conflict, B),
-            conflictArguments::canAttack(B),
-            % Attacks are checked on copies, so that A and B are saved exactly as they are stored:
-            % binding their variables would change their identifiers (see context_id)
-            copy_term(B-A, CB-CA),
-            attackRelation::attacks(T, CB, CA),
-            (Constrained == yes -> constraint::compatible(CB, CA) ; true),
+            directAttack(Constrained, T, B, A),
             graphStore::argumentId(B, IdB),
             graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
             fail.
@@ -52,13 +47,27 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             findAttacker(Conflict, B),
             graphStore::argumentId(B, IdB),
             (context_check(addedArgument(IdA)) -> true ; context_check(addedArgument(IdB))),
-            conflictArguments::canAttack(B),
-            copy_term(B-A, CB-CA),
-            attackRelation::attacks(T, CB, CA),
-            (Constrained == yes -> constraint::compatible(CB, CA) ; true),
+            directAttack(Constrained, T, B, A),
             graphStore::saveAttackById(T, IdB, B, IdA, A, IdA, A),
             fail.
         buildAddedAttack(_).
+
+        %! directAttack(-Type, +Attacker, +Attacked)
+        %  Attacker attacks Attacked directly, with an attack of Type, as the graph is built: Attacker may attack (with
+        %  metaConflicts only the copies do, see conflictArguments::canAttack/1), and the two satisfy their constraints
+        %  together (see constraint::compatible/2). The check of the workers of the parallel solver as well.
+        directAttack(T, B, A) :-
+            (parser::constrained -> Constrained = yes ; Constrained = no),
+            directAttack(Constrained, T, B, A).
+
+        % (Constrained: whether the theory may have constraints, found once for all the attacks of a graph.) Attacks are
+        % checked on copies, so that the arguments are saved exactly as they are stored: binding their variables would
+        % change their identifiers (see context_id)
+        directAttack(Constrained, T, B, A) :-
+            conflictArguments::canAttack(B),
+            copy_term(B-A, CB-CA),
+            attackRelation::attacks(T, CB, CA),
+            (Constrained == yes -> constraint::compatible(CB, CA) ; true).
 
         % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
         findAttacker([Head], B) :- !,

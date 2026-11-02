@@ -77,7 +77,7 @@ internal object MessageCodec {
     private fun TextWriter.terms(values: List<Term>) = list(values) { text(it.toString()) }
 
     private fun TextWriter.shared(values: List<SharedArgument>) =
-        list(values) { text(it.id).text(it.argument.toString()).texts(it.supports) }
+        list(values) { text(it.id).text(it.argument.toString()).texts(it.supports).terms(it.bound) }
 
     private fun TextWriter.interests(values: List<Interest>) = list(values) { number(it.worker).terms(it.premises).terms(it.conclusions) }
 
@@ -89,7 +89,7 @@ internal object MessageCodec {
 
     private fun TextReader.terms() = list { term() }
 
-    private fun TextReader.shared() = list { SharedArgument(text(), term(), texts()) }
+    private fun TextReader.shared() = list { SharedArgument(text(), term(), texts(), terms()) }
 
     private fun TextReader.interests() = list { Interest(number(), terms(), terms()) }
 
