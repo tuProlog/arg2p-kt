@@ -28,9 +28,9 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             buildArgumentsFromRules(N, b, Mode).
 
         % mode(-Mode): base, for a theory whose arguments all conclude ground statements with no constraint to keep, or
-        % constrained(Instances) (parser::constrained/0), Instances yes with the instances of the graph extension
-        % constraints: asked once, the arguments of a theory in the base mode built as if constraints were not there
-        mode(constrained(Instances)) :- parser::constrained, !, (parser::instances -> Instances = yes ; Instances = no).
+        % constrained (parser::constrained/0): asked once, the arguments of a theory in the base mode built as if
+        % constraints were not there
+        mode(constrained) :- parser::constrained, !.
         mode(base).
 
         % The rules are kept in the context rather than passed around: they are not ground, so carrying their list
@@ -45,8 +45,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             findall(_, (
                 parser::classicRule(PremiseID, Premise),
                 concludable(Mode, Premise),
-                defeasibleIds(PremiseID, DefeasiblePremises),
-                argument::infoParts(Info, [], [], DefeasiblePremises),
+                argument::premiseInfo(PremiseID, Info),
                 argument::new([PremiseID], none, Premise, [], Info, Argument),
                 graphStore::saveArgument(a, Premise, Argument)
             ), _).
@@ -54,22 +53,16 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         buildArgumentsFromEmptyRules(Mode) :-
             findall(_, (
                 emptyRule([RuleID, RulePrem, RuleHead]),
-                supported(Mode, RulePrem, RuleID, RuleHead, _),
-                defeasibleIds(RuleID, DefeasibleRules),
-                argument::infoParts(Info, DefeasibleRules, DefeasibleRules, []),
-                withConstraints(Mode, RulePrem, [], Body),
-                argument::new([RuleID], RuleID, RuleHead, Body, Info, Argument),
+                supported(Mode, RulePrem, RuleID, RuleHead, Argument),
                 graphStore::saveArgument(a, RuleHead, Argument)
             ), _).
 
-        % A rule with no premise to support with an argument: only contraries, Prolog checks and constraints
+        % A rule with no premise to support with an argument: only contraries, Prolog checks and constraints (as
+        % parser::argued/1 tells them, checked here: backtracking into a call to another module, for every premise of
+        % every rule, costs 2% of the memory of a whole graph)
         emptyRule([RuleID, Body, RuleHead]) :-
             parser::classicRule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_), X \= '{}'(_)).
-
-        % The defeasible ones among the rule or premise Id: none if strict
-        defeasibleIds(Id, []) :- parser::checkStrict(Id), !.
-        defeasibleIds(Id, [Id]).
 
         %! buildArgumentsFromRules(+N, +Tn)
         %  The rounds of the rules using the conclusions N (see buildArgumentsFromRules/3), for the solvers building the
@@ -106,23 +99,24 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % statement of its premises Body with a saved argument, as the mode of the theory asks
         supported(base, Body, RuleID, RuleHead, Argument) :-
             ruleBodyIsSupported(Body, rule(RuleID, RuleHead, Body), [[], [], [], []], Argument).
-        supported(constrained(Instances), Body, RuleID, RuleHead, Argument) :-
-            constrainedBodyIsSupported(Body, rule(RuleID, RuleHead, Body, Instances), [[], [], [], []], [], Argument).
+        supported(constrained, Body, RuleID, RuleHead, Argument) :-
+            constrainedBodyIsSupported(Body, rule(RuleID, RuleHead, Body), [[], [], [], []], [], Argument).
 
         % An argument may conclude Conclusion: ground, or as the module constraint says in a theory with constraints
         concludable(_, Conclusion) :- ground(Conclusion), !.
-        concludable(constrained(_), Conclusion) :- constraint::concludable(Conclusion).
+        concludable(constrained, Conclusion) :- constraint::concludable(Conclusion).
 
         % The body of the argument: the premises of its rule, with the constraints of its supports still open in a theory
         % with constraints (see constraint::extend/3)
         withConstraints(base, Premises, _, Premises).
-        withConstraints(constrained(_), Premises, Supports, Body) :- constraint::extend(Premises, Supports, Body).
+        withConstraints(constrained, Premises, Supports, Body) :- constraint::extend(Premises, Supports, Body).
 
-        % ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), [All, LastDefRules, DefRules, DefPremises], Argument):
-        % Argument is built from RuleID by supporting each statement in Body with a saved argument, collecting the rules
-        % and premises of the supports; its conclusion is ground. Only Body is matched in the clause heads, everything
-        % else is unpacked in the bodies: matching heads with many arguments against every clause is what makes this
-        % predicate expensive.
+        % ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), Parts, Argument): Argument is built from RuleID by
+        % supporting each statement in Body with a saved argument, collecting the rules and premises of the supports
+        % (Parts, see argument::accumulated/3); its conclusion is ground. Only Body is matched in the clause heads,
+        % everything else is unpacked in the bodies: matching heads with many arguments against every clause is what
+        % makes this predicate expensive. A theory with constraints has a recursion of its own
+        % (constrainedBodyIsSupported/5): tracking the supports and the mode here costs the base mode 2% more memory.
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ground(RuleHead),
@@ -135,24 +129,21 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
             parser::holds(Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
-        ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
-            Acc = [All, LastDef, Def, Prem],
+        ruleBodyIsSupported([Statement|Others], Rule, Parts, Argument) :-
             graphStore::argumentFor([Statement], Support),
-            argument::rules(Support, Rules),
-            argument::info(Support, Info),
-            argument::infoParts(Info, SupportLastDef, SupportDef, SupportPrem),
-            ruleBodyIsSupported(Others, Rule, [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]], Argument),
+            argument::accumulated(Support, Parts, Accumulated),
+            ruleBodyIsSupported(Others, Rule, Accumulated, Argument),
             graphStore::saveSupport(Support, Argument).
 
-        % constrainedBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody, Instances), Acc, Supports, Argument): as
+        % constrainedBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), Parts, Supports, Argument): as
         % ruleBodyIsSupported/4 in a theory with constraints, collecting the supports as well: the constraints of the rule
         % ({ } premises) and of the supports, with their bindings, must hold together, and those still open are kept in
-        % the body of Argument (see the module constraint); with instances (Instances yes) its conclusion may be open, and
-        % a support used for fewer values than it has is saved as bound (its instance, which the module constraints adds
-        % when the graph is changed).
+        % the body of Argument (see the module constraint); with instances its conclusion may be open, and a support used
+        % for fewer values than it has is saved as bound (its instance, which the module constraints adds when the graph
+        % is changed).
         constrainedBodyIsSupported([], Rule, Acc, Supports, Argument) :-
-            Rule = rule(RuleID, RuleHead, RuleBody, Instances),
-            concludable(constrained(Instances), RuleHead),
+            Rule = rule(RuleID, RuleHead, RuleBody),
+            concludable(constrained, RuleHead),
             parser::strictness(RuleID, Strict),
             argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             constraint::extend(RuleBody, Supports, Body),
@@ -165,13 +156,10 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
         constrainedBodyIsSupported(['{}'(_)|Others], Rule, Acc, Supports, Argument) :-
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
-        constrainedBodyIsSupported([Statement|Others], Rule, Acc, Supports, Argument) :-
-            Acc = [All, LastDef, Def, Prem],
+        constrainedBodyIsSupported([Statement|Others], Rule, Parts, Supports, Argument) :-
             graphStore::argumentFor([Statement], Support),
-            argument::rules(Support, Rules),
-            argument::info(Support, Info),
-            argument::infoParts(Info, SupportLastDef, SupportDef, SupportPrem),
-            constrainedBodyIsSupported(Others, Rule, [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]], [Support|Supports], Argument),
+            argument::accumulated(Support, Parts, Accumulated),
+            constrainedBodyIsSupported(Others, Rule, Accumulated, [Support|Supports], Argument),
             graphStore::saveSupport(Support, Argument).
         """.trimIndent()
 }

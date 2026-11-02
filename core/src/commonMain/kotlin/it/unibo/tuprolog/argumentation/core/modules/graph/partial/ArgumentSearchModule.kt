@@ -31,7 +31,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         findArgument(Conclusion, Found) :-
             parser::classicRule(Id, Conclusion),
             (parser::boundByQuery(Id) -> parser::instances ; true),
-            premiseInfo(Id, Info),
+            argument::premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
 
         % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise), and the rule
@@ -170,18 +170,9 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         collectPremises([slot(_, constraint)|Slots], Found) :- !,
             collectPremises(Slots, Found).
         collectPremises([slot(_, argument(Sub))|Slots], Found) :-
-            collectPremises(Slots, premises([Rules, LastDefRules, DefRules, DefPremises], Supports)),
-            argument::rules(Sub, SubRules),
-            argument::info(Sub, Info),
-            argument::infoParts(Info, SubLastDefRules, SubDefRules, SubDefPremises),
-            Found = premises(
-                [[SubRules|Rules], [SubLastDefRules|LastDefRules], [SubDefRules|DefRules], [SubDefPremises|DefPremises]],
-                [Sub|Supports]
-            ).
-
-        % The info of an argument made of the premise Id: none of its premises defeasible if it is strict
-        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, argument::infoParts(Info, [], [], []).
-        premiseInfo(Id, Info) :- argument::infoParts(Info, [], [], [Id]).
+            collectPremises(Slots, premises(Parts, Supports)),
+            argument::accumulated(Sub, Parts, Accumulated),
+            Found = premises(Accumulated, [Sub|Supports]).
 
         """.trimIndent()
 }

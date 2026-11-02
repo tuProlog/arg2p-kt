@@ -80,6 +80,19 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
         %  Argument is made of a premise alone.
         isPremise([_, TopRule, _, _, _]) :- TopRule == none.
 
+        %! accumulated(+Support, +Parts, -Accumulated)
+        %  Parts, the rules, last defeasible rules, defeasible rules and defeasible premises of some arguments (a list of
+        %  lists each, as rulesAndInfo/5 takes them), with those of Support first in each.
+        accumulated(Support, [All, LastDef, Def, Prem], [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]]) :-
+            rules(Support, Rules),
+            info(Support, Info),
+            infoParts(Info, SupportLastDef, SupportDef, SupportPrem).
+
+        %! premiseInfo(+Id, -Info)
+        %  The info of an argument made of the premise Id alone: none of its premises defeasible if it is strict.
+        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, infoParts(Info, [], [], []).
+        premiseInfo(Id, Info) :- infoParts(Info, [], [], [Id]).
+
         %! rulesAndInfo(+RuleId, +Strict, +Supports, -Rules, -Info)
         %  The rules and the info of the argument built from the rule RuleId (strict if Strict is strict) on sub-arguments
         %  with the rules, last defeasible rules, defeasible rules and defeasible premises in Supports (see RulesAndInfo);
