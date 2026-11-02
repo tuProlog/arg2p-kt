@@ -79,7 +79,7 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
             context_reset,
             parser:::convertAllRules(_),
             structuredPartial:::computeStatementAcceptance(Goal),
-            graphStore::statementLabel(in, [Goal]).
+            structuredPartial::answer(in, Goal).
 
         %! buildLabelSetsSilent
         %  The labelling of the theory, in the context.

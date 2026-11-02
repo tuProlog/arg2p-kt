@@ -70,6 +70,14 @@ class ConstraintsModuleTest {
         bothModes(overlapping, listOf("ok6", "ok9"), listOf("und", "in"))
     }
 
+    // holdsAt(f, T) over (1, 4] stands, holdsAt(f, 6) is defeated: a statement and its instances are labelled each on
+    // its own, whichever is labelled first
+    @Test
+    fun aStatementDoesNotLabelItsInstances() {
+        val apart = "f1 :=> s.\nr0 : s, {T > 1, T =< 4} => holdsAt(f, T).\nr1 : s => holdsAt(f, 6).\nc1 :=> -holdsAt(f, 6).\n"
+        bothModes(apart, listOf("holdsAt(f, 6)"), listOf("out"))
+    }
+
     @Test
     fun anInstanceRestsOnTheInstancesOfItsSubArguments() = bothModes(after + stated + derived, listOf("ok5", "ok7"), listOf("in", "out"))
 
