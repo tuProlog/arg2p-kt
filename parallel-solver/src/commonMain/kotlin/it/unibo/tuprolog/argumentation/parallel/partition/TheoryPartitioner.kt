@@ -79,7 +79,7 @@ object TheoryPartitioner {
         if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) {
             return Partitioning("", listOf(theory), converted = false, catalog = theory)
         }
-        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules")
         // a theory its profile refuses is refused here, as by the standard solver
         checked(solver.solveOnce("structuredWhole::checkProfile"))
         val rules = rules(solver)

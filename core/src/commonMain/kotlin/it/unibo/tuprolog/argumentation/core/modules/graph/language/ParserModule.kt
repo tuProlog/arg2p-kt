@@ -68,8 +68,15 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
     override val prologRawTheory: String =
         // language=Prolog
         """
+        %! convertAllRules
+        %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1
+        %  clauses, strict/1, sup/2, abstractBp/1), asserted. What the pipeline calls: a term as large as the theory
+        %  bound in a resolution (as the Rules of convertAllRules/1) weighs on every binding made after it.
+        convertAllRules :-
+            \+ \+ convertAllRules(_).
+
         %! convertAllRules(-Rules)
-        %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1 clauses, strict/1, sup/2, abstractBp/1), asserted; Rules are what was asserted.
+        %  As convertAllRules/0, with Rules what was asserted.
         convertAllRules(ArgRules) :-
             defeasibleRules(DefeasibleRules),
             ordinaryPremises(Premises),

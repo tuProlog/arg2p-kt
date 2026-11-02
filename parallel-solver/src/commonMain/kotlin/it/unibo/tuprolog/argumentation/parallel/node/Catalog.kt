@@ -347,7 +347,7 @@ internal class Catalog(
         val partitioning = partitioning()
         solver.resetStaticKb()
         solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
-        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules")
         central = !solver.holds("structuredWhole::builder(B), B == ruleGraph")
         partial = if (central) null else locality()
         changed = false

@@ -56,7 +56,7 @@ class CausalityModule : PrologModule("prolog.argumentation.causality.solver", "c
         generateInterventions(_, S, [undercut(S)]) :-
             S \= -_.
         generateInterventions(R, S, SUP) :-
-            parser:::convertAllRules(_),
+            parser:::convertAllRules,
             compl(S, CS),
             unusedPremises(R, UP), !,
             subsets(UP, SUP),

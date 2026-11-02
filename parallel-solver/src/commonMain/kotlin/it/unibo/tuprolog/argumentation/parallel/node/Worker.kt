@@ -210,7 +210,7 @@ internal class Worker(
     ) {
         solver = Arg2pSolverFactory.solverOf(Arg2pSolver.default(listOf(Flags.parse(flags).library())), "")
         solver.loadStaticKb(Theory.parse(theory, solver.operators))
-        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules")
     }
 
     // A message from sender handled: the first one engages the worker (sender acknowledged once all the worker sent

@@ -115,18 +115,14 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         step(Step) :- steps(Steps), member(Step, Steps).
 
         %! active(+Step)
-        %  Step applies: constraints with the instances of the theory (as parser::instances/0), conflictArguments when
-        %  its conflicts are arguments (as conflict::argued/0), the others when they are graph extensions; any other
-        %  graph extension is (see others/1). The settings are read here rather than through those modules: the graph
-        %  is changed once it is built, when a call to another module costs as much as the graph.
-        active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal) -> true ; setting(openConclusions)).
-        active(conflictArguments) :- !, setting(metaConflicts).
+        %  Step applies: constraints with the instances of the theory (see parser::instances/0), conflictArguments when
+        %  its conflicts are arguments (see conflict::argued/0), the others when they are graph extensions; any other
+        %  graph extension is (see others/1).
+        active(constraints) :- !, parser::instances.
+        active(conflictArguments) :- !, conflict::argued.
         active(Step) :- setting(graphExtension, Step).
 
-        % The graph extensions of the user, the modules other than those of steps/1, as stated. The steps are walked
-        % by recursion, and these collected only if there are some: the graph is changed through the calls of another
-        % module (see structuredPartial::queryAcceptance/2), and a findall/3 there, or backtracking into a call to
-        % another module, costs as much as the context it is made in.
+        % The graph extensions of the user, the modules other than those of steps/1, as stated
         others(Others) :-
             (setting(graphExtension, X), \+ step(X) ->
                 findall(Y, (setting(graphExtension, Y), \+ step(Y)), Others)

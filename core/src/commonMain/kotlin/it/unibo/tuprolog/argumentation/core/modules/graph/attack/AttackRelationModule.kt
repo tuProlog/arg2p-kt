@@ -70,10 +70,8 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
 
         %! static
         %  The attacks no conflict states apply (contraries, undercut(Rule)): unless the conflicts are concluded by
-        %  arguments (metaConflicts, see conflict::argued/0, read here as the setting: a call to another module costs as
-        %  much as the graph it is made over).
-        static :- setting(metaConflicts), !, fail.
-        static.
+        %  arguments (see conflict::argued/0).
+        static :- \+ conflict::argued.
 
         % The top rule of the argument, if it is its last defeasible rule
         defeasibleTopRule(Argument, Rule) :-
