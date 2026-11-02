@@ -61,8 +61,9 @@ builds and labels the graph; the following ones read the labels. `solve` may be 
 once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
 Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
 
-`solve` gives the statements answering a statement, by label, as `answerQuery/4` labels them, each with the arguments
-for it (`queryChain`); any other goal is for the cluster as a solver of arg2p (`solver`, see
+`solve` gives the statements answering a statement, by label, as `answerQuery/4` labels them (under the flag
+`answerMode` as well), each with the arguments for it (`queryChain`); an error a worker meets building (a Prolog check
+of a rule that raises one) is the error of the evaluation, as the standard solver raises it; any other goal is for the cluster as a solver of arg2p (`solver`, see
 [below](#as-a-solver-of-arg2p)).
 
 ---

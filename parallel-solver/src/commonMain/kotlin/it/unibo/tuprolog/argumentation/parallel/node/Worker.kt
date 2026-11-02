@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
@@ -13,6 +14,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.Build
 import it.unibo.tuprolog.argumentation.parallel.message.Candidates
 import it.unibo.tuprolog.argumentation.parallel.message.DirectAttack
 import it.unibo.tuprolog.argumentation.parallel.message.Explore
+import it.unibo.tuprolog.argumentation.parallel.message.Failed
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
 import it.unibo.tuprolog.argumentation.parallel.message.Notify
@@ -58,7 +60,6 @@ internal class Worker(
     // Query mode: the locality explored (null on the whole graph), the statements asked to explore, and those this
     // worker asked the others to explore
     private var locality: String? = null
-    private var metaConflicts = false
     private val queries = mutableListOf<Term>()
     private val asked = mutableListOf<Term>()
     private val handled = mutableSetOf<String>()
@@ -96,7 +97,7 @@ internal class Worker(
     private val premises = goal("parser::classicRule(_, Body, _), member(P, Body), parser::argued(P)")
     private val heads = goal("(parser::classicRule(_, _, [C]) ; parser::classicRule(_, [C]))")
     private val explorations = goal("queryExploration::exploreAll(Q)")
-    private val resumption = goal("queryExploration::resume(S)")
+    private val resumption = goal("queryExploration::resumed(S, Q)")
     private val exploredStatements = goal("(queryExploration::explored(S) ; queryExploration::premiseOfExplored(S))")
     private val kept =
         goal("argument::conclusion(A, [C]), (graphStore::saveArgument(f, [C], A) -> true ; true), graphStore::argumentId(A, Id)")
@@ -117,7 +118,17 @@ internal class Worker(
     private val conflicts = goal("attackCandidates::findPossibleAttackers(X, Conflict), member(S, Conflict)")
     private val attack = goal("attackBuilder::directAttack(T, B, X)")
 
+    // A message handled: a failure (an error of the theory, as a Prolog check that raises one) told to the catalog,
+    // which gives up the graph being built and answers the clients with it, rather than left waiting for a reply
     override fun receive(message: KbMessage) {
+        try {
+            handle(message)
+        } catch (failure: Exception) {
+            network.send(Address.CATALOG, Failed(index, failure.message ?: failure.toString()))
+        }
+    }
+
+    private fun handle(message: KbMessage) {
         when (message) {
             is Load -> {
                 load(message.theory, message.flags)
@@ -129,7 +140,6 @@ internal class Worker(
                 engaged(Address.CATALOG) {
                     workers = message.interests.size
                     locality = message.locality
-                    metaConflicts = solver.holds("conflict::argued")
                     message.interests.filter { it.worker != index }.forEach {
                         conclusionsOf[it.worker] = it.conclusions
                         // on the whole graph, the others need the arguments for their premises; in query mode, those
@@ -137,12 +147,12 @@ internal class Worker(
                         if (locality == null) interests[it.worker] = it.premises
                     }
                     if (locality == null) {
-                        solver.solveOnce("argumentBuilder::buildArguments")
+                        checked(solver.solveOnce("argumentBuilder::buildArguments"))
                         share()
                     }
                 }
                 building = true
-                early.toList().also { early.clear() }.forEach { receive(it) }
+                early.toList().also { early.clear() }.forEach { handle(it) }
             }
             is Explore ->
                 if (!building) {
@@ -162,7 +172,7 @@ internal class Worker(
                         }
                         val new = message.statements.filter { statement -> queries.none { covers(it, statement) } }
                         queries += new
-                        solver.solve(explorations.with("Q" to PlList.of(new))).first()
+                        checked(solver.solve(explorations.with("Q" to PlList.of(new))).first())
                         explored()
                     }
                 }
@@ -173,7 +183,7 @@ internal class Worker(
                     engaged(Address.worker(message.from)) {
                         val claims = keep(message.arguments)
                         if (locality == null) {
-                            solver.solve(fire.with("N" to PlList.of(claims))).first()
+                            checked(solver.solve(fire.with("N" to PlList.of(claims))).first())
                             share()
                         } else {
                             resume(claims)
@@ -242,16 +252,10 @@ internal class Worker(
         network.send(to, message)
     }
 
-    // Query mode: the exploration carried on with the arguments for [claims] the others sent, which may support more of
-    // the arguments of its rules; with metaConflicts, those for conflicts may make others possible attackers, explored
-    // again from scratch
+    // Query mode: the exploration of the statements asked carried on with the arguments for [claims] the others sent
+    // (see queryExploration::resumed/2)
     private fun resume(claims: List<Term>) {
-        if (metaConflicts) {
-            solver.solveOnce("queryExploration::restart")
-            solver.solve(explorations.with("Q" to PlList.of(queries))).first()
-        } else {
-            solver.solve(resumption.with("S" to PlList.of(claims))).first()
-        }
+        checked(solver.solve(resumption.with("S" to PlList.of(claims), "Q" to PlList.of(queries))).first())
         explored()
     }
 
@@ -259,7 +263,7 @@ internal class Worker(
     // arguments of its rules built shared, and the others asked to explore the statements explored that their rules
     // conclude
     private fun explored() {
-        solver.solveOnce("queryExploration::expand($locality), queryExploration::extend($locality)")
+        checked(solver.solveOnce("queryExploration::expand($locality), queryExploration::extend($locality)"))
         share()
         // the statements explored since the last time (by their text), with the premises of the rules for them (asked
         // all at once, so that the others build their arguments side by side: the exploration would ask for each once

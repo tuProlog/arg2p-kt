@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.argumentation.core.runtime.withVariablesFixed
@@ -39,6 +40,7 @@ internal class Goal(
         val bound = bindings.map { it.first }.toSet()
         return solver
             .solve(with(*bindings))
+            .map { checked(it) }
             .filter { it is Solution.Yes }
             .map { solution ->
                 variables

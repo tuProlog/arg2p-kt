@@ -42,6 +42,7 @@ internal object MessageCodec {
                     is Wanted -> text("Wanted").number(message.worker).terms(message.statements)
                     is Candidates -> text("Candidates").number(message.worker).shared(message.arguments)
                     is AttacksFound -> text("AttacksFound").number(message.worker).attacks(message.attacks)
+                    is Failed -> text("Failed").number(message.worker).text(message.error)
                 }
             }.toString()
 
@@ -68,6 +69,7 @@ internal object MessageCodec {
                 "Wanted" -> Wanted(number(), terms())
                 "Candidates" -> Candidates(number(), shared())
                 "AttacksFound" -> AttacksFound(number(), attacks())
+                "Failed" -> Failed(number(), text())
                 else -> error("Unknown message $kind")
             }
         }

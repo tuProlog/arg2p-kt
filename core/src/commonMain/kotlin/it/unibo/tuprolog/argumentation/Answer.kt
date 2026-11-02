@@ -66,6 +66,9 @@ class AnswerQuery(
         return answerOf(labels.map { solution.substitution[it]!! })
     }
 
+    /** The statements [solution], a yes solution of [goal], labels in, out and und, as terms */
+    fun statements(solution: LogicSolution): List<List<Term>> = labels.map { solution.substitution[it]!!.castToList().toList() }
+
     /** The answers [solution] gives, the yes solution of [allGoal] */
     fun answers(solution: LogicSolution): List<Answer> =
         solution.substitution[all]!!

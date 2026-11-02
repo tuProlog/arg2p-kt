@@ -54,6 +54,17 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             findall(_, (member(S, Affected), context_retract(explored(S))), _),
             findall(_, (member(S, Affected), explore(S)), _).
 
+        %! resumed(+Statements, +Queries)
+        %  The exploration of Queries carried on once arguments for Statements, built elsewhere, are saved: from scratch
+        %  when the conflicts are argued (see conflict::argued/0), as those for conflicts may make others possible
+        %  attackers (see restart/0), or else exploring again what they may support (see resume/1).
+        resumed(_, Queries) :-
+            conflict::argued, !,
+            restart,
+            exploreAll(Queries).
+        resumed(Statements, _) :-
+            resume(Statements).
+
         %! restart
         %  The exploration forgotten, not the arguments it built: exploring again finds all that the arguments saved
         %  since support or make possible attackers (with metaConflicts, those for conflicts).

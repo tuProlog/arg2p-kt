@@ -49,4 +49,25 @@ class CatalogRequestsTest {
             }
         assertTrue("weak contraposition" in assertFailsWith<Arg2pException> { noContraposition.solve("x") }.message.orEmpty())
     }
+
+    // A Prolog check of a rule that raises an error while a worker builds: the error of the evaluation, as the standard
+    // solver raises it, not a cluster left waiting
+    @Test
+    fun anErrorOfAWorkerIsTheErrorOfTheEvaluation() {
+        val cluster = LocalCluster(parts = 2).also { it.load("f1 :=> a.\nr1 : a, prolog(X is foo + 1) => b.\nf2 :=> c.") }
+        assertFailsWith<Arg2pException> { cluster.solve("b") }
+    }
+
+    // A theory its profile refuses: the goals building its graph are refused, the other goals solved
+    @Test
+    fun aTheoryItsProfileRefusesSolvesTheOtherGoals() {
+        val cluster = LocalCluster(parts = 2).also { it.load("graphBuildMode(aba).\nassumption(a).\nr : a => b.") }
+        assertTrue(
+            cluster.solver
+                .solve("member(X, [1, 2])")
+                .next()
+                .isYes,
+        )
+        assertFailsWith<Arg2pException> { cluster.solve("b") }
+    }
 }

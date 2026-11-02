@@ -245,6 +245,12 @@ internal data class Candidates(
     val arguments: List<SharedArgument>,
 ) : KbMessage
 
+/** To the catalog: handling a message failed on [worker] with [error]: the graph being built is given up */
+internal data class Failed(
+    val worker: Int,
+    val error: String,
+) : KbMessage
+
 /** To the catalog: the direct attacks on the arguments of [worker] */
 internal data class AttacksFound(
     val worker: Int,
