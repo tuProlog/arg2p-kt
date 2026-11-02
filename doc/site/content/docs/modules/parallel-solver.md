@@ -61,7 +61,8 @@ builds and labels the graph; the following ones read the labels. `solve` may be 
 once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
 Python, the promise is rejected in JavaScript), and the cluster answers the following ones as before.
 
-`solve` gives the arguments for a statement; any other goal is for the cluster as a solver of arg2p (`solver`, see
+`solve` gives the statements answering a statement, by label, as `answerQuery/4` labels them, each with the arguments
+for it (`queryChain`); any other goal is for the cluster as a solver of arg2p (`solver`, see
 [below](#as-a-solver-of-arg2p)).
 
 ---

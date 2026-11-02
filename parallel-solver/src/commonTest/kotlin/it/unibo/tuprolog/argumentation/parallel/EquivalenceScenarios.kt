@@ -5,22 +5,24 @@ import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
- * The labels of the arguments for a statement are the same in a distributed solver, its theory partitioned among
- * workers, and in the standard solver answering it with the same flags (on the part of the graph the statement depends
- * on, in query mode): each subclass runs them on a way of running the nodes
+ * The statements answering a statement are labelled the same in a distributed solver, its theory partitioned among
+ * workers, and in the standard solver answering it with the same flags (answerQuery/4, on the part of the graph the
+ * statement depends on in query mode): each subclass runs them on a way of running the nodes
  */
 abstract class EquivalenceScenarios {
-    // The number of arguments for a statement labelled in, out and und
+    // The statements labelled in, out and und, as text, their variables named in the order they appear
     data class Labels(
-        val inArgs: Int,
-        val outArgs: Int,
-        val undArgs: Int,
+        val inStatements: Set<String>,
+        val outStatements: Set<String>,
+        val undStatements: Set<String>,
     )
 
     /** The evaluation of the statements of [theory], by a distributed solver labelling as the standard one with [flags] */
@@ -29,21 +31,27 @@ abstract class EquivalenceScenarios {
         flags: Flags,
     ): (String) -> EvaluationResponse
 
+    private fun named(statement: String): String {
+        val names = mutableMapOf<String, String>()
+        return Regex("""\b(_[A-Za-z0-9_]*|[A-Z][A-Za-z0-9_]*)\b""").replace(statement) { names.getOrPut(it.value) { "V${names.size}" } }
+    }
+
     private fun centralised(
         theory: String,
         statement: String,
         flags: Flags,
     ): Labels {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
-        // the graph the standard solver builds to answer: in query mode, the part the statement depends on
-        solver.solve(Struct.parse("answerQuery(($statement), _, _, _)", solver.operators)).first()
-        // the arguments whose claim unifies with the statement, as the workers look for them
-        val count = { label: String ->
-            solver
-                .solve(Struct.parse("graphStore::argumentLabel($label, A), argument::claim(A, $statement)", solver.operators))
-                .count { it.isYes }
+        val solution = solver.solve(Struct.parse("answerQuery(($statement), In, Out, Und)", solver.operators)).first()
+        val labelled = { name: String ->
+            solution.substitution
+                .getByName(name)!!
+                .castToList()
+                .toList()
+                .map { named(it.toString()) }
+                .toSet()
         }
-        return Labels(count("in"), count("out"), count("und"))
+        return Labels(labelled("In"), labelled("Out"), labelled("Und"))
     }
 
     private fun assertSameLabels(
@@ -59,19 +67,21 @@ abstract class EquivalenceScenarios {
         val solve = distributed(theory, flags)
         statements.forEach { statement ->
             val response = solve(statement)
-            // a statement with no argument is reported as one und, for no argument
-            val actual =
-                if (response.undArgs.size == 1 &&
+            // a statement with no argument is reported as one und, for no argument; every other with its arguments
+            val none =
+                response.undArgs.size == 1 &&
                     response.undArgs
                         .first()
                         .queryChain
                         .isEmpty()
-                ) {
-                    Labels(0, 0, 0)
-                } else {
-                    Labels(response.inArgs.size, response.outArgs.size, response.undArgs.size)
+            val labelled = { responses: List<Response> -> if (none) emptySet() else responses.map { named(it.claim) }.toSet() }
+            val actual = Labels(labelled(response.inArgs), labelled(response.outArgs), labelled(response.undArgs))
+            assertEquals(centralised(theory, statement, flags), actual, "the statements answering $statement")
+            if (!none) {
+                (response.inArgs + response.outArgs + response.undArgs).forEach {
+                    assertTrue(it.queryChain.isNotEmpty(), "the arguments for ${it.claim}")
                 }
-            assertEquals(centralised(theory, statement, flags), actual, "the arguments for $statement")
+            }
         }
     }
 

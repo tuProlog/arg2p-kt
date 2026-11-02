@@ -28,7 +28,7 @@ class Response:
 
 @dataclass(frozen=True)
 class EvaluationResponse:
-    """The arguments for a statement, by label."""
+    """The statements answering a statement, by label, each with the arguments for it."""
 
     in_args: list[Response] = field(default_factory=list)
     out_args: list[Response] = field(default_factory=list)
@@ -209,7 +209,7 @@ class _Cluster:
         call(self._cluster.reset)
 
     def solve(self, statement: str) -> EvaluationResponse:
-        """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
+        """The statements answering [statement], as Prolog text, by label, each with the arguments for it (Arg2pError for one that is not a statement)."""
         return call(lambda: _response(self._cluster.solve(statement)))
 
     @property

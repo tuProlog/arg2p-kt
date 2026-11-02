@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.parallel.node
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -75,6 +76,31 @@ internal fun covers(
     val fixed = specific.variables.distinct().mapIndexed { i, variable -> variable to Atom.of("fixed variable $i") }
     return Unificator.default.match(general, specific.apply(Substitution.of(fixed.toMap())))
 }
+
+/** Whether [a] and [b] are the same term but for the names of their variables (as the graph store identifies them) */
+internal fun sameUpToVariables(
+    a: Term,
+    b: Term,
+): Boolean = numbered(a) == numbered(b)
+
+// The term with its variables numbered in the order they appear
+private fun numbered(term: Term): Term =
+    if (term.isGround) {
+        term
+    } else {
+        term.apply(
+            Substitution.of(
+                term.variables
+                    .distinct()
+                    .mapIndexed {
+                        i,
+                        variable,
+                        ->
+                        variable to Struct.of("\$VAR", Integer.of(i))
+                    }.toMap(),
+            ),
+        )
+    }
 
 /** The statement [argument], the term of an argument, concludes */
 internal fun claimOf(argument: Term): Term = ArgumentTerm.parts(argument)!!.claim!!

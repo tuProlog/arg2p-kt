@@ -10,15 +10,15 @@ import kotlin.js.JsName
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
- * An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] (none
- * for a statement no argument concludes), as Prolog text
+ * A statement answering the one evaluated ([claim]: the statement itself, or, with constraints, one of its instances),
+ * with the arguments for it in [queryChain] (none for a statement no argument concludes), as Prolog text
  */
 @JsExport
 data class Response(
     val claim: String,
     @JsExport.Ignore @JsName("queryChainList") val queryChain: List<String>,
 ) {
-    /** The argument, as Prolog text (an array in JavaScript) */
+    /** The arguments for the statement, as Prolog text (an array in JavaScript) */
     @JsName("queryChain")
     val queryChainArray: Array<String> get() = queryChain.toTypedArray()
 }
@@ -111,13 +111,16 @@ internal data class Add(
     val elem: String,
 ) : KbMessage
 
-/** To the catalog: the labels of the arguments for the statement [elem], to send to the client [replyTo] */
+/** To the catalog: the labels of the statements answering the statement [elem], to send to the client [replyTo] */
 internal data class RequireEvaluation(
     val elem: String,
     val replyTo: String,
 ) : KbMessage
 
-/** To a client: the arguments for the statement it asked about, by label, or the [error] that kept it from an answer */
+/**
+ * To a client: the statements answering the statement it asked about, by label, as answerQuery/4 labels them, each with
+ * the arguments for it, or the [error] that kept it from an answer
+ */
 @JsExport
 data class EvaluationResponse(
     @JsExport.Ignore @JsName("inArgsList") val inArgs: List<Response>,
@@ -125,15 +128,15 @@ data class EvaluationResponse(
     @JsExport.Ignore @JsName("undArgsList") val undArgs: List<Response>,
     val error: String? = null,
 ) : KbMessage {
-    /** The arguments labelled in (an array in JavaScript) */
+    /** The statements labelled in (an array in JavaScript) */
     @JsName("inArgs")
     val inArray: Array<Response> get() = inArgs.toTypedArray()
 
-    /** The arguments labelled out (an array in JavaScript) */
+    /** The statements labelled out (an array in JavaScript) */
     @JsName("outArgs")
     val outArray: Array<Response> get() = outArgs.toTypedArray()
 
-    /** The arguments labelled und (an array in JavaScript) */
+    /** The statements labelled und (an array in JavaScript) */
     @JsName("undArgs")
     val undArray: Array<Response> get() = undArgs.toTypedArray()
 }

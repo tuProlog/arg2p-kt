@@ -70,7 +70,7 @@ class WebWorkerCluster(
     /** The sites the cluster is federated with, its Web Workers included */
     val peers: Array<String> get() = site.peerSites.toTypedArray()
 
-    /** The arguments for [statement], as Prolog text, by label (rejected if the cluster closes meanwhile) */
+    /** The statements answering [statement], as Prolog text, by label, each with the arguments for it (rejected if the cluster closes meanwhile) */
     fun solve(statement: String): Promise<EvaluationResponse> =
         replies.replied<EvaluationResponse> { site.solve(statement, it) }.then { answered(it) }
 

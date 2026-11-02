@@ -164,10 +164,11 @@ internal class Catalog(
     private var solver = newSolver()
     private val unificator = Unificator.default
 
-    // The arguments for a statement read, by label, as they are (an argument for an open statement, holdsAt(f, T), not
-    // bound by the statement asked, holdsAt(f, 7), which would show it as its instance), and the size of the graph
-    // labelled
-    private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), \\+ \\+ argument::claim(A, S)", solver.operators)
+    // The statements answering a statement asked (Q), by label, as answerQuery/4 reads them (see
+    // structuredPartial::answer/2); the arguments whose claim unifies with a statement, read as they are (those for it
+    // are kept, see sameUpToVariables); and the size of the graph labelled
+    private val statementsLabelled = Goal("S = Q, structuredPartial::answer(L, S)", solver.operators)
+    private val argumentsFor = Goal("graphStore::argument(A), \\+ \\+ argument::claim(A, S)", solver.operators)
     private val size =
         Goal(
             "graphStore::argumentIds(Ids), length(Ids, Arguments), findall(T, graphStore::attackById(T, _, _, _), Ts), " +
@@ -585,8 +586,8 @@ internal class Catalog(
         override fun failed(error: String) = AnswerResponse(null, error)
     }
 
-    // The arguments for a statement by label: the graph labelled for it (see answerQuery/4), or as it was if the solver
-    // labelled the graph built and it has them
+    // The statements answering a statement, by label, with the arguments for each: the graph labelled for it (see
+    // answerQuery/4), or as it was if the solver labelled the graph built and it has them
     private inner class Evaluating(
         private val request: RequireEvaluation,
         private val statement: Term,
@@ -607,14 +608,25 @@ internal class Catalog(
         // what answering the statement needs: the whole graph, unless query mode explores it
         private val needed: Need get() = if (partial == null) Need.Whole else Need.Explored(statement)
 
+        // The statements answering the one asked, by label, each with the arguments for it: as answerQuery/4 labels
+        // them (with constraints, the instances of the statement asked as well); a statement no argument concludes is
+        // UND, for no argument
         private fun labels(): EvaluationResponse {
-            // the statement bound as a term, its variables apart from those of the goal
             val found =
-                argumentsLabelled
-                    .solutions(solver, "S" to statement)
-                    .map { it.getValue("L").toString() to it.getValue("A").toString() }
-                    .distinct()
-            val labelled = { label: String -> found.filter { it.first == label }.map { Response(request.elem, listOf(it.second)) } }
+                statementsLabelled
+                    .solutions(solver, "Q" to statement)
+                    .map { it.getValue("L").toString() to it.getValue("S") }
+                    .distinctBy { (label, labelled) -> label to labelled.toString() }
+            val labelled = { label: String ->
+                found.filter { it.first == label }.map { (_, labelled) ->
+                    val arguments =
+                        argumentsFor
+                            .solutions(solver, "S" to labelled)
+                            .map { it.getValue("A") }
+                            .filter { sameUpToVariables(claimOf(it), labelled) }
+                    Response(labelled.toString(), arguments.map { it.toString() }.distinct())
+                }
+            }
             val und = if (found.isEmpty()) listOf(Response(request.elem, emptyList())) else labelled("und")
             return EvaluationResponse(labelled("in"), labelled("out"), und)
         }
