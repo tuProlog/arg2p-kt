@@ -24,16 +24,15 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             buildPrefAttacks.
 
         %! assertAllSup
-        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority), in
-        %  place of those the theory states: only the concluded ones count.
+        %  The preferences concluded by the arguments, as the preferences (see parser::statePreferences/1), in place of
+        %  those the theory states: only the concluded ones count.
         assertAllSup :-
-            context_retract(sup(_, _)),
-            findall(_, (
+            findall(sup(RuleOne, RuleTwo), (
                 argument::claim(Argument, sup(RuleOne, RuleTwo)),
-                graphStore::argument(Argument),
-                context_absent(sup(RuleOne, RuleTwo)),
-                context_assert(sup(RuleOne, RuleTwo))
-            ), _).
+                graphStore::argument(Argument)
+            ), Concluded),
+            utils::deduplicate(Concluded, Preferences),
+            parser::statePreferences(Preferences).
 
         %! filterSupRelatedAttacks(+Attacks, -Invalid)
         %  Invalid are the attacks among Attacks that the preferences invalidate. Those invalid whatever the
@@ -100,11 +99,6 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         %==============================================================================
         % QUERY MODE
         %==============================================================================
-
-        %! queryRelations
-        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
-        %  queryExploration::extend/1.
-        queryRelations.
 
         %! queryDependencies(+Argument, -Statement)
         %  The preferences between the rules of Argument are themselves conclusions (sup/2).

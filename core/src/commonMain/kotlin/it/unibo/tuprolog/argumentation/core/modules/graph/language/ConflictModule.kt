@@ -64,8 +64,20 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
 
         %! argued
         %  The conflicts are the conclusions of arguments (metaConflicts): which statements conflict changes as the
-        %  graph grows.
+        %  graph grows, and an argument attacks through the conflicts its conclusion has with others only while their
+        %  arguments stand: through a copy of it carrying each (see the module conflictArguments).
         argued :- setting(metaConflicts).
+
+        %! carried(+Argument, -Conflict)
+        %  Argument carries Conflict: the copy of an argument made for an argument for Conflict, mc(Id, Conflict) first
+        %  among its rules (see the module conflictArguments).
+        carried(Argument, Conflict) :-
+            argument::rules(Argument, [mc(_, Conflict)|_]).
+
+        %! attacker(+Argument)
+        %  Argument may attack others: any argument, or, with the conflicts argued, one carrying a conflict.
+        attacker(Argument) :- argued, !, carried(Argument, _).
+        attacker(_).
 
         %! statement(?Statement, ?Other, -ConflictStatement)
         %  With metaConflicts, the arguments for ConflictStatement make Statement conflict with Other.

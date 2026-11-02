@@ -79,10 +79,10 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             argument::lastDefeasibleRules(Argument, [Rule]).
 
         %! conflictsWith(+Argument, ?Statement)
-        %  The conclusion of Argument conflicts with Statement: only through its own conflict for the copy of an argument
-        %  made for a conflict argument (see the module conflictArguments), through any conflict otherwise.
+        %  The conclusion of Argument conflicts with Statement: only through the conflict Argument carries if it does
+        %  (see conflict::carried/2), through any conflict otherwise.
         conflictsWith(Argument, Statement) :-
-            conflictArguments::conflictOf(Argument, Conflict), !,
+            conflict::carried(Argument, Conflict), !,
             argument::conclusion(Argument, Conclusion),
             conflict::stated(Conflict, Conclusion, Statement).
         conflictsWith(Argument, Statement) :-

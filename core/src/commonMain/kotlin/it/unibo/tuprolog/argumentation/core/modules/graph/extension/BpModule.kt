@@ -80,11 +80,6 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
         % QUERY MODE
         %==============================================================================
 
-        %! queryRelations
-        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
-        %  queryExploration::extend/1.
-        queryRelations.
-
         %! queryDependencies(+Argument, -Statement)
         %  A burden of proof on a statement is itself a conclusion (bp/1), related to the arguments for the statement.
         queryDependencies(Argument, bp(Claim)) :-

@@ -170,7 +170,8 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         %! extend(+Locality)
         %  The exploration extended by the steps changing the graph (see structuredWhole::querySteps/1), as they extend
         %  the graph in whole mode: the statements each relates to the arguments built (queryDependencies/2, and for the
-        %  connected locality queryDependants/2) explored, until no argument is new. When the conflicts are arguments
+        %  connected locality queryDependants/2, which a step relating statements both defines) explored, until no
+        %  argument is new. When the conflicts are arguments
         %  (see conflict::argued/0), the arguments built may make more of the others possible attackers or dependants:
         %  those are looked for again.
         extend(Locality) :-

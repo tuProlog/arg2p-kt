@@ -99,9 +99,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
 
         semanticsLocality(Locality) :-
             setting(argumentLabellingMode, Semantics),
-            Semantics::locality(L), !,
-            Locality = L.
-        semanticsLocality(whole_graph).
+            (module_defines(Semantics, locality/1) -> Semantics::locality(Locality) ; Locality = whole_graph).
 
         % The part of the graph explored, its attacks, then changed and labelled as the whole graph is (see the module
         % structuredWhole)

@@ -34,7 +34,7 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             argument::claim(ConflictArgument, Conflict),
             graphStore::argumentId(ConflictArgument, ConflictId),
             graphStore::argumentFor(Conclusion, Argument),
-            \+ conflictOf(Argument, _),
+            \+ conflict::carried(Argument, _),
             argument::rules(Argument, Rules),
             argument::withRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
             graphStore::saveArgument(a, Conclusion, Copy),
@@ -58,25 +58,9 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
                 graphStore::saveSupport(Support, Copy)
             ), _).
 
-        %! conflictOf(+Argument, -Conflict)
-        %  Argument is a copy made for an argument for Conflict.
-        conflictOf(Argument, Conflict) :-
-            argument::rules(Argument, [mc(_, Conflict)|_]).
-
-        %! canAttack(+Argument)
-        %  Argument may attack others: with metaConflicts only the copies do.
-        canAttack(Argument) :- setting(metaConflicts), !,
-            conflictOf(Argument, _).
-        canAttack(_).
-
         %==============================================================================
         % QUERY MODE
         %==============================================================================
-
-        %! queryRelations
-        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
-        %  queryExploration::extend/1.
-        queryRelations.
 
         %! queryDependencies(+Argument, -Statement)
         %  The conflicts are themselves conclusions: Argument depends on the arguments for Statement, which make others

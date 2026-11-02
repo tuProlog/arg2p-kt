@@ -44,7 +44,18 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         buildGraph :-
             checkProfile,
             builder(X),
+            dispatched(X, buildArgumentationGraph/0),
             X:::buildArgumentationGraph.
+
+        %! dispatched(+Module, +Predicate)
+        %  Module defines Predicate (Name/Arity), one the pipeline calls on the modules the flags select: an existence
+        %  error otherwise, rather than the failure of the whole evaluation an unknown predicate gives.
+        dispatched(Module, Name/Arity) :-
+            (module_defines(Module, Name/Arity) ->
+                true
+            ;
+                throw(error(existence_error(procedure, ':'(Module, Name/Arity)), 'the module does not define the predicate the pipeline calls on it'))
+            ).
 
         %! builder(-Builder)
         %  The module building the graph: that of the flag graphBuilder, ruleGraph if no setting names one.
@@ -103,8 +114,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             modifyGraph(Others).
 
         %! querySteps(-Steps)
-        %  The steps changing the graph (see modifyGraph/0) that relate statements in query mode, declaring
-        %  queryRelations/0 (see queryExploration::extend/1), in their order.
+        %  The steps changing the graph (see modifyGraph/0) that relate statements in query mode, defining
+        %  queryDependencies/2 and queryDependants/2 (see queryExploration::extend/1), in their order.
         querySteps(Steps) :-
             steps(All),
             querySteps(All, Known),
@@ -114,7 +125,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
 
         querySteps([], []).
         querySteps([Step|Steps], Query) :-
-            (active(Step), Step::queryRelations -> Query = [Step|Rest] ; Query = Rest),
+            (active(Step), module_defines(Step, queryDependencies/2) -> Query = [Step|Rest] ; Query = Rest),
             querySteps(Steps, Rest).
 
         %! steps(-Steps)
@@ -148,6 +159,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
 
         modifyGraph([]).
         modifyGraph([X|Ext]) :-
+            dispatched(X, modifyArgumentationGraph/0),
             X:::modifyArgumentationGraph,
             modifyGraph(Ext).
 
@@ -155,12 +167,14 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         %  The labelling of the arguments, by the semantics of argumentLabellingMode.
         buildArgumentLabelling :-
             setting(argumentLabellingMode, X),
+            dispatched(X, argumentLabelling/0),
             X:::argumentLabelling.
 
         %! buildStatementLabelling
         %  The labelling of the statements, by statementLabellingMode.
         buildStatementLabelling :-
             setting(statementLabellingMode, X),
+            dispatched(X, statementLabelling/0),
             X:::statementLabelling.
         """.trimIndent()
 }

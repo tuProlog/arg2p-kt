@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.ArgLoader
 import it.unibo.tuprolog.argumentation.core.primitives.modules.LoaderReset
+import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleDefines
 import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoal
 import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoalInBranch
 import it.unibo.tuprolog.core.operators.Operator
@@ -55,7 +56,7 @@ internal class DynamicLoader(
 
     override val baseContent: Library
         get() =
-            listOf(ModuleGoal(this), ModuleGoalInBranch(this), LoaderReset(this)).let {
+            listOf(ModuleGoal(this), ModuleGoalInBranch(this), ModuleDefines(this), LoaderReset(this)).let {
                 Library.of(
                     alias = this.alias,
                     primitives = it.associateBy { prim -> prim.signature },

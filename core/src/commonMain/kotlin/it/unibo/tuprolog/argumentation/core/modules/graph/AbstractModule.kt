@@ -22,25 +22,13 @@ object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract"
             graphStore::claimLabelling(I, O, U).
 
         %! solve(+Arguments, +Attacks)
-        %  The labelling of the abstract framework of Arguments and Attacks, in the context.
-        %  The lists are visited natively (forEach): as the goal of a findall, every step of the saving would visit them.
-        %  The goals of forEach are solved in the module utils: they name the modules of their predicates.
+        %  The labelling of the abstract framework of Arguments and Attacks, in the context: the framework saved as the
+        %  graph builder of abstract theories saves it (see abstractGraph::save/2), then labelled, with no extension (as
+        %  the profile abstract has none).
         solve(Arguments, Attacks) :-
             context_reset,
-            utils::forEach(A, Arguments, (
-                abstract::abstractArgument(A, Argument),
-                graphStore::saveArgument(graph, [A], Argument)
-            )),
-            utils::forEach((X, Y), Attacks, (
-                abstract::abstractArgument(X, XX),
-                abstract::abstractArgument(Y, YY),
-                graphStore::saveAttack(abstract, XX, YY, YY)
-            )),
+            findall(att(X, Y), member((X, Y), Attacks), Atts),
+            abstractGraph::save(Arguments, Atts),
             structuredWhole::buildArgumentLabelling.
-
-        % The argument for the abstract argument A: the strict rule A alone, concluding A
-        abstractArgument(A, Argument) :-
-            argument::infoParts(Info, [], [], []),
-            argument::new([A], A, [A], [], Info, Argument).
         """.trimIndent()
 }

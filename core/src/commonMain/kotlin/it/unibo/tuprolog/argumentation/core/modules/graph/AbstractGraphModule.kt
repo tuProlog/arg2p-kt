@@ -11,21 +11,36 @@ internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentati
         // language=Prolog
         """
         %! buildArgumentationGraph
-        %  The arguments and the attacks of the theory, saved in the context.
+        %  The arguments and the attacks of the theory, saved in the context: an argument attacking or attacked is an
+        %  argument as well.
         buildArgumentationGraph :-
             arguments(Stated),
             attacks(Attacks),
             findall(A, (member(A, Stated) ; member(att(A, _), Attacks) ; member(att(_, A), Attacks)), All),
             utils::sortDistinct(All, Arguments),
+            save(Arguments, Attacks).
+
+        %! save(+Arguments, +Attacks)
+        %  The abstract framework of Arguments (atoms) and Attacks (att(A, B) terms) saved in the context, each argument
+        %  as abstractArgument/2 makes it. The lists are visited natively (forEach): as the goal of a findall, every step
+        %  of the saving would visit them. The goals of forEach are solved in the module utils: they name the modules of
+        %  their predicates.
+        save(Arguments, Attacks) :-
             utils::forEach(A, Arguments, (
-                abstract::abstractArgument(A, Argument),
+                abstractGraph::abstractArgument(A, Argument),
                 graphStore::saveArgument(graph, [A], Argument)
             )),
             utils::forEach(att(X, Y), Attacks, (
-                abstract::abstractArgument(X, XX),
-                abstract::abstractArgument(Y, YY),
+                abstractGraph::abstractArgument(X, XX),
+                abstractGraph::abstractArgument(Y, YY),
                 graphStore::saveAttack(abstract, XX, YY, YY)
             )).
+
+        %! abstractArgument(+A, -Argument)
+        %  The argument for the abstract argument A: the strict rule A alone, concluding A.
+        abstractArgument(A, Argument) :-
+            argument::infoParts(Info, [], [], []),
+            argument::new([A], A, [A], [], Info, Argument).
 
         % The arguments and the attacks the theory states or derives, in either notation
         arguments(Arguments) :-

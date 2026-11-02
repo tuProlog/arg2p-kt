@@ -58,7 +58,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
 
         %! directAttack(-Type, +Attacker, +Attacked)
         %  Attacker attacks Attacked directly, with an attack of Type, as the graph is built: Attacker may attack (with
-        %  metaConflicts only the copies do, see conflictArguments::canAttack/1), and the two satisfy their constraints
+        %  the conflicts argued only the copies carrying one do, see conflict::attacker/1), and the two satisfy their constraints
         %  together (see constraint::compatible/2). The check of the workers of the parallel solver as well.
         directAttack(T, B, A) :-
             (parser::constrained -> Constrained = yes ; Constrained = no),
@@ -68,7 +68,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         % checked on copies, so that the arguments are saved exactly as they are stored: binding their variables would
         % change their identifiers (see context_id)
         directAttack(Constrained, T, B, A) :-
-            conflictArguments::canAttack(B),
+            conflict::attacker(B),
             copy_term(B-A, CB-CA),
             attackRelation::attacks(T, CB, CA),
             (Constrained == yes -> constraint::compatible(CB, CA) ; true).

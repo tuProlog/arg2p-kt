@@ -77,7 +77,7 @@ The `structuredWhole` module runs the sequence on the whole graph, and `structur
 used when `queryMode` is enabled. That variant differs in the second stage alone: it builds the part of the graph the
 query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
 for a connected semantics what they attack and support), then through what the steps changing the graph relate them
-to (`queryDependencies/2`, `queryDependants/2` of the modules declaring `queryRelations/0`), the attacks between
+to (`queryDependencies/2` and `queryDependants/2` of the modules defining them), the attacks between
 them after. The other stages are the same.
 
 ---

@@ -200,6 +200,24 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
 
 
+        %! preference(?Rule, ?Other)
+        %  Rule is preferred to Other: the preferences the theory states (sup/2), closed transitively (see
+        %  supClosure/2), or those stated in their place (see statePreferences/1).
+        preference(Rule, Other) :-
+            context_check(sup(Rule, Other)).
+
+        %! statePreferences(+Preferences)
+        %  Preferences, sup(Rule, Other) terms, as the preferences, in place of those stated so far: the extension
+        %  defeasiblePref states the preferences concluded by arguments, which alone count then.
+        statePreferences(Preferences) :-
+            context_retract(sup(_, _)),
+            utils::assertAll(Preferences).
+
+        %! burden(?Literals)
+        %  The theory states a burden of persuasion on Literals, a list (bp/N facts, abstractBp/1).
+        burden(Literals) :-
+            context_check(abstractBp(Literals)).
+
         %! rule(?Id, ?Premises, ?Conclusion)
         %  The rule Id as converted (see convertAllRules/1), concluding Conclusion from Premises.
         rule(Id, PP, [Conclusion]) :-
