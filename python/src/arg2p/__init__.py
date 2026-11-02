@@ -9,6 +9,7 @@ run through JPype, on the Java runtime the package bundles.
 
 from .arg2p import Answer, Arg2p, Arg2pError, Builder, Causality, Solution, Solutions, SyntaxProblem
 from .flags import (
+    AnswerMode,
     ConflictModel,
     Flags,
     GraphBuilder,
@@ -43,6 +44,7 @@ except ImportError:  # a package built without Gradle
 
 __all__ = [
     "Answer",
+    "AnswerMode",
     "Arg2p",
     "Arg2pError",
     "Argument",

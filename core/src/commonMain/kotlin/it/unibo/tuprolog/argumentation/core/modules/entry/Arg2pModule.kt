@@ -61,6 +61,8 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
 
         %! answerQuery(+Goal, -Yes, -No, -Und)
         %  The statements unifying with Goal labelled IN, OUT and UND: with queryMode only the part of the graph they depend on is built.
+        %  With several labellings, answerMode states how: one solution for each (enumerate), or one across them all
+        %  (credulous, skeptical).
         answerQuery(Goal, Yes, No, Und) :-
             context_reset,
             parser:::convertAllRules(_),
@@ -74,12 +76,11 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
             structuredPartial:::computeStatementAcceptance(Goal, Res).
 
         %! answerQuery(+Goal)
-        %  Goal is a statement labelled IN.
+        %  Goal is a statement labelled IN (as answerMode states, see answerQuery/4).
         answerQuery(Goal) :-
             context_reset,
             parser:::convertAllRules(_),
-            structuredPartial:::computeStatementAcceptance(Goal),
-            structuredPartial::answer(in, Goal).
+            structuredPartial:::accepted(Goal).
 
         %! buildLabelSetsSilent
         %  The labelling of the theory, in the context.

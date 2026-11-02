@@ -61,6 +61,28 @@ class Arg2p private constructor(
     fun answer(query: String): Answer = AnswerQuery(term(query)).let { it.answer(first(it.goal)) }
 
     /**
+     * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
+     * answerMode(enumerate) (the default), the one across them all otherwise (see `answerQuery/4`)
+     *
+     * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
+     */
+    @JsExport.Ignore
+    @JsName("answersList")
+    fun answers(query: String): List<Answer> =
+        AnswerQuery(term(query)).let { answering ->
+            solver
+                .solve(answering.goal)
+                .map { checked(it) }
+                .filter { it.isYes }
+                .map { answering.answer(it) }
+                .toList()
+        }
+
+    /** The answers of [query], one for each labelling with answerMode(enumerate) (an array in JavaScript) */
+    @JsName("answers")
+    fun answerArray(query: String): Array<Answer> = answers(query).toTypedArray()
+
+    /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,
      * stable, ...)
      *

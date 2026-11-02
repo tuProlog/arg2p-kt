@@ -19,6 +19,31 @@ class Arg2pTest {
         assertEquals(Answer(emptyList(), listOf(Value.parse("-a")), emptyList()), Arg2p.of(conflict).answer("-a"))
     }
 
+    // Two preferred labellings, one with d IN and one with -d IN, c IN in both: an answer for each (enumerate), or one across
+    // them, d and -d IN as each is in some (credulous), OUT as each is out in some (skeptical)
+    @Test
+    fun aQueryIsAnsweredForEachLabellingOrAcrossThem() {
+        val theory = "f1 :=> d.\nf2 :=> -d.\nf3 :=> c."
+        val flags = Flags.defaults().argumentLabellingMode(Semantics.PREFERRED)
+        val labels = { answer: Answer ->
+            listOf(answer.inStatements, answer.outStatements, answer.undStatements).map { it.map(Value::toString).toSet() }
+        }
+        val enumerated =
+            Arg2p
+                .of(theory, flags)
+                .answers("X")
+                .map(labels)
+                .toSet()
+        assertEquals(setOf(listOf(setOf("c", "d"), setOf("-d"), emptySet()), listOf(setOf("c", "-d"), setOf("d"), emptySet())), enumerated)
+        val credulous = Arg2p.of(theory, flags.answerMode(AnswerMode.CREDULOUS))
+        assertEquals(listOf(setOf("c", "d", "-d"), emptySet(), emptySet()), labels(credulous.answer("X")))
+        assertEquals(1, credulous.answers("X").size)
+        val skeptical = Arg2p.of(theory, flags.answerMode(AnswerMode.SKEPTICAL))
+        assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X")))
+        assertTrue(skeptical.solve("answerQuery(c)").hasNext())
+        assertFalse(skeptical.solve("answerQuery(d)").next().isYes)
+    }
+
     @Test
     fun theGraphOfEachLabelling() {
         val (graph) = Arg2p.of(conflict).graphs()

@@ -53,6 +53,14 @@ class Semantics(_FlagValue):
     BP_GROUNDED_COMPLETE = "bp_grounded_complete"
 
 
+class AnswerMode(_FlagValue):
+    """How a query is answered for a semantics with several labellings (answerMode): for each, or across them all."""
+
+    ENUMERATE = "enumerate"
+    CREDULOUS = "credulous"
+    SKEPTICAL = "skeptical"
+
+
 class StatementLabelling(_FlagValue):
     """The labelling of the statements from that of the arguments (statementLabellingMode)."""
 
@@ -162,6 +170,10 @@ class Flags:
     def argument_labelling_mode(self, semantics: Semantics) -> Flags:
         """The semantics of the argument labelling."""
         return self._set(self._flags.argumentLabellingMode(semantics.jvm()))
+
+    def answer_mode(self, mode: AnswerMode) -> Flags:
+        """How a query is answered for a semantics with several labellings: for each, or across them all."""
+        return self._set(self._flags.answerMode(mode.jvm()))
 
     def statement_labelling_mode(self, labelling: StatementLabelling) -> Flags:
         """The labelling of the statements."""

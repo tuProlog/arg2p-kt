@@ -283,6 +283,10 @@ class Arg2p:
         """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
         return answer_from_jvm(call(lambda: self._arg2p.answer(query)))
 
+    def answers(self, query: str) -> list[Answer]:
+        """The answers of [query]: one for each labelling with answerMode(enumerate), the one across them all otherwise."""
+        return call(lambda: [answer_from_jvm(answer) for answer in self._arg2p.answers(query)])
+
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
         return call(lambda: [graph_from_jvm(graph) for graph in self._arg2p.graphs()])

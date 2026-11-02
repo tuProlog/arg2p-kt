@@ -60,6 +60,20 @@ enum class Semantics(
     BP_GROUNDED_COMPLETE("bp_grounded_complete"),
 }
 
+/**
+ * How a query is answered for a semantics with several labellings (answerMode): for each labelling, an answer each
+ * (enumerate); or one answer across them all, IN the statements IN in some labelling and OUT those OUT in every one
+ * (credulous), or IN those IN in every labelling and OUT those OUT in some (skeptical), UND the others
+ */
+@JsExport
+enum class AnswerMode(
+    val value: String,
+) {
+    ENUMERATE("enumerate"),
+    CREDULOUS("credulous"),
+    SKEPTICAL("skeptical"),
+}
+
 /** The labelling of the statements from that of the arguments (statementLabellingMode) */
 @JsExport
 enum class StatementLabelling(

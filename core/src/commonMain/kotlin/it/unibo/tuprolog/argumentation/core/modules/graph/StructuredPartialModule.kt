@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
+import it.unibo.tuprolog.argumentation.core.flags.AnswerMode
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -10,7 +11,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  */
 object StructuredPartialModule : PrologModule("prolog.argumentation.structured.partial", "structuredPartial") {
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(QueryMode)
+        get() = listOf(QueryMode, AnswerMode)
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -18,14 +19,63 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         %! computeStatementAcceptance(+Goal, -Result)
         %  The labels of the statements for Goal: in(S), out(S) and und(S) terms.
         computeStatementAcceptance(Goal, Res) :-
+            setting(answerMode, enumerate), !,
             computeStatementAcceptance(Goal),
             mineResults(Goal, Res).
+        computeStatementAcceptance(Goal, Res) :-
+            computeStatementAcceptance(Goal, In, Out, Und),
+            findall(R, (member(S, In), R = in(S) ; member(S, Out), R = out(S) ; member(S, Und), R = und(S)), Res).
 
         %! computeStatementAcceptance(+Goal, -In, -Out, -Und)
-        %  The statements for Goal labelled IN, OUT and UND.
+        %  The statements for Goal labelled IN, OUT and UND, as answerMode states: in each labelling, one solution for
+        %  each (enumerate), or across them all (credulous, skeptical, see acceptance/5).
         computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+            setting(answerMode, enumerate), !,
             computeStatementAcceptance(Goal),
             mineResults(Goal, YesResult, NoResult, UndResult).
+        computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
+            setting(answerMode, Mode),
+            findall([Yes, No, Und], (computeStatementAcceptance(Goal), mineResults(Goal, Yes, No, Und)), Labellings),
+            acceptance(Mode, Labellings, YesResult, NoResult, UndResult).
+
+        %! accepted(?Goal)
+        %  Goal is a statement labelled IN, as answerMode states (see computeStatementAcceptance/4).
+        accepted(Goal) :-
+            setting(answerMode, enumerate), !,
+            computeStatementAcceptance(Goal),
+            answer(in, Goal).
+        accepted(Goal) :-
+            computeStatementAcceptance(Goal, In, _, _),
+            member(Goal, In).
+
+        % acceptance(+Mode, +Labellings, -In, -Out, -Und): the statements across Labellings, the [In, Out, Und] of each
+        % labelling. Credulous: IN those IN in some labelling, OUT those OUT in every one. Skeptical: IN those IN in
+        % every labelling, OUT those OUT in some. UND the others: none is in two of the three.
+        acceptance(Mode, Labellings, In, Out, Und) :-
+            findall(S, (member(Labelling, Labellings), member(Statements, Labelling), member(S, Statements)), Found),
+            distinctStatements(Found, [], All),
+            findall(S, (member(S, All), acceptedAs(Mode, in, S, Labellings)), In0),
+            findall(S, (member(S, All), \+ acceptedAs(Mode, in, S, Labellings), acceptedAs(Mode, out, S, Labellings)), Out0),
+            findall(S, (member(S, All), \+ acceptedAs(Mode, in, S, Labellings), \+ acceptedAs(Mode, out, S, Labellings)), Und0),
+            utils::sort(In0, In),
+            utils::sort(Out0, Out),
+            utils::sort(Und0, Und).
+
+        acceptedAs(credulous, in, S, Labellings) :- member([Yes, _, _], Labellings), memberStatement(S, Yes), !.
+        acceptedAs(credulous, out, S, Labellings) :- \+ (member([_, No, _], Labellings), \+ memberStatement(S, No)).
+        acceptedAs(skeptical, in, S, Labellings) :- \+ (member([Yes, _, _], Labellings), \+ memberStatement(S, Yes)).
+        acceptedAs(skeptical, out, S, Labellings) :- member([_, No, _], Labellings), memberStatement(S, No), !.
+
+        distinctStatements([], Distinct, Distinct).
+        distinctStatements([S|Ss], Seen, Distinct) :-
+            (memberStatement(S, Seen) -> distinctStatements(Ss, Seen, Distinct) ; distinctStatements(Ss, [S|Seen], Distinct)).
+
+        % S is one of the statements, the same up to the names of its variables (each labelling has its own copies)
+        memberStatement(S, [T|_]) :- sameStatement(S, T), !.
+        memberStatement(S, [_|Ts]) :- memberStatement(S, Ts).
+
+        sameStatement(S, T) :- ground(S), !, S == T.
+        sameStatement(S, T) :- constraint::subsumes(S, T), constraint::subsumes(T, S).
 
         %! computeStatementAcceptance(+Goal)
         %  The labels of the statements for Goal, in the context: with queryMode only the part of the graph they depend

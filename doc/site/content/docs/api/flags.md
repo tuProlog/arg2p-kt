@@ -48,6 +48,7 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
+| `answerMode(Mode)` | `enumerate` | `enumerate`, `credulous`, `skeptical`: how a query is answered with several labellings |
 | `autoTransposition` | enabled by `aspic_plus` | the fact is present or absent |
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
@@ -223,6 +224,20 @@ error. See [References]({{% ref "/docs/references#preferences" %}}).
 Enables the goal-directed (structured) evaluation used by [`answerQuery/4`]({{% ref "/docs/api/engine" %}}).
 Instead of building the whole graph, the engine builds only the sub-graph relevant to the query, which is
 considerably faster on large theories. It is **enabled** in `Flags.defaults()`.
+
+### `answerMode(Mode)`
+
+How a query (`answerQuery/4`, `answer` and `answers` in the APIs) is answered under a semantics with several
+labellings (`preferred`, `stable`, ...); with one labelling the three modes agree.
+
+| Value | Answer |
+| --- | --- |
+| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `answerQuery/4` has a solution for each, `answers` lists them, `answer` gives the first. |
+| `credulous` | One answer: in the statements in in some labelling, out those out in every one, und the others. |
+| `skeptical` | One answer: in the statements in in every labelling, out those out in some, und the others. |
+
+`buildLabelSets` and `arg2p::solve(In, Out, Und)`, which label the whole theory, keep one solution for each
+labelling.
 
 ### `autoTransposition`
 

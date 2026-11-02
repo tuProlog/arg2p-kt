@@ -24,6 +24,7 @@ import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
 import kotlin.jvm.JvmStatic
+import it.unibo.tuprolog.argumentation.core.flags.AnswerMode as AnswerModeFlag
 import it.unibo.tuprolog.argumentation.core.flags.ConflictModel as ConflictModelFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder as GraphBuilderFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphExtension as GraphExtensionFlag
@@ -83,6 +84,9 @@ class Flags private constructor(
 
     /** Whether the graph is built on the arguments the query depends on alone */
     fun queryMode(on: Boolean): Flags = switch(QueryMode, on)
+
+    /** How a query is answered for a semantics with several labellings: for each, or across them all */
+    fun answerMode(mode: AnswerMode): Flags = value(AnswerModeFlag, mode.value)
 
     /** Whether the strict rules are transposed */
     fun autoTransposition(on: Boolean): Flags = switch(AutoTransposition, on)
