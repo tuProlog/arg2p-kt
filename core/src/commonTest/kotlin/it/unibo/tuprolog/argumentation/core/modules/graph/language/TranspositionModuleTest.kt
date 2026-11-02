@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -73,7 +73,7 @@ class TranspositionModuleTest {
     @Test
     fun theDeclaredContradictoriesKeepTheConclusionsConsistent() {
         val theory = "r1 : [] => a.\ns1 : a -> c.\nf1 :-> d.\nconflict([c], [d]).\nconflict([d], [c]).\n"
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library())
         val solution = solver.solve(Struct.parse("buildLabelSets(I, O, _)", solver.operators)).first()
         assertEquals("[['-'(a)], [d]]", solution.substitution.getByName("I").toString())
         assertEquals("[[c], [a]]", solution.substitution.getByName("O").toString())
@@ -102,7 +102,7 @@ class TranspositionModuleTest {
     @Test
     fun aRuleNamedAsATranspositionKeepsItsArguments() {
         val theory = "s : a, b -> c.\ns_i : d -> e.\nf1 :=> a.\nf2 :=> b.\nf3 :=> d.\n"
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library())
         val solution = solver.solve(Struct.parse("buildLabelSets(I, _, _)", solver.operators)).first()
         assertTrue("e" in solution.substitution.getByName("I").toString())
     }

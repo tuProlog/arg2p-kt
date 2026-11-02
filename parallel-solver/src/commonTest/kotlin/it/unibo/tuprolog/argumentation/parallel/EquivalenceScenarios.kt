@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.core.Struct
@@ -43,12 +44,13 @@ abstract class EquivalenceScenarios {
     ): Labels {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val solution = solver.solve(Struct.parse("answerQuery(($statement), In, Out, Und)", solver.operators)).first()
+        // the statements as arg2p writes them, as the distributed solver gives its claims
         val labelled = { name: String ->
             solution.substitution
                 .getByName(name)!!
                 .castToList()
                 .toList()
-                .map { named(it.toString()) }
+                .map { named(TermValues.format(it)) }
                 .toSet()
         }
         return Labels(labelled("In"), labelled("Out"), labelled("Und"))

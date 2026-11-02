@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Fact
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -13,12 +14,21 @@ import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.unify.Unificator
 
+/** The goal looking up a goal in a store of clauses (as `context_check(Branch, Goal)` or `cache_check(Goal)`) */
+internal fun interface StoreLookup {
+    fun of(goal: Term): Struct
+}
+
+/** The lookup of a goal in a branch: context_check(Branch, Goal) */
+internal fun branchLookup(branch: Int) = StoreLookup { Struct.of("context_check", Integer.of(branch), it) }
+
 /**
  * The clauses of a [ClauseStore] (a branch of the context, the cache), as the arg2p engine resolves the lookups of
  * the store with them (see [ClauseStore.solve] for the answers they stand for): the facts as stored, the rules with
  * their bodies looked up in the same store (`h :- Lookup(b)`, see [StoreLookup]), and for a `clause(Head, Body)`
  * goal, a fact `clause(h, b)` for each stored clause.
  */
+
 internal class StoreClauses(
     private val store: ClauseStore,
     private val lookup: StoreLookup,

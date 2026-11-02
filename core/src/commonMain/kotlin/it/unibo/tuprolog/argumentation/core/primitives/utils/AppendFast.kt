@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -7,14 +8,13 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * appendFast(+List1, +List2, -List): List is List1 followed by List2, in one step
  */
-internal object AppendFast : Primitive {
-    val signature: Signature = Signature("appendFast", 3)
+internal object AppendFast : PrimitiveWithSignature {
+    override val signature: Signature = Signature("appendFast", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val list1: Term = request.arguments[0]

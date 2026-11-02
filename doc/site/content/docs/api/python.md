@@ -55,8 +55,8 @@ describes one in full (`theory`, `flags`, `output`, then `build()`). `add(text)`
 `Flags.defaults()` (none stated: the theory, its profile and the defaults decide; `Flags.none()` is the same) and
 `Flags.parse(text)` are the flags of a
 solver; each flag has a method, taking a value of its enumeration (`Profile`, `Semantics`, `StatementLabelling`,
-`OrderingPrinciple`, `OrderingComparator`, `GraphExtension`, `GraphLanguage`, `GraphBuilder`, `ConflictModel`) or a
-boolean:
+`OrderingPrinciple`, `OrderingComparator`, `GraphExtension`, `GraphLanguage`, `GraphBuilder`, `ConflictModel`, `AnswerMode`)
+or a boolean:
 
 ```python
 from arg2p import ConflictModel, GraphExtension, Profile

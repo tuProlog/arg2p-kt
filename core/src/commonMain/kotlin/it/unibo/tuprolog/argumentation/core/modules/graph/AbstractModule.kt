@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
@@ -9,9 +7,6 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * labelled by the semantics of argumentLabellingMode.
  */
 object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(ArgumentLabellingMode)
-
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -23,12 +18,14 @@ object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract"
 
         %! solve(+Arguments, +Attacks)
         %  The labelling of the abstract framework of Arguments and Attacks, in the context: the framework saved as the
-        %  graph builder of abstract theories saves it (see abstractGraph::save/2), then labelled, with no extension (as
-        %  the profile abstract has none).
+        %  graph builder of abstract theories saves it (see abstractGraph::save/2), then changed by the graph extensions
+        %  stated and labelled, as the pipeline of a theory is (see structuredWhole::computeGlobalAcceptance/0).
         solve(Arguments, Attacks) :-
             context_reset,
+            structuredWhole::checkProfile,
             findall(att(X, Y), member((X, Y), Attacks), Atts),
             abstractGraph::save(Arguments, Atts),
+            structuredWhole::modifyGraph,
             structuredWhole::buildArgumentLabelling.
         """.trimIndent()
 }

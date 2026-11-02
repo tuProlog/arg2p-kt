@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.primitives.replyList
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * selection(+Select, +Scc, +Explored, -Selected): the branches of the local labellings in Explored (a list of
  * Branch-Ok) kept by Select: all the accepted ones, or the accepted ones whose IN arguments in Scc are maximal
  */
-internal object Selection : SccPrimitive {
+internal object Selection : PrimitiveWithSignature {
     override val signature = Signature("selection", 4)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

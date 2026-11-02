@@ -19,7 +19,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             buildArgumentsFromPremises(Mode),
             buildArgumentsFromEmptyRules(Mode),
             findall([RuleID, RuleBody, RuleHead], (
-                parser::classicRule(RuleID, RuleBody, RuleHead),
+                parser::rule(RuleID, RuleBody, RuleHead),
                 \+ emptyRule([RuleID, RuleBody, RuleHead])
             ), Rules),
             context_retract(graphRule(_)),
@@ -43,7 +43,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
 
         buildArgumentsFromPremises(Mode) :-
             findall(_, (
-                parser::classicRule(PremiseID, Premise),
+                parser::premise(PremiseID, Premise),
                 concludable(Mode, Premise),
                 argument::premiseInfo(PremiseID, Info),
                 argument::new([PremiseID], none, Premise, [], Info, Argument),
@@ -61,7 +61,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % parser::argued/1 tells them, checked here: backtracking into a call to another module, for every premise of
         % every rule, costs 2% of the memory of a whole graph)
         emptyRule([RuleID, Body, RuleHead]) :-
-            parser::classicRule(RuleID, Body, RuleHead),
+            parser::rule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_), X \= '{}'(_)).
 
         %! buildArgumentsFromRules(+N, +Tn)
@@ -105,11 +105,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % An argument may conclude Conclusion: ground, or as the module constraint says in a theory with constraints
         concludable(_, Conclusion) :- ground(Conclusion), !.
         concludable(constrained, Conclusion) :- constraint::concludable(Conclusion).
-
-        % The body of the argument: the premises of its rule, with the constraints of its supports still open in a theory
-        % with constraints (see constraint::extend/3)
-        withConstraints(base, Premises, _, Premises).
-        withConstraints(constrained, Premises, Supports, Body) :- constraint::extend(Premises, Supports, Body).
 
         % ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), Parts, Argument): Argument is built from RuleID by
         % supporting each statement in Body with a saved argument, collecting the rules and premises of the supports

@@ -25,13 +25,7 @@ internal object MessageCodec {
                     is RequireSolution -> text("RequireSolution").text(message.run).texts(listOfNotNull(message.goal)).text(message.replyTo)
                     is RequireAnswer -> text("RequireAnswer").text(message.query).text(message.replyTo)
                     // the solvers of the clients: only on the site of the catalog
-                    is SolutionResponse, is AnswerResponse -> error("Not written: ${message::class.simpleName}")
-                    is EvaluationResponse ->
-                        text("EvaluationResponse")
-                            .responses(message.inArgs)
-                            .responses(message.outArgs)
-                            .responses(message.undArgs)
-                            .texts(listOfNotNull(message.error))
+                    is SolutionResponse, is AnswerResponse, is EvaluationResponse -> error("Not written: ${message::class.simpleName}")
                     is Subscribe -> text("Subscribe").number(message.worker).terms(message.premises).terms(message.conclusions)
                     is Build -> text("Build").interests(message.interests).text(message.locality ?: "")
                     is Explore -> text("Explore").number(message.from).terms(message.statements)
@@ -58,7 +52,6 @@ internal object MessageCodec {
                 "RequireEvaluation" -> RequireEvaluation(text(), text())
                 "RequireSolution" -> RequireSolution(text(), texts().singleOrNull(), text())
                 "RequireAnswer" -> RequireAnswer(text(), text())
-                "EvaluationResponse" -> EvaluationResponse(responses(), responses(), responses(), texts().singleOrNull())
                 "Subscribe" -> Subscribe(number(), terms(), terms())
                 "Build" -> Build(interests(), text().ifEmpty { null })
                 "Explore" -> Explore(number(), terms())
@@ -74,8 +67,6 @@ internal object MessageCodec {
             }
         }
 
-    private fun TextWriter.responses(values: List<Response>) = list(values) { text(it.claim).texts(it.queryChain) }
-
     private fun TextWriter.terms(values: List<Term>) = list(values) { text(it.toString()) }
 
     private fun TextWriter.shared(values: List<SharedArgument>) =
@@ -84,8 +75,6 @@ internal object MessageCodec {
     private fun TextWriter.interests(values: List<Interest>) = list(values) { number(it.worker).terms(it.premises).terms(it.conclusions) }
 
     private fun TextWriter.attacks(values: List<DirectAttack>) = list(values) { text(it.type).text(it.attacker).text(it.target) }
-
-    private fun TextReader.responses() = list { Response(text(), texts()) }
 
     private fun TextReader.term() = Term.parse(text(), operators)
 

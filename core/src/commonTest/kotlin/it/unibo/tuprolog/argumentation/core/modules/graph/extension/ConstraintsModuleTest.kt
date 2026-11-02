@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.extension
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -28,7 +28,7 @@ class ConstraintsModuleTest {
         vararg statements: String,
     ): List<String> =
         statements.map { statement ->
-            val solver = Arg2pSolverFactory.default(theory = theory + flags, settings = FlagsBuilder().queryMode(queryMode).create())
+            val solver = Arg2pSolverFactory.default(theory = theory + flags, settings = Flags.defaults().queryMode(queryMode).library())
             val solution =
                 if (queryMode) {
                     solver.solve(Struct.parse("answerQuery($statement, I, O, U)", solver.operators)).first()

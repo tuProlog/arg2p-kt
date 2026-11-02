@@ -7,13 +7,13 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
+import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.TimeDuration
+import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -67,17 +67,16 @@ internal abstract class AbstractModuleGoal(
                 enter(request, module)
                 loader.solverOf(request, module)
             }
+        // the time the resolution has left
+        val remaining = request.context.let { it.maxDuration - (currentTimeInstant() - it.startTime) }.coerceAtLeast(0)
         return sequence {
             yieldAll(
-                solver.solveForCaller(goal, SolveOptions.allLazilyWithTimeout(TimeDuration.MAX_VALUE)).map {
-                    when (it) {
-                        // Halt carries a failed substitution, so replying with it would turn an
-                        // error inside the module into an ordinary failure: indistinguishable
-                        // from a goal that simply does not hold.
-                        is Solution.Halt -> throw it.exception
-                        else -> request.replyWith(it.substitution)
-                    }
-                },
+                solver
+                    .solveForCaller(
+                        goal,
+                        SolveOptions.allLazilyWithTimeout(remaining),
+                    ).haltsRaised()
+                    .map { request.replyWith(it.substitution) },
             )
         }
     }

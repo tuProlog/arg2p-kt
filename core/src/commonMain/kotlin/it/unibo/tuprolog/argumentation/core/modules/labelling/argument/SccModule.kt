@@ -80,7 +80,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
             undecidedCandidates(Scc, Branch, Candidates),
             member(IdX, Candidates),
-            utils::sort([IdX|Ins], Seed),
+            utils::sortDescending([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),
             cache_assert(scc_seen(Scc, Seed)),
             graphStore::argumentByIdIn(Branch, IdX, X),
@@ -89,7 +89,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             graphStore::labelArgument(in, X, IdX),
             grounded::argumentLabelling,
             graphStore::labelledIds(in, Reached),
-            utils::sort(Reached, Labelled),
+            utils::sortDescending(Reached, Labelled),
             unexplored(Scc, Seed, Labelled),
             reachable(Scc, NewBranch, State).
 

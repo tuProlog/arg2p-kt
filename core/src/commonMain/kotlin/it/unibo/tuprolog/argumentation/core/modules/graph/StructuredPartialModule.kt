@@ -57,9 +57,9 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             findall(S, (member(S, All), acceptedAs(Mode, in, S, Labellings)), In0),
             findall(S, (member(S, All), \+ acceptedAs(Mode, in, S, Labellings), acceptedAs(Mode, out, S, Labellings)), Out0),
             findall(S, (member(S, All), \+ acceptedAs(Mode, in, S, Labellings), \+ acceptedAs(Mode, out, S, Labellings)), Und0),
-            utils::sort(In0, In),
-            utils::sort(Out0, Out),
-            utils::sort(Und0, Und).
+            utils::sortDescending(In0, In),
+            utils::sortDescending(Out0, Out),
+            utils::sortDescending(Und0, Und).
 
         acceptedAs(credulous, in, S, Labellings) :- member([Yes, _, _], Labellings), memberStatement(S, Yes), !.
         acceptedAs(credulous, out, S, Labellings) :- \+ (member([_, No, _], Labellings), \+ memberStatement(S, No)).
@@ -117,9 +117,9 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             findall(Goal, answer(in, Goal), In),
             findall(Goal, answer(out, Goal), Out),
             findall(Goal, answer(und, Goal), Und),
-            utils::sort(In, YesResult),
-            utils::sort(Out, NoResult),
-            utils::sort(Und, UndResult).
+            utils::sortDescending(In, YesResult),
+            utils::sortDescending(Out, NoResult),
+            utils::sortDescending(Und, UndResult).
 
         mineResults(Goal, Result) :-
             findall(in(Goal), answer(in, Goal), In),
@@ -137,59 +137,5 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             Goal = Statement.
         answer(Label, Goal) :-
             graphStore::statementLabel(Label, [Goal]).
-
-        % The graph explored one argument at a time, for the solvers that label it themselves (the actor solver
-        % distributes the rules among its workers, each solver looking for the arguments and the attackers it can build
-        % with its own). The steps changing the graph do not apply: their query relations are explored all the same (see
-        % queryExploration::extend/1), so that the conflicts of metaConflicts make their attackers found.
-
-        %! buildArgument(+Query, -Argument, -SubArguments)
-        %  Argument is each argument for Query, saved with those its label may depend on, and SubArguments are its
-        %  sub-arguments: the solvers that do not know its rules look for their attackers as well.
-        buildArgument(Query, Argument, SubArguments) :-
-            queryExploration::explore(Query),
-            queryExploration::extend(directional),
-            graphStore::argumentFor([Query], Argument),
-            subArguments(Argument, SubArguments).
-
-        %! findAttacker(+Target, +SubArguments, +QueryChain, -Attacker, -AttackerSubArguments, -IsValid)
-        %  Attacker attacks Target, directly or on one of its SubArguments, and the attacks are saved; each attacker is
-        %  given once, with its own sub-arguments. IsValid is no when Attacker is in QueryChain (the arguments the
-        %  evaluation of Target comes from: a cycle), yes otherwise. Target may have been built by another solver, with
-        %  rules this one does not know: its sub-arguments come with it.
-        findAttacker(Target, SubArguments, QueryChain, Attacker, AttackerSubArguments, IsValid) :-
-            findall(A, attacker(Target, [Target|SubArguments], A), As),
-            utils::deduplicate(As, Attackers),
-            member(Attacker, Attackers),
-            subArguments(Attacker, AttackerSubArguments),
-            (member(Attacker, QueryChain) -> IsValid = no ; IsValid = yes).
-
-        % Attacker attacks Target on one of Arguments, Target and its sub-arguments, and the attack is saved (unless it
-        % already is: the same argument is evaluated again in another query chain)
-        attacker(Target, Arguments, Attacker) :-
-            member(On, Arguments),
-            attackerOf(On, Attacker, Type),
-            (graphStore::saveAttack(Type, Attacker, Target, On) -> true ; true).
-
-        % Attacker attacks On directly, with an attack of Type: among the arguments for the statements that may attack
-        % it, built as needed
-        attackerOf(On, Attacker, Type) :-
-            findall(S, attackCandidates::findPossibleAttackers(On, [S]), Statements),
-            utils::deduplicate(Statements, Candidates),
-            member(Statement, Candidates),
-            queryExploration::explore(Statement),
-            queryExploration::extend(directional),
-            graphStore::argumentFor([Statement], Attacker),
-            attackRelation::attacks(Type, Attacker, On),
-            (parser::constrained -> constraint::compatible(Attacker, On) ; true).
-
-        % The sub-arguments of an argument built by this solver
-        subArguments(Argument, SubArguments) :-
-            findall(S, subArgument(Argument, S), Ss),
-            utils::deduplicate(Ss, SubArguments).
-
-        subArgument(Argument, Sub) :-
-            graphStore::support(Supporter, Argument),
-            (Sub = Supporter ; subArgument(Supporter, Sub)).
         """.trimIndent()
 }

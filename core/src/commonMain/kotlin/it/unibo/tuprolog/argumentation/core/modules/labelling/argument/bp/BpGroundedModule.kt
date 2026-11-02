@@ -117,8 +117,8 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         %  superior to the argument attacked: a burden is met by winning, not by drawing.
         filterBpDefeats :-
             findall(_, (
-                graphStore::attack(T, A, B, C),
-                filterBpDefeat(T, A, B, C)
+                graphStore::directAttack(T, A, C),
+                filterBpDefeat(T, A, C, C)
             ), _).
 
         filterBpDefeat(T, B, A, C) :-
@@ -133,23 +133,8 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             \+ (
                 member(A, Arguments), Arg \= A,
                 isArgumentInBurdenOfProof(A),
-                argumentChain(A, Arg)
+                graphStore::reaches(A, Arg)
             ).
-
-        %! argumentChain(+A, +B)
-        %  B is A or an argument reached from A through attacks; the arguments are visited breadth
-        %  first, each once (attack cycles are common: rebuttals are mutual)
-        argumentChain(A, B) :- reaches([A], [], B), !.
-
-        reaches([B|_], _, B) :- !.
-        reaches([A|Frontier], Visited, B) :-
-            findall(C, (
-                graphStore::attack(_, A, C, _),
-                \+ member(C, [A|Visited]),
-                \+ member(C, Frontier)
-            ), Next),
-            utils::appendFast(Frontier, Next, Queue),
-            reaches(Queue, [A|Visited], B).
 
         %==============================================================================
         % BURDEN OF PROOF REIFICATION

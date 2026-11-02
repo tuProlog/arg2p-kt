@@ -53,9 +53,8 @@ import kotlin.collections.Set as KtSet
  * - [parent]/[depth]: the enclosing frame and this frame's distance from the root (`depth == 0`, [isRoot]).
  * - [step]: a monotonically increasing counter of state-machine transitions, used to keep [PrologSolver]'s
  *   `currentContext` in sync with resolution progress and to detect [it.unibo.tuprolog.solve.exception.TimeOutException]s.
- * - [relevantGoals]: the goals selected so far in this frame, whose variables are still of interest, used to trim
- *   [substitution]s of variables local to a finished sub-goal when popping back to [parent] (see
- *   [isVariableInteresting]); [trimmedSize] is the size of the substitution when it was last trimmed.
+ * - [trimmedSize]: the size of the [substitution] when it was last trimmed of the variables local to a finished
+ *   sub-goal, popping back to [parent] (see [isVariableInteresting]).
  * - [inlined]: whether this frame solves the goal of an [Inlining], against libraries of its own; [scoped]: whether
  *   this frame or one above does (so that its libraries are not the ones of the whole resolution).
  * - [theoryVisible]: whether the goals of this frame see the theory of the user (its static and dynamic knowledge
@@ -88,7 +87,6 @@ data class PrologExecutionContext(
     val parent: PrologExecutionContext? = null,
     val depth: Int = 0,
     val step: Long = 0,
-    val relevantGoals: RelevantGoals? = null,
     val trimmedSize: Int = 0,
     val inlined: Boolean = false,
     val scoped: Boolean = false,
@@ -143,14 +141,8 @@ data class PrologExecutionContext(
             query.collectVariables(variables)
             var context: PrologExecutionContext? = this
             while (context != null) {
-                var relevant = context.relevantGoals
-                while (relevant != null) {
-                    relevant.goal.collectVariables(variables)
-                    relevant = relevant.previous
-                }
                 // arg2p: the goals left to solve, not only the current one (as in tuProlog): a variable bound by a
-                // goal before and used by one after would otherwise lose its binding when a sub-goal ends, unless
-                // TrackVariables kept every goal selected
+                // goal before and used by one after would otherwise lose its binding when a sub-goal ends
                 var left = context.goals
                 while (!left.isOver) {
                     left.current?.collectVariables(variables)
@@ -266,13 +258,3 @@ data class PrologExecutionContext(
             "choicePoints=$choicePoints" +
             ")"
 }
-
-/**
- * The goals selected so far in a frame, the newest first: a chain extended at each step, rather than the set of their
- * variables (arg2p: copying the set at each step made long conjunctions quadratic). The variables are only collected
- * when a substitution is trimmed.
- */
-class RelevantGoals(
-    val goal: Term,
-    val previous: RelevantGoals?,
-)

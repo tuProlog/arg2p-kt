@@ -62,6 +62,6 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
             write(X),nl,
             writeListNl(Others).
 
-        % sortDistinct/2, deduplicate/2, sort/2 and subtract/3 are native primitives (see primitives/utils)
+        % sortDistinct/2, deduplicate/2, sortDescending/2, intersectionOf/2 and subtract/3 are native primitives (see primitives/utils)
         """.trimIndent()
 }

@@ -19,8 +19,8 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * A cluster as a solver of arg2p, as `Arg2p` is one, on the theory and the flags of the cluster: any goal solved as the
  * standard solver solves it (buildLabelSets/3, answerQuery/4, the Prolog predicates of the theory, ...), one solution
  * at a time, with the graph of each, and the answers of queries. The graph a goal needs is built by the workers of the
- * cluster and of the sites it is federated with (the whole graph, or, in query mode, the part the statements it
- * evaluates depend on, grown by the later ones), and labelled by the catalog of the cluster; the stages of a
+ * cluster and of the sites it is federated with (the whole graph, or, in query mode, the part the statement it
+ * evaluates depends on, built for each), and labelled by the catalog of the cluster; the stages of a
  * resolution are not kept, the graph of the last one alone.
  */
 @JsExport

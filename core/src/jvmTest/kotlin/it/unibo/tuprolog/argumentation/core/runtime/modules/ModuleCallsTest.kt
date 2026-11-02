@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.runtime.modules
 
 import com.sun.net.httpserver.HttpServer
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
@@ -22,7 +22,7 @@ class ModuleCallsTest {
     private fun solverWithModulesIn(path: String): MutableSolver =
         Arg2pSolverFactory.default(
             theory = "",
-            settings = FlagsBuilder(modulesPath = path).create(),
+            settings = Flags.defaults().modulesPath(path).library(),
         )
 
     private fun temporaryModule(): String {
@@ -205,7 +205,7 @@ class ModuleCallsTest {
                     ),
             )
         val relative = workingDirectory.relativize(directory).toString().replace("\\", "/")
-        val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().create())
+        val solver = Arg2pSolverFactory.default(settings = Flags.defaults().library())
         listOf("'$relative/greetings'", "'$relative/greetings.pl'").forEach { module ->
             val solution = solve(solver, "module::call_module([$module], hello(X))")
             assertTrue(solution.isYes, "expected $module to be found in the working directory, got $solution")

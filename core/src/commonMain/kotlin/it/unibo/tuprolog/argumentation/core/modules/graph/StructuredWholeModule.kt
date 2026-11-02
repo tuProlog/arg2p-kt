@@ -78,8 +78,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             ;
                 true
             ),
-            (setting(graphExtension, abaPref), \+ setting(graphBuildMode, aba_plus) ->
-                throw(error(domain_error(aba_plus_theory, abaPref), 'graphExtension: abaPref is the preference mode of ABA+ alone (graphBuildMode(aba_plus))'))
+            (setting(graphExtension, abaPref), \+ setting(graphLanguage, abaLanguage) ->
+                throw(error(domain_error(aba_theory, abaPref), 'graphExtension: abaPref is the preference mode of ABA theories alone (graphLanguage(abaLanguage), as the profiles aba and aba_plus state)'))
             ;
                 true
             ),
@@ -125,7 +125,11 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
 
         querySteps([], []).
         querySteps([Step|Steps], Query) :-
-            (active(Step), module_defines(Step, queryDependencies/2) -> Query = [Step|Rest] ; Query = Rest),
+            (active(Step), module_defines(Step, queryDependencies/2), module_defines(Step, queryDependants/2) ->
+                Query = [Step|Rest]
+            ;
+                Query = Rest
+            ),
             querySteps(Steps, Rest).
 
         %! steps(-Steps)
@@ -145,12 +149,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         active(Step) :- setting(graphExtension, Step).
 
         % The graph extensions of the user, the modules other than those of steps/1, as stated
-        others(Others) :-
-            (setting(graphExtension, X), \+ step(X) ->
-                findall(Y, (setting(graphExtension, Y), \+ step(Y)), Others)
-            ;
-                Others = []
-            ).
+        others(Others) :- findall(Y, (setting(graphExtension, Y), \+ step(Y)), Others).
 
         applySteps([]).
         applySteps([Step|Steps]) :-

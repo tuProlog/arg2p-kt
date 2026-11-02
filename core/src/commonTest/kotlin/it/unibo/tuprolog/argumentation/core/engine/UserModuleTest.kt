@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 // The theory of the user is a module of its own: the modules reach it through user:: alone, and its predicates are its
 // own, whatever the libraries and the modules name theirs
 class UserModuleTest {
-    private fun solver(theory: String) = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create())
+    private fun solver(theory: String) = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library())
 
     private fun statementsIn(theory: String): String {
         val solver = solver(theory)

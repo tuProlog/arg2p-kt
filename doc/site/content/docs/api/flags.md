@@ -36,7 +36,7 @@ arg2p.setting("graphBuildMode")    // [abstract]
 arg2p.setting("queryMode")         // []: the profile turns it off
 ```
 
-The table below lists the flags, with their values in `Flags.defaults()`.
+The table below lists the flags, with their defaults.
 
 | Flag | Default | Accepted values |
 | --- | --- | --- |
@@ -58,12 +58,6 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `temporal` | disabled | the fact is present or absent: the [axioms of time]({{% ref "/docs/modules/temporal" %}}), concluding what holds for the times of a period (with the graph extension `constraints`) |
 | `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
-
-> [!NOTE]
-> `graphBuildMode`, `argumentLabellingMode`, `statementLabellingMode`, `orderingPrinciple` and
-> `orderingComparator` must always have a value. `Flags.defaults()` fills them in for you, so you only need to
-> write them by hand when you build a theory that supplies its own flags (see
-> [empty flag sets](#empty-flag-sets)).
 
 ---
 
@@ -119,7 +113,7 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 whatever the order they are stated in: `constraints` (with the copies of `metaConflicts` after it), then
 `rebutRestriction`, the preference mode, `bp`. The preference modes (`standardPref`, `defeasiblePref`,
 `defeasibleAllPref`, `abaPref`) exclude one another: a theory stating two of them is refused, as is one stating
-`abaPref` outside the `aba_plus` profile.
+`abaPref` outside an ABA theory (`graphLanguage(abaLanguage)`, as the profiles `aba` and `aba_plus` state).
 
 | Value | Effect |
 | --- | --- |
@@ -303,5 +297,5 @@ val arg2p = Arg2p.of(
 ```
 
 `Flags.parse(text)` states the flags of its Prolog facts, the others as with `Flags.defaults()`: the text
-`argumentLabellingMode(preferred).` leaves query mode on. With the 2P-Kt integration, `FlagsBuilder` states the
-flags it is given other than the default of their flag.
+`argumentLabellingMode(preferred).` leaves query mode on. `Flags.library()` is the library of the flags for a solver
+built by hand (see the [2P-Kt integration]({{% ref "/docs/api/kotlin#building-a-solver-by-hand" %}})).

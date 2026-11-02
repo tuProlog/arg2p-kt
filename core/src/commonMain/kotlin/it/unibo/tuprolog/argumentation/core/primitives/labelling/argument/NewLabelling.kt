@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
@@ -9,15 +10,14 @@ import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextBranch
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * newLabelling(+Branch, +Ids): in a new branch of Branch (left active), the arguments of Ids IN, the unlabelled
  * arguments attacked by an IN one OUT, and the other unlabelled ones UND, asserted with a single context_assert_all
  */
-internal object NewLabelling : Primitive {
-    val signature: Signature = Signature("newLabelling", 2)
+internal object NewLabelling : PrimitiveWithSignature {
+    override val signature: Signature = Signature("newLabelling", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
         arg2pScope {

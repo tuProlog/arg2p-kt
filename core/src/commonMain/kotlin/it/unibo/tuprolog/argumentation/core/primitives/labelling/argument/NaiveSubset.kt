@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.primitives.replyList
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -14,8 +14,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * every argument of Args left out either attacks itself or conflicts with an argument of Set or In (already IN).
  * An argument left out that no later argument can conflict with prunes the search.
  */
-internal object NaiveSubset : Primitive {
-    val signature: Signature = Signature("naiveSubset", 4)
+internal object NaiveSubset : PrimitiveWithSignature {
+    override val signature: Signature = Signature("naiveSubset", 4)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val args = request.ids(0)

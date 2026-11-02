@@ -12,7 +12,6 @@ import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * context_all(+Goal, -Instances): the instances of Goal in the active branch as one list, `findall` as a single step.
- * context_all(+Branch, +Goal, -Instances): the same in the given branch.
  */
 internal class ContextAll(
     arity: Int,

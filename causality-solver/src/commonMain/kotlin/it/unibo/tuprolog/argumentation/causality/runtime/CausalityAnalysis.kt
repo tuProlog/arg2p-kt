@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.causality.runtime
 
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
@@ -9,7 +11,6 @@ import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Atom
@@ -44,7 +45,7 @@ internal class CausalityAnalysis {
         val solver =
             labelling ?: Arg2pSolverFactory
                 .solverOf(
-                    Arg2pSolver.default(listOf(FlagsBuilder(graphExtensions = emptyList(), argumentLabellingMode = "grounded").create())),
+                    Arg2pSolver.default(listOf(Flags.defaults().argumentLabellingMode(Semantics.GROUNDED).library())),
                     theory = "",
                     output = output,
                 ).also { labelling = it }
@@ -205,44 +206,25 @@ internal class CausalityAnalysis {
     }
 
     /**
-     * The NESS condition of ICAIL 2025: an explanation of [effect] (a grounded chain) is refuted by [intervention],
-     * and by none of its proper subsets
-     */
-    fun nessOriginal(
-        request: Solve.Request<ExecutionContext>,
-        intervention: PlList,
-        effect: Term,
-    ): Boolean {
-        val supports = baseSupports(request, effect)
-        if (supports.isEmpty()) return false
-        val attackers = interventionAttackers(request, intervention, supports, effect)
-        return attackers.isNotEmpty() &&
-            (
-                intervention.estimatedLength <= 1 ||
-                    properSubsets(request, intervention).none { interventionAttackers(request, it, supports, effect).isNotEmpty() }
-            )
-    }
-
-    /**
-     * The revised NESS condition: an explanation of [effect] is refuted by [intervention] (an IN attacker), and no
-     * proper subset of it refutes it with the same attackers
+     * The NESS condition: an explanation of [effect] (a grounded chain) is refuted by [intervention] (an IN attacker),
+     * and by none of its proper subsets: as published (ICAIL 2025), a subset refuting it any way; [revised], a subset
+     * refuting it with the same attackers
      */
     fun ness(
         request: Solve.Request<ExecutionContext>,
         intervention: PlList,
         effect: Term,
+        revised: Boolean,
     ): Boolean {
         val supports = baseSupports(request, effect)
         if (supports.isEmpty()) return false
         val attackers = interventionAttackers(request, intervention, supports, effect).map { it.termRepresentation() }
-        return attackers.isNotEmpty() &&
-            (
-                intervention.estimatedLength <= 1 ||
-                    properSubsets(request, intervention).none { subset ->
-                        val others = interventionAttackers(request, subset, supports, effect).map { it.termRepresentation() }
-                        attackers.all { a -> others.any { b -> Unificator.default.match(a, b) } }
-                    }
-            )
+        if (attackers.isEmpty()) return false
+        if (intervention.estimatedLength <= 1) return true
+        return properSubsets(request, intervention).none { subset ->
+            val others = interventionAttackers(request, subset, supports, effect).map { it.termRepresentation() }
+            if (revised) attackers.all { a -> others.any { b -> Unificator.default.match(a, b) } } else others.isNotEmpty()
+        }
     }
 
     /** The but-for condition: an argument for [effect] is IN, and none is after [intervention] */

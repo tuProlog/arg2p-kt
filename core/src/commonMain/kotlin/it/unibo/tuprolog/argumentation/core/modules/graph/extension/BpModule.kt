@@ -39,7 +39,7 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
             argument::conclusion(Burdened, Conclusion),
             argument::infoParts(Info, [artificial], [artificial], []),
             argument::new([artificial|AllRules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
-            graphStore::saveArgument(a, [-burdmet(Conclusion)], Conflict),
+            graphStore::saveArgument([-burdmet(Conclusion)], Conflict),
             graphStore::saveSupport(Bp, Conflict),
             createBpArguments(Others, BpPairs).
 
@@ -56,7 +56,7 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
 
         insertBpPair(BpPair, [], [BpPair]).
         insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
-            bp_grounded::argumentChain(BurdenedL, Burdened),
+            graphStore::reaches(BurdenedL, Burdened),
             insertBpPair((Bp, Burdened), Others, Return), !.
         insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]).
 

@@ -25,7 +25,7 @@ import it.unibo.tuprolog.unify.Unificator
 /**
  * Base implementation of every `:solve-prolog` [it.unibo.tuprolog.solve.Solver]/[it.unibo.tuprolog.solve.MutableSolver]
  * ([PrologSolver] and [MutablePrologSolver], both `internal`, are the only two concrete subclasses; instances
- * are normally obtained through [Arg2pPrologSolverFactory], which is what the `Solver.prolog` property resolves to).
+ * are normally obtained through [Arg2pPrologSolverFactory]).
  *
  * What this class actually contributes over [AbstractSolver] is [solveImpl]: turning a goal into a
  * [Sequence] of [Solution]s by driving the [it.unibo.tuprolog.argumentation.core.engine.fsm.State] finite-state machine
@@ -117,7 +117,7 @@ abstract class AbstractPrologSolver(
      * Builds the root [PrologExecutionContext] for [goal] (carrying over this solver's current [Theory] knowledge
      * bases, [Runtime] libraries, [FlagStore], channels and [SolveOptions.timeout]) and returns the lazy
      * [Sequence] of [Solution]s obtained by driving a fresh [it.unibo.tuprolog.argumentation.core.engine.fsm.StateInit]
-     * through the state machine via [solutionIterator].
+     * through the state machine (see [SolutionIterator]).
      */
     final override fun solveImpl(
         goal: Struct,
@@ -140,19 +140,8 @@ abstract class AbstractPrologSolver(
                 startTime = currentTimeInstant(),
                 maxDuration = options.timeout,
             )
-        return solutionIterator(StateInit(currentContext), this::updateCurrentContextAfterStateTransition).asSequence()
+        return SolutionIterator(StateInit(currentContext), this::updateCurrentContextAfterStateTransition).asSequence()
     }
-
-    /**
-     * Hook through which subclasses choose which [SolutionIterator] flavour drives resolution from [initialState]
-     * onwards, invoking [onStateTransition] after every step ([PrologSolver] always returns a plain
-     * [SolutionIterator]; nothing in this module currently returns another flavour here, as the
-     * `MutableSolutionIterator` of tuProlog's classic solver, though the hook is shaped to allow it).
-     */
-    protected abstract fun solutionIterator(
-        initialState: State,
-        onStateTransition: (State, State, Long) -> Unit,
-    ): SolutionIterator
 
     @Suppress("UNUSED_PARAMETER")
     private fun updateCurrentContextAfterStateTransition(

@@ -71,7 +71,7 @@ object ConstraintsModule : PrologModule("prolog.argumentation.graph.constraints"
             argument::body(General, Body),
             argument::body(Instance, Bound),
             argument::conclusion(Instance, Conclusion),
-            graphStore::saveInstance(instance, Conclusion, Instance),
+            graphStore::saveInstance(Conclusion, Instance),
             graphStore::argumentId(Instance, Id),
             context_assert(addedInstance(Id)),
             findall(_, (member(Sub, Supporters), realizeSupport(Sub, Body, Bound, Instance)), _).

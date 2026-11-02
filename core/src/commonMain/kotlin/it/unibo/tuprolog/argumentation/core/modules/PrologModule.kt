@@ -6,6 +6,8 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.primitive.Primitive
+import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.theory.parsing.parse
 
 /**
  * A module of arg2p, loaded by its first call (Module::Goal): a Prolog theory ([prologRawTheory], parsed once with
@@ -16,8 +18,14 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 abstract class PrologModule(
     final override val alias: String,
     private val moduleIdentifier: String,
-) : LazyRawPrologContent(),
+) : ArgLibrary,
     Loadable {
+    /** The Prolog theory of the module, as text */
+    abstract val prologRawTheory: String
+
+    /** The theory of the module, parsed once with the operators of the modules */
+    val prologTheory: Theory by lazy { Theory.parse(prologRawTheory, theoryOperators) }
+
     /** The native primitives of the module */
     protected open val primitives: Map<Signature, Primitive>
         get() = emptyMap()

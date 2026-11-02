@@ -75,7 +75,8 @@ val flags =
 | `conflictModel` | `ConflictModel` (several): `NEGATION`, `DEONTIC`, `PREFERENCE`, `DECLARED`, or `BUILTIN` for all of them; none: no argument |
 | `graphBuilder` | `GraphBuilder` |
 | `modulesPath` | a path |
-| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `debug` | on or off |
+| `answerMode` | `AnswerMode`: `ENUMERATE`, `CREDULOUS`, `SKEPTICAL` |
+| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `temporal`, `debug` | on or off |
 
 Each value has the atom stating it in a theory (`Semantics.PREFERRED.value` is `preferred`); `toString()` writes the
 flags as the facts stating them. A flag the theory states overrides the one of the solver.
@@ -176,15 +177,6 @@ The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}
 
 ---
 
-## Earlier entry points
-
-`Arg2pSolverFactory.evaluate(theory, flags)` (package `it.unibo.tuprolog.argumentation.core`), the graph of each
-labelling of a theory with the flags of a `FlagsBuilder` (an `Arg2pException` if the evaluation halts, as for a
-theory its profile refuses), is still there, as `FlagsBuilder` is, for the 2P-Kt integration below:
-`Flags.of(builder)` are the flags of a builder.
-
----
-
 ## Building a solver by hand
 
 Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (`core`, `core-jvm` for the JVM):
@@ -194,12 +186,12 @@ Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder().create())).to2pLibraries(),
+    otherLibraries = Arg2pSolver.default(listOf(Flags.defaults().library())).to2pLibraries(),
     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```
@@ -239,9 +231,9 @@ A hand-built solver has no flags unless the library set includes them, as above.
 the libraries afterwards:
 
 ```kotlin
-val settings = FlagsBuilder().create()
+val settings = Flags.defaults().library()
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.content(),
+    otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.baseContent,
     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```

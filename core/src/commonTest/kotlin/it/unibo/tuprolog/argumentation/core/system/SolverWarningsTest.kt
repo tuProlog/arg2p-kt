@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.system
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.channel.OutputChannel
@@ -14,7 +14,7 @@ class SolverWarningsTest {
     fun noWarningForTheHooksATheoryDoesNotDefine() {
         val warnings = mutableListOf<String>()
         val solver =
-            Arg2pSolverFactory.default(theory = "r1 : a => b.\na1 :-> a.", settings = FlagsBuilder().queryMode(false).create())
+            Arg2pSolverFactory.default(theory = "r1 : a => b.\na1 :-> a.", settings = Flags.defaults().queryMode(false).library())
         solver.setWarnings(OutputChannel.of { warnings += it.message.orEmpty() })
         solver.solve(Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)).first()
         assertEquals(emptyList(), warnings)

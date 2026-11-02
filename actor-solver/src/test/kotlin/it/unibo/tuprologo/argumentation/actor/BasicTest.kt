@@ -2,6 +2,7 @@ package it.unibo.tuprologo.argumentation.actor
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.ClusterException
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
@@ -12,7 +13,6 @@ import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.exception.error.SystemError
@@ -220,7 +220,7 @@ class BasicTest {
                     otherLibraries =
                         Arg2pSolver
                             .default(
-                                kotlin.collections.listOf(FlagsBuilder().create()),
+                                kotlin.collections.listOf(Flags.defaults().library()),
                             ).to2pLibraries(),
                     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {

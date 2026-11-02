@@ -1,19 +1,19 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * containsAny(+Elements, +List): an element of List matches one of Elements (without binding them)
  */
-internal object ContainsAny : Primitive {
-    val signature: Signature = Signature("containsAny", 2)
+internal object ContainsAny : PrimitiveWithSignature {
+    override val signature: Signature = Signature("containsAny", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val elemList: Term = request.arguments[0]

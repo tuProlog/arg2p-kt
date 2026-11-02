@@ -24,7 +24,7 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
             ),
             findall((A1, ' SUPPORTS ', A2), member((A1, A2), Supports), SupportsToPrint),
             findall((A1, ' ', T, ' ', A2, ' ON ', A3),  member((T, A1, A2, A3), Attacks),  AttacksToPrint),
-            write('HERE THE GROUNDED SEMI-ABSTRACT ARGUMENTATION GRAPH'),nl,
+            write('HERE THE ARGUMENTATION GRAPH'),nl,
             utils::writeListNl(ArgumentsToPrint),
             utils::writeListNl(SupportsToPrint),
             utils::writeListNl(AttacksToPrint).
@@ -46,7 +46,7 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
         printStatementLabelling([In, Ni, Und]) :-
             write('HERE THE STATEMENTS LABELLED IN: '),nl,
             utils::writeListNl(In),
-            write('HERE THE STATEMENTS LABELLED NI: '),nl,
+            write('HERE THE STATEMENTS LABELLED OUT: '),nl,
             utils::writeListNl(Ni),
             write('HERE THE STATEMENTS LABELLED UND: '),nl,
             utils::writeListNl(Und).

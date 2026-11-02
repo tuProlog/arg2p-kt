@@ -7,6 +7,9 @@ import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 
+/** These solutions, a halt among them raised: an error inside a goal solved for a primitive surfaces, rather than failing it */
+internal fun Sequence<Solution>.haltsRaised(): Sequence<Solution> = map { if (it is Solution.Halt) throw it.exception else it }
+
 /**
  * Solves [goal] on behalf of a primitive, whose caller needs the bindings of all the variables of the goal.
  *
@@ -15,6 +18,7 @@ import it.unibo.tuprolog.solve.Solver
  * be lost (and with them, for instance, the bindings a module makes inside the terms it is given). They are
  * renamed for the query, and bound back in each solution.
  */
+
 internal fun Solver.solveForCaller(
     goal: Struct,
     options: SolveOptions,

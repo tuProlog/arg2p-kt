@@ -40,7 +40,7 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
                 Semantics:::argumentLabelling,
                 findall(A, graphStore::argumentLabelById(in, A), In)
             ), Labellings),
-            utils::intersection(Labellings, Common),
+            utils::intersectionOf(Labellings, Common),
             maximalAdmissibleSubset(Common, Maximal),
             conflictfree::labelSet(Branch, Maximal).
 

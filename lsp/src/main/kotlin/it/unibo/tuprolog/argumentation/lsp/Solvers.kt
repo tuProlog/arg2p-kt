@@ -61,9 +61,13 @@ internal object Solvers {
             Arg2p.checkTheory(text)?.let { ProblemData.of(it) }
         }
 
+    /** The values of the flags in effect for the theory of [solver]: an [Arg2pException] if its profile refuses it */
+    fun settingsOf(solver: Arg2p): Map<String, List<String>> = solver.knownFlags.associateWith { solver.setting(it) }
+
     /**
-     * The values of the flags in effect for [theory] solved with [flags]: those of the flags alone when the theory
-     * does not parse (as the editor of a theory asks them while it is written), none when they do not
+     * The values of the flags in effect for [theory] solved with [flags], as the editor of a theory asks them while it
+     * is written: those of the flags alone when the theory does not parse, none when they do not, none of a flag the
+     * solver refuses
      */
     fun settings(
         theory: String,
@@ -89,4 +93,7 @@ internal object Solvers {
             }
         }
     }
+
+    /** What a text to check is: a theory (or flags), or a query */
+    val KINDS = listOf("theory", "query")
 }

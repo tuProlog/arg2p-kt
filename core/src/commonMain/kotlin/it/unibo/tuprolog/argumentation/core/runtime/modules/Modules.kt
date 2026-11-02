@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.modules
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
@@ -36,10 +35,10 @@ internal class Modules(
         name: Atom,
     ): Module {
         val library =
-            solver.dynamicLibraries().firstOrNull { (it as? Loadable)?.identifier() == name.value }
+            solver.dynamicLibraries().firstOrNull { it.identifier() == name.value }
                 ?: throw ExistenceError.forResource(request.context, name.value)
         val callerLibraries = request.context.libraries.libraries
         val shared = Runtime.of(callerLibraries.filterNot { it.alias in moduleAliases })
-        return Module(name.value, shared + library.content())
+        return Module(name.value, shared + library.baseContent)
     }
 }

@@ -20,7 +20,7 @@ import it.unibo.tuprolog.solve.stdlib.CommonBuiltins
 /**
  * The [it.unibo.tuprolog.solve.library.Library] of built-in predicates the prolog engine adds on top of
  * [CommonBuiltins]: this is what `it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory.defaultBuiltins` returns,
- * and what a solver built via `Solver.prolog.solverWithDefaultBuiltins()` is loaded with.
+ * and what a solver built via `Arg2pPrologSolverFactory.solverWithDefaultBuiltins()` is loaded with.
  *
  * Everything here exists specifically because this engine resolves goals through the finite-state machine
  * under `it.unibo.tuprolog.argumentation.core.engine.fsm` rather than host-language recursion, so control constructs need an

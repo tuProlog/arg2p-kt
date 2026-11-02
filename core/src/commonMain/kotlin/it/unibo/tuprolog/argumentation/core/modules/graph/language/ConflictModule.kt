@@ -30,14 +30,23 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             unguarded(Statement, Other).
         between(Statement, Other) :-
             guarded(Statement, Other, Guard),
-            holds(Guard).
+            parser::holds(Guard).
 
         %! stated(+Conflict, ?Statement, ?Other)
         %  Conflict, a conflict(A, B) or conflict(A, B, Guard) term, makes Statement ([A]) conflict with Other ([B]),
         %  its guard holding.
         stated(conflict(A, B), [A], [B]).
         stated(conflict(A, B, Guard), [A], [B]) :-
-            holds(Guard).
+            parser::holds(Guard).
+
+        %! declared(?Statement, ?Other)
+        %  The theory declares Statement in conflict with Other (conflict/2, or conflict/3 whatever its guard), and the
+        %  conflict model counts the declared conflicts: never with metaConflicts, where the conflicts are the
+        %  conclusions of arguments.
+        declared(Statement, Other) :-
+            \+ setting(metaConflicts),
+            setting(conflictModel, declared),
+            (user::conflict(Statement, Other) ; user::conflict(Statement, Other, _)).
 
         %! guarded(?Statement, ?Other, -Guard)
         %  Statement conflicts with Other when Guard holds.
@@ -101,8 +110,5 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
         % preference: a superiority and its converse
         builtin(preference, [sup(X, Y)], [sup(Y, X)], true).
 
-        % A guard holds: a goal that succeeds, or the term true
-        holds(Guard) :- callable(Guard), !, user::call(Guard).
-        holds(Guard) :- user::Guard.
         """.trimIndent()
 }

@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -33,10 +32,10 @@ internal interface BuiltGraph {
  * module ruleGraph) and query mode (queryExploration), which save the arguments and the attacks the workers built
  * ([graph]) rather than build them
  */
-internal fun graphModules(graph: BuiltGraph): List<ArgLibrary> {
+internal fun graphModules(graph: BuiltGraph): List<Loadable> {
     val modules = listOf(RuleGraph(graph), QueryExploration)
     val replaced = modules.map { it.identifier() }.toSet()
-    return modules + ModuleRegistry.all.filterNot { (it as? Loadable)?.identifier() in replaced }
+    return modules + ModuleRegistry.all.filterNot { it.identifier() in replaced }
 }
 
 // The graph builder of the rules: the arguments the workers built (a graph not built yet stops the resolution, see
@@ -111,23 +110,10 @@ private object QueryExploration : PrologModule("prolog.argumentation.parallel.ex
     override val prologRawTheory: String =
         // language=Prolog
         """
-        %! explore(+Query)
-        %  The arguments for Query and those their labels may depend on, built by the workers.
-        explore(Query) :-
-            ruleGraph::built(explore(Query)).
-
-        %! expand(+Locality)
-        %  Done by the workers, as they explore.
-        expand(_).
-
-        %! extend(+Locality)
-        %  Done by the workers, as they explore.
-        extend(_).
-
         %! explore(+Query, +Locality)
         %  The arguments for Query and those their labels may depend on, built by the workers, who expand and extend
         %  their exploration as Locality goes.
         explore(Query, _) :-
-            explore(Query).
+            ruleGraph::built(explore(Query)).
         """.trimIndent()
 }

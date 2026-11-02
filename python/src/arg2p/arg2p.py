@@ -109,6 +109,11 @@ class Solution:
         self._solution = solution
 
     @property
+    def result(self) -> str:
+        """What the solution is: yes, no or halt."""
+        return str(self._solution.getResult())
+
+    @property
     def is_yes(self) -> bool:
         return bool(self._solution.isYes())
 

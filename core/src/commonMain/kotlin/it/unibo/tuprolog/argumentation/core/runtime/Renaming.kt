@@ -7,6 +7,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.unify.Unificator
 
 /**
  * A copy of this term with fresh variables, one for each of its variables told apart by identity. [Term.freshCopy]
@@ -41,6 +42,13 @@ fun Term.withVariablesFixed(): Term =
     } else {
         apply(Substitution.of(variables.distinct().mapIndexed { i, variable -> variable to Atom.of("\$var_$i") }.toMap()))
     }
+
+/**
+ * Whether this term generalises [other] (subsumes_term/2): it unifies with [other], the variables of [other] taken as
+ * constants (see [withVariablesFixed]); neither is bound
+ */
+@InternalArg2pApi
+fun Term.subsumes(other: Term): Boolean = Unificator.default.match(this, other.withVariablesFixed(), true)
 
 private fun renamed(
     term: Term,

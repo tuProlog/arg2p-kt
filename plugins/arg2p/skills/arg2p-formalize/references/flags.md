@@ -13,15 +13,16 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `orderingPrinciple(P)` | `last` | `last`, `weakest` |
 | `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
 | `conflictModel(M)` (may repeat) | all four parts (`declared` alone under `aba`, `aba_plus`) | `negation` (`a` vs `-a`), `deontic` (`o`/`p` pairs), `preference` (`sup(X, Y)` vs `sup(Y, X)`), `declared` (`conflict/2,3`); `builtin` for all four, `conflictModel(none).` for none (only the contraries of the languages) |
-| `queryMode` | on with no flags given | present or absent |
+| `queryMode` | on | present, or `queryMode(off).` |
+| `answerMode(M)` | `enumerate` | `enumerate` (one answer per labelling), `credulous` (in: in some labelling, out: out in every one), `skeptical` (in: in every labelling, out: out in some) |
 | `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
 | `metaRules`, `metaConflicts` | off (on under `meta`) | present: rules fire only when argued `applicable(Rule)`, conflicts only when argued `conflict(A, B)` |
-| `temporal` | off | present: the axioms of time over `happens(E, T)`, `initiates(E, U)`, `terminates(E, U)`; concludes `holdsAt(U, from(T1))`, `holdsAt(U, until(T2))`, `holdsAt(U, between(T1, T2))`, and answers `holdsAt(U, T)` by the region containing T |
+| `temporal` | off | present: the axioms of time over `happens(E, T)`, `initiates(E, U)`, `terminates(E, U)` (with the graph extension `constraints`): `holdsAt(U, T)` holds for the times of a period, an open conclusion with `{T > T1}`, `{T =< T2}` constraints; see <https://tuprolog.github.io/arg2p-kt/docs/modules/temporal/> |
 | `graphBuilder(B)` | `ruleGraph` | `ruleGraph`, `abstractGraph`: set by the profile |
 | `graphLanguage(L)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`: set by the profile |
 | `debug` | off | present: `bp_grounded_partial` writes the steps of its labelling |
-| `naturalTerms` | off | present (in the theory only): natural-language-like terms are normalised as the rules are parsed |
+| `naturalTerms.` (a predicate of the theory, not a flag) | off | present in the theory: natural-language-like terms are normalised as the rules are parsed |
 | `modulesPath(P)` | `none` | a directory or a base URL `call_module/2` loads modules from |
 
 ## Semantics

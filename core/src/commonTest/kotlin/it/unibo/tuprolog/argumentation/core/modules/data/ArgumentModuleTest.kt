@@ -27,8 +27,6 @@ class ArgumentModuleTest {
         assertEquals("[a]", module.value("argument::body($argument, X)", "X"))
         assertEquals("[[r2], [r2, r1], [f1]]", module.value("argument::info($argument, X)", "X"))
         assertEquals("[r2]", module.value("argument::lastDefeasibleRules($argument, X)", "X"))
-        assertEquals("[r2, r1]", module.value("argument::defeasibleRules($argument, X)", "X"))
-        assertEquals("[f1]", module.value("argument::defeasiblePremises($argument, X)", "X"))
     }
 
     @Test

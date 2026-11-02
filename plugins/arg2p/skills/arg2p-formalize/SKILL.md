@@ -113,9 +113,9 @@ Rule names are unique atoms. Without `sup/2`, two conflicting defeasible conclus
 ## Step 5: choose the flags
 
 Flags are Prolog facts, given to the solver beside the theory (or written in the theory). With no flags, the solver
-uses `argumentLabellingMode(grounded).`, `statementLabellingMode(statement).` and `queryMode.`; flags you give
-**replace** those three, and what they leave out takes the value of the profile (query mode is then off unless you
-state `queryMode.`). Every flag is in `references/flags.md`; the choices that matter:
+is given `argumentLabellingMode(grounded).`, `statementLabellingMode(statement).` and `queryMode.`; the flags you give
+override only the flags they state, the others keep the value their profile presets or their default (query mode stays
+on unless you state `queryMode(off).`). Every flag is in `references/flags.md`; the choices that matter:
 
 - **Semantics**, `argumentLabellingMode(S)`:
   - `grounded` (the default): skeptical, always exactly one labelling. "What must be accepted?"

@@ -28,18 +28,25 @@ class Response:
 
 @dataclass(frozen=True)
 class EvaluationResponse:
-    """The statements answering a statement, by label, each with the arguments for it."""
+    """The statements answering a statement, by label, each with the arguments for it; error, if one kept it from an answer."""
 
     in_args: list[Response] = field(default_factory=list)
     out_args: list[Response] = field(default_factory=list)
     und_args: list[Response] = field(default_factory=list)
+    error: Optional[str] = None
 
 
 def _response(response: Any) -> EvaluationResponse:
     def responses(of: Any) -> list[Response]:
         return [Response(str(it.getClaim()), tuple(str(argument) for argument in it.getQueryChain())) for it in of]
 
-    return EvaluationResponse(responses(response.getInArgs()), responses(response.getOutArgs()), responses(response.getUndArgs()))
+    error = response.getError()
+    return EvaluationResponse(
+        responses(response.getInArgs()),
+        responses(response.getOutArgs()),
+        responses(response.getUndArgs()),
+        None if error is None else str(error),
+    )
 
 
 @dataclass(frozen=True)

@@ -64,14 +64,6 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
         %  Rules are the last defeasible rules of Argument.
         lastDefeasibleRules([_, _, _, _, [Rules, _, _]], Rules).
 
-        %! defeasibleRules(?Argument, ?Rules)
-        %  Rules are the defeasible rules of Argument.
-        defeasibleRules([_, _, _, _, [_, Rules, _]], Rules).
-
-        %! defeasiblePremises(?Argument, ?Premises)
-        %  Premises are the defeasible premises of Argument.
-        defeasiblePremises([_, _, _, _, [_, _, Premises]], Premises).
-
         %! infoParts(?Info, ?LastDefeasibleRules, ?DefeasibleRules, ?DefeasiblePremises)
         %  Info is made of its parts.
         infoParts([LastDefeasibleRules, DefeasibleRules, DefeasiblePremises], LastDefeasibleRules, DefeasibleRules, DefeasiblePremises).

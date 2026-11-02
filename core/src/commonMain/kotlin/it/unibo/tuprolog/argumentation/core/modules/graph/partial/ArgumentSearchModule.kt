@@ -29,7 +29,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
 
         % From a premise: one with variables (parser::boundByQuery/1) concludes an open statement, with instances alone
         findArgument(Conclusion, Found) :-
-            parser::classicRule(Id, Conclusion),
+            parser::premise(Id, Conclusion),
             (parser::boundByQuery(Id) -> parser::instances ; true),
             argument::premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
@@ -37,7 +37,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise), and the rule
         % derives Conclusion from the arguments supporting its premises (see derivable/3)
         findArgument([Claim], Found) :-
-            parser::classicRule(Id, Premises, [Claim]),
+            parser::rule(Id, Premises, [Claim]),
             findPremises(Premises, premises(Parts, Supports)),
             derivable(Id, Claim, Supports),
             parser::strictness(Id, Strict),
@@ -53,7 +53,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         derivable(Id, Claim, Supports) :-
             functor(Claim, Name, Arity),
             functor(General, Name, Arity),
-            parser::classicRule(Written, Premises, [General]),
+            parser::rule(Written, Premises, [General]),
             \+ \+ Written = Id,
             derived(rule(Written, Premises, General), Supports, rule(Id, Claim)).
 
@@ -71,7 +71,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             parser::holds(Check),
             fromSupports(Premises, Supports).
         fromSupports([Premise|Premises], Supports) :-
-            \+ ordinaryPremise(Premise), !,
+            \+ parser::argued(Premise), !,
             fromSupports(Premises, Supports).
         fromSupports([Premise|Premises], [Support|Supports]) :-
             argument::claim(Support, Premise),
@@ -118,7 +118,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             parser::prolog([Premise], _),
             (Supported == true ; ground(Premise)), !.
         readyCheck([slot(Premise, Result)|Slots], Supported, Slot) :-
-            (var(Result), ordinaryPremise(Premise) -> Next = false ; Next = Supported),
+            (var(Result), parser::argued(Premise) -> Next = false ; Next = Supported),
             readyCheck(Slots, Next, Slot).
 
         % The pending ordinary premise concluded by the fewest rules: each count stops at the best one so far
@@ -126,7 +126,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         mostSelective([Slot|Slots], Best, Selected) :-
             Slot = slot(Premise, Result),
             var(Result),
-            ordinaryPremise(Premise), !,
+            parser::argued(Premise), !,
             countLimit(Best, Limit),
             parser::candidates(Premise, Limit, Count),
             selective(Slot, Count, Best, Next),
@@ -140,8 +140,6 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         selective(Slot, Count, none, best(Slot, Count)) :- !.
         selective(Slot, Count, best(_, Min), best(Slot, Count)) :- Count < Min, !.
         selective(_, _, Best, Best).
-
-        ordinaryPremise(Premise) :- parser::argued(Premise).
 
         supportPremise(slot(Premise, Result)) :-
             parser::prolog([Premise], Term), !,

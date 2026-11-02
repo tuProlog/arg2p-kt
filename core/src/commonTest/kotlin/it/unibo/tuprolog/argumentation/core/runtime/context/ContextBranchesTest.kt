@@ -34,7 +34,6 @@ class ContextBranchesTest {
     fun aMissingBranchHasNoSolutions() {
         assertEquals("no", solve("context_check(7, p(_))"))
         assertEquals("no", solve("context_all(7, p(_), _)"))
-        assertEquals("yes", solve("context_absent(7, p(_))"))
         assertEquals("no", solve("context_branch(7, _)"))
     }
 

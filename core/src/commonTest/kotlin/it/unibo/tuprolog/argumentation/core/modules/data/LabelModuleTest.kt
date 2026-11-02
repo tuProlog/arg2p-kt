@@ -14,7 +14,6 @@ class LabelModuleTest {
 
     @Test
     fun labels() {
-        assertEquals(listOf("in", "out", "und"), module.values("label::label(L)", "L"))
         assertEquals("out(a)", module.value("label::argument(out, a, X)", "X"))
         assertEquals("undId(1)", module.value("label::identifier(und, 1, X)", "X"))
         assertEquals("statIn([a])", module.value("label::statement(in, [a], X)", "X"))

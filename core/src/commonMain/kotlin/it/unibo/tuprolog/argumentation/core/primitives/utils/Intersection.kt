@@ -8,10 +8,10 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * intersection(+Sets, -Intersection): the elements of the first list in Sets that are in all of them, in its order
+ * intersectionOf(+Sets, -Intersection): the elements of the first list in Sets that are in all of them, in its order
  * (elements compared as ground terms); fails if Sets is empty
  */
-internal object Intersection : BinaryRelation.WithoutSideEffects<ExecutionContext>("intersection") {
+internal object Intersection : BinaryRelation.WithoutSideEffects<ExecutionContext>("intersectionOf") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

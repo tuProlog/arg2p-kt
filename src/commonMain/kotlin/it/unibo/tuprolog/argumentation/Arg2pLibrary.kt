@@ -8,8 +8,7 @@ import kotlin.js.JsExport
 @JsExport
 object Arg2pLibrary {
     /**
-     * The libraries of a solver of arg2p, with no flags (the theory states them, or a library of FlagsBuilder.create()
-     * added): the causality predicates are loaded by `causality::`
+     * The libraries of a solver of arg2p, with no flags (the theory states them, or a library of Flags.library() added): the causality predicates are loaded by `causality::`
      */
     @JsExport.Ignore
     fun get() = Arg2pSolver.default(dynamicLibs = listOf(CausalityModule()))

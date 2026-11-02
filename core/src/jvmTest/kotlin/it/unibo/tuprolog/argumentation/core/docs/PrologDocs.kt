@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.docs
 
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.modules.LazyRawPrologContent
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
+import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -48,19 +48,19 @@ class ModuleDoc(
     val identifier: String = (module as Loadable).identifier()
     val objectName: String = module::class.simpleName!!
 
-    private val clauses = module.content().clauses.filterIsInstance<Clause>()
+    private val clauses = module.baseContent.clauses.filterIsInstance<Clause>()
 
     /** The predicates it defines, in the order of its theory, and its primitives */
     val defined: Set<Signature> =
-        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + module.content().primitives.keys
+        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + module.baseContent.primitives.keys
 
     /** Its native primitives, each with its KDoc */
     val primitives: Map<Signature, String> =
-        module.content().primitives.mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
+        module.baseContent.primitives.mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
 
     /** The predicates its comments document, in their order */
     val documented: List<Documentation> =
-        (module as? LazyRawPrologContent)?.let { Comments.of(it.prologRawTheory, module) }.orEmpty()
+        (module as? PrologModule)?.let { Comments.of(it.prologRawTheory, module) }.orEmpty()
 
     /** Its predicates: those its comments document, then its native primitives no comment documents */
     val entries: List<Documentation> =
@@ -366,7 +366,7 @@ class PrologReference(
             if (uses.isNotEmpty()) appendLine("- **Calls:** " + uses.joinToString(", ") { link(it) })
             val callers = callers(module).map { it.identifier }
             if (callers.isNotEmpty()) appendLine("- **Called by:** " + callers.joinToString(", ") { link(it) })
-            val flags = module.module.flags().map { it.predicate() }
+            val flags = module.module.baseFlags.map { it.predicate() }
             if (flags.isNotEmpty()) {
                 appendLine("- **Flags:** " + flags.joinToString(", ") { "`$it`" } + " (see [Flags]({{% ref \"/docs/api/flags\" %}}))")
             }

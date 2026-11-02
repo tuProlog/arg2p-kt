@@ -14,8 +14,8 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
         %  The restricted attacks on an argument whose top rule is strict are removed.
         modifyArgumentationGraph :-
             findall(_, (
-                graphStore::attack(T, A, B, C),
-                checkRebutRestriction(T, A, B, C)
+                graphStore::directAttack(T, A, C),
+                checkRebutRestriction(T, A, C, C)
             ), _).
 
         checkRebutRestriction(T, A, B, C) :-
@@ -28,12 +28,9 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
         rebutRestriction(contrary_rebut, _, _, _).
         rebutRestriction(contrary_undermine, _, _, _).
         rebutRestriction(undercut, _, _, _).
-        rebutRestriction(_, _, _, C) :- restrict(C).
-
-        % The top rule of the argument is its last defeasible rule
-        restrict(Argument) :-
-            argument::topRule(Argument, TopRule),
-            argument::lastDefeasibleRules(Argument, [TopRule]),
-            TopRule \== none.
+        % the top rule of the argument is its last defeasible rule (see attackRelation::defeasibleTopRule/2)
+        rebutRestriction(_, _, _, C) :-
+            attackRelation::defeasibleTopRule(C, Rule),
+            Rule \== none.
         """.trimIndent()
 }

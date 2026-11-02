@@ -37,7 +37,7 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             \+ conflict::carried(Argument, _),
             argument::rules(Argument, Rules),
             argument::withRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
-            graphStore::saveArgument(a, Conclusion, Copy),
+            graphStore::saveArgument(Conclusion, Copy),
             graphStore::argumentId(Copy, Id),
             context_assert(conflictCopy(Id)),
             graphStore::saveSupport(ConflictArgument, Copy),
@@ -53,10 +53,8 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
 
         % The supports of Original also support Copy
         cloneSupports(Original, Copy) :-
-            findall(_, (
-                graphStore::support(Support, Original),
-                graphStore::saveSupport(Support, Copy)
-            ), _).
+            findall(Support, graphStore::support(Support, Original), Supports),
+            graphStore::saveSupporters(Copy, Supports).
 
         %==============================================================================
         % QUERY MODE

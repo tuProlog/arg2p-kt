@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -14,9 +14,7 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
-import it.unibo.tuprolog.solve.no
 import it.unibo.tuprolog.solve.yes
-import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import it.unibo.tuprolog.solve.Solver as BaseSolver
 
@@ -24,15 +22,9 @@ object TestingUtils {
     private val duration: TimeDuration
         get() = Long.MAX_VALUE
 
-    fun withArgOperators(theory: String) = Theory.parse(theory, Arg2pSolver.default().operators())
+    fun solver() = solverWithTheory("")
 
-    fun solver(theory: Theory = Theory.empty()) =
-        Arg2pSolverFactory.default(
-            theory = if (theory.isEmpty) "" else theory.toString(true),
-            settings = FlagsBuilder().empty(true).create(),
-        )
-
-    fun solverWithTheory(theory: String) = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().empty(true).create())
+    fun solverWithTheory(theory: String) = Arg2pSolverFactory.default(theory = theory, settings = Flags.none().library())
 
     fun testGoal(
         goal: Struct,
@@ -67,25 +59,6 @@ object TestingUtils {
         }
     }
 
-    fun testNoGoal(
-        goal: Struct,
-        solver: BaseSolver = solver(),
-    ) {
-        testGoal(goal, solver) {
-            listOf(it.no())
-        }
-    }
-
-    fun testYesGoal(
-        goals: Iterable<Struct>,
-        solver: BaseSolver = solver(),
-    ) = goals.forEach { testYesGoal(it, solver) }
-
-    fun testNoGoal(
-        goals: Iterable<Struct>,
-        solver: BaseSolver = solver(),
-    ) = goals.forEach { testNoGoal(it, solver) }
-
     fun buildLabelSets(
         theory: String,
         argsIn: String,
@@ -106,38 +79,6 @@ object TestingUtils {
                 }
             }
         }
-
-    fun answerQuery(
-        theory: String,
-        query: String,
-        argsIn: String,
-        argsOut: String,
-        argsUnd: String,
-    ) {
-        logicProgramming {
-            solverWithTheory(theory).also { solver ->
-                TestingUtils.testGoalNoBacktracking(
-                    "answerQuery"(Struct.parse(query), "StatIn", "StatOut", "StatUnd"),
-                    solver,
-                ) {
-                    it.yes(
-                        "StatIn" to Struct.parse(argsIn),
-                        "StatOut" to Struct.parse(argsOut),
-                        "StatUnd" to Struct.parse(argsUnd),
-                    )
-                }
-            }
-        }
-    }
-
-    fun prepareContext(
-        solver: MutableSolver,
-        theory: it.unibo.tuprolog.argumentation.core.model.Theory,
-    ) = arg2pScope {
-        theory.forEach {
-            solver.solve("context_assert"(it.toTerm())).first()
-        }
-    }
 
     fun prepareContext(
         solver: MutableSolver,

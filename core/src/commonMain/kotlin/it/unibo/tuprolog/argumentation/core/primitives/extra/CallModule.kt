@@ -4,6 +4,8 @@ import it.unibo.tuprolog.argumentation.SyntaxProblem
 import it.unibo.tuprolog.argumentation.core.engine.AbstractPrologSolver
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
@@ -23,7 +25,6 @@ import it.unibo.tuprolog.solve.exception.error.SyntaxError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 
@@ -34,8 +35,8 @@ import it.unibo.tuprolog.theory.Theory
  * that cannot be read raises an existence error, one that does not parse a syntax error; an error raised within the
  * modules is raised by the call.
  */
-internal object CallModule : Primitive {
-    val signature = Signature("call_module", 2)
+internal object CallModule : PrimitiveWithSignature {
+    override val signature = Signature("call_module", 2)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val modules: Term = request.arguments[0]
@@ -54,13 +55,8 @@ internal object CallModule : Primitive {
 
         val base = modulesPath(request.context)
         val solver = solverOf(request.context, names.map { locationOf(it.value, base) })
-        return solver.solveForCaller(goal, SolveOptions.allLazily()).map {
-            when (it) {
-                is Solution.Yes -> request.replySuccess(it.substitution)
-                // an error inside the modules surfaces: a failure would turn a broken call into an empty result
-                is Solution.Halt -> throw it.exception
-                else -> request.replyFail()
-            }
+        return solver.solveForCaller(goal, SolveOptions.allLazily()).haltsRaised().map {
+            if (it is Solution.Yes) request.replySuccess(it.substitution) else request.replyFail()
         }
     }
 

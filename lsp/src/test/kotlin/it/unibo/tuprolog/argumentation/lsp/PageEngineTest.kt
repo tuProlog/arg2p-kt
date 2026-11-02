@@ -32,7 +32,7 @@ class PageEngineTest {
         session: String = "page",
         engine: PageEngine = this.engine,
         limit: Duration = Duration.INFINITE,
-    ): CompletableFuture<List<Answer>> = engine.handle(session, JsonParser.parseString(request).asJsonObject, limit)
+    ): CompletableFuture<List<PageMessage>> = engine.handle(session, JsonParser.parseString(request).asJsonObject, limit)
 
     // The answers to [request] of [session], as JSON
     private fun ask(
@@ -41,7 +41,7 @@ class PageEngineTest {
         engine: PageEngine = this.engine,
     ): List<JsonObject> = answered(send(request, session, engine))
 
-    private fun answered(answers: CompletableFuture<List<Answer>>) =
+    private fun answered(answers: CompletableFuture<List<PageMessage>>) =
         json.toJsonTree(answers.get(60, TimeUnit.SECONDS)).asJsonArray.map {
             it.asJsonObject
         }

@@ -180,7 +180,7 @@ internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
 /** Why an evaluation stopped by its client has no answer */
 internal const val STOPPED = "The evaluation was stopped"
 
-/** To a client: the [answer] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
+/** To a client: the [answers] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
 internal data class AnswerResponse(
     val answers: List<Answer>?,
     val error: String? = null,

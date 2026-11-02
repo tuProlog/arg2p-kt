@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
 import it.unibo.tuprolog.argumentation.core.primitives.ids
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * undecidedCandidates(+Scc, +Branch, -Ids): the UND arguments of Scc in Branch that can be forced IN, those not
  * attacked by an UND argument of a previous component (nothing left could defend them)
  */
-internal object UndecidedCandidates : SccPrimitive {
+internal object UndecidedCandidates : PrimitiveWithSignature {
     override val signature = Signature("undecidedCandidates", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {

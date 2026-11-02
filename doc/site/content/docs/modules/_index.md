@@ -100,7 +100,6 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
 | `debug` | Prints graphs and labellings (`buildLabelSets/0`), and the trace of `bp_grounded_partial` with the `debug` flag. |
-| `interpreter` | Meta-interpreter, used to trace how facts were derived. |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
 ### Labelling modules
@@ -211,7 +210,7 @@ Res = [in(d)]
 
 Inside the call:
 
-- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of `FlagsBuilder`, not
+- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of its `Flags`, not
   those written in its theory), so the module is evaluated under the same semantics, ordering and preferences,
   unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;

@@ -17,7 +17,7 @@ Each one keeps the semantics of the original solver, but for the fixes marked as
 - Fix, bindings of the goals left: a finished sub-goal trims the substitution to the variables still of interest,
   which tuProlog takes from the current goal of each frame only (and from every goal selected, with TrackVariables):
   a variable bound by a goal and used by a later one lost its binding whenever a sub-goal ended in between, unless
-  TrackVariables was on. The variables of all the goals left are kept, so the flag is not needed
+  TrackVariables was on. The variables of all the goals left are kept, and the flag is gone
   (`SubstitutionTrimmingTest`).
 - Fix, unloading a library: `unloadLibrary` removes it (tuProlog's solver added it again).
 
@@ -33,7 +33,7 @@ Each one keeps the semantics of the original solver, but for the fixes marked as
   get back as for any goal, and the call is subject to the time limit of the resolution; backtracking into a choice
   point within an inlined call goes on with the libraries of the call. A `Sourcing` resolves a goal with the clauses
   of a `ClauseSource`: the lookups of the context (`context_check/1,2`) and of the cache (`cache_check/1`) are
-  resolved with the clauses of their store (`StoreClauses`, in `libs.basic`), as the store answers them.
+  resolved with the clauses of their store (`StoreClauses`, in `runtime.context`), as the store answers them.
 - Clause selection (`ClauseSource`): the clauses of the program are those of the libraries, the static and the dynamic
   theory (`ProgramClauses`). Those of the immutable theories are indexed once by the signature of their heads, then
   by the principal symbol of their first argument (`IndexedTheoryClauses`, `FirstArgumentIndex`), and those matching
@@ -69,7 +69,7 @@ Each one keeps the semantics of the original solver, but for the fixes marked as
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
 
-The unification used by the engine is the one of `Arg2pUnificator` (in `libs.basic`): the default one, computed in a
+The unification used by the engine is the one of `Arg2pUnificator` (in `runtime`): the default one, computed in a
 single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
 
 Together, against the original solver (`EngineBenchmark`, CPU time): graph building 4.4-5.4x faster, query mode

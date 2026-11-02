@@ -6,11 +6,11 @@ import it.unibo.tuprolog.solve.yes
 import kotlin.test.Test
 
 class UtilsModuleTest {
-    // sort/2 is deterministic: no choice point is left after the solution
+    // sortDescending/2 is deterministic: no choice point is left after the solution
     @Test
-    fun sort() {
+    fun sortDescending() {
         arg2pScope {
-            testGoal("utils" call "sort"(listOf("b", "a", "c", "d"), "X")) {
+            testGoal("utils" call "sortDescending"(listOf("b", "a", "c", "d"), "X")) {
                 listOf(
                     it.yes("X" to listOf("d", "c", "b", "a")),
                 )

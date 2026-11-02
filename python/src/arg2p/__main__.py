@@ -195,11 +195,17 @@ def evaluate(argv: list[str]) -> int:
                     f"und {text(answer.und_statements)}"
                 )
     else:
-        for index, solution in enumerate(arg2p.solve("arg2p::solve(In, Out, Und)")):
-            if index:
+        first = True
+        for solution in arg2p.solve("arg2p::solve(In, Out, Und)"):
+            if solution.is_halt:
+                raise _Failure(solution.error or "the evaluation halted")
+            if not solution.is_yes:
+                continue
+            if not first:
                 print()
+            first = False
             for label, name in (("in", "In"), ("out", "Out"), ("und", "Und")):
-                print(f"{label}: {', '.join(sorted(str(statement) for statement in solution.value(name).items))}")
+                print(f"{label}: {', '.join(sorted(text(statement) for statement in solution.value(name) or []))}")
     return 0
 
 

@@ -70,6 +70,6 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
-        attackedStatement(Rule, Statement) :- parser::classicRule(Rule, _, [Statement]).
+        attackedStatement(Rule, Statement) :- parser::rule(Rule, _, [Statement]).
         """.trimIndent()
 }

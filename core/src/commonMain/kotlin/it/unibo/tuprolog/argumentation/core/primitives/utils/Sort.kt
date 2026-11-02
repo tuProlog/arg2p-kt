@@ -8,9 +8,9 @@ import it.unibo.tuprolog.solve.primitive.BinaryRelation
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * sort(+List, ?Sorted): reverse standard order of terms, duplicates kept (as the former quicksort)
+ * sortDescending(+List, ?Sorted): the reverse of the standard order of terms, duplicates kept (as the former quicksort)
  */
-internal object Sort : BinaryRelation.WithoutSideEffects<ExecutionContext>("sort") {
+internal object Sort : BinaryRelation.WithoutSideEffects<ExecutionContext>("sortDescending") {
     override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
         first: Term,
         second: Term,

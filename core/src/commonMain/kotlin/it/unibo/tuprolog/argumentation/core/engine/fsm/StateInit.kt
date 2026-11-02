@@ -27,7 +27,6 @@ data class StateInit(
                     depth = 0,
                     step = 1,
                     customData = context.customData.preservePersistent(),
-                    relevantGoals = null,
                 ).appendRulesAndChoicePoints(Cursor.empty()),
         )
 }

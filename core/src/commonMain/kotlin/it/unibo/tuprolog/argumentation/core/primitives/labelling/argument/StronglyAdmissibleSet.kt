@@ -1,19 +1,19 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * stronglyAdmissibleSet: every IN argument is reachable from the unattacked ones, iteratively adding the IN
  * arguments whose attackers are all attacked by those added so far
  */
-internal object StronglyAdmissibleSet : Primitive {
-    val signature: Signature = Signature("stronglyAdmissibleSet", 0)
+internal object StronglyAdmissibleSet : PrimitiveWithSignature {
+    override val signature: Signature = Signature("stronglyAdmissibleSet", 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val attackers = request.attackGraph().attackers

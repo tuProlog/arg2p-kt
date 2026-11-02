@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
@@ -9,7 +10,6 @@ import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -21,8 +21,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * changed (those attacked by the arguments just labelled), rather than at all the unlabelled ones, which made a
  * chain of attacks quadratic. The labels of a round are asserted in the order of the arguments.
  */
-internal object GroundedFixpoint : Primitive {
-    val signature: Signature = Signature("groundedFixpoint", 0)
+internal object GroundedFixpoint : PrimitiveWithSignature {
+    override val signature: Signature = Signature("groundedFixpoint", 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         arg2pScope {

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.entry
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -15,9 +15,9 @@ class Arg2pSolveTest {
     private fun labellings(
         theory: String,
         goal: String,
-        flags: FlagsBuilder,
+        flags: Flags,
     ): List<String> {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         return solver
             .solve(Struct.parse(goal, solver.operators))
             .onEach { assertTrue(!it.isHalt, "$goal halted: ${it.exception}") }
@@ -28,7 +28,7 @@ class Arg2pSolveTest {
 
     private fun assertSameAsBuildLabelSets(
         theory: String,
-        flags: FlagsBuilder = FlagsBuilder(),
+        flags: Flags = Flags.defaults(),
     ): List<String> {
         val expected = labellings(theory, "buildLabelSets(In, Out, Und)", flags)
         assertTrue(expected.isNotEmpty(), "no labelling of $theory")
@@ -57,7 +57,7 @@ class Arg2pSolveTest {
 
     @Test
     fun severalLabellings() {
-        val labellings = assertSameAsBuildLabelSets("r1 : [] => a.\nr2 : [] => -a.", FlagsBuilder().argumentLabellingMode("complete"))
+        val labellings = assertSameAsBuildLabelSets("r1 : [] => a.\nr2 : [] => -a.", Flags.parse("argumentLabellingMode(complete)."))
         assertTrue(labellings.size > 1, "expected several labellings under complete, got $labellings")
     }
 }

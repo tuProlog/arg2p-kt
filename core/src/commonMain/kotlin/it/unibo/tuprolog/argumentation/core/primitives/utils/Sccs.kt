@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.stronglyConnectedComponents
@@ -8,7 +9,6 @@ import it.unibo.tuprolog.argumentation.core.primitives.replyList
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -19,8 +19,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  */
 internal class Sccs(
     arity: Int,
-) : Primitive {
-    val signature: Signature = Signature("sccs", arity)
+) : PrimitiveWithSignature {
+    override val signature: Signature = Signature("sccs", arity)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val nodes = if (request.arguments.size == 1) request.argumentIds() else request.ids(0)

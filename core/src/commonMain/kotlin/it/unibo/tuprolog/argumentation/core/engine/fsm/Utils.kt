@@ -57,7 +57,6 @@ fun PrologExecutionContext.createChild(currentGoal: Struct = this.currentGoal!!.
         parent = this,
         depth = depth + 1,
         step = step + 1,
-        relevantGoals = null,
         inlined = false,
     )
 
@@ -72,10 +71,6 @@ fun PrologExecutionContext.replaceWithChild(currentGoal: Struct = this.currentGo
         procedure = currentGoal,
         depth = depth + 1,
         step = step + 1,
-        // arg2p: the goals selected in the frame are done, the tail call being the last: the variables of interest
-        // are those of the goals the frame selects next, and of the goals above it (a tail-recursive loop would keep
-        // every goal it selected)
-        relevantGoals = null,
     )
 
 /**

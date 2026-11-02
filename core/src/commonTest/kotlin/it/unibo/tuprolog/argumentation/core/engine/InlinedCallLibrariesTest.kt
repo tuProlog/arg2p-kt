@@ -18,7 +18,7 @@ class InlinedCallLibrariesTest {
     fun failingWithinAModuleCall() {
         val solver = Arg2pSolverFactory.default()
         val libraries = solver.libraries
-        assertTrue(solver.solve(Struct.parse("graphStore::argumentIn(0, X)", solver.operators)).toList().none { it.isYes })
+        assertTrue(solver.solve(Struct.parse("graphStore::argumentById(0, X)", solver.operators)).toList().none { it.isYes })
         assertSame(libraries, solver.libraries)
     }
 

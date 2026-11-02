@@ -69,13 +69,10 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         contradictory(X, Negated) :- negate(X, Negated).
         contradictory(X, Other) :- bothWays(X, Other).
 
-        % X and Other declared in conflict both ways by the theory, with no guard (not with metaConflicts, where the
-        % conflicts are those arguments conclude, nor without the declared conflicts in the conflict model)
+        % X and Other declared in conflict both ways by the theory (see conflict::declared/2)
         bothWays(X, Other) :-
-            \+ setting(metaConflicts),
-            setting(conflictModel, declared),
-            catch(user::conflict([X], [Other]), error(existence_error(_, _), _), fail),
-            catch(user::conflict([Other], [X]), error(existence_error(_, _), _), fail).
+            conflict::declared([X], [Other]),
+            conflict::declared([Other], [X]).
 
         % The name of a transposition: through negations, the one of the rule with its suffix
         named(negation, Id, _, Id).

@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.data
 
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.utils.distinctSortedTerms
 import it.unibo.tuprolog.argumentation.core.primitives.utils.sortedTerms
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
@@ -10,7 +11,6 @@ import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -20,8 +20,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * Fails if RuleId already occurs among the rules of the sub-arguments, or if it is none and not strict.
  * SortedRules: RuleId and the rules, as sort/2. Info: [LastDefRules, DefRules, DefPremises], each as sortDistinct/2.
  */
-internal object RulesAndInfo : Primitive {
-    val signature: Signature = Signature("rulesAndInfo", 5)
+internal object RulesAndInfo : PrimitiveWithSignature {
+    override val signature: Signature = Signature("rulesAndInfo", 5)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val ruleId = request.arguments[0]

@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.primitives.graph.conflictGraph
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.primitives.replyList
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -14,8 +14,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * one (itself included), each once. The search only adds arguments compatible with those already chosen, so every
  * branch ends in a solution: the cost grows with the number of sets, not with the subsets of Args.
  */
-internal object ConflictFreeSubset : Primitive {
-    val signature: Signature = Signature("conflictFreeSubset", 3)
+internal object ConflictFreeSubset : PrimitiveWithSignature {
+    override val signature: Signature = Signature("conflictFreeSubset", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val args = request.ids(0)

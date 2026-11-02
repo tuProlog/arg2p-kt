@@ -4,16 +4,11 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.dsl.logicProgramming
-import it.unibo.tuprolog.solve.assertSolutionEquals
-import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.yes
-import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.time.DurationUnit
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
-class SpeedTest {
+// The case study of the ambulance, in query mode
+class AmbulanceQueryTest {
     private val baseTheory: String =
         """
         r1 : on_road(V),
@@ -116,69 +111,20 @@ class SpeedTest {
     private val structuredTheory = baseTheory + "queryMode."
 
     @Test
-    @ExperimentalTime
-    @Ignore
-    fun structuredResolutionSpeedTestNoLastCall() {
-        val time =
-            measureTime {
-                logicProgramming {
-                    TestingUtils.solverWithTheory(structuredTheory).also { solver ->
-
-                        val query =
-                            set_flag(LastCallOptimization.name, LastCallOptimization.OFF) and
-                                current_flag(LastCallOptimization.name, V)
-
-                        assertSolutionEquals(
-                            listOf(query.yes(V to LastCallOptimization.OFF)),
-                            solver.solve(query).toList(),
-                        )
-
-                        TestingUtils.testGoalNoBacktracking(
-                            "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
-                            solver,
-                        ) {
-                            it.yes(
-                                "StatIn" to Struct.parse("[responsible(pino)]"),
-                                "StatOut" to Struct.parse("[responsible(lisa)]"),
-                                "StatUnd" to Struct.parse("[responsible(demers)]"),
-                            )
-                        }
-                    }
+    fun theResponsible() {
+        logicProgramming {
+            TestingUtils.solverWithTheory(structuredTheory).also { solver ->
+                TestingUtils.testGoalNoBacktracking(
+                    "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                    solver,
+                ) {
+                    it.yes(
+                        "StatIn" to Struct.parse("[responsible(pino)]"),
+                        "StatOut" to Struct.parse("[responsible(lisa)]"),
+                        "StatUnd" to Struct.parse("[responsible(demers)]"),
+                    )
                 }
             }
-
-        println(time.toDouble(DurationUnit.SECONDS))
-    }
-
-    @Test
-    @ExperimentalTime
-    fun structuredResolutionSpeedLastCall() {
-        val time =
-            measureTime {
-                logicProgramming {
-                    TestingUtils.solverWithTheory(structuredTheory).also { solver ->
-
-                        val query = current_flag(LastCallOptimization.name, V)
-
-                        assertSolutionEquals(
-                            listOf(query.yes(V to LastCallOptimization.ON)),
-                            solver.solve(query).toList(),
-                        )
-
-                        TestingUtils.testGoalNoBacktracking(
-                            "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
-                            solver,
-                        ) {
-                            it.yes(
-                                "StatIn" to Struct.parse("[responsible(pino)]"),
-                                "StatOut" to Struct.parse("[responsible(lisa)]"),
-                                "StatUnd" to Struct.parse("[responsible(demers)]"),
-                            )
-                        }
-                    }
-                }
-            }
-
-        println(time.toDouble(DurationUnit.SECONDS))
+        }
     }
 }

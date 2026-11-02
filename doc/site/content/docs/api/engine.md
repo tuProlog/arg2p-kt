@@ -79,9 +79,8 @@ succeeds when the Arg2P library is loaded — useful to check that a solver was 
 ## Flags
 
 The behaviour of the resolution process is controlled by flags. They can be written directly in the theory,
-set from Kotlin through `FlagsBuilder`, or edited in the _Flags_ panel of the playground.
+given to the solver (`Flags`), or edited in the _Flags_ panel of the playground.
 
-`graphBuildMode`, `argumentLabellingMode`, `statementLabellingMode`, `orderingPrinciple` and
-`orderingComparator` always need a value; everything else is optional. The complete list — accepted values,
+Every flag has a default, and a profile (`graphBuildMode`) presets several. The complete list — accepted values,
 defaults, and the flags that can only be written in a theory — is on the
 [Flags Reference]({{% ref "/docs/api/flags" %}}) page.

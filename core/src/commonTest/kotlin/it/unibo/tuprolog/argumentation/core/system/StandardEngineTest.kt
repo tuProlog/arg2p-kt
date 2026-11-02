@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.system
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solver
@@ -20,9 +20,9 @@ import kotlin.test.assertEquals
 class StandardEngineTest {
     private fun tuProlog(
         theory: String,
-        flags: FlagsBuilder,
+        flags: Flags,
     ): Solver {
-        val arg2p = Arg2pSolver.default(listOf(flags.create()))
+        val arg2p = Arg2pSolver.default(listOf(flags.library()))
         return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = arg2p.to2pLibraries(),
             // tuProlog's solver loses bindings a goal left to solve needs, unless every goal selected is tracked
@@ -49,9 +49,9 @@ class StandardEngineTest {
     private fun assertSame(
         theory: String,
         goal: String,
-        flags: FlagsBuilder = FlagsBuilder(),
+        flags: Flags = Flags.defaults(),
     ) = assertEquals(
-        results(Arg2pSolverFactory.default(theory = theory, settings = flags.create()), goal),
+        results(Arg2pSolverFactory.default(theory = theory, settings = flags.library()), goal),
         results(tuProlog(theory, flags), goal),
         goal,
     )
@@ -59,7 +59,7 @@ class StandardEngineTest {
     private val tweety = "d1 : bird(X) => flies(X).\nd2 : penguin(X) => bird(X).\ns1 : penguin(X) -> -flies(X).\na1 :-> penguin(tweety)."
 
     @Test
-    fun theWholeGraph() = assertSame(tweety, "buildLabelSets(In, Out, Und)", FlagsBuilder().queryMode(false))
+    fun theWholeGraph() = assertSame(tweety, "buildLabelSets(In, Out, Und)", Flags.defaults().queryMode(false))
 
     @Test
     fun queryMode() = assertSame(tweety, "answerQuery(flies(X), In, Out, Und)")
@@ -69,7 +69,7 @@ class StandardEngineTest {
         assertSame(
             "r1 : a => b.\nr2 :=> -b.\nf1 :=> a.\nsup(r1, r2).",
             "buildLabelSets(In, Out, Und)",
-            FlagsBuilder().queryMode(false),
+            Flags.defaults().queryMode(false),
         )
 
     @Test
@@ -77,7 +77,7 @@ class StandardEngineTest {
         assertSame(
             "r1 :=> a.\nr2 :=> -a.\nr3 : a => b.",
             "buildLabelSets(In, Out, Und)",
-            FlagsBuilder().queryMode(false).argumentLabellingMode("preferred"),
+            Flags.parse("queryMode(off).\nargumentLabellingMode(preferred)."),
         )
 
     @Test
@@ -85,6 +85,6 @@ class StandardEngineTest {
         assertSame(
             "bp(guilty).\nr1 : evidence => guilty.\nr2 : alibi => -guilty.\nf1 :=> evidence.\nf2 :=> alibi.",
             "buildLabelSets(In, Out, Und)",
-            FlagsBuilder().queryMode(false).argumentLabellingMode("bp_grounded").graphExtensions(listOf("standardPref", "bp")),
+            Flags.parse("queryMode(off).\nargumentLabellingMode(bp_grounded).\ngraphExtension(standardPref).\ngraphExtension(bp)."),
         )
 }

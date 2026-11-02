@@ -6,15 +6,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ParserModuleTest {
-    private fun module() =
-        ModuleTesting("r1 : a, ~(b) => c.\nr2 : a => d.\nr3 : p(X) => q(X).").also {
-            it.run("context_reset", "parser:::convertAllRules(_)")
-        }
+    private fun module() = ModuleTesting.parsed("r1 : a, ~(b) => c.\nr2 : a => d.\nr3 : p(X) => q(X).")
 
     @Test
     fun theRulesUsingAPremiseAreFoundAsByScanningThem() {
         val module = module()
-        val scanned = module.values("parser::classicRule(_, Premises, [S]), member(a, Premises)", "S")
+        val scanned = module.values("parser::rule(_, Premises, [S]), member(a, Premises)", "S")
         assertEquals(scanned, module.values("parser::ruleUsing(a, S)", "S"))
         assertEquals(setOf("c", "d"), scanned.toSet())
     }

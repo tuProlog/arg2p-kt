@@ -56,8 +56,8 @@ object Behaviour {
             .filter { it.isYes }
             .map { solution -> listOf("In", "Out", "Und").map { solution.value(it)!! } }
 
-    /** [actual] is [expected] but for the names of its variables */
-    fun assertVariant(
+    // [actual] is [expected] but for the names of its variables
+    private fun assertVariant(
         expected: Value,
         actual: Value,
         message: String? = null,

@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.unit
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.TestingUtils.prepareContext
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solver
@@ -9,7 +10,6 @@ import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -250,7 +250,7 @@ class SemanticsPaperExamplesTest {
         val failures =
             listOf("complete", "preferred", "semistable", "stable", "ideal", "eager", "naive", "stage", "cf2", "stage2")
                 .mapNotNull { semantics ->
-                    val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().argumentLabellingMode(semantics).create())
+                    val solver = Arg2pSolverFactory.default(settings = Flags.parse("argumentLabellingMode($semantics).").library())
                     val solutions = solver.solve(Struct.parse(query, solver.operators)).toList()
                     // every labelling labels the four arguments
                     val labellings =

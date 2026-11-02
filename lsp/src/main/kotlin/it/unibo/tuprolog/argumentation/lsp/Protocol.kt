@@ -82,12 +82,12 @@ internal class EngineAnswers(
 
     companion object {
         /** [answers] as JSON */
-        fun of(answers: List<Answer>) = EngineAnswers(json.toJsonTree(answers).asJsonArray)
+        fun of(answers: List<PageMessage>) = EngineAnswers(json.toJsonTree(answers).asJsonArray)
     }
 }
 
 /** A message of the engine to a page: its type, and its fields */
-internal typealias Answer = Map<String, Any?>
+internal typealias PageMessage = Map<String, Any?>
 
 /** An evaluation that failed, and where its text does not parse ([ProblemData.where]: theory, flags or query) */
 internal data class ErrorData(

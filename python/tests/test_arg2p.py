@@ -202,7 +202,7 @@ def test_the_command_line(tmp_path, capsys):
     assert main([str(theory), "-q", "a"]) == 0
     assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
     assert main([str(theory), "-s", "preferred"]) == 0
-    assert "in: a" in capsys.readouterr().out
+    assert "in: [a]" in capsys.readouterr().out
 
 
 def test_a_file_the_command_line_cannot_read_or_write_is_told(tmp_path, capsys):

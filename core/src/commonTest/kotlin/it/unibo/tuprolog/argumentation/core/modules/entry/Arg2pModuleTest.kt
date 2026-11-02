@@ -11,9 +11,8 @@ import kotlin.test.Test
 
 class Arg2pModuleTest {
     private fun solverWithTheory() =
-        TestingUtils.solver(
-            TestingUtils.withArgOperators(
-                """
+        TestingUtils.solverWithTheory(
+            """
                 r0 : -c => a.
                 r1 : a => c.
                 r2 : [] => -a.
@@ -28,7 +27,6 @@ class Arg2pModuleTest {
                 orderingPrinciple(last).
                 orderingComparator(democrat).
             """,
-            ),
         )
 
     @Test

@@ -3,7 +3,7 @@ package it.unibo.tuprolog.argumentation.parallel.node
 import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.runtime.canonical
-import it.unibo.tuprolog.argumentation.core.runtime.withVariablesFixed
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -11,7 +11,6 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.unify.Unificator
 
 /**
  * A goal parsed once, its variables bound to terms each time it is solved: the arguments are passed as terms, never
@@ -51,6 +50,9 @@ internal class Goal(
     }
 }
 
+/** The integer bound to the variable [name] */
+internal fun Map<String, Term>.integer(name: String): Int = (getValue(name) as Integer).intValue.toInt()
+
 /** The values of the variables of [goal], Prolog text, by name, in each of its solutions */
 internal fun Solver.solutions(goal: String): List<Map<String, Term>> = Goal(goal, operators).solutions(this)
 
@@ -59,12 +61,6 @@ internal fun Solver.solveOnce(goal: String): Solution = solve(Struct.parse(goal,
 
 /** Whether [goal], Prolog text, succeeds */
 internal fun Solver.holds(goal: String): Boolean = solveOnce(goal).isYes
-
-/** Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it */
-internal fun covers(
-    general: Term,
-    specific: Term,
-): Boolean = Unificator.default.match(general, specific.withVariablesFixed())
 
 /** Whether [a] and [b] are the same term but for the names of their variables (as the graph store identifies them) */
 internal fun sameUpToVariables(

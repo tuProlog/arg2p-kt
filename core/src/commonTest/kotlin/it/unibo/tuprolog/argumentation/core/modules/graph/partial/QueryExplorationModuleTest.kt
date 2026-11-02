@@ -10,10 +10,7 @@ class QueryExplorationModuleTest {
     // b depends on a, d on c, and -a attacks a
     private val theory = "r1 : a => b.\nr2 : [] => a.\nr3 : c => d.\nr4 : [] => c.\nr5 : [] => -a.\nqueryMode."
 
-    private fun module() =
-        ModuleTesting(theory).also {
-            it.run("context_reset", "parser:::convertAllRules(_)")
-        }
+    private fun module() = ModuleTesting.parsed(theory)
 
     private fun ModuleTesting.claims() = values("context_check(argument(A)), argument::claim(A, C)", "C").toSet()
 

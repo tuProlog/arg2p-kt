@@ -37,23 +37,28 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         % Arguments
         %--------------------------------------------------------------------------
 
-        %! saveArgument(+Tag, +Conclusion, +Argument)
-        %  Argument, for Conclusion, is saved under Tag, unless it already is.
-        saveArgument(Tag, Conclusion, Argument) :-
+        %! saveArgument(+Conclusion, +Argument)
+        %  Argument, for Conclusion, is saved, unless it already is.
+        saveArgument(Conclusion, Argument) :-
             context_absent(clause(conc(Conclusion), argument(Argument))),
             context_id(argument(Argument), Id),
-            store(Tag, Conclusion, Argument, Id).
+            store(Conclusion, Argument, Id).
 
-        %! saveInstance(+Tag, +Conclusion, +Argument)
-        %  As saveArgument/3, unless an argument with the identifier of Argument is saved: Argument is saved even when an
+        %! saveArgument(+Tag, +Conclusion, +Argument)
+        %  As saveArgument/2, Conclusion noted as new under Tag (see newConclusion/2): the rounds of the graph builder.
+        saveArgument(Tag, Conclusion, Argument) :-
+            saveArgument(Conclusion, Argument),
+            context_assert(newConc(Tag, Conclusion)).
+
+        %! saveInstance(+Conclusion, +Argument)
+        %  As saveArgument/2, unless an argument with the identifier of Argument is saved: Argument is saved even when an
         %  argument it is an instance of (for more values, see the module constraints) is.
-        saveInstance(Tag, Conclusion, Argument) :-
+        saveInstance(Conclusion, Argument) :-
             context_id(argument(Argument), Id),
             context_absent(clause(arg(Id), _)),
-            store(Tag, Conclusion, Argument, Id).
+            store(Conclusion, Argument, Id).
 
-        store(Tag, Conclusion, Argument, Id) :-
-            context_assert(newConc(Tag, Conclusion)),
+        store(Conclusion, Argument, Id) :-
             context_assert(argument(Argument)),
             context_assert(conc(Conclusion) :- argument(Argument)),
             context_assert(arg(Id) :- argument(Argument)),
@@ -155,6 +160,11 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         saveSupports(Supports) :-
             findall(_, (member(support(Supporter, Supported), Supports), (saveSupport(Supporter, Supported) -> true ; true)), _).
 
+        %! saveSupporters(+Argument, +Supporters)
+        %  Each of Supporters saved as a support of Argument (see saveSupport/2).
+        saveSupporters(Argument, Supporters) :-
+            findall(_, (member(Supporter, Supporters), saveSupport(Supporter, Argument)), _).
+
         %! support(?Supporter, ?Supported)
         %  Supporter supports Supported.
         support(Supporter, Supported) :-
@@ -199,7 +209,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_assert(Attack).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
-        %  The attack is removed, in all its forms.
+        %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
+        %  is done for an attack not saved (an extended one, say).
         removeAttack(Type, Attacker, Attacked, On) :-
             attack::new(Type, Attacker, Attacked, On, Attack),
             context_retract(Attack),
@@ -228,6 +239,31 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  The argument with identifier IdAttacker attacks the one with identifier IdAttacked.
         attacksById(IdAttacker, IdAttacked) :-
             expandedAttackById(_, IdAttacker, IdAttacked, _).
+
+        %! directAttack(?Type, ?Attacker, ?Attacked)
+        %  Attacker attacks Attacked itself, with an attack of Type: an attack saved, which attack/4 extends to the
+        %  arguments built on Attacked. The steps changing the attacks read these: the extended ones follow. (The
+        %  arguments are given as they are saved, as attack/4 gives them: removing an attack identifies them, see
+        %  context_id.)
+        directAttack(Type, Attacker, Attacked) :-
+            expandedAttack(Type, Attacker, Attacked, On),
+            Attacked == On.
+
+        %! directAttacks(-Attacks)
+        %  Attacks are the (Type, Attacker, Attacked) attacks saved (see directAttack/3).
+        directAttacks(Attacks) :-
+            findall((Type, Attacker, Attacked), directAttack(Type, Attacker, Attacked), Attacks).
+
+        %! reaches(+A, +B)
+        %  B is A or an argument reached from A through attacks: the arguments are visited breadth first, each once
+        %  (attack cycles are common, rebuttals being mutual).
+        reaches(A, B) :- reached([A], [], B), !.
+
+        reached([B|_], _, B) :- !.
+        reached([A|Frontier], Visited, B) :-
+            findall(C, (attack(_, A, C, _), \+ member(C, [A|Visited]), \+ member(C, Frontier)), Next),
+            utils::appendFast(Frontier, Next, Queue),
+            reached(Queue, [A|Visited], B).
 
         %--------------------------------------------------------------------------
         % Labels
@@ -306,7 +342,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             findall(Argument, argumentLabel(Label, Argument), Arguments).
 
         %--------------------------------------------------------------------------
-        % The graph and its labels in a given context branch, rather than the active one
+        % The graph and its labels in a given context branch, rather than the active one (read by Kotlin, see
+        % GraphMining)
         %--------------------------------------------------------------------------
 
         %! argumentIn(+Branch, ?Argument)
@@ -328,6 +365,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(Branch, Fact).
 
         %--------------------------------------------------------------------------
+
+        %--------------------------------------------------------------------------
         % The whole graph and its labels, sorted
         %--------------------------------------------------------------------------
 
@@ -337,9 +376,9 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             arguments(AllArguments),
             attacks(AllAttacks),
             supports(AllSupports),
-            utils::sort(AllArguments, Arguments),
-            utils::sort(AllAttacks, Attacks),
-            utils::sort(AllSupports, Supports).
+            utils::sortDescending(AllArguments, Arguments),
+            utils::sortDescending(AllAttacks, Attacks),
+            utils::sortDescending(AllSupports, Supports).
 
         %! argumentLabelling(-In, -Out, -Und)
         %  The arguments labelled IN, OUT and UND, each sorted.
@@ -364,7 +403,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         sortedLabelled(Kind, Label, Sorted) :-
             findall(X, labelledAs(Kind, Label, X), All),
-            utils::sort(All, Sorted).
+            utils::sortDescending(All, Sorted).
 
         labelledAs(argumentLabel, Label, Argument) :- argumentLabel(Label, Argument).
         labelledAs(statementLabel, Label, Statement) :- statementLabel(Label, Statement).

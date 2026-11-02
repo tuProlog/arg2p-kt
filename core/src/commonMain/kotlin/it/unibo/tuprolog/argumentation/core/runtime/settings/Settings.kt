@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.settings
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
@@ -25,7 +26,7 @@ import it.unibo.tuprolog.theory.Theory
  * setting/1 (whether a switch is on) and setting/2 (the values of a flag); checking a flag no library declares, or a
  * switch for its values (and the other way round), raises a domain error.
  *
- * Their values are a view over the facts of the libraries (the settings of the solver, as [FlagsBuilder] states them)
+ * Their values are a view over the facts of the libraries (the flags of the solver, see Flags.library())
  * and those of the theory, through the profile of the theory (graphBuildMode, see [Profiles]): for each flag, the
  * theory states its values, or else the settings of the solver if they state it, or else the profile, or else the
  * default of the flag. A flag is stated with no value by `Flag(none)` (no graph extension, say), a switch stated
@@ -38,7 +39,7 @@ class Settings(
     /** The flags the libraries of the solver declare, by name */
     val flags: Map<String, ArgsFlag<*, *>> by lazy {
         (solver.baseLibraries() + solver.staticLibraries() + solver.dynamicLibraries())
-            .flatMap { it.flags() }
+            .flatMap { it.baseFlags }
             .associateBy { it.predicate() }
     }
 
@@ -85,6 +86,16 @@ class Settings(
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
         if (viewOf !== context.staticKb) {
             val libraries = context.libraries.asTheory(context.unificator)
+            val undeclared =
+                context.libraries.libraries
+                    .firstOrNull { it.alias == Flags.ALIAS }
+                    ?.clauses
+                    ?.mapNotNull { it.head?.functor }
+                    ?.filter { it !in flags }
+                    .orEmpty()
+            if (undeclared.isNotEmpty()) {
+                throw IllegalArgumentException("Not a flag: ${undeclared.distinct().joinToString()} (${flags.keys.joinToString()})")
+            }
             val theory = flags.mapValues { (_, flag) -> stated(flag, context.staticKb) }
             val solver = flags.mapValues { (_, flag) -> stated(flag, libraries) }
             val mode = theory[GraphBuildMode.predicate()].orEmpty().ifEmpty { solver[GraphBuildMode.predicate()].orEmpty() }
@@ -97,7 +108,7 @@ class Settings(
                             "graphBuildMode: no profile ${mode.first()} (${Profiles.all.joinToString { it.name }})",
                         )
                 }
-            val presets = profile?.presets.orEmpty()
+            val presets = profile.presets
             view =
                 flags.mapValues { (name, flag) ->
                     val stated = solver.getValue(name)
@@ -107,7 +118,7 @@ class Settings(
                             theory.getValue(name).isNotEmpty() -> theory.getValue(name)
                             stated.isNotEmpty() -> stated
                             preset != null -> preset
-                            else -> defaultOf(flag).map { if (it == Truth.TRUE.toString()) Truth.TRUE else Atom.of(it) }
+                            else -> defaultOf(flag)
                         }
                     values.filter { it != NONE && it != OFF }.also { checked(flag, it) }
                 }
@@ -121,9 +132,9 @@ class Settings(
         flag: ArgsFlag<*, *>,
         values: List<Term>,
     ) {
-        if (flag.isOpen) return
-        val declared = (flag.values() as? Iterable<*>)?.map { it.toString() }?.takeIf { it.isNotEmpty() } ?: return
-        val unknown = values.filter { it.toString() !in declared && it.toString() !in flag.aliases.keys }
+        if (flag.isOpen || flag.isSwitch) return
+        val declared = (flag.values() as Iterable<*>).map { it.toString() }
+        val unknown = values.filter { it.toString() !in declared }
         if (unknown.isNotEmpty()) {
             throw IllegalArgumentException("${flag.predicate()}: no value ${unknown.joinToString()} (${declared.joinToString()})")
         }
@@ -150,12 +161,12 @@ class Settings(
             values.flatMap { value -> flag.aliases[(value as? Atom)?.value]?.map { Atom.of(it) } ?: listOf(value) }.distinct()
         }
 
-    // The default values of a flag, as text
-    private fun defaultOf(flag: ArgsFlag<*, *>): List<String> =
+    // The default values of a flag
+    private fun defaultOf(flag: ArgsFlag<*, *>): List<Term> =
         when (val default = flag.default()) {
-            is Boolean -> if (default) listOf(Truth.TRUE.toString()) else emptyList()
-            is Iterable<*> -> default.map { Atom.of(it.toString()).toString() }
-            else -> listOf(Atom.of(default.toString()).toString())
+            is Boolean -> if (default) listOf(Truth.TRUE) else emptyList()
+            is Iterable<*> -> default.map { Atom.of(it.toString()) }
+            else -> listOf(Atom.of(default.toString()))
         }
 
     /** The flag named by the first argument of [request], declared of the kind its check expects (a switch or not) */

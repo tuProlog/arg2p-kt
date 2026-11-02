@@ -1,7 +1,6 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine
 
-import it.unibo.tuprolog.argumentation.core.engine.fsm.State
 import it.unibo.tuprolog.solve.channel.InputChannel
 import it.unibo.tuprolog.solve.channel.InputStore
 import it.unibo.tuprolog.solve.channel.OutputChannel
@@ -37,11 +36,6 @@ internal open class PrologSolver : AbstractPrologSolver {
         warnings: OutputChannel<Warning> = OutputChannel.warn(),
         trustKb: Boolean = false,
     ) : super(unificator, libraries, flags, staticKb, dynamicKb, stdIn, stdOut, stdErr, warnings, trustKb)
-
-    override fun solutionIterator(
-        initialState: State,
-        onStateTransition: (State, State, Long) -> Unit,
-    ) = SolutionIterator.of(initialState, onStateTransition)
 
     override fun copy(
         unificator: Unificator,

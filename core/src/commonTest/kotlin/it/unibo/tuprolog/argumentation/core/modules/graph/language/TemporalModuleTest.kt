@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -37,7 +37,7 @@ class TemporalModuleTest {
         vararg statements: String,
     ): List<String> =
         statements.map { statement ->
-            val solver = Arg2pSolverFactory.default(theory = "temporal.\n$theory", settings = FlagsBuilder().create())
+            val solver = Arg2pSolverFactory.default(theory = "temporal.\n$theory", settings = Flags.defaults().library())
             val solution = solver.solve(Struct.parse("answerQuery($statement, I, O, U)", solver.operators)).first()
             val term = Struct.parse(statement, solver.operators)
             listOf("I" to "in", "O" to "out", "U" to "und")
@@ -92,7 +92,7 @@ class TemporalModuleTest {
     // query would give (t_still binds the start it is about)
     @Test
     fun theWholeGraphHasThePeriods() {
-        val solver = Arg2pSolverFactory.default(theory = "temporal.\n$restarted", settings = FlagsBuilder().queryMode(false).create())
+        val solver = Arg2pSolverFactory.default(theory = "temporal.\n$restarted", settings = Flags.defaults().queryMode(false).library())
         val solution = solver.solve(Struct.parse("buildLabelSets(I, O, U)", solver.operators)).first()
         assertTrue(solution.isYes, solution.toString())
         val statements =

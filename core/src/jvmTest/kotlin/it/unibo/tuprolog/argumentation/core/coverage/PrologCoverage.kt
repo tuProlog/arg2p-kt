@@ -46,7 +46,7 @@ class PrologCoverage {
     // The clauses of the modules, by identity: the engine resolves goals with the clauses of their libraries as they are
     private fun moduleClauses(): List<Owned> =
         ModuleRegistry.all.filterIsInstance<Loadable>().distinctBy { it.identifier() }.flatMap { module ->
-            val clauses = (module as it.unibo.tuprolog.argumentation.core.modules.ArgLibrary).content().clauses
+            val clauses = (module as it.unibo.tuprolog.argumentation.core.modules.ArgLibrary).baseContent.clauses
             clauses
                 .groupBy { "${it.head?.functor}/${it.head?.arity}" }
                 .flatMap { (predicate, sameName) ->

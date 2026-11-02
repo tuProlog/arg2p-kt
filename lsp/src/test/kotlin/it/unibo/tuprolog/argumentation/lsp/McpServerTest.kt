@@ -380,7 +380,6 @@ class McpServerTest {
         val answer = session(call(1, "explore", """{"theory":"$tweety"}""")).getValue(1)
         assertFalse(answer.isError())
         val explored = answer.content()
-        assertEquals("aspic_plus", explored.get("profile").asString)
         val link = explored.get("playground").asString
         assertTrue(link.startsWith(Playground.URL + "?s="))
         val state = JsonParser.parseString(Playground.state(link.substringAfter("?s="))).asJsonArray

@@ -107,12 +107,16 @@ class AsyncSolutions internal constructor(
     /** The next solution, the graph of its resolution then given by the graph() of the solver */
     fun next(): Promise<Solution> = nextSolution().then { solutionOf(it) }
 
-    // The next solution, as the solver of the theory gives it: a reply with no solution left, as it says there is no other
-    internal fun nextSolution(): Promise<LogicSolution> =
-        reply().then {
-            if (!it.exhausted) pending = null
+    // The next solution, as the solver of the theory gives it: the reply taken at once, so that another call asks for
+    // the one after it; a reply with no solution left, as it says there is no other
+    internal fun nextSolution(): Promise<LogicSolution> {
+        val reply = pending ?: asked()
+        pending = null
+        return reply.then {
+            if (it.exhausted) pending = Promise.resolve(it)
             solved.given(it, goal)
         }
+    }
 
     /** The solutions left, at most [limit] of them, each asked for once the one before it is given */
     fun toArray(limit: Int = Int.MAX_VALUE): Promise<Array<Solution>> =

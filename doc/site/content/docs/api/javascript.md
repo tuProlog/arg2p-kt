@@ -57,7 +57,7 @@ const solver = Arg2p.builder()
 decide; `Flags.none()` is the same), and
 `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of its enumeration
 (`Profile`, `Semantics`, `StatementLabelling`, `OrderingPrinciple`, `OrderingComparator`, `GraphExtension`,
-`GraphLanguage`, `GraphBuilder`, `ConflictModel`), a boolean for a switch:
+`GraphLanguage`, `GraphBuilder`, `ConflictModel`, `AnswerMode`), a boolean for a switch:
 
 ```js
 Flags.defaults()

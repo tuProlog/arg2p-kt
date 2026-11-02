@@ -111,7 +111,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         %  all at once, so that they are built side by side (the bindings of the others leave them as they are).
         premiseOfExplored(Premise) :-
             context_check(explored(Statement)),
-            parser::classicRule(_, Premises, [Statement]),
+            parser::rule(_, Premises, [Statement]),
             member(Premise, Premises),
             ground(Premise),
             parser::argued(Premise).
@@ -217,12 +217,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         % a previous round of explore/1, whose dependencies are explored again)
         recordArgument(Query, Argument, Supports) :-
             graphStore::saveArgument(query, [Query], Argument), !,
-            saveSupports(Argument, Supports).
+            graphStore::saveSupporters(Argument, Supports).
         recordArgument(_, _, _).
-
-        saveSupports(_, []).
-        saveSupports(Argument, [Support|Supports]) :-
-            graphStore::saveSupport(Support, Argument),
-            saveSupports(Argument, Supports).
         """.trimIndent()
 }

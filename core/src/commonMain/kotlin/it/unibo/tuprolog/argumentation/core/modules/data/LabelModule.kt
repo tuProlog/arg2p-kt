@@ -13,12 +13,6 @@ object LabelModule : PrologModule("prolog.argumentation.data.label", "label") {
     override val prologRawTheory: String =
         // language=Prolog
         """
-        %! label(?Label)
-        %  Label is a label: in, out or und.
-        label(in).
-        label(out).
-        label(und).
-
         %! argument(?Label, ?Argument, ?Fact)
         %  Fact labels Argument with Label.
         argument(in, Argument, in(Argument)).

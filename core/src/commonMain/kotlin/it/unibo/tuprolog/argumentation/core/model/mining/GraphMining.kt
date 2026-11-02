@@ -10,16 +10,13 @@ import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
-import kotlin.js.JsName
 
 // The graph of a context branch, read through graphStore: its arguments, their labels, attacks and supports
 
 /** The graph of the active context branch */
-@JsName("mineActiveGraph")
 fun Solver.graph(): Graph = graph(activeBranch())
 
 /** The graph of the context branch [context]: its arguments, labelled, their attacks and supports */
-@JsName("mineGraph")
 fun Solver.graph(context: Int): Graph =
     arguments(context).let {
         Graph.of(labels(context, it), attacks(context, it), supports(context, it))
@@ -29,7 +26,6 @@ fun Solver.graph(context: Int): Graph =
  * The arguments of the context branch [context], with the arguments supporting them ([Argument.supports]), identified
  * as A0, A1, ... in order of their number of supporters, rules, conclusion and top rule
  */
-@JsName("mineArguments")
 fun Solver.arguments(context: Int): List<Argument> {
     val arguments =
         arg2pScope {
@@ -48,7 +44,6 @@ fun Solver.arguments(context: Int): List<Argument> {
 }
 
 /** The attacks between [arguments] in the context branch [context] */
-@JsName("mineAttacks")
 fun Solver.attacks(
     context: Int,
     arguments: List<Argument>,
@@ -72,14 +67,12 @@ fun Solver.attacks(
 }
 
 /** The supports between [arguments] in the context branch [context] */
-@JsName("mineSupports")
 fun Solver.supports(
     context: Int,
     arguments: List<Argument>,
 ): List<Support> = supportsBetween(context, arguments).map { (supporter, supported) -> Support(supporter, supported) }
 
 /** [arguments] with their labels in the context branch [context] (na, when an argument has none) */
-@JsName("mineLabels")
 fun Solver.labels(
     context: Int,
     arguments: List<Argument>,
@@ -99,7 +92,6 @@ fun Solver.labels(
 }
 
 /** The number of the active context branch: the one of the last stage of the last resolution */
-@JsName("mineActiveBranch")
 fun Solver.activeBranch(): Int =
     arg2pScope {
         this@activeBranch

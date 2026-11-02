@@ -1,13 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
+import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
@@ -16,8 +17,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * tracking, every resolution step visits the terms of the goal it belongs to, so the list would make every step
  * as costly as it is long. Goal runs in this module: other modules are called through ::.
  */
-internal object ForEach : Primitive {
-    val signature: Signature = Signature("forEach", 3)
+internal object ForEach : PrimitiveWithSignature {
+    override val signature: Signature = Signature("forEach", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val list = request.arguments[1]
@@ -30,7 +31,7 @@ internal object ForEach : Primitive {
             val iteration = Tuple.of(request.arguments[0], request.arguments[2]).renamedCopy()
             val unifier = Arg2pUnificator.mgu(iteration[0], item)
             if (unifier.isSuccess) {
-                solver.solve(iteration[1].apply(unifier).castToStruct()).forEach { if (it.isHalt) throw it.exception!! }
+                solver.solve(iteration[1].apply(unifier).castToStruct()).haltsRaised().forEach { }
             }
         }
         return sequenceOf(request.replyWith(true))

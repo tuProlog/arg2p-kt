@@ -16,7 +16,6 @@ import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -113,9 +112,8 @@ class Flags private constructor(
 
     override fun hashCode(): Int = facts.hashCode()
 
-    /** The library of the flags, for a solver of arg2p */
+    /** The library of the flags, for a solver of arg2p built by hand (see Arg2pSolver and Arg2pSolverFactory) */
     @JsExport.Ignore
-    @InternalArg2pApi
     fun library(): ArgLibrary =
         object : ArgLibrary {
             override val alias = ALIAS
@@ -146,7 +144,7 @@ class Flags private constructor(
     ) = apply { facts[flag.predicate()] = listOf(if (on) flag.predicate() else "${flag.predicate()}(off)") }
 
     companion object {
-        private const val ALIAS = "prolog.argumentation.flags"
+        internal const val ALIAS = "prolog.argumentation.flags"
 
         /**
          * The flags of arg2p by default: none stated, every flag as the theory states it, or else as its profile
@@ -176,40 +174,5 @@ class Flags private constructor(
                     .groupBy({ it.head.functor }, { TermValues.format(it.head) })
                     .toMutableMap(),
             )
-
-        /**
-         * The flags of [builder]: those it sets to other than the default of their flag, stated (the builder cannot
-         * tell a flag set to its default from one left alone)
-         */
-        @JsExport.Ignore
-        @JvmStatic
-        fun of(builder: FlagsBuilder): Flags {
-            if (builder.emptyBuilder) return none()
-            val flags = Flags(linkedMapOf())
-            with(builder) {
-                // in the order the builder lists them, the order the graph extensions of a user apply in (those of
-                // arg2p come in a fixed order, see structuredWhole::modifyGraph/0)
-                if (graphExtensions.toList() != GraphExtensionFlag.default().toList()) {
-                    flags.values(GraphExtensionFlag, graphExtensions.toList().ifEmpty { listOf("none") })
-                }
-                if (queryMode != QueryMode.default()) flags.switch(QueryMode, queryMode)
-                if (autoTransposition != AutoTransposition.default()) flags.switch(AutoTransposition, autoTransposition)
-                if (prologStrictCompatibility != PrologStrictCompatibility.default()) {
-                    flags.switch(PrologStrictCompatibility, prologStrictCompatibility)
-                }
-                if (metaConflicts != MetaConflicts.default()) flags.switch(MetaConflicts, metaConflicts)
-                if (metaRules != MetaRules.default()) flags.switch(MetaRules, metaRules)
-                if (graphBuildMode != GraphBuildMode.default()) flags.value(GraphBuildMode, graphBuildMode)
-                if (graphBuilder != GraphBuilderFlag.default()) flags.value(GraphBuilderFlag, graphBuilder)
-                if (argumentLabellingMode != ArgumentLabellingMode.default()) flags.value(ArgumentLabellingMode, argumentLabellingMode)
-                if (statementLabellingMode != StatementLabellingMode.default()) {
-                    flags.value(StatementLabellingMode, statementLabellingMode)
-                }
-                if (orderingPrinciple != OrderingPrincipleFlag.default()) flags.value(OrderingPrincipleFlag, orderingPrinciple)
-                if (orderingComparator != OrderingComparatorFlag.default()) flags.value(OrderingComparatorFlag, orderingComparator)
-                if (modulesPath != ModulesPath.default()) flags.value(ModulesPath, modulesPath)
-            }
-            return flags
-        }
     }
 }

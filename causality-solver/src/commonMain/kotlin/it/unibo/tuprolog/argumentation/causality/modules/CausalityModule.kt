@@ -3,8 +3,6 @@ package it.unibo.tuprolog.argumentation.causality.modules
 import it.unibo.tuprolog.argumentation.causality.primitives.ButFor
 import it.unibo.tuprolog.argumentation.causality.primitives.Ness
 import it.unibo.tuprolog.argumentation.causality.primitives.NessIntervention
-import it.unibo.tuprolog.argumentation.causality.primitives.NessOriginal
-import it.unibo.tuprolog.argumentation.causality.primitives.NessOriginalIntervention
 import it.unibo.tuprolog.argumentation.causality.runtime.CausalityAnalysis
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
@@ -25,8 +23,13 @@ class CausalityModule : PrologModule("prolog.argumentation.causality.solver", "c
 
     override val primitives: Map<Signature, Primitive>
         get() =
-            listOf(Ness(analysis), NessIntervention(analysis), NessOriginal(analysis), NessOriginalIntervention(analysis), ButFor(analysis))
-                .associateBy { it.signature }
+            listOf(
+                Ness(analysis, revised = true),
+                Ness(analysis, revised = false),
+                NessIntervention(analysis, revised = true),
+                NessIntervention(analysis, revised = false),
+                ButFor(analysis),
+            ).associateBy { it.signature }
 
     override val theoryOperators: OperatorSet
         get() = super.theoryOperators.plus(ParserModule.operators())

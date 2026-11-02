@@ -1,19 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.modules.ArgContext
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsentIn
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextActive
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAll
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssert
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssertAll
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBranch
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheck
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckIn
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckout
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextClosure
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCount
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDrop
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDropAfter
@@ -34,9 +30,7 @@ import it.unibo.tuprolog.solve.library.Runtime
  * backtracking, which the context_* primitives change and read (see the files of the primitives of the context, on
  * branches, assertions and lookups).
  */
-internal class Context :
-    ArgLibrary,
-    ArgContext {
+internal class Context : ArgLibrary {
     private val branches = ContextBranches()
 
     // Operations of the context for the native primitives of the other libraries, which reach it through [of]
@@ -64,11 +58,8 @@ internal class Context :
         return store.derived(functor, arity, name, compute)
     }
 
-    /** The terms asserted in the active branch, in order, as context_assert_all/1 */
+    /** The terms asserted in the active branch, in order (utils::assertAll/1) */
     fun assertAll(terms: Iterable<Term>) = terms.forEach { branches.selected.assertA(it) }
-
-    /** The identifier of [term], as context_id/2 gives it */
-    fun identifier(term: Term): Int = branches.identifier(term)
 
     /** The identifier of [term] if it has one already, without giving it one */
     fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
@@ -101,18 +92,14 @@ internal class Context :
                 ContextDropAfter(branches),
                 ContextLast(branches),
                 ContextAssert(branches),
-                ContextAssertAll(branches),
                 ContextRetract(branches),
                 ContextCheck(branches),
                 ContextCheckIn(branches),
                 ContextAll(2, branches, this),
-                ContextAll(3, branches, this),
                 ContextId(branches),
                 ContextUnifiable(branches),
                 ContextAbsent(branches),
                 ContextCount(branches),
-                ContextAbsentIn(branches),
-                ContextClosure(branches),
             ).let { primitives ->
                 Library.of(
                     alias = this.alias,

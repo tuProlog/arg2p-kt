@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.runtime.subsumes
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.Attack
@@ -82,8 +83,8 @@ internal class Worker(
     private var building = false
     private val early = mutableListOf<KbMessage>()
 
-    // The search for the attacks, again for each graph the catalog labels: started, the
-    // statements each other worker wants, the arguments of the others sent to it, how many workers sent theirs
+    // The search for the attacks: started, the statements each other worker wants, the arguments of the others sent to
+    // it, how many workers sent theirs
     private var attacking = false
     private var candidatesSent = false
     private var attacksSent = false
@@ -94,8 +95,8 @@ internal class Worker(
     private val conflictsOf = mutableMapOf<Int, List<Term>>()
     private var candidatesFrom = 0
 
-    private val premises = goal("parser::classicRule(_, Body, _), member(P, Body), parser::argued(P)")
-    private val heads = goal("(parser::classicRule(_, _, [C]) ; parser::classicRule(_, [C]))")
+    private val premises = goal("parser::rule(_, Body, _), member(P, Body), parser::argued(P)")
+    private val heads = goal("(parser::rule(_, _, [C]) ; parser::premise(_, [C]))")
     private val explorations = goal("queryExploration::exploreAll(Q)")
     private val resumption = goal("queryExploration::resumed(S, Q)")
     private val exploredStatements = goal("(queryExploration::explored(S) ; queryExploration::premiseOfExplored(S))")
@@ -170,7 +171,7 @@ internal class Worker(
                                 )
                             }
                         }
-                        val new = message.statements.filter { statement -> queries.none { covers(it, statement) } }
+                        val new = message.statements.filter { statement -> queries.none { it.subsumes(statement) } }
                         queries += new
                         checked(solver.solve(explorations.with("Q" to PlList.of(new))).first())
                         explored()
@@ -273,7 +274,7 @@ internal class Worker(
                 .solutions(solver)
                 .map { it.getValue("S") }
                 .filter { handled.add(it.toString()) }
-                .filter { statement -> asked.none { covers(it, statement) } }
+                .filter { statement -> asked.none { it.subsumes(statement) } }
         asked += needed
         conclusionsOf.forEach { (worker, conclusions) ->
             val theirs = needed.filter { statement -> conclusions.any { unificator.match(it, statement) } }
@@ -329,7 +330,7 @@ internal class Worker(
         }
     }
 
-    // The statements whose arguments may attack the arguments of its rules, found once for each (see sendAttacks)
+    // The statements whose arguments may attack the arguments of its rules, found once
     private fun wanted(): List<Term> {
         own.filter { it !in conflictsOf }.forEach { id ->
             conflictsOf[id] = conflicts.solutions(solver, "X" to terms.getValue(id)).map { it.getValue("S") }
@@ -373,13 +374,6 @@ internal class Worker(
                         }
                 }.distinct()
         network.send(Address.CATALOG, AttacksFound(index, attacks))
-        // the search done: what the others send from now on is for the next one (they sent all of this one already)
-        attacking = false
-        candidatesSent = false
-        attacksSent = false
-        wantedBy.clear()
-        candidates.clear()
-        candidatesFrom = 0
     }
 
     // An argument as much of it as an attack needs: itself without its rules
@@ -395,6 +389,4 @@ internal class Worker(
         }
 
     private fun goal(text: String) = Goal(text, TermValues.operators)
-
-    private fun Map<String, Term>.integer(name: String) = (getValue(name) as Integer).intValue.toInt()
 }

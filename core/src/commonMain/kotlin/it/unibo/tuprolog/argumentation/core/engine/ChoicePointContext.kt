@@ -2,7 +2,6 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.core.Rule
-import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.utils.Cursor
@@ -31,20 +30,6 @@ sealed class ChoicePointContext(
     open val parent: ChoicePointContext?,
     open val depth: Int = 0,
 ) {
-    // This assertion fails on JS since depth is undefined
-//    init {
-//        require((depth == 0 && parent == null) || (depth > 0 && parent != null)) {
-//            """Violated initial constraint for claass ChoicePointContext: (depth == 0 && parent == null) || (depth > 0 && parent != null)
-//                |   depth=$depth
-//                |   parent=$parent
-//            """.trimMargin()
-//        }
-//    }
-
-    /** Whether this is the first choice point of a resolution (i.e. it has no [parent]). */
-    val isRoot: Boolean
-        get() = depth == 0
-
     /** Whether this choice point, or any of its ancestors along [pathToRoot], still has an alternative to try. */
     val hasOpenAlternatives: Boolean
         get() = pathToRoot.any { it.alternatives.hasNext }
@@ -61,22 +46,13 @@ sealed class ChoicePointContext(
                 }
             }
 
-    /** Shorthand for [executionContext]'s [PrologExecutionContext.depth], or `null` if [executionContext] is `null`. */
-    val executionContextDepth: Int?
-        get() = executionContext?.depth
-
-    /** Shorthand for [executionContext]'s [PrologExecutionContext.procedure], or `null` if [executionContext] is `null`. */
-    val executionContextProcedure: Struct?
-        get() = executionContext?.procedure
-
     override fun toString(): String =
         "$typeName(" +
             "alternatives=$alternatives, " +
             if (executionContext === null) {
-                "executionContext=$executionContext, "
+                "executionContext=null, "
             } else {
-                "executionContextDepth=$executionContextDepth, "
-                "executionContextProcedure=$executionContextProcedure, "
+                "executionContextDepth=${executionContext?.depth}, executionContextProcedure=${executionContext?.procedure}, "
             } +
             "depth=$depth" +
             ")"

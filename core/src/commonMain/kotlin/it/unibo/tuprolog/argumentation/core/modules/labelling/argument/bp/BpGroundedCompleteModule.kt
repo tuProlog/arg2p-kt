@@ -37,8 +37,8 @@ object BpGroundedCompleteModule : PrologModule("prolog.argumentation.graph.label
             completeBpLabelling(Stop, LeftArguments).
 
         stopCondition(stop, Args, NewArgs) :-
-            utils::sort(Args, SortedArgs),
-            utils::sort(NewArgs, SortedArgs), !.
+            utils::sortDescending(Args, SortedArgs),
+            utils::sortDescending(NewArgs, SortedArgs), !.
         stopCondition(go, _, _) :- graphStore::unlabelArguments(und).
         """.trimIndent()
 }

@@ -2,9 +2,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
-import it.unibo.tuprolog.argumentation.core.engine.RelevantGoals
 import it.unibo.tuprolog.solve.Solution
-import it.unibo.tuprolog.solve.flags.TrackVariables
 
 /**
  * "Goal Selection", the entry point of every resolution step: decides what to do with
@@ -12,8 +10,7 @@ import it.unibo.tuprolog.solve.flags.TrackVariables
  * substitution as a solution and move to `StateEnd`; no goals left but a parent exists -> pop the stack, carrying
  * the child's substitution (filtered down to variables the parent still cares about, via
  * [PrologExecutionContext.isVariableInteresting]) into the parent, and loop back into `StateGoalSelection` for
- * the parent's remaining goals; goals remain -> move to `StatePrimitiveSelection` (after recording the current
- * goal's variables as relevant, if `TrackVariables` is `ON`).
+ * the parent's remaining goals; goals remain -> move to `StatePrimitiveSelection`.
  */
 data class StateGoalSelection(
     override val context: PrologExecutionContext,
@@ -60,13 +57,6 @@ data class StateGoalSelection(
                     },
                 )
             }
-        } else if (context.flags[TrackVariables] == TrackVariables.ON) {
-            StatePrimitiveSelection(
-                context.copy(
-                    step = nextStep(),
-                    relevantGoals = RelevantGoals(context.goals.current!!, context.relevantGoals),
-                ),
-            )
         } else {
             StatePrimitiveSelection(
                 context.copy(step = nextStep()),

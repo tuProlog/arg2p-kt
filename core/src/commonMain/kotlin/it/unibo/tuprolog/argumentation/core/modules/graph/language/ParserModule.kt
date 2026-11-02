@@ -27,8 +27,8 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * The rules of a theory, read by the graph builders (module `parser`): convertAllRules/1 converts the rules,
- * premises, preferences and burdens of the theory, which classicRule/2,3 and the other predicates read.
+ * The rules of a theory, read by the graph builders (module `parser`): convertAllRules/0 converts the rules,
+ * premises, preferences and burdens of the theory, which rule/3, premise/2 and the other predicates read.
  */
 object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
     override val primitives: Map<Signature, Primitive>
@@ -83,7 +83,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             axiomPremises(Axioms, AxiomsIds),
             utils::appendLists([DefeasibleRules, Premises, Axioms], Others),
             strictRules(Others, StrictRules, RulesIds),
-            specialRules(SpecialRules),
+            bpsNew(SpecialRules),
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
@@ -195,9 +195,6 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::appendFast(AxiomsOld, AxiomsNew, Axioms),
             extractId(Axioms, Ids).
 
-        specialRules(SpecialRules) :-
-            bpsNew(SpecialRules).
-
 
 
         %! holds(+Check)
@@ -228,9 +225,8 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         burden(Literals) :-
             context_check(abstractBp(Literals)).
 
-        %! rule(?Id, ?Premises, ?Conclusion)
-        %  The rule Id as converted (see convertAllRules/1), concluding Conclusion from Premises.
-        rule(Id, PP, [Conclusion]) :-
+        % The rule Id as written (and converted, see convertAllRules/0), concluding Conclusion from Premises
+        ruleWritten(Id, PP, [Conclusion]) :-
             rule::rule(Id, Premises, Conclusion, Head, Body),
             context_check(clause(Head, Body)),
             tupleToList(Premises, P),
@@ -282,26 +278,24 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         ff([[X]], [X]) :- !.
         ff(X, X).
 
-        %! classicRule(?Id, ?Premises, ?Conclusion)
-        %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its first premise.
-        classicRule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, rule(X, Y, Z).
-        classicRule(X, Y, Z) :- rule(X, Y, Z).
-        %! classicRule(?Id, ?Conclusion)
-        %  The premise Id concludes Conclusion ([Statement]).
-        classicRule(X, Y) :- premise(X, Y).
+        %! rule(?Id, ?Premises, ?Conclusion)
+        %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its
+        %  first premise.
+        rule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, ruleWritten(X, Y, Z).
+        rule(X, Y, Z) :- ruleWritten(X, Y, Z).
 
         %! ruleUsing(?Premise, ?Conclusion)
-        %  A rule concludes Conclusion (a statement) from Premise, among others: classicRule/3 and member/2 over its
+        %  A rule concludes Conclusion (a statement) from Premise, among others: rule/3 and member/2 over its
         %  premises, through an index of the premises of the rules built once in the active context.
         ruleUsing(Premise, Conclusion) :-
             premisesIndexed,
             context_check(premiseOf(Premise, Conclusion)).
 
         % The index: premiseOf/2 facts asserted from the last, as context_check returns the newest clauses first, so
-        % that lookups give the rules in the order of classicRule/3
+        % that lookups give the rules in the order of rule/3
         premisesIndexed :- context_check(premisesIndexed), !.
         premisesIndexed :-
-            findall(premiseOf(P, C), (classicRule(_, Premises, [C]), member(P, Premises)), Index),
+            findall(premiseOf(P, C), (rule(_, Premises, [C]), member(P, Premises)), Index),
             assertFromLast(Index),
             context_assert(premisesIndexed).
 
@@ -316,8 +310,8 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         % The index: boundByQueryRule/1 facts, built with the rules (indexRules/2), or else once in the active context
         boundByQueryIndexed :- context_check(boundByQueryIndexed), !.
         boundByQueryIndexed :-
-            findall([Id, Premises, C], classicRule(Id, Premises, [C]), Rules),
-            findall([Id, C], classicRule(Id, [C]), Facts),
+            findall([Id, Premises, C], rule(Id, Premises, [C]), Rules),
+            findall([Id, C], premise(Id, [C]), Facts),
             utils::appendLists([Rules, Facts], All),
             boundByQuery(All, Ids, _),
             assertIds(Ids),
@@ -347,7 +341,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         constrained :- context_check(theoryKind(constrained, Kind)), !, Kind == yes.
         % (without indexRules/2)
         constrained :-
-            (instances -> Kind = yes ; classicRule(_, Premises, _), member(P, Premises), constraint([P], _) -> Kind = yes ; Kind = no),
+            (instances -> Kind = yes ; rule(_, Premises, _), member(P, Premises), constraint([P], _) -> Kind = yes ; Kind = no),
             context_assert(theoryKind(constrained, Kind)),
             Kind == yes.
         """.trimIndent()
