@@ -57,4 +57,14 @@ class MetaConflictsTest {
             labels(listOf("f1 :=> a.", "f2 :=> b.", "f3 :=> c.", "r4 : [] => conflict(a, b).", "r5 : [] => conflict(b, c).")),
         )
     }
+
+    // Only the conflicts argued attack: the copy made for a conflict of undercut(r1) with z, or of c with z, does not
+    // undercut r1, nor rebut a rule with the contrary ~(c), as no argued conflict says so; b stands
+    @Test
+    fun noAttackButThroughTheConflictsArgued() {
+        val undercut = listOf("f1 :=> a.", "r1 : a => b.", "r2 : [] => undercut(r1).", "c1 : [] => conflict(undercut(r1), z).", "f3 :=> z.")
+        assertEquals(true, labels(undercut)[0].contains("[b]"), "${labels(undercut)}")
+        val contrary = listOf("f1 :=> a.", "r1 : a, ~(c) => b.", "r2 : [] => c.", "c1 : [] => conflict(c, z).", "f3 :=> z.")
+        assertEquals(true, labels(contrary)[0].contains("[b]"), "${labels(contrary)}")
+    }
 }

@@ -39,8 +39,10 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             conflict::unguarded(Statement, Conclusion).
         findPossibleAttackers(Argument, [Statement]) :-
             argument::body(Argument, Body),
-            member(~(Statement), Body).
+            member(~(Statement), Body),
+            static.
         findPossibleAttackers(Argument, [undercut(Rule)]) :-
+            static,
             argument::topRule(Argument, Rule).
         findPossibleAttackers(Argument, Statement) :-
             argument::topRule(Argument, Rule),
@@ -59,11 +61,17 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             attackedStatement(Conflicting, Statement).
         possiblyAttacked(Argument, Statement) :-
             argument::claim(Argument, Claim),
-            parser::ruleUsing(~(Claim), Statement).
+            parser::ruleUsing(~(Claim), Statement),
+            static.
 
         conflicting(Conclusion, Statement) :- conflict::guarded(Conclusion, [Statement], _).
         conflicting(Conclusion, Statement) :- conflict::unguarded(Conclusion, [Statement]).
-        conflicting([undercut(Rule)], Rule).
+        conflicting([undercut(Rule)], Rule) :- static.
+
+        % The attacks no conflict states apply: as attackRelation::static/0, read here as the setting, as a call to
+        % another module costs as much as the graph it is made over
+        static :- setting(metaConflicts), !, fail.
+        static.
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
