@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
+import it.unibo.tuprolog.argumentation.core.flags.OpenConclusions
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -53,7 +54,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         get() = super.theoryOperators.plus(operators())
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage, Temporal)
+        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage, Temporal, OpenConclusions)
 
     fun operators() =
         OperatorSet(
@@ -294,12 +295,16 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
         %! instances
         %  The arguments holding for sets of values get their instances (see the module constraints): with the graph
-        %  extension constraints, or with temporal.
+        %  extension constraints, with temporal, or with openConclusions (internal: for a theory already converted).
         instances :- context_check(theoryKind(instances, Kind)), !, Kind == yes.
         instances :-
-            (setting(graphExtension, constraints) -> Kind = yes ; setting(temporal) -> Kind = yes ; Kind = no),
+            (open -> Kind = yes ; Kind = no),
             context_assert(theoryKind(instances, Kind)),
             Kind == yes.
+
+        open :- setting(graphExtension, constraints), !.
+        open :- setting(temporal), !.
+        open :- setting(openConclusions).
 
         %! constrained
         %  An argument may have open conclusions or constraints to keep: with instances, or a rule with a { } premise.

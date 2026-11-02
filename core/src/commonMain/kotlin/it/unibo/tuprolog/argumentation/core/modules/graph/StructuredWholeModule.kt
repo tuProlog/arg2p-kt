@@ -119,7 +119,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         %  its conflicts are arguments (as conflict::argued/0), the others when they are graph extensions; any other
         %  graph extension is (see others/1). The settings are read here rather than through those modules: the graph
         %  is changed once it is built, when a call to another module costs as much as the graph.
-        active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal)).
+        active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal) -> true ; setting(openConclusions)).
         active(conflictArguments) :- !, setting(metaConflicts).
         active(Step) :- setting(graphExtension, Step).
 
