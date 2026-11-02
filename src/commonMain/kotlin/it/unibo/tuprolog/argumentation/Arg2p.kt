@@ -2,7 +2,9 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.Graph
@@ -10,9 +12,7 @@ import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
-import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
-import it.unibo.tuprolog.argumentation.parallel.checked
-import it.unibo.tuprolog.argumentation.parallel.graphsOf
+import it.unibo.tuprolog.argumentation.graphsOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -164,9 +164,9 @@ class Arg2p private constructor(
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, solver.operators) }
+    internal fun term(text: String): Term = termOf(text, solver.operators)
 
-    private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
+    private fun struct(goal: String): Struct = goalOf(goal, solver.operators)
 
     /** A solver of arg2p, as it is described: its theory, its flags, and where what it prints goes */
     class Builder {

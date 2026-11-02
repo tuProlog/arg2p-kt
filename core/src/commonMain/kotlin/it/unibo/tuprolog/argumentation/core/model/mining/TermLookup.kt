@@ -1,8 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model.mining
 
-import it.unibo.tuprolog.core.Integer
-import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
+import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.core.Term
 
 /**
@@ -15,27 +13,8 @@ internal class TermLookup<T>(
     key: (T) -> Term,
 ) {
     private val index: Map<Term, T> =
-        mutableMapOf<Term, T>().also { map -> items.forEach { map.getOrPut(canonical(key(it))) { it } } }
+        mutableMapOf<Term, T>().also { map -> items.forEach { map.getOrPut(key(it).canonical()) { it } } }
 
     /** The first item whose term is [term], up to the names of its variables */
-    fun firstOrNull(term: Term): T? = index[canonical(term)]
-
-    // The term with its variables numbered in the order they appear: the same for the terms equal up to their names
-    private fun canonical(term: Term): Term =
-        if (term.isGround) {
-            term
-        } else {
-            term.apply(
-                Substitution.of(
-                    term.variables
-                        .distinct()
-                        .mapIndexed {
-                            i,
-                            variable,
-                            ->
-                            variable to Struct.of("\$VAR", Integer.of(i))
-                        }.toMap(),
-                ),
-            )
-        }
+    fun firstOrNull(term: Term): T? = index[term.canonical()]
 }

@@ -15,13 +15,21 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         // language=Prolog
         """
         %! modifyArgumentationGraph
-        %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.
+        %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences, each
+        %  on its own (see modifyArgumentationGraph/1).
         modifyArgumentationGraph :-
+            modifyArgumentationGraph(each).
+
+        %! modifyArgumentationGraph(+Model)
+        %  As modifyArgumentationGraph/0, the attack arguments attacked by an argument for each preference invalidating
+        %  them (Model each), or for all of them together, preference(Preferences) (Model all, the extension
+        %  defeasibleAllPref).
+        modifyArgumentationGraph(Model) :-
             assertAllSup,
             graphStore::attacks(Attacks),
             filterSupRelatedAttacks(Attacks, InvalidAttacks),
             convertAttacks(InvalidAttacks),
-            buildPrefAttacks.
+            buildPrefAttacks(Model).
 
         %! assertAllSup
         %  The preferences concluded by the arguments, as the preferences (see parser::statePreferences/1), in place of
@@ -83,10 +91,10 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             argument::claim(AttackArgument, attack(Type, A, B, C)),
             graphStore::argument(AttackArgument).
 
-        %! buildPrefAttacks
-        %  The arguments for the preferences invalidating an attack, by any of its justifications, attack its
-        %  argument (and so what it supports).
-        buildPrefAttacks :-
+        % The arguments for the preferences invalidating an attack, by any of its justifications, attack its argument
+        % (and so what it supports): each of them (each), or one for all of them together (all), for each choice of
+        % an argument for each preference (see argumentsFor/2), each standing or falling with its own
+        buildPrefAttacks(each) :-
             attackArgument(Attack, T, A, B, C),
             invalid(T, A, B, C, Preferences),
             member(X, Preferences),
@@ -94,7 +102,41 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             graphStore::argument(Preference),
             graphStore::saveAttack(pref, Preference, Attack, Attack),
             fail.
-        buildPrefAttacks.
+        buildPrefAttacks(all) :-
+            attackArgument(Attack, T, A, B, C),
+            invalid(T, A, B, C, Preferences),
+            argumentsFor(Preferences, Supports),
+            createSuperiorityArgument(Preferences, Supports, Argument),
+            graphStore::saveAttack(pref, Argument, Attack, Attack),
+            fail.
+        buildPrefAttacks(_).
+
+        % Supports is each choice of one argument for each of Preferences, in their order
+        argumentsFor([], []).
+        argumentsFor([X|Xs], [Support|Supports]) :-
+            argument::claim(Support, X),
+            graphStore::argument(Support),
+            argumentsFor(Xs, Supports).
+
+        % The argument for preference(Preferences) supported by Supports, one argument for each of them, and so attacked
+        % as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
+        createSuperiorityArgument(Preferences, Supports, Argument) :-
+            mergeIds(Supports, MergedId),
+            argument::infoParts(Info, [pref], MergedId, []),
+            argument::new(MergedId, pref, [preference(Preferences)], [], Info, Argument),
+            (graphStore::saveArgument(a, [preference(Preferences)], Argument) -> saveRelations(Supports, Argument) ; true).
+
+        saveRelations(Supports, Argument) :-
+            findall(_, (
+                member(A, Supports),
+                graphStore::saveSupport(A, Argument)
+            ), _).
+
+        % The rules of the arguments, after pref
+        mergeIds([], [pref]).
+        mergeIds(Arguments, [pref|MergedId]) :-
+            findall(Rules, (member(A, Arguments), argument::rules(A, Rules)), Res),
+            utils::appendLists(Res, MergedId).
 
         %==============================================================================
         % QUERY MODE

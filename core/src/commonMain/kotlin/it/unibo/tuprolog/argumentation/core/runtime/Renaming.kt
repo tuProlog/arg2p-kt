@@ -1,6 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.runtime
 
+import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 
@@ -13,6 +17,30 @@ import it.unibo.tuprolog.core.Var
  */
 @Suppress("UNCHECKED_CAST")
 fun <T : Term> T.renamedCopy(): T = if (isGround) this else renamed(this, HashMap()) as T
+
+/**
+ * This term with its variables numbered in the order they appear (`'$VAR'(0)`, ...): the same for two terms equal
+ * up to the names of their variables, which is how the graph store identifies arguments and statements
+ */
+@InternalArg2pApi
+fun Term.canonical(): Term =
+    if (isGround) {
+        this
+    } else {
+        apply(Substitution.of(variables.distinct().mapIndexed { i, variable -> variable to Struct.of("\$VAR", Integer.of(i)) }.toMap()))
+    }
+
+/**
+ * This term with each of its variables replaced by an atom of its own (`$var_0`, ...): a term (with none of these
+ * atoms) unifies with it if and only if it generalises this term
+ */
+@InternalArg2pApi
+fun Term.withVariablesFixed(): Term =
+    if (isGround) {
+        this
+    } else {
+        apply(Substitution.of(variables.distinct().mapIndexed { i, variable -> variable to Atom.of("\$var_$i") }.toMap()))
+    }
 
 private fun renamed(
     term: Term,

@@ -278,14 +278,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(Fact).
 
         %! labelStatement(+Label, +Statement)
-        %  Statement is labelled with Label.
+        %  Statement is labelled with Label, by the identifier of the label as well (see statementLabelled/2).
         labelStatement(Label, Statement) :-
-            label::statement(Label, Statement, Fact),
-            context_assert(Fact).
-
-        %! labelStatementAsWritten(+Label, +Statement)
-        %  As labelStatement/2, by the identifier of the label as well (see statementLabelled/2).
-        labelStatementAsWritten(Label, Statement) :-
             label::statement(Label, Statement, Fact),
             context_assert(Fact),
             context_id(Fact, Key),
@@ -298,9 +292,9 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(Fact).
 
         %! statementLabelled(+Label, +Statement)
-        %  Statement, as it is written (up to the names of its variables), is labelled with Label by
-        %  labelStatementAsWritten/2: unlike statementLabel/2, a statement with variables is not labelled by those of its
-        %  instances labelled, nor they by it (see the module constraints).
+        %  Statement, as it is written (up to the names of its variables), is labelled with Label: unlike
+        %  statementLabel/2, a statement with variables is not labelled by those of its instances labelled, nor they by
+        %  it (see the module constraints).
         statementLabelled(Label, Statement) :-
             label::statement(Label, Statement, Fact),
             context_id(Fact, Key),

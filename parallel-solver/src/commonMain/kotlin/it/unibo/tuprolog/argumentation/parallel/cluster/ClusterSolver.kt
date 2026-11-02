@@ -4,11 +4,11 @@ package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.Solutions
 import it.unibo.tuprolog.argumentation.core.model.Graph
-import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
+import it.unibo.tuprolog.argumentation.graphsOf
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
-import it.unibo.tuprolog.argumentation.parallel.graphsOf
 import it.unibo.tuprolog.argumentation.solutionsOf
 import kotlin.js.JsExport
 import kotlin.js.JsName

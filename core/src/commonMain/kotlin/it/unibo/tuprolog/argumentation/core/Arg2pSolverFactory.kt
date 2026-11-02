@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
@@ -9,7 +10,6 @@ import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Atom
-import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -61,7 +61,7 @@ object Arg2pSolverFactory {
         default(theory = kb, settings = flags.create()).let { solver ->
             solver
                 .solve(Atom.of("buildLabelSetsSilent"))
-                .onEach { if (it is Solution.Halt) throw Arg2pException(it.exception.message ?: it.exception.toString()) }
+                .onEach { checked(it) }
                 .filter { it.isYes }
                 .map { solver.graph() }
         }

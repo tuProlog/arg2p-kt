@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.partition
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.parallel.node.checked
 import it.unibo.tuprolog.argumentation.parallel.node.holds
 import it.unibo.tuprolog.argumentation.parallel.node.solutions
 import it.unibo.tuprolog.argumentation.parallel.node.solveOnce

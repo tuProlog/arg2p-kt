@@ -101,8 +101,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         otherTag(a, b).
         otherTag(b, a).
 
-        ruleStrictness(Id, strict) :- parser::checkStrict(Id), !.
-        ruleStrictness(_, defeasible).
 
         % supported(+Mode, +Body, +RuleID, +RuleHead, -Argument): Argument is built from the rule RuleID supporting each
         % statement of its premises Body with a saved argument, as the mode of the theory asks
@@ -128,14 +126,14 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ground(RuleHead),
-            ruleStrictness(RuleID, Strict),
+            parser::strictness(RuleID, Strict),
             argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             argument::new(Rules, RuleID, RuleHead, RuleBody, Info, Argument),
             \+ graphStore::argumentFor(RuleHead, Argument).
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
-            (callable(Check) -> user::call(Check); user::Check),
+            parser::holds(Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([Statement|Others], Rule, Acc, Argument) :-
             Acc = [All, LastDef, Def, Prem],
@@ -155,7 +153,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         constrainedBodyIsSupported([], Rule, Acc, Supports, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody, Instances),
             concludable(constrained(Instances), RuleHead),
-            ruleStrictness(RuleID, Strict),
+            parser::strictness(RuleID, Strict),
             argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             constraint::extend(RuleBody, Supports, Body),
             argument::new(Rules, RuleID, RuleHead, Body, Info, Argument),
@@ -163,7 +161,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         constrainedBodyIsSupported([~(_)|Others], Rule, Acc, Supports, Argument) :-
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
         constrainedBodyIsSupported([prolog(Check)|Others], Rule, Acc, Supports, Argument) :-
-            (callable(Check) -> user::call(Check); user::Check),
+            parser::holds(Check),
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
         constrainedBodyIsSupported(['{}'(_)|Others], Rule, Acc, Supports, Argument) :-
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).

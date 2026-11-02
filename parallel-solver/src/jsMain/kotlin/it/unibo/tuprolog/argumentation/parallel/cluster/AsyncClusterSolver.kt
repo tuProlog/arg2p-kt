@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.parallel.cluster
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.Solution
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.model.Graph
-import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
-import it.unibo.tuprolog.argumentation.parallel.checked
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse

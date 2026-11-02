@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.partial
 
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
-import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.argumentation.core.runtime.withVariablesFixed
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -18,15 +18,6 @@ internal object GroundVars : BinaryRelation.WithoutSideEffects<ExecutionContext>
         second: Term,
     ): Sequence<Substitution> =
         Arg2pUnificator
-            .mgu(
-                second,
-                first.apply(
-                    Substitution.of(
-                        first.variables.distinct().withIndex().associate { (index, variable) ->
-                            variable to
-                                Atom.of("\$var_$index")
-                        },
-                    ),
-                ),
-            ).let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
+            .mgu(second, first.withVariablesFixed())
+            .let { if (it.isSuccess) sequenceOf(it) else emptySequence() }
 }

@@ -19,6 +19,31 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
     override val prologRawTheory: String =
         // language=Prolog
         """
+        %! minimalUndOf(+Semantics, +Branch)
+        %  The labellings of Semantics with a minimal set of UND arguments (semi-stable for preferred, stage for naive),
+        %  each labelled in a branch of Branch.
+        minimalUndOf(Semantics, Branch) :-
+            findall(Und-In, (
+                Semantics:::argumentLabelling,
+                findall(A, graphStore::argumentLabelById(und, A), Und),
+                findall(A, graphStore::argumentLabelById(in, A), In)
+            ), Labellings),
+            utils::minimalBySet(Labellings, Minimal),
+            member(In, Minimal),
+            conflictfree::labelSet(Branch, In).
+
+        %! maximalAdmissibleCommonOf(+Semantics, +Branch)
+        %  The labelling with IN the maximal admissible subset of the intersection of the labellings of Semantics
+        %  (ideal for preferred, eager for semistable), in a branch of Branch.
+        maximalAdmissibleCommonOf(Semantics, Branch) :-
+            findall(In, (
+                Semantics:::argumentLabelling,
+                findall(A, graphStore::argumentLabelById(in, A), In)
+            ), Labellings),
+            utils::intersection(Labellings, Common),
+            maximalAdmissibleSubset(Common, Maximal),
+            conflictfree::labelSet(Branch, Maximal).
+
         %! locality(-Locality)
         %  Query mode: the label of an argument only depends on the arguments it depends on (directionality)
         locality(directional).

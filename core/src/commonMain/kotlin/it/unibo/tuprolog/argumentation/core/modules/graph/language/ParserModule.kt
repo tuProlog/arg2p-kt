@@ -200,6 +200,16 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
 
 
+        %! holds(+Check)
+        %  Check, a Prolog premise of a rule, holds in the theory of the user.
+        holds(Check) :-
+            (callable(Check) -> user::call(Check) ; user::Check).
+
+        %! strictness(+Id, -Strictness)
+        %  The rule Id is strict or defeasible (see checkStrict/1).
+        strictness(Id, strict) :- checkStrict(Id), !.
+        strictness(_, defeasible).
+
         %! preference(?Rule, ?Other)
         %  Rule is preferred to Other: the preferences the theory states (sup/2), closed transitively (see
         %  supClosure/2), or those stated in their place (see statePreferences/1).

@@ -40,7 +40,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             parser::classicRule(Id, Premises, [Claim]),
             findPremises(Premises, premises(Parts, Supports)),
             derivable(Id, Claim, Supports),
-            ruleStrictness(Id, Strict),
+            parser::strictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
             (parser::constrained -> constraint::extend(Premises, Supports, Body) ; Body = Premises),
             Found = found(Body, Id, Rules, Info, Supports).
@@ -68,7 +68,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         fromSupports([], []).
         fromSupports([Premise|Premises], Supports) :-
             parser::prolog([Premise], Check), !,
-            (callable(Check) -> user::call(Check); user::Check),
+            parser::holds(Check),
             fromSupports(Premises, Supports).
         fromSupports([Premise|Premises], Supports) :-
             \+ ordinaryPremise(Premise), !,
@@ -145,7 +145,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
 
         supportPremise(slot(Premise, Result)) :-
             parser::prolog([Premise], Term), !,
-            (callable(Term) -> user::call(Term); user::Term),
+            parser::holds(Term),
             Result = check.
         supportPremise(slot(Premise, Result)) :-
             parser::contrary([Premise], _), !,
@@ -183,7 +183,5 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         premiseInfo(Id, Info) :- parser::checkStrict(Id), !, argument::infoParts(Info, [], [], []).
         premiseInfo(Id, Info) :- argument::infoParts(Info, [], [], [Id]).
 
-        ruleStrictness(Id, strict) :- parser::checkStrict(Id), !.
-        ruleStrictness(_, defeasible).
         """.trimIndent()
 }

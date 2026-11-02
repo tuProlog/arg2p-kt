@@ -1,8 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.core.Substitution
+import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 
 /**
  * The branches of a context: each a store of clauses (see [ClauseStore]), one of them active, a new one forked from
@@ -78,26 +77,14 @@ internal class ContextBranches {
      * get renamed whenever a term is read back from the context)
      */
     fun identifier(term: Term): Int =
-        identifiers.getOrPut(canonical(term)) {
+        identifiers.getOrPut(term.canonical()) {
             terms += term
             terms.size - 1
         }
 
     /** The identifier of [term] if it has one already (see [identifier]) */
-    fun knownIdentifier(term: Term): Int? = identifiers[canonical(term)]
+    fun knownIdentifier(term: Term): Int? = identifiers[term.canonical()]
 
     /** The term with identifier [identifier], as first given an identifier; null if none has it */
     fun term(identifier: Int): Term? = terms.getOrNull(identifier)
-
-    // The variables of the canonical terms, the i-th variable of a term replaced by the i-th of them: variables of their
-    // own, which no term given has (an atom in their place would make a term with that atom the same as one with a
-    // variable)
-    private val canonicalVariables: MutableList<Var> = mutableListOf()
-
-    private fun canonical(term: Term): Term {
-        val variables = term.variables.distinct().toList()
-        if (variables.isEmpty()) return term
-        while (canonicalVariables.size < variables.size) canonicalVariables += Var.of("V${canonicalVariables.size}")
-        return term.apply(Substitution.of(variables.mapIndexed { i, v -> v to canonicalVariables[i] }.toMap()))
-    }
 }

@@ -1,9 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.node
 
-import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
-import it.unibo.tuprolog.core.Atom
-import it.unibo.tuprolog.core.Integer
+import it.unibo.tuprolog.argumentation.core.runtime.canonical
+import it.unibo.tuprolog.argumentation.core.runtime.withVariablesFixed
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
@@ -59,48 +58,17 @@ internal fun Solver.solveOnce(goal: String): Solution = solve(Struct.parse(goal,
 /** Whether [goal], Prolog text, succeeds */
 internal fun Solver.holds(goal: String): Boolean = solveOnce(goal).isYes
 
-/** [solution], unless it is a halt: its error raised, as an [Arg2pException] */
-internal fun checked(solution: Solution): Solution {
-    if (solution.isHalt) {
-        val error = solution.exception
-        throw Arg2pException(error?.message ?: error?.toString() ?: solution.toString())
-    }
-    return solution
-}
-
 /** Whether exploring [general] explores [specific] as well: [specific], its variables fixed, is an instance of it */
 internal fun covers(
     general: Term,
     specific: Term,
-): Boolean {
-    val fixed = specific.variables.distinct().mapIndexed { i, variable -> variable to Atom.of("fixed variable $i") }
-    return Unificator.default.match(general, specific.apply(Substitution.of(fixed.toMap())))
-}
+): Boolean = Unificator.default.match(general, specific.withVariablesFixed())
 
 /** Whether [a] and [b] are the same term but for the names of their variables (as the graph store identifies them) */
 internal fun sameUpToVariables(
     a: Term,
     b: Term,
-): Boolean = numbered(a) == numbered(b)
-
-// The term with its variables numbered in the order they appear
-private fun numbered(term: Term): Term =
-    if (term.isGround) {
-        term
-    } else {
-        term.apply(
-            Substitution.of(
-                term.variables
-                    .distinct()
-                    .mapIndexed {
-                        i,
-                        variable,
-                        ->
-                        variable to Struct.of("\$VAR", Integer.of(i))
-                    }.toMap(),
-            ),
-        )
-    }
+): Boolean = a.canonical() == b.canonical()
 
 /** The statement [argument], the term of an argument, concludes */
 internal fun claimOf(argument: Term): Term = ArgumentTerm.parts(argument)!!.claim!!

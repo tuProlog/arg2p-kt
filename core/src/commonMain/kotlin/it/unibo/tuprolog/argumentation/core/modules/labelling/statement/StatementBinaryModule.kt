@@ -12,35 +12,20 @@ object StatementBinaryModule : PrologModule("prolog.argumentation.graph.labellin
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, OUT the others
-        %  (their arguments are OUT or UND). With the instances of the graph extension constraints, a statement with
-        %  variables and its instances are labelled each on its own (see graphStore::statementLabelled/2).
+        %  (their arguments are OUT or UND), each statement as it is written: one with variables and its instances are
+        %  labelled each on its own (see graphStore::statementLabelled/2).
         statementLabelling :-
-            parser::instances, !,
             findall(_, (
                 argument::conclusion(A, Conc),
                 graphStore::argumentLabel(in, A),
                 \+ graphStore::statementLabelled(in, Conc),
-                graphStore::labelStatementAsWritten(in, Conc)
+                graphStore::labelStatement(in, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
                 (graphStore::argumentLabel(out, A) ; graphStore::argumentLabel(und, A)),
                 \+ graphStore::statementLabelled(in, Conc),
                 \+ graphStore::statementLabelled(out, Conc),
-                graphStore::labelStatementAsWritten(out, Conc)
-            ), _).
-        statementLabelling :-
-            findall(_, (
-                argument::conclusion(A, Conc),
-                graphStore::argumentLabel(in, A),
-                \+ graphStore::statementLabel(in, Conc),
-                graphStore::labelStatement(in, Conc)
-            ), _),
-            findall(_, (
-                argument::conclusion(A, Conc),
-                (graphStore::argumentLabel(out, A) ; graphStore::argumentLabel(und, A)),
-                \+ graphStore::statementLabel(in, Conc),
-                \+ graphStore::statementLabel(out, Conc),
                 graphStore::labelStatement(out, Conc)
             ), _).
         """.trimIndent()

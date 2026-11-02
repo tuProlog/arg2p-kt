@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.parallel.node
 import it.unibo.tuprolog.argumentation.AnswerQuery
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.SyntaxProblem
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.Graph
@@ -11,6 +10,8 @@ import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
+import it.unibo.tuprolog.argumentation.goalOf
+import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.federation.EvaluationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.WorkerStats
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
@@ -40,6 +41,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.Partitioning
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
+import it.unibo.tuprolog.argumentation.termOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -578,7 +580,7 @@ internal class Catalog(
 
         override fun answer(solution: LogicSolution?): KbMessage =
             if (solution?.isHalt == true) {
-                failed(solution.exception?.message ?: solution.toString())
+                failed(solution.haltMessage())
             } else {
                 AnswerResponse(solution?.takeIf { it.isYes }?.let { query.answers(it) }.orEmpty())
             }
@@ -598,7 +600,7 @@ internal class Catalog(
 
         override fun answer(solution: LogicSolution?): KbMessage {
             if (solution == null) return EvaluationResponse(emptyList(), emptyList(), emptyList())
-            if (solution.isHalt) return failed(solution.exception?.message ?: solution.toString())
+            if (solution.isHalt) return failed(solution.haltMessage())
             labelled = true
             return labels()
         }
@@ -643,12 +645,11 @@ internal class Catalog(
         fun term(
             text: String,
             operators: OperatorSet,
-        ): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), operators) }
+        ): Term = termOf(text, operators)
 
-        // A goal, Prolog text, read as the standard solver reads it
         fun goal(
             text: String,
             operators: OperatorSet,
-        ): Struct = term(text, operators).let { it as? Struct ?: throw Arg2pException("Not a goal: $text") }
+        ): Struct = goalOf(text, operators)
     }
 }

@@ -1,8 +1,10 @@
-package it.unibo.tuprolog.argumentation.parallel
+package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.Arg2pException
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
@@ -29,9 +31,24 @@ fun graphsOf(
 /** [solution], unless it is a halt: an Arg2pException with its error then */
 @InternalArg2pApi
 fun checked(solution: LogicSolution): LogicSolution {
-    if (solution.isHalt) {
-        val error = solution.exception
-        throw Arg2pException(error?.message ?: error?.toString() ?: solution.toString())
-    }
+    if (solution.isHalt) throw Arg2pException(solution.haltMessage())
     return solution
 }
+
+/** The error of [this], a halt, as text */
+@InternalArg2pApi
+fun LogicSolution.haltMessage(): String = exception?.let { it.message ?: it.toString() } ?: toString()
+
+/** The term [text] reads as, with [operators]: an Arg2pException telling where it does not parse (as a query) */
+@InternalArg2pApi
+fun termOf(
+    text: String,
+    operators: OperatorSet,
+): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, operators) }
+
+/** The goal [text] reads as, with [operators]: an Arg2pException if it does not parse, or is no goal */
+@InternalArg2pApi
+fun goalOf(
+    text: String,
+    operators: OperatorSet,
+): Struct = termOf(text, operators).let { it as? Struct ?: throw Arg2pException("Not a goal: $text") }
