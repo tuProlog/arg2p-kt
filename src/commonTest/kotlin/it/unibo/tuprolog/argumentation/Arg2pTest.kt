@@ -134,14 +134,15 @@ class Arg2pTest {
         assertEquals(all, Arg2p.of("conflictModel(builtin).").setting("conflictModel"))
         assertEquals(listOf("declared"), Arg2p.of("conflictModel(declared).").setting("conflictModel"))
         assertEquals(emptyList(), Arg2p.of("conflictModel(none).").setting("conflictModel"))
-        // the flags of the solver: several parts, none, or all of them, which leave the profile its own (ABA)
+        // the flags of the solver: several parts, none, or all of them; the profile has its own (ABA) unless they state some
         val parts = Flags.none().conflictModel(ConflictModel.NEGATION, ConflictModel.PREFERENCE)
         assertEquals("conflictModel(negation).\nconflictModel(preference).\n", parts.toString())
         assertEquals(listOf("negation", "preference"), Arg2p.of("", parts).setting("conflictModel"))
         assertEquals(emptyList(), Arg2p.of("", Flags.none().conflictModel()).setting("conflictModel"))
         val aba = { flags: Flags -> Arg2p.of("graphBuildMode(aba).", flags).setting("conflictModel") }
-        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(ConflictModel.BUILTIN)))
-        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(*ConflictModel.entries.toTypedArray())))
+        assertEquals(listOf("declared"), aba(Flags.defaults()))
+        assertEquals(all, aba(Flags.defaults().conflictModel(ConflictModel.BUILTIN)))
+        assertEquals(all, aba(Flags.defaults().conflictModel(*ConflictModel.entries.toTypedArray())))
         assertEquals(listOf("negation"), aba(Flags.defaults().conflictModel(ConflictModel.NEGATION)))
     }
 
@@ -207,7 +208,7 @@ class Arg2pTest {
                 .toString(),
         )
         assertEquals(
-            "",
+            "queryMode(off).\n",
             Flags
                 .none()
                 .queryMode(true)
@@ -215,7 +216,8 @@ class Arg2pTest {
                 .toString(),
         )
         assertEquals(Flags.none().graphBuildMode(Profile.ABA_PLUS), Flags.parse("graphBuildMode(aba_plus)."))
-        assertTrue("graphBuildMode(aspic_plus)." in Flags.defaults().toString())
+        // the defaults state nothing: the theory, its profile and the defaults of the flags decide
+        assertEquals("", Flags.defaults().toString())
     }
 
     @Test

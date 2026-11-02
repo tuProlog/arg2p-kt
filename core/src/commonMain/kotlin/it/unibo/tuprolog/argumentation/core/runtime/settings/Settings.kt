@@ -27,10 +27,10 @@ import it.unibo.tuprolog.theory.Theory
  *
  * Their values are a view over the facts of the libraries (the settings of the solver, as [FlagsBuilder] states them)
  * and those of the theory, through the profile of the theory (graphBuildMode, see [Profiles]): for each flag, the
- * theory states its values, or else the settings of the solver if they differ from the default of the flag, or else
- * the profile, or else the settings of the solver. A flag is stated with no value by `Flag(none)` (no graph
- * extension, say), a switch stated off by `Switch(off)`: so a theory clears what its profile presets. A value
- * standing for others ([ArgsFlag.aliases], the builtin of conflictModel) states those, and the values tell them.
+ * theory states its values, or else the settings of the solver if they state it, or else the profile, or else the
+ * default of the flag. A flag is stated with no value by `Flag(none)` (no graph extension, say), a switch stated
+ * off by `Switch(off)`: so a theory, or the solver, clears what the profile presets. A value standing for others
+ * ([ArgsFlag.aliases], the builtin of conflictModel) states those, and the values tell them.
  */
 class Settings(
     private val solver: Arg2pSolver,
@@ -100,17 +100,14 @@ class Settings(
             val presets = profile?.presets.orEmpty()
             view =
                 flags.mapValues { (name, flag) ->
-                    // a switch of the solver is off with no fact, another flag has no value stated
                     val stated = solver.getValue(name)
-                    // the values of the default in any order (those of a set of parts, as conflictModel)
-                    val explicit = (flag.isSwitch || stated.isNotEmpty()) && stated.map { it.toString() }.toSet() != defaultOf(flag).toSet()
                     val preset = presets[name]?.let { expanded(flag, it) }
                     val values =
                         when {
                             theory.getValue(name).isNotEmpty() -> theory.getValue(name)
-                            explicit -> stated
-                            flag.isSwitch -> preset ?: stated
-                            else -> preset ?: stated.ifEmpty { defaultOf(flag).map { Atom.of(it) } }
+                            stated.isNotEmpty() -> stated
+                            preset != null -> preset
+                            else -> defaultOf(flag).map { if (it == Truth.TRUE.toString()) Truth.TRUE else Atom.of(it) }
                         }
                     values.filter { it != NONE && it != OFF }.also { checked(flag, it) }
                 }

@@ -22,7 +22,9 @@ A flag stated in the theory replaces the value the solver was given for it: a th
 `autoTransposition(off).`).
 
 The [profile]({{% ref "/docs/profiles" %}}) of the theory, `graphBuildMode`, presets several flags at once. The
-theory overrides those presets, and so does a value the solver is given that differs from the default of its flag.
+theory overrides those presets, and so does a flag the solver is given (`Flags.defaults().autoTransposition(false)`
+turns transposition off under `aspic_plus`); a flag nobody states takes its default. So: the theory, then the flags
+of the solver, then the profile, then the default.
 
 A solver tells the values in effect for its theory, whichever way they came: `setting(flag)` gives the values of a
 flag (`["true"]` for a switch on, none for one off), and `knownFlags` (`known_flags` in Python) the names of the
@@ -278,10 +280,10 @@ Write the facts directly in your theory:
 
 ---
 
-## Empty flag sets
+## Flags stated by the theory alone
 
-`Flags.none()` disables the injection of *every* flag fact. The theory then has to declare all the required
-flags itself:
+`Flags.defaults()` (`Flags.none()` is the same) states no flag: every flag is as the theory states it, as its
+profile presets it, or its default. A theory may state them all:
 
 ```kotlin
 val arg2p = Arg2p.of(
@@ -300,5 +302,6 @@ val arg2p = Arg2p.of(
 )
 ```
 
-`Flags.parse(text)` states only the flags of its Prolog facts as well. With the 2P-Kt integration, the same is
-`FlagsBuilder().empty(true)`.
+`Flags.parse(text)` states the flags of its Prolog facts, the others as with `Flags.defaults()`: the text
+`argumentLabellingMode(preferred).` leaves query mode on. With the 2P-Kt integration, `FlagsBuilder` states the
+flags it is given other than the default of their flag.

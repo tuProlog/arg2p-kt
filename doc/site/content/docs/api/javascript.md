@@ -53,7 +53,8 @@ const solver = Arg2p.builder()
     .build()
 ```
 
-`Flags.defaults()` are the flags of arg2p by default, `Flags.none()` only those the theory states, and
+`Flags.defaults()` are the flags of arg2p by default (none stated: the theory, its profile and the defaults
+decide; `Flags.none()` is the same), and
 `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of its enumeration
 (`Profile`, `Semantics`, `StatementLabelling`, `OrderingPrinciple`, `OrderingComparator`, `GraphExtension`,
 `GraphLanguage`, `GraphBuilder`, `ConflictModel`), a boolean for a switch:

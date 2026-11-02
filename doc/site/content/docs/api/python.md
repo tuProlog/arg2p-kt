@@ -52,7 +52,8 @@ arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], wri
 describes one in full (`theory`, `flags`, `output`, then `build()`). `add(text)` adds clauses to the theory,
 `load(text)` replaces it.
 
-`Flags.defaults()`, `Flags.none()` (only the flags the theory states) and `Flags.parse(text)` are the flags of a
+`Flags.defaults()` (none stated: the theory, its profile and the defaults decide; `Flags.none()` is the same) and
+`Flags.parse(text)` are the flags of a
 solver; each flag has a method, taking a value of its enumeration (`Profile`, `Semantics`, `StatementLabelling`,
 `OrderingPrinciple`, `OrderingComparator`, `GraphExtension`, `GraphLanguage`, `GraphBuilder`, `ConflictModel`) or a
 boolean:

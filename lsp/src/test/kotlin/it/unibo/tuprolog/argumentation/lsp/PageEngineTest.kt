@@ -169,7 +169,8 @@ class PageEngineTest {
         ) = ask("""{"type":"settings","reqId":1,"theory":"$theory","flags":"$flags"}""").of("settings").getAsJsonObject("settings")
         val settings = settings("graphBuildMode(abstract).\\na -> b.", flags)
         assertEquals("abstract", settings.getAsJsonArray("graphBuildMode")[0].asString)
-        assertTrue(settings.getAsJsonArray("queryMode").isEmpty)
+        // the flags given state query mode, over the profile abstract, which presets it off
+        assertEquals("true", settings.getAsJsonArray("queryMode")[0].asString)
         assertEquals("grounded", settings.getAsJsonArray("argumentLabellingMode")[0].asString)
         // a theory that does not parse: the flags alone; flags that do not: nothing
         assertEquals("aspic_plus", settings("a :=> b", flags).getAsJsonArray("graphBuildMode")[0].asString)

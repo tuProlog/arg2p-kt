@@ -136,9 +136,10 @@ def _array(cls: type, values: tuple) -> Any:
 
 class Flags:
     """
-    The flags of a solver, as the facts stating them: defaults() (those of arg2p), none() (only those the theory
-    states), or parse(text). A flag set replaces what the flags stated for it; the theory may state flags as well,
-    which override these. The profile of the theory (graph_build_mode) presets the flags its definition needs.
+    The flags of a solver, as the facts stating them: defaults() (none stated: the theory, its profile and the
+    defaults decide; none() is the same), or parse(text) (those stated by Prolog text). A flag set here is stated
+    (a switch set to False stated off); the theory may state flags as well, which override these, and these override
+    what the profile of the theory (graph_build_mode) presets.
     """
 
     def __init__(self, flags: Any) -> None:

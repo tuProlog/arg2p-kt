@@ -49,9 +49,10 @@ theory as Prolog text. `Arg2p.version()` is the version of Arg2P.
 
 ### Flags
 
-`Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default, `Flags.none()` only those
-the theory states, and `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of
-its enumeration, or a boolean for a switch:
+`Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default (none stated: the theory,
+its profile and the defaults decide; `Flags.none()` is the same), and `Flags.parse(text)` those stated by Prolog
+facts on top of them. Each flag has a method, taking a value of its enumeration, or a boolean for a switch (false
+states it off, over the profile):
 
 ```kotlin
 val flags =

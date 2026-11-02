@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.settings
 
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -107,5 +109,27 @@ class SettingsTest {
         assertTrue(solve("setting(graphExtension, X)", "graphBuildMode(aspic_plsu).", flags).startsWith("error"))
         // the modules of a user are values of the open flags
         assertEquals("[mine]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(mine).", flags))
+    }
+
+    // The flags of the solver win over the profile when stated, the theory over them, the default over nothing
+    @Test
+    fun theFlagsStatedWinOverTheProfileTheTheoryOverThem() {
+        val stated = { theory: String, flags: Flags, goal: String ->
+            val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
+            val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
+            if (solution.isYes) solution.substitution.getByName("L")?.toString() ?: "yes" else "no"
+        }
+        // aspic_plus presets transposition on: the flag given turns it off, the theory turns it on again
+        assertEquals("no", stated("", Flags.defaults().autoTransposition(false), "setting(autoTransposition)"))
+        assertEquals("yes", stated("autoTransposition.", Flags.defaults().autoTransposition(false), "setting(autoTransposition)"))
+        // the extensions given are those in effect, not the profile's
+        assertEquals(
+            "[standardPref]",
+            stated("", Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF), "findall(X, setting(graphExtension, X), L)"),
+        )
+        // nothing stated: query mode is on by default, with the flags parsed from text as well
+        assertEquals("yes", stated("", Flags.defaults(), "setting(queryMode)"))
+        assertEquals("yes", stated("", Flags.parse("argumentLabellingMode(preferred).\n"), "setting(queryMode)"))
+        assertEquals("no", stated("", Flags.parse("queryMode(off).\n"), "setting(queryMode)"))
     }
 }

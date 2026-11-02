@@ -33,10 +33,10 @@ import it.unibo.tuprolog.argumentation.core.flags.OrderingComparator as Ordering
 import it.unibo.tuprolog.argumentation.core.flags.OrderingPrinciple as OrderingPrincipleFlag
 
 /**
- * The flags of a solver (see the flags reference of arg2p), as the facts stating them: [defaults] (those of arg2p),
- * [none] (only those the theory states), or [parse] (as Prolog text). A flag set replaces what the flags stated for
- * it; the theory may state flags as well, which override these. The profile of the theory ([graphBuildMode]) presets
- * the flags its definition needs.
+ * The flags of a solver (see the flags reference of arg2p), as the facts stating them: those set here (a switch
+ * turned off stated off, `autoTransposition(off)`), or those [parse] reads from Prolog text; [defaults] states none.
+ * A flag the theory states wins over one set here, which wins over what the profile of the theory presets
+ * ([graphBuildMode]), which wins over the default of the flag.
  */
 @JsExport
 class Flags private constructor(
@@ -143,23 +143,23 @@ class Flags private constructor(
     private fun switch(
         flag: ArgsFlag<*, *>,
         on: Boolean,
-    ) = apply { if (on) facts[flag.predicate()] = listOf(flag.predicate()) else facts.remove(flag.predicate()) }
+    ) = apply { facts[flag.predicate()] = listOf(if (on) flag.predicate() else "${flag.predicate()}(off)") }
 
     companion object {
         private const val ALIAS = "prolog.argumentation.flags"
 
-        /** The flags of arg2p by default (those of [FlagsBuilder]) */
-        @JvmStatic
-        @JsStatic
-        fun defaults(): Flags = of(FlagsBuilder())
-
         /**
-         * No flags: the solver has only those the theory states, and those its profile presets (graphBuildMode, ASPIC+
-         * when the theory names none); the other flags take their defaults, the switches are off
+         * The flags of arg2p by default: none stated, every flag as the theory states it, or else as its profile
+         * presets it (graphBuildMode, ASPIC+ when the theory names none), or else its default
          */
         @JvmStatic
         @JsStatic
-        fun none(): Flags = Flags(linkedMapOf())
+        fun defaults(): Flags = Flags(linkedMapOf())
+
+        /** As [defaults]: no flag stated */
+        @JvmStatic
+        @JsStatic
+        fun none(): Flags = defaults()
 
         /**
          * The flags stated by the facts of [text], Prolog text (`argumentLabellingMode(preferred). queryMode.`): an
@@ -177,31 +177,39 @@ class Flags private constructor(
                     .toMutableMap(),
             )
 
-        /** The flags of [builder] */
+        /**
+         * The flags of [builder]: those it sets to other than the default of their flag, stated (the builder cannot
+         * tell a flag set to its default from one left alone)
+         */
         @JsExport.Ignore
         @JvmStatic
-        fun of(builder: FlagsBuilder): Flags =
-            if (builder.emptyBuilder) {
-                none()
-            } else {
-                with(builder) {
-                    Flags(linkedMapOf())
-                        // in the order the builder lists them, the order the graph extensions of a user apply in (those
-                        // of arg2p come in a fixed order, see structuredWhole::modifyGraph/0)
-                        .values(GraphExtensionFlag, graphExtensions.toList().ifEmpty { listOf("none") })
-                        .switch(QueryMode, queryMode)
-                        .switch(AutoTransposition, autoTransposition)
-                        .switch(PrologStrictCompatibility, prologStrictCompatibility)
-                        .switch(MetaConflicts, metaConflicts)
-                        .switch(MetaRules, metaRules)
-                        .value(GraphBuildMode, graphBuildMode)
-                        .value(GraphBuilderFlag, graphBuilder)
-                        .value(ArgumentLabellingMode, argumentLabellingMode)
-                        .value(StatementLabellingMode, statementLabellingMode)
-                        .value(OrderingPrincipleFlag, orderingPrinciple)
-                        .value(OrderingComparatorFlag, orderingComparator)
-                        .value(ModulesPath, modulesPath)
+        fun of(builder: FlagsBuilder): Flags {
+            if (builder.emptyBuilder) return none()
+            val flags = Flags(linkedMapOf())
+            with(builder) {
+                // in the order the builder lists them, the order the graph extensions of a user apply in (those of
+                // arg2p come in a fixed order, see structuredWhole::modifyGraph/0)
+                if (graphExtensions.toList() != GraphExtensionFlag.default().toList()) {
+                    flags.values(GraphExtensionFlag, graphExtensions.toList().ifEmpty { listOf("none") })
                 }
+                if (queryMode != QueryMode.default()) flags.switch(QueryMode, queryMode)
+                if (autoTransposition != AutoTransposition.default()) flags.switch(AutoTransposition, autoTransposition)
+                if (prologStrictCompatibility != PrologStrictCompatibility.default()) {
+                    flags.switch(PrologStrictCompatibility, prologStrictCompatibility)
+                }
+                if (metaConflicts != MetaConflicts.default()) flags.switch(MetaConflicts, metaConflicts)
+                if (metaRules != MetaRules.default()) flags.switch(MetaRules, metaRules)
+                if (graphBuildMode != GraphBuildMode.default()) flags.value(GraphBuildMode, graphBuildMode)
+                if (graphBuilder != GraphBuilderFlag.default()) flags.value(GraphBuilderFlag, graphBuilder)
+                if (argumentLabellingMode != ArgumentLabellingMode.default()) flags.value(ArgumentLabellingMode, argumentLabellingMode)
+                if (statementLabellingMode != StatementLabellingMode.default()) {
+                    flags.value(StatementLabellingMode, statementLabellingMode)
+                }
+                if (orderingPrinciple != OrderingPrincipleFlag.default()) flags.value(OrderingPrincipleFlag, orderingPrinciple)
+                if (orderingComparator != OrderingComparatorFlag.default()) flags.value(OrderingComparatorFlag, orderingComparator)
+                if (modulesPath != ModulesPath.default()) flags.value(ModulesPath, modulesPath)
             }
+            return flags
+        }
     }
 }
