@@ -153,20 +153,19 @@ abstract class ClusterSolverScenarios {
             assertEquals(Arg2p.of(tweety).answer(it), cluster(tweety, Flags.defaults()).answer(it), it)
         }
 
-    // in query mode, a later goal needing more of the graph explores it further: the graph has what each goal needs,
-    // labelled as the standard solver labels it
+    // in query mode, each goal has a graph of its own, with what it needs, labelled as the standard solver labels it
     @Test
-    fun theGraphGrowsWithTheGoals() {
+    fun theGraphIsBuiltForEachGoal() {
         val theory = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => d.\nr5 :=> -d.\n"
         val cluster = cluster(theory, Flags.defaults())
-        listOf("b" to setOf("a", "b"), "d" to setOf("a", "b", "c", "d", "-d")).forEach { (statement, built) ->
+        listOf("b" to setOf("a", "b"), "d" to setOf("c", "d", "-d")).forEach { (statement, built) ->
             val goal = "answerQuery($statement, In, Out, Und)"
             val arg2p = Arg2p.of(theory)
             val expected = solved(arg2p.solve(goal).next(), arg2p.graph())
             val actual = solved(cluster.solve(goal).next(), cluster.graph())
             assertEquals(expected.bindings, actual.bindings, goal)
             val labels = { graph: Graph -> graph.labellings.map { "${it.argument.conclusion} ${it.argument.topRule} ${it.label}" } }
-            assertTrue(labels(cluster.graph()).containsAll(labels(arg2p.graph())), goal)
+            assertEquals(labels(arg2p.graph()).toSet(), labels(cluster.graph()).toSet(), goal)
             assertEquals(
                 built,
                 cluster

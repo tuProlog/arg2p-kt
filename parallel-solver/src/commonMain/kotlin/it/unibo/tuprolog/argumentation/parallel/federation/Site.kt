@@ -307,7 +307,7 @@ class Site(
     }
 
     // What a client solving a goal in [run] is given if stopped
-    private fun stopped(run: String) = SolutionResponse(run, null, NO_GRAPH, false, "", stopped = true)
+    private fun stopped(run: String) = SolutionResponse(run, null, NO_GRAPH, "", stopped = true)
 
     /** [link], just opened, leads to a delegate of this site: the site offers its workers, and runs workers on them */
     fun delegate(link: Link) {

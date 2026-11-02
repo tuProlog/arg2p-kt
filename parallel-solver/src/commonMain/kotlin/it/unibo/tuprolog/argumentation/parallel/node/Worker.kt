@@ -82,7 +82,7 @@ internal class Worker(
     private var building = false
     private val early = mutableListOf<KbMessage>()
 
-    // The search for the attacks, again for each graph the catalog labels (in query mode it grows): started, the
+    // The search for the attacks, again for each graph the catalog labels: started, the
     // statements each other worker wants, the arguments of the others sent to it, how many workers sent theirs
     private var attacking = false
     private var candidatesSent = false

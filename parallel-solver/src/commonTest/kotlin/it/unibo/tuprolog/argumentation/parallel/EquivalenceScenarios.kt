@@ -191,15 +191,15 @@ abstract class EquivalenceScenarios {
         )
 
     // The instances of the arguments for sets of values, which the catalog adds as the standard solver does: those the
-    // workers' arguments rest on, and those a conflict binds; on the whole graph, and in query mode each statement on a
-    // graph of its own (that of a distributed solver grows with the statements evaluated before)
+    // workers' arguments rest on, and those a conflict binds; on the whole graph, and in query mode (each statement on a
+    // graph of its own, in both solvers)
     private fun bothModes(
         flags: Flags,
         theory: String,
         vararg statements: String,
     ) {
         assertSameLabels(flags.queryMode(false), theory, *statements)
-        statements.forEach { assertSameLabels(flags.queryMode(true), theory, it) }
+        assertSameLabels(flags.queryMode(true), theory, *statements)
     }
 
     @Test

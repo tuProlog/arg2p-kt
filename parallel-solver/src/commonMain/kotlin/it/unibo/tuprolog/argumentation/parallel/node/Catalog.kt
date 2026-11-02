@@ -83,9 +83,9 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * mode the statements it explores) is solved again from its start once they built it, as is a goal whose solutions are
  * asked for after the solver solved another one; an evaluation of a statement reads the labels of the arguments for it
  * (see answerQuery/4). The graph is built again when the theory changes, when the network loses some of the workers of a
- * graph being built ([Rebuild]), when the flags change ([Configure]), and when a goal needs a graph of the other kind
- * (whole, or in query mode); in query mode, it grows as later goals need more of it. The evaluations stopped by their
- * clients give up the graph being built for them ([Stop]).
+ * graph being built ([Rebuild]), when the flags change ([Configure]), and when a goal needs another graph: the whole
+ * one, or in query mode the one of the statement it explores, built for each statement as the standard solver builds
+ * it. The evaluations stopped by their clients give up the graph being built for them ([Stop]).
  */
 internal class Catalog(
     private val network: Network,
@@ -224,7 +224,7 @@ internal class Catalog(
                         }
                     }
                 if (run == null) {
-                    network.send(message.replyTo, SolutionResponse(message.run, null, NO_GRAPH, false, "", "This goal is no longer solved"))
+                    network.send(message.replyTo, SolutionResponse(message.run, null, NO_GRAPH, "", "This goal is no longer solved"))
                 } else {
                     enqueue(Solving(message.run, run, message.replyTo))
                 }
@@ -335,15 +335,6 @@ internal class Catalog(
         return solution.takeIf { need == null }
     }
 
-    // Whether [run] has more solutions: if knowing needs a graph not built yet, it is built when they are asked for
-    private fun hasNext(run: Run): Boolean {
-        val more = run.solutions?.hasNext() ?: false
-        if (need == null) return more
-        need = null
-        current = null
-        return true
-    }
-
     // The solver given the theory, changed: the part of the catalog (see TheoryPartitioner), and how it builds the graph;
     // the graph of the theory before forgotten
     private fun prepare() {
@@ -376,28 +367,20 @@ internal class Catalog(
         }
     }
 
-    // [need] built by the workers: the whole graph, the statement explored further in query mode on the graph built,
-    // or explored on a graph built anew
-    private fun build(need: Need) {
-        when {
-            need is Need.Explored && built && locality != null && locality == partial -> {
-                stage = Stage.BUILDING
-                built = false
-                awaited = 0
-                explore(listOf(need.statement))
-                if (awaited == 0) published()
-            }
-            need is Need.Explored -> start(listOf(need.statement), whole = false)
-            else -> start(emptyList(), whole = true)
+    // [need] built by the workers, anew: the whole graph, or in query mode the graph of the statement explored
+    private fun build(need: Need) =
+        when (need) {
+            is Need.Explored -> start(listOf(need.statement), whole = false)
+            Need.Whole -> start(emptyList(), whole = true)
         }
-    }
 
-    // Whether the graph built has what [need] asks for
+    // Whether the graph built is the one [need] asks for: the whole graph, or in query mode the one explored for the
+    // same statement (a graph for each statement, as the standard solver builds it: kept for the statement asked again)
     private fun met(need: Need) =
         built &&
             when (need) {
                 Need.Whole -> locality == null
-                is Need.Explored -> locality == partial && (locality == null || explored.any { covers(it, need.statement) })
+                is Need.Explored -> locality == partial && (locality == null || explored.any { sameUpToVariables(it, need.statement) })
             }
 
     // The workers loaded with their rules and the flags (the theory split again if they changed), and the locality of
@@ -562,7 +545,8 @@ internal class Catalog(
         abstract fun failed(error: String): KbMessage
     }
 
-    // The next solution of the goal of the client, with the graph of its resolution and what the solver printed
+    // The next solution of the goal of the client, with the graph of its resolution and what the solver printed: the
+    // one after it is not computed until the client asks for it
     private inner class Solving(
         private val id: String,
         override val run: Run,
@@ -570,13 +554,12 @@ internal class Catalog(
     ) : Job(replyTo) {
         override fun answer(solution: LogicSolution?): KbMessage {
             val graph = solution?.let { mined() } ?: NO_GRAPH
-            val more = solution != null && hasNext(run)
             val output = printed.substring(minOf(run.printed, printed.length))
             run.printed += output.length
-            return SolutionResponse(id, solution, graph, more, output)
+            return SolutionResponse(id, solution, graph, output)
         }
 
-        override fun failed(error: String) = SolutionResponse(id, null, NO_GRAPH, false, "", error)
+        override fun failed(error: String) = SolutionResponse(id, null, NO_GRAPH, "", error)
     }
 
     // The statements for a query by label, as the standard solver answers them: every answer at once

@@ -37,10 +37,13 @@ class AsyncClusterSolver internal constructor(
             solved.output = value
         }
 
-    /** The solutions of [goal], Prolog text, given one at a time as they are asked for (rejected for a goal that cannot be read) */
+    /**
+     * The solutions of [goal], Prolog text: the first computed at once (rejected for a goal that cannot be read), each
+     * next one as it is asked for
+     */
     fun solve(goal: String): Promise<AsyncSolutions> =
         replies.replied<SolutionResponse> { site.query(goal, it) }.then { first ->
-            AsyncSolutions(Given(goal, solved.checked(first), solved)) { replies.replied { reply -> site.next(first.run, reply) } }
+            AsyncSolutions(goal, solved.checked(first), solved) { replies.replied { reply -> site.next(first.run, reply) } }
         }
 
     /**
@@ -68,37 +71,62 @@ class AsyncClusterSolver internal constructor(
         solutions: AsyncSolutions,
         found: Array<Graph>,
     ): Promise<Array<Graph>> =
-        if (!solutions.hasNext()) {
-            Promise.resolve(found)
-        } else {
-            solutions
-                .nextSolution()
-                .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + solved.graph else found) }
-                .flattened()
-        }
+        solutions
+            .hasNext()
+            .then { more ->
+                if (!more) {
+                    Promise.resolve(found)
+                } else {
+                    solutions
+                        .nextSolution()
+                        .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + solved.graph else found) }
+                        .flattened()
+                }
+            }.flattened()
 }
 
-/** The solutions of a goal, given one at a time as they are asked for */
+/**
+ * The solutions of a goal (Prolog text), from the [first] reply of the site, as [solved] gives them: each next one
+ * computed as it is asked for (by hasNext() or next()), none before
+ */
 @JsExport
 class AsyncSolutions internal constructor(
-    private val given: Given,
+    private val goal: String,
+    first: SolutionResponse,
+    private val solved: Solved,
     private val asked: () -> Promise<SolutionResponse>,
 ) {
-    /** Whether the goal has another solution */
-    fun hasNext(): Boolean = given.hasNext()
+    // the reply not given yet: the first, then the one asked for
+    private var pending: Promise<SolutionResponse>? = Promise.resolve(first)
+
+    private fun reply(): Promise<SolutionResponse> = pending ?: asked().also { pending = it }
+
+    /** Whether the goal has another solution: computed, if not yet */
+    fun hasNext(): Promise<Boolean> = reply().then { !it.exhausted }
 
     /** The next solution, the graph of its resolution then given by the graph() of the solver */
     fun next(): Promise<Solution> = nextSolution().then { solutionOf(it) }
 
-    // The next solution, as the solver of the theory gives it
-    internal fun nextSolution(): Promise<LogicSolution> = (given.first()?.let { Promise.resolve(it) } ?: asked()).then { given.given(it) }
+    // The next solution, as the solver of the theory gives it: a reply with no solution left, as it says there is no other
+    internal fun nextSolution(): Promise<LogicSolution> =
+        reply().then {
+            if (!it.exhausted) pending = null
+            solved.given(it, goal)
+        }
 
     /** The solutions left, at most [limit] of them, each asked for once the one before it is given */
     fun toArray(limit: Int = Int.MAX_VALUE): Promise<Array<Solution>> =
-        if (limit <= 0 || !hasNext()) {
+        if (limit <= 0) {
             Promise.resolve(emptyArray())
         } else {
-            next().then { solution -> toArray(limit - 1).then { arrayOf(solution) + it } }.flattened()
+            hasNext()
+                .then { more ->
+                    if (!more) {
+                        Promise.resolve(emptyArray())
+                    } else {
+                        next().then { solution -> toArray(limit - 1).then { arrayOf(solution) + it } }.flattened()
+                    }
+                }.flattened()
         }
 }
 

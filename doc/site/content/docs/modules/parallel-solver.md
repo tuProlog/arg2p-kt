@@ -113,12 +113,13 @@ solver.graphs()                      // the graph of each labelling
 
 The clusters of JavaScript running their workers on threads (`WorkerCluster`, `WebWorkerCluster`) promise what the
 workers compute: their `solver` (`AsyncClusterSolver`) gives a promise of the solutions (`AsyncSolutions`, whose
-`next()` and `toArray()` are promises as well), of the answer and of the graphs; `graph()` is the graph of the
-solution last given. A `LocalCluster` answers at once, in JavaScript as well.
+`hasNext()`, `next()` and `toArray()` are promises as well, each solution computed as it is asked for), of the answer
+and of the graphs; `graph()` is the graph of the solution last given. A `LocalCluster` answers at once, in JavaScript
+as well.
 
 ```javascript
 const solutions = await cluster.solver.solve('arg2p::solve(In, Out, Und)')
-while (solutions.hasNext()) {
+while (await solutions.hasNext()) {
   const solution = await solutions.next()
   console.log(solution.text('In'), cluster.solver.graph().labellings.map(it => it.label))
 }
@@ -131,10 +132,10 @@ How the goals are solved:
   solver derives the other arguments, applies the graph extensions and labels the graph, every semantics as the
   standard solver does;
 - a goal needing a graph the workers did not build pauses: the workers build it (the whole graph for
-  `arg2p::solve(In, Out, Und)`, the part the statements explored depend on for `arg2p::solve(Goal, Res)` in query
-  mode, explored further by the later goals), then the goal is solved again from its start. So is a goal whose next solution is asked for after
-  the catalog solved another one; the solutions given already are left out. What the goal does besides (asserting
-  facts, printing) is done again: what was printed is given once;
+  `arg2p::solve(In, Out, Und)`, the part the statement explored depends on for `arg2p::solve(Goal, Res)` in query
+  mode, built for each statement as the standard solver builds it), then the goal is solved again from its start. So
+  is a goal whose next solution is asked for after the catalog solved another one; the solutions given already are
+  left out. What the goal does besides (asserting facts, printing) is done again: what was printed is given once;
 - the catalog has the theory but its rules, which the workers have: a goal reading the rules themselves (the modules
   of the parser, the context) does not find them;
 - with several labellings (`preferred`, `stable`, ...), the labellings are the same as those of the standard
@@ -168,8 +169,8 @@ well, as delegates with 1 each. The workers of the federation are those of the s
 An `EvaluationStats` has the part of the graph it was answered on (`locality`: `directional` or `connected` in query
 mode, `whole_graph` otherwise, `catalog` for a graph the catalog builds alone, as an abstract framework, with no
 worker), the `arguments` and the `attacks` of the graph labelled, the arguments the workers
-built for it (`added`: all of them for a graph built anew, those explored further in query mode, none for an
-evaluation answered on the graph as it was), how many each worker built (`workers`: its `partition`, its `site`, its
+built for it (`added`: all of them for a graph built anew, none for an evaluation answered on the graph as it was),
+how many each worker built (`workers`: its `partition`, its `site`, its
 `arguments` and the direct `attacks` it found), and how long it took (`milliseconds`).
 
 `onPeersChanged`, on `ThreadedCluster`, `WorkerCluster` and `WebWorkerCluster`, is called whenever a site joins or
@@ -357,11 +358,10 @@ same modules (`queryExploration`), each worker on its own rules:
   as the standard solver does, so that the workers build them side by side; should a premise have no argument, the
   arguments for the others are built nonetheless, which changes no label.
 
-Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation that
-needs more of the graph explores it further, then the attacks are found and the graph is labelled again; one that
-needs no more is answered from it. A change of the theory starts again from scratch. The graph of an evaluation in
-query mode (see `solver.graph()`) is thus the part built so far: that of its statements, and of those evaluated
-before.
+Once nothing is left to explore, the attacks are found and the graph is labelled as above. A later evaluation of
+another statement builds its graph anew, as the standard solver does; one of the same statement is answered on the
+graph built for it. A change of the theory starts again from scratch. The graph of an evaluation in query mode (see
+`solver.graph()`) is thus that of its statement alone.
 
 The whole graph is built with no query mode, for a semantics whose labels depend on all of it (`stable`), and for a
 goal asking for it in query mode as well (`arg2p::solve(In, Out, Und)`, as the standard solver): an evaluation in query mode after

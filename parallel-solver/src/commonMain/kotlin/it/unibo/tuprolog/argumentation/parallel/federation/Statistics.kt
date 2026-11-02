@@ -59,8 +59,8 @@ data class SiteStats(
  * part of the graph it was answered on ([locality]: directional or connected in query mode, whole_graph otherwise, or
  * catalog for a graph the catalog builds alone, as an abstract framework, with no worker), the
  * arguments and the attacks of the graph labelled (those the catalog derives from the others included), the arguments
- * the workers built for it ([added]: all of them for a graph built anew, those explored further in query mode, none
- * for an evaluation answered on the graph as it was), what each worker of the graph built ([workers], one for each
+ * the workers built for it ([added]: all of them for a graph built anew, none for an evaluation answered on the graph
+ * as it was), what each worker of the graph built ([workers], one for each
  * partition of the theory), and how long the evaluation took, in milliseconds (the construction of the graph included)
  */
 @JsExport

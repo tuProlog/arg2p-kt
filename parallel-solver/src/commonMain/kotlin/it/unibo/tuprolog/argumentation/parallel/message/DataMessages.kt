@@ -72,8 +72,7 @@ internal data class DirectAttack(
  *    sends them to the catalog ([AttacksFound]), which extends them to the arguments built on the attacked ones and
  *    labels the graph.
  *
- * In query mode a later evaluation needing more of the graph explores it further ([Explore]), then the attacks are
- * found again.
+ * In query mode the graph is built for each statement evaluated, as the standard solver builds it.
  *
  * The goals of the clients ([RequireSolution], [RequireAnswer], [RequireEvaluation]) are solved by the catalog, on the
  * graph the workers built for them as above (see Catalog).
@@ -158,20 +157,22 @@ internal data class RequireAnswer(
 ) : KbMessage
 
 /**
- * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, whether the goal
- * has more solutions, and what the solver printed computing it; or the [error] that kept it from one (a goal that
- * cannot be read, a theory that cannot be read); or, [stopped], none as the evaluation was stopped. Only for the
- * clients of the site of the catalog: never written.
+ * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, and what the
+ * solver printed computing it; or the [error] that kept it from one (a goal that cannot be read, a theory that cannot
+ * be read); or, [stopped], none as the evaluation was stopped. Only for the clients of the site of the catalog: never
+ * written.
  */
 internal data class SolutionResponse(
     val run: String,
     val solution: LogicSolution?,
     val graph: Graph,
-    val hasNext: Boolean,
     val output: String,
     val error: String? = null,
     val stopped: Boolean = false,
-) : KbMessage
+) : KbMessage {
+    /** Whether the goal has no more solutions: no solution here, no error, not stopped */
+    val exhausted: Boolean get() = solution == null && error == null && !stopped
+}
 
 /** The graph of a solution that labels none */
 internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
