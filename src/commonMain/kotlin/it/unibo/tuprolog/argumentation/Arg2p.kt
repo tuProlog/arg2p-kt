@@ -34,7 +34,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  *
  * ```kotlin
  * val arg2p = Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).")
- * arg2p.answer("a").inStatements      // [a]
+ * arg2p.answer("a").single().inStatements      // [a]
  * ```
  *
  * The context of the solver keeps a branch for every stage of a resolution (each module call made with `:::`),
@@ -54,21 +54,15 @@ class Arg2p private constructor(
     val theory: String get() = solver.staticKb.toString(asPrologText = true)
 
     /**
-     * The statements for [query], Prolog text, labelled in, out and und (see `answerQuery/4`)
-     *
-     * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
-     */
-    fun answer(query: String): Answer = AnswerQuery(term(query)).let { it.answer(first(it.goal)) }
-
-    /**
      * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
-     * answerMode(enumerate) (the default), the one across them all otherwise (see `answerQuery/4`)
+     * answerMode(enumerate) (the default; one with a semantics of one labelling, as grounded), the one across them all
+     * with answerMode(credulous) or answerMode(skeptical), none for no labelling (see `answerQuery/4`)
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
     @JsExport.Ignore
-    @JsName("answersList")
-    fun answers(query: String): List<Answer> =
+    @JsName("answerList")
+    fun answer(query: String): List<Answer> =
         AnswerQuery(term(query)).let { answering ->
             solver
                 .solve(answering.goal)
@@ -78,9 +72,9 @@ class Arg2p private constructor(
                 .toList()
         }
 
-    /** The answers of [query], one for each labelling with answerMode(enumerate) (an array in JavaScript) */
-    @JsName("answers")
-    fun answerArray(query: String): Array<Answer> = answers(query).toTypedArray()
+    /** The answers of [query] (see [answer]; an array in JavaScript) */
+    @JsName("answer")
+    fun answerArray(query: String): Array<Answer> = answer(query).toTypedArray()
 
     /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,

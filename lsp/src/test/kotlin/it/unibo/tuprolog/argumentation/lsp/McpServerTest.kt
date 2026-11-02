@@ -209,7 +209,8 @@ class McpServerTest {
 
     @Test
     fun theStatementsOfAQueryAreLabelled() {
-        val labels = session(call(1, "answer", """{"theory":"$tweety","query":"flies(tweety)"}""")).getValue(1).content()
+        val answers = session(call(1, "answer", """{"theory":"$tweety","query":"flies(tweety)"}""")).getValue(1).content()
+        val labels = answers.getAsJsonArray("answers").single().asJsonObject
         assertEquals(listOf("flies(tweety)"), labels.getAsJsonArray("out").map { it.asString })
         assertTrue(labels.getAsJsonArray("in").isEmpty)
     }

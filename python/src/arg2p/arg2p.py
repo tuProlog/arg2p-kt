@@ -225,7 +225,7 @@ class Arg2p:
     A solver of arg2p for a theory, as Prolog text, with its flags: it answers queries (answer), gives the graph of
     each labelling (graphs), solves Prolog goals (solve) and tests causality (causality).
 
-        >>> Arg2p.of("r1 : [] => a.\\nr2 : [] => -a.\\nsup(r1, r2).").answer("a").in_statements
+        >>> Arg2p.of("r1 : [] => a.\\nr2 : [] => -a.\\nsup(r1, r2).").answer("a")[0].in_statements
         ['a']
 
     The context of the solver keeps a branch for every stage of a resolution, numbered from 0: active_branch is the
@@ -279,13 +279,13 @@ class Arg2p:
         """
         return [str(value) for value in call(lambda: self._arg2p.setting(flag))]
 
-    def answer(self, query: str) -> Answer:
-        """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
-        return answer_from_jvm(call(lambda: self._arg2p.answer(query)))
-
-    def answers(self, query: str) -> list[Answer]:
-        """The answers of [query]: one for each labelling with answerMode(enumerate), the one across them all otherwise."""
-        return call(lambda: [answer_from_jvm(answer) for answer in self._arg2p.answers(query)])
+    def answer(self, query: str) -> list[Answer]:
+        """
+        The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
+        answerMode(enumerate) (the default; one with a semantics of one labelling, as grounded), the one across them all
+        with answerMode(credulous) or answerMode(skeptical) (raises Arg2pError if it halts).
+        """
+        return call(lambda: [answer_from_jvm(answer) for answer in self._arg2p.answer(query)])
 
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""

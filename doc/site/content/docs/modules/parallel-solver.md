@@ -97,7 +97,7 @@ val solver = ThreadedCluster(threads = 8).apply { load(theory) }.solver
 val solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                  // [[a], [c]]
 solver.graph()                       // the graph of the solution: arguments, labels, attacks, supports
-solver.answer("a").inStatements      // [a]
+solver.answer("a").single().inStatements   // [a]
 solver.graphs()                      // the graph of each labelling
 ```
 

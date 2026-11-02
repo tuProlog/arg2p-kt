@@ -19,7 +19,7 @@ Use the tools of the **Arg2P MCP server** when they are there (`solve`, `answer`
 | Tool | Takes | Gives |
 | --- | --- | --- |
 | `check` | `text`, `kind` (`theory`, the default, or `query`) | whether the text parses, and where it does not (line, column, token) |
-| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und` |
+| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | the statements matching a literal (`flies(X)`, `-guilty`) labelled `in`, `out` and `und`: `answers`, one per labelling, or one across them all with `answerMode(credulous)` or `answerMode(skeptical)` |
 | `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | the solutions of any query (default `arg2p::solve(In, Out, Und)`), with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
 | `settings` | `theory`, `flags`, `timeoutSeconds` | the value in effect of every flag for the theory: its profile, its semantics, ... |
 | `explore` | `theory`, `query`, `flags`, `timeoutSeconds` | shows the user the solver of the theory, to explore the results themselves (see the `arg2p-explore` skill) |
@@ -43,7 +43,7 @@ uvx arg2p theory.arg2p -q "flies(tweety)" -s preferred    # or: pip install arg2
 ```python
 from arg2p import Arg2p, Flags, Semantics
 arg2p = Arg2p.of(theory, Flags.defaults().argument_labelling_mode(Semantics.PREFERRED))
-answer = arg2p.answer("flies(tweety)")    # answer.in_statements, out_statements, und_statements
+answers = arg2p.answer("flies(tweety)")   # one per labelling: in_statements, out_statements, und_statements
 for graph in arg2p.graphs():              # one per labelling
     print(graph.conclusions("in"))
 ```

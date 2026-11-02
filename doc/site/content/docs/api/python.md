@@ -39,9 +39,14 @@ r2 : [] => -a.
 sup(r1, r2).
 """)
 
-arg2p.answer("a").in_statements     # ['a']
-arg2p.answer("-a").out_statements   # [Struct(functor='-', args=('a',))], written -a
+(answer,) = arg2p.answer("a")          # an answer for each labelling: one under grounded
+answer.in_statements                   # ['a']
+arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], written -a
 ```
+
+`answer` gives an answer for each labelling, or the one across them all with the flag `answerMode(credulous)` or
+`answerMode(skeptical)` (`Flags.defaults().answer_mode(AnswerMode.SKEPTICAL)`, see
+[answerMode]({{% ref "/docs/api/flags#answermodemode" %}})).
 
 `Arg2p.of(theory, flags)` is a solver for a theory (`Flags.defaults()` if no flags are given), `Arg2p.builder()`
 describes one in full (`theory`, `flags`, `output`, then `build()`). `add(text)` adds clauses to the theory,
@@ -142,7 +147,7 @@ solver = evaluating.solver
 solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                          # as for Arg2p
 solver.graph()                               # the Graph of the solution
-solver.answer("a").in_statements             # as Arg2p.answer
+solver.answer("a")[0].in_statements          # as Arg2p.answer
 evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
 evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations, the peers kept
 solver.stop()                                # from another thread: the goal being solved ends as a halt

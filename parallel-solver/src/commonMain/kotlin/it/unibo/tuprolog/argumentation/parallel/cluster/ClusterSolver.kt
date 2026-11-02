@@ -44,11 +44,18 @@ class ClusterSolver internal constructor(
     fun solve(goal: String): Solutions = solutionsOf(solutions(goal))
 
     /**
-     * The statements for [query], Prolog text, labelled in, out and und (see answerQuery/4)
+     * The statements for [query], Prolog text, labelled in, out and und, as Arg2p.answer gives them: one answer for each
+     * labelling, or the one across them all (see answerQuery/4 and the flag answerMode)
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
-    fun answer(query: String): Answer = solved.answer(replies.replied { site.answer(query, it) })
+    @JsExport.Ignore
+    @JsName("answerList")
+    fun answer(query: String): List<Answer> = solved.answer(replies.replied { site.answer(query, it) })
+
+    /** The answers of [query] (see [answer]; an array in JavaScript) */
+    @JsName("answer")
+    fun answerArray(query: String): Array<Answer> = answer(query).toTypedArray()
 
     /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,

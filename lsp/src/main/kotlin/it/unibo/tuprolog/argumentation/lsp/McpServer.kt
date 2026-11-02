@@ -292,12 +292,17 @@ internal class McpServer(
         query: String,
         flags: String,
     ): Found {
-        val answer = Solvers.of(theory, Flags.parse(flags)).answer(query)
+        val answers = Solvers.of(theory, Flags.parse(flags)).answer(query)
         return Found(
             mapOf(
-                "in" to answer.inStatements.map { it.toString() },
-                "out" to answer.outStatements.map { it.toString() },
-                "und" to answer.undStatements.map { it.toString() },
+                "answers" to
+                    answers.map { answer ->
+                        mapOf(
+                            "in" to answer.inStatements.map { it.toString() },
+                            "out" to answer.outStatements.map { it.toString() },
+                            "und" to answer.undStatements.map { it.toString() },
+                        )
+                    },
             ),
         )
     }
@@ -478,7 +483,9 @@ internal class McpServer(
                     "title" to "Label the statements of a query",
                     "description" to
                         "The statements matching a query (a literal, as flies(X) or -flies(tweety)) labelled in " +
-                        "(justified), out (rejected) and und (undecided) by the theory, under its semantics.",
+                        "(justified), out (rejected) and und (undecided) by the theory, under its semantics: answers, " +
+                        "one for each labelling, or one across them all with the flag answerMode(credulous) or " +
+                        "answerMode(skeptical).",
                     "inputSchema" to
                         schema(
                             "theory" to text(THEORY),

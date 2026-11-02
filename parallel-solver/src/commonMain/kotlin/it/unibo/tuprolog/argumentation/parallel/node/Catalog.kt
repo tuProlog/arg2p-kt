@@ -568,19 +568,19 @@ internal class Catalog(
         override fun failed(error: String) = SolutionResponse(id, null, NO_GRAPH, false, "", error)
     }
 
-    // The statements for a query by label, as the standard solver answers them
+    // The statements for a query by label, as the standard solver answers them: every answer at once
     private inner class Answering(
         request: RequireAnswer,
     ) : Job(request.replyTo) {
         private val query by lazy { AnswerQuery(term(request.query, solver.operators)) }
 
-        override val run = Run { query.goal }
+        override val run = Run { query.allGoal }
 
         override fun answer(solution: LogicSolution?): KbMessage =
             if (solution?.isHalt == true) {
                 failed(solution.exception?.message ?: solution.toString())
             } else {
-                AnswerResponse(query.answer(solution?.takeIf { it.isYes }))
+                AnswerResponse(solution?.takeIf { it.isYes }?.let { query.answers(it) }.orEmpty())
             }
 
         override fun failed(error: String) = AnswerResponse(null, error)

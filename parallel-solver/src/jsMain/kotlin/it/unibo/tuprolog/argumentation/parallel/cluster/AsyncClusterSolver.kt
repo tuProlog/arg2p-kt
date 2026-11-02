@@ -43,8 +43,12 @@ class AsyncClusterSolver internal constructor(
             AsyncSolutions(Given(goal, solved.checked(first), solved)) { replies.replied { reply -> site.next(first.run, reply) } }
         }
 
-    /** The statements for [query], Prolog text, labelled in, out and und (rejected if the evaluation halts) */
-    fun answer(query: String): Promise<Answer> = replies.replied<AnswerResponse> { site.answer(query, it) }.then { solved.answer(it) }
+    /**
+     * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling, or the one across
+     * them all (see the flag answerMode; rejected if the evaluation halts)
+     */
+    fun answer(query: String): Promise<Array<Answer>> =
+        replies.replied<AnswerResponse> { site.answer(query, it) }.then { solved.answer(it).toTypedArray() }
 
     /** The graph of each labelling of the theory (rejected if the evaluation halts) */
     fun graphs(): Promise<Array<Graph>> = solve(LABELLINGS).then { graphsOf(it, emptyArray()) }.flattened()

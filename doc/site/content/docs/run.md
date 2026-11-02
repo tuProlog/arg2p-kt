@@ -139,7 +139,7 @@ with it rather than guessing what they conclude. Its tools:
 | Tool | Takes | Gives |
 | --- | --- | --- |
 | `solve` | `theory`, `query`, `flags`, `maxSolutions`, `timeoutSeconds` | The solutions of a query (default `arg2p::solve(In, Out, Und)`) on a theory, with their bindings and the argument graph of the last one: every argument with its conclusion, top rule and label, every attack with its type |
-| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | The statements matching a literal (`flies(X)`, `-guilty`) labelled in, out and und |
+| `answer` | `theory`, `query`, `flags`, `timeoutSeconds` | The statements matching a literal (`flies(X)`, `-guilty`) labelled in, out and und: `answers`, one per labelling, or one across them all with `answerMode(credulous)` or `answerMode(skeptical)` |
 | `check` | `text`, `kind` (`theory`, the default, or `query`) | Whether the text parses, and where it does not (line, column, token) |
 | `settings` | `theory`, `flags`, `timeoutSeconds` | The value in effect of every flag for a theory: its profile, its semantics, ... |
 | `explore` | `theory`, `query`, `flags`, `timeoutSeconds` | Shows the user the solver of a theory, to explore its results themselves |

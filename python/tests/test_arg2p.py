@@ -34,15 +34,15 @@ CONFLICT = "r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2)."
 
 
 def test_a_query_is_answered():
-    answer = Arg2p.of(CONFLICT).answer("a")
+    answer = Arg2p.of(CONFLICT).answer("a")[0]
     assert answer.in_statements == ["a"]
     assert answer.label("a") == "in"
-    negated = Arg2p.of(CONFLICT).answer("-a")
+    negated = Arg2p.of(CONFLICT).answer("-a")[0]
     assert [str(it) for it in negated.out_statements] == ["-a"]
     assert negated.out_statements == [Struct("-", ("a",))]
     assert negated.label("-a") == "out"
     # a statement is compared as a term: '1' is not 1
-    assert Arg2p.of("f1 :=> p(1).").answer("p(X)").label("p('1')") is None
+    assert Arg2p.of("f1 :=> p(1).").answer("p(X)")[0].label("p('1')") is None
 
 
 def test_the_graph_of_each_labelling():
@@ -129,9 +129,9 @@ def test_texts_that_do_not_parse_tell_where():
 def test_the_theory_changes():
     arg2p = Arg2p.of("f1 :=> a.")
     arg2p.add("f2 :=> b.")
-    assert arg2p.answer("b").in_statements == ["b"]
+    assert arg2p.answer("b")[0].in_statements == ["b"]
     arg2p.load("f3 :=> c.")
-    assert arg2p.answer("b") == Answer()
+    assert arg2p.answer("b") == [Answer()]
     assert "f3" in arg2p.theory
 
 
@@ -162,8 +162,8 @@ def test_the_conflict_model_takes_several_parts():
     assert Arg2p.of("conflictModel(declared).").setting("conflictModel") == ["declared"]
     # a negation conflicts with the part negation alone
     theory = "f1 :=> d.\nf2 :=> -d.\n"
-    assert Arg2p.of(theory + "conflictModel(negation).").answer("d").und_statements == ["d"]
-    assert Arg2p.of(theory + "conflictModel(declared).").answer("d").in_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(negation).").answer("d")[0].und_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(declared).").answer("d")[0].in_statements == ["d"]
 
 
 @pytest.mark.parametrize(
@@ -178,7 +178,7 @@ def test_the_values_of_the_flags_are_those_of_arg2p(values):
 
 def test_the_flags_of_the_solver_are_the_ones_it_uses():
     theory = "f1 :=> d.\nf2 :=> -d."
-    assert Arg2p.of(theory).answer("d").und_statements == ["d"]
+    assert Arg2p.of(theory).answer("d")[0].und_statements == ["d"]
     stable = Arg2p.of(theory, Flags.defaults().argument_labelling_mode(Semantics.STABLE)).graphs()
     assert sorted(graph.conclusions("in") for graph in stable) == [["-d"], ["d"]]
 
@@ -246,7 +246,7 @@ def test_the_mcp_server():
     finally:
         server.kill()
     assert answers[1]["result"]["serverInfo"]["name"] == "arg2p"
-    assert answers[2]["result"]["structuredContent"]["in"] == ["a"]
+    assert answers[2]["result"]["structuredContent"]["answers"][0]["in"] == ["a"]
 
 
 def test_a_command_run_by_the_command_line_gives_its_exit_status():

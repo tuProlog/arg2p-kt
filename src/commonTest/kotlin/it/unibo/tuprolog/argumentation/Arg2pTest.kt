@@ -13,10 +13,10 @@ class Arg2pTest {
 
     @Test
     fun aQueryIsAnswered() {
-        val answer = Arg2p.of(conflict).answer("a")
+        val answer = Arg2p.of(conflict).answer("a").single()
         assertEquals(listOf(Value.Atom("a")), answer.inStatements)
         assertEquals("in", answer.label("a"))
-        assertEquals(Answer(emptyList(), listOf(Value.parse("-a")), emptyList()), Arg2p.of(conflict).answer("-a"))
+        assertEquals(Answer(emptyList(), listOf(Value.parse("-a")), emptyList()), Arg2p.of(conflict).answer("-a").single())
     }
 
     // Two preferred labellings, one with d IN and one with -d IN, c IN in both: an answer for each (enumerate), or one across
@@ -31,15 +31,15 @@ class Arg2pTest {
         val enumerated =
             Arg2p
                 .of(theory, flags)
-                .answers("X")
+                .answer("X")
                 .map(labels)
                 .toSet()
         assertEquals(setOf(listOf(setOf("c", "d"), setOf("-d"), emptySet()), listOf(setOf("c", "-d"), setOf("d"), emptySet())), enumerated)
         val credulous = Arg2p.of(theory, flags.answerMode(AnswerMode.CREDULOUS))
-        assertEquals(listOf(setOf("c", "d", "-d"), emptySet(), emptySet()), labels(credulous.answer("X")))
-        assertEquals(1, credulous.answers("X").size)
+        assertEquals(listOf(setOf("c", "d", "-d"), emptySet(), emptySet()), labels(credulous.answer("X").single()))
+        assertEquals(1, credulous.answer("X").size)
         val skeptical = Arg2p.of(theory, flags.answerMode(AnswerMode.SKEPTICAL))
-        assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X")))
+        assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X").single()))
         assertTrue(skeptical.solve("answerQuery(c)").hasNext())
         assertFalse(skeptical.solve("answerQuery(d)").next().isYes)
     }
@@ -167,9 +167,15 @@ class Arg2pTest {
     fun theTheoryChanges() {
         val arg2p = Arg2p.of("f1 :=> a.")
         arg2p.add("f2 :=> b.")
-        assertEquals(listOf(Value.Atom("b")), arg2p.answer("b").inStatements)
+        assertEquals(listOf(Value.Atom("b")), arg2p.answer("b").single().inStatements)
         arg2p.load("f3 :=> c.")
-        assertTrue(arg2p.answer("b").inStatements.isEmpty())
+        assertTrue(
+            arg2p
+                .answer("b")
+                .single()
+                .inStatements
+                .isEmpty(),
+        )
         assertTrue("f3" in arg2p.theory)
     }
 
@@ -215,7 +221,7 @@ class Arg2pTest {
     @Test
     fun theFlagsOfTheSolverAreTheOnesItUses() {
         val theory = "f1 :=> d.\nf2 :=> -d."
-        val grounded = Arg2p.of(theory).answer("d")
+        val grounded = Arg2p.of(theory).answer("d").single()
         assertEquals(listOf(Value.Atom("d")), grounded.undStatements)
         val stable = Arg2p.of(theory, Flags.defaults().argumentLabellingMode(Semantics.STABLE)).graphs()
         assertEquals(setOf(listOf("d"), listOf("-d")), stable.map { it.conclusions("in") }.toSet())

@@ -189,11 +189,11 @@ def evaluate(argv: list[str]) -> int:
     arg2p = Arg2p.of(theory, flags)
     if arguments.query:
         for query in arguments.query:
-            answer = arg2p.answer(query)
-            print(
-                f"{query}: in {text(answer.in_statements)}, out {text(answer.out_statements)}, "
-                f"und {text(answer.und_statements)}"
-            )
+            for answer in arg2p.answer(query):
+                print(
+                    f"{query}: in {text(answer.in_statements)}, out {text(answer.out_statements)}, "
+                    f"und {text(answer.und_statements)}"
+                )
     else:
         for index, graph in enumerate(arg2p.graphs()):
             if index:

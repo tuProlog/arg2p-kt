@@ -36,9 +36,12 @@ fun main() {
         sup(r1, r2).
         """.trimIndent(),
     )
-    println(arg2p.answer("a").inStatements)   // [a]
+    println(arg2p.answer("a").single().inStatements)   // [a]
 }
 ```
+
+`answer` gives an answer for each labelling (one under `grounded`), or the one across them all with the flag
+`answerMode(credulous)` or `answerMode(skeptical)` (see [answerMode]({{% ref "/docs/api/flags#answermodemode" %}})).
 
 From Java, `Arg2p.of(theory)` and `Arg2p.of(theory, flags)` are static methods as well. `Arg2p.builder()` describes one in full: its `theory`, its `flags`, and the `output` receiving what it prints (the
 standard output otherwise). `add(text)` adds clauses to the theory, `load(text)` replaces it, and `theory` is the

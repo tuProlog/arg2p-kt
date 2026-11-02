@@ -83,9 +83,12 @@ Flags.defaults().conflictModels([ConflictModel.NEGATION, ConflictModel.DECLARED]
 parses).
 
 ```js
-const answer = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
+const [answer] = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
 answer.inStatements.map(String)    // ['a']
 ```
+
+`answer` gives an answer for each labelling (one under `grounded`), or the one across them all with the flag
+`answerMode(credulous)` or `answerMode(skeptical)` (see [answerMode]({{% ref "/docs/api/flags#answermodemode" %}})).
 
 `graphs()` gives the graph of each labelling of the theory: one, or several for a semantics with several (preferred,
 stable, ...). A graph has its `arguments`, `attacks`, `supports` and `labellings` (each argument with its label), and

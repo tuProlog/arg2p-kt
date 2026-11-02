@@ -185,7 +185,7 @@ abstract class ClusterSolverScenarios {
         val cluster = cluster(tweety, Flags.defaults())
         val first = cluster.solve("member(X, [1, 2, 3])")
         assertEquals("1", first.next().text("X"))
-        assertEquals("in", cluster.answer("-flies(tweety)").label("-flies(tweety)"))
+        assertEquals("in", cluster.answer("-flies(tweety)").single().label("-flies(tweety)"))
         assertEquals(listOf("2", "3"), first.toList().filter { it.isYes }.map { it.text("X") })
     }
 

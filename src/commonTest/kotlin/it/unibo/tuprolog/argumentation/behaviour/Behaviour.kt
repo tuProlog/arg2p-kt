@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.behaviour
 
+import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2p
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.Value
@@ -14,7 +15,7 @@ object Behaviour {
     /** A solver of [theory], with only the flags the theory states */
     fun solver(theory: String): Arg2p = Arg2p.of(theory, Flags.none())
 
-    /** The statements for [query] in [theory] are [argsIn], [argsOut] and [argsUnd], lists as Prolog text */
+    /** The statements for [query] in [theory] are [argsIn], [argsOut] and [argsUnd] (in the first answer), lists as Prolog text */
     fun answerQuery(
         theory: String,
         query: String,
@@ -22,7 +23,7 @@ object Behaviour {
         argsOut: String,
         argsUnd: String,
     ) {
-        val answer = solver(theory).answer(query)
+        val answer = solver(theory).answer(query).firstOrNull() ?: Answer(emptyList(), emptyList(), emptyList())
         assertVariant(Value.parse(argsIn), Value.List(answer.inStatements), "in")
         assertVariant(Value.parse(argsOut), Value.List(answer.outStatements), "out")
         assertVariant(Value.parse(argsUnd), Value.List(answer.undStatements), "und")

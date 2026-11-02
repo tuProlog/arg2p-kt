@@ -3,7 +3,7 @@ Arg2P from Python: structured argumentation in Prolog (ASPIC+, ABA, abstract fra
 run through JPype, on the Java runtime the package bundles.
 
     >>> from arg2p import Arg2p
-    >>> Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).").answer("a").in_statements
+    >>> Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).").answer("a")[0].in_statements
     ['a']
 """
 

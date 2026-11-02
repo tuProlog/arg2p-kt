@@ -181,7 +181,7 @@ internal const val STOPPED = "The evaluation was stopped"
 
 /** To a client: the [answer] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
 internal data class AnswerResponse(
-    val answer: Answer?,
+    val answers: List<Answer>?,
     val error: String? = null,
 ) : KbMessage
 

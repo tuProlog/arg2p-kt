@@ -17,7 +17,7 @@ r2 : [] => -a.
 sup(r1, r2).
 """)
 
-arg2p.answer("a").in_statements                 # ['a']
+arg2p.answer("a")[0].in_statements              # ['a'], an answer for each labelling
 (graph,) = arg2p.graphs()
 graph.conclusions("out")                        # ['-a']
 

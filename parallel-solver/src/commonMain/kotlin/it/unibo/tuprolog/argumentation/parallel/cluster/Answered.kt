@@ -54,8 +54,8 @@ internal class Solved {
         return solution
     }
 
-    /** The answer of [response], unless it is an error, raised */
-    fun answer(response: AnswerResponse): Answer = response.answer ?: throw Arg2pException(response.error ?: "No answer")
+    /** The answers of [response], unless it is an error, raised */
+    fun answer(response: AnswerResponse): List<Answer> = response.answers ?: throw Arg2pException(response.error ?: "No answer")
 }
 
 /**
