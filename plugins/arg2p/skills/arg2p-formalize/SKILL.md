@@ -123,9 +123,11 @@ state `queryMode.`). Every flag is in `references/flags.md`; the choices that ma
     defensible?" `stable` may have none.
   - `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete`: **required** when the theory declares `bp/N`.
 - **Preferences concluded by rules** (`sup/2` in the head of a rule): `graphExtension(defeasiblePref).` (one
-  superiority) or `graphExtension(defeasibleAllPref).` (comparators needing several). A theory stating
-  `graphExtension` replaces the profile's: restate `graphExtension(standardPref).` if you still want static
-  preferences.
+  superiority) or `graphExtension(defeasibleAllPref).` (comparators needing several), in place of
+  `standardPref`: a theory has one preference mode, and stating two is refused. Under them only concluded
+  preferences count: write a fixed one as a rule with no premise (`p1 : [] => sup(r1, r2).`), not a `sup/2` fact. A
+  theory stating `graphExtension` replaces the profile's: restate `graphExtension(rebutRestriction).` if you still
+  want it.
 - **Ordering**: `orderingPrinciple(last).` (the default) or `weakest.`; `orderingComparator(elitist).` (the default),
   `democrat.` or `normal.`
 - **`queryMode.`**: goal-directed evaluation: only the arguments relevant to the query are built, which is faster on

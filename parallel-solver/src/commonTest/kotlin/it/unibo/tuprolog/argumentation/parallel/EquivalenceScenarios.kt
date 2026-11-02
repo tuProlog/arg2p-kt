@@ -149,7 +149,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun defeasiblePreferences() =
         assertSameLabels(
-            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.DEFEASIBLE_PREF),
+            Flags.defaults().graphExtensions(GraphExtension.DEFEASIBLE_PREF),
             "r1 : p => q.\nr2 : s => -q.\nf1 :=> p.\nf2 :=> s.\nrs : [] => sup(r1, r2).",
             "q",
             "-q",

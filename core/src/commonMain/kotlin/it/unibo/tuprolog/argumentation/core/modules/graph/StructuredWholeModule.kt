@@ -50,27 +50,68 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         builder(ruleGraph).
 
         %! checkProfile
-        %  The theory is written in the languages of its profile (see parser::checkLanguages).
-        checkProfile :- parser::checkLanguages.
+        %  The theory is written in the languages of its profile (see parser::checkLanguages), and its graph extensions
+        %  go together: one preference mode at most (see preferenceMode/1), abaPref only for ABA+ (the profile
+        %  aba_plus).
+        checkProfile :-
+            parser::checkLanguages,
+            checkExtensions.
+
+        checkExtensions :-
+            findall(P, (setting(graphExtension, P), preferenceMode(P)), Modes),
+            (Modes = [_, _|_] ->
+                throw(error(domain_error(one_preference_mode, Modes), 'graphExtension: one preference mode at most (standardPref, defeasiblePref, defeasibleAllPref or abaPref)'))
+            ;
+                true
+            ),
+            (setting(graphExtension, abaPref), \+ setting(graphBuildMode, aba_plus) ->
+                throw(error(domain_error(aba_plus_theory, abaPref), 'graphExtension: abaPref is the preference mode of ABA+ alone (graphBuildMode(aba_plus))'))
+            ;
+                true
+            ).
+
+        %! preferenceMode(?Extension)
+        %  Extension weighs the attacks by the preferences: a theory has one at most.
+        preferenceMode(standardPref).
+        preferenceMode(defeasiblePref).
+        preferenceMode(defeasibleAllPref).
+        preferenceMode(abaPref).
 
         %! modifyGraph
-        %  The graph changed: the arguments derived from the others added, with their attacks (see addArguments/0), then
-        %  by each graph extension, the last stated first.
+        %  The graph changed by the steps the flags select (see active/1), in the order of step/1 whatever the order the
+        %  flags state them in: first those adding the arguments derived from the others, each with their attacks (the
+        %  instances of constraints, also with temporal, then the copies of metaConflicts), then those changing the
+        %  attacks (rebutRestriction, the preference mode, bp). Any other graph extension (a module of the user) comes
+        %  last, the last stated first.
         modifyGraph :-
-            addArguments,
-            findall(X, (setting(graphExtension, X), \+ adding(X)), Ext),
-            modifyGraph(Ext).
+            findall(S, (step(S), active(S)), Steps),
+            findall(X, (setting(graphExtension, X), \+ step(X)), Others),
+            applySteps(Steps),
+            modifyGraph(Others).
 
-        % The arguments derived from the others, added before the extensions change the attacks, whatever the order they
-        % are stated in, so that they change those of the arguments added as well: the instances of the arguments for
-        % sets of values (constraints, also with temporal, see parser::instances/0), then the copies for the conflicts
-        % (metaConflicts). The settings are read here, as a call to another module costs as much as the graph it is
-        % made over.
-        addArguments :-
-            ((setting(graphExtension, constraints) ; setting(temporal)) -> constraints:::modifyArgumentationGraph ; true),
-            (setting(metaConflicts) -> conflictArguments:::modifyArgumentationGraph ; true).
+        %! step(?Step)
+        %  The modules changing the graph, in the order they apply.
+        step(constraints).
+        step(conflictArguments).
+        step(rebutRestriction).
+        step(standardPref).
+        step(defeasiblePref).
+        step(defeasibleAllPref).
+        step(abaPref).
+        step(bp).
 
-        adding(constraints).
+        %! active(+Step)
+        %  Step applies: constraints with that graph extension or temporal, conflictArguments with metaConflicts, the
+        %  others when they are graph extensions. The settings are read here, as a call to another module costs as much
+        %  as the graph it is made over.
+        active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal)).
+        active(conflictArguments) :- !, setting(metaConflicts).
+        active(Step) :- setting(graphExtension, Step).
+
+        applySteps([]).
+        applySteps([Step|Steps]) :-
+            Step:::modifyArgumentationGraph,
+            applySteps(Steps).
 
         modifyGraph([]).
         modifyGraph([X|Ext]) :-

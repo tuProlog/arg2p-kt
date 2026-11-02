@@ -69,7 +69,7 @@ implementation exists.
 | --- | --- | --- |
 | Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
-| Change the graph: add the arguments derived from the others (the instances of `constraints`, the copies of `metaConflicts`) with their attacks, then apply the graph extensions (preferences, restrictions) | `constraints`, `conflictArguments`, one per extension | `graphExtension`, `temporal`, `metaConflicts` |
+| Change the graph, in a fixed order: add the arguments derived from the others (the instances of `constraints`, the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `constraints`, `conflictArguments`, one per extension | `graphExtension`, `temporal`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 

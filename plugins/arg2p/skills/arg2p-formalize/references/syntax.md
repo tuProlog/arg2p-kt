@@ -42,7 +42,9 @@ default ordering (`orderingPrinciple(last)`, `orderingComparator(elitist)`), an 
 premise is stronger than one with some, whatever the preferences.
 
 Preferences can be concluded by rules (`r : condition => sup(r1, r2).`): add `graphExtension(defeasiblePref).` (or
-`defeasibleAllPref` for comparators needing several superiorities) to the flags.
+`defeasibleAllPref` for comparators needing several superiorities) to the flags, in place of `standardPref` (one
+preference mode at most). Then only concluded preferences count: a fixed one is a rule with no premise
+(`p1 : [] => sup(r1, r2).`).
 
 ## Custom conflicts
 

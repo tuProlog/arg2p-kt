@@ -112,7 +112,11 @@ the conflicts are those the arguments conclude, whatever the parts.
 ### `graphExtension(Mode)`
 
 Post-processing steps applied to the graph once it has been built. Unlike the other flags, `graphExtension`
-**may appear several times**: every occurrence adds an extension, and all of them are applied.
+**may appear several times**: every occurrence adds an extension, and all of them are applied, in a fixed order
+whatever the order they are stated in: `constraints` (with the copies of `metaConflicts` after it), then
+`rebutRestriction`, the preference mode, `bp`. The preference modes (`standardPref`, `defeasiblePref`,
+`defeasibleAllPref`, `abaPref`) exclude one another: a theory stating two of them is refused, as is one stating
+`abaPref` outside the `aba_plus` profile.
 
 | Value | Effect |
 | --- | --- |

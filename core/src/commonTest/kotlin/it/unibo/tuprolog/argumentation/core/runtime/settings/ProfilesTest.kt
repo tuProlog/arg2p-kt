@@ -85,6 +85,35 @@ class ProfilesTest {
     }
 
     @Test
+    fun aTheoryHasOnePreferenceModeAtMost() {
+        val both = preferred + "graphExtension(standardPref).\ngraphExtension(defeasiblePref).\n"
+        val refused = labelling(both)
+        assertTrue(refused.isHalt, refused.toString())
+        assertTrue(refused.exception.toString().contains("one_preference_mode"), refused.exception.toString())
+        assertTrue(answer(both, "a").isHalt)
+    }
+
+    @Test
+    fun abaPrefIsForAbaPlusAlone() {
+        val refused = labelling(preferred + "graphExtension(abaPref).\n")
+        assertTrue(refused.isHalt, refused.toString())
+        assertTrue(refused.exception.toString().contains("aba_plus_theory"), refused.exception.toString())
+    }
+
+    @Test
+    fun theStepsChangingTheGraphApplyInTheirOrder() {
+        // whatever the order the flags state them in: the arguments added first, then the attacks changed
+        val module =
+            ModuleTesting(
+                "metaConflicts.\ngraphExtension(bp).\ngraphExtension(standardPref).\ngraphExtension(rebutRestriction).\ntemporal.\n",
+            )
+        assertEquals(
+            listOf("constraints", "conflictArguments", "rebutRestriction", "standardPref", "bp"),
+            module.values("structuredWhole::step(S), structuredWhole::active(S)", "S"),
+        )
+    }
+
+    @Test
     fun theDefeasiblePartOfAspicRefusesStrictRules() {
         assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "graphBuildMode(aspic_defeasible).\n"))
         val refused = labelling(preferred + "s1 : [] -> b.\ngraphBuildMode(aspic_defeasible).\n")
