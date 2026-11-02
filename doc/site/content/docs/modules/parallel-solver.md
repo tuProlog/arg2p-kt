@@ -344,9 +344,10 @@ same modules (`queryExploration`), each worker on its own rules:
 
 - the catalog asks the workers whose rules conclude a statement evaluated to explore it;
 - a worker explores it on its rules: the arguments for it, those for their premises, and the statements their labels
-  may depend on (their possible attackers, the conflicts that relate them with `metaConflicts`, what each graph
-  extension declares, and, for a semantics whose labels also depend on what an argument attacks or supports, the
-  connected ones, those as well);
+  may depend on (their possible attackers, and, for a semantics whose labels also depend on what an argument attacks
+  or supports, the connected ones, those as well); then the statements the steps changing the graph relate to the
+  arguments built (the conflicts with `metaConflicts`, the preferences with `defeasiblePref`, the burdens with `bp`),
+  explored in turn;
 - a statement explored that the rules of other workers conclude is explored by them in turn: they send back the
   arguments they build for it, on which the worker carries its exploration on (exploring again only what they may
   support). The premises of a rule are asked for all at once, rather than each once the one before it is supported

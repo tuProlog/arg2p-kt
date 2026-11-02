@@ -69,5 +69,36 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
         canAttack(Argument) :- setting(metaConflicts), !,
             conflictOf(Argument, _).
         canAttack(_).
+
+        %==============================================================================
+        % QUERY MODE
+        %==============================================================================
+
+        %! queryRelations
+        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
+        %  queryExploration::extend/1.
+        queryRelations.
+
+        %! queryDependencies(+Argument, -Statement)
+        %  The conflicts are themselves conclusions: Argument depends on the arguments for Statement, which make others
+        %  conflict with it.
+        queryDependencies(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::statement(_, Conclusion, Statement).
+        queryDependencies(Argument, Statement) :-
+            argument::topRule(Argument, Rule),
+            Rule \== none,
+            conflict::statement(_, [Rule], Statement).
+
+        %! queryDependants(+Argument, -Statement)
+        %  The arguments for Statement depend on Argument: those its conclusion makes conflict with others, and, for an
+        %  argument for a conflict, those it makes conflict.
+        queryDependants(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::statement(Conclusion, _, Statement).
+        queryDependants(Argument, Statement) :-
+            argument::claim(Argument, Conflict),
+            conflict::statement([A], [B], Conflict),
+            (Statement = A ; Statement = B).
         """.trimIndent()
 }

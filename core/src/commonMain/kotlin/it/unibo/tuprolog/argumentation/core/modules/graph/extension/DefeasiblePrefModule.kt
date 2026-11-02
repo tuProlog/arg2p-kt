@@ -103,6 +103,11 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         % QUERY MODE
         %==============================================================================
 
+        %! queryRelations
+        %  The module relates statements in query mode (queryDependencies/2, queryDependants/2): see
+        %  queryExploration::extend/1.
+        queryRelations.
+
         %! queryDependencies(+Argument, -Statement)
         %  The preferences between the rules of Argument are themselves conclusions (sup/2).
         queryDependencies(Argument, S) :-

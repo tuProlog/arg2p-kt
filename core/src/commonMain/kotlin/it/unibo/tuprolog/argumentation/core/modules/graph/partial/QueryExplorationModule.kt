@@ -33,6 +33,16 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
                 true
             ).
 
+        %! explore(+Query, +Locality)
+        %  The part of the graph the labels of the arguments for Query depend on, as Locality goes (see
+        %  structuredPartial::locality/1): the arguments for Query and those they depend on (explore/1), those depending
+        %  on them for the connected locality (expand/1), then what the steps changing the graph relate to them
+        %  (extend/1).
+        explore(Query, Locality) :-
+            explore(Query),
+            expand(Locality),
+            extend(Locality).
+
         % A solver given arguments built elsewhere (as a worker of the parallel solver, which has some of the rules) carries
         % on its exploration as they come: resume/1 explores again what they may support, restart/0 forgets it all.
 
@@ -131,11 +141,8 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         exploreStatement(_, _).
 
         % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
-        % it): those that make others conflict with it (metaConflicts), those of its possible attackers, and those the
-        % graph extensions relate it to. The conflicts come first, as the possible attackers are only looked for once.
-        dependency(_, Argument, S) :- attackCandidates::attackDependency(Argument, S).
+        % it): those of its possible attackers. The steps changing the graph relate it to others in turn (see extend/1).
         dependency(Id, Argument, S) :- attackCandidates::possibleAttackers(Id, Argument, [S]).
-        dependency(_, Argument, S) :- setting(graphExtension, X), X::queryDependencies(Argument, S).
 
         %! expand(+Locality)
         %  For the connected locality, the arguments whose labels may depend on the ones built (see dependant/2), with
@@ -153,14 +160,46 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             expand(connected).
         expand(_).
 
-        % The statements whose arguments may depend on an argument: those it may attack, those its conclusion makes
-        % conflict (metaConflicts), those of its super-arguments, and those the graph extensions relate to it
+        % The statements whose arguments may depend on an argument: those it may attack, and those of its
+        % super-arguments. The steps changing the graph relate others to it in turn (see extend/1).
         dependant(Argument, S) :- attackCandidates::possiblyAttacked(Argument, S).
-        dependant(Argument, S) :- attackCandidates::attackDependant(Argument, S).
         dependant(Argument, S) :-
             argument::claim(Argument, Claim),
             parser::ruleUsing(Claim, S).
-        dependant(Argument, S) :- setting(graphExtension, X), X::queryDependants(Argument, S).
+
+        %! extend(+Locality)
+        %  The exploration extended by the steps changing the graph (see structuredWhole::querySteps/1), as they extend
+        %  the graph in whole mode: the statements each relates to the arguments built (queryDependencies/2, and for the
+        %  connected locality queryDependants/2) explored, until no argument is new. When the conflicts are arguments
+        %  (see conflict::argued/0), the arguments built may make more of the others possible attackers or dependants:
+        %  those are looked for again.
+        extend(Locality) :-
+            structuredWhole::querySteps(Steps),
+            extend(Steps, Locality).
+
+        extend([], _) :- !.
+        extend(Steps, Locality) :-
+            graphStore::argumentIds(Before),
+            findall(S, (graphStore::argumentById(_, A), member(Step, Steps), related(Locality, Step, A, S)), Statements),
+            findall(_, (member(S, Statements), explore(S)), _),
+            graphStore::argumentIds(After),
+            length(Before, N),
+            length(After, M),
+            (N == M -> true ; again(Locality), extend(Steps, Locality)).
+
+        related(_, Step, Argument, S) :- Step::queryDependencies(Argument, S).
+        related(connected, Step, Argument, S) :- Step::queryDependants(Argument, S).
+
+        % Once arguments are added: if the conflicts are arguments, the possible attackers and the dependants of all
+        % of them looked for again; those of the new ones otherwise
+        again(Locality) :-
+            conflict::argued, !,
+            attackCandidates::forgetPossibleAttackers,
+            context_retract(expanded(_)),
+            findall(_, (graphStore::argumentById(Id, A), dependency(Id, A, S), explore(S)), _),
+            expand(Locality).
+        again(Locality) :-
+            expand(Locality).
 
         % recordArgument(+Query, +Argument, +Supports): Argument saved with its supports, unless it already was (built in
         % a previous round of explore/1, whose dependencies are explored again)

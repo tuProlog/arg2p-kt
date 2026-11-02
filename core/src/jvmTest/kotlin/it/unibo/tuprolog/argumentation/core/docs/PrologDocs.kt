@@ -257,6 +257,7 @@ class PrologReference(
             Signature("argumentLabelling", 0),
             Signature("statementLabelling", 0),
             Signature("locality", 1),
+            Signature("queryRelations", 0),
             Signature("queryDependencies", 2),
             Signature("queryDependants", 2),
         )

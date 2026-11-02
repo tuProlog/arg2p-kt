@@ -62,6 +62,11 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
         unguarded(Statement, Other) :-
             context_check(conflict(Statement, Other)).
 
+        %! argued
+        %  The conflicts are the conclusions of arguments (metaConflicts): which statements conflict changes as the
+        %  graph grows.
+        argued :- setting(metaConflicts).
+
         %! statement(?Statement, ?Other, -ConflictStatement)
         %  With metaConflicts, the arguments for ConflictStatement make Statement conflict with Other.
         statement([A], [B], conflict(A, B, _)) :- setting(metaConflicts).

@@ -51,8 +51,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         queryAcceptance(whole_graph, _) :- !,
             structuredWhole:::computeGlobalAcceptance.
         queryAcceptance(Locality, Goal) :-
-            queryExploration::explore(Goal),
-            queryExploration::expand(Locality),
+            queryExploration::explore(Goal, Locality),
             structuredWhole::checkProfile,
             structuredWhole::builder(X),
             X:::buildAdditionalArguments,
@@ -95,6 +94,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         %  sub-arguments: the solvers that do not know its rules look for their attackers as well.
         buildArgument(Query, Argument, SubArguments) :-
             queryExploration::explore(Query),
+            queryExploration::extend(directional),
             graphStore::argumentFor([Query], Argument),
             subArguments(Argument, SubArguments).
 
@@ -124,6 +124,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             utils::deduplicate(Statements, Candidates),
             member(Statement, Candidates),
             queryExploration::explore(Statement),
+            queryExploration::extend(directional),
             graphStore::argumentFor([Statement], Attacker),
             attackRelation::attacks(Type, Attacker, On),
             (parser::constrained -> constraint::compatible(Attacker, On) ; true).

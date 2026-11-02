@@ -252,7 +252,7 @@ internal class Worker(
     // arguments of its rules built shared, and the others asked to explore the statements explored that their rules
     // conclude
     private fun explored() {
-        if (locality == "connected") solver.solveOnce("queryExploration::expand(connected)")
+        solver.solveOnce("queryExploration::expand($locality), queryExploration::extend($locality)")
         share()
         // the statements explored since the last time (by their text), with the premises of the rules for them (asked
         // all at once, so that the others build their arguments side by side: the exploration would ask for each once

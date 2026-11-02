@@ -78,39 +78,61 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         preferenceMode(abaPref).
 
         %! modifyGraph
-        %  The graph changed by the steps the flags select (see active/1), in the order of step/1 whatever the order the
+        %  The graph changed by the steps the flags select (see active/1), in the order of steps/1 whatever the order the
         %  flags state them in: first those adding the arguments derived from the others, each with their attacks (the
         %  instances of constraints, also with temporal, then the copies of metaConflicts), then those changing the
         %  attacks (rebutRestriction, the preference mode, bp). Any other graph extension (a module of the user) comes
         %  last, the last stated first.
         modifyGraph :-
-            findall(S, (step(S), active(S)), Steps),
-            findall(X, (setting(graphExtension, X), \+ step(X)), Others),
+            steps(Steps),
             applySteps(Steps),
+            others(Others),
             modifyGraph(Others).
 
-        %! step(?Step)
+        %! querySteps(-Steps)
+        %  The steps changing the graph (see modifyGraph/0) that relate statements in query mode, declaring
+        %  queryRelations/0 (see queryExploration::extend/1), in their order.
+        querySteps(Steps) :-
+            steps(All),
+            querySteps(All, Known),
+            others(Others),
+            querySteps(Others, Theirs),
+            append(Known, Theirs, Steps).
+
+        querySteps([], []).
+        querySteps([Step|Steps], Query) :-
+            (active(Step), Step::queryRelations -> Query = [Step|Rest] ; Query = Rest),
+            querySteps(Steps, Rest).
+
+        %! steps(-Steps)
         %  The modules changing the graph, in the order they apply.
-        step(constraints).
-        step(conflictArguments).
-        step(rebutRestriction).
-        step(standardPref).
-        step(defeasiblePref).
-        step(defeasibleAllPref).
-        step(abaPref).
-        step(bp).
+        steps([constraints, conflictArguments, rebutRestriction, standardPref, defeasiblePref, defeasibleAllPref, abaPref, bp]).
+
+        %! step(?Step)
+        %  Step is one of steps/1.
+        step(Step) :- steps(Steps), member(Step, Steps).
 
         %! active(+Step)
         %  Step applies: constraints with that graph extension or temporal, conflictArguments with metaConflicts, the
-        %  others when they are graph extensions. The settings are read here, as a call to another module costs as much
-        %  as the graph it is made over.
+        %  others when they are graph extensions; any other graph extension is (see others/1).
         active(constraints) :- !, (setting(graphExtension, constraints) -> true ; setting(temporal)).
         active(conflictArguments) :- !, setting(metaConflicts).
         active(Step) :- setting(graphExtension, Step).
 
+        % The graph extensions of the user, the modules other than those of steps/1, as stated. The steps are walked
+        % by recursion, and these collected only if there are some: the graph is changed through the calls of another
+        % module (see structuredPartial::queryAcceptance/2), and a findall/3 there, or backtracking into a call to
+        % another module, costs as much as the context it is made in.
+        others(Others) :-
+            (setting(graphExtension, X), \+ step(X) ->
+                findall(Y, (setting(graphExtension, Y), \+ step(Y)), Others)
+            ;
+                Others = []
+            ).
+
         applySteps([]).
         applySteps([Step|Steps]) :-
-            Step:::modifyArgumentationGraph,
+            (active(Step) -> Step:::modifyArgumentationGraph ; true),
             applySteps(Steps).
 
         modifyGraph([]).

@@ -74,7 +74,11 @@ implementation exists.
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
 The `structuredWhole` module runs the sequence on the whole graph, and `structuredPartial` implements the goal-directed variant
-used when `queryMode` is enabled.
+used when `queryMode` is enabled. That variant differs in the second stage alone: it builds the part of the graph the
+query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
+for a connected semantics what they attack and support), then through what the steps changing the graph relate them
+to (`queryDependencies/2`, `queryDependants/2` of the modules declaring `queryRelations/0`), the attacks between
+them after. The other stages are the same.
 
 ---
 

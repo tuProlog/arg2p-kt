@@ -125,5 +125,15 @@ private object QueryExploration : PrologModule("prolog.argumentation.parallel.ex
         %! expand(+Locality)
         %  Done by the workers, as they explore.
         expand(_).
+
+        %! extend(+Locality)
+        %  Done by the workers, as they explore.
+        extend(_).
+
+        %! explore(+Query, +Locality)
+        %  The arguments for Query and those their labels may depend on, built by the workers, who expand and extend
+        %  their exploration as Locality goes.
+        explore(Query, _) :-
+            explore(Query).
         """.trimIndent()
 }
