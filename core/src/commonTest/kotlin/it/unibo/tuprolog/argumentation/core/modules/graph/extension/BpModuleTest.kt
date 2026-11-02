@@ -6,7 +6,9 @@ import kotlin.test.assertTrue
 
 /** The burdens of proof argued (the extension bp): a burden stands on each of its arguments */
 class BpModuleTest {
-    private val config = "statementLabellingMode(statement).\nargumentLabellingMode(bp_grounded).\ngraphExtension(standardPref).\ngraphExtension(bp).\n"
+    private val config =
+        "statementLabellingMode(statement).\nargumentLabellingMode(bp_grounded).\n" +
+            "graphExtension(standardPref).\ngraphExtension(bp).\n"
 
     // Two arguments for the burden on guilty, one undercut: the burden stands on the other, and guilty, not met, is OUT
     @Test
