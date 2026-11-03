@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
 import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
+import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
@@ -1905,14 +1906,36 @@ internal class Machine(
         return fromTerm(term, cells)
     }
 
-    override val context: ExecutionContext
-        get() {
-            val name = program.nameOfFunctor(nativeFunctor)
-            val goal = if (nativeArity == 0) Atom.of(name) else Struct.of(name, List(nativeArity) { term(regs[it]) })
-            return PrologExecutionContext(environmentSeen(), procedure = goal)
-        }
+    override val context: ExecutionContext get() = PrologExecutionContext(environmentSeen())
+
+    override val libraries: Runtime get() = scope.libraries ?: environment!!.libraries
 
     override val rootLibraries: Runtime get() = environment!!.libraries
+
+    override fun sourced(
+        goal: Int,
+        source: ClauseSource,
+    ): Int {
+        val g = deref(goal)
+        val goalTerm = term(g).castToStruct()
+        val clauses = source.clausesFor(goalTerm, environment!!.unificator)
+        if (clauses.isEmpty()) return FAILED
+        // The arguments of the goal looked up in the registers (those of the call were the primitive's)
+        val goalArity = goalTerm.arity
+        if (goalArity > regs.size) regs = regs.copyOf(goalArity * 2)
+        if (tag(g) == STR) {
+            val a = payload(g)
+            for (i in 0 until goalArity) regs[i] = heap[a + 1 + i]
+        } else if (tag(g) == LIST) {
+            val a = payload(g)
+            regs[0] = heap[a]
+            regs[1] = heap[a + 1]
+        }
+        val call = SourcedCall(clauses)
+        val index = calls.size
+        calls.add(call)
+        return trySourced(call, 0, goalArity, index)
+    }
 
     override fun inline(
         goal: Int,

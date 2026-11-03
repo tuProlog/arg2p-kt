@@ -15,6 +15,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
@@ -173,11 +174,18 @@ class Settings(
     internal fun declared(
         request: Solve.Request<ExecutionContext>,
         switch: Boolean,
+    ): ArgsFlag<*, *> = declared(request.arguments[0], request.context, request.signature, switch)
+
+    /** The flag named [name] (the first argument of a call of [signature]), declared of the kind its check expects */
+    internal fun declared(
+        name: Term,
+        context: ExecutionContext,
+        signature: Signature,
+        switch: Boolean,
     ): ArgsFlag<*, *> {
-        val name = request.arguments[0]
-        if (name !is Atom) throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.ATOM, name, 0)
+        if (name !is Atom) throw TypeError.forArgument(context, signature, TypeError.Expected.ATOM, name, 0)
         return flags[name.value]?.takeIf { it.isSwitch == switch }
-            ?: throw DomainError.forArgument(request.context, request.signature, DomainError.Expected.FLAG, name, 0)
+            ?: throw DomainError.forArgument(context, signature, DomainError.Expected.FLAG, name, 0)
     }
 
     override val alias = "prolog.argumentation.settings"
