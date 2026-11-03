@@ -1,12 +1,46 @@
 package it.unibo.tuprolog.argumentation.core.runtime
 
 import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.unify.Unificator
+
+/**
+ * Whether this term is ground, where the answer is at hand (arg2p): a list or a tuple knows it when built, an atom or
+ * a number always, a variable never. A plain compound term computes it on its first request, by sequences over its
+ * whole subterm allocated at every level, which the walks of the engine cost less than: they visit its parts instead
+ * (those ground at hand, lists for the most part, visited no further).
+ */
+internal fun Term.isKnownGround(): Boolean =
+    when (this) {
+        is Var -> false
+        is Cons, is Tuple -> isGround
+        is Struct -> arity == 0
+        else -> true
+    }
+
+/**
+ * This compound term with [part] applied to each argument: the term itself where none changes, built only where one
+ * does (arg2p: a list of arguments allocated for every term visited, changed or not, was a tenth of the allocations)
+ */
+internal inline fun Struct.rebuilt(part: (Term) -> Term): Term {
+    var arguments: ArrayList<Term>? = null
+    for (i in 0 until arity) {
+        val argument = this[i]
+        val result = part(argument)
+        if (arguments == null && result !== argument) {
+            arguments = ArrayList(arity)
+            for (j in 0 until i) arguments.add(this[j])
+        }
+        arguments?.add(result)
+    }
+    return if (arguments == null) this else Struct.of(functor, arguments)
+}
 
 /**
  * The unificator of the argumentation solvers: the default one, without the occurs check unless explicitly
@@ -97,7 +131,6 @@ object Arg2pUnificator : Unificator by Unificator.default {
             path: ArrayList<Var>?,
         ): Term =
             when {
-                term.isGround -> term
                 term is Var -> {
                     val bound = bindings!![term]
                     if (bound == null || (path != null && term in path)) {
@@ -107,15 +140,7 @@ object Arg2pUnificator : Unificator by Unificator.default {
                         resolve(bound, visiting).also { visiting.removeAt(visiting.size - 1) }
                     }
                 }
-                term is Struct -> {
-                    var changed = false
-                    val arguments =
-                        List(term.arity) { i ->
-                            val argument = term[i]
-                            resolve(argument, path).also { if (it !== argument) changed = true }
-                        }
-                    if (changed) Struct.of(term.functor, arguments) else term
-                }
+                term is Struct && !term.isKnownGround() -> term.rebuilt { resolve(it, path) }
                 else -> term
             }
     }

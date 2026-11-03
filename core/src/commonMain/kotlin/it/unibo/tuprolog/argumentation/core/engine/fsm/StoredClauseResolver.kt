@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
+import it.unibo.tuprolog.argumentation.core.runtime.isKnownGround
+import it.unibo.tuprolog.argumentation.core.runtime.rebuilt
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -169,13 +171,13 @@ internal object StoredClauseResolver : ClauseResolver {
             }
 
         // [term], of the goal, with the bindings applied through the chains of bound variables; [path] the variables
-        // being resolved, a variable bound to a term holding it (there is no occurs check) left in it
+        // being resolved, a variable bound to a term holding it (there is no occurs check) left in it. The terms of
+        // the goal are the fresh ones of the resolution: the plain compound ones are visited (see isKnownGround)
         private fun resolve(
             term: Term,
             path: ArrayList<Var>?,
         ): Term =
             when {
-                term.isGround -> term
                 term is Var -> {
                     val bound = bindings?.get(term)
                     if (bound == null || (path != null && term in path)) {
@@ -185,15 +187,7 @@ internal object StoredClauseResolver : ClauseResolver {
                         resolve(bound, visiting).also { visiting.removeAt(visiting.size - 1) }
                     }
                 }
-                term is Struct -> {
-                    var changed = false
-                    val arguments =
-                        List(term.arity) { i ->
-                            val argument = term[i]
-                            resolve(argument, path).also { if (it !== argument) changed = true }
-                        }
-                    if (changed) Struct.of(term.functor, arguments) else term
-                }
+                term is Struct && !term.isKnownGround() -> term.rebuilt { resolve(it, path) }
                 else -> term
             }
 
