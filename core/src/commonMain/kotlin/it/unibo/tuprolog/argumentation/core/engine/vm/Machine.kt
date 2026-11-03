@@ -210,13 +210,13 @@ internal class Machine(
             CONTINUE
         }
         builtin("=", 2) { m -> if (m.unify(m.regs[0], m.regs[1])) CONTINUE else FAILED }
-        builtin("is", 2) { m -> if (m.unify(m.regs[0], m.program.intWord(m.eval(m.regs[1])))) CONTINUE else FAILED }
-        builtin("<", 2) { m -> if (m.eval(m.regs[0]) < m.eval(m.regs[1])) CONTINUE else FAILED }
-        builtin(">", 2) { m -> if (m.eval(m.regs[0]) > m.eval(m.regs[1])) CONTINUE else FAILED }
-        builtin("=<", 2) { m -> if (m.eval(m.regs[0]) <= m.eval(m.regs[1])) CONTINUE else FAILED }
-        builtin(">=", 2) { m -> if (m.eval(m.regs[0]) >= m.eval(m.regs[1])) CONTINUE else FAILED }
-        builtin("=:=", 2) { m -> if (m.eval(m.regs[0]) == m.eval(m.regs[1])) CONTINUE else FAILED }
-        builtin("=\\=", 2) { m -> if (m.eval(m.regs[0]) != m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic("is") { m -> if (m.unify(m.regs[0], m.program.intWord(m.eval(m.regs[1])))) CONTINUE else FAILED }
+        arithmetic("<") { m -> if (m.eval(m.regs[0]) < m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic(">") { m -> if (m.eval(m.regs[0]) > m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic("=<") { m -> if (m.eval(m.regs[0]) <= m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic(">=") { m -> if (m.eval(m.regs[0]) >= m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic("=:=") { m -> if (m.eval(m.regs[0]) == m.eval(m.regs[1])) CONTINUE else FAILED }
+        arithmetic("=\\=") { m -> if (m.eval(m.regs[0]) != m.eval(m.regs[1])) CONTINUE else FAILED }
         builtin("var", 1) { m -> if (tag(m.deref(m.regs[0])) == REF) CONTINUE else FAILED }
         builtin("nonvar", 1) { m -> if (tag(m.deref(m.regs[0])) != REF) CONTINUE else FAILED }
         builtin("call", 1) { m ->
@@ -257,6 +257,29 @@ internal class Machine(
     ) {
         builtins[program.functor(name, arity)] = implementation
     }
+
+    // An arithmetic builtin: [native] on the integers and the operators the machine evaluates itself, the primitive
+    // of the libraries (tuProlog's evaluation, floats and every function) on anything else
+    private fun arithmetic(
+        name: String,
+        native: Builtin,
+    ) {
+        val functor = program.functor(name, 2)
+        builtins[functor] =
+            Builtin { m ->
+                try {
+                    native.call(m)
+                } catch (_: NotNative) {
+                    val primitive =
+                        m.scope.primitive(functor)
+                            ?: throw Raised(error(Struct.of("existence_error", Atom.of("procedure"), Indicator.of(name, 2)), "$name/2"))
+                    m.callPrimitive(primitive, functor, 2)
+                }
+            }
+    }
+
+    // An expression the machine does not evaluate itself (see arithmetic)
+    private class NotNative : RuntimeException()
 
     /** Prepares the dispatch tables: to call once the program is loaded */
     fun prepare() {
@@ -1019,6 +1042,11 @@ internal class Machine(
 
     // ---- arithmetic
 
+    /**
+     * The value of the integer expression [w0]: a small or large integer, or the four operations, integer division,
+     * modulo and negation of such; anything else (a float, another function, an error) is left to the library
+     * ([NotNative])
+     */
     fun eval(w0: Int): Long {
         val w = deref(w0)
         return when (tag(w)) {
@@ -1032,24 +1060,19 @@ internal class Machine(
                     fTimes -> eval(heap[a + 1]) * eval(heap[a + 2])
                     fIntDiv -> {
                         val divisor = eval(heap[a + 2])
-                        if (divisor == 0L) throw Raised(error(Struct.of("evaluation_error", Atom.of("zero_divisor")), "is/2"))
+                        if (divisor == 0L) throw NotNative()
                         eval(heap[a + 1]) / divisor
                     }
                     fMod -> {
                         val divisor = eval(heap[a + 2])
-                        if (divisor == 0L) throw Raised(error(Struct.of("evaluation_error", Atom.of("zero_divisor")), "is/2"))
+                        if (divisor == 0L) throw NotNative()
                         eval(heap[a + 1]).mod(divisor)
                     }
                     fNeg -> -eval(heap[a + 1])
-                    else -> {
-                        val indicator = Indicator.of(program.functorName(heap[a]), program.arity(heap[a]))
-                        throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), indicator), "is/2"))
-                    }
+                    else -> throw NotNative()
                 }
             }
-            REF -> throw Raised(error(Atom.of("instantiation_error"), "is/2"))
-            ATOM -> throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), Indicator.of(program.atoms[payload(w)], 0)), "is/2"))
-            else -> throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), toTerm(w, HashMap())), "is/2"))
+            else -> throw NotNative()
         }
     }
 
@@ -1520,7 +1543,7 @@ internal class Machine(
         when (term) {
             is Var -> ref(variables.getOrPut(term) { newVariable() })
             is Integer -> program.intWord(term.value.toLong())
-            is Real -> program.floatWord(term.value.toDouble())
+            is Real -> program.floatWord(term)
             is Atom -> program.atomWord(term.value)
             is Cons -> {
                 val first = alloc(2)
@@ -1568,7 +1591,7 @@ internal class Machine(
             ATOM -> Atom.of(program.atoms[payload(w)])
             INT -> Integer.of(payload(w))
             BIG -> Integer.of(program.bigs[payload(w)])
-            FLT -> Real.of(program.floats[payload(w)])
+            FLT -> program.floats[payload(w)]
             STR -> {
                 val a = payload(w)
                 val n = program.arity(heap[a])

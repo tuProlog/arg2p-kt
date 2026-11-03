@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Runtime
@@ -30,8 +31,10 @@ internal class Program {
     val functorArities = ArrayList<Int>()
     private val functorIds = HashMap<Long, Int>()
 
-    val floats = ArrayList<Double>()
-    private val floatIds = HashMap<Double, Int>()
+    // (the floats as tuProlog reads them: a float read from "61.167" and the double 61.167 are two values, and the
+    // first must come out as it went in)
+    val floats = ArrayList<Real>()
+    private val floatIds = HashMap<Real, Int>()
     val bigs = ArrayList<Long>()
     private val bigIds = HashMap<Long, Int>()
 
@@ -242,7 +245,7 @@ internal class Program {
 
     fun nameOfFunctor(functor: Int): String = atoms[functorNames[functor]]
 
-    fun floatWord(value: Double): Int =
+    fun floatWord(value: Real): Int =
         word(
             FLT,
             floatIds.getOrPut(value) {

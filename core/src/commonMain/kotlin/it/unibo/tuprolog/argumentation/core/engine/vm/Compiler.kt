@@ -112,7 +112,7 @@ internal class Compiler(
     private fun constant(term: Term): Int =
         when (term) {
             is Integer -> program.intWord(term.value.toLong())
-            is Real -> program.floatWord(term.value.toDouble())
+            is Real -> program.floatWord(term)
             is Atom -> program.atomWord(term.value)
             else -> throw IllegalArgumentException("not a term of the machine: $term")
         }
