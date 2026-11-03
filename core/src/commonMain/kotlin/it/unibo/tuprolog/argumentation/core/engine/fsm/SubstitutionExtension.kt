@@ -13,9 +13,9 @@ import it.unibo.tuprolog.core.Var
  * they are only applied to its terms. As `substitution + bindings`, without checking for contradictions and copying
  * the terms one time less.
  */
-internal fun Substitution.Unifier.extendedWith(bindings: Substitution.Unifier): Substitution.Unifier {
+internal fun Substitution.Unifier.extendedWith(bindings: Map<Var, Term>): Substitution.Unifier {
     if (bindings.isEmpty()) return this
-    if (isEmpty()) return bindings
+    if (isEmpty()) return bindings as? Substitution.Unifier ?: Substitution.unifier(bindings)
     return Substitution.unifier(Extended(this, bindings))
 }
 
@@ -26,7 +26,7 @@ internal fun Substitution.Unifier.extendedWith(bindings: Substitution.Unifier): 
  */
 private class Extended(
     private val substitution: Substitution.Unifier,
-    private val bindings: Substitution.Unifier,
+    private val bindings: Map<Var, Term>,
 ) : AbstractMap<Var, Term>() {
     override val size: Int
         get() = substitution.size + bindings.size
@@ -73,7 +73,7 @@ private class Extended(
  * allocated at each level) to check them against the unifier before copying it. [unifier] binds the variables of its
  * own values to nothing (it is applied to itself, as the unifiers of the resolution are).
  */
-internal fun Term.substituted(unifier: Substitution.Unifier): Term =
+internal fun Term.substituted(unifier: Map<Var, Term>): Term =
     when {
         unifier.isEmpty() -> this
         this is Var -> unifier[this] ?: this

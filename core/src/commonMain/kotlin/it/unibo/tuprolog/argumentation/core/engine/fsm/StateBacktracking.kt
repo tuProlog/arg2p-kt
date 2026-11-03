@@ -15,14 +15,13 @@ data class StateBacktracking(
     override val context: PrologExecutionContext,
 ) : AbstractState(context) {
     override fun computeNext(): State {
-        val choicePoints = context.choicePoints
-        return if (choicePoints.let { it === null || !it.hasOpenAlternatives }) {
+        val choicePointContext = context.choicePoints?.firstOpen()
+        return if (choicePointContext == null) {
             StateEnd(
                 solution = Solution.no(context.query),
                 context = context.copy(step = nextStep()),
             )
         } else {
-            val choicePointContext = choicePoints!!.pathToRoot.first { it.alternatives.hasNext }
             // arg2p: backtracking into a primitive computes its next answers, which may raise errors
             try {
                 val nextContext = choicePointContext.backtrack(context)

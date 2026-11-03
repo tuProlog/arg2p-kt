@@ -13,10 +13,11 @@ import it.unibo.tuprolog.utils.Cursor
 /**
  * The resolution of a goal with a clause: the bindings it gives the variables of the goal (those of the clause are
  * renamed apart, and only occur in its body), and the goals of the body to execute in place of the goal, prepared for
- * execution.
+ * execution. The bindings are a plain map, each with the others applied: a unifier built from them is copied twice
+ * by tuProlog, and they are only read to extend the substitution (see [extendedWith]).
  */
 internal class Resolution(
-    val goalBindings: Substitution.Unifier,
+    val goalBindings: Map<Var, Term>,
     val goals: Cursor<out Term>,
 ) {
     /** [substitution], the one of the resolution, extended with the bindings of the goal (see [extendedWith]) */

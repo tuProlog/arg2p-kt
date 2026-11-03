@@ -45,6 +45,16 @@ data class StatePrimitiveSelection(
                     val signature = theoryIndexes.signatureOf(goalStruct)
 
                     if (libraries.hasPrimitive(signature)) {
+                        // arg2p: a type test of the standard library is answered in this frame (see NativeTests): it
+                        // goes on with the next goal, or backtracks, as the frame of the primitive left would
+                        val test = NativeTests.of(signature, libraries)
+                        if (test != null) {
+                            return@with if (test(goalStruct[0])) {
+                                StateGoalSelection(context.copy(goals = goals.next, step = nextStep()))
+                            } else {
+                                StateBacktracking(context.advanced())
+                            }
+                        }
                         val childContext = createChild()
                         try {
                             val request = childContext.toRequest(goalStruct, signature, executionTime)

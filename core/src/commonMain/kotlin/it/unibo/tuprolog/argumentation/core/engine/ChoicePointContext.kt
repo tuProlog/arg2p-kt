@@ -32,7 +32,20 @@ sealed class ChoicePointContext(
 ) {
     /** Whether this choice point, or any of its ancestors along [pathToRoot], still has an alternative to try. */
     val hasOpenAlternatives: Boolean
-        get() = pathToRoot.any { it.alternatives.hasNext }
+        get() = firstOpen() != null
+
+    /**
+     * This choice point or its nearest ancestor with an alternative to try, null if none has one (arg2p: by a loop,
+     * where [pathToRoot] built a sequence at every backtracking)
+     */
+    fun firstOpen(): ChoicePointContext? {
+        var current: ChoicePointContext? = this
+        while (current != null) {
+            if (current.alternatives.hasNext) return current
+            current = current.parent
+        }
+        return null
+    }
 
     /** This choice point and all its ancestors, from here up to (and including) the root, in that order. */
     val pathToRoot: Sequence<ChoicePointContext>
@@ -65,6 +78,10 @@ sealed class ChoicePointContext(
      * [PrologExecutionContext], ready to be handed to
      * [it.unibo.tuprolog.argumentation.core.engine.fsm.StatePrimitiveExecution] or
      * [it.unibo.tuprolog.argumentation.core.engine.fsm.StateRuleExecution] depending on the concrete subtype.
+     *
+     * (arg2p: the context resumed is copied once, with the choice point advanced as its choice points, and the
+     * choice point advanced keeps it as its context: the two refer to each other, so the context is set in the
+     * choice point once it is built, before anything else sees either.)
      */
     abstract fun backtrack(context: PrologExecutionContext): PrologExecutionContext
 
@@ -76,7 +93,7 @@ sealed class ChoicePointContext(
     /** A choice point recording the remaining [it.unibo.tuprolog.solve.primitive.Solve.Response] alternatives of a primitive call. */
     data class Primitives(
         override val alternatives: Cursor<out Solve.Response>,
-        override val executionContext: PrologExecutionContext?,
+        override var executionContext: PrologExecutionContext?,
         override val parent: ChoicePointContext?,
         override val depth: Int,
     ) : ChoicePointContext(alternatives, executionContext, parent, depth) {
@@ -86,7 +103,8 @@ sealed class ChoicePointContext(
             get() = "Primitives"
 
         override fun backtrack(context: PrologExecutionContext): PrologExecutionContext {
-            val tempContext =
+            val next = copy(alternatives = alternatives.next)
+            val resumed =
                 executionContext!!.copy(
                     primitives = alternatives,
                     step = context.step + 1,
@@ -99,22 +117,17 @@ sealed class ChoicePointContext(
                     outputChannels = context.outputChannels,
                     libraries = librariesFor(context),
                     customData = context.customData.discardEphemeral(),
+                    choicePoints = next,
                 )
-
-            val nextChoicePointContext =
-                copy(
-                    alternatives = alternatives.next,
-                    executionContext = tempContext,
-                )
-
-            return tempContext.copy(choicePoints = nextChoicePointContext)
+            next.executionContext = resumed
+            return resumed
         }
     }
 
     /** A choice point recording the remaining candidate [Rule]s of a clause resolution attempt. */
     data class Rules(
         override val alternatives: Cursor<out Rule>,
-        override val executionContext: PrologExecutionContext?,
+        override var executionContext: PrologExecutionContext?,
         override val parent: ChoicePointContext?,
         override val depth: Int,
     ) : ChoicePointContext(alternatives, executionContext, parent, depth) {
@@ -124,7 +137,8 @@ sealed class ChoicePointContext(
             get() = "Rules"
 
         override fun backtrack(context: PrologExecutionContext): PrologExecutionContext {
-            val tempContext =
+            val next = copy(alternatives = alternatives.next)
+            val resumed =
                 executionContext!!.copy(
                     rules = alternatives,
                     step = context.step + 1,
@@ -137,15 +151,10 @@ sealed class ChoicePointContext(
                     outputChannels = context.outputChannels,
                     libraries = librariesFor(context),
                     customData = context.customData.discardEphemeral(),
+                    choicePoints = next,
                 )
-
-            val nextChoicePointContext =
-                copy(
-                    alternatives = alternatives.next,
-                    executionContext = tempContext,
-                )
-
-            return tempContext.copy(choicePoints = nextChoicePointContext)
+            next.executionContext = resumed
+            return resumed
         }
     }
 }

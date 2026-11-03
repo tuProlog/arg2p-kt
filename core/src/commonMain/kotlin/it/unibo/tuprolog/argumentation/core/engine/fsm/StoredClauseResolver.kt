@@ -4,7 +4,6 @@ import it.unibo.tuprolog.argumentation.core.runtime.isKnownGround
 import it.unibo.tuprolog.argumentation.core.runtime.rebuilt
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
@@ -79,13 +78,13 @@ internal object StoredClauseResolver : ClauseResolver {
         }
 
         // The bindings of the variables of the goal, each with the others applied, the fresh variables left out
-        private fun goalBindings(): Substitution.Unifier {
-            val found = bindings ?: return Substitution.empty()
+        private fun goalBindings(): Map<Var, Term> {
+            val found = bindings ?: return emptyMap()
             val resolved = LinkedHashMap<Var, Term>(found.size * 2)
             for ((variable, term) in found) {
                 if (fresh?.contains(variable) != true) resolved[variable] = resolve(term, null)
             }
-            return Substitution.unifier(resolved)
+            return resolved
         }
 
         private fun rename(
@@ -109,7 +108,8 @@ internal object StoredClauseResolver : ClauseResolver {
             clauseTerm: Term,
             goalTerm: Term,
         ): Boolean {
-            if (clauseTerm.isGround) return unify(clauseTerm, goalTerm)
+            // (a variable is not asked whether it is ground: it would collect its variables in a sequence to answer)
+            if (clauseTerm !is Var && clauseTerm.isGround) return unify(clauseTerm, goalTerm)
             val goal = dereference(goalTerm)
             return when {
                 clauseTerm is Var -> renamed?.get(clauseTerm)?.let { unify(it, goal) } ?: true.also { rename(clauseTerm, named(goal)) }
@@ -172,8 +172,8 @@ internal object StoredClauseResolver : ClauseResolver {
         // A term of the clause as a term of the goal: its variables renamed as they stand
         private fun copy(term: Term): Term =
             when {
-                term.isGround -> term
                 term is Var -> renamed?.get(term) ?: freshVariable(nameOf(term)).also { rename(term, it) }
+                term.isGround -> term
                 term is Struct -> Struct.of(term.functor, List(term.arity) { copy(term[it]) })
                 else -> term
             }
@@ -181,7 +181,6 @@ internal object StoredClauseResolver : ClauseResolver {
         // A term of the clause as a term of the goal, with the bindings applied
         private fun instantiate(term: Term): Term =
             when {
-                term.isGround -> term
                 term is Var -> {
                     val known = instantiated?.get(term)
                     known ?: (
@@ -189,6 +188,7 @@ internal object StoredClauseResolver : ClauseResolver {
                             ?: Var.of(nameOf(term)).also { rename(term, it) }
                     ).also { (instantiated ?: HashMap<Var, Term>(8).also { instantiated = it })[term] = it }
                 }
+                term.isGround -> term
                 term is Struct -> Struct.of(term.functor, List(term.arity) { instantiate(term[it]) })
                 else -> term
             }

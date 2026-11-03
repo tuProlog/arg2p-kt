@@ -23,11 +23,18 @@ data class StatePrimitiveExecution(
         val ctx = primitives.current?.let { apply(it.sideEffects) } ?: this
         return ctx.copy(
             goals = goals ?: this.goals,
-            procedure = pathToRoot.drop(procedureFromAncestor).map { it.procedure }.first(),
+            procedure = ancestor(procedureFromAncestor).procedure,
             primitives = Cursor.empty(),
             substitution = (substitution ?: this.substitution) as Substitution.Unifier,
             step = nextStep(),
         )
+    }
+
+    // The frame [generations] above this one (arg2p: by a loop, where a sequence of the path to the root was built)
+    private fun PrologExecutionContext.ancestor(generations: Int): PrologExecutionContext {
+        var frame = this
+        repeat(generations) { frame = frame.parent!! }
+        return frame
     }
 
     // arg2p: the answer of a primitive binds the variables of its goal, which had the substitution applied: it extends
