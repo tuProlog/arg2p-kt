@@ -53,6 +53,54 @@ internal object Op {
     const val RESTORE_SCOPE = 43
     const val CUT_LOCAL = 44
 
+    // Superinstructions: a list or a structure of two arguments with both arguments unified (the sub-instructions
+    // below, three words each), a deallocation followed by the last call or by the return
+    const val GET_LIST2 = 45
+    const val GET_STR2 = 46
+    const val DEALLOCATE_EXECUTE = 47
+    const val RETURN = 48
+
+    // Arithmetic compiled inline: `is/2` and the comparisons evaluate their expressions (postfix code of the
+    // elements below, two words each) from the registers without building a term, falling back to the builtin
+    // on anything but small integers
+    const val ARITH_IS = 49
+    const val ARITH_CMP = 50
+
+    // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
+    // constant
+    const val T_X = 1
+    const val T_Y = 2
+    const val T_NEW_X = 3
+    const val T_NEW_Y = 4
+    const val T_CONST = 5
+
+    // The elements of an expression
+    const val E_X = 1
+    const val E_Y = 2
+    const val E_CONST = 3
+    const val E_ADD = 4
+    const val E_SUB = 5
+    const val E_MUL = 6
+    const val E_IDIV = 7
+    const val E_MOD = 8
+    const val E_NEG = 9
+
+    // The comparisons
+    const val C_LT = 1
+    const val C_GT = 2
+    const val C_LE = 3
+    const val C_GE = 4
+    const val C_EQ = 5
+    const val C_NE = 6
+
+    // The sub-instructions of GET_LIST2 and GET_STR2: the kind, then the register (or the constant) and the name
+    const val U_X_VAR = 1
+    const val U_Y_VAR = 2
+    const val U_X_VAL = 3
+    const val U_Y_VAL = 4
+    const val U_CONST = 5
+    const val U_VOID = 6
+
     /** The flag of a term call transparent to cut (the barrier of the frame) rather than opaque (its own) */
     const val TRANSPARENT = 1
     const val OPAQUE = 0

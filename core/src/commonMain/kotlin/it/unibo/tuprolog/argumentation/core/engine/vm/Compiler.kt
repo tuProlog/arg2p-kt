@@ -65,6 +65,9 @@ internal class Compiler(
         var occurrences = 0
         var permanent = false
         var register = -1
+
+        // The argument register a temporary variable lives in, when one is its (see compile)
+        var preferred = -1
         var seen = false
         var firstInRegion = false
         var everMet = false
@@ -80,6 +83,12 @@ internal class Compiler(
     private var nextTemp = 0
     private var nextLevel = 0
     private var needsEnv = false
+
+    // The goal of the first chunk (the one the head's temporaries may reach), if any
+    private var firstGoal: Struct? = null
+
+    // Whether the goal analysed last was arithmetic compiled inline: the next call joins its chunk (no call between)
+    private var inlineOpen = false
 
     // The levels (frame slots) of the negations and conditions being compiled: a cut inside one is local to it
     private val cutLevels = ArrayList<Int>()
@@ -126,6 +135,8 @@ internal class Compiler(
     ): Int {
         vars.clear()
         cutLevels.clear()
+        firstGoal = null
+        inlineOpen = false
         chunk = 0
         leafGoals = 0
         hasControl = false
@@ -142,6 +153,7 @@ internal class Compiler(
             if (info.permanent) info.register = permanents++
         }
         needsEnv = permanents > 0 || leafGoals > 1 || hasControl || hasCut
+        preferRegisters(head)
         nextTemp = maxArity
         nextLevel = permanents
         val start = program.codeTop
@@ -154,15 +166,48 @@ internal class Compiler(
         }
         for (i in 0 until head.arity) getArgument(head[i], i)
         val executed = emit(body, last = true)
-        if (!executed) {
-            if (needsEnv) program.emit(Op.DEALLOCATE)
-            program.emit(Op.PROCEED)
-        }
+        if (!executed) program.emit(if (needsEnv) Op.RETURN else Op.PROCEED)
         if (nextTemp > program.maxRegister) program.maxRegister = nextTemp
         return start
     }
 
     // ---- analysis
+
+    /**
+     * The argument registers the temporaries of the head and of the first goal live in, sparing the moves: a
+     * variable that is the argument i of the head and of the first goal alike stays in Ai (no instruction either
+     * side); one first met within the structure of the argument i of the head, or first met in the body, that is
+     * the argument k of the first goal is unified (or created) straight into Ak when the head is done with Ak
+     * (k <= i: the arguments before i are read by then, Ai itself by the instruction entering the structure)
+     */
+    private fun preferRegisters(head: Struct) {
+        val goal = firstGoal ?: return
+        val firstIn = HashMap<Var, Int>()
+        val bare = HashSet<Var>()
+        for (i in 0 until head.arity) {
+            val argument = head[i]
+            if (argument is Var) {
+                if (argument !in firstIn) {
+                    firstIn[argument] = i
+                    bare.add(argument)
+                }
+            } else {
+                val within = LinkedHashSet<Var>().also { collectVariables(argument, it) }
+                for (variable in within) if (variable !in firstIn) firstIn[variable] = i
+            }
+        }
+        for (k in 0 until goal.arity) {
+            val variable = goal[k] as? Var ?: continue
+            val info = vars[variable]!!
+            if (info.permanent || info.occurrences == 1 || info.preferred != -1) continue
+            val i = firstIn[variable]
+            when {
+                i == null -> info.preferred = k
+                variable in bare -> if (i == k) info.preferred = k
+                k <= i -> info.preferred = k
+            }
+        }
+    }
 
     private fun parse(term: Term): Body =
         when {
@@ -204,9 +249,21 @@ internal class Compiler(
         when (body) {
             is Body.Goal -> {
                 val goal = body.term
-                leafGoals++
-                if (goal.arity > maxArity) maxArity = goal.arity
-                val c = if (first && !region) 0 else ++chunk
+                val inline = inlineArithmetic(goal)
+                val c =
+                    if (first && !region) {
+                        0
+                    } else if (inlineOpen) {
+                        chunk
+                    } else {
+                        ++chunk
+                    }
+                if (!inline) {
+                    leafGoals++
+                    if (goal.arity > maxArity) maxArity = goal.arity
+                    if (c == 0 && firstGoal == null) firstGoal = goal
+                }
+                inlineOpen = inline
                 for (i in 0 until goal.arity) occurrences(goal[i], c, region)
             }
             is Body.Conj -> for ((i, item) in body.items.withIndex()) analyze(item, first && i == 0, region)
@@ -215,8 +272,11 @@ internal class Compiler(
                     analyze(Body.Goal(body.term), first, region)
                 } else {
                     hasControl = true
+                    inlineOpen = false
                     analyze(body.left, first = false, region = true)
+                    inlineOpen = false
                     analyze(body.right, first = false, region = true)
+                    inlineOpen = false
                 }
             is Body.IfThenElse ->
                 if (definedByTheory(body.term)) {
@@ -224,9 +284,13 @@ internal class Compiler(
                 } else {
                     hasControl = true
                     levels++
+                    inlineOpen = false
                     analyze(body.condition, first = false, region = true)
+                    inlineOpen = false
                     analyze(body.then, first = false, region = true)
+                    inlineOpen = false
                     analyze(body.otherwise, first = false, region = true)
+                    inlineOpen = false
                 }
             is Body.Naf ->
                 if (definedByTheory(body.term)) {
@@ -234,10 +298,128 @@ internal class Compiler(
                 } else {
                     hasControl = true
                     levels++
+                    inlineOpen = false
                     analyze(body.goal, first = false, region = true)
+                    inlineOpen = false
                 }
             Body.Cut -> hasCut = true
             Body.True -> Unit
+        }
+    }
+
+    // ---- arithmetic compiled inline
+
+    /**
+     * Whether [goal] is `is/2` or a comparison the theory does not redefine, over expressions of variables, small
+     * integers and the integer operations the machine evaluates: compiled inline (no call: the goal joins the chunk
+     * of the call after it)
+     */
+    private fun inlineArithmetic(goal: Struct): Boolean {
+        if (goal.arity != 2 || definedByTheory(goal)) return false
+        val kind = COMPARISONS[goal.functor]
+        if (goal.functor == "is") {
+            val target = goal[0]
+            return (target is Var || (target is Integer && smallInteger(target))) && expression(goal[1])
+        }
+        return kind != null && expression(goal[0]) && expression(goal[1])
+    }
+
+    private fun expression(term: Term): Boolean =
+        when (term) {
+            is Var -> true
+            is Integer -> smallInteger(term)
+            is Struct -> operation(term) != 0 && (0 until term.arity).all { expression(term[it]) }
+            else -> false
+        }
+
+    private fun smallInteger(term: Integer): Boolean = Words.fitsInt(term.value.toLong())
+
+    private fun operation(term: Struct): Int =
+        when (term.arity) {
+            2 ->
+                when (term.functor) {
+                    "+" -> Op.E_ADD
+                    "-" -> Op.E_SUB
+                    "*" -> Op.E_MUL
+                    "//" -> Op.E_IDIV
+                    "mod" -> Op.E_MOD
+                    else -> 0
+                }
+            1 -> if (term.functor == "-") Op.E_NEG else 0
+            else -> 0
+        }
+
+    private fun emitArithmetic(goal: Struct) {
+        val functor = goal.functor
+        if (functor == "is") {
+            val target = goal[0]
+            created(goal[1])
+            program.emit(Op.ARITH_IS)
+            if (target is Var) {
+                val info = vars[target]!!
+                if (info.seen) {
+                    program.emit(if (info.permanent) Op.T_Y else Op.T_X, info.register)
+                } else {
+                    info.seen = true
+                    if (info.permanent) {
+                        program.emit(Op.T_NEW_Y, info.register)
+                    } else {
+                        info.register = temporary(info)
+                        program.emit(Op.T_NEW_X, info.register)
+                    }
+                }
+            } else {
+                program.emit(Op.T_CONST, constant(target))
+            }
+            emitExpression(goal[1])
+        } else {
+            created(goal[0])
+            created(goal[1])
+            program.emit(Op.ARITH_CMP, COMPARISONS[functor]!!)
+            emitExpression(goal[0])
+            emitExpression(goal[1])
+        }
+    }
+
+    // The variables of [term] not met before, created where they live (an instantiation error follows)
+    private fun created(term: Term) {
+        when (term) {
+            is Var -> {
+                val info = vars[term]!!
+                if (info.seen) return
+                info.seen = true
+                if (info.permanent) {
+                    program.emit(Op.INIT_Y, info.register, program.nameOperand(term))
+                } else {
+                    info.register = temporary(info)
+                    program.emit(Op.PUT_X_VAR, info.register, info.register, program.nameOperand(term))
+                }
+            }
+            is Struct -> for (i in 0 until term.arity) created(term[i])
+            else -> Unit
+        }
+    }
+
+    // The code of [term] in postfix, after its length
+    private fun emitExpression(term: Term) {
+        val lengthAt = program.emit(0)
+        val start = program.codeTop
+        emitElements(term)
+        program.code[lengthAt] = program.codeTop - start
+    }
+
+    private fun emitElements(term: Term) {
+        when (term) {
+            is Var -> {
+                val info = vars[term]!!
+                program.emit(if (info.permanent) Op.E_Y else Op.E_X, info.register)
+            }
+            is Integer -> program.emit(Op.E_CONST, constant(term))
+            is Struct -> {
+                for (i in 0 until term.arity) emitElements(term[i])
+                program.emit(operation(term), 0)
+            }
+            else -> throw IllegalStateException("not an expression: $term")
         }
     }
 
@@ -287,14 +469,17 @@ internal class Compiler(
         when (body) {
             is Body.Goal -> {
                 val goal = body.term
+                if (inlineArithmetic(goal)) {
+                    emitArithmetic(goal)
+                    return false
+                }
                 for (i in 0 until goal.arity) putArgument(goal[i], i)
                 val functor = program.functor(goal.functor, goal.arity)
                 if (last) {
-                    if (needsEnv) program.emit(Op.DEALLOCATE)
-                    program.emit(Op.EXECUTE, functor)
+                    program.emit(if (needsEnv) Op.DEALLOCATE_EXECUTE else Op.EXECUTE, functor, goal.arity)
                     return true
                 }
-                program.emit(Op.CALL, functor)
+                program.emit(Op.CALL, functor, goal.arity)
                 return false
             }
             is Body.Conj -> {
@@ -373,8 +558,8 @@ internal class Compiler(
                     if (info.permanent) {
                         program.emit(Op.GET_Y_VAR, info.register, register)
                     } else {
-                        info.register = nextTemp++
-                        program.emit(Op.GET_X_VAR, info.register, register)
+                        info.register = temporary(info)
+                        if (info.register != register) program.emit(Op.GET_X_VAR, info.register, register)
                     }
                 } else {
                     program.emit(if (info.permanent) Op.GET_Y_VAL else Op.GET_X_VAL, info.register, register)
@@ -382,14 +567,64 @@ internal class Compiler(
             }
             is Atom -> program.emit(Op.GET_CONST, constant(term), register)
             is Cons -> {
-                program.emit(Op.GET_LIST, register)
-                unifyArguments(listOf(term.head, term.tail))
+                program.emit(Op.GET_LIST2, register)
+                unifyTwoArguments(term.head, term.tail)
             }
             is Struct -> {
-                program.emit(Op.GET_STR, program.functorWord(term.functor, term.arity), register)
-                unifyArguments(List(term.arity) { term[it] })
+                if (term.arity == 2) {
+                    program.emit(Op.GET_STR2, program.functorWord(term.functor, term.arity), register)
+                    unifyTwoArguments(term[0], term[1])
+                } else {
+                    program.emit(Op.GET_STR, program.functorWord(term.functor, term.arity), register)
+                    unifyArguments(List(term.arity) { term[it] })
+                }
             }
             else -> program.emit(Op.GET_CONST, constant(term), register)
+        }
+    }
+
+    private fun temporary(info: VarInfo): Int = if (info.preferred != -1) info.preferred else nextTemp++
+
+    // The two arguments of a list or of a structure of two, as the sub-instructions of the superinstruction
+    // entering it (emitted after its opcode and operands), the compound ones through temporaries unified after
+    private fun unifyTwoArguments(
+        first: Term,
+        second: Term,
+    ) {
+        val pending = ArrayList<Pair<Int, Term>>()
+        subInstruction(first, pending)
+        subInstruction(second, pending)
+        for ((temp, argument) in pending) getArgument(argument, temp)
+    }
+
+    private fun subInstruction(
+        argument: Term,
+        pending: ArrayList<Pair<Int, Term>>,
+    ) {
+        when (argument) {
+            is Var -> {
+                val info = vars[argument]!!
+                if (info.occurrences == 1) {
+                    program.emit(Op.U_VOID, 0, 0)
+                } else if (!info.seen) {
+                    info.seen = true
+                    if (info.permanent) {
+                        program.emit(Op.U_Y_VAR, info.register, program.nameOperand(argument))
+                    } else {
+                        info.register = temporary(info)
+                        program.emit(Op.U_X_VAR, info.register, program.nameOperand(argument))
+                    }
+                } else {
+                    program.emit(if (info.permanent) Op.U_Y_VAL else Op.U_X_VAL, info.register, 0)
+                }
+            }
+            is Atom -> program.emit(Op.U_CONST, constant(argument), 0)
+            is Struct -> {
+                val temp = nextTemp++
+                program.emit(Op.U_X_VAR, temp, 0)
+                pending.add(temp to argument)
+            }
+            else -> program.emit(Op.U_CONST, constant(argument), 0)
         }
     }
 
@@ -418,7 +653,7 @@ internal class Compiler(
                         if (info.permanent) {
                             program.emit(Op.UNIFY_Y_VAR, info.register, program.nameOperand(argument))
                         } else {
-                            info.register = nextTemp++
+                            info.register = temporary(info)
                             program.emit(Op.UNIFY_X_VAR, info.register, program.nameOperand(argument))
                         }
                     } else {
@@ -457,11 +692,13 @@ internal class Compiler(
                     if (info.permanent) {
                         program.emit(Op.PUT_Y_VAR, info.register, register, program.nameOperand(term))
                     } else {
-                        info.register = nextTemp++
+                        info.register = temporary(info)
                         program.emit(Op.PUT_X_VAR, info.register, register, program.nameOperand(term))
                     }
-                } else {
-                    program.emit(if (info.permanent) Op.PUT_Y_VAL else Op.PUT_X_VAL, info.register, register)
+                } else if (info.permanent) {
+                    program.emit(Op.PUT_Y_VAL, info.register, register)
+                } else if (info.register != register) {
+                    program.emit(Op.PUT_X_VAL, info.register, register)
                 }
             }
             is Atom -> program.emit(Op.PUT_CONST, constant(term), register)
@@ -499,7 +736,7 @@ internal class Compiler(
                                 if (info.permanent) {
                                     program.emit(Op.SET_Y_VAR, info.register, program.nameOperand(argument))
                                 } else {
-                                    info.register = nextTemp++
+                                    info.register = temporary(info)
                                     program.emit(Op.SET_X_VAR, info.register, program.nameOperand(argument))
                                 }
                             } else {
@@ -536,6 +773,19 @@ internal class Compiler(
     }
 
     // ---- the blocks of the control constructs called as goals at run time (see Machine)
+
+    private companion object {
+        val COMPARISONS =
+            mapOf(
+                "is" to 0,
+                "<" to Op.C_LT,
+                ">" to Op.C_GT,
+                "=<" to Op.C_LE,
+                ">=" to Op.C_GE,
+                "=:=" to Op.C_EQ,
+                "=\\=" to Op.C_NE,
+            )
+    }
 
     /** The code of `','(A, B)` with the goals in registers 0 and 1 */
     fun conjunctionBlock(): Int {

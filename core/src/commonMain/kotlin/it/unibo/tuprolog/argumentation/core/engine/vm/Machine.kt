@@ -130,9 +130,6 @@ internal class Machine(
     private var pinnedWords = IntArray(16)
     private var pinnedWordsTop = 0
 
-    // Set by the STOP instruction: the continuation of a run reached its end
-    private var stopped = false
-
     private val builtins = HashMap<Int, Builtin>()
     private var builtinTable = arrayOfNulls<Builtin>(0)
 
@@ -153,7 +150,8 @@ internal class Machine(
 
     // Garbage collection
     private var gcThreshold = gcMinimum
-    private var forward = IntArray(0)
+    private var marks = LongArray(0)
+    private var counts = IntArray(0)
     private var markStack = IntArray(1 shl 10)
     private var frameVisited = BooleanArray(0)
 
@@ -202,6 +200,30 @@ internal class Machine(
     private val fIntDiv = program.functor("//", 2)
     private val fMod = program.functor("mod", 2)
     private val fNeg = program.functor("-", 1)
+
+    private val fIs = program.functor("is", 2)
+    private val wPlus = program.functorWord("+", 2)
+    private val wMinus = program.functorWord("-", 2)
+    private val wTimes = program.functorWord("*", 2)
+    private val wIntDiv = program.functorWord("//", 2)
+    private val wMod = program.functorWord("mod", 2)
+    private val wNeg = program.functorWord("-", 1)
+    private val comparisonFunctors =
+        intArrayOf(
+            0,
+            program.functor("<", 2),
+            program.functor(">", 2),
+            program.functor("=<", 2),
+            program.functor(">=", 2),
+            program.functor("=:=", 2),
+            program.functor("=\\=", 2),
+        )
+
+    // The stacks of the inline arithmetic: the values being computed, the words of an expression being built for the
+    // builtin when the machine cannot compute it, and whether the last evaluation could not
+    private var values = LongArray(32)
+    private var exprWords = IntArray(32)
+    private var evalFailed = false
 
     private val fIfThen = program.functorWord("->", 2)
     private val fList = program.functor(".", 2)
@@ -642,9 +664,6 @@ internal class Machine(
     private fun predicateOf(functor: Int): Program.Predicate? =
         (if (theoryVisible) program.theory.predicate(functor) else null) ?: scope.predicate(functor)
 
-    // The keys of the arguments of the call at hand, for the clauses to be matched against
-    private var goalKeys = IntArray(16)
-
     // Enters the first clause of [predicate] from the position [from] among the candidates for [key] (the first
     // argument's, computed when [from] is 0), leaving a choice point if another may match (the keys of every
     // argument of its head are matched against the arguments, as the engine left no choice point for a clause whose
@@ -655,18 +674,40 @@ internal class Machine(
         arity: Int,
         barrier: Int,
         key0: Int,
-        source: Int = MERGED,
+        source: Int,
     ): Boolean {
         val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
-        val candidates = predicate.candidates(key)
         val clauses = predicate.clauses
+        val n = clauses.size
+        if (key == 0 || n < Program.Predicate.INDEXED_FROM) {
+            // The clauses in order, over the flat tables: the first candidate by its first argument, its head
+            // deciding the rest; the lookahead for another by every argument the clause keys
+            val firstKeys = predicate.firstKeys
+            var i = from
+            if (n - from > 1) {
+                while (i < n && !matches(firstKeys[i], key)) i++
+                if (i == n) return false
+                var j = i + 1
+                if (predicate.deep) {
+                    while (j < n && !matches(clauses[j], key, arity)) j++
+                } else {
+                    while (j < n && !matches(firstKeys[j], key)) j++
+                }
+                if (j < n) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
+            } else if (i == n) {
+                return false
+            }
+            cutBarrier = barrier
+            if (ClauseObservers.active) ClauseObservers.resolved(clauses[i].source)
+            pc = predicate.starts[i]
+            return true
+        }
+        // The candidates of the key (the clauses of an indexed predicate it may match), in order
+        val candidates = predicate.candidates(key)
         val size = candidates.size
         var i = from
         if (size - from > 1) {
-            // (a single candidate left: its head decides)
-            if (goalKeys.size < arity) goalKeys = IntArray(arity * 2)
-            for (k in 1 until arity) goalKeys[k] = keyOfHeap(regs[k])
-            while (i < size && !matches(clauses[candidates[i]], key, arity)) i++
+            while (i < size && !matches(clauses[candidates[i]].key, key)) i++
             if (i == size) return false
             var j = i + 1
             while (j < size && !matches(clauses[candidates[j]], key, arity)) j++
@@ -676,7 +717,7 @@ internal class Machine(
         }
         cutBarrier = barrier
         val clause = clauses[candidates[i]]
-        ClauseObservers.resolved(clause.source)
+        if (ClauseObservers.active) ClauseObservers.resolved(clause.source)
         pc = clause.start
         return true
     }
@@ -689,7 +730,10 @@ internal class Machine(
         val keys = clause.keys
         if (arity == 0) return true
         if (!matches(keys[0], key)) return false
-        for (k in 1 until arity) if (!matches(keys[k], goalKeys[k])) return false
+        for (k in 1 until arity) {
+            val ck = keys[k]
+            if (ck != 0 && !matches(ck, keyOfHeap(regs[k]))) return false
+        }
         return true
     }
 
@@ -731,7 +775,7 @@ internal class Machine(
             }
         }
         // (a cut in a clause of the predicate cuts its alternatives alone, whatever the goal is transparent to)
-        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cpTop, 0)) JUMPED else FAILED }
+        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cpTop, 0, MERGED)) JUMPED else FAILED }
         val primitive = scope.primitive(functor) ?: return FAILED
         return callPrimitive(primitive, functor, arity)
     }
@@ -769,259 +813,539 @@ internal class Machine(
 
     // ---- the instructions
 
-    /** Runs the instruction at [pc]: false on failure */
+    /**
+     * Runs the code from [pc] until the continuation of the run reaches its end (true) or an instruction fails
+     * (false); the program counter lives in a local meanwhile, written to [pc] around the calls
+     */
     fun execute(): Boolean {
-        val code = program.code
-        val at = pc
-        when (code[at]) {
-            Op.GET_X_VAR -> {
-                regs[code[at + 1]] = regs[code[at + 2]]
-                pc = at + 3
-            }
-            Op.GET_Y_VAR -> {
-                local[frame + FRAME + code[at + 1]] = regs[code[at + 2]]
-                pc = at + 3
-            }
-            Op.GET_X_VAL -> {
-                if (!unify(regs[code[at + 1]], regs[code[at + 2]])) return false
-                pc = at + 3
-            }
-            Op.GET_Y_VAL -> {
-                if (!unify(local[frame + FRAME + code[at + 1]], regs[code[at + 2]])) return false
-                pc = at + 3
-            }
-            Op.GET_CONST -> {
-                if (!unifyConstant(code[at + 1], regs[code[at + 2]])) return false
-                pc = at + 3
-            }
-            Op.GET_STR -> {
-                val f = code[at + 1]
-                val d = deref(regs[code[at + 2]])
-                when (tag(d)) {
-                    REF -> {
-                        val h = alloc(1)
-                        heap[h] = f
-                        bind(payload(d), word(STR, h))
-                        writing = true
-                    }
-                    STR -> {
-                        val a = payload(d)
-                        if (heap[a] != f) return false
-                        next = a + 1
-                        writing = false
-                    }
-                    else -> return false
+        var code = program.code
+        var ip = pc
+        while (true) {
+            val at = ip
+            when (code[at]) {
+                Op.GET_X_VAR -> {
+                    regs[code[at + 1]] = regs[code[at + 2]]
+                    ip = at + 3
                 }
-                pc = at + 3
-            }
-            Op.GET_LIST -> {
-                val d = deref(regs[code[at + 1]])
-                when (tag(d)) {
-                    REF -> {
-                        bind(payload(d), word(LIST, top))
-                        writing = true
-                    }
-                    LIST -> {
-                        next = payload(d)
-                        writing = false
-                    }
-                    else -> return false
+                Op.GET_Y_VAR -> {
+                    local[frame + FRAME + code[at + 1]] = regs[code[at + 2]]
+                    ip = at + 3
                 }
-                pc = at + 2
-            }
-            Op.UNIFY_X_VAR -> {
-                if (writing) {
+                Op.GET_X_VAL -> {
+                    if (!unify(regs[code[at + 1]], regs[code[at + 2]])) return false
+                    ip = at + 3
+                }
+                Op.GET_Y_VAL -> {
+                    if (!unify(local[frame + FRAME + code[at + 1]], regs[code[at + 2]])) return false
+                    ip = at + 3
+                }
+                Op.GET_CONST -> {
+                    if (!unifyConstant(code[at + 1], regs[code[at + 2]])) return false
+                    ip = at + 3
+                }
+                Op.GET_STR -> {
+                    if (!getStructure(code[at + 1], regs[code[at + 2]])) return false
+                    ip = at + 3
+                }
+                Op.GET_LIST -> {
+                    if (!getList(regs[code[at + 1]])) return false
+                    ip = at + 2
+                }
+                Op.GET_LIST2 -> {
+                    if (!getList(regs[code[at + 1]])) return false
+                    if (!unifySub(code[at + 2], code[at + 3], code[at + 4])) return false
+                    if (!unifySub(code[at + 5], code[at + 6], code[at + 7])) return false
+                    ip = at + 8
+                }
+                Op.GET_STR2 -> {
+                    if (!getStructure(code[at + 1], regs[code[at + 2]])) return false
+                    if (!unifySub(code[at + 3], code[at + 4], code[at + 5])) return false
+                    if (!unifySub(code[at + 6], code[at + 7], code[at + 8])) return false
+                    ip = at + 9
+                }
+                Op.UNIFY_X_VAR -> {
+                    regs[code[at + 1]] = if (writing) ref(pushVariable(code[at + 2])) else heap[next++]
+                    ip = at + 3
+                }
+                Op.UNIFY_Y_VAR -> {
+                    local[frame + FRAME + code[at + 1]] = if (writing) ref(pushVariable(code[at + 2])) else heap[next++]
+                    ip = at + 3
+                }
+                Op.UNIFY_X_VAL -> {
+                    if (writing) {
+                        pushCell(regs[code[at + 1]])
+                    } else if (!unify(regs[code[at + 1]], heap[next++])) {
+                        return false
+                    }
+                    ip = at + 2
+                }
+                Op.UNIFY_Y_VAL -> {
+                    if (writing) {
+                        pushCell(local[frame + FRAME + code[at + 1]])
+                    } else if (!unify(local[frame + FRAME + code[at + 1]], heap[next++])) {
+                        return false
+                    }
+                    ip = at + 2
+                }
+                Op.UNIFY_CONST -> {
+                    if (writing) {
+                        pushCell(code[at + 1])
+                    } else if (!unifyConstant(code[at + 1], heap[next++])) {
+                        return false
+                    }
+                    ip = at + 2
+                }
+                Op.UNIFY_VOID -> {
+                    val n = code[at + 1]
+                    if (writing) pushVoids(n) else next += n
+                    ip = at + 2
+                }
+                Op.PUT_X_VAR -> {
+                    val h = newVariable(code[at + 3])
+                    regs[code[at + 1]] = ref(h)
+                    regs[code[at + 2]] = ref(h)
+                    ip = at + 4
+                }
+                Op.PUT_Y_VAR -> {
+                    val h = newVariable(code[at + 3])
+                    local[frame + FRAME + code[at + 1]] = ref(h)
+                    regs[code[at + 2]] = ref(h)
+                    ip = at + 4
+                }
+                Op.PUT_X_VAL -> {
+                    regs[code[at + 2]] = regs[code[at + 1]]
+                    ip = at + 3
+                }
+                Op.PUT_Y_VAL -> {
+                    regs[code[at + 2]] = local[frame + FRAME + code[at + 1]]
+                    ip = at + 3
+                }
+                Op.PUT_CONST -> {
+                    regs[code[at + 2]] = code[at + 1]
+                    ip = at + 3
+                }
+                Op.PUT_STR -> {
+                    val h = alloc(1)
+                    heap[h] = code[at + 1]
+                    regs[code[at + 2]] = word(STR, h)
+                    ip = at + 3
+                }
+                Op.PUT_LIST -> {
+                    regs[code[at + 1]] = word(LIST, top)
+                    ip = at + 2
+                }
+                Op.SET_X_VAR -> {
                     regs[code[at + 1]] = ref(pushVariable(code[at + 2]))
-                } else {
-                    regs[code[at + 1]] = heap[next++]
+                    ip = at + 3
                 }
-                pc = at + 3
-            }
-            Op.UNIFY_Y_VAR -> {
-                if (writing) {
+                Op.SET_Y_VAR -> {
                     local[frame + FRAME + code[at + 1]] = ref(pushVariable(code[at + 2]))
-                } else {
-                    local[frame + FRAME + code[at + 1]] = heap[next++]
+                    ip = at + 3
                 }
-                pc = at + 3
-            }
-            Op.UNIFY_X_VAL -> {
-                if (writing) {
+                Op.SET_X_VAL -> {
                     pushCell(regs[code[at + 1]])
-                } else if (!unify(regs[code[at + 1]], heap[next++])) {
-                    return false
+                    ip = at + 2
                 }
-                pc = at + 2
-            }
-            Op.UNIFY_Y_VAL -> {
-                if (writing) {
+                Op.SET_Y_VAL -> {
                     pushCell(local[frame + FRAME + code[at + 1]])
-                } else if (!unify(local[frame + FRAME + code[at + 1]], heap[next++])) {
-                    return false
+                    ip = at + 2
                 }
-                pc = at + 2
-            }
-            Op.UNIFY_CONST -> {
-                if (writing) {
+                Op.SET_CONST -> {
                     pushCell(code[at + 1])
-                } else if (!unifyConstant(code[at + 1], heap[next++])) {
-                    return false
+                    ip = at + 2
                 }
-                pc = at + 2
-            }
-            Op.UNIFY_VOID -> {
-                val n = code[at + 1]
-                if (writing) {
-                    val h = alloc(n)
-                    for (i in h until h + n) {
-                        heap[i] = ref(i)
-                        varInfo[i] = 0
+                Op.SET_VOID -> {
+                    pushVoids(code[at + 1])
+                    ip = at + 2
+                }
+                Op.ALLOCATE -> {
+                    allocate(code[at + 1])
+                    ip = at + 2
+                }
+                Op.DEALLOCATE -> {
+                    deallocate()
+                    ip = at + 1
+                }
+                Op.CALL -> {
+                    ip = at + 3
+                    continuation = ip
+                    cutBarrier = cpTop
+                    pc = ip
+                    when (call(code[at + 1], code[at + 2])) {
+                        FAILED -> return false
+                        JUMPED -> ip = pc
+                        else -> Unit
                     }
-                } else {
-                    next += n
+                    code = program.code
                 }
-                pc = at + 2
+                Op.EXECUTE -> {
+                    cutBarrier = cpTop
+                    when (call(code[at + 1], code[at + 2])) {
+                        FAILED -> return false
+                        CONTINUE -> ip = continuation
+                        else -> ip = pc
+                    }
+                    code = program.code
+                }
+                Op.DEALLOCATE_EXECUTE -> {
+                    deallocate()
+                    cutBarrier = cpTop
+                    when (call(code[at + 1], code[at + 2])) {
+                        FAILED -> return false
+                        CONTINUE -> ip = continuation
+                        else -> ip = pc
+                    }
+                    code = program.code
+                }
+                Op.RETURN -> {
+                    deallocate()
+                    ip = continuation
+                }
+                Op.PROCEED -> ip = continuation
+                Op.CUT -> {
+                    cutTo(local[frame + 2])
+                    ip = at + 1
+                }
+                Op.GET_LEVEL -> {
+                    local[frame + FRAME + code[at + 1]] = Words.int(cpTop)
+                    ip = at + 2
+                }
+                Op.CUT_Y -> {
+                    cutTo(payload(local[frame + FRAME + code[at + 1]]))
+                    ip = at + 2
+                }
+                Op.CUT_LOCAL -> {
+                    cutTo(payload(local[frame + FRAME + code[at + 1]]) + 1)
+                    ip = at + 2
+                }
+                Op.TRY_ELSE -> {
+                    pushChoicePoint(RESUME, 0, 0, 0, code[at + 1])
+                    ip = at + 2
+                }
+                Op.TRUST_ME -> ip = at + 1
+                Op.JUMP -> ip = code[at + 1]
+                Op.FAIL -> return false
+                Op.CALL_TERM -> {
+                    val goal = local[frame + FRAME + code[at + 1]]
+                    ip = at + 3
+                    continuation = ip
+                    cutBarrier = if (code[at + 2] == Op.TRANSPARENT) local[frame + 2] else cpTop
+                    pc = ip
+                    when (callTerm(goal)) {
+                        FAILED -> return false
+                        JUMPED -> ip = pc
+                        else -> Unit
+                    }
+                    code = program.code
+                }
+                Op.EXECUTE_TERM -> {
+                    val goal = regs[code[at + 1]]
+                    if (code[at + 2] == Op.OPAQUE) cutBarrier = cpTop
+                    when (callTerm(goal)) {
+                        FAILED -> return false
+                        CONTINUE -> ip = continuation
+                        else -> ip = pc
+                    }
+                    code = program.code
+                }
+                Op.STOP -> {
+                    pc = at
+                    return true
+                }
+                Op.ARITH_IS -> {
+                    val n = code[at + 3]
+                    ip = at + 4 + n
+                    val value = evaluate(code, at + 4, n)
+                    if (!evalFailed) {
+                        val w = program.intWord(value)
+                        val operand = code[at + 2]
+                        when (code[at + 1]) {
+                            Op.T_X -> if (!unify(regs[operand], w)) return false
+                            Op.T_Y -> if (!unify(local[frame + FRAME + operand], w)) return false
+                            Op.T_NEW_X -> regs[operand] = w
+                            Op.T_NEW_Y -> local[frame + FRAME + operand] = w
+                            else -> if (operand != w) return false
+                        }
+                    } else {
+                        // The builtin: the target and the expression as words in the registers, which are kept
+                        val a0 = regs[0]
+                        val a1 = regs[1]
+                        regs[0] = targetWord(code[at + 1], code[at + 2])
+                        regs[1] = build(code, at + 4, n)
+                        continuation = ip
+                        cutBarrier = cpTop
+                        pc = ip
+                        when (call(fIs, 2)) {
+                            FAILED -> return false
+                            JUMPED -> ip = pc
+                            else -> Unit
+                        }
+                        regs[0] = a0
+                        regs[1] = a1
+                        code = program.code
+                    }
+                }
+                Op.ARITH_CMP -> {
+                    val nA = code[at + 2]
+                    val nB = code[at + 3 + nA]
+                    ip = at + 4 + nA + nB
+                    val a = evaluate(code, at + 3, nA)
+                    val b = if (evalFailed) 0L else evaluate(code, at + 4 + nA, nB)
+                    if (!evalFailed) {
+                        val holds =
+                            when (code[at + 1]) {
+                                Op.C_LT -> a < b
+                                Op.C_GT -> a > b
+                                Op.C_LE -> a <= b
+                                Op.C_GE -> a >= b
+                                Op.C_EQ -> a == b
+                                else -> a != b
+                            }
+                        if (!holds) return false
+                    } else {
+                        val a0 = regs[0]
+                        val a1 = regs[1]
+                        regs[0] = build(code, at + 3, nA)
+                        regs[1] = build(code, at + 4 + nA, nB)
+                        continuation = ip
+                        cutBarrier = cpTop
+                        pc = ip
+                        when (call(comparisonFunctors[code[at + 1]], 2)) {
+                            FAILED -> return false
+                            JUMPED -> ip = pc
+                            else -> Unit
+                        }
+                        regs[0] = a0
+                        regs[1] = a1
+                        code = program.code
+                    }
+                }
+                Op.INIT_Y -> {
+                    local[frame + FRAME + code[at + 1]] = ref(newVariable(code[at + 2]))
+                    ip = at + 3
+                }
+                Op.RESTORE_SCOPE -> {
+                    scope = program.scope(payload(local[frame + FRAME]))
+                    theoryVisible = payload(local[frame + FRAME + 1]) != 0
+                    ip = at + 1
+                }
+                else -> throw IllegalStateException("unknown instruction ${code[at]} at $at")
             }
-            Op.PUT_X_VAR -> {
-                val h = newVariable(code[at + 3])
-                regs[code[at + 1]] = ref(h)
-                regs[code[at + 2]] = ref(h)
-                pc = at + 4
+        }
+    }
+
+    // ---- inline arithmetic
+
+    // The value of the expression code at [from] ([n] words): [evalFailed] when an operand is not an integer (the
+    // builtin then raises the error, or computes it)
+    private fun evaluate(
+        code: IntArray,
+        from: Int,
+        n: Int,
+    ): Long {
+        evalFailed = false
+        var sp = 0
+        var i = from
+        val end = from + n
+        while (i < end) {
+            val kind = code[i]
+            val operand = code[i + 1]
+            i += 2
+            when (kind) {
+                Op.E_X, Op.E_Y -> {
+                    val w = deref(if (kind == Op.E_X) regs[operand] else local[frame + FRAME + operand])
+                    val v =
+                        when (tag(w)) {
+                            INT -> payload(w).toLong()
+                            BIG -> program.bigs[payload(w)]
+                            else -> {
+                                evalFailed = true
+                                return 0
+                            }
+                        }
+                    if (sp == values.size) values = values.copyOf(sp * 2)
+                    values[sp++] = v
+                }
+                Op.E_CONST -> {
+                    if (sp == values.size) values = values.copyOf(sp * 2)
+                    values[sp++] = payload(operand).toLong()
+                }
+                Op.E_ADD -> {
+                    sp--
+                    values[sp - 1] = values[sp - 1] + values[sp]
+                }
+                Op.E_SUB -> {
+                    sp--
+                    values[sp - 1] = values[sp - 1] - values[sp]
+                }
+                Op.E_MUL -> {
+                    sp--
+                    values[sp - 1] = values[sp - 1] * values[sp]
+                }
+                Op.E_IDIV -> {
+                    sp--
+                    val divisor = values[sp]
+                    if (divisor == 0L) {
+                        evalFailed = true
+                        return 0
+                    }
+                    values[sp - 1] = values[sp - 1] / divisor
+                }
+                Op.E_MOD -> {
+                    sp--
+                    val divisor = values[sp]
+                    if (divisor == 0L) {
+                        evalFailed = true
+                        return 0
+                    }
+                    values[sp - 1] = values[sp - 1].mod(divisor)
+                }
+                else -> values[sp - 1] = -values[sp - 1]
             }
-            Op.PUT_Y_VAR -> {
-                val h = newVariable(code[at + 3])
-                local[frame + FRAME + code[at + 1]] = ref(h)
-                regs[code[at + 2]] = ref(h)
-                pc = at + 4
+        }
+        return values[0]
+    }
+
+    // The expression code at [from] as a term on the heap, for the builtin
+    private fun build(
+        code: IntArray,
+        from: Int,
+        n: Int,
+    ): Int {
+        var sp = 0
+        var i = from
+        val end = from + n
+        while (i < end) {
+            val kind = code[i]
+            val operand = code[i + 1]
+            i += 2
+            when (kind) {
+                Op.E_X, Op.E_Y, Op.E_CONST -> {
+                    if (sp == exprWords.size) exprWords = exprWords.copyOf(sp * 2)
+                    exprWords[sp++] =
+                        when (kind) {
+                            Op.E_X -> regs[operand]
+                            Op.E_Y -> local[frame + FRAME + operand]
+                            else -> operand
+                        }
+                }
+                Op.E_NEG -> {
+                    val h = alloc(2)
+                    heap[h] = wNeg
+                    heap[h + 1] = exprWords[sp - 1]
+                    exprWords[sp - 1] = word(STR, h)
+                }
+                else -> {
+                    val h = alloc(3)
+                    heap[h] =
+                        when (kind) {
+                            Op.E_ADD -> wPlus
+                            Op.E_SUB -> wMinus
+                            Op.E_MUL -> wTimes
+                            Op.E_IDIV -> wIntDiv
+                            else -> wMod
+                        }
+                    sp--
+                    heap[h + 1] = exprWords[sp - 1]
+                    heap[h + 2] = exprWords[sp]
+                    exprWords[sp - 1] = word(STR, h)
+                }
             }
-            Op.PUT_X_VAL -> {
-                regs[code[at + 2]] = regs[code[at + 1]]
-                pc = at + 3
-            }
-            Op.PUT_Y_VAL -> {
-                regs[code[at + 2]] = local[frame + FRAME + code[at + 1]]
-                pc = at + 3
-            }
-            Op.PUT_CONST -> {
-                regs[code[at + 2]] = code[at + 1]
-                pc = at + 3
-            }
-            Op.PUT_STR -> {
+        }
+        return exprWords[0]
+    }
+
+    // The target of an ARITH_IS as a word (a first occurrence created where it lives)
+    private fun targetWord(
+        kind: Int,
+        operand: Int,
+    ): Int =
+        when (kind) {
+            Op.T_X -> regs[operand]
+            Op.T_Y -> local[frame + FRAME + operand]
+            Op.T_NEW_X -> ref(newVariable()).also { regs[operand] = it }
+            Op.T_NEW_Y -> ref(newVariable()).also { local[frame + FRAME + operand] = it }
+            else -> operand
+        }
+
+    // The structure [f] against [w]: entered in read mode, or built in write mode
+    private fun getStructure(
+        f: Int,
+        w: Int,
+    ): Boolean {
+        val d = deref(w)
+        when (tag(d)) {
+            REF -> {
                 val h = alloc(1)
-                heap[h] = code[at + 1]
-                regs[code[at + 2]] = word(STR, h)
-                pc = at + 3
+                heap[h] = f
+                bind(payload(d), word(STR, h))
+                writing = true
             }
-            Op.PUT_LIST -> {
-                regs[code[at + 1]] = word(LIST, top)
-                pc = at + 2
+            STR -> {
+                val a = payload(d)
+                if (heap[a] != f) return false
+                next = a + 1
+                writing = false
             }
-            Op.SET_X_VAR -> {
-                regs[code[at + 1]] = ref(pushVariable(code[at + 2]))
-                pc = at + 3
-            }
-            Op.SET_Y_VAR -> {
-                local[frame + FRAME + code[at + 1]] = ref(pushVariable(code[at + 2]))
-                pc = at + 3
-            }
-            Op.SET_X_VAL -> {
-                pushCell(regs[code[at + 1]])
-                pc = at + 2
-            }
-            Op.SET_Y_VAL -> {
-                pushCell(local[frame + FRAME + code[at + 1]])
-                pc = at + 2
-            }
-            Op.SET_CONST -> {
-                pushCell(code[at + 1])
-                pc = at + 2
-            }
-            Op.SET_VOID -> {
-                val n = code[at + 1]
-                val h = alloc(n)
-                for (i in h until h + n) {
-                    heap[i] = ref(i)
-                    varInfo[i] = 0
-                }
-                pc = at + 2
-            }
-            Op.ALLOCATE -> {
-                allocate(code[at + 1])
-                pc = at + 2
-            }
-            Op.DEALLOCATE -> {
-                deallocate()
-                pc = at + 1
-            }
-            Op.CALL -> {
-                val functor = code[at + 1]
-                pc = at + 2
-                continuation = pc
-                cutBarrier = cpTop
-                return call(functor, program.functorArities[functor]) != FAILED
-            }
-            Op.EXECUTE -> {
-                val functor = code[at + 1]
-                cutBarrier = cpTop
-                when (call(functor, program.functorArities[functor])) {
-                    FAILED -> return false
-                    CONTINUE -> pc = continuation
-                    else -> Unit
-                }
-            }
-            Op.PROCEED -> pc = continuation
-            Op.CUT -> {
-                cutTo(local[frame + 2])
-                pc = at + 1
-            }
-            Op.GET_LEVEL -> {
-                local[frame + FRAME + code[at + 1]] = Words.int(cpTop)
-                pc = at + 2
-            }
-            Op.CUT_Y -> {
-                cutTo(payload(local[frame + FRAME + code[at + 1]]))
-                pc = at + 2
-            }
-            Op.CUT_LOCAL -> {
-                cutTo(payload(local[frame + FRAME + code[at + 1]]) + 1)
-                pc = at + 2
-            }
-            Op.TRY_ELSE -> {
-                pushChoicePoint(RESUME, 0, 0, 0, code[at + 1])
-                pc = at + 2
-            }
-            Op.TRUST_ME -> pc = at + 1
-            Op.JUMP -> pc = code[at + 1]
-            Op.FAIL -> return false
-            Op.CALL_TERM -> {
-                val goal = local[frame + FRAME + code[at + 1]]
-                pc = at + 3
-                continuation = pc
-                cutBarrier = if (code[at + 2] == Op.TRANSPARENT) local[frame + 2] else cpTop
-                return callTerm(goal) != FAILED
-            }
-            Op.EXECUTE_TERM -> {
-                val goal = regs[code[at + 1]]
-                if (code[at + 2] == Op.OPAQUE) cutBarrier = cpTop
-                when (callTerm(goal)) {
-                    FAILED -> return false
-                    CONTINUE -> pc = continuation
-                    else -> Unit
-                }
-            }
-            Op.STOP -> stopped = true
-            Op.INIT_Y -> {
-                local[frame + FRAME + code[at + 1]] = ref(newVariable(code[at + 2]))
-                pc = at + 3
-            }
-            Op.RESTORE_SCOPE -> {
-                scope = program.scope(payload(local[frame + FRAME]))
-                theoryVisible = payload(local[frame + FRAME + 1]) != 0
-                pc = at + 1
-            }
-            else -> throw IllegalStateException("unknown instruction ${code[at]} at $at")
+            else -> return false
         }
         return true
+    }
+
+    private fun getList(w: Int): Boolean {
+        val d = deref(w)
+        when (tag(d)) {
+            REF -> {
+                bind(payload(d), word(LIST, top))
+                writing = true
+            }
+            LIST -> {
+                next = payload(d)
+                writing = false
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    // A sub-instruction of GET_LIST2 and GET_STR2 (see Op): one argument of the structure entered
+    private fun unifySub(
+        kind: Int,
+        a: Int,
+        b: Int,
+    ): Boolean {
+        when (kind) {
+            Op.U_X_VAR -> regs[a] = if (writing) ref(pushVariable(b)) else heap[next++]
+            Op.U_Y_VAR -> local[frame + FRAME + a] = if (writing) ref(pushVariable(b)) else heap[next++]
+            Op.U_X_VAL ->
+                if (writing) {
+                    pushCell(regs[a])
+                } else if (!unify(regs[a], heap[next++])) {
+                    return false
+                }
+            Op.U_Y_VAL ->
+                if (writing) {
+                    pushCell(local[frame + FRAME + a])
+                } else if (!unify(local[frame + FRAME + a], heap[next++])) {
+                    return false
+                }
+            Op.U_CONST ->
+                if (writing) {
+                    pushCell(a)
+                } else if (!unifyConstant(a, heap[next++])) {
+                    return false
+                }
+            else -> if (writing) pushVoids(1) else next++
+        }
+        return true
+    }
+
+    private fun pushVoids(n: Int) {
+        val h = alloc(n)
+        for (i in h until h + n) {
+            heap[i] = ref(i)
+            varInfo[i] = 0
+        }
     }
 
     /**
@@ -1030,10 +1354,6 @@ internal class Machine(
      */
     fun run(cpBase: Int): Boolean {
         while (true) {
-            if (stopped) {
-                stopped = false
-                return true
-            }
             val ok =
                 try {
                     execute()
@@ -1044,7 +1364,8 @@ internal class Machine(
                         else -> continue
                     }
                 }
-            if (!ok && !backtrack(cpBase)) return false
+            if (ok) return true
+            if (!backtrack(cpBase)) return false
         }
     }
 
@@ -1510,8 +1831,10 @@ internal class Machine(
     fun collect(arity: Int) {
         collections++
         collectedFrom = top
-        if (forward.size < top) forward = IntArray(maxOf(top, heap.size))
-        forward.fill(-1, 0, top)
+        val blocks = (top + 63) ushr 6
+        if (marks.size < blocks) marks = LongArray(maxOf(blocks, (heap.size + 63) ushr 6))
+        marks.fill(0L, 0, blocks)
+        if (counts.size <= blocks) counts = IntArray(maxOf(blocks + 1, counts.size * 2))
         // Marking: the cells reachable from the roots
         for (i in 0 until arity) markWord(regs[i])
         if (frameVisited.size < local.size) frameVisited = BooleanArray(local.size)
@@ -1522,16 +1845,13 @@ internal class Machine(
         for (i in 0 until trailTop) markCell(trail[i])
         for (i in 0 until pinnedWordsTop) markWord(pinnedWords[i])
         for (call in calls) if (call is PrimitiveCall) for (c in call.cells) markCell(c)
-        // The new addresses: those of the cells kept, and for the others the count of cells kept below (negated)
+        // The new addresses: the cells kept below each block
         var n = 0
-        for (i in 0 until top) {
-            if (forward[i] != -1) {
-                forward[i] = n
-                n++
-            } else {
-                forward[i] = -n - 1
-            }
+        for (b in 0 until blocks) {
+            counts[b] = n
+            n += marks[b].countOneBits()
         }
+        counts[blocks] = n
         collectedTo = n
         // The roots relocated
         for (i in 0 until arity) regs[i] = relocated(regs[i])
@@ -1539,19 +1859,24 @@ internal class Machine(
         relocateFrames(frame)
         for (cp in 0 until cpTop) relocateFrames(cps[cp * CP_SIZE + 3])
         for (i in 0 until cpArgsTop) cpArgs[i] = relocated(cpArgs[i])
-        for (i in 0 until trailTop) trail[i] = forward[trail[i]]
+        for (i in 0 until trailTop) trail[i] = newAddress(trail[i])
         for (i in 0 until pinnedWordsTop) pinnedWords[i] = relocated(pinnedWords[i])
-        for (call in calls) if (call is PrimitiveCall) for (i in call.cells.indices) call.cells[i] = forward[call.cells[i]]
+        for (call in calls) if (call is PrimitiveCall) for (i in call.cells.indices) call.cells[i] = newAddress(call.cells[i])
         for (cp in 0 until cpTop) {
             val base = cp * CP_SIZE
             cps[base + 1] = newAddress(cps[base + 1])
         }
         // The cells kept slide down, their words relocated, their names with them
-        for (i in 0 until top) {
-            val f = forward[i]
-            if (f >= 0) {
+        var f = 0
+        for (b in 0 until blocks) {
+            var bits = marks[b]
+            val base = b shl 6
+            while (bits != 0L) {
+                val i = base + bits.countTrailingZeroBits()
                 heap[f] = relocated(heap[i])
                 varInfo[f] = varInfo[i]
+                f++
+                bits = bits and (bits - 1)
             }
         }
         top = n
@@ -1580,18 +1905,25 @@ internal class Machine(
         }
     }
 
-    // The new address of a mark [address] (the first cell at or after it kept)
-    private fun newAddress(address: Int): Int {
-        if (address >= collectedFrom) return collectedTo
-        val f = forward[address]
-        return if (f >= 0) f else -f - 1
+    private fun marked(c: Int): Boolean = (marks[c ushr 6] ushr (c and 63)) and 1L != 0L
+
+    private fun mark(c: Int) {
+        marks[c ushr 6] = marks[c ushr 6] or (1L shl (c and 63))
     }
 
-    private fun relocated(w: Int): Int = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), forward[payload(w)]) else w
+    // The new address of a cell kept, or of a mark [address] (the first cell at or after it kept): the cells kept
+    // below it
+    private fun newAddress(address: Int): Int {
+        if (address >= collectedFrom) return collectedTo
+        val b = address ushr 6
+        return counts[b] + (marks[b] and ((1L shl (address and 63)) - 1)).countOneBits()
+    }
+
+    private fun relocated(w: Int): Int = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), newAddress(payload(w))) else w
 
     private fun markCell(c: Int) {
-        if (forward[c] != -1) return
-        forward[c] = 0
+        if (marked(c)) return
+        mark(c)
         var sp = 0
         markStack[sp++] = c
         while (sp > 0) {
@@ -1600,19 +1932,19 @@ internal class Machine(
             when (tag(w)) {
                 REF -> {
                     val a = payload(w)
-                    if (forward[a] == -1) {
-                        forward[a] = 0
+                    if (!marked(a)) {
+                        mark(a)
                         sp = push(sp, a)
                     }
                 }
                 STR -> {
                     val a = payload(w)
-                    if (forward[a] == -1) {
-                        forward[a] = 0
+                    if (!marked(a)) {
+                        mark(a)
                         val n = program.arity(heap[a])
                         for (i in 1..n) {
-                            if (forward[a + i] == -1) {
-                                forward[a + i] = 0
+                            if (!marked(a + i)) {
+                                mark(a + i)
                                 sp = push(sp, a + i)
                             }
                         }
@@ -1621,8 +1953,8 @@ internal class Machine(
                 LIST -> {
                     val a = payload(w)
                     for (i in 0..1) {
-                        if (forward[a + i] == -1) {
-                            forward[a + i] = 0
+                        if (!marked(a + i)) {
+                            mark(a + i)
                             sp = push(sp, a + i)
                         }
                     }
@@ -1646,8 +1978,8 @@ internal class Machine(
             REF -> markCell(payload(w))
             STR -> {
                 val a = payload(w)
-                if (forward[a] == -1) {
-                    forward[a] = 0
+                if (!marked(a)) {
+                    mark(a)
                     val n = program.arity(heap[a])
                     for (i in 1..n) markCell(a + i)
                 }
@@ -1783,7 +2115,6 @@ internal class Machine(
         cpArgsTop = 0
         pinnedWordsTop = 0
         calls.clear()
-        stopped = false
         theoryVisible = initialTheoryVisible
         callsSinceCheck = 0
         scope = environment?.let { program.scopeOf(it.libraries) } ?: program.theory

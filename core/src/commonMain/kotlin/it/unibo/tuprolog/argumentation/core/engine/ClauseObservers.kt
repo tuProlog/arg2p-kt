@@ -14,10 +14,18 @@ fun interface ClauseObserver {
 object ClauseObservers {
     private var observers: List<ClauseObserver> = emptyList()
 
+    /** Whether any observer is registered (the engine asks before telling) */
+    var active = false
+        private set
+
     /** Registers [observer] until the returned handle is closed */
     fun register(observer: ClauseObserver): AutoCloseable {
         observers = observers + observer
-        return AutoCloseable { observers = observers - observer }
+        active = true
+        return AutoCloseable {
+            observers = observers - observer
+            active = observers.isNotEmpty()
+        }
     }
 
     fun resolved(clause: Clause) {

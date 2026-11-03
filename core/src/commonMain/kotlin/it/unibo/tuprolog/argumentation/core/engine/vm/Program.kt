@@ -65,6 +65,9 @@ internal class Program {
         val dynamic: Boolean,
     ) {
         val key: Int get() = if (keys.isEmpty()) 0 else keys[0]
+
+        /** Whether an argument beyond the first is keyed */
+        val deep: Boolean get() = keys.size > 1 && (1 until keys.size).any { keys[it] != 0 }
     }
 
     /** The clauses of a predicate, and which of them a first argument may match */
@@ -75,6 +78,16 @@ internal class Program {
         private var all: IntArray? = null
         private var byKey: HashMap<Int, IntArray>? = null
 
+        /** The first-argument key and the start of each clause, flat, for the selection to read */
+        var firstKeys = IntArray(4)
+            private set
+        var starts = IntArray(4)
+            private set
+
+        /** Whether a clause keys an argument beyond the first */
+        var deep = false
+            private set
+
         /** Bumped whenever the clauses change */
         var version = 0
             private set
@@ -83,12 +96,31 @@ internal class Program {
             clause: ClauseCode,
             onTop: Boolean,
         ) {
-            if (onTop) clauses.add(0, clause) else clauses.add(clause)
+            val n = clauses.size
+            if (n == firstKeys.size) {
+                firstKeys = firstKeys.copyOf(n * 2)
+                starts = starts.copyOf(n * 2)
+            }
+            val at = if (onTop) 0 else n
+            if (onTop) {
+                clauses.add(0, clause)
+                firstKeys.copyInto(firstKeys, 1, 0, n)
+                starts.copyInto(starts, 1, 0, n)
+            } else {
+                clauses.add(clause)
+            }
+            firstKeys[at] = clause.key
+            starts[at] = clause.start
+            if (clause.deep) deep = true
             changed()
         }
 
         fun removeAt(index: Int) {
-            clauses.removeAt(index)
+            val n = clauses.size
+            val removed = clauses.removeAt(index)
+            firstKeys.copyInto(firstKeys, index, index + 1, n)
+            starts.copyInto(starts, index, index + 1, n)
+            if (removed.deep) deep = clauses.any { it.deep }
             changed()
         }
 
