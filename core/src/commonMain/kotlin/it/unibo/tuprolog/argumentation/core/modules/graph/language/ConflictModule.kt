@@ -41,12 +41,17 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
 
         %! declared(?Statement, ?Other)
         %  The theory declares Statement in conflict with Other (conflict/2, or conflict/3 whatever its guard), and the
-        %  conflict model counts the declared conflicts: never with metaConflicts, where the conflicts are the
-        %  conclusions of arguments.
+        %  conflict model counts the declared conflicts (see declaredCounted/0).
         declared(Statement, Other) :-
-            \+ setting(metaConflicts),
-            setting(conflictModel, declared),
+            declaredCounted,
             (user::conflict(Statement, Other) ; user::conflict(Statement, Other, _)).
+
+        %! declaredCounted
+        %  The conflict model counts the conflicts the theory declares: never with metaConflicts, where the conflicts
+        %  are the conclusions of arguments.
+        declaredCounted :-
+            \+ setting(metaConflicts),
+            setting(conflictModel, declared).
 
         %! guarded(?Statement, ?Other, -Guard)
         %  Statement conflicts with Other when Guard holds.

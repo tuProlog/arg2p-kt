@@ -84,8 +84,8 @@ allprojects {
                 languageVersion.set(JavaLanguageVersion.of(project.findProperty("testJvm")?.toString() ?: jvmVersion))
             },
         )
-        maxHeapSize = property("jvmMaxHeapSize").toString()
-        jvmArgs("-Xss${property("jvmStackSize")}")
+        maxHeapSize = project.property("jvmMaxHeapSize").toString()
+        jvmArgs("-Xss${project.property("jvmStackSize")}")
     }
 
     // The JavaScript of every library of arg2p: ES modules (as bundlers, Node.js and Deno import them), the names of

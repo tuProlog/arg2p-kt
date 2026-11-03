@@ -25,10 +25,12 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         % in a single pass rather than merging and deduplicating the lists once for each rule (cubic in the number of
         % rules).
         transpose(Rules, TempCtrRules, Taken, CtrRules) :-
+            (conflict::declaredCounted -> context_assert(transposing(declared)) ; true),
             reverse(Rules, Reversed),
             findall(TrH, (member(H, Reversed), transposition(H, Taken, TrH)), Tran),
             utils::appendFast(TempCtrRules, Tran, All),
-            utils::uniqueByFirst(All, CtrRules).
+            utils::uniqueByFirst(All, CtrRules),
+            context_retract(transposing(_)).
 
         transposition([Id, Prec, Effect], _, [Id, Prec, Effect]).
         transposition([Id, Prec, Effect], Taken, [NewId, NewPrec ,XNegated]) :-
@@ -69,10 +71,13 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         contradictory(X, Negated) :- negate(X, Negated).
         contradictory(X, Other) :- bothWays(X, Other).
 
-        % X and Other declared in conflict both ways by the theory (see conflict::declared/2)
+        % X and Other declared in conflict both ways by the theory, with no guard, when the conflict model counts the
+        % declared conflicts (decided once by transpose/4, see conflict::declaredCounted/0: asking the conflict module
+        % for each pair would cost a module call for every premise of the strict rules)
         bothWays(X, Other) :-
-            conflict::declared([X], [Other]),
-            conflict::declared([Other], [X]).
+            context_check(transposing(declared)),
+            user::conflict([X], [Other]),
+            user::conflict([Other], [X]).
 
         % The name of a transposition: through negations, the one of the rule with its suffix
         named(negation, Id, _, Id).
