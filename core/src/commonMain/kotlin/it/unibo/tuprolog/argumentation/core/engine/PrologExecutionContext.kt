@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
+import it.unibo.tuprolog.argumentation.core.engine.fsm.substituted
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -125,7 +126,7 @@ data class PrologExecutionContext(
     val currentGoal: Term?
         get() {
             if (!currentGoalComputed) {
-                currentGoalValue = if (goals.isOver) null else goals.current?.apply(substitution)
+                currentGoalValue = if (goals.isOver) null else goals.current?.substituted(substitution)
                 currentGoalComputed = true
             }
             return currentGoalValue
