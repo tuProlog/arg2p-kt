@@ -16,7 +16,6 @@ import it.unibo.tuprolog.solve.channel.OutputStore
 import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.Warning
 import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.impl.AbstractSolver
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory

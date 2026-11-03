@@ -4,6 +4,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.flags.ShowWildCardVariablesInSolutions
 
 /**
  * "Goal Selection", the entry point of every resolution step: decides what to do with
@@ -20,9 +21,12 @@ data class StateGoalSelection(
     override fun computeNext(): State =
         if (context.goals.isOver) {
             if (context.isRoot) {
-                // arg2p: the bindings of the variables of the query alone (see Bindings.retaining): the solver cleans
-                // the solution up to them anyway, copying its substitution (thrice) however large
+                // arg2p: the bindings of the variables of the query alone (see Bindings.retaining), as the solver of
+                // tuProlog cleaned each solution up (copying its substitution thrice, however large, and collecting
+                // the variables of the query by sequences): but for the anonymous ones, and the wildcards if hidden
                 val queryVariables = HashSet<Var>().also { context.query.collectVariables(it) }
+                val hideWildcards = context.flags[ShowWildCardVariablesInSolutions] == ShowWildCardVariablesInSolutions.OFF
+                queryVariables.removeAll { it.isAnonymous || (hideWildcards && it.isWildcard) }
                 StateEnd(
                     Solution.yes(context.query, context.bindings.retaining(queryVariables).unifier),
                     context.copy(step = nextStep()),

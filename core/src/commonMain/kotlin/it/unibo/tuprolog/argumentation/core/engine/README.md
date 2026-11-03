@@ -68,6 +68,13 @@ Each one keeps the semantics of the original solver, but for the fixes marked as
   programs met last; a tail call drops the goals already done in its frame.
 - Steps: the instant of each state is only read with a time limit, the lazy values of contexts and states are not
   synchronized (a resolution is confined to a thread), and the path of a context to the root is built when needed.
+- Solutions (`AbstractSolver`, forked from the `solve` module): the base of the solvers cleaned each solution up to
+  the variables of its query, collecting them by sequences over the whole query and copying the substitution for
+  every solution: a findall/3 over a long list collected its items in the square of their number. The engine emits
+  each solution with the bindings of the variables of the query alone (`Bindings.retaining`, looked up rather than
+  scanned when no variable is bound to a variable), and the bindings a frame leaves behind are resolved once each,
+  only those kept (resolving them all, binding by binding, cost the square of the bindings of a resolution: nrev30
+  2x faster).
 
 The unification used by the engine is the one of `Arg2pUnificator` (in `runtime`): the default one, computed in a
 single recursive pass rather than by rewriting a queue of equations (`Arg2pUnificatorTest` compares the two).
