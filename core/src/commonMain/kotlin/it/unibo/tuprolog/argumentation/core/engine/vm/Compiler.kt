@@ -100,6 +100,7 @@ internal class Compiler(
     private fun keyOf(term: Term): Int =
         when (term) {
             is Var -> 0
+            is Atom -> constant(term)
             is Cons -> Program.LIST_KEY
             is Struct -> program.functorWord(term.functor, term.arity)
             else -> constant(term)
@@ -349,6 +350,7 @@ internal class Compiler(
                     program.emit(if (info.permanent) Op.GET_Y_VAL else Op.GET_X_VAL, info.register, register)
                 }
             }
+            is Atom -> program.emit(Op.GET_CONST, constant(term), register)
             is Cons -> {
                 program.emit(Op.GET_LIST, register)
                 unifyArguments(listOf(term.head, term.tail))
@@ -393,6 +395,10 @@ internal class Compiler(
                         program.emit(if (info.permanent) Op.UNIFY_Y_VAL else Op.UNIFY_X_VAL, info.register)
                     }
                 }
+                is Atom -> {
+                    flushVoids()
+                    program.emit(Op.UNIFY_CONST, constant(argument))
+                }
                 is Struct -> {
                     flushVoids()
                     val temp = nextTemp++
@@ -428,12 +434,13 @@ internal class Compiler(
                     program.emit(if (info.permanent) Op.PUT_Y_VAL else Op.PUT_X_VAL, info.register, register)
                 }
             }
+            is Atom -> program.emit(Op.PUT_CONST, constant(term), register)
             is Struct -> {
                 val arguments = if (term is Cons) listOf(term.head, term.tail) else List(term.arity) { term[it] }
                 // The compound arguments built first, into temporaries
                 val built = HashMap<Int, Int>()
                 for ((i, argument) in arguments.withIndex()) {
-                    if (argument is Struct) {
+                    if (argument is Struct && argument !is Atom) {
                         val temp = nextTemp++
                         putArgument(argument, temp)
                         built[i] = temp
@@ -468,6 +475,13 @@ internal class Compiler(
                             } else {
                                 program.emit(if (info.permanent) Op.SET_Y_VAL else Op.SET_X_VAL, info.register)
                             }
+                        }
+                        is Atom -> {
+                            if (voids > 0) {
+                                program.emit(Op.SET_VOID, voids)
+                                voids = 0
+                            }
+                            program.emit(Op.SET_CONST, constant(argument))
                         }
                         is Struct -> {
                             if (voids > 0) {
@@ -561,6 +575,18 @@ internal class Compiler(
         program.emit(Op.FAIL)
         program.code[elseLabel] = program.codeTop
         program.emit(Op.TRUST_ME)
+        program.emit(Op.DEALLOCATE)
+        program.emit(Op.PROCEED)
+        return start
+    }
+
+    /**
+     * The code an inlined goal returns to: the scope of the caller restored from the frame the inlining allocated
+     * (see Machine.inline), the frame deallocated
+     */
+    fun restoreScopeBlock(): Int {
+        val start = program.codeTop
+        program.emit(Op.RESTORE_SCOPE)
         program.emit(Op.DEALLOCATE)
         program.emit(Op.PROCEED)
         return start

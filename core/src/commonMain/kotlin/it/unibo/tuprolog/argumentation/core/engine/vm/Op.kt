@@ -50,6 +50,7 @@ internal object Op {
     const val EXECUTE_TERM = 40
     const val STOP = 41
     const val INIT_Y = 42
+    const val RESTORE_SCOPE = 43
 
     /** The flag of a term call transparent to cut (the barrier of the frame) rather than opaque (its own) */
     const val TRANSPARENT = 1

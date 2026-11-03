@@ -1,10 +1,19 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
+import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
+import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
+import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
+import it.unibo.tuprolog.argumentation.core.engine.Inlining
+import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.DefaultBuiltins
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
+import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.system.measureNanoTime
@@ -36,6 +45,9 @@ class VmSpikeTest {
         sign(X, S) :- (X < 0 -> S = neg ; X =:= 0 -> S = zero ; S = pos).
         either(X) :- (X = a ; X = b).
         notp(X) :- \+ p(X).
+        many(1, a). many(2, b). many(3, c). many(4, d). many(5, e). many(6, f). many(7, g). many(8, h).
+        many(9, i). many(X, var) :- integer(X), X > 100. many(10, j). many(11, k). many(12, l).
+        safe(X, R) :- catch(X, error(E, _), R = caught(E)).
         prim(0) :- !.
         prim(N) :-
             atom_length(hello, 5), functor(T, f, 3), arg(1, T, a), T =.. [f | Args], length(Args, 3),
@@ -47,9 +59,39 @@ class VmSpikeTest {
         program.add(Theory.parse(theory))
         val machine = Machine(program, gcMinimum)
         machine.prepare()
-        machine.facade(ExecutionEnvironment(libraries = Runtime.of(DefaultBuiltins), startTime = 0))
+        machine.facade(ExecutionEnvironment(libraries = Runtime.of(DefaultBuiltins, delegations), startTime = 0))
         return machine
     }
+
+    // A library of a "module" (secret/1 lives there alone) and of two delegated calls: in_module(G) runs G with the
+    // module's libraries, looked_up(G) resolves G with clauses read when called
+    private val moduleLibraries =
+        Runtime.of(Library.of(alias = "test.module", clauses = Theory.parse("secret(42). secret(43).").clauses.toList()))
+
+    private val inModule =
+        object : DelegatedCall {
+            override fun delegate(request: Solve.Request<ExecutionContext>): Delegation =
+                Inlining(request.arguments[0] as Struct, moduleLibraries)
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
+    private val lookedUp =
+        object : DelegatedCall {
+            override fun delegate(request: Solve.Request<ExecutionContext>): Delegation =
+                Sourcing(
+                    request.arguments[0] as Struct,
+                    ClauseSource { _, _ -> Theory.parse("stored(1). stored(2). stored(X) :- X = 3.").clauses.toList() },
+                )
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
+    private val delegations =
+        Library.of(
+            alias = "test.delegations",
+            primitives = mapOf(Signature("in_module", 1) to inModule, Signature("looked_up", 1) to lookedUp),
+        )
 
     private fun answers(
         m: Machine,
@@ -102,6 +144,47 @@ class VmSpikeTest {
         assertEquals(listOf("L = [1, 2]"), answers(m, "assertz(dyn(1)), assertz(dyn(2)), findall(X, dyn(X), L)"))
         assertEquals(listOf("L = [2]"), answers(m, "retract(dyn(1)), findall(X, dyn(X), L)"))
         assertEquals(listOf("L = [3]"), answers(m, "findall(X, (member(X, [1, 2, 3]), \\+ dyn(X), X > 2), L)"))
+    }
+
+    @Test
+    fun exceptions() {
+        val m = machine()
+        assertEquals(listOf("R = caught(evaluation_error(zero_divisor))"), answers(m, "safe(X is 1 // 0, R)"))
+        assertEquals(listOf("R = caught(type_error(evaluable, foo/0))"), answers(m, "safe(X is foo + 1, R)"))
+        assertEquals(listOf("X = recovered"), answers(m, "catch(throw(oops), oops, X = recovered)"))
+        assertEquals(listOf("E = oops"), answers(m, "catch(catch(throw(oops), other, true), E, true)"))
+        assertEquals(listOf("X = 1", "X = 2"), answers(m, "catch(member(X, [1, 2]), _, true)"))
+        assertEquals(listOf("R = caught(type_error(integer, a))"), answers(m, "safe(atom_length(abc, a), R)"))
+        val stopping = "findall(X, catch((member(X, [a, b, c]), (X == c -> throw(stop) ; true)), stop, fail), L)"
+        assertEquals(listOf("L = [a, b]"), answers(m, stopping))
+        try {
+            answers(m, "throw(unhandled)")
+            kotlin.test.fail("no halt")
+        } catch (halt: Machine.Halt) {
+            assertTrue(halt.exception.message!!.contains("unhandled"), halt.exception.message)
+        }
+    }
+
+    @Test
+    fun delegatedCalls() {
+        val m = machine()
+        assertEquals(emptyList(), answers(m, "secret(X)"))
+        assertEquals(listOf("X = 42", "X = 43"), answers(m, "in_module(secret(X))"))
+        assertEquals(listOf("L = [42, 43]"), answers(m, "findall(X, in_module(secret(X)), L)"))
+        assertEquals(listOf("X = 42"), answers(m, "in_module((secret(X), !))"))
+        assertEquals(listOf("X = 1", "X = 2", "X = 3"), answers(m, "looked_up(stored(X))"))
+        assertEquals(listOf("X = 2"), answers(m, "looked_up(stored(X)), X > 1, !"))
+        assertEquals(listOf("L = [42, 42, 42, 43, 43, 43]"), answers(m, "findall(X, (in_module(secret(X)), p(_)), L)"))
+    }
+
+    @Test
+    fun indexing() {
+        val m = machine()
+        assertEquals(listOf("Y = g"), answers(m, "many(7, Y)"))
+        assertEquals(listOf("Y = var"), answers(m, "many(200, Y)"))
+        assertEquals(emptyList(), answers(m, "many(50, Y)"))
+        assertEquals(12, answers(m, "many(X, Y)").size)
+        assertEquals(listOf("X = 10"), answers(m, "many(X, j)"))
     }
 
     @Test

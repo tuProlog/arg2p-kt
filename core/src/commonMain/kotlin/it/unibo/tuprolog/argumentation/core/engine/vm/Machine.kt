@@ -1,7 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
+import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
+import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.BIG
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FLT
@@ -15,7 +18,9 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ref
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
+import it.unibo.tuprolog.core.Indicator
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
@@ -24,7 +29,9 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.exception.LogicError
 import it.unibo.tuprolog.solve.exception.ResolutionException
+import it.unibo.tuprolog.solve.exception.error.MessageError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.sideffects.SideEffect
@@ -38,6 +45,14 @@ import it.unibo.tuprolog.core.List as LogicList
  * registers instruction by instruction, its body goals are called with their arguments put in the registers, the
  * last one in place of the clause (its frame deallocated first). Backtracking resets the tops of the heap and of
  * the trail and the registers of the machine to those a choice point saved.
+ *
+ * The predicates a goal is resolved with are those of the [scope] of the libraries the resolution runs with, and
+ * those of the theory of the user when it is visible: a module call ([Inlining]) switches them for its goal and
+ * back when the goal is done (a frame of its own holds the scope to restore). A lookup ([Sourcing]) resolves its
+ * goal with clauses read when it is made.
+ *
+ * An exception is a ball thrown through the code ([Raised]): the choice points are unwound to the nearest catch/3
+ * ([CATCH]) whose catcher unifies with it, and its recovery runs in its place; a ball no catch takes halts the run.
  *
  * The heap is garbage collected ([collect]) when a call finds it above a threshold: the cells reachable from the
  * arguments of the call, from the frames reachable from the current one and from those the choice points saved,
@@ -76,6 +91,10 @@ internal class Machine(
     /** The cut barrier of the clause being entered: the choice points a cut in it keeps */
     var cutBarrier = 0
 
+    /** The libraries the resolution runs with, and whether the theory of the user is visible */
+    var scope: Program.Scope = program.theory
+    var theoryVisible = true
+
     // Structure unification: the next cell to read, or writing
     private var next = 0
     private var writing = false
@@ -101,11 +120,12 @@ internal class Machine(
     private val builtins = HashMap<Int, Builtin>()
     private var builtinTable = arrayOfNulls<Builtin>(0)
 
-    // The facade: the environment the primitives of the libraries are called in, their implementations by functor
+    // The facade: the environment the primitives of the libraries are called in
     private var environment: ExecutionEnvironment? = null
-    private var primitiveTable = arrayOfNulls<Primitive>(0)
-    private var primitiveLooked = BooleanArray(0)
-    private val primitiveCalls = ArrayList<PrimitiveCall>()
+
+    // The calls with alternatives left that are not clauses: of primitives (their responses) and of lookups (their
+    // clauses), referred to by the choice points
+    private val calls = ArrayList<Any>()
 
     // Garbage collection
     private var gcThreshold = gcMinimum
@@ -133,7 +153,18 @@ internal class Machine(
         val cells: IntArray,
     )
 
-    /** A resolution halted by the exception of a primitive */
+    // A lookup with clauses left to try
+    private class SourcedCall(
+        val clauses: List<Clause>,
+    )
+
+    /** A ball thrown through the code: the term, and the exception it came from, if any */
+    class Raised(
+        val ball: Term,
+        val exception: ResolutionException? = null,
+    ) : RuntimeException(ball.toString())
+
+    /** A resolution halted by an exception no catch/3 took */
     class Halt(
         val exception: ResolutionException,
     ) : RuntimeException(exception.message, exception)
@@ -150,13 +181,15 @@ internal class Machine(
     private val fList = program.functor(".", 2)
     private val failGoal = program.atomWord("fail")
 
-    // The code of the control constructs called as goals at run time, and of the end of a run
+    // The code of the control constructs called as goals at run time, of the end of a run, of the return from an
+    // inlined goal
     private val compiler = Compiler(program)
     private val stopAddress = compiler.stopBlock()
     private val conjunctionBlock = compiler.conjunctionBlock()
     private val disjunctionBlock = compiler.disjunctionBlock()
     private val ifThenElseBlock = compiler.ifThenElseBlock()
     private val negationBlock = compiler.negationBlock()
+    private val restoreScopeBlock = compiler.restoreScopeBlock()
 
     init {
         builtin("true", 0) { CONTINUE }
@@ -199,6 +232,12 @@ internal class Machine(
         }
         builtin("\\+", 1) { m -> m.jump(negationBlock) }
         builtin("findall", 3) { m -> m.findall(m.regs[0], m.regs[1], m.regs[2]) }
+        builtin("catch", 3) { m -> m.catch() }
+        builtin("throw", 1) { m ->
+            val ball = m.deref(m.regs[0])
+            if (tag(ball) == REF) throw Raised(error(Atom.of("instantiation_error"), "throw/1"))
+            throw Raised(m.toTerm(ball, HashMap()))
+        }
     }
 
     fun builtin(
@@ -217,13 +256,13 @@ internal class Machine(
         if (program.maxRegister + 1 > regs.size) regs = regs.copyOf(program.maxRegister + 1)
     }
 
-    /** The primitives of the libraries of [environment] answer the goals the program and the builtins do not */
+    /**
+     * The primitives and the clauses of the libraries of [environment] answer the goals the theory and the builtins
+     * do not
+     */
     fun facade(environment: ExecutionEnvironment) {
         this.environment = environment
-        primitiveTable = arrayOfNulls(0)
-        primitiveLooked = BooleanArray(0)
-        // (the clauses of the libraries, as any program clause: the builtins still answer the goals they do)
-        for (library in environment.libraries.libraries) program.add(library.clauses)
+        scope = program.scopeOf(environment.libraries)
         prepare()
     }
 
@@ -239,6 +278,13 @@ internal class Machine(
         val start = top
         top += cells
         return start
+    }
+
+    // A cell holding [w] allocated at the top (`heap[alloc(1)] = w` would store into the array read before alloc
+    // grew it)
+    private fun pushCell(w: Int) {
+        if (top == heap.size) heap = heap.copyOf(heap.size * 2)
+        heap[top++] = w
     }
 
     fun newVariable(): Int {
@@ -376,6 +422,7 @@ internal class Machine(
         arity: Int,
         barrier: Int,
         resumeAt: Int,
+        key: Int = 0,
     ) {
         val base = cpTop * CP_SIZE
         if (base + CP_SIZE > cps.size) cps = cps.copyOf(cps.size * 2)
@@ -389,8 +436,12 @@ internal class Machine(
         cps[base + 7] = nextClause
         cps[base + 8] = barrier
         cps[base + 9] = cpArgsTop
-        cps[base + 10] = primitiveCalls.size
+        cps[base + 10] = calls.size
         cps[base + 11] = arity
+        cps[base + 12] = key
+        cps[base + 13] = scope.id
+        cps[base + 14] = if (theoryVisible) 1 else 0
+        cps[base + 15] = pinnedWordsTop
         if (cpArgsTop + arity > cpArgs.size) cpArgs = cpArgs.copyOf(maxOf(cpArgs.size * 2, cpArgsTop + arity))
         regs.copyInto(cpArgs, cpArgsTop, 0, arity)
         cpArgsTop += arity
@@ -406,25 +457,28 @@ internal class Machine(
         frame = cps[base + 3]
         continuation = cps[base + 4]
         pc = cps[base + 5]
+        scope = program.scope(cps[base + 13])
+        theoryVisible = cps[base + 14] != 0
+        pinnedWordsTop = cps[base + 15]
     }
 
     private fun popChoicePoint() {
         cpTop--
         val base = cpTop * CP_SIZE
         cpArgsTop = cps[base + 9]
-        truncatePrimitiveCalls(cps[base + 10])
+        truncateCalls(cps[base + 10])
         heapBarrier = if (cpTop > 0) cps[(cpTop - 1) * CP_SIZE + 1] else 0
     }
 
-    private fun truncatePrimitiveCalls(size: Int) {
-        while (primitiveCalls.size > size) primitiveCalls.removeAt(primitiveCalls.size - 1)
+    private fun truncateCalls(size: Int) {
+        while (calls.size > size) calls.removeAt(calls.size - 1)
     }
 
     fun cutTo(barrier: Int) {
         if (cpTop > barrier) {
             val base = barrier * CP_SIZE
             cpArgsTop = cps[base + 9]
-            truncatePrimitiveCalls(cps[base + 10])
+            truncateCalls(cps[base + 10])
             cpTop = barrier
             heapBarrier = if (cpTop > 0) cps[(cpTop - 1) * CP_SIZE + 1] else 0
         }
@@ -450,18 +504,29 @@ internal class Machine(
                     popChoicePoint()
                     return true
                 }
+                CATCH -> popChoicePoint()
                 PRIMITIVE -> {
-                    val call = primitiveCalls[nextClause]
-                    val response = call.responses.next()
-                    if (!call.responses.hasNext()) popChoicePoint()
+                    val call = calls[nextClause] as PrimitiveCall
+                    val response = nextResponse(call.responses)
+                    if (!hasNextResponse(call.responses)) popChoicePoint()
                     if (applyResponse(response, call)) return true
+                }
+                SOURCED -> {
+                    val call = calls[nextClause] as SourcedCall
+                    val argsBase = cps[base + 9]
+                    val arity = cps[base + 11]
+                    val from = cps[base + 12]
+                    cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
+                    popChoicePoint()
+                    if (trySourced(call, from, arity, nextClause) != FAILED) return true
                 }
                 else -> {
                     val argsBase = cps[base + 9]
                     val arity = cps[base + 11]
+                    val key = cps[base + 12]
                     cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
                     popChoicePoint()
-                    if (tryClauses(program.predicateTable[functor]!!, nextClause, arity, barrier)) return true
+                    if (tryClauses(predicateOf(functor)!!, nextClause, arity, barrier, key)) return true
                 }
             }
         }
@@ -480,25 +545,31 @@ internal class Machine(
         }
     }
 
-    // Enters the first clause of [predicate] from [from] whose key matches the first argument, leaving a choice
-    // point if another may; false when none matches
+    // The predicate of [functor] the resolution sees: of its libraries, or of the theory of the user if visible
+    private fun predicateOf(functor: Int): Program.Predicate? =
+        scope.predicate(functor) ?: if (theoryVisible) program.theory.predicate(functor) else null
+
+    // Enters the first clause of [predicate] from the position [from] among the candidates for [key] (the first
+    // argument's, computed when [from] is 0), leaving a choice point if another may match; false when none does
     private fun tryClauses(
         predicate: Program.Predicate,
         from: Int,
         arity: Int,
         barrier: Int,
+        key0: Int,
     ): Boolean {
+        val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
+        val candidates = predicate.candidates(key)
         val clauses = predicate.clauses
-        val size = clauses.size
-        val key = if (arity == 0) 0 else keyOfHeap(regs[0])
+        val size = candidates.size
         var i = from
-        while (i < size && !matches(clauses[i].key, key)) i++
+        while (i < size && !matches(clauses[candidates[i]].key, key)) i++
         if (i == size) return false
         var j = i + 1
-        while (j < size && !matches(clauses[j].key, key)) j++
-        if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0)
+        while (j < size && !matches(clauses[candidates[j]].key, key)) j++
+        if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key)
         cutBarrier = barrier
-        pc = clauses[i].start
+        pc = clauses[candidates[i]].start
         return true
     }
 
@@ -517,9 +588,9 @@ internal class Machine(
     ): Int {
         if (top > gcThreshold) collect(arity)
         if (functor < builtinTable.size) builtinTable[functor]?.let { return it.call(this) }
-        program.predicateTable[functor]?.let { return if (tryClauses(it, 0, arity, cutBarrier)) JUMPED else FAILED }
-        val primitive = primitiveFor(functor) ?: return FAILED
-        return if (callPrimitive(primitive, functor, arity)) CONTINUE else FAILED
+        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cutBarrier, 0)) JUMPED else FAILED }
+        val primitive = scope.primitive(functor) ?: return FAILED
+        return callPrimitive(primitive, functor, arity)
     }
 
     /** Calls the goal [w], a term on the heap, its arguments loaded in the registers */
@@ -547,8 +618,8 @@ internal class Machine(
                 regs[0] = heap[a]
                 regs[1] = heap[a + 1]
             }
-            REF -> throw IllegalStateException("instantiation_error: the goal is a variable")
-            else -> throw IllegalStateException("type_error(callable)")
+            REF -> throw Raised(error(Atom.of("instantiation_error"), "call/1"))
+            else -> throw Raised(error(Struct.of("type_error", Atom.of("callable"), toTerm(g, HashMap())), "call/1"))
         }
         return call(functor, arity)
     }
@@ -637,7 +708,7 @@ internal class Machine(
             }
             Op.UNIFY_X_VAL -> {
                 if (writing) {
-                    heap[alloc(1)] = regs[code[at + 1]]
+                    pushCell(regs[code[at + 1]])
                 } else if (!unify(regs[code[at + 1]], heap[next++])) {
                     return false
                 }
@@ -645,7 +716,7 @@ internal class Machine(
             }
             Op.UNIFY_Y_VAL -> {
                 if (writing) {
-                    heap[alloc(1)] = local[frame + FRAME + code[at + 1]]
+                    pushCell(local[frame + FRAME + code[at + 1]])
                 } else if (!unify(local[frame + FRAME + code[at + 1]], heap[next++])) {
                     return false
                 }
@@ -653,7 +724,7 @@ internal class Machine(
             }
             Op.UNIFY_CONST -> {
                 if (writing) {
-                    heap[alloc(1)] = code[at + 1]
+                    pushCell(code[at + 1])
                 } else if (!unifyConstant(code[at + 1], heap[next++])) {
                     return false
                 }
@@ -716,15 +787,15 @@ internal class Machine(
                 pc = at + 2
             }
             Op.SET_X_VAL -> {
-                heap[alloc(1)] = regs[code[at + 1]]
+                pushCell(regs[code[at + 1]])
                 pc = at + 2
             }
             Op.SET_Y_VAL -> {
-                heap[alloc(1)] = local[frame + FRAME + code[at + 1]]
+                pushCell(local[frame + FRAME + code[at + 1]])
                 pc = at + 2
             }
             Op.SET_CONST -> {
-                heap[alloc(1)] = code[at + 1]
+                pushCell(code[at + 1])
                 pc = at + 2
             }
             Op.SET_VOID -> {
@@ -798,21 +869,110 @@ internal class Machine(
                 local[frame + FRAME + code[at + 1]] = ref(newVariable())
                 pc = at + 2
             }
+            Op.RESTORE_SCOPE -> {
+                scope = program.scope(payload(local[frame + FRAME]))
+                theoryVisible = payload(local[frame + FRAME + 1]) != 0
+                pc = at + 1
+            }
             else -> throw IllegalStateException("unknown instruction ${code[at]} at $at")
         }
         return true
     }
 
-    /** Runs until a run reaches its end (true: a solution) or no choice point above [cpBase] is left */
+    /**
+     * Runs until a run reaches its end (true: a solution) or no choice point above [cpBase] is left; a ball no
+     * catch/3 above [cpBase] takes is thrown on
+     */
     fun run(cpBase: Int): Boolean {
         while (true) {
             if (stopped) {
                 stopped = false
                 return true
             }
-            if (!execute() && !backtrack(cpBase)) return false
+            val ok =
+                try {
+                    execute()
+                } catch (raised: Raised) {
+                    when (unwind(raised, cpBase)) {
+                        UNCAUGHT -> throw raised
+                        EXHAUSTED -> return false
+                        else -> continue
+                    }
+                }
+            if (!ok && !backtrack(cpBase)) return false
         }
     }
+
+    // ---- exceptions
+
+    /** The ball `error(Type, Context)` of a standard error raised by the builtin [where] */
+    private fun error(
+        type: Term,
+        where: String,
+    ): Term = Struct.of("error", type, Atom.of(where))
+
+    // catch(Goal, Catcher, Recovery): a choice point the unwinding of a ball stops at, then the goal
+    private fun catch(): Int {
+        pushChoicePoint(CATCH, 0, 3, 0, continuation)
+        cutBarrier = cpTop
+        return callTerm(regs[0])
+    }
+
+    // Unwinds the choice points above [cpBase] to the nearest catch/3 whose catcher unifies with the ball of
+    // [raised], and runs its recovery: UNCAUGHT when there is none, EXHAUSTED when the recovery fails with no choice
+    // point left above [cpBase], RESUMED otherwise
+    private fun unwind(
+        raised: Raised,
+        cpBase: Int,
+    ): Int {
+        while (cpTop > cpBase) {
+            val base = (cpTop - 1) * CP_SIZE
+            if (cps[base + 6] != CATCH) {
+                popChoicePoint()
+                continue
+            }
+            restoreTop()
+            val argsBase = cps[base + 9]
+            val catcher = cpArgs[argsBase + 1]
+            val recovery = cpArgs[argsBase + 2]
+            popChoicePoint()
+            val ball = fromTerm(raised.ball, HashMap())
+            if (unify(catcher, ball)) {
+                cutBarrier = cpTop
+                when (callTerm(recovery)) {
+                    FAILED -> if (!backtrack(cpBase)) return EXHAUSTED
+                    CONTINUE -> pc = continuation
+                    else -> Unit
+                }
+                return RESUMED
+            }
+        }
+        return UNCAUGHT
+    }
+
+    /** The resolution exception of a ball no catch took */
+    fun haltOf(raised: Raised): ResolutionException {
+        raised.exception?.let { return it }
+        val context: ExecutionContext = PrologExecutionContext(environment ?: ExecutionEnvironment(startTime = 0))
+        val ball = raised.ball
+        return if (ball is Struct && ball.functor == "error" && ball.arity in 1..2 && ball[0] is Struct) {
+            try {
+                LogicError.of(context = context, type = ball[0] as Struct, extraData = if (ball.arity > 1) ball[1] else null)
+            } catch (_: IllegalArgumentException) {
+                MessageError.of(ball, context)
+            }
+        } else {
+            MessageError.of(ball, context)
+        }
+    }
+
+    // The ball of a resolution exception, as catch/3 sees it
+    private fun ballOf(exception: ResolutionException): Term =
+        when (exception) {
+            is MessageError -> exception.content
+            is LogicError -> exception.errorStruct
+            else -> throw Halt(exception)
+        }
 
     // ---- arithmetic
 
@@ -827,14 +987,26 @@ internal class Machine(
                     fPlus -> eval(heap[a + 1]) + eval(heap[a + 2])
                     fMinus -> eval(heap[a + 1]) - eval(heap[a + 2])
                     fTimes -> eval(heap[a + 1]) * eval(heap[a + 2])
-                    fIntDiv -> eval(heap[a + 1]) / eval(heap[a + 2])
-                    fMod -> eval(heap[a + 1]).mod(eval(heap[a + 2]))
+                    fIntDiv -> {
+                        val divisor = eval(heap[a + 2])
+                        if (divisor == 0L) throw Raised(error(Struct.of("evaluation_error", Atom.of("zero_divisor")), "is/2"))
+                        eval(heap[a + 1]) / divisor
+                    }
+                    fMod -> {
+                        val divisor = eval(heap[a + 2])
+                        if (divisor == 0L) throw Raised(error(Struct.of("evaluation_error", Atom.of("zero_divisor")), "is/2"))
+                        eval(heap[a + 1]).mod(divisor)
+                    }
                     fNeg -> -eval(heap[a + 1])
-                    else -> throw IllegalStateException("type_error(evaluable, ${program.functorName(heap[a])})")
+                    else -> {
+                        val indicator = Indicator.of(program.functorName(heap[a]), program.arity(heap[a]))
+                        throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), indicator), "is/2"))
+                    }
                 }
             }
-            REF -> throw IllegalStateException("instantiation_error in arithmetic")
-            else -> throw IllegalStateException("type_error(evaluable)")
+            REF -> throw Raised(error(Atom.of("instantiation_error"), "is/2"))
+            ATOM -> throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), Indicator.of(program.atoms[payload(w)], 0)), "is/2"))
+            else -> throw Raised(error(Struct.of("type_error", Atom.of("evaluable"), toTerm(w, HashMap())), "is/2"))
         }
     }
 
@@ -856,7 +1028,7 @@ internal class Machine(
         val pinnedBase = pinnedWordsTop
         val pinnedTemplate = pinWord(template)
         val pinnedResult = pinWord(result)
-        // The barrier choice point: the state before the goal, resumed at the instruction after the call
+        // The barrier choice point: the state before the goal, resumed at the continuation of the call
         pushChoicePoint(BARRIER, 0, 0, 0, continuation)
         val cpBase = cpTop
         continuation = stopAddress
@@ -968,37 +1140,44 @@ internal class Machine(
 
     // ---- the facade: the primitives of the libraries
 
-    private fun primitiveFor(functor: Int): Primitive? {
-        val environment = environment ?: return null
-        if (functor >= primitiveTable.size) {
-            val size = maxOf(program.functorNames.size, functor + 1)
-            primitiveTable = primitiveTable.copyOf(size)
-            primitiveLooked = primitiveLooked.copyOf(size)
-        }
-        if (!primitiveLooked[functor]) {
-            primitiveLooked[functor] = true
-            primitiveTable[functor] =
-                environment.libraries.primitives[Signature(program.nameOfFunctor(functor), program.functorArities[functor])]
-        }
-        return primitiveTable[functor]
-    }
-
     // Calls [primitive] on the registers: the goal as terms, the first answer unified back, the others left as a
-    // choice point resuming at the continuation (the next instruction of a call, see Op.CALL)
+    // choice point resuming at the continuation (the next instruction of a call, see Op.CALL); a delegated call
+    // is run by the machine itself
     private fun callPrimitive(
         primitive: Primitive,
         functor: Int,
         arity: Int,
-    ): Boolean {
+    ): Int {
         val names = HashMap<Int, Var>()
         val arguments = List(arity) { toTerm(regs[it], names) }
         val name = program.nameOfFunctor(functor)
         val goal = if (arity == 0) Atom.of(name) else Struct.of(name, arguments)
         val context: ExecutionContext = PrologExecutionContext(environment!!, procedure = goal)
         val request = Solve.Request(Signature(name, arity), arguments, context)
-        val responses = primitive.solve(request).iterator()
-        if (!responses.hasNext()) return false
-        val response = responses.next()
+        if (primitive is DelegatedCall) {
+            val delegation =
+                try {
+                    primitive.delegate(request)
+                } catch (exception: ResolutionException) {
+                    throw Raised(ballOf(exception), exception)
+                }
+            if (delegation != null) {
+                val cells = HashMap<Var, Int>(names.size * 2)
+                for ((cell, variable) in names) cells[variable] = cell
+                return when (delegation) {
+                    is Inlining -> inline(delegation, cells)
+                    is Sourcing -> sourced(delegation, cells)
+                }
+            }
+        }
+        val responses =
+            try {
+                primitive.solve(request).iterator()
+            } catch (exception: ResolutionException) {
+                throw Raised(ballOf(exception), exception)
+            }
+        if (!hasNextResponse(responses)) return FAILED
+        val response = nextResponse(responses)
         val variables = arrayOfNulls<Var>(names.size)
         val cells = IntArray(names.size)
         var i = 0
@@ -1009,12 +1188,26 @@ internal class Machine(
         }
         @Suppress("UNCHECKED_CAST")
         val call = PrimitiveCall(responses, variables as Array<Var>, cells)
-        if (responses.hasNext()) {
-            pushChoicePoint(PRIMITIVE, primitiveCalls.size, 0, 0, continuation)
-            primitiveCalls.add(call)
+        if (hasNextResponse(responses)) {
+            pushChoicePoint(PRIMITIVE, calls.size, 0, 0, continuation)
+            calls.add(call)
         }
-        return applyResponse(response, call)
+        return if (applyResponse(response, call)) CONTINUE else FAILED
     }
+
+    private fun hasNextResponse(responses: Iterator<Solve.Response>): Boolean =
+        try {
+            responses.hasNext()
+        } catch (exception: ResolutionException) {
+            throw Raised(ballOf(exception), exception)
+        }
+
+    private fun nextResponse(responses: Iterator<Solve.Response>): Solve.Response =
+        try {
+            responses.next()
+        } catch (exception: ResolutionException) {
+            throw Raised(ballOf(exception), exception)
+        }
 
     // The answer of a primitive: its side effects applied, its bindings unified with the cells of the goal
     private fun applyResponse(
@@ -1038,7 +1231,7 @@ internal class Machine(
                 ok
             }
             is Solution.No -> false
-            is Solution.Halt -> throw Halt(solution.exception)
+            is Solution.Halt -> throw Raised(ballOf(solution.exception), solution.exception)
         }
     }
 
@@ -1049,19 +1242,79 @@ internal class Machine(
                 is SideEffect.AddDynamicClauses -> {
                     for (clause in effect.clauses) {
                         if (effect.onTop) environment.dynamicKb.assertA(clause) else environment.dynamicKb.assertZ(clause)
-                        program.add(clause, dynamic = true, onTop = effect.onTop)
+                        program.theory.add(clause, dynamic = true, onTop = effect.onTop)
                     }
                     prepare()
                 }
                 is SideEffect.RemoveDynamicClauses -> {
                     for (clause in effect.clauses) {
                         environment.dynamicKb.retract(clause)
-                        program.remove(clause)
+                        program.theory.remove(clause)
                     }
                 }
                 else -> throw IllegalStateException("side effect not supported by the machine: $effect")
             }
         }
+    }
+
+    // ---- delegated calls: module calls and lookups
+
+    // The goal of [inlining] run with its libraries, in a frame of its own holding the scope to go back to
+    private fun inline(
+        inlining: Inlining,
+        cells: HashMap<Var, Int>,
+    ): Int {
+        allocate(2)
+        local[frame + FRAME] = Words.int(scope.id)
+        local[frame + FRAME + 1] = Words.int(if (theoryVisible) 1 else 0)
+        continuation = restoreScopeBlock
+        scope = program.scopeOf(inlining.libraries)
+        theoryVisible = inlining.theory
+        cutBarrier = cpTop
+        val goal = fromTerm(inlining.goal, cells)
+        return when (callTerm(goal)) {
+            FAILED -> FAILED
+            CONTINUE -> jump(continuation)
+            else -> JUMPED
+        }
+    }
+
+    // The goal of [sourcing] resolved with the clauses its source gives for it
+    private fun sourced(
+        sourcing: Sourcing,
+        cells: HashMap<Var, Int>,
+    ): Int {
+        val clauses = sourcing.source.clausesFor(sourcing.goal, environment!!.unificator)
+        if (clauses.isEmpty()) return FAILED
+        // The arguments of the goal looked up in the registers (those of the call were the primitive's)
+        val goal = sourcing.goal
+        val goalArity = goal.arity
+        if (goalArity > regs.size) regs = regs.copyOf(goalArity * 2)
+        for (i in 0 until goalArity) regs[i] = fromTerm(goal[i], cells)
+        val call = SourcedCall(clauses)
+        val index = calls.size
+        calls.add(call)
+        return trySourced(call, 0, goalArity, index)
+    }
+
+    // Tries the clauses of [call] from [from] on the goal in the registers: its head unified with the arguments,
+    // its body called; a choice point is left while clauses remain
+    private fun trySourced(
+        call: SourcedCall,
+        from: Int,
+        arity: Int,
+        index: Int,
+    ): Int {
+        val clauses = call.clauses
+        if (from == clauses.size) return FAILED
+        if (from + 1 < clauses.size) pushChoicePoint(SOURCED, index, arity, 0, continuation, from + 1)
+        val clause = clauses[from]
+        val variables = HashMap<Var, Int>()
+        val head = clause.head!!
+        for (i in 0 until arity) if (!unify(fromTerm(head[i], variables), regs[i])) return FAILED
+        if (clause.body.isTrue) return CONTINUE
+        cutBarrier = cpTop
+        return callTerm(fromTerm(clause.body, variables))
     }
 
     // ---- garbage collection
@@ -1081,7 +1334,7 @@ internal class Machine(
         for (i in 0 until cpArgsTop) markWord(cpArgs[i])
         for (i in 0 until trailTop) markCell(trail[i])
         for (i in 0 until pinnedWordsTop) markWord(pinnedWords[i])
-        for (call in primitiveCalls) for (c in call.cells) markCell(c)
+        for (call in calls) if (call is PrimitiveCall) for (c in call.cells) markCell(c)
         // The new addresses: those of the cells kept, and for the others the count of cells kept below (negated)
         var n = 0
         for (i in 0 until top) {
@@ -1101,7 +1354,7 @@ internal class Machine(
         for (i in 0 until cpArgsTop) cpArgs[i] = relocated(cpArgs[i])
         for (i in 0 until trailTop) trail[i] = forward[trail[i]]
         for (i in 0 until pinnedWordsTop) pinnedWords[i] = relocated(pinnedWords[i])
-        for (call in primitiveCalls) for (i in call.cells.indices) call.cells[i] = forward[call.cells[i]]
+        for (call in calls) if (call is PrimitiveCall) for (i in call.cells.indices) call.cells[i] = forward[call.cells[i]]
         for (cp in 0 until cpTop) {
             val base = cp * CP_SIZE
             cps[base + 1] = newAddress(cps[base + 1])
@@ -1309,11 +1562,16 @@ internal class Machine(
         cpTop = 0
         cpArgsTop = 0
         pinnedWordsTop = 0
-        primitiveCalls.clear()
+        calls.clear()
         stopped = false
+        theoryVisible = true
+        scope = environment?.let { program.scopeOf(it.libraries) } ?: program.theory
     }
 
-    /** The solutions of [query]: each the bindings of its variables, until none is left */
+    /**
+     * The solutions of [query]: each the bindings of its variables, until none is left; a ball no catch/3 takes
+     * ends them with a [Halt]
+     */
     fun solve(query: Struct): Sequence<Map<Var, Term>> =
         sequence {
             reset()
@@ -1329,7 +1587,7 @@ internal class Machine(
             continuation = stopAddress
             cutBarrier = 0
             pc = compiled.start
-            var found = run(0)
+            var found = runToSolution(first = true)
             while (found) {
                 val names = HashMap<Int, Var>()
                 // (the variables left unbound are not bindings)
@@ -1338,14 +1596,21 @@ internal class Machine(
                         .filter { (_, pin) -> tag(deref(pinnedWords[pin])) != REF }
                         .associate { (variable, pin) -> variable to toTerm(pinnedWords[pin], names) },
                 )
-                found = backtrack(0) && run(0)
+                found = runToSolution(first = false)
             }
+        }
+
+    private fun runToSolution(first: Boolean): Boolean =
+        try {
+            (first || backtrack(0)) && run(0)
+        } catch (raised: Raised) {
+            throw Halt(haltOf(raised))
         }
 
     companion object {
         const val NONE = -1
         const val FRAME = 4
-        const val CP_SIZE = 12
+        const val CP_SIZE = 16
 
         // The slots of a frame before the clause sets them
         private const val UNSET = (0 shl Words.TAG_BITS) or INT
@@ -1354,11 +1619,18 @@ internal class Machine(
         const val BARRIER = -2
         const val RESUME = -3
         const val PRIMITIVE = -4
+        const val CATCH = -5
+        const val SOURCED = -6
 
         // The outcomes of a call
         const val FAILED = 0
         const val CONTINUE = 1
         const val JUMPED = 2
+
+        // The outcomes of unwinding a ball
+        private const val UNCAUGHT = 0
+        private const val RESUMED = 1
+        private const val EXHAUSTED = 2
 
         // The heap cells above which a call collects
         const val GC_MIN = 1 shl 20

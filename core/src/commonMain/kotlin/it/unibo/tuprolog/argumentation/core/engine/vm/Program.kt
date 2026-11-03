@@ -9,12 +9,17 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.library.Runtime
+import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
 
 /**
  * A program of the machine (spike): the symbol tables (atoms, functors, floats and large integers, each once, so that
  * equal constants are equal words), the code array the clauses are compiled into (see [Compiler]) and the
- * predicates, each with its clauses and their first-argument keys.
+ * predicates: those of the theory of the user ([theory]) and, for each set of libraries a resolution runs with, those
+ * of the clauses of the libraries and the primitives they provide (a [Scope]).
  */
 internal class Program {
     val atoms = ArrayList<String>()
@@ -34,14 +39,16 @@ internal class Program {
     var code = IntArray(1 shl 14)
     var codeTop = 0
 
-    /** The predicates by functor id (null where the program has none) */
-    var predicateTable = arrayOfNulls<Predicate>(1 shl 8)
-        private set
-
     /** The highest register any clause uses */
     var maxRegister = 0
 
     private val compiler = Compiler(this)
+
+    /** The predicates of the theory of the user (its static and dynamic clauses) */
+    val theory = Scope(this, null, 0)
+
+    /** The scopes of the libraries, by id (see [scopeOf]) */
+    val scopes = ArrayList<Scope>()
 
     class ClauseCode(
         val key: Int,
@@ -51,10 +58,108 @@ internal class Program {
         val source: Clause?,
     )
 
+    /** The clauses of a predicate, and which of them a first argument may match */
     class Predicate(
         val functor: Int,
     ) {
         val clauses = ArrayList<ClauseCode>()
+        private var all: IntArray? = null
+        private var byKey: HashMap<Int, IntArray>? = null
+
+        fun add(
+            clause: ClauseCode,
+            onTop: Boolean,
+        ) {
+            if (onTop) clauses.add(0, clause) else clauses.add(clause)
+            all = null
+            byKey = null
+        }
+
+        fun removeAt(index: Int) {
+            clauses.removeAt(index)
+            all = null
+            byKey = null
+        }
+
+        /**
+         * The indexes of the clauses a goal whose first argument has [key] may match, in order: all of them for an
+         * unbound argument or a small predicate, otherwise those with the same key or none
+         */
+        fun candidates(key: Int): IntArray {
+            if (key == 0 || clauses.size < INDEXED_FROM) return all ?: IntArray(clauses.size) { it }.also { all = it }
+            val index = byKey ?: HashMap<Int, IntArray>().also { byKey = it }
+            return index.getOrPut(key) {
+                val matching = ArrayList<Int>()
+                for (i in clauses.indices) {
+                    val k = clauses[i].key
+                    if (k == 0 || k == key) matching.add(i)
+                }
+                matching.toIntArray()
+            }
+        }
+
+        companion object {
+            const val INDEXED_FROM = 8
+        }
+    }
+
+    /**
+     * The predicates and primitives a resolution sees with a set of [libraries] (null for the theory of the user):
+     * the clauses of the libraries compiled when the scope is made, the primitives looked up as called
+     */
+    class Scope(
+        private val program: Program,
+        val libraries: Runtime?,
+        val id: Int,
+    ) {
+        var predicates = arrayOfNulls<Predicate>(1 shl 8)
+        private var primitives = arrayOfNulls<Primitive>(0)
+        private var looked = BooleanArray(0)
+
+        fun predicate(functor: Int): Predicate? = if (functor < predicates.size) predicates[functor] else null
+
+        /** The primitive of the libraries for [functor], if any */
+        fun primitive(functor: Int): Primitive? {
+            val libraries = libraries ?: return null
+            if (functor >= primitives.size) {
+                val size = maxOf(program.functorNames.size, functor + 1)
+                primitives = primitives.copyOf(size)
+                looked = looked.copyOf(size)
+            }
+            if (!looked[functor]) {
+                looked[functor] = true
+                primitives[functor] =
+                    libraries.primitives[Signature(program.nameOfFunctor(functor), program.functorArities[functor])]
+            }
+            return primitives[functor]
+        }
+
+        internal fun grow(functors: Int) {
+            if (functors > predicates.size) predicates = predicates.copyOf(maxOf(predicates.size * 2, functors))
+        }
+
+        /** Adds [clause], last among those of its predicate (first if [onTop]); [dynamic] ones can be removed */
+        fun add(
+            clause: Clause,
+            dynamic: Boolean = false,
+            onTop: Boolean = false,
+        ) {
+            val head = clause.head ?: return
+            val functor = program.functor(head.functor, head.arity)
+            val compiled = program.compiler.compile(clause, if (dynamic) clause else null)
+            val predicate = predicates[functor] ?: Predicate(functor).also { predicates[functor] = it }
+            predicate.add(compiled, onTop)
+        }
+
+        /** Removes the first dynamic clause equal to [clause] (variables apart); false if there is none */
+        fun remove(clause: Clause): Boolean {
+            val head = clause.head ?: return false
+            val predicate = predicates[program.functor(head.functor, head.arity)] ?: return false
+            val index = predicate.clauses.indexOfFirst { it.source != null && it.source.equals(clause, false) }
+            if (index < 0) return false
+            predicate.removeAt(index)
+            return true
+        }
     }
 
     val emptyList: Int = atomWord("[]")
@@ -81,7 +186,9 @@ internal class Program {
             functorNames.add(nameAtom)
             functorArities.add(arity)
             val id = functorNames.size - 1
-            if (id >= predicateTable.size) predicateTable = predicateTable.copyOf(predicateTable.size * 2)
+            val functors = functorNames.size
+            theory.grow(functors)
+            for (scope in scopes) scope.grow(functors)
             id
         }
     }
@@ -145,41 +252,31 @@ internal class Program {
         emit(b)
     }
 
-    /** Adds the clauses of [theory] */
+    /** Adds the clauses of [theory] to those of the theory of the user */
     fun add(theory: Theory) {
-        for (clause in theory.clauses) add(clause)
+        for (clause in theory.clauses) this.theory.add(clause)
     }
 
-    /** Adds [clauses] */
+    /** Adds [clauses] to those of the theory of the user */
     fun add(clauses: Iterable<Clause>) {
-        for (clause in clauses) add(clause)
+        for (clause in clauses) theory.add(clause)
     }
 
-    /** Adds [clause], last among those of its predicate (first if [onTop]); [dynamic] ones can be removed */
-    fun add(
-        clause: Clause,
-        dynamic: Boolean = false,
-        onTop: Boolean = false,
-    ) {
-        val head = clause.head ?: return
-        val functor = functor(head.functor, head.arity)
-        val compiled = compiler.compile(clause, if (dynamic) clause else null)
-        val predicate = predicateTable[functor] ?: Predicate(functor).also { predicateTable[functor] = it }
-        if (onTop) predicate.clauses.add(0, compiled) else predicate.clauses.add(compiled)
+    /** The scope of [libraries]: made, with their clauses compiled, when first asked for */
+    fun scopeOf(libraries: Runtime): Scope {
+        for (scope in scopes) if (scope.libraries === libraries) return scope
+        val scope = Scope(this, libraries, scopes.size + 1)
+        scope.grow(functorNames.size)
+        scopes.add(scope)
+        for (library in libraries.libraries) for (clause in library.clauses) scope.add(clause)
+        return scope
     }
 
-    /** The code of [query] as a clause whose head holds its variables: the address of its first instruction */
-    fun compileQuery(query: it.unibo.tuprolog.core.Struct): Compiler.Query = compiler.compileQuery(query)
+    /** The scope of [id] (see [Scope.id]): the theory of the user for 0 */
+    fun scope(id: Int): Scope = if (id == 0) theory else scopes[id - 1]
 
-    /** Removes the first dynamic clause equal to [clause] (variables apart); false if there is none */
-    fun remove(clause: Clause): Boolean {
-        val head = clause.head ?: return false
-        val predicate = predicateTable[functor(head.functor, head.arity)] ?: return false
-        val index = predicate.clauses.indexOfFirst { it.source != null && it.source.equals(clause, false) }
-        if (index < 0) return false
-        predicate.clauses.removeAt(index)
-        return true
-    }
+    /** The code of [query] as a clause whose head holds its variables */
+    fun compileQuery(query: Struct): Compiler.Query = compiler.compileQuery(query)
 
     companion object {
         /** The first-argument key of a list cell */
