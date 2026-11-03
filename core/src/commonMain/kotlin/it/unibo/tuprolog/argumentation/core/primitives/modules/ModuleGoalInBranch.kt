@@ -17,15 +17,15 @@ internal class ModuleGoalInBranch(
     // A new branch of the active one, through the context library if it is reachable, otherwise solving the goals
     // of the context in a solver of the module
     override fun enter(
-        request: Solve.Request<ExecutionContext>,
         module: Module,
+        request: () -> Solve.Request<ExecutionContext>,
     ) {
         val context = Context.of(module.libraries)
         if (context != null) {
             context.branch(context.active)
             return
         }
-        val solver = request.context.createSolver(libraries = module.libraries)
+        val solver = request().context.createSolver(libraries = module.libraries)
         logicProgramming {
             solver
                 .solve("context_active"(X))

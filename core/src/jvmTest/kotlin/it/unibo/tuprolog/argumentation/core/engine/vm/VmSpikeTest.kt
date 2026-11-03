@@ -5,12 +5,16 @@ import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeResume
 import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.DefaultBuiltins
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -90,10 +94,68 @@ class VmSpikeTest {
             override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
         }
 
+    // Native primitives: twice(X, Y) doubles an integer (a type error otherwise), pick(X) gives 1, 2 and 3 on
+    // backtracking, built(T) builds f(a, [1, 2 | T]) with a fresh variable, native_in_module(G) enters the module
+    private val twice =
+        object : NativePrimitive {
+            override fun call(call: NativeCall): Int {
+                val x = call.arg(0)
+                if (call.kind(x) !=
+                    NativeCall.INT
+                ) {
+                    throw TypeError.forGoal(call.context, Signature("twice", 2), TypeError.Expected.INTEGER, call.term(x))
+                }
+                return if (call.unify(call.arg(1), call.int(call.intValue(x) * 2))) NativeCall.CONTINUE else NativeCall.FAIL
+            }
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
+    private val pick =
+        object : NativePrimitive {
+            private fun from(
+                call: NativeCall,
+                n: Long,
+            ): Int {
+                if (n > 3) return NativeCall.FAIL
+                if (n < 3) call.alternatives(NativeResume { from(it, n + 1) })
+                return if (call.unify(call.arg(0), call.int(n))) NativeCall.CONTINUE else NativeCall.FAIL
+            }
+
+            override fun call(call: NativeCall): Int = from(call, 1)
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
+    private val built =
+        object : NativePrimitive {
+            override fun call(call: NativeCall): Int {
+                val term = call.struct("f", intArrayOf(call.atom("a"), call.list(intArrayOf(call.int(1), call.int(2)), call.variable())))
+                return if (call.unify(call.arg(0), term)) NativeCall.CONTINUE else NativeCall.FAIL
+            }
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
+    private val nativeInModule =
+        object : NativePrimitive {
+            override fun call(call: NativeCall): Int = call.inline(call.arg(0), moduleLibraries, theoryVisible = false)
+
+            override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
+        }
+
     private val delegations =
         Library.of(
             alias = "test.delegations",
-            primitives = mapOf(Signature("in_module", 1) to inModule, Signature("looked_up", 1) to lookedUp),
+            primitives =
+                mapOf(
+                    Signature("in_module", 1) to inModule,
+                    Signature("looked_up", 1) to lookedUp,
+                    Signature("twice", 2) to twice,
+                    Signature("pick", 1) to pick,
+                    Signature("built", 1) to built,
+                    Signature("native_in_module", 1) to nativeInModule,
+                ),
         )
 
     private fun answers(
@@ -178,6 +240,22 @@ class VmSpikeTest {
         assertEquals(listOf("X = 1", "X = 2", "X = 3"), answers(m, "looked_up(stored(X))"))
         assertEquals(listOf("X = 2"), answers(m, "looked_up(stored(X)), X > 1, !"))
         assertEquals(listOf("L = [42, 42, 42, 43, 43, 43]"), answers(m, "findall(X, (in_module(secret(X)), p(_)), L)"))
+    }
+
+    @Test
+    fun nativePrimitives() {
+        val m = machine()
+        assertEquals(listOf("Y = 42"), answers(m, "twice(21, Y)"))
+        assertEquals(emptyList(), answers(m, "twice(21, 43)"))
+        assertEquals(listOf("R = caught(type_error(integer, a))"), answers(m, "safe(twice(a, _), R)"))
+        assertEquals(listOf("X = 1", "X = 2", "X = 3"), answers(m, "pick(X)"))
+        assertEquals(listOf("L = [1, 2, 3]"), answers(m, "findall(X, pick(X), L)"))
+        assertEquals(listOf("X = 2"), answers(m, "pick(X), X > 1, !"))
+        assertEquals(listOf("L = [2, 3]"), answers(m, "findall(X, (pick(X), X > 1), L)"))
+        assertEquals(listOf("T = [1, 2 | _]"), answers(m, "built(f(a, T))").map { it.replace(Regex("_\\w+"), "_") })
+        assertEquals(listOf("X = 42", "X = 43"), answers(m, "native_in_module(secret(X))"))
+        assertEquals(listOf("X = 42"), answers(m, "native_in_module((secret(X), !))"))
+        assertEquals(listOf("L = [84, 86]"), answers(m, "findall(Y, (native_in_module(secret(X)), twice(X, Y)), L)"))
     }
 
     @Test

@@ -13,7 +13,7 @@ internal class ModuleGoal(
     override val signature = Signature("::", 2)
 
     override fun enter(
-        request: Solve.Request<ExecutionContext>,
         module: Module,
+        request: () -> Solve.Request<ExecutionContext>,
     ) = Unit
 }

@@ -3,6 +3,8 @@ package it.unibo.tuprolog.argumentation.core.primitives.modules
 import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
@@ -29,12 +31,31 @@ import it.unibo.tuprolog.solve.primitive.Solve
 internal abstract class AbstractModuleGoal(
     private val loader: DynamicLoader,
 ) : PrimitiveWithSignature,
-    DelegatedCall {
-    /** What the call does before its goal is solved, in [module] */
+    DelegatedCall,
+    NativePrimitive {
+    /** What the call does before its goal is solved, in [module]; [request] made only if it is needed */
     protected abstract fun enter(
-        request: Solve.Request<ExecutionContext>,
         module: Module,
+        request: () -> Solve.Request<ExecutionContext>,
     )
+
+    // The machine: the module's libraries entered on the goal as a word, no term built
+    override fun call(call: NativeCall): Int {
+        val name = call.arg(0)
+        val goal = call.arg(1)
+        if (call.kind(name) != NativeCall.ATOM) {
+            throw TypeError.forGoal(call.context, signature, TypeError.Expected.ATOM, call.term(name))
+        }
+        if (!call.isCallable(goal)) {
+            throw TypeError.forGoal(call.context, signature, TypeError.Expected.CALLABLE, call.term(goal))
+        }
+        val moduleName = call.atomName(name)
+        if (moduleName == USER) return call.inline(goal, call.rootLibraries, theoryVisible = true)
+        val request = { Solve.Request(signature, listOf(call.term(name), call.term(goal)), call.context) }
+        val module = loader.modules.of(moduleName, request)
+        enter(module, request)
+        return call.inline(goal, module.libraries, theoryVisible = false)
+    }
 
     // The module and the goal of the call, checked
     private fun call(request: Solve.Request<ExecutionContext>): Pair<Atom, Struct> {
@@ -53,7 +74,7 @@ internal abstract class AbstractModuleGoal(
         val (name, goal) = call(request)
         if (name.value == USER) return Inlining(goal, userLibraries(request.context), theory = true)
         val module = loader.modules.of(request, name)
-        enter(request, module)
+        enter(module) { request }
         return Inlining(goal, module.libraries)
     }
 
@@ -64,7 +85,7 @@ internal abstract class AbstractModuleGoal(
                 request.context.createMutableSolver(libraries = userLibraries(request.context))
             } else {
                 val module = loader.modules.of(request, name)
-                enter(request, module)
+                enter(module) { request }
                 loader.solverOf(request, module)
             }
         // the time the resolution has left

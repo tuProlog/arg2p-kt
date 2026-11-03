@@ -35,6 +35,9 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
   program; any exception of its code is a `system_error` `catch/3` can handle. A `DelegatedCall` (module calls,
   context lookups) is run by the machine itself: an `Inlining` switches the scope of the libraries for its goal and
   restores it through a frame of its own; a `Sourcing` tries the clauses its `ClauseSource` gives when called.
+- `NativePrimitive`: a primitive the machine runs on its words (through `NativeCall`: the arguments read,
+  unified and built in place, a goal entered against other libraries, alternatives left for backtracking), skipping
+  the facade; the module calls `::` and `:::` are native. A `Primitive` still, for the other solvers.
 - `VmSolver` and `MutableVmSolver`: the tuProlog `Solver` over a program compiled from the static and the dynamic
   knowledge base (again when either changes through the solver); the solvers created for the sub-goals of a
   resolution share the program. The theory of the user is a module of its own: a predicate it defines is its, whatever

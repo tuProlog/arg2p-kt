@@ -27,6 +27,12 @@ internal class Modules(
         name: Atom,
     ): Module = loaded.getOrPut(name.value) { load(request, name) }
 
+    /** The module named [name], [request] made only if it is to be loaded */
+    fun of(
+        name: String,
+        request: () -> Solve.Request<ExecutionContext>,
+    ): Module = loaded[name] ?: load(request(), Atom.of(name)).also { loaded[name] = it }
+
     /** Forgets the modules loaded so far */
     fun clear() = loaded.clear()
 

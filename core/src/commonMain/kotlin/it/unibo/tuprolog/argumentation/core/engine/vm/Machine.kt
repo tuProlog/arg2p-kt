@@ -4,6 +4,9 @@ import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeResume
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
@@ -36,6 +39,7 @@ import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.TimeOutException
 import it.unibo.tuprolog.solve.exception.error.MessageError
 import it.unibo.tuprolog.solve.exception.error.SystemError
+import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.sideffects.SideEffect
@@ -70,7 +74,7 @@ internal class Machine(
     val program: Program,
     // The heap cells above which a call collects (the threshold then follows the cells kept)
     private val gcMinimum: Int = GC_MIN,
-) {
+) : NativeCall {
     var heap = IntArray(1 shl 16)
     var top = 0
 
@@ -181,6 +185,11 @@ internal class Machine(
     private class SourcedCall(
         val clauses: List<Clause>,
     )
+
+    // The arity of the native primitive being called, and the variables its [term]s gave the cells (one call)
+    private var nativeArity = 0
+    private var nativeFunctor = 0
+    private var nativeNames: HashMap<Int, Var>? = null
 
     /** A ball thrown through the code: the term, and the exception it came from, if any */
     class Raised(
@@ -397,7 +406,7 @@ internal class Machine(
         return a
     }
 
-    fun deref(w0: Int): Int {
+    override fun deref(w0: Int): Int {
         var w = w0
         while (tag(w) == REF) {
             val c = heap[payload(w)]
@@ -428,7 +437,7 @@ internal class Machine(
 
     // ---- unification
 
-    fun unify(
+    override fun unify(
         x0: Int,
         y0: Int,
     ): Boolean {
@@ -622,6 +631,33 @@ internal class Machine(
                     val response = nextResponse(call.responses)
                     if (!hasNextResponse(call)) popChoicePoint()
                     if (applyResponse(response, call)) return true
+                }
+                NATIVE -> {
+                    val resume = calls[nextClause] as NativeResume
+                    val argsBase = cps[base + 9]
+                    val arity = cps[base + 11]
+                    cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
+                    popChoicePoint()
+                    nativeArity = arity
+                    nativeNames = null
+                    val outcome =
+                        try {
+                            resume.resume(this)
+                        } catch (raised: Raised) {
+                            throw raised
+                        } catch (halt: Halt) {
+                            throw halt
+                        } catch (exception: Exception) {
+                            throw raised(exception)
+                        }
+                    when (outcome) {
+                        FAILED -> Unit
+                        CONTINUE -> {
+                            pc = continuation
+                            return true
+                        }
+                        else -> return true
+                    }
                 }
                 SOURCED -> {
                     val call = calls[nextClause] as SourcedCall
@@ -1640,6 +1676,7 @@ internal class Machine(
         functor: Int,
         arity: Int,
     ): Int {
+        if (primitive is NativePrimitive) return callNative(primitive, functor, arity)
         val names = HashMap<Int, Var>()
         val arguments = List(arity) { toTerm(regs[it], names) }
         val name = program.nameOfFunctor(functor)
@@ -1712,6 +1749,116 @@ internal class Machine(
 
     // The ball of an exception the code of a primitive raised: a resolution exception as it is, any other a
     // system_error catch/3 can handle (as the engine does)
+    // ---- native primitives (the machine as their NativeCall)
+
+    private fun callNative(
+        primitive: NativePrimitive,
+        functor: Int,
+        arity: Int,
+    ): Int {
+        nativeFunctor = functor
+        nativeArity = arity
+        nativeNames = null
+        return try {
+            primitive.call(this)
+        } catch (raised: Raised) {
+            throw raised
+        } catch (halt: Halt) {
+            throw halt
+        } catch (exception: Exception) {
+            throw raised(exception)
+        }
+    }
+
+    override val arity: Int get() = nativeArity
+
+    override fun arg(i: Int): Int = deref(regs[i])
+
+    override fun kind(w: Int): Int =
+        when (tag(w)) {
+            REF -> NativeCall.VAR
+            ATOM -> NativeCall.ATOM
+            INT, BIG -> NativeCall.INT
+            FLT -> NativeCall.FLOAT
+            STR -> NativeCall.STRUCT
+            else -> NativeCall.LIST
+        }
+
+    override fun atomName(w: Int): String = program.atoms[payload(w)]
+
+    override fun intValue(w: Int): Long = if (tag(w) == INT) payload(w).toLong() else program.bigs[payload(w)]
+
+    override fun functorName(w: Int): String = if (tag(w) == LIST) "." else program.functorName(heap[payload(w)])
+
+    override fun arityOf(w: Int): Int = if (tag(w) == LIST) 2 else program.arity(heap[payload(w)])
+
+    override fun argOf(
+        w: Int,
+        i: Int,
+    ): Int = deref(heap[payload(w) + (if (tag(w) == LIST) i else i + 1)])
+
+    override fun atom(name: String): Int = program.atomWord(name)
+
+    override fun int(value: Long): Int = program.intWord(value)
+
+    override fun struct(
+        name: String,
+        args: IntArray,
+    ): Int {
+        if (args.isEmpty()) return program.atomWord(name)
+        val h = alloc(args.size + 1)
+        heap[h] = program.functorWord(name, args.size)
+        for (i in args.indices) heap[h + 1 + i] = args[i]
+        return word(STR, h)
+    }
+
+    override fun list(
+        items: IntArray,
+        tail: Int,
+    ): Int {
+        var list = tail
+        for (k in items.indices.reversed()) {
+            val cell = alloc(2)
+            heap[cell] = items[k]
+            heap[cell + 1] = list
+            list = word(LIST, cell)
+        }
+        return list
+    }
+
+    override val emptyList: Int get() = program.emptyList
+
+    override fun variable(): Int = ref(newVariable())
+
+    override fun term(w: Int): Term = toTerm(w, nativeNames ?: HashMap<Int, Var>().also { nativeNames = it })
+
+    override fun word(term: Term): Int {
+        val names = nativeNames
+        val cells = HashMap<Var, Int>()
+        if (names != null) for ((cell, variable) in names) cells[variable] = cell
+        return fromTerm(term, cells)
+    }
+
+    override val context: ExecutionContext
+        get() {
+            val name = program.nameOfFunctor(nativeFunctor)
+            val goal = if (nativeArity == 0) Atom.of(name) else Struct.of(name, List(nativeArity) { term(regs[it]) })
+            return PrologExecutionContext(environmentSeen(), procedure = goal)
+        }
+
+    override val rootLibraries: Runtime get() = environment!!.libraries
+
+    override fun inline(
+        goal: Int,
+        libraries: Runtime,
+        theoryVisible: Boolean,
+    ): Int = inlineWord(goal, libraries, theoryVisible)
+
+    override fun alternatives(resume: NativeResume) {
+        pushChoicePoint(NATIVE, calls.size, nativeArity, 0, continuation)
+        calls.add(resume)
+    }
+
     private fun raised(exception: Exception): Raised {
         val resolution =
             exception as? ResolutionException
@@ -1770,16 +1917,23 @@ internal class Machine(
     private fun inline(
         inlining: Inlining,
         cells: HashMap<Var, Int>,
+    ): Int = inlineWord(fromTerm(inlining.goal, cells), inlining.libraries, inlining.theory)
+
+    // The goal [goal] entered against [libraries] (the theory of the user visible or not), the scope of the caller
+    // restored by the frame allocated here when the goal returns
+    private fun inlineWord(
+        goal: Int,
+        libraries: Runtime,
+        theory: Boolean,
     ): Int {
         allocate(2)
         local[frame + FRAME] = Words.int(scope.id)
         local[frame + FRAME + 1] = Words.int(if (theoryVisible) 1 else 0)
         continuation = restoreScopeBlock
-        scope = program.scopeOf(inlining.libraries)
+        scope = program.scopeOf(libraries)
         if (program.maxRegister + 1 > regs.size) regs = regs.copyOf(program.maxRegister + 1)
-        theoryVisible = inlining.theory
+        theoryVisible = theory
         cutBarrier = cpTop
-        val goal = fromTerm(inlining.goal, cells)
         return when (callTerm(goal)) {
             FAILED -> FAILED
             CONTINUE -> jump(continuation)
@@ -2100,6 +2254,7 @@ internal class Machine(
                 PRIMITIVE -> "primitive"
                 CATCH -> "catch"
                 SOURCED -> "sourced"
+                NATIVE -> "native"
                 else -> "clauses of ${program.nameOfFunctor(functor)}/${program.functorArities[functor]} from ${cps[cp * CP_SIZE + 7]}"
             }
         }
@@ -2186,6 +2341,7 @@ internal class Machine(
         const val PRIMITIVE = -4
         const val CATCH = -5
         const val SOURCED = -6
+        const val NATIVE = -7
 
         // Where the clauses of a choice point come from: the libraries and the theory, or the theory alone
         private const val MERGED = 0
