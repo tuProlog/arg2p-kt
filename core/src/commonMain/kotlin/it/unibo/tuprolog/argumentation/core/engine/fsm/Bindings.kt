@@ -110,6 +110,21 @@ class Bindings private constructor(
         return of(map)
     }
 
+    /**
+     * The bindings a solution keeps, as tuProlog cleans a solution up (`retaining`): those of [variables], the ones
+     * of the query, and those binding a variable to one of them; resolved, in their order. The solution is cleaned up
+     * anyway: this spares building the unifier of all the bindings only for most of them to be filtered out.
+     */
+    fun retaining(variables: Set<Var>): Bindings {
+        val map = toMap(resolve = true)
+        val iterator = map.entries.iterator()
+        while (iterator.hasNext()) {
+            val (variable, term) = iterator.next()
+            if (variable !in variables && !(term is Var && term in variables)) iterator.remove()
+        }
+        return of(map)
+    }
+
     // The bindings in their order, each variable once (the last term, where it was bound again), as tuProlog's map
     private fun toMap(resolve: Boolean): LinkedHashMap<Var, Term> {
         val entries = ArrayList<Entry>(size)

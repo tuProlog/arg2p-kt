@@ -148,19 +148,46 @@ fun Exception.asResolutionException(context: ExecutionContext): ResolutionExcept
  * resolution backtracks into it, as an error of that answer
  */
 fun Sequence<Solve.Response>.raisingErrorsInTurn(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-    sequence {
-        val answers = iterator()
-        while (true) {
-            val answer =
-                try {
-                    if (answers.hasNext()) answers.next() else null
-                } catch (exception: Exception) {
-                    request.replyException(exception.asResolutionException(request.context))
-                } ?: break
-            yield(answer)
-            if (answer.solution.isHalt) break
+    AnswersRaisingErrorsInTurn(this, request)
+
+// (A plain sequence: a `sequence {}` builder allocated a coroutine and its continuations for every primitive call)
+private class AnswersRaisingErrorsInTurn(
+    private val answers: Sequence<Solve.Response>,
+    private val request: Solve.Request<ExecutionContext>,
+) : Sequence<Solve.Response> {
+    override fun iterator(): Iterator<Solve.Response> =
+        object : Iterator<Solve.Response> {
+            private val source = answers.iterator()
+            private var ahead: Solve.Response? = null
+            private var over = false
+
+            // The next answer computed ahead, an error computing it becoming an answer raising it, after which there
+            // is no more (as after an answer halting the resolution)
+            private fun lookAhead() {
+                if (ahead != null || over) return
+                val answer =
+                    try {
+                        if (source.hasNext()) source.next() else null
+                    } catch (exception: Exception) {
+                        request.replyException(exception.asResolutionException(request.context))
+                    }
+                if (answer == null) over = true else ahead = answer
+            }
+
+            override fun hasNext(): Boolean {
+                lookAhead()
+                return ahead != null
+            }
+
+            override fun next(): Solve.Response {
+                lookAhead()
+                val answer = ahead ?: throw NoSuchElementException()
+                ahead = null
+                if (answer.solution.isHalt) over = true
+                return answer
+            }
         }
-    }
+}
 
 /** The context an error raised in this one is reported in: the nearest one that is not throw/1 */
 fun PrologExecutionContext.skipThrow(): ExecutionContext = pathToRoot.first { it.procedure?.functor != Throw.functor }

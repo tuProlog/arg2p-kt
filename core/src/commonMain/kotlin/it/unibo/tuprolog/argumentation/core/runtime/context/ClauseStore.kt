@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
 import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
@@ -80,7 +81,7 @@ internal class ClauseStore private constructor(
     /** Solutions of a goal (a fact, a single-goal rule, or `clause(Head, Body)`) on a snapshot of the store */
     fun solve(goal: Term): Sequence<Substitution> {
         val struct = goal.asStruct() ?: return emptySequence()
-        val variables = struct.variables.toSet()
+        val variables = HashSet<Var>().also { struct.collectVariables(it) }
         val solutions =
             if (struct.functor == "clause" && struct.arity == 2) {
                 lookupClause(struct[0], struct[1])
@@ -99,7 +100,7 @@ internal class ClauseStore private constructor(
         body: Term,
     ): Sequence<Substitution> {
         val headStruct = head.asStruct() ?: return emptySequence()
-        val variables = body.variables.toSet()
+        val variables = HashSet<Var>().also { body.collectVariables(it) }
         return data.candidates(headStruct).asSequence().mapNotNull { stored ->
             val fresh = stored.clause.renamedCopy()
             if (!Arg2pUnificator.mgu(headStruct, fresh.head!!).isSuccess) return@mapNotNull null
@@ -398,11 +399,9 @@ internal class ClauseStore private constructor(
         // The anonymous variables of a term named: a fresh copy of a clause (as lookups make) gives each occurrence of
         // one a variable of its own, so p(_1, _1) would match p(a, b)
         private fun named(term: Term): Term {
-            val anonymous =
-                term.variables
-                    .filter { it.isAnonymous }
-                    .distinct()
-                    .toList()
+            // (the variables collected by a plain recursion: Term.variables nests a sequence for each subterm)
+            val variables = LinkedHashSet<Var>().also { term.collectVariables(it) }
+            val anonymous = variables.filter { it.isAnonymous }
             return if (anonymous.isEmpty()) term else term.apply(Substitution.of(anonymous.associateWith { Var.of("A") }))
         }
 

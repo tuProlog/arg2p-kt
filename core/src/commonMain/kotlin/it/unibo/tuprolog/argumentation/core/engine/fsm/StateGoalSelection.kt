@@ -2,6 +2,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Solution
 
 /**
@@ -19,8 +20,11 @@ data class StateGoalSelection(
     override fun computeNext(): State =
         if (context.goals.isOver) {
             if (context.isRoot) {
+                // arg2p: the bindings of the variables of the query alone (see Bindings.retaining): the solver cleans
+                // the solution up to them anyway, copying its substitution (thrice) however large
+                val queryVariables = HashSet<Var>().also { context.query.collectVariables(it) }
                 StateEnd(
-                    Solution.yes(context.query, context.substitution),
+                    Solution.yes(context.query, context.bindings.retaining(queryVariables).unifier),
                     context.copy(step = nextStep()),
                 )
             } else {
