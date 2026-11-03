@@ -88,6 +88,10 @@ internal class Program {
         var deep = false
             private set
 
+        /** How many clauses there are */
+        var size = 0
+            private set
+
         /** Bumped whenever the clauses change */
         var version = 0
             private set
@@ -112,6 +116,7 @@ internal class Program {
             firstKeys[at] = clause.key
             starts[at] = clause.start
             if (clause.deep) deep = true
+            size = clauses.size
             changed()
         }
 
@@ -121,6 +126,7 @@ internal class Program {
             firstKeys.copyInto(firstKeys, index, index + 1, n)
             starts.copyInto(starts, index, index + 1, n)
             if (removed.deep) deep = clauses.any { it.deep }
+            size = clauses.size
             changed()
         }
 

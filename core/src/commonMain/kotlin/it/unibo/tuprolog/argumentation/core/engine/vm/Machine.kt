@@ -728,32 +728,42 @@ internal class Machine(
         source: Int,
     ): Boolean {
         val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
-        val clauses = predicate.clauses
-        val n = clauses.size
-        if (key == 0 || n < Program.Predicate.INDEXED_FROM) {
-            // The clauses in order, over the flat tables: the first candidate by its first argument, its head
-            // deciding the rest; the lookahead for another by every argument the clause keys
-            val firstKeys = predicate.firstKeys
-            var i = from
-            if (n - from > 1) {
-                while (i < n && !matches(firstKeys[i], key)) i++
-                if (i == n) return false
-                var j = i + 1
-                if (predicate.deep) {
-                    while (j < n && !matches(clauses[j], key, arity)) j++
-                } else {
-                    while (j < n && !matches(firstKeys[j], key)) j++
-                }
-                if (j < n) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
-            } else if (i == n) {
-                return false
+        val n = predicate.size
+        if (key != 0 && n >= Program.Predicate.INDEXED_FROM) return tryIndexed(predicate, from, arity, barrier, key, source)
+        // The clauses in order, over the flat tables: the first candidate by its first argument, its head deciding
+        // the rest; the lookahead for another by every argument the clause keys
+        val firstKeys = predicate.firstKeys
+        var i = from
+        if (n - from > 1) {
+            while (i < n && !matches(firstKeys[i], key)) i++
+            if (i == n) return false
+            var j = i + 1
+            if (predicate.deep) {
+                val clauses = predicate.clauses
+                while (j < n && !matches(clauses[j], key, arity)) j++
+            } else {
+                while (j < n && !matches(firstKeys[j], key)) j++
             }
-            cutBarrier = barrier
-            if (ClauseObservers.active) ClauseObservers.resolved(clauses[i].source)
-            pc = predicate.starts[i]
-            return true
+            if (j < n) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
+        } else if (i == n) {
+            return false
         }
-        // The candidates of the key (the clauses of an indexed predicate it may match), in order
+        cutBarrier = barrier
+        if (ClauseObservers.active) ClauseObservers.resolved(predicate.clauses[i].source)
+        pc = predicate.starts[i]
+        return true
+    }
+
+    // The candidates of [key] (the clauses of an indexed predicate it may match), in order
+    private fun tryIndexed(
+        predicate: Program.Predicate,
+        from: Int,
+        arity: Int,
+        barrier: Int,
+        key: Int,
+        source: Int,
+    ): Boolean {
+        val clauses = predicate.clauses
         val candidates = predicate.candidates(key)
         val size = candidates.size
         var i = from
@@ -802,8 +812,20 @@ internal class Machine(
         functor: Int,
         arity: Int,
     ): Int {
+        if (top > gcThreshold || ++callsSinceCheck >= CHECK_EVERY) housekeeping(arity)
+        if (functor < builtinTable.size) {
+            val builtin = builtinTable[functor]
+            if (builtin != null) return callBuiltin(builtin, functor, arity)
+        }
+        // (a cut in a clause of the predicate cuts its alternatives alone, whatever the goal is transparent to)
+        val predicate = predicateOf(functor) ?: return callPrimitiveOf(functor, arity)
+        return if (tryClauses(predicate, 0, arity, cpTop, 0, MERGED)) JUMPED else FAILED
+    }
+
+    // Every so many calls, or the heap above its threshold: the collection, the deadline and the interruption
+    private fun housekeeping(arity: Int) {
         if (top > gcThreshold) collect(arity)
-        if (++callsSinceCheck >= CHECK_EVERY) {
+        if (callsSinceCheck >= CHECK_EVERY) {
             callsSinceCheck = 0
             val environment = environment ?: ExecutionEnvironment(startTime = 0)
             if (currentTimeInstant() > deadline) {
@@ -815,18 +837,25 @@ internal class Machine(
                 throw Halt(ResolutionException(INTERRUPTED, context = context))
             }
         }
-        if (functor < builtinTable.size) {
-            builtinTable[functor]?.let { builtin ->
-                // (the clauses the theory of the user gives a builtin are its alternatives: the strict rules of an
-                // argumentation theory are clauses of ->/2)
-                if (theoryVisible) {
-                    program.theory.predicate(functor)?.let { pushChoicePoint(functor, 0, arity, cpTop, continuation, 0, THEORY) }
-                }
-                return builtin.call(this)
-            }
+    }
+
+    private fun callBuiltin(
+        builtin: Builtin,
+        functor: Int,
+        arity: Int,
+    ): Int {
+        // (the clauses the theory of the user gives a builtin are its alternatives: the strict rules of an
+        // argumentation theory are clauses of ->/2)
+        if (theoryVisible) {
+            program.theory.predicate(functor)?.let { pushChoicePoint(functor, 0, arity, cpTop, continuation, 0, THEORY) }
         }
-        // (a cut in a clause of the predicate cuts its alternatives alone, whatever the goal is transparent to)
-        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cpTop, 0, MERGED)) JUMPED else FAILED }
+        return builtin.call(this)
+    }
+
+    private fun callPrimitiveOf(
+        functor: Int,
+        arity: Int,
+    ): Int {
         val primitive = scope.primitive(functor) ?: return FAILED
         return callPrimitive(primitive, functor, arity)
     }
