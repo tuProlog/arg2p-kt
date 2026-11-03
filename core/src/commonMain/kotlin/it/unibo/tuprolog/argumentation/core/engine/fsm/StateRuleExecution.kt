@@ -40,7 +40,7 @@ data class StateRuleExecution(
                 context.copy(
                     goals = resolution.goals,
                     rules = Cursor.empty(),
-                    substitution = resolution.extend(context.substitution),
+                    bindings = resolution.extend(context.bindings),
                     step = nextStep(),
                 ),
             )

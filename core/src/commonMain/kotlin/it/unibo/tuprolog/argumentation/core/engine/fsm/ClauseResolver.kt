@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Rule
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.prepareForExecution
@@ -14,14 +13,14 @@ import it.unibo.tuprolog.utils.Cursor
  * The resolution of a goal with a clause: the bindings it gives the variables of the goal (those of the clause are
  * renamed apart, and only occur in its body), and the goals of the body to execute in place of the goal, prepared for
  * execution. The bindings are a plain map, each with the others applied: a unifier built from them is copied twice
- * by tuProlog, and they are only read to extend the substitution (see [extendedWith]).
+ * by tuProlog, and they are only read to extend the bindings of the resolution (see [Bindings]).
  */
 internal class Resolution(
     val goalBindings: Map<Var, Term>,
     val goals: Cursor<out Term>,
 ) {
-    /** [substitution], the one of the resolution, extended with the bindings of the goal (see [extendedWith]) */
-    fun extend(substitution: Substitution.Unifier): Substitution.Unifier = substitution.extendedWith(goalBindings)
+    /** [bindings], those of the resolution, extended with the bindings of the goal (see [Bindings.extended]) */
+    fun extend(bindings: Bindings): Bindings = bindings.extended(goalBindings)
 }
 
 /** How the engine resolves a goal with one of the clauses selected for it (arg2p) */

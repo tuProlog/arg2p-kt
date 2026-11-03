@@ -28,7 +28,7 @@ internal object FactResolution {
                 ?: return StateBacktracking(context.copy(step = step))
         ClauseObservers.resolved(fact)
         return StateGoalSelection(
-            context.copy(goals = context.goals.next, substitution = resolution.extend(context.substitution), step = step),
+            context.copy(goals = context.goals.next, bindings = resolution.extend(context.bindings), step = step),
         )
     }
 }

@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.persistentOnly
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.utils.Cursor
 
 /**
@@ -22,7 +21,7 @@ data class StateInit(
                     goals = context.query.toGoals(),
                     rules = Cursor.empty(),
                     primitives = Cursor.empty(),
-                    substitution = Substitution.empty(),
+                    bindings = Bindings.EMPTY,
                     parent = null,
                     choicePoints = null,
                     depth = 0,

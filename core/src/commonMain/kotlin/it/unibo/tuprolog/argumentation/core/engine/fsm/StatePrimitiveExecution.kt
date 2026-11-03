@@ -18,14 +18,14 @@ data class StatePrimitiveExecution(
     private fun PrologExecutionContext.copyFromCurrentPrimitive(
         goals: Cursor<out Term>? = null,
         procedureFromAncestor: Int = 0,
-        substitution: Substitution? = null,
+        bindings: Bindings? = null,
     ): PrologExecutionContext {
         val ctx = primitives.current?.let { apply(it.sideEffects) } ?: this
         return ctx.copy(
             goals = goals ?: this.goals,
             procedure = ancestor(procedureFromAncestor).procedure,
             primitives = Cursor.empty(),
-            substitution = (substitution ?: this.substitution) as Substitution.Unifier,
+            bindings = bindings ?: this.bindings,
             step = nextStep(),
         )
     }
@@ -38,14 +38,14 @@ data class StatePrimitiveExecution(
     }
 
     // arg2p: the answer of a primitive binds the variables of its goal, which had the substitution applied: it extends
-    // the substitution (see extendedWith) unless it binds a variable the substitution does, merged then
-    private fun merged(answer: Substitution): Substitution {
-        val substitution = context.substitution
+    // the bindings (see Bindings.extended) unless it binds a variable the substitution does, merged then
+    private fun merged(answer: Substitution): Bindings {
+        val bindings = context.bindings
         val unifier = answer.takeIf { it.isSuccess }?.castToUnifier()
-        return if (unifier != null && unifier.keys.none { it in substitution }) {
-            substitution.extendedWith(unifier)
+        return if (unifier != null && unifier.keys.none { it in bindings }) {
+            bindings.extended(unifier)
         } else {
-            context.unificator.merge(substitution, answer, occurCheckEnabled = false)
+            Bindings.of(context.unificator.merge(context.substitution, answer, occurCheckEnabled = false) as Substitution.Unifier)
         }
     }
 
@@ -57,7 +57,7 @@ data class StatePrimitiveExecution(
                         context.copyFromCurrentPrimitive(
                             goals = context.goals.next,
                             procedureFromAncestor = 1,
-                            substitution = merged(it.substitution),
+                            bindings = merged(it.substitution),
                         ),
                     )
                 },

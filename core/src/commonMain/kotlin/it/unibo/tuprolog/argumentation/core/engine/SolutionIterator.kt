@@ -15,8 +15,17 @@ import it.unibo.tuprolog.solve.Solution
  */
 internal class SolutionIterator(
     state: State,
-    private val onStateTransition: (State, State, Long) -> Unit,
+    private val onStateTransition: StateTransitionListener,
 ) : Iterator<Solution> {
+    /** Told every transition of the state machine (arg2p: a function type boxed the index of each transition) */
+    fun interface StateTransitionListener {
+        fun onStateTransition(
+            source: State,
+            destination: State,
+            index: Long,
+        )
+    }
+
     /** The state the machine is currently in (before the next call to [next] advances it). */
     var state: State = state
         private set
@@ -31,7 +40,7 @@ internal class SolutionIterator(
         do {
             val previousState = state
             state = state.next()
-            onStateTransition(previousState, state, ++step)
+            onStateTransition.onStateTransition(previousState, state, ++step)
         } while (!state.isEndState)
         return state.castToEndState().solution
     }

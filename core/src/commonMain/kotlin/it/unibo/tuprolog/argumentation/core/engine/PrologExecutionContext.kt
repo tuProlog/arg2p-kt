@@ -1,9 +1,9 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0): see README.md in this package
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.Bindings
 import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
-import it.unibo.tuprolog.argumentation.core.engine.fsm.substituted
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -44,7 +44,8 @@ import kotlin.collections.Set as KtSet
  * alternatives.
  *
  * The fields of [it.unibo.tuprolog.solve.ExecutionContext] but [procedure] and [substitution] are read from the
- * [environment] of the frame (arg2p, see [ExecutionEnvironment]); the ones specific to the prolog engine are:
+ * [environment] of the frame (arg2p, see [ExecutionEnvironment]), and [substitution] is the unifier of the [bindings]
+ * of the frame, built when read (see [Bindings]); the ones specific to the prolog engine are:
  * - [query]/[goals]: the original query, and the cursor over the goals still to be proven in this frame.
  * - [rules]/[primitives]: the still-untried candidate clauses/primitive responses for the current goal, i.e. the
  *   frame's own view of the [choicePoints] entry recorded for it (if any).
@@ -66,7 +67,7 @@ import kotlin.collections.Set as KtSet
 data class PrologExecutionContext(
     val environment: ExecutionEnvironment,
     override val procedure: Struct? = null,
-    override val substitution: Substitution.Unifier = Substitution.empty(),
+    val bindings: Bindings = Bindings.EMPTY,
     val goals: Cursor<out Term> = Cursor.empty(),
     val rules: Cursor<out Rule> = Cursor.empty(),
     val primitives: Cursor<out Solve.Response> = Cursor.empty(),
@@ -83,6 +84,9 @@ data class PrologExecutionContext(
     init {
         require((depth == 0 && parent == null) || (depth > 0 && parent != null))
     }
+
+    override val substitution: Substitution.Unifier
+        get() = bindings.unifier
 
     override val unificator: Unificator
         get() = environment.unificator
@@ -155,7 +159,7 @@ data class PrologExecutionContext(
     val currentGoal: Term?
         get() {
             if (!currentGoalComputed) {
-                currentGoalValue = if (goals.isOver) null else goals.current?.substituted(substitution)
+                currentGoalValue = if (goals.isOver) null else goals.current?.let { bindings.resolved(it) }
                 currentGoalComputed = true
             }
             return currentGoalValue
@@ -303,7 +307,7 @@ data class PrologExecutionContext(
         "PrologExecutionContext(" +
             "step=$step, " +
             "depth=$depth, " +
-            "substitution=$substitution, " +
+            "bindings=$bindings, " +
             "logicStackTrace=$logicStackTrace, " +
             "goals=$goals, " +
             "rules=$rules, " +

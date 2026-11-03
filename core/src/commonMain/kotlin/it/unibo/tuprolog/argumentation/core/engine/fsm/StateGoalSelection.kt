@@ -27,19 +27,19 @@ data class StateGoalSelection(
                 // The bindings of the variables of no more interest are dropped once the substitution has doubled
                 // since it was last trimmed (arg2p: trimming it at every frame left made each step cost as much as
                 // all the variables in the frames above): keeping them a little longer does not change anything else
-                val trim = context.substitution.size > maxOf(MIN_TRIMMED_SIZE, 2 * context.trimmedSize)
-                val substitution =
+                val trim = context.bindings.size > maxOf(MIN_TRIMMED_SIZE, 2 * context.trimmedSize)
+                val bindings =
                     if (trim) {
-                        context.substitution.filter { (it, _) -> context.isVariableInteresting(it) }.castToUnifier()
+                        context.bindings.filter { context.isVariableInteresting(it) }
                     } else {
-                        context.substitution
+                        context.bindings
                     }
                 StateGoalSelection(
                     context.parent!!.let {
                         it.copy(
                             choicePoints = context.choicePoints,
-                            substitution = substitution,
-                            trimmedSize = if (trim) substitution.size else context.trimmedSize,
+                            bindings = bindings,
+                            trimmedSize = if (trim) bindings.size else context.trimmedSize,
                             goals = it.goals.next, // go on with parent's goals
                             step = nextStep(),
                             // The environment of the frame left (its side effects stay), with the libraries of

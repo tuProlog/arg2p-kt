@@ -97,7 +97,7 @@ data class StateException(
                     goals = newGoals,
                     rules = Cursor.empty(),
                     primitives = Cursor.empty(),
-                    substitution = newSubstitution.castToUnifier(),
+                    bindings = Bindings.of(newSubstitution.castToUnifier()),
                     step = nextStep(),
                 ),
             )

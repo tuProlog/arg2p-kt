@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.appendPrimitives
 import it.unibo.tuprolog.argumentation.core.engine.appendRules
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
+import it.unibo.tuprolog.argumentation.core.runtime.isKnownGround
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
@@ -196,11 +197,12 @@ fun PrologExecutionContext.toRequest(
 ) = Solve.Request(signature, goal.args, this, startTime)
 
 // The variables of a term, collected by a plain recursion (Term.variables nests a lazy sequence for each argument),
-// skipping its ground parts (whose groundness is known: lists build it, other structures compute it once)
+// skipping its parts ground at hand (see isKnownGround: the goals are fresh terms, whose groundness a plain compound
+// term computed by sequences over its whole subterm)
 internal fun Term.collectVariables(into: MutableSet<Var>) {
     when (this) {
         is Var -> into.add(this)
-        is Struct -> if (!isGround) for (i in 0 until arity) this[i].collectVariables(into)
+        is Struct -> if (!isKnownGround()) for (i in 0 until arity) this[i].collectVariables(into)
         else -> Unit
     }
 }

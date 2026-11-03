@@ -144,8 +144,14 @@ abstract class AbstractPrologSolver(
                 ),
                 theoryVisible = theoryVisible,
             )
-        return SolutionIterator(StateInit(currentContext), this::updateCurrentContextAfterStateTransition).asSequence()
+        return SolutionIterator(StateInit(currentContext), transitionListener).asSequence()
     }
+
+    // (One listener for all the resolutions of the solver, rather than a function reference bound at each)
+    private val transitionListener =
+        SolutionIterator.StateTransitionListener { source, destination, index ->
+            updateCurrentContextAfterStateTransition(source, destination, index)
+        }
 
     @Suppress("UNUSED_PARAMETER")
     private fun updateCurrentContextAfterStateTransition(
