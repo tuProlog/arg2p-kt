@@ -81,15 +81,18 @@ internal class Compiler(
     private var nextLevel = 0
     private var needsEnv = false
 
-    /** Compiles [clause] (kept as [source] if dynamic): the address of its code and its first-argument key */
+    // The levels (frame slots) of the negations and conditions being compiled: a cut inside one is local to it
+    private val cutLevels = ArrayList<Int>()
+
+    /** Compiles [clause]: the address of its code and its first-argument key */
     fun compile(
         clause: Clause,
-        source: Clause?,
+        dynamic: Boolean,
     ): Program.ClauseCode {
         val head = clause.head!!
         val start = compile(head, clause.body)
-        val key = if (head.arity == 0) 0 else keyOf(head[0])
-        return Program.ClauseCode(key, start, source)
+        val keys = IntArray(head.arity) { keyOf(head[it]) }
+        return Program.ClauseCode(keys, start, clause, dynamic)
     }
 
     /** Compiles [query] as the body of a clause whose head holds its variables, in order */
@@ -122,6 +125,7 @@ internal class Compiler(
         bodyTerm: Term,
     ): Int {
         vars.clear()
+        cutLevels.clear()
         chunk = 0
         leafGoals = 0
         hasControl = false
@@ -142,9 +146,9 @@ internal class Compiler(
         nextLevel = permanents
         val start = program.codeTop
         if (needsEnv) program.emit(Op.ALLOCATE, permanents + levels)
-        for (info in vars.values) {
+        for ((variable, info) in vars) {
             if (info.permanent && info.firstInRegion) {
-                program.emit(Op.INIT_Y, info.register)
+                program.emit(Op.INIT_Y, info.register, program.nameOperand(variable))
                 info.seen = true
             }
         }
@@ -188,7 +192,8 @@ internal class Compiler(
             }
             term is Struct && term.arity == 1 && term.functor == "\\+" -> Body.Naf(term, parse(term[0]))
             term is Struct -> Body.Goal(term)
-            else -> throw IllegalArgumentException("not a goal: $term")
+            // (a number as a goal: call/1 raises the type error when the clause runs)
+            else -> Body.Goal(Struct.of("call", term))
         }
 
     private fun analyze(
@@ -318,7 +323,9 @@ internal class Compiler(
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
                 val elseLabel = program.emit(0)
+                cutLevels.add(level)
                 emit(body.condition, last = false)
+                cutLevels.removeAt(cutLevels.size - 1)
                 program.emit(Op.CUT_Y, level)
                 emit(body.then, last = false)
                 program.emit(Op.JUMP)
@@ -335,7 +342,9 @@ internal class Compiler(
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
                 val elseLabel = program.emit(0)
+                cutLevels.add(level)
                 emit(body.goal, last = false)
+                cutLevels.removeAt(cutLevels.size - 1)
                 program.emit(Op.CUT_Y, level)
                 program.emit(Op.FAIL)
                 program.code[elseLabel] = program.codeTop
@@ -343,7 +352,8 @@ internal class Compiler(
                 return false
             }
             Body.Cut -> {
-                program.emit(Op.CUT)
+                // (a cut inside a negation or a condition is local to it: the choice point of the construct stays)
+                if (cutLevels.isEmpty()) program.emit(Op.CUT) else program.emit(Op.CUT_LOCAL, cutLevels[cutLevels.size - 1])
                 return false
             }
             Body.True -> return false
@@ -406,10 +416,10 @@ internal class Compiler(
                     if (!info.seen) {
                         info.seen = true
                         if (info.permanent) {
-                            program.emit(Op.UNIFY_Y_VAR, info.register)
+                            program.emit(Op.UNIFY_Y_VAR, info.register, program.nameOperand(argument))
                         } else {
                             info.register = nextTemp++
-                            program.emit(Op.UNIFY_X_VAR, info.register)
+                            program.emit(Op.UNIFY_X_VAR, info.register, program.nameOperand(argument))
                         }
                     } else {
                         program.emit(if (info.permanent) Op.UNIFY_Y_VAL else Op.UNIFY_X_VAL, info.register)
@@ -422,7 +432,7 @@ internal class Compiler(
                 is Struct -> {
                     flushVoids()
                     val temp = nextTemp++
-                    program.emit(Op.UNIFY_X_VAR, temp)
+                    program.emit(Op.UNIFY_X_VAR, temp, 0)
                     pending.add(temp to argument)
                 }
                 else -> {
@@ -445,10 +455,10 @@ internal class Compiler(
                 if (!info.seen) {
                     info.seen = true
                     if (info.permanent) {
-                        program.emit(Op.PUT_Y_VAR, info.register, register)
+                        program.emit(Op.PUT_Y_VAR, info.register, register, program.nameOperand(term))
                     } else {
                         info.register = nextTemp++
-                        program.emit(Op.PUT_X_VAR, info.register, register)
+                        program.emit(Op.PUT_X_VAR, info.register, register, program.nameOperand(term))
                     }
                 } else {
                     program.emit(if (info.permanent) Op.PUT_Y_VAL else Op.PUT_X_VAL, info.register, register)
@@ -487,10 +497,10 @@ internal class Compiler(
                             if (!info.seen) {
                                 info.seen = true
                                 if (info.permanent) {
-                                    program.emit(Op.SET_Y_VAR, info.register)
+                                    program.emit(Op.SET_Y_VAR, info.register, program.nameOperand(argument))
                                 } else {
                                     info.register = nextTemp++
-                                    program.emit(Op.SET_X_VAR, info.register)
+                                    program.emit(Op.SET_X_VAR, info.register, program.nameOperand(argument))
                                 }
                             } else {
                                 program.emit(if (info.permanent) Op.SET_Y_VAL else Op.SET_X_VAL, info.register)

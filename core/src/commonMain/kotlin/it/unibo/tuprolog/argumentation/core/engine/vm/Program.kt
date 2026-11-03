@@ -11,6 +11,7 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -54,12 +55,17 @@ internal class Program {
     val scopes = ArrayList<Scope>()
 
     class ClauseCode(
-        val key: Int,
+        /** The keys of the arguments of the head (0: a variable, matching anything); [key] is the first */
+        val keys: IntArray,
         /** The address of the first instruction */
         val start: Int,
-        // The clause as given, for the dynamic ones (retracted by equality)
-        val source: Clause?,
-    )
+        /** The clause as given */
+        val source: Clause,
+        /** Whether the clause is dynamic (retracted by equality) */
+        val dynamic: Boolean,
+    ) {
+        val key: Int get() = if (keys.isEmpty()) 0 else keys[0]
+    }
 
     /** The clauses of a predicate, and which of them a first argument may match */
     class Predicate(
@@ -129,36 +135,6 @@ internal class Program {
 
         fun predicate(functor: Int): Predicate? = if (functor < predicates.size) predicates[functor] else null
 
-        // The predicates of the libraries followed by those of the theory of the user, by functor
-        private class Merged(
-            val libraryVersion: Int,
-            val theoryVersion: Int,
-            val predicate: Predicate,
-        )
-
-        private val merged = HashMap<Int, Merged>()
-
-        /**
-         * The predicate [functor] as a resolution sees it when the libraries ([library]) and the theory of the user
-         * ([theory]) both define it: the clauses of the libraries first (as the engine concatenates them), kept until
-         * either changes
-         */
-        fun merged(
-            functor: Int,
-            library: Predicate,
-            theory: Predicate,
-        ): Predicate {
-            val known = merged[functor]
-            if (known != null && known.libraryVersion == library.version && known.theoryVersion == theory.version) {
-                return known.predicate
-            }
-            val predicate = Predicate(functor)
-            for (clause in library.clauses) predicate.add(clause, onTop = false)
-            for (clause in theory.clauses) predicate.add(clause, onTop = false)
-            merged[functor] = Merged(library.version, theory.version, predicate)
-            return predicate
-        }
-
         /** The primitive of the libraries for [functor], if any */
         fun primitive(functor: Int): Primitive? {
             val libraries = libraries ?: return null
@@ -187,7 +163,7 @@ internal class Program {
         ) {
             val head = clause.head ?: return
             val functor = program.functor(head.functor, head.arity)
-            val compiled = program.compiler.compile(clause, if (dynamic) clause else null)
+            val compiled = program.compiler.compile(clause, dynamic)
             val predicate = predicates[functor] ?: Predicate(functor).also { predicates[functor] = it }
             predicate.add(compiled, onTop)
         }
@@ -196,7 +172,7 @@ internal class Program {
         fun remove(clause: Clause): Boolean {
             val head = clause.head ?: return false
             val predicate = predicates[program.functor(head.functor, head.arity)] ?: return false
-            val index = predicate.clauses.indexOfFirst { it.source != null && it.source.equals(clause, false) }
+            val index = predicate.clauses.indexOfFirst { it.dynamic && it.source.equals(clause, false) }
             if (index < 0) return false
             predicate.removeAt(index)
             return true
@@ -292,6 +268,21 @@ internal class Program {
         emit(a)
         emit(b)
     }
+
+    fun emit(
+        opcode: Int,
+        a: Int,
+        b: Int,
+        c: Int,
+    ) {
+        emit(opcode)
+        emit(a)
+        emit(b)
+        emit(c)
+    }
+
+    /** The operand naming a variable the code creates: its name atom and one, 0 for an anonymous one */
+    fun nameOperand(variable: Var): Int = if (variable.isAnonymous) 0 else atom(variable.name) + 1
 
     /** Adds the clauses of [theory] to those of the theory of the user */
     fun add(theory: Theory) {

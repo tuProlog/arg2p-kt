@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
-import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -41,12 +40,12 @@ data class ExecutionEnvironment(
     val query: Struct = Truth.TRUE,
     val startTime: TimeInstant,
     val maxDuration: TimeDuration = TimeDuration.MAX_VALUE,
-    val theoryIndexes: TheoryIndexes = TheoryIndexes(),
-    /**
-     * The program of the machine the resolution runs on, when it runs on the machine (see `engine.vm.VmSolver`):
-     * the solvers created for its sub-goals share it
-     */
+    /** The program of the machine the resolution runs on (see `engine.vm.VmSolver`): the solvers created for its sub-goals share it */
     val vm: Any? = null,
+    /** Whether the theory of the user is visible to the resolution (not within a module call) */
+    val theoryVisible: Boolean = true,
+    /** The environment of the root of the resolution, where this one is that of a module call (null: this is the root) */
+    val root: ExecutionEnvironment? = null,
 ) {
     init {
         require(startTime >= 0)
@@ -76,7 +75,7 @@ data class ExecutionEnvironment(
         }
 
     // Whether every value but the libraries and the custom data is the same as in [other]
-    private fun sharesTheRestWith(other: ExecutionEnvironment): Boolean =
+    internal fun sharesTheRestWith(other: ExecutionEnvironment): Boolean =
         unificator === other.unificator &&
             flags === other.flags &&
             staticKb === other.staticKb &&
@@ -87,8 +86,9 @@ data class ExecutionEnvironment(
             query === other.query &&
             startTime == other.startTime &&
             maxDuration == other.maxDuration &&
-            theoryIndexes === other.theoryIndexes &&
-            vm === other.vm
+            vm === other.vm &&
+            theoryVisible == other.theoryVisible &&
+            root === other.root
 }
 
 /** This store without its ephemeral data: itself when it has none (`discardEphemeral` copies it in any case) */

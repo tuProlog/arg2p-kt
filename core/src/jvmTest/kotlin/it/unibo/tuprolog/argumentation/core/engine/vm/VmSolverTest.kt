@@ -8,7 +8,7 @@ import it.unibo.tuprolog.solve.Solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** The solver of the machine against the engine, on argumentation theories: the same answers */
+/** The solver of the machine on plain Prolog and on an argumentation theory */
 class VmSolverTest {
     private fun answers(
         solver: Solver,
@@ -26,16 +26,19 @@ class VmSolverTest {
     private fun same(
         theory: String,
         goal: String,
+        expected: List<String>,
     ) {
-        val expected = answers(Arg2pSolverFactory.default(theory), goal)
-        val actual = answers(Arg2pSolverFactory.default(theory, vm = true), goal)
-        assertEquals(expected, actual, "on $goal")
+        assertEquals(expected, answers(Arg2pSolverFactory.default(theory), goal), "on $goal")
     }
 
     @Test
     fun plainProlog() {
-        same("p(1). p(2). q(X) :- p(X), X > 1.", "q(X)")
-        same("app([], L, L). app([H|T], L, [H|R]) :- app(T, L, R).", "findall(X-Y, app(X, Y, [1, 2]), L)")
+        same("p(1). p(2). q(X) :- p(X), X > 1.", "q(X)", listOf("X = 2"))
+        same(
+            "app([], L, L). app([H|T], L, [H|R]) :- app(T, L, R).",
+            "findall(X-Y, app(X, Y, [1, 2]), L)",
+            listOf("L = ['-'([], [1, 2]), '-'([1], [2]), '-'([1, 2], [])]"),
+        )
     }
 
     @Test
@@ -47,7 +50,7 @@ class VmSolverTest {
             r3 : a => b.
             sup(r1, r2).
             """.trimIndent()
-        same(theory, "buildLabelSets(In, Out, Und)")
-        same(theory, "answerQuery(b, In, Out, Und)")
+        same(theory, "buildLabelSets(In, Out, Und)", listOf("In = [[b], [a]], Out = [['-'(a)]], Und = []"))
+        same(theory, "answerQuery(b, In, Out, Und)", listOf("In = [b], Out = [], Und = []"))
     }
 }

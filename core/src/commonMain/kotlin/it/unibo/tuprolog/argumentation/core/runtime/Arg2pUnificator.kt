@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.runtime
 
-import it.unibo.tuprolog.argumentation.core.engine.fsm.VarMap
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Rule

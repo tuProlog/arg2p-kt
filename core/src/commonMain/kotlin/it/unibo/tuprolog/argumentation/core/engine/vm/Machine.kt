@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
+import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.Inlining
@@ -34,6 +35,7 @@ import it.unibo.tuprolog.solve.exception.LogicError
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.TimeOutException
 import it.unibo.tuprolog.solve.exception.error.MessageError
+import it.unibo.tuprolog.solve.exception.error.SystemError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.sideffects.SideEffect
@@ -71,6 +73,18 @@ internal class Machine(
 ) {
     var heap = IntArray(1 shl 16)
     var top = 0
+
+    // What a cell holding an unbound variable is called when the term is read: 0 nothing, a name atom and one for a
+    // variable the code made (fresh as read), minus an index and one for the variable object the cell was made for
+    // (the same object as read again: a stored term read twice gives the same variables, as the engine does)
+    private var varInfo = IntArray(1 shl 16)
+    private val varObjects = ArrayList<Var>()
+
+    // The cells of the variables of the query (the first ones), and when each was bound (the engine reported the
+    // bindings of a solution in the order they were made)
+    private var queryCells = 0
+    private var queryBound = IntArray(16)
+    private var bindings = 0
 
     // The cells below this address are trailed when bound (the heap top at the latest choice point)
     private var heapBarrier = 0
@@ -156,11 +170,13 @@ internal class Machine(
         fun call(machine: Machine): Int
     }
 
-    // A call of a primitive with answers left: its responses, and the cells of the variables of its goal
+    // A call of a primitive with answers left: its responses, the cells of the variables of its goal, and the error
+    // raised computing the next answer ahead, if any (raised when the resolution backtracks into that answer)
     private class PrimitiveCall(
         val responses: Iterator<Solve.Response>,
         val variables: Array<Var>,
         val cells: IntArray,
+        var pending: Exception? = null,
     )
 
     // A lookup with clauses left to try
@@ -304,25 +320,58 @@ internal class Machine(
         return JUMPED
     }
 
+    // The environment as a primitive sees it where it is called: within a module call, the libraries of the module
+    // and the theory of the user hidden (the solvers it creates for its sub-goals see the same), the root's otherwise;
+    // kept per scope and visibility until the root changes
+    private val environmentsSeen = HashMap<Int, ExecutionEnvironment>()
+
+    private fun environmentSeen(): ExecutionEnvironment {
+        val base = environment!!
+        val libraries = scope.libraries
+        if ((libraries == null || libraries === base.libraries) && base.theoryVisible == theoryVisible) return base
+        val key = scope.id * 2 + (if (theoryVisible) 1 else 0)
+        val cached = environmentsSeen[key]
+        if (cached != null && cached.root === base) return cached
+        val made = base.copy(libraries = libraries ?: base.libraries, theoryVisible = theoryVisible, root = base)
+        environmentsSeen[key] = made
+        return made
+    }
+
     // ---- heap
 
     fun alloc(cells: Int): Int {
-        if (top + cells > heap.size) heap = heap.copyOf(maxOf(heap.size * 2, top + cells))
+        if (top + cells > heap.size) grow(top + cells)
         val start = top
         top += cells
         return start
     }
 
+    private fun grow(cells: Int) {
+        val size = maxOf(heap.size * 2, cells)
+        heap = heap.copyOf(size)
+        varInfo = varInfo.copyOf(size)
+    }
+
     // A cell holding [w] allocated at the top (`heap[alloc(1)] = w` would store into the array read before alloc
     // grew it)
     private fun pushCell(w: Int) {
-        if (top == heap.size) heap = heap.copyOf(heap.size * 2)
+        if (top == heap.size) grow(top + 1)
         heap[top++] = w
     }
 
-    fun newVariable(): Int {
+    /** A fresh unbound variable, called by [info] when read (see varInfo) */
+    fun newVariable(info: Int = 0): Int {
         val a = alloc(1)
         heap[a] = ref(a)
+        varInfo[a] = info
+        return a
+    }
+
+    // A fresh unbound variable at the top, as the structure being built asks (see Op.UNIFY_X_VAR)
+    private fun pushVariable(info: Int): Int {
+        val a = alloc(1)
+        heap[a] = ref(a)
+        varInfo[a] = info
         return a
     }
 
@@ -341,6 +390,7 @@ internal class Machine(
         w: Int,
     ) {
         heap[address] = w
+        if (address < queryCells) queryBound[address] = ++bindings
         if (address < heapBarrier) {
             if (trailTop == trail.size) trail = trail.copyOf(trail.size * 2)
             trail[trailTop++] = address
@@ -405,12 +455,13 @@ internal class Machine(
         return true
     }
 
-    // The younger variable bound to the older
+    // Two variables met: the first bound to the second (the engine bound the left one to the right: X = Y binds X;
+    // either way is safe here, both cells being on the heap and the older one trailed)
     private fun bindVariables(
         a: Int,
         b: Int,
     ) {
-        if (a < b) bind(b, ref(a)) else bind(a, ref(b))
+        bind(a, ref(b))
     }
 
     // A constant against a word: bound to it if a variable, the same word otherwise
@@ -542,8 +593,12 @@ internal class Machine(
                 CATCH -> popChoicePoint()
                 PRIMITIVE -> {
                     val call = calls[nextClause] as PrimitiveCall
+                    call.pending?.let {
+                        popChoicePoint()
+                        throw raised(it)
+                    }
                     val response = nextResponse(call.responses)
-                    if (!hasNextResponse(call.responses)) popChoicePoint()
+                    if (!hasNextResponse(call)) popChoicePoint()
                     if (applyResponse(response, call)) return true
                 }
                 SOURCED -> {
@@ -582,20 +637,18 @@ internal class Machine(
         }
     }
 
-    // The predicate of [functor] the resolution sees: the clauses of its libraries followed by those of the theory
-    // of the user, if visible (as the engine concatenates them: a theory may add clauses to a library predicate)
-    private fun predicateOf(functor: Int): Program.Predicate? {
-        val library = scope.predicate(functor)
-        val theory = if (theoryVisible) program.theory.predicate(functor) else null
-        return when {
-            library == null -> theory
-            theory == null -> library
-            else -> scope.merged(functor, library, theory)
-        }
-    }
+    // The predicate of [functor] the resolution sees: the theory of the user's, if visible and it defines it (the
+    // theory is a module of its own, whatever the libraries define under the same name), else the libraries'
+    private fun predicateOf(functor: Int): Program.Predicate? =
+        (if (theoryVisible) program.theory.predicate(functor) else null) ?: scope.predicate(functor)
+
+    // The keys of the arguments of the call at hand, for the clauses to be matched against
+    private var goalKeys = IntArray(16)
 
     // Enters the first clause of [predicate] from the position [from] among the candidates for [key] (the first
-    // argument's, computed when [from] is 0), leaving a choice point if another may match; false when none does
+    // argument's, computed when [from] is 0), leaving a choice point if another may match (the keys of every
+    // argument of its head are matched against the arguments, as the engine left no choice point for a clause whose
+    // head did not unify); false when none does
     private fun tryClauses(
         predicate: Program.Predicate,
         from: Int,
@@ -609,13 +662,34 @@ internal class Machine(
         val clauses = predicate.clauses
         val size = candidates.size
         var i = from
-        while (i < size && !matches(clauses[candidates[i]].key, key)) i++
-        if (i == size) return false
-        var j = i + 1
-        while (j < size && !matches(clauses[candidates[j]].key, key)) j++
-        if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
+        if (size - from > 1) {
+            // (a single candidate left: its head decides)
+            if (goalKeys.size < arity) goalKeys = IntArray(arity * 2)
+            for (k in 1 until arity) goalKeys[k] = keyOfHeap(regs[k])
+            while (i < size && !matches(clauses[candidates[i]], key, arity)) i++
+            if (i == size) return false
+            var j = i + 1
+            while (j < size && !matches(clauses[candidates[j]], key, arity)) j++
+            if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
+        } else if (i == size) {
+            return false
+        }
         cutBarrier = barrier
-        pc = clauses[candidates[i]].start
+        val clause = clauses[candidates[i]]
+        ClauseObservers.resolved(clause.source)
+        pc = clause.start
+        return true
+    }
+
+    private fun matches(
+        clause: Program.ClauseCode,
+        key: Int,
+        arity: Int,
+    ): Boolean {
+        val keys = clause.keys
+        if (arity == 0) return true
+        if (!matches(keys[0], key)) return false
+        for (k in 1 until arity) if (!matches(keys[k], goalKeys[k])) return false
         return true
     }
 
@@ -636,17 +710,20 @@ internal class Machine(
         if (top > gcThreshold) collect(arity)
         if (++callsSinceCheck >= CHECK_EVERY) {
             callsSinceCheck = 0
+            val environment = environment ?: ExecutionEnvironment(startTime = 0)
             if (currentTimeInstant() > deadline) {
-                val environment = environment ?: ExecutionEnvironment(startTime = 0)
                 val context: ExecutionContext = PrologExecutionContext(environment)
                 throw Halt(TimeOutException(exceededDuration = environment.maxDuration, context = context))
+            }
+            if (resolutionInterrupted()) {
+                val context: ExecutionContext = PrologExecutionContext(environment)
+                throw Halt(ResolutionException(INTERRUPTED, context = context))
             }
         }
         if (functor < builtinTable.size) {
             builtinTable[functor]?.let { builtin ->
-                // (the clauses the theory of the user gives a builtin are its alternatives, as the engine
-                // concatenates the clauses of a library predicate and those of the theory: strict rules are clauses
-                // of ->/2)
+                // (the clauses the theory of the user gives a builtin are its alternatives: the strict rules of an
+                // argumentation theory are clauses of ->/2)
                 if (theoryVisible) {
                     program.theory.predicate(functor)?.let { pushChoicePoint(functor, 0, arity, cpTop, continuation, 0, THEORY) }
                 }
@@ -754,23 +831,19 @@ internal class Machine(
             }
             Op.UNIFY_X_VAR -> {
                 if (writing) {
-                    val h = alloc(1)
-                    heap[h] = ref(h)
-                    regs[code[at + 1]] = ref(h)
+                    regs[code[at + 1]] = ref(pushVariable(code[at + 2]))
                 } else {
                     regs[code[at + 1]] = heap[next++]
                 }
-                pc = at + 2
+                pc = at + 3
             }
             Op.UNIFY_Y_VAR -> {
                 if (writing) {
-                    val h = alloc(1)
-                    heap[h] = ref(h)
-                    local[frame + FRAME + code[at + 1]] = ref(h)
+                    local[frame + FRAME + code[at + 1]] = ref(pushVariable(code[at + 2]))
                 } else {
                     local[frame + FRAME + code[at + 1]] = heap[next++]
                 }
-                pc = at + 2
+                pc = at + 3
             }
             Op.UNIFY_X_VAL -> {
                 if (writing) {
@@ -800,23 +873,26 @@ internal class Machine(
                 val n = code[at + 1]
                 if (writing) {
                     val h = alloc(n)
-                    for (i in h until h + n) heap[i] = ref(i)
+                    for (i in h until h + n) {
+                        heap[i] = ref(i)
+                        varInfo[i] = 0
+                    }
                 } else {
                     next += n
                 }
                 pc = at + 2
             }
             Op.PUT_X_VAR -> {
-                val h = newVariable()
+                val h = newVariable(code[at + 3])
                 regs[code[at + 1]] = ref(h)
                 regs[code[at + 2]] = ref(h)
-                pc = at + 3
+                pc = at + 4
             }
             Op.PUT_Y_VAR -> {
-                val h = newVariable()
+                val h = newVariable(code[at + 3])
                 local[frame + FRAME + code[at + 1]] = ref(h)
                 regs[code[at + 2]] = ref(h)
-                pc = at + 3
+                pc = at + 4
             }
             Op.PUT_X_VAL -> {
                 regs[code[at + 2]] = regs[code[at + 1]]
@@ -841,16 +917,12 @@ internal class Machine(
                 pc = at + 2
             }
             Op.SET_X_VAR -> {
-                val h = alloc(1)
-                heap[h] = ref(h)
-                regs[code[at + 1]] = ref(h)
-                pc = at + 2
+                regs[code[at + 1]] = ref(pushVariable(code[at + 2]))
+                pc = at + 3
             }
             Op.SET_Y_VAR -> {
-                val h = alloc(1)
-                heap[h] = ref(h)
-                local[frame + FRAME + code[at + 1]] = ref(h)
-                pc = at + 2
+                local[frame + FRAME + code[at + 1]] = ref(pushVariable(code[at + 2]))
+                pc = at + 3
             }
             Op.SET_X_VAL -> {
                 pushCell(regs[code[at + 1]])
@@ -867,7 +939,10 @@ internal class Machine(
             Op.SET_VOID -> {
                 val n = code[at + 1]
                 val h = alloc(n)
-                for (i in h until h + n) heap[i] = ref(i)
+                for (i in h until h + n) {
+                    heap[i] = ref(i)
+                    varInfo[i] = 0
+                }
                 pc = at + 2
             }
             Op.ALLOCATE -> {
@@ -907,6 +982,10 @@ internal class Machine(
                 cutTo(payload(local[frame + FRAME + code[at + 1]]))
                 pc = at + 2
             }
+            Op.CUT_LOCAL -> {
+                cutTo(payload(local[frame + FRAME + code[at + 1]]) + 1)
+                pc = at + 2
+            }
             Op.TRY_ELSE -> {
                 pushChoicePoint(RESUME, 0, 0, 0, code[at + 1])
                 pc = at + 2
@@ -932,8 +1011,8 @@ internal class Machine(
             }
             Op.STOP -> stopped = true
             Op.INIT_Y -> {
-                local[frame + FRAME + code[at + 1]] = ref(newVariable())
-                pc = at + 2
+                local[frame + FRAME + code[at + 1]] = ref(newVariable(code[at + 2]))
+                pc = at + 3
             }
             Op.RESTORE_SCOPE -> {
                 scope = program.scope(payload(local[frame + FRAME]))
@@ -1100,26 +1179,30 @@ internal class Machine(
         continuation = stopAddress
         cutBarrier = cpTop
         var found =
-            when (callTerm(goal)) {
-                FAILED -> backtrack(cpBase) && run(cpBase)
-                CONTINUE -> {
-                    pc = continuation
-                    run(cpBase)
+            nested(cpBase) {
+                when (callTerm(goal)) {
+                    FAILED -> backtrack(cpBase) && run(cpBase)
+                    CONTINUE -> {
+                        pc = continuation
+                        run(cpBase)
+                    }
+                    else -> run(cpBase)
                 }
-                else -> run(cpBase)
             }
         var bag = IntArray(64)
+        var bagInfo = IntArray(64)
         var bagTop = 0
         var roots = IntArray(16)
         var count = 0
         while (found) {
             if (count == roots.size) roots = roots.copyOf(count * 2)
-            val copier = Copier(bag, bagTop)
+            val copier = Copier(bag, bagTop, bagInfo)
             val root = copier.copy(deref(pinnedWords[pinnedTemplate]))
             bag = copier.bag
+            bagInfo = copier.bagInfo
             bagTop = copier.top
             roots[count++] = root
-            found = backtrack(cpBase) && run(cpBase)
+            found = nested(cpBase) { backtrack(cpBase) && run(cpBase) }
         }
         restoreTop()
         popChoicePoint()
@@ -1130,6 +1213,7 @@ internal class Machine(
         for (i in 0 until bagTop) {
             val w = bag[i]
             heap[base + i] = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), payload(w) + base) else w
+            varInfo[base + i] = bagInfo[i]
         }
         var list = program.emptyList
         for (k in count - 1 downTo 0) {
@@ -1142,15 +1226,35 @@ internal class Machine(
         return if (unify(resultWord, list)) CONTINUE else FAILED
     }
 
+    // A step of a nested run (above [cpBase]): a ball thrown by it, outside the run loop (by the call starting it, by
+    // the backtracking resuming it), is unwound within the run as the loop would
+    private inline fun nested(
+        cpBase: Int,
+        step: () -> Boolean,
+    ): Boolean =
+        try {
+            step()
+        } catch (raised: Raised) {
+            when (unwind(raised, cpBase)) {
+                UNCAUGHT -> throw raised
+                EXHAUSTED -> false
+                else -> run(cpBase)
+            }
+        }
+
     // A copy of a term of the heap into a bag of its own (relative addresses), its unbound variables fresh
     private inner class Copier(
         var bag: IntArray,
         var top: Int,
+        var bagInfo: IntArray,
     ) {
         private val variables = HashMap<Int, Int>()
 
         private fun allocBag(cells: Int): Int {
-            if (top + cells > bag.size) bag = bag.copyOf(maxOf(bag.size * 2, top + cells))
+            if (top + cells > bag.size) {
+                bag = bag.copyOf(maxOf(bag.size * 2, top + cells))
+                bagInfo = bagInfo.copyOf(bag.size)
+            }
             val start = top
             top += cells
             return start
@@ -1164,6 +1268,7 @@ internal class Machine(
                         variables.getOrPut(payload(w)) {
                             val a = allocBag(1)
                             bag[a] = ref(a)
+                            bagInfo[a] = varInfo[payload(w)]
                             a
                         },
                     )
@@ -1218,14 +1323,14 @@ internal class Machine(
         val arguments = List(arity) { toTerm(regs[it], names) }
         val name = program.nameOfFunctor(functor)
         val goal = if (arity == 0) Atom.of(name) else Struct.of(name, arguments)
-        val context: ExecutionContext = PrologExecutionContext(environment!!, procedure = goal)
+        val context: ExecutionContext = PrologExecutionContext(environmentSeen(), procedure = goal)
         val request = Solve.Request(Signature(name, arity), arguments, context)
         if (primitive is DelegatedCall) {
             val delegation =
                 try {
                     primitive.delegate(request)
-                } catch (exception: ResolutionException) {
-                    throw Raised(ballOf(exception), exception)
+                } catch (exception: Exception) {
+                    throw raised(exception)
                 }
             if (delegation != null) {
                 val cells = HashMap<Var, Int>(names.size * 2)
@@ -1239,10 +1344,16 @@ internal class Machine(
         val responses =
             try {
                 primitive.solve(request).iterator()
-            } catch (exception: ResolutionException) {
-                throw Raised(ballOf(exception), exception)
+            } catch (exception: Exception) {
+                throw raised(exception)
             }
-        if (!hasNextResponse(responses)) return FAILED
+        val any =
+            try {
+                responses.hasNext()
+            } catch (exception: Exception) {
+                throw raised(exception)
+            }
+        if (!any) return FAILED
         val response = nextResponse(responses)
         val variables = arrayOfNulls<Var>(names.size)
         val cells = IntArray(names.size)
@@ -1254,26 +1365,38 @@ internal class Machine(
         }
         @Suppress("UNCHECKED_CAST")
         val call = PrimitiveCall(responses, variables as Array<Var>, cells)
-        if (hasNextResponse(responses)) {
+        if (hasNextResponse(call)) {
             pushChoicePoint(PRIMITIVE, calls.size, 0, 0, continuation)
             calls.add(call)
         }
         return if (applyResponse(response, call)) CONTINUE else FAILED
     }
 
-    private fun hasNextResponse(responses: Iterator<Solve.Response>): Boolean =
+    // Whether [call] has an answer after the current one: computed ahead (as the engine does, to know whether the
+    // call leaves alternatives), an error computing it kept for when the resolution backtracks into it
+    private fun hasNextResponse(call: PrimitiveCall): Boolean =
         try {
-            responses.hasNext()
-        } catch (exception: ResolutionException) {
-            throw Raised(ballOf(exception), exception)
+            call.responses.hasNext()
+        } catch (exception: Exception) {
+            call.pending = exception
+            true
         }
 
     private fun nextResponse(responses: Iterator<Solve.Response>): Solve.Response =
         try {
             responses.next()
-        } catch (exception: ResolutionException) {
-            throw Raised(ballOf(exception), exception)
+        } catch (exception: Exception) {
+            throw raised(exception)
         }
+
+    // The ball of an exception the code of a primitive raised: a resolution exception as it is, any other a
+    // system_error catch/3 can handle (as the engine does)
+    private fun raised(exception: Exception): Raised {
+        val resolution =
+            exception as? ResolutionException
+                ?: SystemError.forUncaughtException(PrologExecutionContext(environment ?: ExecutionEnvironment(startTime = 0)), exception)
+        return Raised(ballOf(resolution), resolution)
+    }
 
     // The answer of a primitive: its side effects applied, its bindings unified with the cells of the goal
     private fun applyResponse(
@@ -1332,6 +1455,7 @@ internal class Machine(
         local[frame + FRAME + 1] = Words.int(if (theoryVisible) 1 else 0)
         continuation = restoreScopeBlock
         scope = program.scopeOf(inlining.libraries)
+        if (program.maxRegister + 1 > regs.size) regs = regs.copyOf(program.maxRegister + 1)
         theoryVisible = inlining.theory
         cutBarrier = cpTop
         val goal = fromTerm(inlining.goal, cells)
@@ -1422,10 +1546,13 @@ internal class Machine(
             val base = cp * CP_SIZE
             cps[base + 1] = newAddress(cps[base + 1])
         }
-        // The cells kept slide down, their words relocated
+        // The cells kept slide down, their words relocated, their names with them
         for (i in 0 until top) {
             val f = forward[i]
-            if (f >= 0) heap[f] = relocated(heap[i])
+            if (f >= 0) {
+                heap[f] = relocated(heap[i])
+                varInfo[f] = varInfo[i]
+            }
         }
         top = n
         heapBarrier = if (cpTop > 0) cps[(cpTop - 1) * CP_SIZE + 1] else 0
@@ -1541,7 +1668,13 @@ internal class Machine(
         variables: HashMap<Var, Int>,
     ): Int =
         when (term) {
-            is Var -> ref(variables.getOrPut(term) { newVariable() })
+            is Var ->
+                ref(
+                    variables.getOrPut(term) {
+                        varObjects.add(term)
+                        newVariable(-varObjects.size)
+                    },
+                )
             is Integer -> program.intWord(term.value.toLong())
             is Real -> program.floatWord(term)
             is Atom -> program.atomWord(term.value)
@@ -1587,7 +1720,7 @@ internal class Machine(
     ): Term {
         val w = deref(w0)
         return when (tag(w)) {
-            REF -> names.getOrPut(payload(w)) { Var.of("_G${payload(w)}") }
+            REF -> names.getOrPut(payload(w)) { variableOf(payload(w)) }
             ATOM -> Atom.of(program.atoms[payload(w)])
             INT -> Integer.of(payload(w))
             BIG -> Integer.of(program.bigs[payload(w)])
@@ -1616,8 +1749,32 @@ internal class Machine(
         }
     }
 
+    // The variable a cell holding an unbound one is read as (see varInfo)
+    private fun variableOf(cell: Int): Var {
+        val info = varInfo[cell]
+        return when {
+            info > 0 -> Var.of(program.atoms[info - 1])
+            info < 0 -> varObjects[-info - 1]
+            else -> Var.of("_G$cell")
+        }
+    }
+
+    /** The kinds of the choice points left, oldest first: a diagnostic */
+    fun choicePointKinds(): List<String> =
+        (0 until cpTop).map { cp ->
+            when (val functor = cps[cp * CP_SIZE + 6]) {
+                BARRIER -> "barrier"
+                RESUME -> "resume"
+                PRIMITIVE -> "primitive"
+                CATCH -> "catch"
+                SOURCED -> "sourced"
+                else -> "clauses of ${program.nameOfFunctor(functor)}/${program.functorArities[functor]} from ${cps[cp * CP_SIZE + 7]}"
+            }
+        }
+
     /** The machine emptied: a top-level query starts from nothing */
     fun reset() {
+        varObjects.clear()
         top = 0
         heapBarrier = 0
         trailTop = 0
@@ -1648,9 +1805,14 @@ internal class Machine(
             val compiled = program.compileQuery(query)
             prepare()
             // (the cells of the variables of the query, as the arguments of its code, pinned: the collector moves them)
-            val pins = HashMap<Var, Int>()
+            val pins = LinkedHashMap<Var, Int>()
+            queryCells = compiled.variables.size
+            if (queryBound.size < queryCells) queryBound = IntArray(queryCells)
+            queryBound.fill(0, 0, queryCells)
+            bindings = 0
             for ((i, variable) in compiled.variables.withIndex()) {
-                val cell = newVariable()
+                varObjects.add(variable)
+                val cell = newVariable(-varObjects.size)
                 regs[i] = ref(cell)
                 pins[variable] = pinWord(ref(cell))
             }
@@ -1660,10 +1822,12 @@ internal class Machine(
             var found = runToSolution(first = true)
             while (found) {
                 val names = HashMap<Int, Var>()
-                // (the variables left unbound are not bindings)
+                // (the variables left unbound are not bindings; the others in the order they were bound, as the
+                // engine reported them)
                 yield(
                     pins.entries
-                        .filter { (_, pin) -> tag(deref(pinnedWords[pin])) != REF }
+                        .filter { (_, pin) -> heap[payload(pinnedWords[pin])].let { it != pinnedWords[pin] } }
+                        .sortedBy { (_, pin) -> queryBound[pin] }
                         .associate { (variable, pin) -> variable to toTerm(pinnedWords[pin], names) },
                 )
                 found = runToSolution(first = false)
@@ -1711,5 +1875,8 @@ internal class Machine(
 
         // The calls between two looks at the clock
         private const val CHECK_EVERY = 1024
+
+        /** The message of the halt of a resolution its caller interrupted */
+        const val INTERRUPTED = "The resolution was interrupted by its caller"
     }
 }

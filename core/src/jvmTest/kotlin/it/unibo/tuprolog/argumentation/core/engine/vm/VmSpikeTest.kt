@@ -138,7 +138,7 @@ class VmSpikeTest {
     fun primitivesThroughTheFacade() {
         val m = machine()
         assertEquals(listOf("N = 5"), answers(m, "atom_length(hello, N)"))
-        assertTrue(answers(m, "functor(T, f, 2)").single().matches(Regex("T = f\\(_G\\w+, _G\\w+\\)")))
+        assertTrue(answers(m, "functor(T, f, 2)").single().matches(Regex("T = f\\(_\\w*, _\\w*\\)")))
         assertEquals(listOf("L = [f, a, b]"), answers(m, "f(a, b) =.. L"))
         assertEquals(listOf("X = 1", "X = 2", "X = 3"), answers(m, "between(1, 3, X)"))
         assertEquals(listOf("L = [1, 2, 3]"), answers(m, "findall(X, between(1, 3, X), L)"))

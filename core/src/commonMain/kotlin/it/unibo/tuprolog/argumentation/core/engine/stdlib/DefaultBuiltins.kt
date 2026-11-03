@@ -5,33 +5,16 @@ import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.CopyTerm
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.FindAll
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Length
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Comma
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Cut
-import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.NegationAsFailure
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.impl.ExtensionLibrary
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper
-import it.unibo.tuprolog.solve.rule.RuleWrapper
 import it.unibo.tuprolog.solve.stdlib.CommonBuiltins
 
 /**
- * The [it.unibo.tuprolog.solve.library.Library] of built-in predicates the prolog engine adds on top of
- * [CommonBuiltins]: this is what `it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory.defaultBuiltins` returns,
- * and what a solver built via `Arg2pPrologSolverFactory.solverWithDefaultBuiltins()` is loaded with.
- *
- * Everything here exists specifically because this engine resolves goals through the finite-state machine
- * under `it.unibo.tuprolog.argumentation.core.engine.fsm` rather than host-language recursion, so control constructs need an
- * engine-specific implementation: [it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw] is a `Primitive`
- * (`throw/1`), while [it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Catch] (`catch/3`),
- * [it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call] (`call/1`),
- * [it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Comma] (`','/2`),
- * [it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Cut] (`'!'/0`) and
- * [it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.NegationAsFailure] (`'\+'/1`) are all `RuleWrapper`s expanded into
- * ordinary rule bodies that `StateRuleSelection`/`StateException` know how to special-case (cut transparency,
- * exception propagation) at the FSM level.
+ * The builtins of the solvers of arg2p: those of tuProlog (CommonBuiltins), with the copy_term/2 and findall/3 of the
+ * engine in place of tuProlog's (which copy terms by the names of their variables), and length/2 and throw/1 of its
+ * own. The control constructs are instructions of the machine (see `engine.vm`).
  */
 object DefaultBuiltins : ExtensionLibrary(CommonBuiltins) {
     // copy_term/2 and findall/3 of the engine in place of those of 2p-kt, which copy terms by the names of their
@@ -45,16 +28,5 @@ object DefaultBuiltins : ExtensionLibrary(CommonBuiltins) {
             listOf(
                 Throw,
                 Length,
-            )
-
-    override val additionalRules: Iterable<RuleWrapper<*>>
-        get() =
-            listOf(
-                Catch,
-                Call,
-                Comma,
-                Cut,
-                NegationAsFailure.Fail,
-                NegationAsFailure.Success,
             )
 }

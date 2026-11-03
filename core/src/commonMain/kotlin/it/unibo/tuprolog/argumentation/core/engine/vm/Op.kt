@@ -51,6 +51,7 @@ internal object Op {
     const val STOP = 41
     const val INIT_Y = 42
     const val RESTORE_SCOPE = 43
+    const val CUT_LOCAL = 44
 
     /** The flag of a term call transparent to cut (the barrier of the frame) rather than opaque (its own) */
     const val TRANSPARENT = 1

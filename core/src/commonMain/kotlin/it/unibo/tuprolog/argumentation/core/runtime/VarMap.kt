@@ -1,4 +1,4 @@
-package it.unibo.tuprolog.argumentation.core.engine.fsm
+package it.unibo.tuprolog.argumentation.core.runtime
 
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var

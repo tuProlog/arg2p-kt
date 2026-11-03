@@ -20,7 +20,7 @@ object ClauseObservers {
         return AutoCloseable { observers = observers - observer }
     }
 
-    internal fun resolved(clause: Clause) {
+    fun resolved(clause: Clause) {
         val current = observers
         if (current.isEmpty()) return
         current.forEach { it.resolved(clause) }

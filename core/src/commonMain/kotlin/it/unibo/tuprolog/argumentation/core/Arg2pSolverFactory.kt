@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.core
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.engine.vm.VmPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
@@ -19,22 +18,20 @@ object Arg2pSolverFactory {
         settings: ArgLibrary = Flags.defaults().library(),
         staticLibs: Iterable<ArgLibrary> = emptyList(),
         dynamicLibs: Iterable<Loadable> = emptyList(),
-        vm: Boolean = false,
-    ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory, vm = vm)
+    ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
     /**
      * A solver of the libraries of [arg2p], and the [extra] ones, for [theory] (its clauses tagged with the
      * identifiers of their comments, see RuleAnnotations): unknown predicates fail (the hooks a theory may define,
      * as conflict/2 and sup/2, are called whether it does or not), what it prints goes to [output] (the standard
-     * output by default); on the machine (`engine.vm`) if [vm], on the engine otherwise
+     * output by default)
      */
     fun solverOf(
         arg2p: Arg2pSolver,
         theory: String,
         extra: Runtime = Runtime.empty(),
         output: OutputChannel<String> = OutputChannel.stdOut(),
-        vm: Boolean = false,
-    ) = (if (vm) VmPrologSolverFactory else Arg2pPrologSolverFactory).mutableSolverWithDefaultBuiltins(
+    ) = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
         unificator = Arg2pUnificator,
         otherLibraries = arg2p.to2pLibraries() + extra,
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
