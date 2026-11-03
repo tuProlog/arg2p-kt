@@ -36,6 +36,11 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
 - `NativePrimitive`: a primitive the machine runs on its words (through `NativeCall`: the arguments read,
   unified and built in place, a goal entered against other libraries, alternatives left for backtracking), skipping
   the facade; the module calls `::` and `:::` are native. A `Primitive` still, for the other solvers.
+- `Record`: a term off the heap as the words of a program (relative addresses, its variables fresh each time it is
+  put back), what the context and the cache of arg2p keep: a native takes one from the heap and puts it back, enters
+  a goal with records as the clauses of its predicate, or runs a nested run (`findall`, a count of solutions) for
+  itself. The stores are bound to the solver's program when it is built, so their records copy to and from the heap
+  without a term; the other solvers read them as terms.
 - `VmSolver` and `MutableVmSolver`: the tuProlog `Solver` over a program compiled from the static and the dynamic
   knowledge base (again when either changes through the solver); the solvers created for the sub-goals of a
   resolution share the program. The theory of the user is a module of its own: a predicate it defines is its, whatever
