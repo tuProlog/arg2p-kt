@@ -1,10 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.primitives.extra
 
 import it.unibo.tuprolog.argumentation.SyntaxProblem
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.engine.vm.VmSolver
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.primitives.context.answersOf
 import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
@@ -12,7 +15,6 @@ import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.exception.TuPrologException
 import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -25,7 +27,6 @@ import it.unibo.tuprolog.solve.exception.error.SyntaxError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.libs.io.IOLib
 import it.unibo.tuprolog.solve.libs.io.Url
-import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 
 /**
@@ -35,29 +36,27 @@ import it.unibo.tuprolog.theory.Theory
  * that cannot be read raises an existence error, one that does not parse a syntax error; an error raised within the
  * modules is raised by the call.
  */
-internal object CallModule : PrimitiveWithSignature {
-    override val signature = Signature("call_module", 2)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val modules: Term = request.arguments[0]
-        val goal: Term = request.arguments[1]
+internal object CallModule : AbstractNativePrimitive(Signature("call_module", 2)) {
+    override fun call(call: NativeCall): Int {
+        val context = call.context
+        val modules = call.termArg(0)
+        val goal = call.termArg(1)
 
         if (modules !is List) {
-            throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.LIST, modules, 0)
+            throw TypeError.forArgument(context, signature, TypeError.Expected.LIST, modules, 0)
         }
         if (goal !is Struct) {
-            throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.CALLABLE, goal, 1)
+            throw TypeError.forArgument(context, signature, TypeError.Expected.CALLABLE, goal, 1)
         }
         val names =
             modules.toList().map {
-                it as? Atom ?: throw TypeError.forArgument(request.context, request.signature, TypeError.Expected.ATOM, it, 0)
+                it as? Atom ?: throw TypeError.forArgument(context, signature, TypeError.Expected.ATOM, it, 0)
             }
 
-        val base = modulesPath(request.context)
-        val solver = solverOf(request.context, names.map { locationOf(it.value, base) })
-        return solver.solveForCaller(goal, SolveOptions.allLazily()).haltsRaised().map {
-            if (it is Solution.Yes) request.replySuccess(it.substitution) else request.replyFail()
-        }
+        val base = modulesPath(context)
+        val solver = solverOf(context, names.map { locationOf(it.value, base) })
+        val solutions = solver.solveForCaller(goal, SolveOptions.allLazily()).haltsRaised().filterIsInstance<Solution.Yes>()
+        return call.answersOf(solutions.map { it.substitution }.iterator())
     }
 
     // The modules path of the settings, if there is one

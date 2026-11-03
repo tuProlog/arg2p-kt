@@ -18,7 +18,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object ConstraintModule : PrologModule("prolog.argumentation.language.constraint", "constraint") {
     override val primitives: Map<Signature, Primitive>
-        get() = mapOf(Subsumes::descriptionPair.get())
+        get() = mapOf(Subsumes.signature to Subsumes)
 
     override val prologRawTheory: String =
         // language=Prolog

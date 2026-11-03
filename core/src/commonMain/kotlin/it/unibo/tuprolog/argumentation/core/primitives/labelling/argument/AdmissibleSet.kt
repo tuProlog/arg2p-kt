@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.reply
+import it.unibo.tuprolog.argumentation.core.engine.termsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.argumentation.core.primitives.ids
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * admissibleSet: every attacker of an IN argument is attacked by an IN argument other than itself.
@@ -15,18 +15,16 @@ import it.unibo.tuprolog.solve.primitive.Solve
  */
 internal class AdmissibleSet(
     arity: Int,
-) : PrimitiveWithSignature {
-    override val signature: Signature = Signature("admissibleSet", arity)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val inIds = request.labelledIds("in") + if (request.arguments.isEmpty()) emptyList() else request.ids(0)
-        val attackers = request.attackGraph().attackers
+) : AbstractNativePrimitive(Signature("admissibleSet", arity)) {
+    override fun call(call: NativeCall): Int {
+        val inIds = call.labelledIds("in") + if (call.arity == 0) emptyList() else call.termsArg(0, signature)
+        val attackers = call.attackGraph().attackers
         val admissible =
             inIds.all { h ->
                 attackers[h].orEmpty().all { attacker ->
                     attackers[attacker].orEmpty().any { defendant -> defendant in inIds && defendant != attacker }
                 }
             }
-        return sequenceOf(request.replyWith(admissible))
+        return call.reply(admissible)
     }
 }

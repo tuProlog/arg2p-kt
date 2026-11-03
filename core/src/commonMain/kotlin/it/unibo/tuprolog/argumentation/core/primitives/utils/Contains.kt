@@ -1,37 +1,19 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.reply
+import it.unibo.tuprolog.argumentation.core.engine.termArg
+import it.unibo.tuprolog.argumentation.core.engine.termsArg
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
-import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * contains(?Element, +List): an element of List matches Element (without binding it)
  */
-internal object Contains : PrimitiveWithSignature {
-    override val signature: Signature = Signature("contains", 2)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val elem: Term = request.arguments[0]
-        val list: Term = request.arguments[1]
-
-        if (list !is List) {
-            throw TypeError.forGoal(
-                request.context,
-                request.signature,
-                TypeError.Expected.LIST,
-                list,
-            )
-        }
-
-        return sequence {
-            yield(
-                request.replyWith(list.toList().any { Arg2pUnificator.match(it, elem) }),
-            )
-        }
+internal object Contains : AbstractNativePrimitive(Signature("contains", 2)) {
+    override fun call(call: NativeCall): Int {
+        val element = call.termArg(0)
+        return call.reply(call.termsArg(1, signature).any { Arg2pUnificator.match(it, element) })
     }
 }

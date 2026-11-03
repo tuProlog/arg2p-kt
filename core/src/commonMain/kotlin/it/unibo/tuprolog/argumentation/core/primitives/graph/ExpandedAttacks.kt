@@ -1,9 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /** An attack by the identifiers of its arguments: of [type], of [attacker] on [attacked], on its sub-argument [on] */
 internal data class AttackIds(
@@ -72,7 +71,7 @@ private class Expansion(
 private val NO_SUPPORTS: Map<Term, List<Term>> = emptyMap()
 
 /** The attacks of the given branch (the active one if null), the saved ones and those they extend to */
-internal fun Solve.Request<ExecutionContext>.expandedAttacks(branch: Int? = null): ExpandedAttacks {
+internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks {
     val supported =
         contextLibrary.derived("supportId/2", "supported", branch) { clauses ->
             clauses.groupBy({ it.head!![0] }, { it.head!![1] }).ifEmpty { NO_SUPPORTS }

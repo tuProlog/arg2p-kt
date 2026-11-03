@@ -1,33 +1,30 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * stronglyAdmissibleSet: every IN argument is reachable from the unattacked ones, iteratively adding the IN
  * arguments whose attackers are all attacked by those added so far
  */
-internal object StronglyAdmissibleSet : PrimitiveWithSignature {
-    override val signature: Signature = Signature("stronglyAdmissibleSet", 0)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val attackers = request.attackGraph().attackers
+internal object StronglyAdmissibleSet : AbstractNativePrimitive(Signature("stronglyAdmissibleSet", 0)) {
+    override fun call(call: NativeCall): Int {
+        val attackers = call.attackGraph().attackers
         val built = mutableSetOf<Term>()
-        var pending = request.labelledIds("in")
+        var pending = call.labelledIds("in")
         while (pending.isNotEmpty()) {
             val added =
                 pending.filter { h ->
                     attackers[h].orEmpty().all { attacker -> attackers[attacker].orEmpty().any { it in built } }
                 }
-            if (added.isEmpty()) return sequenceOf(request.replyFail())
+            if (added.isEmpty()) return NativeCall.FAIL
             built += added
             pending = pending - added.toSet()
         }
-        return sequenceOf(request.replyWith(true))
+        return NativeCall.CONTINUE
     }
 }

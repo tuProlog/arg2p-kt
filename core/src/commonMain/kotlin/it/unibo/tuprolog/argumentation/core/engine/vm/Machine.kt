@@ -192,6 +192,10 @@ internal class Machine(
     private var nativeFunctor = 0
     private var nativeNames: HashMap<Int, Var>? = null
 
+    // The cells the words of a native call gave the variables of its terms that were not cells already (fresh ones
+    // of a clause copied, say): the same variable the same cell within the call
+    private var nativeFresh: HashMap<Var, Int>? = null
+
     /** A ball thrown through the code: the term, and the exception it came from, if any */
     class Raised(
         val ball: Term,
@@ -649,16 +653,17 @@ internal class Machine(
                     if (applyResponse(response, call)) return true
                 }
                 NATIVE -> {
-                    val resume = calls[nextClause] as NativeResume
+                    val alternatives = calls[nextClause] as NativeAlternatives
                     val argsBase = cps[base + 9]
                     val arity = cps[base + 11]
                     cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
                     popChoicePoint()
                     nativeArity = arity
-                    nativeNames = null
+                    nativeNames = alternatives.names?.let { names -> HashMap(names.filterKeys { it < top }) }
+                    nativeFresh = null
                     val outcome =
                         try {
-                            resume.resume(this)
+                            alternatives.resume.resume(this)
                         } catch (raised: Raised) {
                             throw raised
                         } catch (halt: Halt) {
@@ -1826,6 +1831,7 @@ internal class Machine(
         nativeFunctor = functor
         nativeArity = arity
         nativeNames = null
+        nativeFresh = null
         return try {
             primitive.call(this)
         } catch (raised: Raised) {
@@ -1901,7 +1907,7 @@ internal class Machine(
 
     override fun word(term: Term): Int {
         val names = nativeNames
-        val cells = HashMap<Var, Int>()
+        val cells = nativeFresh ?: HashMap<Var, Int>().also { nativeFresh = it }
         if (names != null) for ((cell, variable) in names) cells[variable] = cell
         return fromTerm(term, cells)
     }
@@ -1945,8 +1951,15 @@ internal class Machine(
 
     override fun alternatives(resume: NativeResume) {
         pushChoicePoint(NATIVE, calls.size, nativeArity, 0, continuation)
-        calls.add(resume)
+        calls.add(NativeAlternatives(resume, nativeNames))
     }
+
+    // The alternatives of a native call, with the variables its terms gave the cells (the same on resumption, for
+    // the cells still there)
+    private class NativeAlternatives(
+        val resume: NativeResume,
+        val names: HashMap<Int, Var>?,
+    )
 
     private fun raised(exception: Exception): Raised {
         val resolution =

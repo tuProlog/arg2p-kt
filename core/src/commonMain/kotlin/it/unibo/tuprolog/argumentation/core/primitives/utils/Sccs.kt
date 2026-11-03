@@ -1,15 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.replyTerms
+import it.unibo.tuprolog.argumentation.core.engine.termsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.stronglyConnectedComponents
-import it.unibo.tuprolog.argumentation.core.primitives.ids
-import it.unibo.tuprolog.argumentation.core.primitives.replyList
 import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * sccs(-Sccs): strongly connected components of the attack graph, as lists of argument identifiers,
@@ -19,13 +18,11 @@ import it.unibo.tuprolog.solve.primitive.Solve
  */
 internal class Sccs(
     arity: Int,
-) : PrimitiveWithSignature {
-    override val signature: Signature = Signature("sccs", arity)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val nodes = if (request.arguments.size == 1) request.argumentIds() else request.ids(0)
-        val attacked = request.attackGraph().attacked
+) : AbstractNativePrimitive(Signature("sccs", arity)) {
+    override fun call(call: NativeCall): Int {
+        val nodes = if (call.arity == 1) call.argumentIds() else call.termsArg(0, signature)
+        val attacked = call.attackGraph().attacked
         val sccs = stronglyConnectedComponents(nodes) { attacked[it].orEmpty() }
-        return sequenceOf(request.replyList(request.arguments.lastIndex, sccs.map { List.of(it) }) ?: request.replyFail())
+        return call.replyTerms(call.arity - 1, sccs.map { List.of(it) })
     }
 }

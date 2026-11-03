@@ -1,23 +1,20 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.replyTerms
+import it.unibo.tuprolog.argumentation.core.engine.termsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.ids
-import it.unibo.tuprolog.argumentation.core.primitives.replyList
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * maximalAdmissibleSubset(+Ids, -Subset): the largest admissible subset of the conflict-free set Ids, removing the
  * arguments with an attacker not attacked by the remaining ones until none is left (a greatest fixpoint, polynomial)
  */
-internal object MaximalAdmissibleSubset : PrimitiveWithSignature {
-    override val signature: Signature = Signature("maximalAdmissibleSubset", 2)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val attackers = request.attackGraph().attackers
-        var subset = request.ids(0)
+internal object MaximalAdmissibleSubset : AbstractNativePrimitive(Signature("maximalAdmissibleSubset", 2)) {
+    override fun call(call: NativeCall): Int {
+        val attackers = call.attackGraph().attackers
+        var subset = call.termsArg(0, signature)
         while (true) {
             val defended =
                 subset.filter { h ->
@@ -28,6 +25,6 @@ internal object MaximalAdmissibleSubset : PrimitiveWithSignature {
             if (defended.size == subset.size) break
             subset = defended
         }
-        return sequenceOf(request.replyList(1, subset) ?: request.replyFail())
+        return call.replyTerms(1, subset)
     }
 }

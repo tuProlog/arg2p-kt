@@ -34,16 +34,16 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
     override val primitives: Map<Signature, Primitive>
         get() =
             mapOf(
-                PrologStrictRules::descriptionPair.get(),
-                PrologAxioms::descriptionPair.get(),
-                BpsNew::descriptionPair.get(),
-                PrologPremises::descriptionPair.get(),
-                PrologDefeasibleRules::descriptionPair.get(),
-                ExtractId::descriptionPair.get(),
-                BoundByQuery::descriptionPair.get(),
-                RuleIds::descriptionPair.get(),
-                RuleToClause::descriptionPair.get(),
-                RuleToClauseNatural::descriptionPair.get(),
+                PrologStrictRules.signature to PrologStrictRules,
+                PrologAxioms.signature to PrologAxioms,
+                BpsNew.signature to BpsNew,
+                PrologPremises.signature to PrologPremises,
+                PrologDefeasibleRules.signature to PrologDefeasibleRules,
+                ExtractId.signature to ExtractId,
+                BoundByQuery.signature to BoundByQuery,
+                RuleIds.signature to RuleIds,
+                RuleToClause.signature to RuleToClause,
+                RuleToClauseNatural.signature to RuleToClauseNatural,
             )
 
     // The operators of the rules of a theory, for the theory of the parser and the solvers using it

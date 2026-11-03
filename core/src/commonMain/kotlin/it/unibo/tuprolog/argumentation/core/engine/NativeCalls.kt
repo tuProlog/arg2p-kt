@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
+import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.InstantiationError
@@ -94,21 +96,52 @@ fun NativeCall.reply(success: Boolean): Int = if (success) NativeCall.CONTINUE e
 
 /**
  * The argument [i] unified with each of [values] in turn, on backtracking: an answer per value that unifies, no
- * alternative left after the last
+ * alternative left after the last of those (the values are matched against the argument as terms first, so that
+ * a call with one answer leaves no choice point, as the facade leaves none)
  */
 fun NativeCall.answers(
     i: Int,
     values: Iterator<Term>,
 ): Int {
-    while (values.hasNext()) {
-        val value = values.next()
-        if (values.hasNext()) {
-            alternatives { it.answers(i, values) }
-            return reply(i, value)
-        }
-        return reply(i, value)
-    }
-    return NativeCall.FAIL
+    val target = term(arg(i))
+    val unificator = context.unificator
+    return attempts(
+        values
+            .asSequence()
+            .filter { unificator.mgu(target, it).isSuccess }
+            .map { value -> { call: NativeCall -> call.reply(i, value) == NativeCall.CONTINUE } }
+            .iterator(),
+    )
+}
+
+/**
+ * An answer per candidate of [candidates] (a tuple of terms, its variables renamed apart as those of a clause),
+ * the arguments of the call from [from] on unified with it, on backtracking
+ */
+fun NativeCall.answersMatching(
+    from: Int,
+    candidates: Iterator<List<Term>>,
+): Int {
+    val target = Struct.of("t", (from until arity).map { term(arg(it)) })
+    val unificator = context.unificator
+    return attempts(
+        candidates
+            .asSequence()
+            .map { values -> Struct.of("t", values).renamedCopy() }
+            .filter { unificator.mgu(target, it).isSuccess }
+            .map { renamed ->
+                { call: NativeCall ->
+                    var ok = true
+                    for (i in 0 until renamed.arity) {
+                        if (!call.unify(call.arg(from + i), call.word(renamed[i]))) {
+                            ok = false
+                            break
+                        }
+                    }
+                    ok
+                }
+            }.iterator(),
+    )
 }
 
 /** An answer per element of [attempts] that succeeds (each unifying what it needs), on backtracking */

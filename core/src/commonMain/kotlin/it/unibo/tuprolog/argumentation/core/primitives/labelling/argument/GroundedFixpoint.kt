@@ -1,16 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.storedArguments
-import it.unibo.tuprolog.argumentation.core.primitives.ids
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * groundedFixpoint: extends the IN/OUT labelling of the active context to the grounded fixpoint, labelling UND
@@ -21,20 +19,17 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * changed (those attacked by the arguments just labelled), rather than at all the unlabelled ones, which made a
  * chain of attacks quadratic. The labels of a round are asserted in the order of the arguments.
  */
-internal object GroundedFixpoint : PrimitiveWithSignature {
-    override val signature: Signature = Signature("groundedFixpoint", 0)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+internal object GroundedFixpoint : AbstractNativePrimitive(Signature("groundedFixpoint", 0)) {
+    override fun call(call: NativeCall): Int {
         arg2pScope {
-            val arguments = request.storedArguments()
+            val arguments = call.storedArguments()
             val position = arguments.withIndex().associate { (index, argument) -> argument.first to index }
-            val graph = request.attackGraph()
-            val inIds = request.labelledIds("in").toMutableSet()
-            val outIds = request.labelledIds("out").toMutableSet()
+            val graph = call.attackGraph()
+            val inIds = call.labelledIds("in").toMutableSet()
+            val outIds = call.labelledIds("out").toMutableSet()
 
             // an argument of the graph not labelled yet
             fun unlabelled(id: Term) = id in position && id !in inIds && id !in outIds
-
             // the attackers not OUT of each unlabelled argument
             val pending = HashMap<Term, Int>()
             arguments.forEach { (id, _) ->
@@ -47,10 +42,9 @@ internal object GroundedFixpoint : PrimitiveWithSignature {
             ): List<Term> {
                 val sorted = ids.sortedBy { position.getValue(it) }
                 if (sorted.isEmpty()) return sorted
-                request.labelArguments(listOf(Pair(name, sorted.map { id -> arguments[position.getValue(id)] })))
+                call.labelArguments(listOf(Pair(name, sorted.map { id -> arguments[position.getValue(id)] })))
                 return sorted
             }
-
             // the arguments to label IN, and those to label OUT, in the next round
             var candidatesIn: Collection<Term> = pending.filterValues { it == 0 }.keys
             var candidatesOut: Collection<Term> =
@@ -77,6 +71,6 @@ internal object GroundedFixpoint : PrimitiveWithSignature {
             } while (newIn.isNotEmpty() || newOut.isNotEmpty())
             label(arguments.map { it.first }.filter { unlabelled(it) }, "und")
         }
-        return sequenceOf(request.replyWith(true))
+        return NativeCall.CONTINUE
     }
 }

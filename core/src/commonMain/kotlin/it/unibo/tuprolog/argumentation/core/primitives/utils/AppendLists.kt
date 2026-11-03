@@ -1,43 +1,24 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
-import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.items
+import it.unibo.tuprolog.argumentation.core.engine.listArg
+import it.unibo.tuprolog.argumentation.core.engine.replyItems
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /** appendLists(Lists, Result): Result is the concatenation of the lists in Lists */
-internal object AppendLists : PrimitiveWithSignature {
-    override val signature: Signature = Signature("appendLists", 2)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val lists: Term = request.arguments[0]
-
-        if (lists !is List) {
-            throw TypeError.forGoal(
-                request.context,
-                request.signature,
-                TypeError.Expected.LIST,
-                lists,
-            )
-        }
-
+internal object AppendLists : AbstractNativePrimitive(Signature("appendLists", 2)) {
+    override fun call(call: NativeCall): Int {
         val items =
-            lists.toList().flatMap { list ->
-                if (list !is List) {
-                    throw TypeError.forGoal(
-                        request.context,
-                        request.signature,
-                        TypeError.Expected.LIST,
+            call.listArg(0, signature).flatMap { list ->
+                (
+                    call.items(
                         list,
-                    )
-                }
-                list.toList()
+                    ) ?: throw TypeError.forGoal(call.context, signature, TypeError.Expected.LIST, call.term(list))
+                ).asIterable()
             }
-        val unifier = Arg2pUnificator.mgu(request.arguments[1], List.of(items))
-        return sequenceOf(if (unifier.isSuccess) request.replyWith(unifier) else request.replyFail())
+        return call.replyItems(1, items.toIntArray())
     }
 }

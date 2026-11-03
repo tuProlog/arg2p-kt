@@ -1,20 +1,21 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.replyTerms
+import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.model.terms.RuleTerm
 import it.unibo.tuprolog.core.List
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
-import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.primitive.BinaryRelation
-import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.solve.Signature
 import kotlin.collections.List as KList
 
 /**
  * ruleToClauseNatural(+Rules, -Clauses): as ruleToClause/2, with naturalTerms: the statements written as text
  * are turned into terms, the words in upper case and in brackets becoming their arguments
  */
-internal object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<ExecutionContext>("ruleToClauseNatural") {
+internal object RuleToClauseNatural : AbstractNativePrimitive(Signature("ruleToClauseNatural", 2)) {
     class TemplateExtractor {
         private val upperRegex = Regex("""\b[A-Z][a-zA-Z]*\b""")
         private val bracketRegex = Regex("""\[([^\]]+)\]""")
@@ -149,25 +150,15 @@ internal object RuleToClauseNatural : BinaryRelation.WithoutSideEffects<Executio
         return Term.parse("[${mapped.joinToString(",")}]").asList()!!.toList()
     }
 
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
-        first: Term,
-        second: Term,
-    ): Sequence<Substitution> {
+    override fun call(call: NativeCall): Int {
         val extractor = TemplateExtractor()
-        return sequenceOf(
-            Substitution.of(
-                second.asVar()!!,
-                List.of(
-                    first
-                        .asList()!!
-                        .toList()
-                        .map { original ->
-                            original.asList()!!.toList().let {
-                                RuleTerm.of(List.of(parseTerm(extractor, it))) ?: throw IllegalArgumentException()
-                            }
-                        },
-                ),
-            ),
+        return call.replyTerms(
+            1,
+            call.termArg(0).asList()!!.toList().map { original ->
+                original.asList()!!.toList().let {
+                    RuleTerm.of(List.of(parseTerm(extractor, it))) ?: throw IllegalArgumentException()
+                }
+            },
         )
     }
 }

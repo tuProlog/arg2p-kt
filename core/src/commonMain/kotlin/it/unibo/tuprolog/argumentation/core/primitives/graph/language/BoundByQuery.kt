@@ -1,16 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
-import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.reply
+import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Struct
-import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.primitive.Solve
-import it.unibo.tuprolog.solve.primitive.TernaryRelation
+import it.unibo.tuprolog.solve.Signature
 
 /**
  * boundByQuery(+Rules, -Ids, -Constraints): of Rules, as the parser reads them from the theory (`[Id, Premises,
@@ -22,15 +21,11 @@ import it.unibo.tuprolog.solve.primitive.TernaryRelation
  * is a constraint, `no` otherwise. A single visit of the rules, which a Prolog loop over the list would make
  * quadratic (each step applying its bindings to the rest of the list).
  */
-internal object BoundByQuery : TernaryRelation.WithoutSideEffects<ExecutionContext>("boundByQuery") {
-    override fun Solve.Request<ExecutionContext>.computeAllSubstitutions(
-        first: Term,
-        second: Term,
-        third: Term,
-    ): Sequence<Substitution> {
+internal object BoundByQuery : AbstractNativePrimitive(Signature("boundByQuery", 3)) {
+    override fun call(call: NativeCall): Int {
         val ids = mutableListOf<Term>()
         var constraints = false
-        for (rule in first.asList()!!.toList()) {
+        for (rule in call.termArg(0).asList()!!.toList()) {
             val parts = rule.asList()?.toList() ?: continue
             val (id, premises, conclusion) =
                 when (parts.size) {
@@ -41,8 +36,8 @@ internal object BoundByQuery : TernaryRelation.WithoutSideEffects<ExecutionConte
             if (premises.any { it is Struct && it.arity == 1 && it.functor == "{}" }) constraints = true
             if (boundByQuery(premises, conclusion)) ids += id
         }
-        val unifier = Arg2pUnificator.mgu(Tuple.of(second, third), Tuple.of(List.of(ids), Atom.of(if (constraints) "yes" else "no")))
-        return if (unifier.isSuccess) sequenceOf(unifier) else emptySequence()
+        if (call.reply(1, List.of(ids)) == NativeCall.FAIL) return NativeCall.FAIL
+        return call.reply(2, Atom.of(if (constraints) "yes" else "no"))
     }
 
     // The premises of a rule: a list, or a conjunction ([] for none)

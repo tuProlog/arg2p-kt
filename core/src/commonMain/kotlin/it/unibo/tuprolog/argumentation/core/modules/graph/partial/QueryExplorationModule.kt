@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object QueryExplorationModule : PrologModule("prolog.argumentation.structured.exploration", "queryExploration") {
     override val primitives: Map<Signature, Primitive>
-        get() = mapOf(GroundVars.descriptionPair)
+        get() = mapOf(GroundVars.signature to GroundVars)
 
     override val prologRawTheory: String =
         // language=Prolog
