@@ -14,8 +14,10 @@ import it.unibo.tuprolog.utils.Cursor
 data class StateRuleExecution(
     override val context: PrologExecutionContext,
 ) : AbstractState(context) {
+    // arg2p: the context advanced in place (see advanced), its rules left as they are: backtracking reads neither
+    // them nor the context it is given, beyond its step and its choice points
     private val failureState: StateBacktracking
-        get() = StateBacktracking(context.copy(rules = Cursor.empty(), step = nextStep()))
+        get() = StateBacktracking(context.advanced())
 
     /*
      * arg2p: the clause is resolved as the resolver for the unificator does (see ClauseResolver): its variables are
@@ -36,7 +38,7 @@ data class StateRuleExecution(
             ClauseObservers.resolved(rule)
             StateGoalSelection(
                 context.copy(
-                    goals = resolution.body.toBodyGoals(),
+                    goals = resolution.goals,
                     rules = Cursor.empty(),
                     substitution = resolution.extend(context.substitution),
                     step = nextStep(),

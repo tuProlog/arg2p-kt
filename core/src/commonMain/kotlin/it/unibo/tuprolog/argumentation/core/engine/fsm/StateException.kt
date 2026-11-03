@@ -12,7 +12,6 @@ import it.unibo.tuprolog.solve.exception.error.MessageError
 import it.unibo.tuprolog.solve.exception.error.SystemError
 import it.unibo.tuprolog.unify.Unificator
 import it.unibo.tuprolog.utils.Cursor
-import it.unibo.tuprolog.utils.plus
 
 /**
  * "Exception": reached whenever a primitive's response, or an ISO error raised mid-resolution, carries an
@@ -80,8 +79,18 @@ data class StateException(
                 (context.substitution + catcher).filter { (it, _) ->
                     context.isVariableInteresting(it)
                 }
-            val subGoals = catchGoal[2][newSubstitution]
-            val newGoals = subGoals.toGoals() + context.goals.next
+            // arg2p: the goals of the recovery, then those left in the frame, as a list (see ListCursor)
+            val newGoals =
+                ListCursor.of(
+                    ArrayList<Term>().also { goals ->
+                        catchGoal[2][newSubstitution].addGoalsTo(goals, prepared = false)
+                        var left = context.goals.next
+                        while (!left.isOver) {
+                            goals.add(left.current!!)
+                            left = left.next
+                        }
+                    },
+                )
 
             StateGoalSelection(
                 context.copy(

@@ -6,7 +6,6 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.utils.Cursor
-import it.unibo.tuprolog.utils.cursor
 
 /**
  * How the engine solves a [it.unibo.tuprolog.argumentation.core.engine.DelegatedCall] (arg2p), made in `caller`: in
@@ -69,7 +68,7 @@ internal object DelegationStates {
         return if (rules.isOver) {
             StateBacktracking(frame)
         } else {
-            StateRuleExecution(frame.copy(goals = sequenceOf(sourcing.goal).cursor()).appendRulesAndChoicePoints(rules))
+            StateRuleExecution(frame.copy(goals = ListCursor.of(listOf(sourcing.goal))).appendRulesAndChoicePoints(rules))
         }
     }
 }

@@ -59,6 +59,10 @@ class ClauseResolverTest {
         return term.apply(Substitution.of(variables.mapIndexed { i, v -> v to Atom.of("v$i") }.toMap()))
     }
 
+    // The goal with the bindings of the resolution applied, with the goals of the body
+    private fun Resolution.resolved(goal: Struct): Struct =
+        Struct.of("r", goal[Substitution.unifier(goalBindings)], List.of(goals.asSequence().toList()))
+
     @Test
     fun storedClausesResolveAsRenamedOnes() {
         val random = Random(7)
@@ -79,11 +83,7 @@ class ClauseResolverTest {
             if (expected == null || actual == null) return@repeat
             resolved++
             assertEquals(expected.goalBindings.keys, actual.goalBindings.keys, case)
-            assertEquals(
-                canonical(Struct.of("r", goal[expected.goalBindings], expected.body)),
-                canonical(Struct.of("r", goal[actual.goalBindings], actual.body)),
-                case,
-            )
+            assertEquals(canonical(expected.resolved(goal)), canonical(actual.resolved(goal)), case)
         }
         assertEquals(true, resolved > 500, "too few resolutions: $resolved")
     }

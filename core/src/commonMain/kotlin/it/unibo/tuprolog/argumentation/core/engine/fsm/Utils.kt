@@ -11,6 +11,7 @@ import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -19,29 +20,41 @@ import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.error.SystemError
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.utils.Cursor
-import it.unibo.tuprolog.utils.cursor
 import kotlin.jvm.JvmName
 
-/** Flattens a (possibly nested) `, `/2 tuple of goals into the sequence of its leaves, depth-first. */
-fun Term.unfoldGoals(): Sequence<Term> =
-    when {
-        this.isTuple -> castToTuple().toSequence().flatMap { it.unfoldGoals() }
-        else -> sequenceOf(this)
+/**
+ * Turns this term into the [Cursor] of goals `StateGoalSelection` iterates over: conjunctions (`,`/2 tuples, nested
+ * or not) are flattened into their leaves, depth-first, and every variable goal is wrapped into `call(X)` so it goes
+ * through the ISO callability check before execution (arg2p: into a list, see [ListCursor]).
+ */
+fun Term.toGoals(): Cursor<out Term> =
+    if (this is Tuple) {
+        ListCursor.of(ArrayList<Term>(4).also { addGoalsTo(it, prepared = false) })
+    } else {
+        ListCursor.of(listOf(if (this is Var) Struct.of("call", this) else this))
     }
 
 /**
- * Turns this term into the [Cursor] of goals `StateGoalSelection` iterates over: [unfoldGoals] flattens
- * conjunctions, and every variable goal is wrapped into `call(X)` so it goes through the ISO callability check
- * before execution.
+ * Adds this term, a goal or a conjunction of goals, to [into] as the goals to execute (arg2p): the conjunctions
+ * flattened, each goal [preparedForExecution] if [prepared], otherwise a variable goal wrapped into `call(X)`
  */
-fun Term.toGoals(): Cursor<out Term> =
-    unfoldGoals()
-        .map {
-            when {
-                it.isVar -> Struct.of("call", it)
-                else -> it
-            }
-        }.cursor()
+internal fun Term.addGoalsTo(
+    into: ArrayList<Term>,
+    prepared: Boolean,
+) {
+    var current: Term = this
+    while (current is Tuple) {
+        current.left.addGoalsTo(into, prepared)
+        current = current.right
+    }
+    into.add(
+        when {
+            prepared -> current.preparedForExecution()
+            current is Var -> Struct.of("call", current)
+            else -> current
+        },
+    )
+}
 
 /** The goals of the body of a clause, as [toGoals]: none for `true`, the body of a fact (arg2p) */
 fun Term.toBodyGoals(): Cursor<out Term> = if (isTrue) Cursor.empty() else toGoals()

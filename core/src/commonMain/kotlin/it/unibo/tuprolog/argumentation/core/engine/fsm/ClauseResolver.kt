@@ -8,14 +8,16 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.prepareForExecution
 import it.unibo.tuprolog.unify.Unificator
+import it.unibo.tuprolog.utils.Cursor
 
 /**
  * The resolution of a goal with a clause: the bindings it gives the variables of the goal (those of the clause are
- * renamed apart, and only occur in its body), and the body to execute in place of the goal, prepared for execution.
+ * renamed apart, and only occur in its body), and the goals of the body to execute in place of the goal, prepared for
+ * execution.
  */
 internal class Resolution(
     val goalBindings: Substitution.Unifier,
-    val body: Term,
+    val goals: Cursor<out Term>,
 ) {
     /** [substitution], the one of the resolution, extended with the bindings of the goal (see [extendedWith]) */
     fun extend(substitution: Substitution.Unifier): Substitution.Unifier = substitution.extendedWith(goalBindings)
@@ -57,6 +59,6 @@ internal class RenamingClauseResolver(
         val unifier = substitution.castToUnifier()
         val ruleVariables = HashSet<Var>().also { renamed.head.collectVariables(it) }
         val goalBindings = unifier.filter { (variable, _) -> variable !in ruleVariables }.castToUnifier()
-        return Resolution(goalBindings, renamed.prepareForExecution(unifier).body[unifier])
+        return Resolution(goalBindings, renamed.prepareForExecution(unifier).body[unifier].toBodyGoals())
     }
 }

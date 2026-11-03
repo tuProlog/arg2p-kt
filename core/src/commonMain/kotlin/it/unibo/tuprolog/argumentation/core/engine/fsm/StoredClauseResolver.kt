@@ -6,7 +6,9 @@ import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.utils.Cursor
 
 /**
  * Resolution of a goal with a clause as stored, for the unificator of arg2p (strict equality of constants, no occurs
@@ -50,10 +52,31 @@ internal object StoredClauseResolver : ClauseResolver {
             goal: Term,
         ): Resolution? =
             if (unifyWithClause(rule.head, goal)) {
-                Resolution(goalBindings(), instantiate(rule.body).preparedForExecution())
+                Resolution(goalBindings(), bodyGoals(rule.body))
             } else {
                 null
             }
+
+        // The goals of the body, instantiated one by one (the body as stored flattened, see addGoalsTo): its instance
+        // built as a tuple computed the groundness of each fresh goal when built, by sequences over its whole term
+        private fun bodyGoals(body: Term): Cursor<out Term> {
+            if (body.isTrue) return Cursor.empty()
+            val goals = ArrayList<Term>(4)
+            addBodyGoals(body, goals)
+            return ListCursor.of(goals)
+        }
+
+        private fun addBodyGoals(
+            body: Term,
+            into: ArrayList<Term>,
+        ) {
+            var current = body
+            while (current is Tuple) {
+                addBodyGoals(current.left, into)
+                current = current.right
+            }
+            instantiate(current).addGoalsTo(into, prepared = true)
+        }
 
         // The bindings of the variables of the goal, each with the others applied, the fresh variables left out
         private fun goalBindings(): Substitution.Unifier {

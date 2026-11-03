@@ -4,6 +4,7 @@ import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -113,9 +114,24 @@ class TheoryIndexes {
         }
     }
 
+    // The signatures of the callables met, by functor then arity (see signatureOf)
+    private val signatures = HashMap<String, Array<Signature?>>()
+
+    /** The signature of [goal], built the first time its functor and arity are met (not at every primitive selection) */
+    internal fun signatureOf(goal: Struct): Signature {
+        val arity = goal.arity
+        var byArity = signatures[goal.functor]
+        if (byArity == null || byArity.size <= arity) {
+            byArity = (byArity ?: NO_SIGNATURES).copyOf(arity + 1)
+            signatures[goal.functor] = byArity
+        }
+        return byArity[arity] ?: Signature(goal.functor, arity).also { byArity[arity] = it }
+    }
+
     private companion object {
         const val CACHED = 64
         const val PROGRAMS = 16
+        val NO_SIGNATURES = arrayOfNulls<Signature>(0)
     }
 }
 
