@@ -42,6 +42,11 @@ data class ExecutionEnvironment(
     val startTime: TimeInstant,
     val maxDuration: TimeDuration = TimeDuration.MAX_VALUE,
     val theoryIndexes: TheoryIndexes = TheoryIndexes(),
+    /**
+     * The program of the machine the resolution runs on, when it runs on the machine (see `engine.vm.VmSolver`):
+     * the solvers created for its sub-goals share it
+     */
+    val vm: Any? = null,
 ) {
     init {
         require(startTime >= 0)
@@ -82,7 +87,8 @@ data class ExecutionEnvironment(
             query === other.query &&
             startTime == other.startTime &&
             maxDuration == other.maxDuration &&
-            theoryIndexes === other.theoryIndexes
+            theoryIndexes === other.theoryIndexes &&
+            vm === other.vm
 }
 
 /** This store without its ephemeral data: itself when it has none (`discardEphemeral` copies it in any case) */

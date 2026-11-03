@@ -90,6 +90,12 @@ abstract class AbstractSolver<E : ExecutionContext>(
     protected fun updateContext(operator: E.() -> ExecutionContext) {
         @Suppress("UNCHECKED_CAST")
         currentContext = currentContext.operator() as E
+        onContextUpdated()
+    }
+
+    /** Called after [updateContext] (arg2p: the solvers of the machine recompile their program) */
+    protected open fun onContextUpdated() {
+        // does nothing by default
     }
 
     protected fun loadGoal(theory: Atom): Struct = Struct.of("consult", theory)

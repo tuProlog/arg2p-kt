@@ -48,6 +48,9 @@ class VmSpikeTest {
         many(1, a). many(2, b). many(3, c). many(4, d). many(5, e). many(6, f). many(7, g). many(8, h).
         many(9, i). many(X, var) :- integer(X), X > 100. many(10, j). many(11, k). many(12, l).
         safe(X, R) :- catch(X, error(E, _), R = caught(E)).
+        '->'(k(s1), b).
+        '->'(k(s2), c).
+        strict(Id) :- '->'(k(Id), _).
         prim(0) :- !.
         prim(N) :-
             atom_length(hello, 5), functor(T, f, 3), arg(1, T, a), T =.. [f | Args], length(Args, 3),
@@ -175,6 +178,16 @@ class VmSpikeTest {
         assertEquals(listOf("X = 1", "X = 2", "X = 3"), answers(m, "looked_up(stored(X))"))
         assertEquals(listOf("X = 2"), answers(m, "looked_up(stored(X)), X > 1, !"))
         assertEquals(listOf("L = [42, 42, 42, 43, 43, 43]"), answers(m, "findall(X, (in_module(secret(X)), p(_)), L)"))
+    }
+
+    @Test
+    fun theoryClausesOfBuiltins() {
+        val m = machine()
+        // ->/2 is if-then as a goal, and the strict rules of a theory are its clauses too (the engine concatenates)
+        assertEquals(listOf("X = 1"), answers(m, "(true -> X = 1)"))
+        assertEquals(listOf("L = [s1, s2]"), answers(m, "findall(Id, '->'(k(Id), _), L)"))
+        assertEquals(listOf("Id = s1", "Id = s2"), answers(m, "strict(Id)"))
+        assertEquals(listOf("X = 2"), answers(m, "(fail -> X = 1 ; X = 2)"))
     }
 
     @Test

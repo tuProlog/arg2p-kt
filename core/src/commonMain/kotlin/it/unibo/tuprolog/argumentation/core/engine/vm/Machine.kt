@@ -29,8 +29,10 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.LogicError
 import it.unibo.tuprolog.solve.exception.ResolutionException
+import it.unibo.tuprolog.solve.exception.TimeOutException
 import it.unibo.tuprolog.solve.exception.error.MessageError
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.solve.primitive.Solve
@@ -120,8 +122,16 @@ internal class Machine(
     private val builtins = HashMap<Int, Builtin>()
     private var builtinTable = arrayOfNulls<Builtin>(0)
 
-    // The facade: the environment the primitives of the libraries are called in
-    private var environment: ExecutionEnvironment? = null
+    /** The facade: the environment the primitives of the libraries are called in, as their side effects left it */
+    var environment: ExecutionEnvironment? = null
+        private set
+
+    // The time the run must end by, and the calls made since it was last checked
+    private var deadline = Long.MAX_VALUE
+    private var callsSinceCheck = 0
+
+    // Whether the theory of the user is visible when a run starts
+    private var initialTheoryVisible = true
 
     // The calls with alternatives left that are not clauses: of primitives (their responses) and of lookups (their
     // clauses), referred to by the choice points
@@ -423,6 +433,7 @@ internal class Machine(
         barrier: Int,
         resumeAt: Int,
         key: Int = 0,
+        source: Int = MERGED,
     ) {
         val base = cpTop * CP_SIZE
         if (base + CP_SIZE > cps.size) cps = cps.copyOf(cps.size * 2)
@@ -442,6 +453,7 @@ internal class Machine(
         cps[base + 13] = scope.id
         cps[base + 14] = if (theoryVisible) 1 else 0
         cps[base + 15] = pinnedWordsTop
+        cps[base + 16] = source
         if (cpArgsTop + arity > cpArgs.size) cpArgs = cpArgs.copyOf(maxOf(cpArgs.size * 2, cpArgsTop + arity))
         regs.copyInto(cpArgs, cpArgsTop, 0, arity)
         cpArgsTop += arity
@@ -524,9 +536,11 @@ internal class Machine(
                     val argsBase = cps[base + 9]
                     val arity = cps[base + 11]
                     val key = cps[base + 12]
+                    val source = cps[base + 16]
                     cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
                     popChoicePoint()
-                    if (tryClauses(predicateOf(functor)!!, nextClause, arity, barrier, key)) return true
+                    val predicate = if (source == THEORY) program.theory.predicate(functor)!! else predicateOf(functor)!!
+                    if (tryClauses(predicate, nextClause, arity, barrier, key, source)) return true
                 }
             }
         }
@@ -545,9 +559,17 @@ internal class Machine(
         }
     }
 
-    // The predicate of [functor] the resolution sees: of its libraries, or of the theory of the user if visible
-    private fun predicateOf(functor: Int): Program.Predicate? =
-        scope.predicate(functor) ?: if (theoryVisible) program.theory.predicate(functor) else null
+    // The predicate of [functor] the resolution sees: the clauses of its libraries followed by those of the theory
+    // of the user, if visible (as the engine concatenates them: a theory may add clauses to a library predicate)
+    private fun predicateOf(functor: Int): Program.Predicate? {
+        val library = scope.predicate(functor)
+        val theory = if (theoryVisible) program.theory.predicate(functor) else null
+        return when {
+            library == null -> theory
+            theory == null -> library
+            else -> scope.merged(functor, library, theory)
+        }
+    }
 
     // Enters the first clause of [predicate] from the position [from] among the candidates for [key] (the first
     // argument's, computed when [from] is 0), leaving a choice point if another may match; false when none does
@@ -557,6 +579,7 @@ internal class Machine(
         arity: Int,
         barrier: Int,
         key0: Int,
+        source: Int = MERGED,
     ): Boolean {
         val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
         val candidates = predicate.candidates(key)
@@ -567,7 +590,7 @@ internal class Machine(
         if (i == size) return false
         var j = i + 1
         while (j < size && !matches(clauses[candidates[j]].key, key)) j++
-        if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key)
+        if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
         cutBarrier = barrier
         pc = clauses[candidates[i]].start
         return true
@@ -579,16 +602,36 @@ internal class Machine(
     ): Boolean = clauseKey == 0 || goalKey == 0 || clauseKey == goalKey
 
     /**
-     * Calls the predicate, builtin or primitive of [functor] on the registers, [cutBarrier] being the barrier of
-     * the clause entered: [FAILED], [CONTINUE] (a builtin done, the code goes on at [pc]) or [JUMPED] (at [pc])
+     * Calls the predicate, builtin or primitive of [functor] on the registers, [cutBarrier] being the barrier a cut
+     * called as the goal itself cuts to: [FAILED], [CONTINUE] (a builtin done, the code goes on at [pc]) or [JUMPED]
+     * (at [pc])
      */
     private fun call(
         functor: Int,
         arity: Int,
     ): Int {
         if (top > gcThreshold) collect(arity)
-        if (functor < builtinTable.size) builtinTable[functor]?.let { return it.call(this) }
-        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cutBarrier, 0)) JUMPED else FAILED }
+        if (++callsSinceCheck >= CHECK_EVERY) {
+            callsSinceCheck = 0
+            if (currentTimeInstant() > deadline) {
+                val environment = environment ?: ExecutionEnvironment(startTime = 0)
+                val context: ExecutionContext = PrologExecutionContext(environment)
+                throw Halt(TimeOutException(exceededDuration = environment.maxDuration, context = context))
+            }
+        }
+        if (functor < builtinTable.size) {
+            builtinTable[functor]?.let { builtin ->
+                // (the clauses the theory of the user gives a builtin are its alternatives, as the engine
+                // concatenates the clauses of a library predicate and those of the theory: strict rules are clauses
+                // of ->/2)
+                if (theoryVisible) {
+                    program.theory.predicate(functor)?.let { pushChoicePoint(functor, 0, arity, cpTop, continuation, 0, THEORY) }
+                }
+                return builtin.call(this)
+            }
+        }
+        // (a cut in a clause of the predicate cuts its alternatives alone, whatever the goal is transparent to)
+        predicateOf(functor)?.let { return if (tryClauses(it, 0, arity, cpTop, 0)) JUMPED else FAILED }
         val primitive = scope.primitive(functor) ?: return FAILED
         return callPrimitive(primitive, functor, arity)
     }
@@ -1236,25 +1279,22 @@ internal class Machine(
     }
 
     private fun applySideEffects(sideEffects: List<SideEffect>) {
-        val environment = environment!!
+        var environment = environment!!
         for (effect in sideEffects) {
             when (effect) {
                 is SideEffect.AddDynamicClauses -> {
-                    for (clause in effect.clauses) {
-                        if (effect.onTop) environment.dynamicKb.assertA(clause) else environment.dynamicKb.assertZ(clause)
-                        program.theory.add(clause, dynamic = true, onTop = effect.onTop)
-                    }
+                    for (clause in effect.clauses) program.theory.add(clause, dynamic = true, onTop = effect.onTop)
                     prepare()
                 }
-                is SideEffect.RemoveDynamicClauses -> {
-                    for (clause in effect.clauses) {
-                        environment.dynamicKb.retract(clause)
-                        program.theory.remove(clause)
-                    }
-                }
-                else -> throw IllegalStateException("side effect not supported by the machine: $effect")
+                is SideEffect.RemoveDynamicClauses -> for (clause in effect.clauses) program.theory.remove(clause)
+                is SideEffect.ResetDynamicKb -> throw IllegalStateException("side effect not supported by the machine: $effect")
+                else -> Unit
             }
+            // (the knowledge bases, flags, libraries, operators and channels of the environment, as the effect
+            // leaves them: a mutable theory is changed in place)
+            environment = effect.applyTo(PrologExecutionContext(environment)).let { it as PrologExecutionContext }.environment
         }
+        this.environment = environment
     }
 
     // ---- delegated calls: module calls and lookups
@@ -1564,7 +1604,8 @@ internal class Machine(
         pinnedWordsTop = 0
         calls.clear()
         stopped = false
-        theoryVisible = true
+        theoryVisible = initialTheoryVisible
+        callsSinceCheck = 0
         scope = environment?.let { program.scopeOf(it.libraries) } ?: program.theory
     }
 
@@ -1572,8 +1613,14 @@ internal class Machine(
      * The solutions of [query]: each the bindings of its variables, until none is left; a ball no catch/3 takes
      * ends them with a [Halt]
      */
-    fun solve(query: Struct): Sequence<Map<Var, Term>> =
+    fun solve(
+        query: Struct,
+        deadline: Long = Long.MAX_VALUE,
+        theoryVisible: Boolean = true,
+    ): Sequence<Map<Var, Term>> =
         sequence {
+            this@Machine.deadline = deadline
+            initialTheoryVisible = theoryVisible
             reset()
             val compiled = program.compileQuery(query)
             prepare()
@@ -1610,7 +1657,7 @@ internal class Machine(
     companion object {
         const val NONE = -1
         const val FRAME = 4
-        const val CP_SIZE = 16
+        const val CP_SIZE = 17
 
         // The slots of a frame before the clause sets them
         private const val UNSET = (0 shl Words.TAG_BITS) or INT
@@ -1621,6 +1668,10 @@ internal class Machine(
         const val PRIMITIVE = -4
         const val CATCH = -5
         const val SOURCED = -6
+
+        // Where the clauses of a choice point come from: the libraries and the theory, or the theory alone
+        private const val MERGED = 0
+        private const val THEORY = 1
 
         // The outcomes of a call
         const val FAILED = 0
@@ -1634,5 +1685,8 @@ internal class Machine(
 
         // The heap cells above which a call collects
         const val GC_MIN = 1 shl 20
+
+        // The calls between two looks at the clock
+        private const val CHECK_EVERY = 1024
     }
 }

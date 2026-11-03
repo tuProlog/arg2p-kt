@@ -4,6 +4,8 @@ package it.unibo.tuprolog.argumentation.core.engine
 import it.unibo.tuprolog.argumentation.core.engine.fsm.Bindings
 import it.unibo.tuprolog.argumentation.core.engine.fsm.TheoryIndexes
 import it.unibo.tuprolog.argumentation.core.engine.fsm.collectVariables
+import it.unibo.tuprolog.argumentation.core.engine.vm.MutableVmSolver
+import it.unibo.tuprolog.argumentation.core.engine.vm.VmSolver
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -207,18 +209,24 @@ data class PrologExecutionContext(
         inputChannels: InputStore,
         outputChannels: OutputStore,
     ): Solver =
-        PrologSolver(
-            unificator,
-            libraries,
-            flags,
-            staticKb,
-            dynamicKb,
-            inputChannels,
-            outputChannels,
-            trustKb = true,
-        ).also {
-            it.shareTheoryIndexes(theoryIndexes)
-            it.theoryVisible = theoryVisible
+        if (environment.vm != null) {
+            VmSolver(unificator, libraries, flags, staticKb, dynamicKb, inputChannels, outputChannels, trustKb = true).also {
+                it.share(environment.vm, theoryVisible)
+            }
+        } else {
+            PrologSolver(
+                unificator,
+                libraries,
+                flags,
+                staticKb,
+                dynamicKb,
+                inputChannels,
+                outputChannels,
+                trustKb = true,
+            ).also {
+                it.shareTheoryIndexes(theoryIndexes)
+                it.theoryVisible = theoryVisible
+            }
         }
 
     override fun createMutableSolver(
@@ -230,18 +238,24 @@ data class PrologExecutionContext(
         inputChannels: InputStore,
         outputChannels: OutputStore,
     ): MutableSolver =
-        MutablePrologSolver(
-            unificator,
-            libraries,
-            flags,
-            staticKb,
-            dynamicKb,
-            inputChannels,
-            outputChannels,
-            trustKb = true,
-        ).also {
-            it.shareTheoryIndexes(theoryIndexes)
-            it.theoryVisible = theoryVisible
+        if (environment.vm != null) {
+            MutableVmSolver(unificator, libraries, flags, staticKb, dynamicKb, inputChannels, outputChannels, trustKb = true).also {
+                it.share(environment.vm, theoryVisible)
+            }
+        } else {
+            MutablePrologSolver(
+                unificator,
+                libraries,
+                flags,
+                staticKb,
+                dynamicKb,
+                inputChannels,
+                outputChannels,
+                trustKb = true,
+            ).also {
+                it.shareTheoryIndexes(theoryIndexes)
+                it.theoryVisible = theoryVisible
+            }
         }
 
     override fun update(

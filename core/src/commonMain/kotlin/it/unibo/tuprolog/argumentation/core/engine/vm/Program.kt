@@ -66,19 +66,27 @@ internal class Program {
         private var all: IntArray? = null
         private var byKey: HashMap<Int, IntArray>? = null
 
+        /** Bumped whenever the clauses change */
+        var version = 0
+            private set
+
         fun add(
             clause: ClauseCode,
             onTop: Boolean,
         ) {
             if (onTop) clauses.add(0, clause) else clauses.add(clause)
-            all = null
-            byKey = null
+            changed()
         }
 
         fun removeAt(index: Int) {
             clauses.removeAt(index)
+            changed()
+        }
+
+        private fun changed() {
             all = null
             byKey = null
+            version++
         }
 
         /**
@@ -117,6 +125,36 @@ internal class Program {
         private var looked = BooleanArray(0)
 
         fun predicate(functor: Int): Predicate? = if (functor < predicates.size) predicates[functor] else null
+
+        // The predicates of the libraries followed by those of the theory of the user, by functor
+        private class Merged(
+            val libraryVersion: Int,
+            val theoryVersion: Int,
+            val predicate: Predicate,
+        )
+
+        private val merged = HashMap<Int, Merged>()
+
+        /**
+         * The predicate [functor] as a resolution sees it when the libraries ([library]) and the theory of the user
+         * ([theory]) both define it: the clauses of the libraries first (as the engine concatenates them), kept until
+         * either changes
+         */
+        fun merged(
+            functor: Int,
+            library: Predicate,
+            theory: Predicate,
+        ): Predicate {
+            val known = merged[functor]
+            if (known != null && known.libraryVersion == library.version && known.theoryVersion == theory.version) {
+                return known.predicate
+            }
+            val predicate = Predicate(functor)
+            for (clause in library.clauses) predicate.add(clause, onTop = false)
+            for (clause in theory.clauses) predicate.add(clause, onTop = false)
+            merged[functor] = Merged(library.version, theory.version, predicate)
+            return predicate
+        }
 
         /** The primitive of the libraries for [functor], if any */
         fun primitive(functor: Int): Primitive? {

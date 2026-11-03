@@ -173,9 +173,13 @@ class Arg2p private constructor(
         private var theory = ""
         private var flags = Flags.defaults()
         private var output: ((String) -> Unit)? = null
+        private var vm = false
 
         /** The theory, as Prolog text */
         fun theory(theory: String): Builder = apply { this.theory = theory }
+
+        /** Whether the solver runs on the machine (`core.engine.vm`, a work in progress) rather than on the engine */
+        fun vm(enabled: Boolean): Builder = apply { vm = enabled }
 
         /** The flags ([Flags.defaults] otherwise) */
         fun flags(flags: Flags): Builder = apply { this.flags = flags }
@@ -189,7 +193,12 @@ class Arg2p private constructor(
             val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
             return Arg2p(
                 SyntaxProblem.parsing("Theory") {
-                    Arg2pSolverFactory.solverOf(arg2p, theory, output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut())
+                    Arg2pSolverFactory.solverOf(
+                        arg2p,
+                        theory,
+                        output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut(),
+                        vm = vm,
+                    )
                 },
                 arg2p,
             )

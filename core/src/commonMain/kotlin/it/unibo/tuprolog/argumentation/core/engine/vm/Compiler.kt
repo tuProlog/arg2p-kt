@@ -38,17 +38,20 @@ internal class Compiler(
         ) : Body()
 
         class Disj(
+            val term: Struct,
             val left: Body,
             val right: Body,
         ) : Body()
 
         class IfThenElse(
+            val term: Struct,
             val condition: Body,
             val then: Body,
             val otherwise: Body,
         ) : Body()
 
         class Naf(
+            val term: Struct,
             val goal: Body,
         ) : Body()
 
@@ -175,15 +178,15 @@ internal class Compiler(
             term is Struct && term.arity == 2 && term.functor == ";" -> {
                 val left = term[0]
                 if (left is Struct && left.arity == 2 && left.functor == "->") {
-                    Body.IfThenElse(parse(left[0]), parse(left[1]), parse(term[1]))
+                    Body.IfThenElse(term, parse(left[0]), parse(left[1]), parse(term[1]))
                 } else {
-                    Body.Disj(parse(left), parse(term[1]))
+                    Body.Disj(term, parse(left), parse(term[1]))
                 }
             }
             term is Struct && term.arity == 2 && term.functor == "->" -> {
-                Body.IfThenElse(parse(term[0]), parse(term[1]), parse(Atom.of("fail")))
+                Body.IfThenElse(term, parse(term[0]), parse(term[1]), parse(Atom.of("fail")))
             }
-            term is Struct && term.arity == 1 && term.functor == "\\+" -> Body.Naf(parse(term[0]))
+            term is Struct && term.arity == 1 && term.functor == "\\+" -> Body.Naf(term, parse(term[0]))
             term is Struct -> Body.Goal(term)
             else -> throw IllegalArgumentException("not a goal: $term")
         }
@@ -202,27 +205,41 @@ internal class Compiler(
                 for (i in 0 until goal.arity) occurrences(goal[i], c, region)
             }
             is Body.Conj -> for ((i, item) in body.items.withIndex()) analyze(item, first && i == 0, region)
-            is Body.Disj -> {
-                hasControl = true
-                analyze(body.left, first = false, region = true)
-                analyze(body.right, first = false, region = true)
-            }
-            is Body.IfThenElse -> {
-                hasControl = true
-                levels++
-                analyze(body.condition, first = false, region = true)
-                analyze(body.then, first = false, region = true)
-                analyze(body.otherwise, first = false, region = true)
-            }
-            is Body.Naf -> {
-                hasControl = true
-                levels++
-                analyze(body.goal, first = false, region = true)
-            }
+            is Body.Disj ->
+                if (definedByTheory(body.term)) {
+                    analyze(Body.Goal(body.term), first, region)
+                } else {
+                    hasControl = true
+                    analyze(body.left, first = false, region = true)
+                    analyze(body.right, first = false, region = true)
+                }
+            is Body.IfThenElse ->
+                if (definedByTheory(body.term)) {
+                    analyze(Body.Goal(body.term), first, region)
+                } else {
+                    hasControl = true
+                    levels++
+                    analyze(body.condition, first = false, region = true)
+                    analyze(body.then, first = false, region = true)
+                    analyze(body.otherwise, first = false, region = true)
+                }
+            is Body.Naf ->
+                if (definedByTheory(body.term)) {
+                    analyze(Body.Goal(body.term), first, region)
+                } else {
+                    hasControl = true
+                    levels++
+                    analyze(body.goal, first = false, region = true)
+                }
             Body.Cut -> hasCut = true
             Body.True -> Unit
         }
     }
+
+    // Whether the theory of the user has clauses for the functor of [term], a control construct: it is then called
+    // as a goal, so that the engine's reading holds (the clauses of a library predicate followed by the theory's:
+    // the strict rules of an argumentation theory are clauses of ->/2). Told when the clause is compiled.
+    private fun definedByTheory(term: Struct): Boolean = program.theory.predicate(program.functor(term.functor, term.arity)) != null
 
     private fun occurrences(
         term: Term,
@@ -283,6 +300,7 @@ internal class Compiler(
                 return false
             }
             is Body.Disj -> {
+                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
                 program.emit(Op.TRY_ELSE)
                 val elseLabel = program.emit(0)
                 emit(body.left, last = false)
@@ -295,6 +313,7 @@ internal class Compiler(
                 return false
             }
             is Body.IfThenElse -> {
+                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
                 val level = nextLevel++
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
@@ -311,6 +330,7 @@ internal class Compiler(
                 return false
             }
             is Body.Naf -> {
+                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
                 val level = nextLevel++
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
