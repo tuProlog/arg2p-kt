@@ -48,14 +48,13 @@ internal class Context : ArgLibrary {
      * [ClauseStore.derived]); for a branch that does not exist, computed on no clause
      */
     fun <T : Any> derived(
-        functor: String,
-        arity: Int,
+        key: String,
         name: String,
         branch: Int? = null,
         compute: (kotlin.collections.List<Clause>) -> T,
     ): T {
         val store = if (branch == null) branches.selected else branches.storeOf(branch) ?: return compute(emptyList())
-        return store.derived(functor, arity, name, compute)
+        return store.derived(key, name, compute)
     }
 
     /** The terms asserted in the active branch, in order (utils::assertAll/1) */

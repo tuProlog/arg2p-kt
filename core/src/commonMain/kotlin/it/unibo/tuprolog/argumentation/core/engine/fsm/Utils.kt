@@ -7,6 +7,7 @@ import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.appendPrimitives
 import it.unibo.tuprolog.argumentation.core.engine.appendRules
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.primitive.Throw
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -44,6 +45,29 @@ fun Term.toGoals(): Cursor<out Term> =
 
 /** The goals of the body of a clause, as [toGoals]: none for `true`, the body of a fact (arg2p) */
 fun Term.toBodyGoals(): Cursor<out Term> = if (isTrue) Cursor.empty() else toGoals()
+
+/**
+ * This term, a body, prepared for execution as Clause.prepareForExecution prepares the body of a clause (arg2p,
+ * without building the clause): the variables in the place of a goal are called through call/1
+ */
+internal fun Term.preparedForExecution(): Term =
+    when {
+        this is Var -> Struct.of("call", this)
+        this is Struct && arity == 2 && functor in Clause.notableFunctors -> {
+            val left = this[0].preparedForExecution()
+            val right = this[1].preparedForExecution()
+            if (left === this[0] && right === this[1]) this else Struct.of(functor, left, right)
+        }
+        else -> this
+    }
+
+/**
+ * This context, its step advanced in place (arg2p): the transitions that keep the frame as it is (the goal chosen, then
+ * the clauses of its predicate selected) count without copying it. Every other state copies the context it is given,
+ * and the contexts the choice points keep are never the ones a state goes on with: none but this state reads the
+ * context advanced.
+ */
+internal fun PrologExecutionContext.advanced(): PrologExecutionContext = apply { step++ }
 
 /**
  * Pushes a new child frame onto the execution-context stack for the current goal, becoming its own

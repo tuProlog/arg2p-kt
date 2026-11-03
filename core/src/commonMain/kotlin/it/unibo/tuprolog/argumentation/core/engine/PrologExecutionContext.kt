@@ -87,7 +87,8 @@ data class PrologExecutionContext(
     val choicePoints: ChoicePointContext? = null,
     val parent: PrologExecutionContext? = null,
     val depth: Int = 0,
-    val step: Long = 0,
+    // (A var: the transitions that keep the frame as it is advance it in place, see advanced)
+    var step: Long = 0,
     val trimmedSize: Int = 0,
     val inlined: Boolean = false,
     val scoped: Boolean = false,

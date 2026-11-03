@@ -74,11 +74,11 @@ private val NO_SUPPORTS: Map<Term, List<Term>> = emptyMap()
 /** The attacks of the given branch (the active one if null), the saved ones and those they extend to */
 internal fun Solve.Request<ExecutionContext>.expandedAttacks(branch: Int? = null): ExpandedAttacks {
     val supported =
-        contextLibrary.derived("supportId", 2, "supported", branch) { clauses ->
+        contextLibrary.derived("supportId/2", "supported", branch) { clauses ->
             clauses.groupBy({ it.head!![0] }, { it.head!![1] }).ifEmpty { NO_SUPPORTS }
         }
     val expansion =
-        contextLibrary.derived("attackId", 4, "expansion", branch) { clauses ->
+        contextLibrary.derived("attackId/4", "expansion", branch) { clauses ->
             Expansion(clauses.map { it.head!!.let { head -> AttackIds(head[0], head[1], head[2], head[3]) } })
         }
     if (expansion.supported !== supported) {

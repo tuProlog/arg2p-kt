@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
-import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -49,7 +48,7 @@ internal object StoredClauseResolver : ClauseResolver {
             goal: Term,
         ): Resolution? =
             if (unifyWithClause(rule.head, goal)) {
-                Resolution(goalBindings(), prepare(instantiate(rule.body)))
+                Resolution(goalBindings(), instantiate(rule.body).preparedForExecution())
             } else {
                 null
             }
@@ -200,17 +199,5 @@ internal object StoredClauseResolver : ClauseResolver {
 
         // The name of the copy of a variable of the clause: a named one for an anonymous one (see above)
         private fun nameOf(variable: Var): String = if (variable.isAnonymous) "_N" else variable.name
-
-        // As Clause.prepareForExecution: the variables in the place of a goal are called through call/1
-        private fun prepare(goal: Term): Term =
-            when {
-                goal is Var -> Struct.of("call", goal)
-                goal is Struct && goal.arity == 2 && goal.functor in Clause.notableFunctors -> {
-                    val left = prepare(goal[0])
-                    val right = prepare(goal[1])
-                    if (left === goal[0] && right === goal[1]) goal else Struct.of(goal.functor, left, right)
-                }
-                else -> goal
-            }
     }
 }

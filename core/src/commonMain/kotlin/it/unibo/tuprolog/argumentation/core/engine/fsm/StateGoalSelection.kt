@@ -58,9 +58,7 @@ data class StateGoalSelection(
                 )
             }
         } else {
-            StatePrimitiveSelection(
-                context.copy(step = nextStep()),
-            )
+            StatePrimitiveSelection(context.advanced())
         }
 
     private companion object {

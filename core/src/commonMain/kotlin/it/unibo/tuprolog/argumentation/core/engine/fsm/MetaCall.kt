@@ -3,11 +3,13 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.Call
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.rule.NegationAsFailure
+import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.Tuple
-import it.unibo.tuprolog.core.prepareForExecution
+import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.exception.ResolutionException
@@ -36,14 +38,26 @@ internal abstract class MetaCall(
         time: TimeInstant,
     ): State {
         val frame = context.createChild(goal)
-        val check = frame.copy(goals = Struct.of(EnsureExecutable.functor, goal[0]).toGoals()).createChild()
-        return try {
-            ensureExecutable(check, time)
-            StateGoalSelection(frame(goal, frame).copy(step = context.step + 1))
-        } catch (exception: ResolutionException) {
-            StateException(exception.updateLastContext(check.skipThrow()), context.copy(step = context.step + 1))
+        // a goal plainly executable is not checked by the primitive, in a frame of its own (arg2p): the errors of the
+        // others are raised as it raises them
+        if (!goal[0].isExecutable()) {
+            val check = frame.copy(goals = Struct.of(EnsureExecutable.functor, goal[0]).toGoals()).createChild()
+            try {
+                ensureExecutable(check, time)
+            } catch (exception: ResolutionException) {
+                return StateException(exception.updateLastContext(check.skipThrow()), context.copy(step = context.step + 1))
+            }
         }
+        return StateGoalSelection(frame(goal, frame).copy(step = context.step + 1))
     }
+
+    // Whether a goal is executable as ensure_executable/1 checks it: a callable, through the control constructs
+    private fun Term.isExecutable(): Boolean =
+        when {
+            this is Var -> false
+            this is Struct && arity == 2 && functor in Clause.notableFunctors -> this[0].isExecutable() && this[1].isExecutable()
+            else -> this is Struct
+        }
 
     // Runs ensure_executable/1, the current goal of [check], raising its errors
     private fun ensureExecutable(
@@ -63,10 +77,7 @@ internal object CallConstruct : MetaCall(Call.functor) {
     override fun frame(
         goal: Struct,
         frame: PrologExecutionContext,
-    ): PrologExecutionContext {
-        val body = Rule.of(goal, goal[0]).prepareForExecution().body
-        return frame.copy(goals = body.toBodyGoals()).appendChoicePoint(Cursor.empty())
-    }
+    ): PrologExecutionContext = frame.copy(goals = goal[0].preparedForExecution().toBodyGoals()).appendChoicePoint(Cursor.empty())
 }
 
 /**

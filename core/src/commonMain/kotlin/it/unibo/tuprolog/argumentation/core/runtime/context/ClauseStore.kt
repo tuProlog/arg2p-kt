@@ -65,15 +65,14 @@ internal class ClauseStore private constructor(
     }
 
     /**
-     * A value derived from the clauses of the predicate [functor]/[arity] (newest first), named [name]: computed once,
-     * until the predicate changes (the branches sharing the predicate share it)
+     * A value derived from the clauses of the predicate [key] (`functor/arity`, newest first), named [name]: computed
+     * once, until the predicate changes (the branches sharing the predicate share it)
      */
     fun <T : Any> derived(
-        functor: String,
-        arity: Int,
+        key: String,
         name: String,
         compute: (List<Clause>) -> T,
-    ): T = data.derived("$functor/$arity", name, compute)
+    ): T = data.derived(key, name, compute)
 
     /** The stored clauses whose head may unify with the given one, newest first, as stored */
     fun clausesFor(head: Term): List<Clause> = head.asStruct()?.let { struct -> data.candidates(struct).map { it.clause } } ?: emptyList()
