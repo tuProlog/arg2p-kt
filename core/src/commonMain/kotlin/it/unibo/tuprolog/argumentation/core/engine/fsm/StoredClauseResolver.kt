@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.runtime.isKnownGround
 import it.unibo.tuprolog.argumentation.core.runtime.rebuilt
+import it.unibo.tuprolog.argumentation.core.runtime.structOf
 import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -34,17 +35,15 @@ internal object StoredClauseResolver : ClauseResolver {
     // by ground goals, need none), and the bindings are read through each other and resolved once at the end (see
     // Arg2pUnificator)
     private class Unification {
-        // The variables of the clause, as the terms of the goal (or the fresh variables) they stand for
-        private var renamed: HashMap<Var, Term>? = null
+        // The variables of the clause, as the terms of the goal (or the fresh variables) they stand for; once the
+        // head is unified, with the bindings applied as the body is instantiated (see instantiate)
+        private var renamed: VarMap? = null
 
-        // The fresh variables, standing for the variables of the clause not met by a term of the goal
-        private var fresh: HashSet<Var>? = null
+        // The fresh variables, standing for the variables of the clause not met by a term of the goal (each as itself)
+        private var fresh: VarMap? = null
 
         // The bindings of the variables of the goal (and of the fresh ones)
-        private var bindings: HashMap<Var, Term>? = null
-
-        // The variables of the clause in the body, with the bindings applied
-        private var instantiated: HashMap<Var, Term>? = null
+        private var bindings: VarMap? = null
 
         fun resolve(
             rule: Rule,
@@ -80,9 +79,10 @@ internal object StoredClauseResolver : ClauseResolver {
         // The bindings of the variables of the goal, each with the others applied, the fresh variables left out
         private fun goalBindings(): Map<Var, Term> {
             val found = bindings ?: return emptyMap()
-            val resolved = LinkedHashMap<Var, Term>(found.size * 2)
-            for ((variable, term) in found) {
-                if (fresh?.contains(variable) != true) resolved[variable] = resolve(term, null)
+            val resolved = VarMap()
+            for (i in 0 until found.size) {
+                val variable = found.keyAt(i)
+                if (fresh?.containsKey(variable) != true) resolved.put(variable, resolve(found.valueAt(i), null))
             }
             return resolved
         }
@@ -91,10 +91,10 @@ internal object StoredClauseResolver : ClauseResolver {
             variable: Var,
             term: Term,
         ) {
-            (renamed ?: HashMap<Var, Term>(8).also { renamed = it })[variable] = term
+            (renamed ?: VarMap().also { renamed = it }).put(variable, term)
         }
 
-        private fun freshVariable(name: String): Var = Var.of(name).also { (fresh ?: HashSet<Var>(4).also { fresh = it }).add(it) }
+        private fun freshVariable(name: String): Var = Var.of(name).also { (fresh ?: VarMap().also { fresh = it }).put(it, it) }
 
         // The term a variable of the goal stands for, through the variables bound to variables
         private fun dereference(term: Term): Term {
@@ -165,7 +165,7 @@ internal object StoredClauseResolver : ClauseResolver {
             variable: Var,
             term: Term,
         ): Boolean {
-            (bindings ?: HashMap<Var, Term>(8).also { bindings = it })[variable] = term
+            (bindings ?: VarMap().also { bindings = it }).put(variable, term)
             return true
         }
 
@@ -174,22 +174,25 @@ internal object StoredClauseResolver : ClauseResolver {
             when {
                 term is Var -> renamed?.get(term) ?: freshVariable(nameOf(term)).also { rename(term, it) }
                 term.isGround -> term
-                term is Struct -> Struct.of(term.functor, List(term.arity) { copy(term[it]) })
+                term is Struct -> structOf(term.functor, List(term.arity) { copy(term[it]) })
                 else -> term
             }
 
-        // A term of the clause as a term of the goal, with the bindings applied
+        // A term of the clause as a term of the goal, with the bindings applied. The head is unified by now: the term
+        // a variable of the clause stands for is kept with the bindings applied, once resolved (a map of the
+        // instances was allocated for each resolution)
         private fun instantiate(term: Term): Term =
             when {
                 term is Var -> {
-                    val known = instantiated?.get(term)
-                    known ?: (
-                        renamed?.get(term)?.let { if (bindings == null) it else resolve(it, null) }
-                            ?: Var.of(nameOf(term)).also { rename(term, it) }
-                    ).also { (instantiated ?: HashMap<Var, Term>(8).also { instantiated = it })[term] = it }
+                    val known = renamed?.get(term)
+                    when {
+                        known == null -> Var.of(nameOf(term)).also { rename(term, it) }
+                        bindings == null -> known
+                        else -> resolve(known, null).also { if (it !== known) renamed!!.put(term, it) }
+                    }
                 }
                 term.isGround -> term
-                term is Struct -> Struct.of(term.functor, List(term.arity) { instantiate(term[it]) })
+                term is Struct -> structOf(term.functor, List(term.arity) { instantiate(term[it]) })
                 else -> term
             }
 

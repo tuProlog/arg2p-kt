@@ -16,7 +16,6 @@ import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.flags.LastCallOptimization.ON
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.stdlib.magic.MagicCut
-import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.utils.Cursor
 
 /**
@@ -87,14 +86,16 @@ data class StateRuleSelection(
     private fun exceptionalState(exception: ResolutionException): StateException =
         StateException(exception, context.copy(step = nextStep()))
 
+    // (arg2p: whether the program defines the procedure is answered by its indexes, where the indicator of the goal
+    // was looked up in the theories of the libraries, the static and the dynamic one, built as needed)
     private fun missingProcedure(
-        ruleSources: () -> Sequence<Theory>,
+        defined: () -> Boolean,
         missing: Signature,
     ): State =
         when (val unknown = context.flags[Unknown]) {
             Unknown.FAIL -> failureState
             else -> {
-                if (ruleSources().none { missing.toIndicator() in it }) {
+                if (!defined()) {
                     when (unknown) {
                         Unknown.ERROR ->
                             exceptionalState(
@@ -225,13 +226,10 @@ data class StateRuleSelection(
     private fun selectRules(clauses: List<Clause>): State {
         val rules: Cursor<out Rule> = RuleCursor.of(clauses)
         return when {
-            rules.isOver -> missingProcedure({ context.ruleSources() }, goal.signatureOf)
+            rules.isOver -> missingProcedure({ ProgramClauses.of(context, theory = true).defines(goal) }, goal.signatureOf)
             context.isTailRecursive(goal) ->
                 StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, goal))
             else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, goal))
         }
     }
-
-    // The theories of the program, only needed to report a missing procedure
-    private fun PrologExecutionContext.ruleSources(): Sequence<Theory> = sequenceOf(libraries.asTheory(unificator), staticKb, dynamicKb)
 }

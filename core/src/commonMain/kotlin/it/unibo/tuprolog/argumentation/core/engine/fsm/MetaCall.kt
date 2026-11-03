@@ -8,7 +8,6 @@ import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
-import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.TimeInstant
@@ -83,7 +82,8 @@ internal object CallConstruct : MetaCall(Call.functor) {
 /**
  * \+/1, as its clauses `\+ G :- ensure_executable(G), call(G), '$cut', fail` and `\+ G :- true`: the frame tries the
  * goal, cutting its own choice point and failing if the goal succeeds; the choice point goes on with the second
- * clause.
+ * clause. (The goals as the list they are flattened into: a tuple of them checked its goal ground when built,
+ * by sequences over its whole term.)
  */
 internal object NegationConstruct : MetaCall(NegationAsFailure.FUNCTOR) {
     override fun frame(
@@ -92,5 +92,5 @@ internal object NegationConstruct : MetaCall(NegationAsFailure.FUNCTOR) {
     ): PrologExecutionContext =
         frame
             .appendChoicePoint(RuleCursor.of(listOf(Rule.of(goal, Truth.TRUE))))
-            .copy(goals = Tuple.of(Struct.of(Call.functor, goal[0]), MagicCut, Truth.FAIL).toGoals())
+            .copy(goals = ListCursor.of(listOf(Struct.of(Call.functor, goal[0]), MagicCut, Truth.FAIL)))
 }

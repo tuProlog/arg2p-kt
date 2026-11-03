@@ -16,9 +16,11 @@ import it.unibo.tuprolog.unify.Unificator
  * is a module of its own, the names of the libraries do not reach it, and the modules see it only through `user::`.
  */
 internal class ProgramClauses private constructor(
-    private val libraries: ClauseSource,
+    private val libraries: TheoryClauseSource,
     private val theories: List<TheoryClauseSource>,
-) : ClauseSource {
+) : TheoryClauseSource {
+    override fun defines(goal: Struct): Boolean = libraries.defines(goal) || theories.any { it.defines(goal) }
+
     override fun clausesFor(
         goal: Struct,
         unificator: Unificator,
@@ -86,5 +88,6 @@ internal class MutableTheoryClauses(
         unificator: Unificator,
     ): List<Clause> = theory[goal].toList()
 
-    override fun defines(goal: Struct): Boolean = theory.contains(Indicator.of(goal.functor, goal.arity))
+    // (An empty theory, the dynamic one most of the time, is not asked: it built the indicator and looked it up)
+    override fun defines(goal: Struct): Boolean = theory.isNonEmpty && theory.contains(Indicator.of(goal.functor, goal.arity))
 }

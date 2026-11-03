@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.VarMap
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Rule
@@ -25,6 +26,22 @@ internal fun Term.isKnownGround(): Boolean =
     }
 
 /**
+ * The compound term of [functor] and [arguments], as `Struct.of` builds it (a list, a tuple, a clause, an indicator,
+ * a block, an atom or a plain compound term by its functor and arity), built directly where [Struct.of] copied the
+ * arguments on the way (a tuple sliced them)
+ */
+internal fun structOf(
+    functor: String,
+    arguments: List<Term>,
+): Struct =
+    when {
+        arguments.size != 2 -> Struct.of(functor, arguments)
+        functor == "." -> Cons.of(arguments[0], arguments[1])
+        functor == "," -> Tuple.of(arguments[0], arguments[1])
+        else -> Struct.of(functor, arguments)
+    }
+
+/**
  * This compound term with [part] applied to each argument: the term itself where none changes, built only where one
  * does (arg2p: a list of arguments allocated for every term visited, changed or not, was a tenth of the allocations)
  */
@@ -39,7 +56,7 @@ internal inline fun Struct.rebuilt(part: (Term) -> Term): Term {
         }
         arguments?.add(result)
     }
-    return if (arguments == null) this else Struct.of(functor, arguments)
+    return if (arguments == null) this else structOf(functor, arguments)
 }
 
 /**
@@ -66,14 +83,14 @@ object Arg2pUnificator : Unificator by Unificator.default {
         // The bindings found so far, each variable to the term it met (a bound variable among them, followed on
         // reading, see dereference): none until one is needed, as a goal matched against the heads of its clauses
         // binds nothing most of the time
-        private var bindings: HashMap<Var, Term>? = null
+        private var bindings: VarMap? = null
 
         /** The unifier: each binding with the others applied, so that applying it once applies them all */
         val result: Substitution
             get() {
                 val found = bindings ?: return Substitution.empty()
-                val resolved = LinkedHashMap<Var, Term>(found.size * 2)
-                for ((variable, term) in found) resolved[variable] = resolve(term, null)
+                val resolved = VarMap()
+                for (i in 0 until found.size) resolved.put(found.keyAt(i), resolve(found.valueAt(i), null))
                 return Substitution.unifier(resolved)
             }
 
@@ -120,7 +137,7 @@ object Arg2pUnificator : Unificator by Unificator.default {
             variable: Var,
             term: Term,
         ): Boolean {
-            (bindings ?: HashMap<Var, Term>(8).also { bindings = it })[variable] = term
+            (bindings ?: VarMap().also { bindings = it }).put(variable, term)
             return true
         }
 
