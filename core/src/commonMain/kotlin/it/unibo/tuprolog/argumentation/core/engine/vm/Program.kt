@@ -44,17 +44,17 @@ internal class Program {
     var code = IntArray(1 shl 12)
     var codeTop = 0
 
-    val predicates = HashMap<Int, Predicate>()
-
-    val emptyList: Int = atomWord("[]")
-    val functorConj: Int = functor(",", 2)
-    val functorCall: Int = functor("call", 1)
+    /** The predicates by functor id (null where the program has none) */
+    var predicateTable = arrayOfNulls<Predicate>(1 shl 8)
+        private set
 
     class ClauseCode(
         val key: Int,
         val variables: Int,
         val headArgs: IntArray,
         val body: IntArray,
+        // The clause as given, for the dynamic ones (retracted by equality)
+        val source: Clause?,
     )
 
     class Predicate(
@@ -62,6 +62,8 @@ internal class Program {
     ) {
         val clauses = ArrayList<ClauseCode>()
     }
+
+    val emptyList: Int = atomWord("[]")
 
     fun atom(name: String): Int =
         atomIds.getOrPut(name) {
@@ -84,7 +86,9 @@ internal class Program {
         return functorIds.getOrPut(key) {
             functorNames.add(nameAtom)
             functorArities.add(arity)
-            functorNames.size - 1
+            val id = functorNames.size - 1
+            if (id >= predicateTable.size) predicateTable = predicateTable.copyOf(predicateTable.size * 2)
+            id
         }
     }
 
@@ -96,6 +100,8 @@ internal class Program {
     fun arity(functorWord: Int): Int = functorArities[payload(functorWord)]
 
     fun functorName(functorWord: Int): String = atoms[functorNames[payload(functorWord)]]
+
+    fun nameOfFunctor(functor: Int): String = atoms[functorNames[functor]]
 
     fun floatWord(value: Double): Int =
         word(
@@ -130,7 +136,17 @@ internal class Program {
         for (clause in theory.clauses) add(clause)
     }
 
-    fun add(clause: Clause) {
+    /** Adds [clauses] */
+    fun add(clauses: Iterable<Clause>) {
+        for (clause in clauses) add(clause)
+    }
+
+    /** Adds [clause], last among those of its predicate (first if [onTop]); [dynamic] ones can be removed */
+    fun add(
+        clause: Clause,
+        dynamic: Boolean = false,
+        onTop: Boolean = false,
+    ) {
         val head = clause.head ?: return
         val slots = HashMap<Var, Int>()
         val headArgs = IntArray(head.arity) { toCode(head[it], slots) }
@@ -139,7 +155,19 @@ internal class Program {
         val body = IntArray(goals.size) { toCode(goals[it], slots) }
         val key = if (headArgs.isEmpty()) 0 else keyOfCode(headArgs[0])
         val functor = functor(head.functor, head.arity)
-        predicates.getOrPut(functor) { Predicate(functor) }.clauses.add(ClauseCode(key, slots.size, headArgs, body))
+        val predicate = predicateTable[functor] ?: Predicate(functor).also { predicateTable[functor] = it }
+        val compiled = ClauseCode(key, slots.size, headArgs, body, if (dynamic) clause else null)
+        if (onTop) predicate.clauses.add(0, compiled) else predicate.clauses.add(compiled)
+    }
+
+    /** Removes the first dynamic clause equal to [clause] (variables apart); false if there is none */
+    fun remove(clause: Clause): Boolean {
+        val head = clause.head ?: return false
+        val predicate = predicateTable[functor(head.functor, head.arity)] ?: return false
+        val index = predicate.clauses.indexOfFirst { it.source != null && it.source.equals(clause, false) }
+        if (index < 0) return false
+        predicate.clauses.removeAt(index)
+        return true
     }
 
     private fun flatten(
@@ -171,7 +199,7 @@ internal class Program {
     ): Int =
         when (term) {
             is Var -> word(REF, slots.getOrPut(term) { slots.size })
-            is Integer -> intWord(term.value.toLongExact())
+            is Integer -> intWord(term.value.toLong())
             is Real -> floatWord(term.value.toDouble())
             is Atom -> atomWord(term.value)
             is Cons -> {
@@ -200,6 +228,3 @@ internal class Program {
         const val LIST_KEY = (0 shl Words.TAG_BITS) or LIST
     }
 }
-
-// (The spike keeps integers within a Long)
-private fun Integer.toLongExact(): Long = value.toLong()
