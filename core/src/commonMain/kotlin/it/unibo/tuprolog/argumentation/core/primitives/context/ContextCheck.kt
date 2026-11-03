@@ -3,14 +3,13 @@ package it.unibo.tuprolog.argumentation.core.primitives.context
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
-import it.unibo.tuprolog.argumentation.core.runtime.context.branchLookup
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * context_check(Goal): the solutions of Goal in the active branch (see [it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore.solve]); the machine
- * resolves Goal with the clauses of the branch itself (see [it.unibo.tuprolog.argumentation.core.runtime.context.StoreClauses])
+ * resolves Goal with the records of the branch itself (see [lookup])
  */
 internal class ContextCheck(
     private val branches: ContextBranches,

@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.core.primitives.context
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.replyWord
-import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.solve.Signature
 
@@ -18,11 +17,7 @@ internal class ContextCount(
     override fun call(call: NativeCall): Int {
         val limitWord = call.arg(1)
         val limit = if (call.kind(limitWord) == NativeCall.INT) call.intValue(limitWord).toInt() else Int.MAX_VALUE
-        val count =
-            branches.selected
-                .solve(call.termArg(0))
-                .take(limit)
-                .count()
+        val count = call.countSolutions(call.struct("context_check", intArrayOf(call.arg(0))), limit)
         return call.replyWord(2, call.int(count.toLong()))
     }
 }

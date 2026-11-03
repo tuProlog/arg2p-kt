@@ -3,7 +3,6 @@ package it.unibo.tuprolog.argumentation.core.primitives.context
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.reply
-import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.solve.Signature
 
@@ -11,5 +10,6 @@ import it.unibo.tuprolog.solve.Signature
 internal class ContextAbsent(
     private val branches: ContextBranches,
 ) : AbstractNativePrimitive(Signature("context_absent", 1)) {
-    override fun call(call: NativeCall): Int = call.reply(branches.selected.solve(call.termArg(0)).none())
+    override fun call(call: NativeCall): Int =
+        call.reply(call.countSolutions(call.struct("context_check", intArrayOf(call.arg(0))), 1) == 0)
 }

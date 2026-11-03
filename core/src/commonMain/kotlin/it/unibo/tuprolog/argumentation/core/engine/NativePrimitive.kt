@@ -145,6 +145,35 @@ interface NativeCall {
      */
     fun alternatives(resume: NativeResume)
 
+    /** A copy of the term [w] off the heap */
+    fun record(w: Int): Record
+
+    /** [record] onto the heap, its variables fresh */
+    fun recall(record: Record): Int
+
+    /**
+     * Enters [goal] resolved with [records] as the clauses of its predicate (their heads unified with its arguments,
+     * their bodies called), the goals of a body each wrapped by [wrap] (null: called as they are), as the goal of the
+     * primitive: the primitive returns what this returns
+     */
+    fun sourcedRecords(
+        goal: Int,
+        records: List<Record>,
+        wrap: GoalWrapper?,
+    ): Int
+
+    /** The list of the instances of [template] for every solution of [goal], as findall/3 (the registers kept) */
+    fun findall(
+        template: Int,
+        goal: Int,
+    ): Int
+
+    /** How many solutions [goal] has, counted up to [limit] (the registers kept) */
+    fun countSolutions(
+        goal: Int,
+        limit: Int,
+    ): Int
+
     companion object {
         const val FAIL = 0
         const val CONTINUE = 1

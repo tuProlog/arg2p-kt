@@ -3,8 +3,7 @@ package it.unibo.tuprolog.argumentation.core.primitives.context
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.intArg
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termArg
+import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.solve.Signature
@@ -20,14 +19,16 @@ internal class ContextAll(
 ) : AbstractNativePrimitive(Signature("context_all", arity)) {
     override fun call(call: NativeCall): Int {
         val arity = call.arity
-        val store =
+        val goal = call.arg(arity - 2)
+        val lookup =
             if (arity == 2) {
-                branches.selected
+                call.struct("context_check", intArrayOf(goal))
             } else {
-                branches.storeOf(call.intArg(0, signature).toInt()) ?: return NativeCall.FAIL
+                val branch = call.intArg(0, signature).toInt()
+                if (branches.storeOf(branch) == null) return NativeCall.FAIL
+                call.struct("context_check", intArrayOf(call.int(branch.toLong()), goal))
             }
-        val goal = call.termArg(arity - 2)
-        val instances = store.solve(goal).map { goal.apply(it) }.toList()
-        return call.replyTerms(arity - 1, instances)
+        val instances = call.findall(goal, lookup)
+        return call.replyWord(arity - 1, instances)
     }
 }

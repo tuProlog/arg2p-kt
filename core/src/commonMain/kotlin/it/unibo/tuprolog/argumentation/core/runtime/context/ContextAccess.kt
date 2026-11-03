@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.items
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
@@ -19,7 +20,10 @@ internal fun NativeCall.contextInstances(
     branch: Term? = null,
 ): List<Struct> {
     val index = branch?.let { it.asInteger()?.intValue?.toInt() ?: return emptyList() }
-    return contextLibrary.instances(goal, index).map { it.castToStruct() }
+    val g = word(goal)
+    val lookup =
+        if (index == null) struct("context_check", intArrayOf(g)) else struct("context_check", intArrayOf(int(index.toLong()), g))
+    return items(findall(g, lookup))!!.map { term(it).castToStruct() }
 }
 
 /** A new branch of the given one, made active (context_branch/2): false if there is no such branch */

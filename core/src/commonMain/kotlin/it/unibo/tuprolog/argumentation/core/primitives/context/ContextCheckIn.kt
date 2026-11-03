@@ -5,7 +5,6 @@ import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.intArg
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.argumentation.core.runtime.context.branchArgument
-import it.unibo.tuprolog.argumentation.core.runtime.context.branchLookup
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve

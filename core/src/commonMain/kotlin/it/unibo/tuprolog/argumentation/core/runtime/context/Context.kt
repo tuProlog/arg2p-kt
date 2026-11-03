@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
@@ -66,17 +67,8 @@ internal class Context : ArgLibrary {
     /** The term with identifier [identifier] (see [identifier]), if any */
     fun term(identifier: Int): Term? = branches.term(identifier)
 
-    /**
-     * The instances of goal in the given branch (the active one if null), as context_all: for the native primitives
-     * reading the context, without solving a goal (see [ContextAll.owner])
-     */
-    fun instances(
-        goal: Term,
-        branch: Int? = null,
-    ): kotlin.collections.List<Term> {
-        val store = if (branch == null) branches.selected else branches.storeOf(branch) ?: return emptyList()
-        return store.solve(goal).map { goal.apply(it) }.toList()
-    }
+    /** The stores on the words of [program] (the machine's) */
+    internal fun bind(program: Program) = branches.bind(program)
 
     override val alias = "prolog.argumentation.context"
 

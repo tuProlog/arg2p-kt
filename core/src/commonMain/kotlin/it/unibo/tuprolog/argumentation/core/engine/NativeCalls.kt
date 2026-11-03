@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.InstantiationError
@@ -134,6 +135,27 @@ fun NativeCall.answersMatching(
                     var ok = true
                     for (i in 0 until renamed.arity) {
                         if (!call.unify(call.arg(from + i), call.word(renamed[i]))) {
+                            ok = false
+                            break
+                        }
+                    }
+                    ok
+                }
+            }.iterator(),
+    )
+}
+
+/** An answer per substitution of [substitutions] (over the arguments as terms), the arguments unified under it */
+fun NativeCall.answersOf(substitutions: Iterator<Substitution>): Int {
+    val arguments = List(arity) { term(arg(it)) }
+    return attempts(
+        substitutions
+            .asSequence()
+            .map { substitution ->
+                { call: NativeCall ->
+                    var ok = true
+                    for (i in arguments.indices) {
+                        if (!call.unify(call.arg(i), call.word(arguments[i].apply(substitution)))) {
                             ok = false
                             break
                         }

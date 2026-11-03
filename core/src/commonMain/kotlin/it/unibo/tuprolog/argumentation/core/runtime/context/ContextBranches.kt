@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.core.Term
 
@@ -9,7 +10,15 @@ import it.unibo.tuprolog.core.Term
  */
 internal class ContextBranches {
     private var next: Int = 1
+    private var encoding: Program? = null
     private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore())
+
+    /** The stores on the words of [program]: those there, and those made from now on */
+    fun bind(program: Program) {
+        encoding = program
+        stores.values.forEach { it.bind(program) }
+    }
+
     private val identifiers: MutableMap<Term, Int> = mutableMapOf()
     private val terms: MutableList<Term> = mutableListOf()
 
@@ -37,7 +46,7 @@ internal class ContextBranches {
         active = 0
         next = 1
         stores.clear()
-        stores[0] = ClauseStore()
+        stores[0] = ClauseStore(encoding)
         identifiers.clear()
         terms.clear()
     }

@@ -3,10 +3,12 @@ package it.unibo.tuprolog.argumentation.core.engine.vm
 import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
+import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeResume
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.BIG
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FLT
@@ -179,9 +181,11 @@ internal class Machine(
         var pending: Exception? = null,
     )
 
-    // A lookup with clauses left to try
+    // A lookup with clauses left to try: terms, or records (the goals of their bodies wrapped)
     private class SourcedCall(
-        val clauses: List<Clause>,
+        val clauses: List<Clause>?,
+        val records: List<Record>?,
+        val wrap: GoalWrapper?,
     )
 
     // The arity of the native primitive being called, and the variables its [term]s gave the cells (one call)
@@ -236,6 +240,8 @@ internal class Machine(
     private var exprWords = IntArray(32)
     private var evalFailed = false
 
+    private val wComma = program.functorWord(",", 2)
+    private val wTrue = program.atomWord("true")
     private val fIfThen = program.functorWord("->", 2)
     private val fList = program.functor(".", 2)
     private val failGoal = program.atomWord("fail")
@@ -1596,44 +1602,69 @@ internal class Machine(
         goal: Int,
         result: Int,
     ): Int {
-        val pinnedBase = pinnedWordsTop
-        val pinnedTemplate = pinWord(template)
         val pinnedResult = pinWord(result)
+        solutions(template, goal, Int.MAX_VALUE)
+        val resultWord = pinnedWords[pinnedResult]
+        pinnedWordsTop = pinnedResult
+        return if (unify(resultWord, collectedList)) CONTINUE else FAILED
+    }
+
+    // The list the last nested run collected (see solutions)
+    private var collectedList = 0
+
+    // The solutions of [goal] in a nested run, up to [limit]: the instances of [template] (NONE for none) collected
+    // as a list left in [collectedList]; how many solutions were found
+    private fun solutions(
+        template: Int,
+        goal: Int,
+        limit: Int,
+    ): Int {
+        val pinnedBase = pinnedWordsTop
+        val pinnedTemplate = if (template == NONE) NONE else pinWord(template)
         // The barrier choice point: the state before the goal, resumed at the continuation of the call
         pushChoicePoint(BARRIER, 0, 0, 0, continuation)
         val cpBase = cpTop
         continuation = stopAddress
         cutBarrier = cpTop
         var found =
-            nested(cpBase) {
-                when (callTerm(goal)) {
-                    FAILED -> backtrack(cpBase) && run(cpBase)
-                    CONTINUE -> {
-                        pc = continuation
-                        run(cpBase)
+            limit > 0 &&
+                nested(cpBase) {
+                    when (callTerm(goal)) {
+                        FAILED -> backtrack(cpBase) && run(cpBase)
+                        CONTINUE -> {
+                            pc = continuation
+                            run(cpBase)
+                        }
+                        else -> run(cpBase)
                     }
-                    else -> run(cpBase)
                 }
-            }
         var bag = IntArray(64)
         var bagInfo = IntArray(64)
         var bagTop = 0
         var roots = IntArray(16)
         var count = 0
         while (found) {
-            if (count == roots.size) roots = roots.copyOf(count * 2)
-            val copier = Copier(bag, bagTop, bagInfo)
-            val root = copier.copy(deref(pinnedWords[pinnedTemplate]))
-            bag = copier.bag
-            bagInfo = copier.bagInfo
-            bagTop = copier.top
-            roots[count++] = root
-            found = nested(cpBase) { backtrack(cpBase) && run(cpBase) }
+            if (pinnedTemplate != NONE) {
+                if (count == roots.size) roots = roots.copyOf(count * 2)
+                val copier = Copier(bag, bagTop, bagInfo)
+                val root = copier.copy(deref(pinnedWords[pinnedTemplate]))
+                bag = copier.bag
+                bagInfo = copier.bagInfo
+                bagTop = copier.top
+                roots[count] = root
+            }
+            count++
+            found = count < limit && nested(cpBase) { backtrack(cpBase) && run(cpBase) }
         }
+        // (the run stopped at the limit leaves choice points above the barrier: cut, then the barrier restores)
+        cutTo(cpBase)
         restoreTop()
         popChoicePoint()
-        val resultWord = pinnedWords[pinnedResult]
         pinnedWordsTop = pinnedBase
+        if (pinnedTemplate == NONE) {
+            collectedList = program.emptyList
+            return count
+        }
         // The bag onto the heap, its addresses shifted
         val base = alloc(bagTop)
         for (i in 0 until bagTop) {
@@ -1649,7 +1680,64 @@ internal class Machine(
             heap[cell + 1] = list
             list = word(LIST, cell)
         }
-        return if (unify(resultWord, list)) CONTINUE else FAILED
+        collectedList = list
+        return count
+    }
+
+    override fun findall(
+        template: Int,
+        goal: Int,
+    ): Int {
+        val count = nestedForNative(template, goal, Int.MAX_VALUE)
+        return if (count >= 0) collectedList else collectedList
+    }
+
+    override fun countSolutions(
+        goal: Int,
+        limit: Int,
+    ): Int = nestedForNative(NONE, goal, limit)
+
+    // A nested run on behalf of the native call at hand: its registers and its state kept across the run (the
+    // natives the run calls have theirs)
+    private fun nestedForNative(
+        template: Int,
+        goal: Int,
+        limit: Int,
+    ): Int {
+        val arity = nativeArity
+        val functor = nativeFunctor
+        val names = nativeNames
+        val fresh = nativeFresh
+        val pinnedBase = pinnedWordsTop
+        for (i in 0 until arity) pinWord(regs[i])
+        val count = solutions(template, goal, limit)
+        for (i in 0 until arity) regs[i] = pinnedWords[pinnedBase + i]
+        pinnedWordsTop = pinnedBase
+        nativeArity = arity
+        nativeFunctor = functor
+        nativeNames = names
+        nativeFresh = fresh
+        return count
+    }
+
+    override fun record(w: Int): Record {
+        val copier = Copier(IntArray(16), 0, IntArray(16))
+        val root = copier.copy(w)
+        return Record(program, copier.bag.copyOf(copier.top), root, null)
+    }
+
+    override fun recall(record: Record): Int {
+        if (record.program !== program) return fromTerm(record.term, HashMap())
+        val words = record.words
+        val n = words.size
+        val base = alloc(n)
+        for (i in 0 until n) {
+            val x = words[i]
+            heap[base + i] = if (tag(x) == REF || tag(x) == STR || tag(x) == LIST) word(tag(x), payload(x) + base) else x
+            varInfo[base + i] = 0
+        }
+        val r = record.root
+        return if (tag(r) == REF || tag(r) == STR || tag(r) == LIST) word(tag(r), payload(r) + base) else r
     }
 
     // A step of a nested run (above [cpBase]): a ball thrown by it, outside the run loop (by the call starting it, by
@@ -1932,10 +2020,63 @@ internal class Machine(
             regs[0] = heap[a]
             regs[1] = heap[a + 1]
         }
-        val call = SourcedCall(clauses)
+        val call = SourcedCall(clauses, null, null)
         val index = calls.size
         calls.add(call)
         return trySourced(call, 0, goalArity, index)
+    }
+
+    override fun sourcedRecords(
+        goal: Int,
+        records: List<Record>,
+        wrap: GoalWrapper?,
+    ): Int {
+        if (records.isEmpty()) return FAILED
+        val g = deref(goal)
+        val goalArity = loadArguments(g)
+        val call = SourcedCall(null, records, wrap)
+        val index = calls.size
+        calls.add(call)
+        return trySourced(call, 0, goalArity, index)
+    }
+
+    // The arguments of the goal [g] (dereferenced) in the registers; its arity
+    private fun loadArguments(g: Int): Int =
+        when (tag(g)) {
+            STR -> {
+                val a = payload(g)
+                val n = program.arity(heap[a])
+                if (n > regs.size) regs = regs.copyOf(n * 2)
+                for (i in 0 until n) regs[i] = heap[a + 1 + i]
+                n
+            }
+            LIST -> {
+                val a = payload(g)
+                regs[0] = heap[a]
+                regs[1] = heap[a + 1]
+                2
+            }
+            else -> 0
+        }
+
+    // The body [w] with each of its goals wrapped by [wrap]: a conjunction rebuilt, `true` left alone
+    private fun wrapped(
+        w: Int,
+        wrap: GoalWrapper,
+    ): Int {
+        val d = deref(w)
+        if (tag(d) == STR && heap[payload(d)] == wComma) {
+            val a = payload(d)
+            val left = wrapped(heap[a + 1], wrap)
+            val right = wrapped(heap[a + 2], wrap)
+            val h = alloc(3)
+            heap[h] = wComma
+            heap[h + 1] = left
+            heap[h + 2] = right
+            return word(STR, h)
+        }
+        if (d == wTrue) return d
+        return wrap.wrap(this, d)
     }
 
     override fun inline(
@@ -2041,7 +2182,32 @@ internal class Machine(
         arity: Int,
         index: Int,
     ): Int {
-        val clauses = call.clauses
+        val records = call.records
+        if (records != null) {
+            if (from == records.size) return FAILED
+            if (from + 1 < records.size) pushChoicePoint(SOURCED, index, arity, 0, continuation, from + 1)
+            val record = records[from]
+            val w = recall(record)
+            val head = deref(if (record.isRule) heap[payload(w) + 1] else w)
+            when (tag(head)) {
+                STR -> {
+                    val a = payload(head)
+                    for (i in 0 until arity) if (!unify(heap[a + 1 + i], regs[i])) return FAILED
+                }
+                LIST -> {
+                    val a = payload(head)
+                    if (!unify(heap[a], regs[0]) || !unify(heap[a + 1], regs[1])) return FAILED
+                }
+                else -> Unit
+            }
+            if (!record.isRule) return CONTINUE
+            val body = heap[payload(w) + 2]
+            val wrap = call.wrap
+            val goal = if (wrap == null) body else wrapped(body, wrap)
+            cutBarrier = cpTop
+            return callTerm(goal)
+        }
+        val clauses = call.clauses!!
         if (from == clauses.size) return FAILED
         if (from + 1 < clauses.size) pushChoicePoint(SOURCED, index, arity, 0, continuation, from + 1)
         val clause = clauses[from]
