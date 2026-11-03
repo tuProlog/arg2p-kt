@@ -567,8 +567,22 @@ internal class Compiler(
             }
             is Atom -> program.emit(Op.GET_CONST, constant(term), register)
             is Cons -> {
-                program.emit(Op.GET_LIST2, register)
-                unifyTwoArguments(term.head, term.tail)
+                val head = term.head
+                val tail = term.tail
+                if (head is Var && tail is Var && head != tail && freshTemporary(head) && freshTemporary(tail)) {
+                    val h = vars[head]!!
+                    val t = vars[tail]!!
+                    h.seen = true
+                    h.register = temporary(h)
+                    t.seen = true
+                    t.register = temporary(t)
+                    program.emit(Op.GET_LIST_VV, register)
+                    program.emit(h.register, program.nameOperand(head))
+                    program.emit(t.register, program.nameOperand(tail))
+                } else {
+                    program.emit(Op.GET_LIST2, register)
+                    unifyTwoArguments(head, tail)
+                }
             }
             is Struct -> {
                 if (term.arity == 2) {
@@ -584,6 +598,12 @@ internal class Compiler(
     }
 
     private fun temporary(info: VarInfo): Int = if (info.preferred != -1) info.preferred else nextTemp++
+
+    // A temporary variable occurring more than once, not met yet
+    private fun freshTemporary(variable: Var): Boolean {
+        val info = vars[variable]!!
+        return !info.permanent && !info.seen && info.occurrences > 1
+    }
 
     // The two arguments of a list or of a structure of two, as the sub-instructions of the superinstruction
     // entering it (emitted after its opcode and operands), the compound ones through temporaries unified after

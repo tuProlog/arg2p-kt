@@ -66,6 +66,9 @@ internal object Op {
     const val ARITH_IS = 49
     const val ARITH_CMP = 50
 
+    // A list whose head and tail are both temporaries met first: the commonest list in a head
+    const val GET_LIST_VV = 51
+
     // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
     // constant
     const val T_X = 1

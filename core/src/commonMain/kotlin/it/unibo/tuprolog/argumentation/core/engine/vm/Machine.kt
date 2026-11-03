@@ -441,9 +441,24 @@ internal class Machine(
         x0: Int,
         y0: Int,
     ): Boolean {
+        // The plain cases first, without the stack: the same word, a variable on either side, two constants
+        val x1 = deref(x0)
+        val y1 = deref(y0)
+        if (x1 == y1) return true
+        val tx1 = tag(x1)
+        val ty1 = tag(y1)
+        if (tx1 == REF) {
+            if (ty1 == REF) bindVariables(payload(x1), payload(y1)) else bind(payload(x1), y1)
+            return true
+        }
+        if (ty1 == REF) {
+            bind(payload(y1), x1)
+            return true
+        }
+        if (tx1 != ty1 || (tx1 != STR && tx1 != LIST)) return false
         var sp = 0
-        pdl[sp++] = x0
-        pdl[sp++] = y0
+        pdl[sp++] = x1
+        pdl[sp++] = y1
         while (sp > 0) {
             val y = deref(pdl[--sp])
             val x = deref(pdl[--sp])
@@ -886,6 +901,28 @@ internal class Machine(
                 Op.GET_LIST -> {
                     if (!getList(regs[code[at + 1]])) return false
                     ip = at + 2
+                }
+                Op.GET_LIST_VV -> {
+                    val d = deref(regs[code[at + 1]])
+                    when (tag(d)) {
+                        REF -> {
+                            val h = alloc(2)
+                            heap[h] = ref(h)
+                            varInfo[h] = code[at + 3]
+                            heap[h + 1] = ref(h + 1)
+                            varInfo[h + 1] = code[at + 5]
+                            regs[code[at + 2]] = ref(h)
+                            regs[code[at + 4]] = ref(h + 1)
+                            bind(payload(d), word(LIST, h))
+                        }
+                        LIST -> {
+                            val a = payload(d)
+                            regs[code[at + 2]] = heap[a]
+                            regs[code[at + 4]] = heap[a + 1]
+                        }
+                        else -> return false
+                    }
+                    ip = at + 6
                 }
                 Op.GET_LIST2 -> {
                     if (!getList(regs[code[at + 1]])) return false
@@ -2312,8 +2349,9 @@ internal class Machine(
                 // engine reported them)
                 yield(
                     pins.entries
-                        .filter { (_, pin) -> heap[payload(pinnedWords[pin])].let { it != pinnedWords[pin] } }
-                        .sortedBy { (_, pin) -> queryBound[pin] }
+                        .filter { (variable, pin) ->
+                            !variable.isAnonymous && heap[payload(pinnedWords[pin])].let { it != pinnedWords[pin] }
+                        }.sortedBy { (_, pin) -> queryBound[pin] }
                         .associate { (variable, pin) -> variable to toTerm(pinnedWords[pin], names) },
                 )
                 found = runToSolution(first = false)
