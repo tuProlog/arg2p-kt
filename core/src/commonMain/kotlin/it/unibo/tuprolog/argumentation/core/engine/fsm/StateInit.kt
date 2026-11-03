@@ -2,6 +2,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.persistentOnly
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.utils.Cursor
 
@@ -26,7 +27,7 @@ data class StateInit(
                     choicePoints = null,
                     depth = 0,
                     step = 1,
-                    customData = context.customData.preservePersistent(),
+                    environment = context.environment.carried(customData = context.customData.persistentOnly()),
                 ).appendRulesAndChoicePoints(Cursor.empty()),
         )
 }

@@ -38,21 +38,18 @@ data class StateGoalSelection(
                     context.parent!!.let {
                         it.copy(
                             choicePoints = context.choicePoints,
-                            flags = context.flags,
-                            dynamicKb = context.dynamicKb,
-                            staticKb = context.staticKb,
                             substitution = substitution,
                             trimmedSize = if (trim) substitution.size else context.trimmedSize,
                             goals = it.goals.next, // go on with parent's goals
-                            procedure = it.procedure,
                             step = nextStep(),
-                            startTime = context.startTime,
-                            operators = context.operators,
-                            inputChannels = context.inputChannels,
-                            outputChannels = context.outputChannels,
-                            // The libraries of an inlined call only apply to its goal
-                            libraries = if (context.inlined) it.libraries else context.libraries,
-                            customData = context.customData,
+                            // The environment of the frame left (its side effects stay), with the libraries of
+                            // the parent where the frame was an inlined call: its libraries only apply to its goal
+                            environment =
+                                if (context.inlined) {
+                                    context.environment.carried(libraries = it.libraries, candidate = it.environment)
+                                } else {
+                                    context.environment
+                                },
                         )
                     },
                 )

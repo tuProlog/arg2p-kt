@@ -51,7 +51,7 @@ internal class MutablePrologSolver :
     override fun loadLibrary(library: Library) {
         updateContext {
             val newRuntime = libraries + library
-            copy(
+            withEnvironment(
                 libraries = newRuntime,
                 operators = operators + getAllOperators(newRuntime).toOperatorSet(),
             )
@@ -62,7 +62,7 @@ internal class MutablePrologSolver :
         updateContext {
             // arg2p: the library removed (tuProlog's solver added it again)
             val newRuntime = libraries - library.alias
-            copy(
+            withEnvironment(
                 libraries = newRuntime,
                 operators = getAllOperators(newRuntime, staticKb, dynamicKb).toOperatorSet(),
             )
@@ -71,7 +71,7 @@ internal class MutablePrologSolver :
 
     override fun setRuntime(libraries: Runtime) {
         updateContext {
-            copy(
+            withEnvironment(
                 libraries = libraries,
                 operators = getAllOperators(libraries, staticKb, dynamicKb).toOperatorSet(),
             )
@@ -91,7 +91,7 @@ internal class MutablePrologSolver :
 
     override fun resetStaticKb() {
         updateContext {
-            copy(
+            withEnvironment(
                 staticKb = Theory.empty(unificator),
                 operators = getAllOperators(libraries, dynamicKb).toOperatorSet(),
             )
@@ -111,7 +111,7 @@ internal class MutablePrologSolver :
 
     override fun resetDynamicKb() {
         updateContext {
-            copy(
+            withEnvironment(
                 dynamicKb = MutableTheory.empty(unificator),
                 operators = getAllOperators(libraries, staticKb).toOperatorSet(),
             )
@@ -120,7 +120,7 @@ internal class MutablePrologSolver :
 
     override fun assertA(clause: Clause) {
         updateContext {
-            copy(
+            withEnvironment(
                 dynamicKb = dynamicKb.assertA(clause),
                 operators = operators + listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -129,13 +129,13 @@ internal class MutablePrologSolver :
 
     override fun assertA(fact: Struct) {
         updateContext {
-            copy(dynamicKb = dynamicKb.assertA(fact))
+            withEnvironment(dynamicKb = dynamicKb.assertA(fact))
         }
     }
 
     override fun assertZ(clause: Clause) {
         updateContext {
-            copy(
+            withEnvironment(
                 dynamicKb = dynamicKb.assertZ(clause),
                 operators = operators + listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -144,14 +144,14 @@ internal class MutablePrologSolver :
 
     override fun assertZ(fact: Struct) {
         updateContext {
-            copy(dynamicKb = dynamicKb.assertZ(fact))
+            withEnvironment(dynamicKb = dynamicKb.assertZ(fact))
         }
     }
 
     override fun retract(clause: Clause): RetractResult<Theory> {
         val result = dynamicKb.retract(clause)
         updateContext {
-            copy(
+            withEnvironment(
                 dynamicKb = result.theory.toMutableTheory(),
                 operators = operators - listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -162,7 +162,7 @@ internal class MutablePrologSolver :
     override fun retract(fact: Struct): RetractResult<Theory> {
         val result = dynamicKb.retract(fact)
         updateContext {
-            copy(dynamicKb = result.theory.toMutableTheory())
+            withEnvironment(dynamicKb = result.theory.toMutableTheory())
         }
         return result
     }
@@ -170,7 +170,7 @@ internal class MutablePrologSolver :
     override fun retractAll(clause: Clause): RetractResult<Theory> {
         val result = dynamicKb.retractAll(clause)
         updateContext {
-            copy(
+            withEnvironment(
                 dynamicKb = result.theory.toMutableTheory(),
                 operators = operators - result.theory.getAllOperators().toOperatorSet(),
             )
@@ -181,7 +181,7 @@ internal class MutablePrologSolver :
     override fun retractAll(fact: Struct): RetractResult<Theory> {
         val result = dynamicKb.retractAll(fact)
         updateContext {
-            copy(dynamicKb = result.theory.toMutableTheory())
+            withEnvironment(dynamicKb = result.theory.toMutableTheory())
         }
         return result
     }
@@ -191,43 +191,43 @@ internal class MutablePrologSolver :
         value: Term,
     ) {
         updateContext {
-            copy(flags = flags.set(name, value))
+            withEnvironment(flags = flags.set(name, value))
         }
     }
 
     override fun setFlag(flag: Pair<String, Term>) {
         updateContext {
-            copy(flags = flags + flag)
+            withEnvironment(flags = flags + flag)
         }
     }
 
     override fun setFlag(flag: NotableFlag) {
         updateContext {
-            copy(flags = flags + flag)
+            withEnvironment(flags = flags + flag)
         }
     }
 
     override fun setStandardInput(stdIn: InputChannel<String>) {
         updateContext {
-            copy(inputChannels = inputChannels + (InputStore.STDIN to stdIn))
+            withEnvironment(inputChannels = inputChannels + (InputStore.STDIN to stdIn))
         }
     }
 
     override fun setStandardError(stdErr: OutputChannel<String>) {
         updateContext {
-            copy(outputChannels = outputChannels + (OutputStore.STDERR to stdErr))
+            withEnvironment(outputChannels = outputChannels + (OutputStore.STDERR to stdErr))
         }
     }
 
     override fun setStandardOutput(stdOut: OutputChannel<String>) {
         updateContext {
-            copy(outputChannels = outputChannels + (OutputStore.STDOUT to stdOut))
+            withEnvironment(outputChannels = outputChannels + (OutputStore.STDOUT to stdOut))
         }
     }
 
     override fun setWarnings(warnings: OutputChannel<Warning>) {
         updateContext {
-            copy(outputChannels = OutputStore.of(outputChannels, warnings))
+            withEnvironment(outputChannels = OutputStore.of(outputChannels, warnings))
         }
     }
 

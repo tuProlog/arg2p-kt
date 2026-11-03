@@ -21,7 +21,7 @@ data class StateEnd(
 
     override fun computeNext(): State =
         if (context.hasOpenAlternatives) {
-            StateBacktracking(context.copy(step = nextStep(), startTime = currentTime()))
+            StateBacktracking(context.copy(step = nextStep(), environment = context.environment.copy(startTime = currentTime())))
         } else {
             super.computeNext()
         }

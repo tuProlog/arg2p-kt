@@ -101,16 +101,18 @@ abstract class AbstractPrologSolver(
         outputChannels: OutputStore,
         trustKb: Boolean,
     ) = PrologExecutionContext(
-        unificator = unificator,
-        libraries = libraries,
-        flags = flags,
-        staticKb = if (trustKb) staticKb.toImmutableTheory() else Theory.empty(unificator),
-        dynamicKb = if (trustKb) dynamicKb.toMutableTheory() else MutableTheory.empty(unificator),
-        // arg2p: the operators the solver has just collected from the libraries, rather than collecting them again
-        operators = operators,
-        inputChannels = inputChannels,
-        outputChannels = outputChannels,
-        startTime = 0,
+        ExecutionEnvironment(
+            unificator = unificator,
+            libraries = libraries,
+            flags = flags,
+            staticKb = if (trustKb) staticKb.toImmutableTheory() else Theory.empty(unificator),
+            dynamicKb = if (trustKb) dynamicKb.toMutableTheory() else MutableTheory.empty(unificator),
+            // arg2p: the operators the solver has just collected from the libraries, rather than collecting them again
+            operators = operators,
+            inputChannels = inputChannels,
+            outputChannels = outputChannels,
+            startTime = 0,
+        ),
     )
 
     /**
@@ -125,20 +127,22 @@ abstract class AbstractPrologSolver(
     ): Sequence<Solution> {
         currentContext =
             PrologExecutionContext(
-                unificator = unificator,
-                query = goal,
-                libraries = libraries,
-                flags = flags,
-                staticKb = staticKb.toImmutableTheory(),
-                dynamicKb = dynamicKb.toMutableTheory(),
-                operators = operators,
-                inputChannels = inputChannels,
-                outputChannels = outputChannels,
-                customData = currentContext.customData,
-                theoryIndexes = currentContext.theoryIndexes,
+                ExecutionEnvironment(
+                    unificator = unificator,
+                    query = goal,
+                    libraries = libraries,
+                    flags = flags,
+                    staticKb = staticKb.toImmutableTheory(),
+                    dynamicKb = dynamicKb.toMutableTheory(),
+                    operators = operators,
+                    inputChannels = inputChannels,
+                    outputChannels = outputChannels,
+                    customData = currentContext.customData,
+                    theoryIndexes = currentContext.theoryIndexes,
+                    startTime = currentTimeInstant(),
+                    maxDuration = options.timeout,
+                ),
                 theoryVisible = theoryVisible,
-                startTime = currentTimeInstant(),
-                maxDuration = options.timeout,
             )
         return SolutionIterator(StateInit(currentContext), this::updateCurrentContextAfterStateTransition).asSequence()
     }
@@ -155,7 +159,9 @@ abstract class AbstractPrologSolver(
         // call, which only apply to its goal: the solver keeps those of the whole resolution, the root's
         currentContext =
             if (destination is EndState && context.scoped) {
-                context.pathToRoot.last().let { context.copy(libraries = it.libraries, theoryVisible = it.theoryVisible) }
+                context.root.let {
+                    context.copy(environment = context.environment.carried(libraries = it.libraries), theoryVisible = it.theoryVisible)
+                }
             } else {
                 context
             }
@@ -170,7 +176,7 @@ abstract class AbstractPrologSolver(
      * (see [TheoryIndexes])
      */
     internal fun shareTheoryIndexes(indexes: TheoryIndexes) {
-        currentContext = currentContext.copy(theoryIndexes = indexes)
+        currentContext = currentContext.copy(environment = currentContext.environment.copy(theoryIndexes = indexes))
     }
 
     /**

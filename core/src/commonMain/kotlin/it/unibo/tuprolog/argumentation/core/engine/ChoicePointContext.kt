@@ -2,7 +2,6 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.core.Rule
-import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.utils.Cursor
 
@@ -85,10 +84,17 @@ sealed class ChoicePointContext(
      */
     abstract fun backtrack(context: PrologExecutionContext): PrologExecutionContext
 
-    // The libraries to go on with, backtracking from the given context: the current ones, as libraries apply to the
-    // whole resolution, unless either context is within an inlined call, whose libraries only apply to its goal
-    protected fun librariesFor(context: PrologExecutionContext): Runtime =
-        executionContext!!.let { if (it.scoped || context.scoped) it.libraries else context.libraries }
+    // The environment to go on with, backtracking from the given context: the current one (its side effects stay,
+    // its ephemeral data dropped), with the libraries of the choice point if either context is within an inlined
+    // call, whose libraries only apply to its goal (libraries otherwise apply to the whole resolution)
+    protected fun environmentFor(context: PrologExecutionContext): ExecutionEnvironment {
+        val saved = executionContext!!
+        return context.environment.carried(
+            libraries = if (saved.scoped || context.scoped) saved.libraries else context.libraries,
+            customData = context.customData.withoutEphemeral(),
+            candidate = saved.environment,
+        )
+    }
 
     /** A choice point recording the remaining [it.unibo.tuprolog.solve.primitive.Solve.Response] alternatives of a primitive call. */
     data class Primitives(
@@ -108,15 +114,7 @@ sealed class ChoicePointContext(
                 executionContext!!.copy(
                     primitives = alternatives,
                     step = context.step + 1,
-                    startTime = context.startTime,
-                    flags = context.flags,
-                    dynamicKb = context.dynamicKb,
-                    staticKb = context.staticKb,
-                    operators = context.operators,
-                    inputChannels = context.inputChannels,
-                    outputChannels = context.outputChannels,
-                    libraries = librariesFor(context),
-                    customData = context.customData.discardEphemeral(),
+                    environment = environmentFor(context),
                     choicePoints = next,
                 )
             next.executionContext = resumed
@@ -142,15 +140,7 @@ sealed class ChoicePointContext(
                 executionContext!!.copy(
                     rules = alternatives,
                     step = context.step + 1,
-                    startTime = context.startTime,
-                    flags = context.flags,
-                    dynamicKb = context.dynamicKb,
-                    staticKb = context.staticKb,
-                    operators = context.operators,
-                    inputChannels = context.inputChannels,
-                    outputChannels = context.outputChannels,
-                    libraries = librariesFor(context),
-                    customData = context.customData.discardEphemeral(),
+                    environment = environmentFor(context),
                     choicePoints = next,
                 )
             next.executionContext = resumed

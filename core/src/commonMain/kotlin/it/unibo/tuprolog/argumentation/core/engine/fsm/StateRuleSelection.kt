@@ -128,13 +128,12 @@ data class StateRuleSelection(
 
     private fun Term.isCut(): Boolean = this.isAtom && this.castToAtom().value == "!"
 
+    // (arg2p: the frames walked by a loop, where a sequence of the path to the root was built at every cut)
     private fun PrologExecutionContext.computeCutLimit(magicCut: Boolean = false): CutLimit {
-        val cutLimit =
-            if (magicCut) {
-                this.pathToRoot.firstOrNull()
-            } else {
-                this.pathToRoot.firstOrNull { it.procedure?.isTransparentToCut() != true }
-            }
+        var cutLimit: PrologExecutionContext? = this
+        if (!magicCut) {
+            while (cutLimit != null && cutLimit.procedure?.isTransparentToCut() == true) cutLimit = cutLimit.parent
+        }
         return if (cutLimit == null) {
             CutLimit.None
         } else {
@@ -160,18 +159,20 @@ data class StateRuleSelection(
                 this
             }
             else -> {
-                val cutCandidates =
-                    pathToRoot.filter {
-                        it.executionContext!!.procedure == cutLimit.procedure
+                // The parent of the first choice point of the procedure within the depth to cut; none if the
+                // procedure has choice points but none within it; this one if it has none (arg2p: by a loop,
+                // where two sequences of the path to the root were built at every cut)
+                var candidate = false
+                var current: ChoicePointContext? = this
+                while (current != null) {
+                    val saved = current.executionContext!!
+                    if (saved.procedure == cutLimit.procedure) {
+                        if (saved.depth <= cutLimit.depthToCut) return current.parent
+                        candidate = true
                     }
-                if (cutCandidates.any()) {
-                    cutCandidates
-                        .firstOrNull {
-                            it.executionContext!!.depth <= cutLimit.depthToCut
-                        }?.parent
-                } else {
-                    this
+                    current = current.parent
                 }
+                if (candidate) null else this
             }
         }
 

@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.engine.fsm
 
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.argumentation.core.engine.AbstractPrologSolver
+import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -41,7 +42,7 @@ class TheoryIndexesTest {
     @Test
     fun theSolversOfAResolutionShareThem() {
         val indexes = TheoryIndexes()
-        val context = PrologExecutionContext(startTime = 0, theoryIndexes = indexes)
+        val context = PrologExecutionContext(ExecutionEnvironment(startTime = 0, theoryIndexes = indexes))
         assertSame(indexes, indexesOf(context.createSolver()))
         assertSame(indexes, indexesOf(context.createMutableSolver()))
     }

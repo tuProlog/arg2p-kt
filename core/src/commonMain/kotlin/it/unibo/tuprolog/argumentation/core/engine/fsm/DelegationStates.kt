@@ -33,7 +33,7 @@ internal object DelegationStates {
             frame
                 .copy(
                     goals = inlining.goal.toGoals(),
-                    libraries = inlining.libraries,
+                    environment = frame.environment.carried(libraries = inlining.libraries),
                     theoryVisible = inlining.theory,
                     inlined = true,
                     scoped = true,

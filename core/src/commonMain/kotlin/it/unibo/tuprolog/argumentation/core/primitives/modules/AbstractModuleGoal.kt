@@ -84,7 +84,7 @@ internal abstract class AbstractModuleGoal(
     // The libraries of the goals of the user: those of the root of the resolution (the libraries of a module call
     // only apply to its goal)
     private fun userLibraries(context: ExecutionContext): Runtime =
-        (context as? PrologExecutionContext)?.pathToRoot?.last()?.libraries ?: context.libraries
+        (context as? PrologExecutionContext)?.root?.libraries ?: context.libraries
 
     private companion object {
         /** The module of the theory of the user */

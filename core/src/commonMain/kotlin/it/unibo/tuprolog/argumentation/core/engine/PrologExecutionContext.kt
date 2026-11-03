@@ -8,7 +8,6 @@ import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -20,11 +19,9 @@ import it.unibo.tuprolog.solve.channel.InputStore
 import it.unibo.tuprolog.solve.channel.OutputStore
 import it.unibo.tuprolog.solve.data.CustomDataStore
 import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.getAllOperators
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.solve.sideffects.SideEffect
-import it.unibo.tuprolog.solve.toOperatorSet
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -46,7 +43,8 @@ import kotlin.collections.Set as KtSet
  * [choicePoints], the sibling data structure (see [ChoicePointContext]) recording still-open backtracking
  * alternatives.
  *
- * Most fields mirror [it.unibo.tuprolog.solve.ExecutionContext]; the ones specific to the prolog engine are:
+ * The fields of [it.unibo.tuprolog.solve.ExecutionContext] but [procedure] and [substitution] are read from the
+ * [environment] of the frame (arg2p, see [ExecutionEnvironment]); the ones specific to the prolog engine are:
  * - [query]/[goals]: the original query, and the cursor over the goals still to be proven in this frame.
  * - [rules]/[primitives]: the still-untried candidate clauses/primitive responses for the current goal, i.e. the
  *   frame's own view of the [choicePoints] entry recorded for it (if any).
@@ -63,27 +61,15 @@ import kotlin.collections.Set as KtSet
  * - [theoryIndexes]: the indexes of the immutable theories, kept by the solver and shared with the solvers the
  *   resolution creates (see [TheoryIndexes]).
  *
- * @throws IllegalArgumentException if [depth] and [parent] are inconsistent (`depth == 0` iff `parent == null`),
- * or if [startTime] or [maxDuration] are negative.
+ * @throws IllegalArgumentException if [depth] and [parent] are inconsistent (`depth == 0` iff `parent == null`).
  */
 data class PrologExecutionContext(
+    val environment: ExecutionEnvironment,
     override val procedure: Struct? = null,
-    override val unificator: Unificator = Unificator.default,
-    override val libraries: Runtime = Runtime.empty(),
-    override val flags: FlagStore = FlagStore.empty(),
-    override val staticKb: Theory = Theory.empty(unificator),
-    override val dynamicKb: MutableTheory = MutableTheory.empty(unificator),
-    override val operators: OperatorSet = getAllOperators(libraries, staticKb, dynamicKb).toOperatorSet(),
-    override val inputChannels: InputStore = InputStore.fromStandard(),
-    override val outputChannels: OutputStore = OutputStore.fromStandard(),
-    override val customData: CustomDataStore = CustomDataStore.empty(),
     override val substitution: Substitution.Unifier = Substitution.empty(),
-    val query: Struct = Truth.TRUE,
     val goals: Cursor<out Term> = Cursor.empty(),
     val rules: Cursor<out Rule> = Cursor.empty(),
     val primitives: Cursor<out Solve.Response> = Cursor.empty(),
-    override val startTime: TimeInstant,
-    override val maxDuration: TimeDuration = TimeDuration.MAX_VALUE,
     val choicePoints: ChoicePointContext? = null,
     val parent: PrologExecutionContext? = null,
     val depth: Int = 0,
@@ -93,13 +79,49 @@ data class PrologExecutionContext(
     val inlined: Boolean = false,
     val scoped: Boolean = false,
     val theoryVisible: Boolean = true,
-    val theoryIndexes: TheoryIndexes = TheoryIndexes(),
 ) : ExecutionContext {
     init {
         require((depth == 0 && parent == null) || (depth > 0 && parent != null))
-        require(startTime >= 0)
-        require(maxDuration >= 0)
     }
+
+    override val unificator: Unificator
+        get() = environment.unificator
+
+    override val libraries: Runtime
+        get() = environment.libraries
+
+    override val flags: FlagStore
+        get() = environment.flags
+
+    override val staticKb: Theory
+        get() = environment.staticKb
+
+    override val dynamicKb: MutableTheory
+        get() = environment.dynamicKb
+
+    override val operators: OperatorSet
+        get() = environment.operators
+
+    override val inputChannels: InputStore
+        get() = environment.inputChannels
+
+    override val outputChannels: OutputStore
+        get() = environment.outputChannels
+
+    override val customData: CustomDataStore
+        get() = environment.customData
+
+    override val startTime: TimeInstant
+        get() = environment.startTime
+
+    override val maxDuration: TimeDuration
+        get() = environment.maxDuration
+
+    val query: Struct
+        get() = environment.query
+
+    val theoryIndexes: TheoryIndexes
+        get() = environment.theoryIndexes
 
     /** Whether this is the outermost frame of a resolution (i.e. it has no [parent]). */
     val isRoot: Boolean
@@ -116,12 +138,18 @@ data class PrologExecutionContext(
     val pathToRoot: Sequence<PrologExecutionContext>
         get() = generateSequence(this) { it.parent }
 
+    /** The root of this frame (arg2p: by a loop, where [pathToRoot] built a sequence) */
+    val root: PrologExecutionContext
+        get() {
+            var frame = this
+            while (true) frame = frame.parent ?: return frame
+        }
+
     // arg2p: the values computed when first needed are kept in fields rather than lazy delegates, which a copy of the
     // context (made at almost every step) allocated anew, with their initializers, for each of them
     private var currentGoalValue: Term? = null
     private var currentGoalComputed = false
     private var interestingVariablesValue: KtSet<Var>? = null
-    private var logicStackTraceValue: KtList<Struct>? = null
 
     /** The current [goals] entry with [substitution] already applied, or `null` if there is none left to prove. */
     val currentGoal: Term?
@@ -162,12 +190,9 @@ data class PrologExecutionContext(
      */
     fun isVariableInteresting(variable: Var) = variable in interestingVariables
 
+    // (arg2p: built at each request, which only the errors make, rather than kept in a field of every frame)
     override val logicStackTrace: KtList<Struct>
-        get() =
-            logicStackTraceValue ?: pathToRoot
-                .map { it.procedure ?: Struct.of("?-", query) }
-                .toList()
-                .also { logicStackTraceValue = it }
+        get() = pathToRoot.map { it.procedure ?: Struct.of("?-", query) }.toList()
 
     override fun createSolver(
         unificator: Unificator,
@@ -227,15 +252,45 @@ data class PrologExecutionContext(
         customData: CustomDataStore,
     ): PrologExecutionContext =
         copy(
-            unificator = unificator,
-            libraries = libraries,
-            flags = flags,
-            staticKb = staticKb,
-            dynamicKb = dynamicKb.toMutableTheory(),
-            operators = operators,
-            inputChannels = inputChannels,
-            outputChannels = outputChannels,
-            customData = customData,
+            environment =
+                environment.copy(
+                    unificator = unificator,
+                    libraries = libraries,
+                    flags = flags,
+                    staticKb = staticKb,
+                    dynamicKb = dynamicKb.toMutableTheory(),
+                    operators = operators,
+                    inputChannels = inputChannels,
+                    outputChannels = outputChannels,
+                    customData = customData,
+                ),
+        )
+
+    /** This frame with the given values in its [environment] (arg2p: as a copy of the frame with them, before) */
+    fun withEnvironment(
+        unificator: Unificator = this.unificator,
+        libraries: Runtime = this.libraries,
+        flags: FlagStore = this.flags,
+        staticKb: Theory = this.staticKb,
+        dynamicKb: MutableTheory = this.dynamicKb,
+        operators: OperatorSet = this.operators,
+        inputChannels: InputStore = this.inputChannels,
+        outputChannels: OutputStore = this.outputChannels,
+        customData: CustomDataStore = this.customData,
+    ): PrologExecutionContext =
+        copy(
+            environment =
+                environment.copy(
+                    unificator = unificator,
+                    libraries = libraries,
+                    flags = flags,
+                    staticKb = staticKb,
+                    dynamicKb = dynamicKb,
+                    operators = operators,
+                    inputChannels = inputChannels,
+                    outputChannels = outputChannels,
+                    customData = customData,
+                ),
         )
 
     override fun apply(sideEffect: SideEffect): PrologExecutionContext = super.apply(sideEffect) as PrologExecutionContext
