@@ -13,6 +13,7 @@ import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
@@ -23,7 +24,7 @@ import it.unibo.tuprolog.theory.Theory
  * predicates: those of the theory of the user ([theory]) and, for each set of libraries a resolution runs with, those
  * of the clauses of the libraries and the primitives they provide (a [Scope]).
  */
-internal class Program {
+internal class Program() {
     val atoms = ArrayList<String>()
     private val atomIds = HashMap<String, Int>()
 
@@ -45,6 +46,44 @@ internal class Program {
 
     /** The highest register any clause uses */
     var maxRegister = 0
+
+    // The program this one was derived from, if any (see SharedPrograms): its symbols and its code up to
+    // [baseCodeTop] are this program's too, so the scopes it compiled by then serve here as they are
+    private var base: Program? = null
+    private var baseCodeTop = 0
+
+    // The scopes of a base program by the aliases of their libraries, each with the libraries (with clauses) it was
+    // compiled from and where its code ends
+    private val sharedScopes = HashMap<List<String>, Scope>()
+
+    /** A program starting as a copy of [base]: its symbols, its code, its scopes (compiled once, for every solver) */
+    constructor(base: Program) : this() {
+        // (the tables as the base has them: those the primary constructor made are its first entries too)
+        atoms.clear()
+        atoms.addAll(base.atoms)
+        atomIds.clear()
+        atomIds.putAll(base.atomIds)
+        functorNames.clear()
+        functorNames.addAll(base.functorNames)
+        functorArities.clear()
+        functorArities.addAll(base.functorArities)
+        functorIds.clear()
+        functorIds.putAll(base.functorIds)
+        floats.clear()
+        floats.addAll(base.floats)
+        floatIds.clear()
+        floatIds.putAll(base.floatIds)
+        bigs.clear()
+        bigs.addAll(base.bigs)
+        bigIds.clear()
+        bigIds.putAll(base.bigIds)
+        code = base.code.copyOf(maxOf(base.codeTop + (1 shl 12), 1 shl 14))
+        codeTop = base.codeTop
+        maxRegister = base.maxRegister
+        this.base = base
+        baseCodeTop = base.codeTop
+        theory.grow(functorNames.size)
+    }
 
     private val compiler = Compiler(this)
 
@@ -166,8 +205,15 @@ internal class Program {
         private val program: Program,
         val libraries: Runtime?,
         val id: Int,
+        predicates: Array<Predicate?> = arrayOfNulls(1 shl 8),
     ) {
-        var predicates = arrayOfNulls<Predicate>(1 shl 8)
+        var predicates = predicates
+
+        /** Where the code of the clauses compiled for the scope ends (a scope of a base program) */
+        var codeEnd = 0
+
+        /** The libraries with clauses the scope was compiled from, for another program to check before sharing it */
+        var sources: List<Library> = emptyList()
         private var primitives = arrayOfNulls<Primitive>(0)
         private var looked = BooleanArray(0)
 
@@ -202,6 +248,7 @@ internal class Program {
             val head = clause.head ?: return
             val functor = program.functor(head.functor, head.arity)
             val compiled = program.compiler.compile(clause, dynamic)
+            grow(program.functorNames.size)
             val predicate = predicates[functor] ?: Predicate(functor).also { predicates[functor] = it }
             predicate.add(compiled, onTop)
         }
@@ -244,6 +291,7 @@ internal class Program {
             val functors = functorNames.size
             theory.grow(functors)
             for (scope in scopes) scope.grow(functors)
+            for (scope in sharedScopes.values) scope.grow(functors)
             id
         }
     }
@@ -332,15 +380,57 @@ internal class Program {
         for (clause in clauses) theory.add(clause)
     }
 
-    /** The scope of [libraries]: made, with their clauses compiled, when first asked for */
+    /**
+     * The scope of [libraries]: made when first asked for, its clauses compiled, or taken from the base program when
+     * it compiled a scope of the same libraries (the clauses of a module are the same objects in every solver)
+     */
     fun scopeOf(libraries: Runtime): Scope {
         for (scope in scopes) if (scope.libraries === libraries) return scope
+        val base = base
+        if (base != null) {
+            val shared = base.sharedScopeOf(libraries)
+            if (shared != null && shared.codeEnd <= baseCodeTop) {
+                val scope = Scope(this, libraries, scopes.size + 1, shared.predicates)
+                scope.grow(functorNames.size)
+                scopes.add(scope)
+                return scope
+            }
+        }
         val scope = Scope(this, libraries, scopes.size + 1)
         scope.grow(functorNames.size)
         scopes.add(scope)
-        for (library in libraries.libraries) for (clause in library.clauses) scope.add(clause)
+        compileInto(scope, libraries)
         return scope
     }
+
+    private fun compileInto(
+        scope: Scope,
+        libraries: Runtime,
+    ) {
+        for (library in libraries.libraries) for (clause in library.clauses) scope.add(clause)
+        scope.codeEnd = codeTop
+        scope.sources = libraries.libraries.filter { it.clauses.iterator().hasNext() }
+    }
+
+    // The scope of a base program for [libraries]: the one compiled for the same aliases, if its libraries with
+    // clauses are the same objects, else one compiled now (under the lock of the shared programs: a base program is
+    // read by every solver derived from it)
+    private fun sharedScopeOf(libraries: Runtime): Scope? =
+        locked(SharedPrograms) {
+            val key = libraries.libraries.map { it.alias }
+            val known = sharedScopes[key]
+            val sources = libraries.libraries.filter { it.clauses.iterator().hasNext() }
+            if (known != null) {
+                if (known.sources.size == sources.size && known.sources.indices.all { known.sources[it] === sources[it] }) known else null
+            } else {
+                val scope = Scope(this, libraries, sharedScopes.size + 1)
+                scope.grow(functorNames.size)
+                // (registered first: the functors its clauses intern grow it with the others)
+                sharedScopes[key] = scope
+                compileInto(scope, libraries)
+                scope
+            }
+        }
 
     /** The scope of [id] (see [Scope.id]): the theory of the user for 0 */
     fun scope(id: Int): Scope = if (id == 0) theory else scopes[id - 1]
@@ -352,4 +442,20 @@ internal class Program {
         /** The first-argument key of a list cell */
         const val LIST_KEY = (0 shl Words.TAG_BITS) or LIST
     }
+}
+
+/**
+ * The base programs of the solvers, one per set of libraries (by their aliases): the clauses of the libraries are
+ * compiled once into it, and every solver with those libraries starts from a copy of it ([derived]), so a solver
+ * compiles its own theory alone
+ */
+internal object SharedPrograms {
+    private val bases = HashMap<List<String>, Program>()
+
+    /** A program for a solver with [libraries], derived from their base program */
+    fun derived(libraries: Runtime): Program =
+        locked(this) {
+            val base = bases.getOrPut(libraries.libraries.map { it.alias }) { Program() }
+            Program(base)
+        }
 }

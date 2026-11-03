@@ -41,6 +41,10 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
   a goal with records as the clauses of its predicate, or runs a nested run (`findall`, a count of solutions) for
   itself. The stores are bound to the solver's program when it is built, so their records copy to and from the heap
   without a term; the other solvers read them as terms.
+- `SharedPrograms`: the clauses of the libraries are compiled once per process, into a base program per set of
+  libraries; a solver's program starts as a copy of the base (its symbols and its code) and compiles the theory of
+  the user alone. A base program grows as modules are first called; a solver uses the scopes compiled before its
+  copy, and compiles the others itself.
 - `VmSolver` and `MutableVmSolver`: the tuProlog `Solver` over a program compiled from the static and the dynamic
   knowledge base (again when either changes through the solver); the solvers created for the sub-goals of a
   resolution share the program. The theory of the user is a module of its own: a predicate it defines is its, whatever

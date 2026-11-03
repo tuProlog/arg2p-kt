@@ -38,11 +38,8 @@ internal class ModuleDefines(
         val libraries = loader.modules.of(name) { Solve.Request(signature, listOf(Atom.of(name), indicator), context) }.libraries
         val clauses =
             defined.getOrPut(name) {
-                libraries
-                    .asTheory(context.unificator)
-                    .clauses
-                    .mapNotNull { it.head?.indicator }
-                    .toSet()
+                // (the clauses visited as they are: a theory indexed over all of them cost more than the first solve)
+                libraries.libraries.flatMap { library -> library.clauses.mapNotNull { it.head?.indicator } }.toSet()
             }
         val isDefined = libraries.hasPrimitive(Signature(predicate.value, arity)) || Indicator.of(predicate.value, arity) in clauses
         return call.reply(isDefined)
