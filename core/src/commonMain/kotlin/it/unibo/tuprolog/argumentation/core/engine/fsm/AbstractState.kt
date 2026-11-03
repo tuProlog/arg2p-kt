@@ -27,10 +27,14 @@ abstract class AbstractState(
      * states are confined to the thread of their resolution, so the lazy value needs no synchronization).
      */
     protected val executionTime: TimeInstant
-        get() = executionTimeValue ?: currentTime().also { executionTimeValue = it }
+        get() {
+            if (executionTimeValue < 0) executionTimeValue = currentTime()
+            return executionTimeValue
+        }
 
-    // Kept in a field rather than a lazy delegate, which each state allocated with its initializer
-    private var executionTimeValue: TimeInstant? = null
+    // Kept in a primitive field, not yet read while negative: a lazy delegate was allocated with each state, and a
+    // nullable field boxed the instant each primitive call reads
+    private var executionTimeValue: TimeInstant = -1
 
     /**
      * Whether [executionTime] is past [PrologExecutionContext.startTime] + [PrologExecutionContext.maxDuration]

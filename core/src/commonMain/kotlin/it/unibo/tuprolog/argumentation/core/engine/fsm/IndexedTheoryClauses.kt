@@ -4,7 +4,6 @@ import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
@@ -127,10 +126,12 @@ internal class FirstArgumentIndex(
         // The principal symbol of the first argument of a head, null if there is none or it is a variable
         fun Struct.firstArgumentSymbol(): Any? = if (arity == 0) null else symbol(this[0])
 
+        // A compound term by its functor alone (its string, not a signature built at every lookup): the clauses with
+        // the same functor and another arity are among the candidates, left out as the others not matching are
         fun symbol(term: Term): Any? =
             when {
                 term is Var -> null
-                term is Struct && term.arity > 0 -> Signature(term.functor, term.arity)
+                term is Struct && term.arity > 0 -> term.functor
                 else -> term
             }
     }

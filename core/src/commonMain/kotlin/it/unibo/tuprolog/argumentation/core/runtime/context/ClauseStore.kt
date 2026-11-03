@@ -154,7 +154,7 @@ internal class ClauseStore private constructor(
     )
 
     private class Node {
-        val children = HashMap<String, Node>()
+        val children = HashMap<Any, Node>()
         val here = LinkedHashSet<Long>()
 
         fun copy(): Node =
@@ -188,7 +188,7 @@ internal class ClauseStore private constructor(
 
         /** Ids of the stored arguments whose path is compatible with the given one */
         fun compatible(
-            symbols: List<String>,
+            symbols: List<Any>,
             complete: Boolean,
             target: MutableSet<Long>,
         ) {
@@ -411,23 +411,30 @@ internal class ClauseStore private constructor(
             return if (struct.isRule()) Rule.of(struct[0].castToStruct(), struct[1]) else Fact.of(struct)
         }
 
-        private fun symbol(term: Term): String =
+        // The symbols of a term in the path: a numeric term itself, the value of an atom, the functor of a compound
+        // term then its arity (as an Int, which no term is: nothing is built for them, where strings were)
+        private fun MutableList<Any>.addSymbols(term: Term) {
             when (term) {
-                is Numeric -> "#${term.decimalValue}"
-                is Atom -> "a:${term.value}"
-                is Struct -> "s:${term.functor}/${term.arity}"
+                is Numeric -> add(term)
+                is Atom -> add(term.value)
+                is Struct -> {
+                    add(term.functor)
+                    add(term.arity)
+                }
                 else -> error("unexpected term $term")
             }
+        }
 
         /** Preorder symbols of a term up to its first variable; complete when the term was fully visited */
-        private fun path(term: Term): Pair<List<String>, Boolean> {
-            val symbols = ArrayList<String>()
+        private fun path(term: Term): Pair<List<Any>, Boolean> {
+            val symbols = ArrayList<Any>()
             val stack = ArrayDeque<Term>().apply { addLast(term) }
+            var visited = 0
             while (stack.isNotEmpty()) {
-                if (symbols.size == MAX_PATH) return symbols to false
+                if (visited++ == MAX_PATH) return symbols to false
                 val current = stack.removeLast()
                 if (current is Var) return symbols to false
-                symbols.add(symbol(current))
+                symbols.addSymbols(current)
                 if (current is Struct && current !is Atom) {
                     for (i in current.arity - 1 downTo 0) stack.addLast(current[i])
                 }
