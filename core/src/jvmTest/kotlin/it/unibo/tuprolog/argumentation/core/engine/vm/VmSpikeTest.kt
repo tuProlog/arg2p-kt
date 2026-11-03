@@ -1,14 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
 import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
-import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
-import it.unibo.tuprolog.argumentation.core.engine.Delegation
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
-import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeResume
-import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.stdlib.DefaultBuiltins
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -76,19 +72,23 @@ class VmSpikeTest {
         Runtime.of(Library.of(alias = "test.module", clauses = Theory.parse("secret(42). secret(43).").clauses.toList()))
 
     private val inModule =
-        object : DelegatedCall {
-            override fun delegate(request: Solve.Request<ExecutionContext>): Delegation =
-                Inlining(request.arguments[0] as Struct, moduleLibraries)
+        object : NativePrimitive {
+            override fun call(call: NativeCall): Int = call.inline(call.arg(0), moduleLibraries, theoryVisible = false)
 
             override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()
         }
 
     private val lookedUp =
-        object : DelegatedCall {
-            override fun delegate(request: Solve.Request<ExecutionContext>): Delegation =
-                Sourcing(
-                    request.arguments[0] as Struct,
-                    ClauseSource { _, _ -> Theory.parse("stored(1). stored(2). stored(X) :- X = 3.").clauses.toList() },
+        object : NativePrimitive {
+            override fun call(call: NativeCall): Int =
+                call.sourced(
+                    call.arg(0),
+                    ClauseSource {
+                        _,
+                        _,
+                        ->
+                        Theory.parse("stored(1). stored(2). stored(X) :- X = 3.").clauses.toList()
+                    },
                 )
 
             override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> = throw UnsupportedOperationException()

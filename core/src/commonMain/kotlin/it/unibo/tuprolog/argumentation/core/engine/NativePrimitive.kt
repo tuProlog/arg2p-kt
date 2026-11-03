@@ -80,6 +80,12 @@ interface NativeCall {
         b: Int,
     ): Boolean
 
+    /** Whether [a] and [b] unify, neither bound */
+    fun unifiable(
+        a: Int,
+        b: Int,
+    ): Boolean
+
     fun atom(name: String): Int
 
     fun int(value: Long): Int

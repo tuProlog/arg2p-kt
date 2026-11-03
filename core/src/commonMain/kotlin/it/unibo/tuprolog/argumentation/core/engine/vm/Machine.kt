@@ -2,14 +2,11 @@ package it.unibo.tuprolog.argumentation.core.engine.vm
 
 import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
-import it.unibo.tuprolog.argumentation.core.engine.DelegatedCall
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
-import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeResume
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
-import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.BIG
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FLT
@@ -56,9 +53,9 @@ import it.unibo.tuprolog.core.List as LogicList
  * the trail and the registers of the machine to those a choice point saved.
  *
  * The predicates a goal is resolved with are those of the [scope] of the libraries the resolution runs with, and
- * those of the theory of the user when it is visible: a module call ([Inlining]) switches them for its goal and
- * back when the goal is done (a frame of its own holds the scope to restore). A lookup ([Sourcing]) resolves its
- * goal with clauses read when it is made.
+ * those of the theory of the user when it is visible: a module call ([NativeCall.inline]) switches them for its
+ * goal and back when the goal is done (a frame of its own holds the scope to restore). A lookup
+ * ([NativeCall.sourced]) resolves its goal with clauses read when it is made.
  *
  * An exception is a ball thrown through the code ([Raised]): the choice points are unwound to the nearest catch/3
  * ([CATCH]) whose catcher unifies with it, and its recovery runs in its place; a ball no catch takes halts the run.
@@ -1755,22 +1752,6 @@ internal class Machine(
         val goal = if (arity == 0) Atom.of(name) else Struct.of(name, arguments)
         val context: ExecutionContext = PrologExecutionContext(environmentSeen(), procedure = goal)
         val request = Solve.Request(Signature(name, arity), arguments, context)
-        if (primitive is DelegatedCall) {
-            val delegation =
-                try {
-                    primitive.delegate(request)
-                } catch (exception: Exception) {
-                    throw raised(exception)
-                }
-            if (delegation != null) {
-                val cells = HashMap<Var, Int>(names.size * 2)
-                for ((cell, variable) in names) cells[variable] = cell
-                return when (delegation) {
-                    is Inlining -> inline(delegation, cells)
-                    is Sourcing -> sourced(delegation, cells)
-                }
-            }
-        }
         val responses =
             try {
                 primitive.solve(request).iterator()
@@ -1901,6 +1882,20 @@ internal class Machine(
 
     override val emptyList: Int get() = program.emptyList
 
+    override fun unifiable(
+        a: Int,
+        b: Int,
+    ): Boolean {
+        // (every binding trailed, then undone)
+        val mark = trailTop
+        val barrier = heapBarrier
+        heapBarrier = Int.MAX_VALUE
+        val ok = unify(a, b)
+        undoTrail(mark)
+        heapBarrier = barrier
+        return ok
+    }
+
     override fun variable(): Int = ref(newVariable())
 
     override fun term(w: Int): Term = toTerm(w, nativeNames ?: HashMap<Int, Var>().also { nativeNames = it })
@@ -2016,11 +2011,6 @@ internal class Machine(
     // ---- delegated calls: module calls and lookups
 
     // The goal of [inlining] run with its libraries, in a frame of its own holding the scope to go back to
-    private fun inline(
-        inlining: Inlining,
-        cells: HashMap<Var, Int>,
-    ): Int = inlineWord(fromTerm(inlining.goal, cells), inlining.libraries, inlining.theory)
-
     // The goal [goal] entered against [libraries] (the theory of the user visible or not), the scope of the caller
     // restored by the frame allocated here when the goal returns
     private fun inlineWord(
@@ -2041,24 +2031,6 @@ internal class Machine(
             CONTINUE -> jump(continuation)
             else -> JUMPED
         }
-    }
-
-    // The goal of [sourcing] resolved with the clauses its source gives for it
-    private fun sourced(
-        sourcing: Sourcing,
-        cells: HashMap<Var, Int>,
-    ): Int {
-        val clauses = sourcing.source.clausesFor(sourcing.goal, environment!!.unificator)
-        if (clauses.isEmpty()) return FAILED
-        // The arguments of the goal looked up in the registers (those of the call were the primitive's)
-        val goal = sourcing.goal
-        val goalArity = goal.arity
-        if (goalArity > regs.size) regs = regs.copyOf(goalArity * 2)
-        for (i in 0 until goalArity) regs[i] = fromTerm(goal[i], cells)
-        val call = SourcedCall(clauses)
-        val index = calls.size
-        calls.add(call)
-        return trySourced(call, 0, goalArity, index)
     }
 
     // Tries the clauses of [call] from [from] on the goal in the registers: its head unified with the arguments,

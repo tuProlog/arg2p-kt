@@ -95,6 +95,14 @@ internal class TermCall(
         return true
     }
 
+    override fun unifiable(
+        a: Int,
+        b: Int,
+    ): Boolean =
+        request.context.unificator
+            .mgu(at(a), at(b))
+            .isSuccess
+
     override fun atom(name: String): Int = put(Atom.of(name))
 
     override fun int(value: Long): Int = put(Integer.of(value))

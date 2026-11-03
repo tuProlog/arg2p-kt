@@ -2,8 +2,8 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termArg
+import it.unibo.tuprolog.argumentation.core.engine.listArg
+import it.unibo.tuprolog.argumentation.core.engine.replyItems
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -12,13 +12,8 @@ import it.unibo.tuprolog.solve.Signature
  * rest of the list)
  */
 internal object RuleIds : AbstractNativePrimitive(Signature("ruleIds", 2)) {
-    override fun call(call: NativeCall): Int =
-        call.replyTerms(
-            1,
-            call
-                .termArg(0)
-                .asList()!!
-                .toList()
-                .mapNotNull { it.asList()?.toList()?.firstOrNull() },
-        )
+    override fun call(call: NativeCall): Int {
+        val ids = call.listArg(0, signature).filter { call.kind(it) == NativeCall.LIST }.map { call.argOf(it, 0) }
+        return call.replyItems(1, ids.toIntArray())
+    }
 }

@@ -5,8 +5,8 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.unify.Unificator
 
 /**
- * Where the engine finds the clauses it resolves a goal with (arg2p): the theories of the program, or the source of
- * a [Sourcing] delegation.
+ * Where the engine finds the clauses it resolves a goal with (arg2p): the theories of the program, or the source a
+ * native primitive enters a goal with ([NativeCall.sourced]).
  */
 fun interface ClauseSource {
     /**

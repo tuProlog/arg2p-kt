@@ -1,15 +1,16 @@
 package it.unibo.tuprolog.argumentation.core.primitives.context
 
-import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.argumentation.core.engine.attempts
 import it.unibo.tuprolog.argumentation.core.engine.items
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.StoreClauses
+import it.unibo.tuprolog.argumentation.core.runtime.context.StoreClauses.Companion.ofEach
 import it.unibo.tuprolog.argumentation.core.runtime.context.StoreLookup
+import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
 
@@ -25,10 +26,10 @@ internal fun NativeCall.lookup(
     i: Int,
 ): Int {
     val goal = term(arg(i))
-    return when (val delegation = StoreClauses.delegation(store, lookup, goal, libraries)) {
-        is Inlining -> inline(word(delegation.goal), delegation.libraries, delegation.theory)
-        is Sourcing -> sourced(arg(i), delegation.source)
-        null -> answersOf(store.solve(goal).iterator())
+    return when {
+        goal !is Struct || goal.isTruth -> answersOf(store.solve(goal).iterator())
+        goal is Tuple -> inline(word(lookup.ofEach(goal)), libraries, theoryVisible = false)
+        else -> sourced(arg(i), StoreClauses(store, lookup))
     }
 }
 

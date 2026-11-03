@@ -32,9 +32,7 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
   (the context is `PrologExecutionContext` over the `ExecutionEnvironment` of the resolution); its answer is unified
   back, its further answers left as a choice point holding the responses (an error computing one ahead is raised
   when the resolution backtracks into it), its side effects applied to the environment and mirrored into the
-  program; any exception of its code is a `system_error` `catch/3` can handle. A `DelegatedCall` (module calls,
-  context lookups) is run by the machine itself: an `Inlining` switches the scope of the libraries for its goal and
-  restores it through a frame of its own; a `Sourcing` tries the clauses its `ClauseSource` gives when called.
+  program; any exception of its code is a `system_error` `catch/3` can handle.
 - `NativePrimitive`: a primitive the machine runs on its words (through `NativeCall`: the arguments read,
   unified and built in place, a goal entered against other libraries, alternatives left for backtracking), skipping
   the facade; the module calls `::` and `:::` are native. A `Primitive` still, for the other solvers.
