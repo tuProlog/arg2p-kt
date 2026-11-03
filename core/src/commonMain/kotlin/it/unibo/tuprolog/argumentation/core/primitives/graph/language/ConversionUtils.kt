@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
+import it.unibo.tuprolog.argumentation.core.engine.fsm.signatureOf
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
 import it.unibo.tuprolog.core.Clause
@@ -9,7 +10,6 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.dsl.LogicProgrammingScope
 import it.unibo.tuprolog.dsl.logicProgramming
 import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.primitive.PrimitiveWrapper.Companion.ensuringArgumentIsVariable
 import it.unibo.tuprolog.solve.primitive.Solve
 
@@ -38,7 +38,7 @@ internal object ConversionUtils {
     private fun isPrologGoal(
         goal: Term,
         context: ExecutionContext,
-    ): Boolean = goal !is Struct || context.libraries.hasProtected(goal.extractSignature())
+    ): Boolean = goal !is Struct || context.libraries.hasProtected(goal.signatureOf)
 
     /** The identifier of the rule a Prolog clause stands for: from its position in the theory, the same at each conversion */
     fun ruleId(index: Int): String = "rule_$index"

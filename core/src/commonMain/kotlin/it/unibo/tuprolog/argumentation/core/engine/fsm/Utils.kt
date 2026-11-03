@@ -167,3 +167,9 @@ internal fun Term.collectVariables(into: MutableSet<Var>) {
         else -> Unit
     }
 }
+
+/**
+ * The signature of a callable (arg2p): built from its functor and arity alone, as extractSignature() builds the
+ * indicator term of the callable (an atom, an integer and their lazy values) only to read them back
+ */
+internal val Struct.signatureOf: Signature get() = Signature(functor, arity)

@@ -25,15 +25,30 @@ object Arg2pUnificator : Unificator by Unificator.default {
      * The most general unifier of two terms, as the default unificator computes it (strict equality of constants, a
      * variable bound to what it meets, the left one when two variables meet, no occurs check), but in a single
      * recursive pass: the default one rewrites a queue of equations, applying each new binding to all of them.
-     * The bindings are kept applied to each other, as in the resulting substitution.
+     * The bindings are kept as they are found, each read through the others, and applied to each other once at the
+     * end (a substitution built at every binding, applied to the others, made a unification quadratic).
      */
     private class Unification {
-        private val bindings = LinkedHashMap<Var, Term>()
+        // The bindings found so far, each variable to the term it met (a bound variable among them, followed on
+        // reading, see dereference): none until one is needed, as a goal matched against the heads of its clauses
+        // binds nothing most of the time
+        private var bindings: HashMap<Var, Term>? = null
 
+        /** The unifier: each binding with the others applied, so that applying it once applies them all */
         val result: Substitution
-            get() = Substitution.unifier(bindings)
+            get() {
+                val found = bindings ?: return Substitution.empty()
+                val resolved = LinkedHashMap<Var, Term>(found.size * 2)
+                for ((variable, term) in found) resolved[variable] = resolve(term, null)
+                return Substitution.unifier(resolved)
+            }
 
-        private fun dereference(term: Term): Term = if (term is Var) bindings[term] ?: term else term
+        // The term a variable stands for, through the variables bound to variables
+        private fun dereference(term: Term): Term {
+            var current = term
+            while (current is Var) current = bindings?.get(current) ?: return current
+            return current
+        }
 
         fun unify(
             term1: Term,
@@ -71,16 +86,38 @@ object Arg2pUnificator : Unificator by Unificator.default {
             variable: Var,
             term: Term,
         ): Boolean {
-            val value = if (bindings.isEmpty() || term.isGround) term else term.apply(Substitution.unifier(bindings))
-            if (bindings.isNotEmpty()) {
-                val binding = Substitution.of(variable, value)
-                for (entry in bindings.entries) {
-                    if (!entry.value.isGround) entry.setValue(entry.value.apply(binding))
-                }
-            }
-            bindings[variable] = value
+            (bindings ?: HashMap<Var, Term>(8).also { bindings = it })[variable] = term
             return true
         }
+
+        // [term] with the bindings applied, through the chains of bound variables; [path] the variables being
+        // resolved, a variable bound to a term holding it (there is no occurs check) left in it
+        private fun resolve(
+            term: Term,
+            path: ArrayList<Var>?,
+        ): Term =
+            when {
+                term.isGround -> term
+                term is Var -> {
+                    val bound = bindings!![term]
+                    if (bound == null || (path != null && term in path)) {
+                        term
+                    } else {
+                        val visiting = (path ?: ArrayList(4)).also { it.add(term) }
+                        resolve(bound, visiting).also { visiting.removeAt(visiting.size - 1) }
+                    }
+                }
+                term is Struct -> {
+                    var changed = false
+                    val arguments =
+                        List(term.arity) { i ->
+                            val argument = term[i]
+                            resolve(argument, path).also { if (it !== argument) changed = true }
+                        }
+                    if (changed) Struct.of(term.functor, arguments) else term
+                }
+                else -> term
+            }
     }
 
     /**

@@ -42,7 +42,7 @@ data class StatePrimitiveSelection(
                 }
                 goal.isStruct -> {
                     val goalStruct = goal.castToStruct()
-                    val signature = goalStruct.extractSignature()
+                    val signature = goalStruct.signatureOf
 
                     if (libraries.hasPrimitive(signature)) {
                         val childContext = createChild()

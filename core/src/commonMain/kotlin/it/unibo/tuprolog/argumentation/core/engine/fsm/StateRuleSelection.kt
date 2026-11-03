@@ -12,7 +12,6 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.exception.warning.MissingPredicate
-import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.solve.flags.LastCallOptimization
 import it.unibo.tuprolog.solve.flags.LastCallOptimization.ON
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -55,12 +54,10 @@ data class StateRuleSelection(
     companion object {
         private val catchSignature = Catch.signature
 
-        private val transparentToCut =
-            setOf(
-                Signature(",", 2),
-                Signature(";", 2),
-                Signature("->", 2),
-            )
+        // The control constructs a cut is transparent to: their functors, all of arity 2
+        private val transparentToCut = setOf(",", ";", "->")
+
+        private fun Struct.isTransparentToCut(): Boolean = arity == 2 && functor in transparentToCut
 
         private sealed class CutLimit {
             abstract val depthToCut: Int
@@ -136,7 +133,7 @@ data class StateRuleSelection(
             if (magicCut) {
                 this.pathToRoot.firstOrNull()
             } else {
-                this.pathToRoot.firstOrNull { it.procedure?.extractSignature() !in transparentToCut }
+                this.pathToRoot.firstOrNull { it.procedure?.isTransparentToCut() != true }
             }
         return if (cutLimit == null) {
             CutLimit.None
@@ -178,10 +175,13 @@ data class StateRuleSelection(
             }
         }
 
+    // (The procedure of the frame and the goal compared by functor and arity: their signatures would be built at
+    // every selection, through their indicator terms.)
     private fun PrologExecutionContext.isTailRecursive(currentGoal: Struct): Boolean =
         goals.next.isOver &&
             flags[LastCallOptimization] == ON &&
-            currentGoal.extractSignature().let { it == procedure?.extractSignature() && it != catchSignature }
+            procedure.let { it != null && it.functor == currentGoal.functor && it.arity == currentGoal.arity } &&
+            !(currentGoal.functor == catchSignature.name && currentGoal.arity == catchSignature.arity)
 
     override fun computeNext(): State =
         with(context) {
@@ -224,7 +224,7 @@ data class StateRuleSelection(
     private fun selectRules(clauses: List<Clause>): State {
         val rules: Cursor<out Rule> = RuleCursor.of(clauses)
         return when {
-            rules.isOver -> missingProcedure({ context.ruleSources() }, goal.extractSignature())
+            rules.isOver -> missingProcedure({ context.ruleSources() }, goal.signatureOf)
             context.isTailRecursive(goal) ->
                 StateRuleExecution(context.replaceWithChildAppendingRulesAndChoicePoints(rules, goal))
             else -> StateRuleExecution(context.createChildAppendingRulesAndChoicePoints(rules, goal))

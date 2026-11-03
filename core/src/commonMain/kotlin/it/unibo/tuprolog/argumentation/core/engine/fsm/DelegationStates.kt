@@ -5,7 +5,6 @@ import it.unibo.tuprolog.argumentation.core.engine.Inlining
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.Sourcing
 import it.unibo.tuprolog.core.Clause
-import it.unibo.tuprolog.solve.extractSignature
 import it.unibo.tuprolog.utils.Cursor
 import it.unibo.tuprolog.utils.cursor
 
@@ -55,7 +54,7 @@ internal object DelegationStates {
                 (goal.isAtom && goal.castToAtom().value == "!") ||
                 goal.functor in Clause.notableFunctors ||
                 ControlConstructs.of(goal) != null ||
-                inlining.libraries.hasPrimitive(goal.extractSignature())
+                inlining.libraries.hasPrimitive(goal.signatureOf)
         if (solvedOtherwise) return null
         val clauses = ProgramClauses.of(caller, inlining.libraries, inlining.theory).clausesFor(goal, caller.unificator)
         return FactResolution.of(caller, goal, clauses, step)

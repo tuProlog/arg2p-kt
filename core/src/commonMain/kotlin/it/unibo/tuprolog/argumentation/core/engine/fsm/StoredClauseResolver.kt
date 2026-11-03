@@ -15,7 +15,8 @@ import it.unibo.tuprolog.core.Var
  * parts that are not ground are copied.
  *
  * A variable of the clause meeting a term of the goal stands for that term, and a variable of the goal meeting a
- * term of the clause is bound to its copy: the bindings only bind variables of the goal, kept applied to each other.
+ * term of the clause is bound to its copy: the bindings only bind variables of the goal, applied to each other once
+ * the head is unified.
  *
  * An anonymous variable (`_`) never stands for another, nor is the value of one: a copy of a term (copy_term/2,
  * findall/3) gives each occurrence of an anonymous variable a variable of its own, which would part the places it
@@ -27,44 +28,57 @@ internal object StoredClauseResolver : ClauseResolver {
         goal: Term,
     ): Resolution? = Unification().resolve(rule, goal)
 
-    // The state of a single resolution
+    // The state of a single resolution: its maps are allocated when a binding needs them (most resolutions, of facts
+    // by ground goals, need none), and the bindings are read through each other and resolved once at the end (see
+    // Arg2pUnificator)
     private class Unification {
         // The variables of the clause, as the terms of the goal (or the fresh variables) they stand for
-        private val renamed = HashMap<Var, Term>()
+        private var renamed: HashMap<Var, Term>? = null
 
         // The fresh variables, standing for the variables of the clause not met by a term of the goal
-        private val fresh = HashSet<Var>()
+        private var fresh: HashSet<Var>? = null
 
-        // The bindings of the variables of the goal (and of the fresh ones), applied to each other
-        private val bindings = LinkedHashMap<Var, Term>()
-
-        private val unifier: Substitution.Unifier by lazy(LazyThreadSafetyMode.NONE) {
-            Substitution.unifier(bindings)
-        }
+        // The bindings of the variables of the goal (and of the fresh ones)
+        private var bindings: HashMap<Var, Term>? = null
 
         // The variables of the clause in the body, with the bindings applied
-        private val instantiated = HashMap<Var, Term>()
-
-        // The bindings of the variables of the goal
-        private val goalBindings: Substitution.Unifier
-            get() =
-                if (fresh.none { it in bindings }) {
-                    unifier
-                } else {
-                    Substitution.unifier(bindings.filterKeys { it !in fresh })
-                }
+        private var instantiated: HashMap<Var, Term>? = null
 
         fun resolve(
             rule: Rule,
             goal: Term,
         ): Resolution? =
             if (unifyWithClause(rule.head, goal)) {
-                Resolution(goalBindings, prepare(instantiate(rule.body)))
+                Resolution(goalBindings(), prepare(instantiate(rule.body)))
             } else {
                 null
             }
 
-        private fun dereference(term: Term): Term = if (term is Var) bindings[term] ?: term else term
+        // The bindings of the variables of the goal, each with the others applied, the fresh variables left out
+        private fun goalBindings(): Substitution.Unifier {
+            val found = bindings ?: return Substitution.empty()
+            val resolved = LinkedHashMap<Var, Term>(found.size * 2)
+            for ((variable, term) in found) {
+                if (fresh?.contains(variable) != true) resolved[variable] = resolve(term, null)
+            }
+            return Substitution.unifier(resolved)
+        }
+
+        private fun rename(
+            variable: Var,
+            term: Term,
+        ) {
+            (renamed ?: HashMap<Var, Term>(8).also { renamed = it })[variable] = term
+        }
+
+        private fun freshVariable(name: String): Var = Var.of(name).also { (fresh ?: HashSet<Var>(4).also { fresh = it }).add(it) }
+
+        // The term a variable of the goal stands for, through the variables bound to variables
+        private fun dereference(term: Term): Term {
+            var current = term
+            while (current is Var) current = bindings?.get(current) ?: return current
+            return current
+        }
 
         // Unifies a term of the clause with one of the goal
         private fun unifyWithClause(
@@ -74,7 +88,7 @@ internal object StoredClauseResolver : ClauseResolver {
             if (clauseTerm.isGround) return unify(clauseTerm, goalTerm)
             val goal = dereference(goalTerm)
             return when {
-                clauseTerm is Var -> renamed[clauseTerm]?.let { unify(it, goal) } ?: true.also { renamed[clauseTerm] = named(goal) }
+                clauseTerm is Var -> renamed?.get(clauseTerm)?.let { unify(it, goal) } ?: true.also { rename(clauseTerm, named(goal)) }
                 goal is Var -> bind(goal, copy(clauseTerm))
                 clauseTerm is Struct && goal is Struct ->
                     clauseTerm.arity == goal.arity &&
@@ -118,10 +132,7 @@ internal object StoredClauseResolver : ClauseResolver {
         // A term of the goal, or a named variable bound in place of an anonymous one
         private fun named(term: Term): Term =
             if (term is Var && term.isAnonymous) {
-                Var.of("_N").also {
-                    fresh.add(it)
-                    bind(term, it)
-                }
+                freshVariable("_N").also { bind(term, it) }
             } else {
                 term
             }
@@ -130,14 +141,7 @@ internal object StoredClauseResolver : ClauseResolver {
             variable: Var,
             term: Term,
         ): Boolean {
-            val value = if (bindings.isEmpty() || term.isGround) term else term.apply(Substitution.unifier(bindings))
-            if (bindings.isNotEmpty()) {
-                val binding = Substitution.of(variable, value)
-                for (entry in bindings.entries) {
-                    if (!entry.value.isGround) entry.setValue(entry.value.apply(binding))
-                }
-            }
-            bindings[variable] = value
+            (bindings ?: HashMap<Var, Term>(8).also { bindings = it })[variable] = term
             return true
         }
 
@@ -145,7 +149,7 @@ internal object StoredClauseResolver : ClauseResolver {
         private fun copy(term: Term): Term =
             when {
                 term.isGround -> term
-                term is Var -> renamed.getOrPut(term) { Var.of(nameOf(term)).also { fresh.add(it) } }
+                term is Var -> renamed?.get(term) ?: freshVariable(nameOf(term)).also { rename(term, it) }
                 term is Struct -> Struct.of(term.functor, List(term.arity) { copy(term[it]) })
                 else -> term
             }
@@ -154,12 +158,43 @@ internal object StoredClauseResolver : ClauseResolver {
         private fun instantiate(term: Term): Term =
             when {
                 term.isGround -> term
-                term is Var ->
-                    instantiated.getOrPut(term) {
-                        renamed[term]?.let { if (bindings.isEmpty()) it else it.apply(unifier) }
-                            ?: Var.of(nameOf(term)).also { renamed[term] = it }
-                    }
+                term is Var -> {
+                    val known = instantiated?.get(term)
+                    known ?: (
+                        renamed?.get(term)?.let { if (bindings == null) it else resolve(it, null) }
+                            ?: Var.of(nameOf(term)).also { rename(term, it) }
+                    ).also { (instantiated ?: HashMap<Var, Term>(8).also { instantiated = it })[term] = it }
+                }
                 term is Struct -> Struct.of(term.functor, List(term.arity) { instantiate(term[it]) })
+                else -> term
+            }
+
+        // [term], of the goal, with the bindings applied through the chains of bound variables; [path] the variables
+        // being resolved, a variable bound to a term holding it (there is no occurs check) left in it
+        private fun resolve(
+            term: Term,
+            path: ArrayList<Var>?,
+        ): Term =
+            when {
+                term.isGround -> term
+                term is Var -> {
+                    val bound = bindings?.get(term)
+                    if (bound == null || (path != null && term in path)) {
+                        term
+                    } else {
+                        val visiting = (path ?: ArrayList(4)).also { it.add(term) }
+                        resolve(bound, visiting).also { visiting.removeAt(visiting.size - 1) }
+                    }
+                }
+                term is Struct -> {
+                    var changed = false
+                    val arguments =
+                        List(term.arity) { i ->
+                            val argument = term[i]
+                            resolve(argument, path).also { if (it !== argument) changed = true }
+                        }
+                    if (changed) Struct.of(term.functor, arguments) else term
+                }
                 else -> term
             }
 
