@@ -7,7 +7,6 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
-import it.unibo.tuprolog.unify.Unificator
 
 /**
  * A copy of this term with fresh variables, one for each of its variables told apart by identity. [Term.freshCopy]
@@ -48,7 +47,7 @@ fun Term.withVariablesFixed(): Term =
  * constants (see [withVariablesFixed]); neither is bound
  */
 @InternalArg2pApi
-fun Term.subsumes(other: Term): Boolean = Unificator.default.match(this, other.withVariablesFixed(), true)
+fun Term.subsumes(other: Term): Boolean = Arg2pUnificator.match(this, other.withVariablesFixed())
 
 private fun renamed(
     term: Term,
