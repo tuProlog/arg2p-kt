@@ -87,11 +87,9 @@ internal class ClauseStore private constructor(
 
     fun assertA(term: Term) = assertA(Record.of(term))
 
-    /** [stored] removed, those that are here */
-    fun removeAll(stored: Collection<Stored>) {
-        if (stored.isEmpty()) return
-        val present = stored.filter { data.contains(it) }
-        if (present.isNotEmpty()) writable().removeAll(present)
+    /** [stored], candidates of this store just looked up, removed */
+    fun removeAll(stored: List<Stored>) {
+        if (stored.isNotEmpty()) writable().removeAll(stored)
     }
 
     /** The stored records whose head may unify with [head] (a record of the head alone), newest first */
@@ -277,12 +275,15 @@ internal class ClauseStore private constructor(
             items[size++] = stored
         }
 
-        fun without(removed: Set<Long>) {
+        // (the items of a bucket, as [removed], are by ascending identifiers)
+        fun without(removed: LongArray) {
             val kept = arrayOfNulls<Stored>(maxOf(4, size))
             var n = 0
+            var next = 0
             for (i in 0 until size) {
                 val stored = items[i]!!
-                if (stored.id !in removed) kept[n++] = stored
+                while (next < removed.size && removed[next] < stored.id) next++
+                if (next == removed.size || removed[next] != stored.id) kept[n++] = stored
             }
             items = kept
             size = n
@@ -302,7 +303,7 @@ internal class ClauseStore private constructor(
     private class Position(
         val index: Int,
     ) {
-        val byKey = HashMap<Int, Bucket>()
+        val byKey = WordTable<Bucket>()
         val variables = Bucket()
         var groundByHash: HashMap<Long, Bucket>? = null
         var nonGround: Bucket? = null
@@ -314,6 +315,23 @@ internal class ClauseStore private constructor(
             val ground = groundByHash ?: return
             val hash = groundHash(stored.record.program!!, stored.record.words, argument)
             if (hash == NOT_GROUND) nonGround!!.append(stored) else ground.getOrPut(hash) { Bucket() }.append(stored)
+        }
+
+        // The buckets holding [stored] without them ([ids], ascending, are their identifiers)
+        fun removeAll(
+            stored: List<Stored>,
+            ids: LongArray,
+        ) {
+            val affected = HashSet<Bucket>()
+            for (one in stored) {
+                val argument = argumentOf(one.record, index)
+                val key = topKey(one.record.words, argument)
+                (if (key == 0) variables else byKey[key])?.let { affected += it }
+                val ground = groundByHash ?: continue
+                val hash = groundHash(one.record.program!!, one.record.words, argument)
+                (if (hash == NOT_GROUND) nonGround else ground[hash])?.let { affected += it }
+            }
+            for (bucket in affected) bucket.without(ids)
         }
 
         fun buildGround(all: Bucket) {
@@ -332,6 +350,8 @@ internal class ClauseStore private constructor(
 
     private class Predicate(
         val arity: Int,
+        // The data that can change it: the other data holding it have it from a copy, and make their own before a change
+        val owner: Data,
     ) {
         var all = Bucket()
         var positions = arrayOfNulls<Position>(arity)
@@ -352,7 +372,7 @@ internal class ClauseStore private constructor(
             return found
         }
 
-        fun copy(): Predicate = Predicate(arity).also { it.all = all.copy() }
+        fun copy(newOwner: Data): Predicate = Predicate(arity, newOwner).also { it.all = all.copy() }
 
         fun add(stored: Stored) {
             derived.clear()
@@ -361,11 +381,19 @@ internal class ClauseStore private constructor(
             for (position in positions) position?.add(stored)
         }
 
-        fun removeAll(removed: Set<Long>) {
+        fun removeAll(stored: List<Stored>) {
             derived.clear()
             ids = null
+            val removed = LongArray(stored.size) { stored[it].id }
+            removed.sort()
+            // (most of the clauses gone: looked up again, the index costs no more than taking them out one by one)
+            val rebuild = stored.size * 4 > all.size
             all.without(removed)
-            positions = arrayOfNulls(arity)
+            if (rebuild) {
+                positions = arrayOfNulls(arity)
+            } else {
+                for (position in positions) position?.removeAll(stored, removed)
+            }
         }
 
         fun position(index: Int): Position =
@@ -376,29 +404,20 @@ internal class ClauseStore private constructor(
     }
 
     private class Data(
-        private val predicates: HashMap<Int, Predicate> = HashMap(),
+        private val predicates: WordTable<Predicate> = WordTable(),
         private var nextId: Long = 0,
     ) {
-        // Predicates this data can modify in place, the others are shared with the data it was copied from
-        // (shared data is never modified: a branch copies it before its first change)
-        private val owned = HashSet<Int>()
+        fun copy(): Data = Data(predicates.copy(), nextId)
 
-        fun copy(): Data = Data(HashMap(predicates), nextId)
-
-        fun isEmpty(): Boolean = predicates.values.all { it.all.size == 0 }
+        fun isEmpty(): Boolean = predicates.values().all { it.all.size == 0 }
 
         /** Every record, oldest first */
         fun all(): List<Record> =
-            predicates.values
+            predicates
+                .values()
                 .flatMap { predicate -> (0 until predicate.all.size).map { predicate.all.items[it]!! } }
                 .sortedBy { it.id }
                 .map { it.record }
-
-        fun contains(stored: Stored): Boolean {
-            val all = predicates[headKey(stored.record.words, stored.record.head)]?.all ?: return false
-            for (i in 0 until all.size) if (all.items[i] === stored) return true
-            return false
-        }
 
         /** The predicate stored under key, copied the first time this data modifies it */
         private fun writable(
@@ -406,8 +425,8 @@ internal class ClauseStore private constructor(
             arity: Int,
         ): Predicate {
             val predicate = predicates[key]
-            if (!owned.add(key) && predicate != null) return predicate
-            return (predicate?.copy() ?: Predicate(arity)).also { predicates[key] = it }
+            if (predicate?.owner === this) return predicate
+            return (predicate?.copy(this) ?: Predicate(arity, this)).also { predicates[key] = it }
         }
 
         fun add(record: Record) {
@@ -418,7 +437,7 @@ internal class ClauseStore private constructor(
         fun removeAll(stored: List<Stored>) {
             for ((key, group) in stored.groupBy { headKey(it.record.words, it.record.head) }) {
                 val record = group.first().record
-                writable(key, arityOf(record, record.head)).removeAll(group.mapTo(HashSet()) { it.id })
+                writable(key, arityOf(record, record.head)).removeAll(group)
             }
         }
 

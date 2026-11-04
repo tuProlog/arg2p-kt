@@ -175,6 +175,68 @@ class StoreResolutionTest {
         }
     }
 
+    // Removing keeps the index of a predicate, or drops it when most clauses go: the lookups answer the same either way
+    private fun afterRetract(
+        facts: Int,
+        retract: String,
+        goal: String,
+    ): String {
+        val solver = solverWithTheory("")
+        val goals =
+            "context_reset, " + (1..facts).joinToString(", ") { "context_assert(p($it, g($it), k))" } +
+                ", context_check(p(1, _, _)), context_check(p(_, g(1), _)), context_check(p(_, _, k)), " +
+                "$retract, findall(X, $goal, L)"
+        return solver
+            .solve(Struct.parse(goals, solver.operators))
+            .first()
+            .substitution.entries
+            .first { it.key.name == "L" }
+            .value
+            .toString()
+    }
+
+    @Test
+    fun lookupsAfterRemovingFewClauses() {
+        val retract = "context_retract(p(5, _, _))"
+        assertEquals("[]", afterRetract(40, retract, "context_check(p(5, X, _))"))
+        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, g(5), _))"))
+        assertEquals("[6]", afterRetract(40, retract, "context_check(p(X, g(6), _))"))
+        assertEquals("[g(6)]", afterRetract(40, retract, "context_check(p(6, X, _))"))
+        assertEquals(39, afterRetract(40, retract, "context_check(p(X, _, k))").split(",").size)
+    }
+
+    @Test
+    fun lookupsAfterRemovingMostClauses() {
+        val retract = "context_retract(p(_, _, k))"
+        assertEquals("[]", afterRetract(40, retract, "context_check(p(5, X, _))"))
+        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, g(6), _))"))
+        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, _, k))"))
+        assertEquals(
+            "[7]",
+            afterRetract(40, "$retract, context_assert(p(7, g(7), k))", "context_check(p(X, g(7), _))"),
+        )
+    }
+
+    @Test
+    fun aRemovalInABranchLeavesTheOthersAlone() {
+        val solver = solverWithTheory("")
+        val goals =
+            "context_reset, " + (1..40).joinToString(", ") { "context_assert(p($it))" } + ", context_check(p(1)), " +
+                "context_active(B0), context_branch(B0, B1), context_retract(p(3)), " +
+                "findall(X, (member(X, [2, 3]), context_check(B1, p(X))), L1), " +
+                "findall(X, (member(X, [2, 3]), context_check(B0, p(X))), L0), L = [L1, L0]"
+        assertEquals(
+            "[[2], [2, 3]]",
+            solver
+                .solve(Struct.parse(goals, solver.operators))
+                .first()
+                .substitution.entries
+                .first { it.key.name == "L" }
+                .value
+                .toString(),
+        )
+    }
+
     @Test
     fun identifiersUpToTheNamesOfVariables() {
         assertTrue(holds("context_id(f(X, Y, X), I), context_id(f(A, B, A), I)"))
