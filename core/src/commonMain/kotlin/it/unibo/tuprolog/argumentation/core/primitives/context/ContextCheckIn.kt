@@ -17,13 +17,15 @@ internal class ContextCheckIn(
     override fun call(call: NativeCall): Int {
         val branch = call.intArg(0, signature).toInt()
         val store = branches.storeOf(branch) ?: return NativeCall.FAIL
-        return call.lookup(store, branchLookup(branch), 1)
+        return call.lookupOrView(store, branchLookup(branch), 1, branch)
     }
 
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-        branches
-            .storeOf(request.branchArgument(0))
-            ?.solve(request.arguments[1])
-            ?.map { request.replyWith(it) }
-            ?: emptySequence()
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val store = branches.storeOf(request.branchArgument(0)) ?: return emptySequence()
+        return if (isView(request.arguments[1], store)) {
+            super.solve(request)
+        } else {
+            store.solve(request.arguments[1]).map { request.replyWith(it) }
+        }
+    }
 }

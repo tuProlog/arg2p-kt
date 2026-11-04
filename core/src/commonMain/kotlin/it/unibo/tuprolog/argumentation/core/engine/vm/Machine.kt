@@ -1917,6 +1917,7 @@ internal class Machine(
             varInfo[base + i] = 0
         }
         val r = record.root
+        if (record.functor != 0) heap[base + payload(r)] = record.functor
         return if (tag(r) == REF || tag(r) == STR || tag(r) == LIST) word(tag(r), payload(r) + base) else r
     }
 

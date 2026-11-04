@@ -12,15 +12,15 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * and writing them in the context; the terms are those of the data modules (argument, support, attack, label,
  * statement).
  *
- * Besides the graph itself (`argument/1`, `support/2`, `attack/4` terms), the context keeps:
- * - `arg(Id)`, the identifiers (`context_id`) of the arguments of the graph the labellings label; an argument is kept
- *   once, the term of its identifier (`context_term`), and the store looks `argument/1` up by the claim inside it;
+ * An argument is kept once, as the term of its identifier (`context_id`, `context_term`): `argument/1` holds that record,
+ * looked up by the claim inside it, and the rest of the graph refers to it by the identifier. The context keeps:
+ * - `arg(Id)`, the arguments of the graph the labellings label;
  * - `newConc(Tag, Conclusion)`, the conclusions of the arguments saved under a tag (the round of the graph builder);
- * - a compact copy of the graph by argument identifiers: `argInfo(Id, InfoId, Info)`, `supportId(IdA, IdB)`,
- *   `attackId(Type, IdA, IdB, IdOn)`. Loops over the graph go through it, so that resolution steps carry integers
- *   rather than whole arguments; InfoId identifies the info of the arguments (see the module argument), what the
- *   preferences weigh;
- * - the labels of the arguments and of the statements (see the module label).
+ * - the graph by these identifiers: `argInfo(Id, InfoId)`, `supportId(IdA, IdB)`, `attackId(Type, IdA, IdB, IdOn)`; InfoId
+ *   identifies the info of the argument (see the module argument), what the preferences weigh;
+ * - the labels of the arguments and of the statements (see the module label): `in(A)` shares the record of `argument(A)`.
+ *
+ * `support/2` and `attack/4`, looked up in the context, are answered from the identifiers, each argument read on its own.
  *
  * Only the attacks found are saved: an attack on an argument is an attack on every argument built on it as well, and
  * the attacks are read with those (attack/4, attackById/4, attacksById/2, attackIn/5, and the attack graph of the
@@ -65,7 +65,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_assert(arg(Id)),
             argument::info(Argument, Info),
             context_id(info(Info), InfoId),
-            context_assert(argInfo(Id, InfoId, Info)).
+            context_assert(argInfo(Id, InfoId)).
 
         %! saveArguments(+Tag, +Arguments)
         %  Each of Arguments saved under Tag, for its conclusion (see saveArgument/3).
@@ -131,7 +131,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentInfo(?Id, ?InfoId, ?Info)
         %  The argument with identifier Id has the info Info, with identifier InfoId.
         argumentInfo(Id, InfoId, Info) :-
-            context_check(argInfo(Id, InfoId, Info)).
+            context_check(argInfo(Id, InfoId)),
+            context_term(InfoId, info(Info)).
 
         %! newConclusion(?Tag, ?Conclusion)
         %  An argument for Conclusion was saved under Tag.
@@ -154,8 +155,6 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Supporter), IdSupporter),
             context_id(argument(Supported), IdSupported),
             context_absent(supportId(IdSupporter, IdSupported)),
-            support::new(Supporter, Supported, Support),
-            context_assert(Support),
             context_assert(supportId(IdSupporter, IdSupported)).
 
         %! saveSupports(+Supports)
@@ -171,8 +170,22 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! support(?Supporter, ?Supported)
         %  Supporter supports Supported.
         support(Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_check(Support).
+            nonvar(Supported), !,
+            context_stored_id(argument(Supported), IdSupported),
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+        support(Supporter, Supported) :-
+            nonvar(Supporter), !,
+            context_stored_id(argument(Supporter), IdSupporter),
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+        support(Supporter, Supported) :-
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+
+        supportOf(IdSupporter, Supporter, IdSupported, Supported) :-
+            context_term(IdSupporter, argument(Supporter)),
+            context_term(IdSupported, argument(Supported)).
 
         %! supports(-Supports)
         %  Supports are the (Supporter, Supported) pairs saved.
@@ -207,20 +220,28 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  As saveAttack/4, with the identifiers of the arguments known.
         saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
             context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_assert(Attack).
+            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
         %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
         %  is done for an attack not saved (an extended one, say).
         removeAttack(Type, Attacker, Attacked, On) :-
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_retract(Attack),
             context_id(argument(Attacker), IdAttacker),
             context_id(argument(Attacked), IdAttacked),
             context_id(argument(On), IdOn),
             context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+
+        %! attackFound(?Type, ?Attacker, ?Attacked, ?On)
+        %  The attack is saved, as it was found (attack/4 extends it): what context_check(attack(Type, Attacker, Attacked, On))
+        %  answers, as context_check(support(Supporter, Supported)) support/2.
+        attackFound(Type, Attacker, Attacked, On) :-
+            context_check(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
+
+        attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
+            context_term(IdAttacker, argument(Attacker)),
+            context_term(IdAttacked, argument(Attacked)),
+            context_term(IdOn, argument(On)).
 
         %! attack(?Type, ?Attacker, ?Attacked, ?On)
         %  Attacker attacks Attacked on On, with an attack of Type: saved, or extended to Attacked from On, which it is
@@ -320,8 +341,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  Statement is labelled with Label, by the identifier of the label as well (see statementLabelled/2).
         labelStatement(Label, Statement) :-
             label::statement(Label, Statement, Fact),
-            context_assert(Fact),
             context_id(Fact, Key),
+            context_assert_id(Key),
             context_assert(statementKey(Key)).
 
         %! statementLabel(?Label, ?Statement)
@@ -355,8 +376,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         %! supportIn(+Branch, ?Supporter, ?Supported)
         supportIn(Branch, Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_check(Branch, Support).
+            context_check(Branch, supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+
+        %! attackFoundIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
+        attackFoundIn(Branch, Type, Attacker, Attacked, On) :-
+            context_check(Branch, attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
         %! attackIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
         attackIn(Branch, Type, Attacker, Attacked, On) :-

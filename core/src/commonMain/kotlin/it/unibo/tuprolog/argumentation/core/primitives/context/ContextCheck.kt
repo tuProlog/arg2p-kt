@@ -14,8 +14,12 @@ import it.unibo.tuprolog.solve.primitive.Solve
 internal class ContextCheck(
     private val branches: ContextBranches,
 ) : AbstractNativePrimitive(Signature("context_check", 1)) {
-    override fun call(call: NativeCall): Int = call.lookup(branches.selected, branchLookup(branches.active), 0)
+    override fun call(call: NativeCall): Int = call.lookupOrView(branches.selected, branchLookup(branches.active), 0, null)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =
-        branches.selected.solve(request.arguments[0]).map { request.replyWith(it) }
+        if (isView(request.arguments[0], branches.selected)) {
+            super.solve(request)
+        } else {
+            branches.selected.solve(request.arguments[0]).map { request.replyWith(it) }
+        }
 }

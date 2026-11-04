@@ -37,7 +37,12 @@ class Record internal constructor(
     /** The root word, relative to [words] */
     internal val root: Int,
     source: Term?,
+    /** The functor of the root in place of the one in [words] (see [named]), 0 for that one */
+    internal val functor: Int = 0,
 ) {
+    /** The identifier of the record, as the identifiers of a context know it (see `context_id/2`); -1 for none */
+    internal var identifier: Int = -1
+
     /** The term, decoded once */
     val term: Term by lazy(LazyThreadSafetyMode.NONE) { source ?: decode(root, HashMap()) }
 
@@ -60,6 +65,9 @@ class Record internal constructor(
 
     /** The body: `true` for a fact (relative word; only with a program) */
     internal val body: Int get() = if (isRule) words[payload(root) + 2] else program!!.trueWord
+
+    /** The same words under the functor [functor], of the same arity: the fact `other(A)` of the fact `name(A)`, not copied */
+    internal fun named(functor: Int): Record = Record(program, words, root, null, functor)
 
     /**
      * The record as a key: the same for two terms up to the names of their variables, however they are laid out (in the
@@ -84,8 +92,9 @@ class Record internal constructor(
             FLT -> program.floats[payload(w)]
             STR -> {
                 val a = payload(w)
-                val n = program.arity(words[a])
-                Struct.of(program.functorName(words[a]), List(n) { decode(words[a + 1 + it], variables) })
+                val f = if (functor != 0 && w == root) functor else words[a]
+                val n = program.arity(f)
+                Struct.of(program.functorName(f), List(n) { decode(words[a + 1 + it], variables) })
             }
             else -> {
                 val heads = ArrayList<Term>()

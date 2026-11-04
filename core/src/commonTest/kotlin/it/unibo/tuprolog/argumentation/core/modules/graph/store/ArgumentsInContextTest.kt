@@ -96,6 +96,93 @@ class ArgumentsInContextTest {
     }
 
     private val argument = "[[r], r, [p(a)], [], [[], [], []]]"
+    private val other = "[[s, r], s, [q(a)], [p(a)], [[s], [s, r], []]]"
+
+    @Test
+    fun aLabelSharesTheRecordOfItsArgument() {
+        assertTrue(
+            holds(
+                """
+                A = $argument,
+                graphStore::saveArgument([p(a)], A),
+                graphStore::argumentId(A, I),
+                graphStore::labelArgument(in, A, I),
+                context_check(in(B)), B == A,
+                context_check(argument(C)), C == A,
+                \+ context_check(out(_)),
+                context_active(Branch),
+                context_branch(Branch, _),
+                graphStore::unlabelArguments(in),
+                \+ context_check(in(_)),
+                context_check(Branch, in(D)), D == A,
+                context_check(argument(_))
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun theRelationsOfTheGraphAreAnsweredFromTheIdentifiers() {
+        assertTrue(
+            holds(
+                """
+                A = $argument, B = $other,
+                graphStore::saveArgument([p(a)], A),
+                graphStore::saveArgument([q(a)], B),
+                graphStore::saveSupport(A, B),
+                graphStore::saveAttack(rebut, A, B, B),
+                context_check(support(A, B)),
+                context_check(support(X, B)), X == A,
+                context_check(support(A, Y)), Y == B,
+                \+ context_check(support(B, A)),
+                context_check(attack(rebut, A, B, B)),
+                context_check(attack(T, _, _, _)), T == rebut,
+                \+ context_check(attack(undercut, _, _, _)),
+                context_active(Branch),
+                context_branch(Branch, _),
+                graphStore::removeAttack(rebut, A, B, B),
+                \+ context_check(attack(_, _, _, _)),
+                context_check(Branch, attack(rebut, A, B, B)),
+                context_check(Branch, support(A, B))
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun aRelationAssertedAsClausesIsLookedUpAsClauses() {
+        assertTrue(holds("context_assert(support(x, y)), context_check(support(x, Y)), Y == y, \\+ context_check(support(y, _))"))
+    }
+
+    @Test
+    fun theInfoOfAnArgumentByItsIdentifier() {
+        assertTrue(
+            holds(
+                "A = $argument, graphStore::saveArgument([p(a)], A), graphStore::argumentId(A, I), " +
+                    "graphStore::argumentInfo(I, K, [[], [], []]), context_term(K, info([[], [], []]))",
+            ),
+        )
+    }
+
+    @Test
+    fun aStatementLabelIsKeptOnce() {
+        assertTrue(
+            holds(
+                "graphStore::labelStatement(in, [p(X)]), graphStore::statementLabel(in, [p(a)]), " +
+                    "graphStore::statementLabelled(in, [p(Y)]), \\+ graphStore::statementLabelled(in, [p(a)]), context_check(statIn([p(_)]))",
+            ),
+        )
+    }
+
+    @Test
+    fun theIdentifierOfAStoredFact() {
+        assertTrue(
+            holds(
+                "A = $argument, graphStore::saveArgument([p(a)], A), graphStore::argumentId(A, I), " +
+                    "context_stored_id(argument(_), J), J == I, \\+ context_stored_id(argument(foo), _), context_assert(k(1)), \\+ context_stored_id(k(_), _)",
+            ),
+        )
+    }
 
     @Test
     fun savedOnceAndFoundByItsConclusionAndIdentifier() {

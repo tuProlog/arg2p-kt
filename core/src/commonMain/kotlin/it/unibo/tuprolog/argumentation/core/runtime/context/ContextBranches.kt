@@ -134,6 +134,7 @@ internal class ContextBranches {
     fun identifier(record: Record): Int {
         val encoded = encoded(record)
         return identifiers.getOrPut(encoded.key) {
+            encoded.identifier = records.size
             records += encoded
             records.size - 1
         }

@@ -22,6 +22,7 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextLast
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextMatching
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextReset
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextStoredId
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTerm
@@ -103,6 +104,7 @@ internal class Context : ArgLibrary {
                 ContextTerm(branches),
                 ContextUnifiable(branches),
                 ContextBy(branches),
+                ContextStoredId(branches),
                 ContextMatching(branches),
                 ContextAbsent(branches),
                 ContextCount(branches),

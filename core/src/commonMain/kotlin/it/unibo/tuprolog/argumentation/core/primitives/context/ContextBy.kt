@@ -85,3 +85,29 @@ internal class ContextMatching(
         )
     }
 }
+
+/** context_stored_id(+Fact, -Id): Id is the identifier of a fact of the active branch that unifies with Fact, which it does not bind */
+internal class ContextStoredId(
+    private val branches: ContextBranches,
+) : AbstractNativePrimitive(Signature("context_stored_id", 2)) {
+    override fun call(call: NativeCall): Int {
+        val pattern = call.arg(0)
+        if (call.kind(pattern) == NativeCall.VAR) return NativeCall.FAIL
+        val store = branches.selected
+        val matching =
+            if (call is Machine) {
+                call.storeMatching(pattern, store)
+            } else {
+                store.candidates(call.record(pattern)).filter { stored ->
+                    !stored.record.isRule && call.unifiable(pattern, call.recall(stored.record))
+                }
+            }
+        return call.attempts(
+            matching
+                .asSequence()
+                .filter { it.record.identifier >= 0 }
+                .map { stored -> { c: NativeCall -> c.unify(c.arg(1), c.int(stored.record.identifier.toLong())) } }
+                .iterator(),
+        )
+    }
+}

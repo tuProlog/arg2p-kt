@@ -135,19 +135,13 @@ internal class ClauseStore private constructor(
         assertA(Record(program, intArrayOf(program.functorWord(name, 1), program.intWord(id.toLong())), word(STR, 0), null))
     }
 
-    /** The fact `name(A)` added, for [fact], the fact `other(A)`: what A is, is not read */
-    fun assertArgumentOf(
+    /** The fact `name(A)` added, for [fact], the fact `other(A)`, its words shared: what A is, is not read */
+    fun assertNamed(
         name: String,
         fact: Record,
     ) {
         val program = encoding()
-        val record = Record.encoded(fact, program)
-        val argument = record.words[payload(record.head) + 1]
-        val n = record.words.size
-        val words = record.words.copyOf(n + 2)
-        words[n] = program.functorWord(name, 1)
-        words[n + 1] = argument
-        assertA(Record(program, words, word(STR, n), null))
+        assertA(Record.encoded(fact, program).named(program.functorWord(name, 1)))
     }
 
     // ---- the term API
@@ -490,11 +484,11 @@ internal class ClauseStore private constructor(
         }
 
         fun add(record: Record) {
-            writable(headKey(record.words, record.head), record).add(Stored(nextId++, record))
+            writable(keyOf(record), record).add(Stored(nextId++, record))
         }
 
         fun removeAll(stored: List<Stored>) {
-            for ((key, group) in stored.groupBy { headKey(it.record.words, it.record.head) }) {
+            for ((key, group) in stored.groupBy { keyOf(it.record) }) {
                 writable(key, group.first().record).removeAll(group)
             }
         }
@@ -634,6 +628,8 @@ internal class ClauseStore private constructor(
                 LIST -> Program.LIST_KEY
                 else -> head
             }
+
+        private fun keyOf(record: Record): Int = if (record.functor != 0) record.functor else headKey(record.words, record.head)
 
         private fun arityOf(
             record: Record,

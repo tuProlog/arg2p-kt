@@ -66,7 +66,7 @@ internal fun NativeCall.labelArguments(
     val idFact = idFact(label)
     for (position in positions) {
         val id = arguments.ids[position]
-        store.assertArgumentOf(label, context.record(id)!!)
+        store.assertNamed(label, context.record(id)!!)
         store.assertId(idFact, id)
     }
 }

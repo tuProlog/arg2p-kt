@@ -18,7 +18,7 @@ class GraphStoreModuleTest {
         assertTrue(module.holds("context_check(argument($a))"))
         assertTrue(module.holds("graphStore::argumentFor([a], X), X == $a"))
         assertTrue(module.holds("context_id(argument($a), Id), graphStore::argumentById(Id, X), X == $a"))
-        assertTrue(module.holds("context_id(argument($a), Id), context_check(argInfo(Id, _, [[r1], [r1], []]))"))
+        assertTrue(module.holds("context_id(argument($a), Id), graphStore::argumentInfo(Id, _, [[r1], [r1], []])"))
         assertTrue(module.holds("context_check(newConc(tag, [a]))"))
     }
 
