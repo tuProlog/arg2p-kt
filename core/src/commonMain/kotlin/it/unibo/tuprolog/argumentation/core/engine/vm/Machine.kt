@@ -752,8 +752,15 @@ internal class Machine(
         key0: Int,
         source: Int,
     ): Boolean {
-        val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
         val n = predicate.size
+        // (one clause: its head decides, with no key to look at)
+        if (n == 1 && from == 0) {
+            cutBarrier = barrier
+            if (ClauseObservers.active) ClauseObservers.resolved(predicate.clauses[0].source)
+            pc = predicate.starts[0]
+            return true
+        }
+        val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
         if (key != 0 && n >= Program.Predicate.INDEXED_FROM) return tryIndexed(predicate, from, arity, barrier, key, source)
         // The clauses in order, over the flat tables: the first candidate by its first argument, its head deciding
         // the rest; the lookahead for another by every argument the clause keys
@@ -897,7 +904,7 @@ internal class Machine(
         val arity: Int
         when (tag(g)) {
             ATOM -> {
-                functor = program.functor(payload(g), 0)
+                functor = program.atomFunctor(payload(g))
                 arity = 0
             }
             STR -> {

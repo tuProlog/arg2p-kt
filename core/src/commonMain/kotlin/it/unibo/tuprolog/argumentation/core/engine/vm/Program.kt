@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
+import it.unibo.tuprolog.argumentation.core.runtime.context.WordTable
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
@@ -119,7 +120,7 @@ internal class Program() {
     ) {
         val clauses = ArrayList<ClauseCode>()
         private var all: IntArray? = null
-        private var byKey: HashMap<Int, IntArray>? = null
+        private var byKey: WordTable<IntArray>? = null
 
         // The clauses with no key, for the keys a frozen predicate does not have
         private var frozenMiss: IntArray? = null
@@ -188,8 +189,9 @@ internal class Program() {
          */
         fun candidates(key: Int): IntArray {
             if (key == 0 || clauses.size < INDEXED_FROM) return all ?: IntArray(clauses.size) { it }.also { all = it }
-            frozenMiss?.let { miss -> return byKey!![key] ?: miss }
-            val index = byKey ?: HashMap<Int, IntArray>().also { byKey = it }
+            val miss = frozenMiss
+            if (miss != null) return byKey!![key] ?: miss
+            val index = byKey ?: WordTable<IntArray>().also { byKey = it }
             return index.getOrPut(key) {
                 val matching = ArrayList<Int>()
                 for (i in clauses.indices) {
@@ -205,12 +207,10 @@ internal class Program() {
             val n = clauses.size
             all = IntArray(n) { it }
             if (n < INDEXED_FROM) return
-            val index = HashMap<Int, IntArray>()
+            val index = WordTable<IntArray>()
             for (clause in clauses) {
                 val key = clause.key
-                if (key != 0 &&
-                    key !in index
-                ) {
+                if (key != 0 && index[key] == null) {
                     index[key] = (0 until n).filter { clauses[it].key == 0 || clauses[it].key == key }.toIntArray()
                 }
             }
@@ -330,6 +330,22 @@ internal class Program() {
         name: String,
         arity: Int,
     ): Int = functor(atom(name), arity)
+
+    // The functors of arity 0 by the id of their atom, plus one: an atom called as a goal looks its predicate up by them
+    private var atomFunctors = IntArray(256)
+
+    /** The functor of the atom [nameAtom] as a goal */
+    fun atomFunctor(nameAtom: Int): Int {
+        if (nameAtom < atomFunctors.size) {
+            val known = atomFunctors[nameAtom]
+            if (known != 0) return known - 1
+        } else {
+            atomFunctors = atomFunctors.copyOf(maxOf(nameAtom + 1, atomFunctors.size * 2))
+        }
+        val functor = functor(nameAtom, 0)
+        atomFunctors[nameAtom] = functor + 1
+        return functor
+    }
 
     fun functor(
         nameAtom: Int,
