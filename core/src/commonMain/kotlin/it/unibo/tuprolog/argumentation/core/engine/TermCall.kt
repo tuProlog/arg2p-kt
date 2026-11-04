@@ -104,6 +104,13 @@ internal class TermCall(
             .mgu(at(a), at(b))
             .isSuccess
 
+    override fun identical(
+        a: Int,
+        b: Int,
+    ): Boolean = at(a) == at(b)
+
+    override fun hashOf(w: Int): Int = at(w).hashCode()
+
     override fun atom(name: String): Int = put(Atom.of(name))
 
     override fun int(value: Long): Int = put(Integer.of(value))

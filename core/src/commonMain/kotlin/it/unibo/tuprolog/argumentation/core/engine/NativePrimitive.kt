@@ -86,6 +86,15 @@ interface NativeCall {
         b: Int,
     ): Boolean
 
+    /** Whether [a] and [b] are identical, as `==` */
+    fun identical(
+        a: Int,
+        b: Int,
+    ): Boolean
+
+    /** A hash of [w], the same for the terms [identical] to it, valid for the call alone */
+    fun hashOf(w: Int): Int
+
     fun atom(name: String): Int
 
     fun int(value: Long): Int

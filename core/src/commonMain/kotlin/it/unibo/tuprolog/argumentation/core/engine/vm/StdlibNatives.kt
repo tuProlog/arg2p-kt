@@ -147,6 +147,35 @@ internal object StdlibNatives {
         }
     }
 
+    /** A hash of the term, the same for those [identical]: all the variables count alike, two cells may be the same one */
+    fun hash(
+        m: Machine,
+        w0: Int,
+        seed: Int,
+    ): Int {
+        var hash = seed
+        var w = m.deref(w0)
+        while (true) {
+            when (tag(w)) {
+                REF -> return 31 * hash
+                STR -> {
+                    val a = payload(w)
+                    val f = m.heap[a]
+                    hash = 31 * hash + f
+                    val n = m.program.arity(f)
+                    for (i in 1 until n) hash = hash(m, m.heap[a + i], hash)
+                    w = m.deref(m.heap[a + n])
+                }
+                LIST -> {
+                    val a = payload(w)
+                    hash = hash(m, m.heap[a], 31 * hash + 1)
+                    w = m.deref(m.heap[a + 1])
+                }
+                else -> return 31 * hash + w
+            }
+        }
+    }
+
     // The ranks of the standard order of tuProlog: reals before integers, atoms, compound terms
     private fun rank(t: Int): Int =
         when (t) {

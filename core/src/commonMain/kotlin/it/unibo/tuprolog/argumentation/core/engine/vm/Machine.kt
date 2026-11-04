@@ -2230,6 +2230,13 @@ internal class Machine(
         return ok
     }
 
+    override fun identical(
+        a: Int,
+        b: Int,
+    ): Boolean = StdlibNatives.identical(this, a, b)
+
+    override fun hashOf(w: Int): Int = StdlibNatives.hash(this, w, 17)
+
     override fun variable(): Int = ref(newVariable())
 
     override fun term(w: Int): Term = toTerm(w, nativeNames ?: HashMap<Int, Var>().also { nativeNames = it })

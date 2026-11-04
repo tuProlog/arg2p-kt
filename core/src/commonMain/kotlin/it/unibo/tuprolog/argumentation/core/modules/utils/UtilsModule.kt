@@ -1,12 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.utils.Contains
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Deduplicate
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Intersection
 import it.unibo.tuprolog.argumentation.core.primitives.utils.MinimalBySet
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Sccs
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Sort
 import it.unibo.tuprolog.argumentation.core.primitives.utils.SortDistinct
+import it.unibo.tuprolog.argumentation.core.primitives.utils.Subtract
 import it.unibo.tuprolog.argumentation.core.primitives.utils.UniqueByFirst
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -24,6 +26,8 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
                 MinimalBySet.signature to MinimalBySet,
                 UniqueByFirst.signature to UniqueByFirst,
                 Intersection.signature to Intersection,
+                Contains.signature to Contains,
+                Subtract.signature to Subtract,
                 Sccs(1).let { it.signature to it },
                 Sccs(2).let { it.signature to it },
             )
@@ -65,28 +69,11 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
             append(List, Rest, Result),
             appendLists(Lists, Rest).
 
-        %! contains(?Element, +List)
-        %  An element of List matches Element (which is not bound).
-        contains(Element, List) :-
-            \+ \+ member(Element, List).
-
         %! containsAny(+Elements, +List)
         %  An element of List matches one of Elements (which are not bound).
         containsAny(Elements, List) :-
             \+ \+ (member(Element, List), member(Element, Elements)).
 
-        %! subtract(+List, +Removed, -Rest)
-        %  Rest is the elements of List not in Removed, in order.
-        subtract([], _, []).
-        subtract([Element|Elements], Removed, Rest) :-
-            identicalTo(Element, Removed), !,
-            subtract(Elements, Removed, Rest).
-        subtract([Element|Elements], Removed, [Element|Rest]) :-
-            subtract(Elements, Removed, Rest).
-
-        identicalTo(Element, [Other|_]) :- Element == Other, !.
-        identicalTo(Element, [_|Others]) :- identicalTo(Element, Others).
-
-        % The others (sortDistinct/2, deduplicate/2, sortDescending/2, intersectionOf/2, ...) are native primitives
+        % The others (contains/2, subtract/3, sortDistinct/2, deduplicate/2, sortDescending/2, intersectionOf/2, ...) are native primitives
         """.trimIndent()
 }
