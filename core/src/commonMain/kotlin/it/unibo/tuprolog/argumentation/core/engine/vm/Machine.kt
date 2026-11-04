@@ -1827,8 +1827,23 @@ internal class Machine(
         }
         for (item in items) if (!StdlibNatives.ground(this, item)) return null
         val sorted = items.copyOf()
-        sortStably(sorted)
+        if (!inOrderAlready(sorted)) sortStably(sorted)
         return sorted
+    }
+
+    // Whether [items] end up in the standard order by a single pass: they are in it, or in the reverse of it (the lists
+    // arg2p sorts mostly are, being read from a store newest first)
+    private fun inOrderAlready(items: IntArray): Boolean {
+        if (items.size < 2) return true
+        var i = 1
+        while (i < items.size && StdlibNatives.order(this, items[i - 1], items[i]) <= 0) i++
+        if (i == items.size) return true
+        if (i > 1) return false
+        i = 1
+        while (i < items.size && StdlibNatives.order(this, items[i - 1], items[i]) > 0) i++
+        if (i < items.size) return false
+        items.reverse()
+        return true
     }
 
     // In the standard order, keeping the order of the equal ones: by insertion when few, merging otherwise
@@ -1849,6 +1864,11 @@ internal class Machine(
         val right = items.copyOfRange(items.size / 2, items.size)
         sortStably(left)
         sortStably(right)
+        if (StdlibNatives.order(this, left[left.size - 1], right[0]) <= 0) {
+            left.copyInto(items)
+            right.copyInto(items, left.size)
+            return
+        }
         var l = 0
         var r = 0
         for (i in items.indices) {
