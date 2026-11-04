@@ -748,7 +748,7 @@ internal class Machine(
         barrier: Int,
     ): Boolean {
         val n = predicate.size
-        if (++predicate.heat and (Program.HOT_CALLS - 1) == 0) program.compileHot(predicate)
+        if (Program.GENERATE_CODE && ++predicate.heat and (Program.HOT_CALLS - 1) == 0) program.compileHot(predicate)
         // (one clause: its head decides, with no key to look at)
         if (n == 1) {
             cutBarrier = barrier

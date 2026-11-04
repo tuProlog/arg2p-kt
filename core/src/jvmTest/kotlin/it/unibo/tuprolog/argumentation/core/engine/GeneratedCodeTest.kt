@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -170,6 +171,7 @@ class GeneratedCodeTest {
             "city(3, R, _)",
         )
 
+    @Ignore // (generated code is off: see Program.GENERATE_CODE)
     @Test
     fun answersDoNotChange() {
         val before = goals.map(::answers)

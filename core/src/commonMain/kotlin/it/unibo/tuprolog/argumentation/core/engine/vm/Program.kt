@@ -633,6 +633,9 @@ internal class Program() {
         /** The first-argument key of a list cell */
         const val LIST_KEY = (0 shl Words.TAG_BITS) or LIST
 
+        /** Whether clauses called enough are compiled by the platform: off, for now, whatever the platform */
+        const val GENERATE_CODE = false
+
         /** The calls of a predicate, a power of 2, that have its clauses compiled: fewer and a short solve pays for code still cold */
         const val HOT_CALLS = 1 shl 14
     }

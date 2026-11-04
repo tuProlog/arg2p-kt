@@ -84,6 +84,30 @@ tasks.register<JavaExec>("prologDocs") {
     )
 }
 
+// What a change to the machine must not break, in seconds: the engine, the labels, the modules. Not a substitute for the
+// JVM tests of every project before a commit
+tasks.register<Test>("jvmQuickTest") {
+    group = "verification"
+    description = "Runs the fast tests of the engine and of the labels"
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    dependsOn("jvmTestClasses")
+    testClassesDirs = jvmTest.testClassesDirs
+    classpath = jvmTest.classpath
+    filter.excludeTestsMatching(benchmarkTests)
+    filter.excludeTestsMatching(coverageTests)
+    listOf(
+        "*.AbaPrefModuleTest",
+        "*.SharedProgramsTest",
+        "*.VmSpikeTest.inferenceRate",
+        "*.StdlibNativesTest",
+        "*.StandardEngineTest",
+        "*.SemanticsReferenceTest",
+        "*.InlinedCallLibrariesTest",
+        "*.ConcurrentSolversTest",
+    ).forEach { filter.excludeTestsMatching(it) }
+    outputs.upToDateWhen { false }
+}
+
 tasks.register<Test>("jvmBenchmark") {
     group = "verification"
     description = "Times the argument labelling semantics on growing abstract frameworks"
