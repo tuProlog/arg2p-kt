@@ -1250,6 +1250,22 @@ internal class Machine(
                         code = program.code
                     }
                 }
+                Op.TYPE_X -> {
+                    if ((code[at + 1] ushr tag(deref(regs[code[at + 2]]))) and 1 == 0) return false
+                    ip = at + 3
+                }
+                Op.TYPE_Y -> {
+                    if ((code[at + 1] ushr tag(deref(local[frame + FRAME + code[at + 2]]))) and 1 == 0) return false
+                    ip = at + 3
+                }
+                Op.IDENTICAL -> {
+                    if (StdlibNatives.identical(this, operand(code[at + 2]), operand(code[at + 3])) == (code[at + 1] != 0)) return false
+                    ip = at + 4
+                }
+                Op.IDENTICAL_C -> {
+                    if ((deref(operand(code[at + 2])) == code[at + 3]) == (code[at + 1] != 0)) return false
+                    ip = at + 4
+                }
                 Op.INIT_Y -> {
                     local[frame + FRAME + code[at + 1]] = ref(newVariable(code[at + 2]))
                     ip = at + 3
@@ -1386,6 +1402,9 @@ internal class Machine(
     }
 
     // The target of an ARITH_IS as a word (a first occurrence created where it lives)
+    // The word of an operand of an inline builtin: a register, or a slot as -1 - slot
+    private fun operand(o: Int): Int = if (o >= 0) regs[o] else local[frame + FRAME - 1 - o]
+
     private fun targetWord(
         kind: Int,
         operand: Int,

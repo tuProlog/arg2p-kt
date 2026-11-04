@@ -69,6 +69,14 @@ internal object Op {
     // A list whose head and tail are both temporaries met first: the commonest list in a head
     const val GET_LIST_VV = 51
 
+    // Builtins compiled inline, on the variables where they are: a type test (a mask of the tags that pass, then the
+    // register or the slot), == or \\== (1 to negate, then two operands: a register, or a slot as -1 - slot), the same
+    // against a constant
+    const val TYPE_X = 52
+    const val TYPE_Y = 53
+    const val IDENTICAL = 54
+    const val IDENTICAL_C = 55
+
     // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
     // constant
     const val T_X = 1

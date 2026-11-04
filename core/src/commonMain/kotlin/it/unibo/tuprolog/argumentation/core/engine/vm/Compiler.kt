@@ -249,7 +249,7 @@ internal class Compiler(
         when (body) {
             is Body.Goal -> {
                 val goal = body.term
-                val inline = inlineArithmetic(goal)
+                val inline = inlineArithmetic(goal) || inlineBuiltin(goal)
                 val c =
                     if (first && !region) {
                         0
@@ -322,6 +322,108 @@ internal class Compiler(
             return (target is Var || (target is Integer && smallInteger(target))) && expression(goal[1])
         }
         return kind != null && expression(goal[0]) && expression(goal[1])
+    }
+
+    // The predicates the clauses being compiled along with this one define: a builtin they define is not inlined, even in
+    // a clause coming before those defining it
+    private var defined: Set<Int> = emptySet()
+
+    /** The clauses compiled from now on, until the next call, come with [clauses] */
+    fun definedAlongside(clauses: Iterable<Clause>) {
+        defined = clauses.mapNotNullTo(HashSet()) { clause -> clause.head?.let { program.functor(it.functor, it.arity) } }
+    }
+
+    // A builtin compiled inline, on the variables where they are: a type test on a variable, == or \\== with a variable and
+    // a variable or a constant, = with a variable on a side that the other does not hold (as it is a goal otherwise)
+    private fun inlineBuiltin(goal: Struct): Boolean {
+        val shape =
+            when (goal.arity) {
+                1 -> goal.functor in TYPE_TESTS && goal[0] is Var
+                2 ->
+                    when (goal.functor) {
+                        "==", "\\==" -> (goal[0] is Var || goal[1] is Var) && simple(goal[0]) && simple(goal[1])
+                        "=" -> unifiesInline(goal[0], goal[1]) || unifiesInline(goal[1], goal[0])
+                        else -> false
+                    }
+                else -> false
+            }
+        return shape && program.functor(goal.functor, goal.arity) !in defined && !definedByTheory(goal)
+    }
+
+    private fun simple(term: Term): Boolean = term is Var || term is Atom || term !is Struct
+
+    private fun unifiesInline(
+        variable: Term,
+        other: Term,
+    ): Boolean = variable is Var && (other is Var || variable !in LinkedHashSet<Var>().also { collectVariables(other, it) })
+
+    private fun emitBuiltin(goal: Struct) {
+        if (goal.arity == 1) {
+            val variable = goal[0] as Var
+            created(variable)
+            val info = vars[variable]!!
+            program.emit(if (info.permanent) Op.TYPE_Y else Op.TYPE_X, TYPE_TESTS[goal.functor]!!, info.register)
+            return
+        }
+        if (goal.functor == "=") {
+            if (unifiesInline(goal[0], goal[1])) emitUnification(goal[0] as Var, goal[1]) else emitUnification(goal[1] as Var, goal[0])
+            return
+        }
+        created(goal[0])
+        created(goal[1])
+        val negated = if (goal.functor == "==") 0 else 1
+        val first = goal[0]
+        val second = goal[1]
+        when {
+            first is Var && second is Var -> program.emit(Op.IDENTICAL, negated, operand(first), operand(second))
+            first is Var -> program.emit(Op.IDENTICAL_C, negated, operand(first), constant(second))
+            else -> program.emit(Op.IDENTICAL_C, negated, operand(second as Var), constant(first))
+        }
+    }
+
+    private fun operand(variable: Var): Int = vars[variable]!!.let { if (it.permanent) -1 - it.register else it.register }
+
+    // variable = other: other unified against the variable, or built as its first value
+    private fun emitUnification(
+        variable: Var,
+        other: Term,
+    ) {
+        val info = vars[variable]!!
+        when {
+            other == variable -> created(variable)
+            info.seen -> unifyWith(info, other)
+            other is Var && vars[other]!!.seen -> unifyWith(vars[other]!!, variable)
+            other is Var -> {
+                created(other)
+                unifyWith(vars[other]!!, variable)
+            }
+            info.occurrences == 1 -> created(other)
+            info.permanent -> {
+                val temp = nextTemp++
+                putArgument(other, temp)
+                info.seen = true
+                program.emit(Op.GET_Y_VAR, info.register, temp)
+            }
+            else -> {
+                val register = temporary(info)
+                putArgument(other, register)
+                info.register = register
+                info.seen = true
+            }
+        }
+    }
+
+    private fun unifyWith(
+        info: VarInfo,
+        term: Term,
+    ) {
+        val register =
+            if (info.permanent) {
+                nextTemp++.also { program.emit(Op.PUT_Y_VAL, info.register, it) }
+            } else {
+                info.register
+            }
+        getArgument(term, register)
     }
 
     private fun expression(term: Term): Boolean =
@@ -471,6 +573,10 @@ internal class Compiler(
                 val goal = body.term
                 if (inlineArithmetic(goal)) {
                     emitArithmetic(goal)
+                    return false
+                }
+                if (inlineBuiltin(goal)) {
+                    emitBuiltin(goal)
                     return false
                 }
                 for (i in 0 until goal.arity) putArgument(goal[i], i)
@@ -795,6 +901,22 @@ internal class Compiler(
     // ---- the blocks of the control constructs called as goals at run time (see Machine)
 
     private companion object {
+        fun mask(vararg tags: Int): Int = tags.fold(0) { mask, tag -> mask or (1 shl tag) }
+
+        // The tags that pass each type test
+        val TYPE_TESTS =
+            mapOf(
+                "var" to mask(Words.REF),
+                "nonvar" to (mask(Words.REF).inv() and 0xFF),
+                "atom" to mask(Words.ATOM),
+                "atomic" to mask(Words.ATOM, Words.INT, Words.BIG, Words.FLT),
+                "callable" to mask(Words.ATOM, Words.STR, Words.LIST),
+                "compound" to mask(Words.STR, Words.LIST),
+                "float" to mask(Words.FLT),
+                "integer" to mask(Words.INT, Words.BIG),
+                "number" to mask(Words.INT, Words.BIG, Words.FLT),
+            )
+
         val COMPARISONS =
             mapOf(
                 "is" to 0,

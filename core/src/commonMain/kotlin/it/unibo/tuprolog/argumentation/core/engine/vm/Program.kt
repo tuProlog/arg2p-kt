@@ -313,6 +313,9 @@ internal class Program() {
 
     /** The word of `true`, and the functor word of `:-/2` */
     val trueWord: Int = atomWord("true")
+
+    /** The name of a list cell */
+    val dotWord: Int = atomWord(".")
     val ruleFunctor: Int = functorWord(":-", 2)
 
     fun atom(name: String): Int =
@@ -419,13 +422,13 @@ internal class Program() {
     fun nameOperand(variable: Var): Int = if (variable.isAnonymous) 0 else atom(variable.name) + 1
 
     /** Adds the clauses of [theory] to those of the theory of the user */
-    fun add(theory: Theory) {
-        for (clause in theory.clauses) this.theory.add(clause)
-    }
+    fun add(theory: Theory) = add(theory.clauses)
 
     /** Adds [clauses] to those of the theory of the user */
     fun add(clauses: Iterable<Clause>) {
+        compiler.definedAlongside(clauses)
         for (clause in clauses) theory.add(clause)
+        compiler.definedAlongside(emptyList())
     }
 
     /**
@@ -457,12 +460,14 @@ internal class Program() {
         frozen: Boolean,
     ): LibraryCode {
         val predicates = LinkedHashMap<Int, Predicate>()
+        compiler.definedAlongside(library.clauses)
         for (clause in library.clauses) {
             val head = clause.head ?: continue
             val functor = functor(head.functor, head.arity)
             val code = compiler.compile(clause, false)
             predicates.getOrPut(functor) { Predicate(functor) }.add(code, false)
         }
+        compiler.definedAlongside(emptyList())
         if (frozen) predicates.values.forEach { it.freeze() }
         return LibraryCode(predicates.values.toList(), codeTop)
     }

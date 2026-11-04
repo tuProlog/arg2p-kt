@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.engine.stdlib.DefaultBuiltins
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.BIG
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FLT
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FUN
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
@@ -250,11 +251,10 @@ internal object StdlibNatives {
         if (t == REF) {
             val name = m.deref(m.regs[1])
             if (tag(name) != ATOM || tag(arity) != INT || payload(arity) <= 0) return NOT_NATIVE
-            val text = m.program.atoms[payload(name)]
-            if (text == ".") return NOT_NATIVE
+            if (name == m.program.dotWord) return NOT_NATIVE
             val n = payload(arity)
             val h = m.alloc(1)
-            m.heap[h] = m.program.functorWord(text, n)
+            m.heap[h] = word(FUN, m.program.functor(payload(name), n))
             m.pushVoids(n)
             return answer(m.unify(term, word(STR, h)))
         }
@@ -265,11 +265,11 @@ internal object StdlibNatives {
         when (t) {
             STR -> {
                 val f = m.heap[payload(term)]
-                name = m.program.atomWord(m.program.functorName(f))
+                name = word(ATOM, m.program.functorNames[payload(f)])
                 n = m.program.arity(f)
             }
             LIST -> {
-                name = m.program.atomWord(".")
+                name = m.program.dotWord
                 n = 2
             }
             ATOM -> {
