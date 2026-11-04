@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
@@ -7,7 +8,9 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextActive
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAll
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssert
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssertId
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBranch
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBy
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheck
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckIn
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckout
@@ -16,10 +19,12 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDrop
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDropAfter
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextId
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextLast
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextMatching
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextReset
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTerm
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextUnifiable
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -65,6 +70,9 @@ internal class Context : ArgLibrary {
     /** The identifier of [term] if it has one already, without giving it one */
     fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
 
+    /** The record with identifier [identifier], if any */
+    fun record(identifier: Int): Record? = branches.record(identifier)
+
     /** The term with identifier [identifier] (see [identifier]), if any */
     fun term(identifier: Int): Term? = branches.term(identifier)
 
@@ -86,12 +94,16 @@ internal class Context : ArgLibrary {
                 ContextDropAfter(branches),
                 ContextLast(branches),
                 ContextAssert(branches),
+                ContextAssertId(branches),
                 ContextRetract(branches),
                 ContextCheck(branches),
                 ContextCheckIn(branches),
                 ContextAll(2, branches, this),
                 ContextId(branches),
+                ContextTerm(branches),
                 ContextUnifiable(branches),
+                ContextBy(branches),
+                ContextMatching(branches),
                 ContextAbsent(branches),
                 ContextCount(branches),
             ).let { primitives ->

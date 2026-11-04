@@ -13,8 +13,8 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * statement).
  *
  * Besides the graph itself (`argument/1`, `support/2`, `attack/4` terms), the context keeps:
- * - `conc(Conclusion) :- argument(A)` and `arg(Id) :- argument(A)`, the arguments by conclusion and by identifier
- *   (`context_id`);
+ * - `arg(Id)`, the identifiers (`context_id`) of the arguments of the graph the labellings label; an argument is kept
+ *   once, the term of its identifier (`context_term`), and the store looks `argument/1` up by the claim inside it;
  * - `newConc(Tag, Conclusion)`, the conclusions of the arguments saved under a tag (the round of the graph builder);
  * - a compact copy of the graph by argument identifiers: `argInfo(Id, InfoId, Info)`, `supportId(IdA, IdB)`,
  *   `attackId(Type, IdA, IdB, IdOn)`. Loops over the graph go through it, so that resolution steps carry integers
@@ -38,11 +38,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %--------------------------------------------------------------------------
 
         %! saveArgument(+Conclusion, +Argument)
-        %  Argument, for Conclusion, is saved, unless it already is.
+        %  Argument, whose conclusion is Conclusion, is saved, unless it already is.
         saveArgument(Conclusion, Argument) :-
-            context_absent(clause(conc(Conclusion), argument(Argument))),
+            context_absent(argument(Argument)),
+            argument::conclusion(Argument, Conclusion),
             context_id(argument(Argument), Id),
-            store(Conclusion, Argument, Id).
+            store(Argument, Id).
 
         %! saveArgument(+Tag, +Conclusion, +Argument)
         %  As saveArgument/2, Conclusion noted as new under Tag (see newConclusion/2): the rounds of the graph builder.
@@ -55,13 +56,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  argument it is an instance of (for more values, see the module constraints) is.
         saveInstance(Conclusion, Argument) :-
             context_id(argument(Argument), Id),
-            context_absent(clause(arg(Id), _)),
-            store(Conclusion, Argument, Id).
+            context_absent(arg(Id)),
+            argument::conclusion(Argument, Conclusion),
+            store(Argument, Id).
 
-        store(Conclusion, Argument, Id) :-
-            context_assert(argument(Argument)),
-            context_assert(conc(Conclusion) :- argument(Argument)),
-            context_assert(arg(Id) :- argument(Argument)),
+        store(Argument, Id) :-
+            context_assert_id(Id),
+            context_assert(arg(Id)),
             argument::info(Argument, Info),
             context_id(info(Info), InfoId),
             context_assert(argInfo(Id, InfoId, Info)).
@@ -88,17 +89,18 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentFor(?Conclusion, ?Argument)
         %  Argument is saved for Conclusion.
         argumentFor(Conclusion, Argument) :-
-            context_check(clause(conc(Conclusion), argument(Argument))).
+            context_by(conclusion, Conclusion, argument(Argument)).
 
         %! argumentUnifiable(+Conclusion, -Argument)
         %  Argument is saved for a conclusion unifying with Conclusion, which it is not bound to.
         argumentUnifiable(Conclusion, Argument) :-
-            context_unifiable(conc(Conclusion), argument(Argument)).
+            context_matching(conclusion, Conclusion, argument(Argument)).
 
         %! argumentById(?Id, ?Argument)
         %  Argument is saved with the identifier Id.
         argumentById(Id, Argument) :-
-            context_check(clause(arg(Id), argument(Argument))).
+            context_check(arg(Id)),
+            context_term(Id, argument(Argument)).
 
         %! argumentId(+Argument, -Id)
         %  Id is the identifier of Argument (see context_id/2).
@@ -108,22 +110,23 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentIds(-Ids)
         %  Ids are the identifiers of the saved arguments.
         argumentIds(Ids) :-
-            findall(Id, context_check(clause(arg(Id), _)), Ids).
+            findall(Id, context_check(arg(Id)), Ids).
 
         %! argumentByIdIn(+Branch, ?Id, ?Argument)
         %  Argument is saved with the identifier Id in the context branch Branch.
         argumentByIdIn(Branch, Id, Argument) :-
-            context_check(Branch, clause(arg(Id), argument(Argument))).
+            context_check(Branch, arg(Id)),
+            context_term(Id, argument(Argument)).
 
         %! excludeArguments
         %  The saved arguments are left out of the graph the labellings label (by their identifiers), until included.
         excludeArguments :-
-            context_retract(arg(_) :- argument(_)).
+            context_retract(arg(_)).
 
         %! includeArgument(+Id, +Argument)
         %  Argument, with identifier Id, is in the graph the labellings label again.
-        includeArgument(Id, Argument) :-
-            context_assert(arg(Id) :- argument(Argument)).
+        includeArgument(Id, _) :-
+            context_assert(arg(Id)).
 
         %! argumentInfo(?Id, ?InfoId, ?Info)
         %  The argument with identifier Id has the info Info, with identifier InfoId.

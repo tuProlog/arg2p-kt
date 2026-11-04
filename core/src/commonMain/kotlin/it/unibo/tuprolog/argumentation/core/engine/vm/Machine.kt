@@ -2343,6 +2343,37 @@ internal class Machine(
         return false
     }
 
+    /** The facts of [store] that unify with [goal], newest first, nothing left bound and the registers as they were */
+    fun storeMatching(
+        goal: Int,
+        store: ClauseStore,
+    ): List<ClauseStore.Stored> {
+        store.bind(program)
+        val g = deref(goal)
+        val candidates = store.candidates(heap, g)
+        val items = candidates.items
+        val arity = if (tag(g) == STR) program.arity(heap[payload(g)]) else 0
+        val saved = regs.copyOf(arity)
+        loadArguments(g)
+        val savedTop = top
+        val savedBarrier = heapBarrier
+        val mark = trailTop
+        val matching = ArrayList<ClauseStore.Stored>()
+        for (i in candidates.size - 1 downTo 0) {
+            val stored = items[i]!!
+            val record = stored.record
+            if (record.isRule || !headMayMatch(record, arity)) continue
+            heapBarrier = Int.MAX_VALUE
+            enterRecord(record)
+            if (unifyHead(record, arity)) matching.add(stored)
+            undoTrail(mark)
+            heapBarrier = savedBarrier
+            top = savedTop
+        }
+        saved.copyInto(regs)
+        return matching
+    }
+
     // Tries the clauses of [call] from position [from] down: past the heads that cannot match, a choice point left if
     // another may. [index] is that of the call among [calls], once it has one
     private fun tryStored(

@@ -2,9 +2,7 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.listArg
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
@@ -14,21 +12,14 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 // The graph kept in the active context and its labels, for the native primitives: the Kotlin side of the module
 // graphStore, reading the same facts, by the identifiers of the arguments
 
-/** The arguments of the graph of a branch, `arg(Id) :- argument(A)`, newest first */
+/** The arguments of the graph of a branch, `arg(Id)`, newest first */
 internal class GraphArguments(
     stored: List<ClauseStore.Stored>,
 ) {
-    private val clauses =
-        stored.filter { clause ->
-            val record = clause.record
-            val body = record.body
-            tag(body) == STR && record.words[payload(body)] == record.program!!.functorWord("argument", 1)
-        }
-
     /** The identifiers of the arguments */
     val ids: IntArray =
-        IntArray(clauses.size) { i ->
-            val record = clauses[i].record
+        IntArray(stored.size) { i ->
+            val record = stored[i].record
             payload(record.words[payload(record.head) + 1])
         }
 
@@ -39,9 +30,6 @@ internal class GraphArguments(
 
     /** The place of the argument with identifier [id], -1 if there is none */
     fun position(id: Int): Int = if (id < positions.size) positions[id] else -1
-
-    /** The clause of the argument at place [position] */
-    fun clause(position: Int): ClauseStore.Stored = clauses[position]
 }
 
 /** The arguments of the graph of the active branch, read once until they change */
@@ -73,11 +61,13 @@ internal fun NativeCall.labelArguments(
     label: String,
     positions: IntArray,
 ) {
-    val store = contextLibrary.store()!!
+    val context = contextLibrary
+    val store = context.store()!!
     val idFact = idFact(label)
     for (position in positions) {
-        store.assertArgumentOfBody(label, arguments.clause(position))
-        store.assertId(idFact, arguments.ids[position])
+        val id = arguments.ids[position]
+        store.assertArgumentOf(label, context.record(id)!!)
+        store.assertId(idFact, id)
     }
 }
 

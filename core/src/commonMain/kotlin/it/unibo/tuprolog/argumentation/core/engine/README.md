@@ -44,7 +44,10 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
   of the heap is bound to, and leaves no choice point when no other record can match (see `Machine.storeGoal`). A
   predicate of a store is indexed by the top symbol of each argument position, a hash of the ground arguments when a
   bucket is large, and a hash of the whole head for goals with all their arguments bound, each index built when first
-  needed and kept across assertions and removals (see `ClauseStore`). The other solvers read the records as terms.
+  needed and kept across assertions and removals (see `ClauseStore`). The places inside the clauses declared for a
+  predicate are indexed the same way, and named ones are looked up with `context_by/3` and `context_matching/3`. A term
+  with an identifier (`context_id/2`) is kept once: a branch asserts its record (`context_assert_id/1`), and
+  `context_term/2` reads it back. The other solvers read the records as terms.
 - `SharedPrograms`: the clauses of the libraries are compiled once per process, into a base program per set of
   libraries; a solver's program starts as a copy of the base (its symbols and its code) and compiles the theory of
   the user alone. A base program grows as modules are first called; a solver uses the scopes compiled before its

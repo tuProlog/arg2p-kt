@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.context
 import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FUN
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
@@ -27,7 +28,8 @@ import it.unibo.tuprolog.core.Var
  *
  * A lookup reads the goal where it is, on the heap of the machine or in a record ([candidates]): each argument position
  * of a predicate is indexed, when first looked up by, by the top symbol of the stored arguments and, for large buckets,
- * by a hash of the ground ones. What it gives are candidates, which the unification of their heads decides.
+ * by a hash of the ground ones, and so is each place inside its clauses declared for it ([PLACES]). What it gives are
+ * candidates, which the unification of their heads decides.
  *
  * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they
  * modify. A lookup sees the clauses as they are when it is made (logical update view): appending writes past the end
@@ -133,14 +135,14 @@ internal class ClauseStore private constructor(
         assertA(Record(program, intArrayOf(program.functorWord(name, 1), program.intWord(id.toLong())), word(STR, 0), null))
     }
 
-    /** The fact `name(A)` added, for the stored clause [clause], `Head :- body(A)`: what A is, is not read */
-    fun assertArgumentOfBody(
+    /** The fact `name(A)` added, for [fact], the fact `other(A)`: what A is, is not read */
+    fun assertArgumentOf(
         name: String,
-        clause: Stored,
+        fact: Record,
     ) {
         val program = encoding()
-        val record = clause.record
-        val argument = record.words[payload(record.body) + 1]
+        val record = Record.encoded(fact, program)
+        val argument = record.words[payload(record.head) + 1]
         val n = record.words.size
         val words = record.words.copyOf(n + 2)
         words[n] = program.functorWord(name, 1)
@@ -298,22 +300,30 @@ internal class ClauseStore private constructor(
         fun candidates(): Candidates = if (size == 0) Candidates.NONE else Candidates(items, size)
     }
 
-    // The index of an argument position, built when first looked up by: by the top symbol of the stored arguments, and
-    // for the ground ones by a hash of the whole of them (that one built when a bucket turns out to be large)
+    /** A place inside the clauses of a predicate: an argument of the head and the way from it through list cells, each step 0 for the head of a cell and 1 for its tail */
+    class Place(
+        val argument: Int,
+        val steps: IntArray,
+    )
+
+    // The index of an argument position or of a place, built when first looked up by: by the top symbol of the stored
+    // terms there, and for the ground ones by a hash of the whole of them (that one built when a bucket turns out to be large)
     private class Position(
-        val index: Int,
+        val place: Place,
     ) {
+        private fun termOf(record: Record): Int = placed(record.words, argumentOf(record, place.argument), place.steps)
+
         val byKey = WordTable<Bucket>()
         val variables = Bucket()
         var groundByHash: HashMap<Long, Bucket>? = null
         var nonGround: Bucket? = null
 
         fun add(stored: Stored) {
-            val argument = argumentOf(stored.record, index)
+            val argument = termOf(stored.record)
             val key = topKey(stored.record.words, argument)
             if (key == 0) variables.append(stored) else byKey.getOrPut(key) { Bucket() }.append(stored)
             val ground = groundByHash ?: return
-            val hash = groundHash(stored.record.program!!, stored.record.words, argument)
+            val hash = hashOf(stored.record.program!!, stored.record.words, argument)
             if (hash == NOT_GROUND) nonGround!!.append(stored) else ground.getOrPut(hash) { Bucket() }.append(stored)
         }
 
@@ -324,11 +334,11 @@ internal class ClauseStore private constructor(
         ) {
             val affected = HashSet<Bucket>()
             for (one in stored) {
-                val argument = argumentOf(one.record, index)
+                val argument = termOf(one.record)
                 val key = topKey(one.record.words, argument)
                 (if (key == 0) variables else byKey[key])?.let { affected += it }
                 val ground = groundByHash ?: continue
-                val hash = groundHash(one.record.program!!, one.record.words, argument)
+                val hash = hashOf(one.record.program!!, one.record.words, argument)
                 (if (hash == NOT_GROUND) nonGround else ground[hash])?.let { affected += it }
             }
             for (bucket in affected) bucket.without(ids)
@@ -340,7 +350,7 @@ internal class ClauseStore private constructor(
             val rest = Bucket()
             for (i in 0 until all.size) {
                 val stored = all.items[i]!!
-                val hash = groundHash(stored.record.program!!, stored.record.words, argumentOf(stored.record, index))
+                val hash = hashOf(stored.record.program!!, stored.record.words, termOf(stored.record))
                 if (hash == NOT_GROUND) rest.append(stored) else ground.getOrPut(hash) { Bucket() }.append(stored)
             }
             groundByHash = ground
@@ -380,9 +390,11 @@ internal class ClauseStore private constructor(
         val arity: Int,
         // The data that can change it: the other data holding it have it from a copy, and make their own before a change
         val owner: Data,
+        // The arguments, then the places declared for it
+        val places: Array<Place>,
     ) {
         var all = Bucket()
-        var positions = arrayOfNulls<Position>(arity)
+        var positions = arrayOfNulls<Position>(places.size)
         private var builtHeads: Heads? = null
 
         fun heads(): Heads =
@@ -407,7 +419,7 @@ internal class ClauseStore private constructor(
             return found
         }
 
-        fun copy(newOwner: Data): Predicate = Predicate(arity, newOwner).also { it.all = all.copy() }
+        fun copy(newOwner: Data): Predicate = Predicate(arity, newOwner, places).also { it.all = all.copy() }
 
         fun add(stored: Stored) {
             derived.clear()
@@ -426,7 +438,7 @@ internal class ClauseStore private constructor(
             val rebuild = stored.size * 4 > all.size
             all.without(removed)
             if (rebuild) {
-                positions = arrayOfNulls(arity)
+                positions = arrayOfNulls(places.size)
                 builtHeads = null
             } else {
                 for (position in positions) position?.removeAll(stored, removed)
@@ -435,7 +447,7 @@ internal class ClauseStore private constructor(
         }
 
         fun position(index: Int): Position =
-            positions[index] ?: Position(index).also { position ->
+            positions[index] ?: Position(places[index]).also { position ->
                 for (i in 0 until all.size) position.add(all.items[i]!!)
                 positions[index] = position
             }
@@ -460,22 +472,30 @@ internal class ClauseStore private constructor(
         /** The predicate stored under key, copied the first time this data modifies it */
         private fun writable(
             key: Int,
-            arity: Int,
+            record: Record,
         ): Predicate {
             val predicate = predicates[key]
             if (predicate?.owner === this) return predicate
-            return (predicate?.copy(this) ?: Predicate(arity, this)).also { predicates[key] = it }
+            return (predicate?.copy(this) ?: newPredicate(key, record)).also { predicates[key] = it }
+        }
+
+        private fun newPredicate(
+            key: Int,
+            record: Record,
+        ): Predicate {
+            val arity = arityOf(record, record.head)
+            val declared = if (tag(key) == FUN) PLACES["${record.program!!.functorName(key)}/$arity"].orEmpty() else emptyList()
+            val places = Array(arity + declared.size) { if (it < arity) Place(it, NO_STEPS) else declared[it - arity] }
+            return Predicate(arity, this, places)
         }
 
         fun add(record: Record) {
-            val head = record.head
-            writable(headKey(record.words, head), arityOf(record, head)).add(Stored(nextId++, record))
+            writable(headKey(record.words, record.head), record).add(Stored(nextId++, record))
         }
 
         fun removeAll(stored: List<Stored>) {
             for ((key, group) in stored.groupBy { headKey(it.record.words, it.record.head) }) {
-                val record = group.first().record
-                writable(key, arityOf(record, record.head)).removeAll(group)
+                writable(key, group.first().record).removeAll(group)
             }
         }
 
@@ -508,8 +528,11 @@ internal class ClauseStore private constructor(
             var bestSize = all.size
             var best: Bucket? = all
             var other: Bucket? = null
-            for (i in 0 until predicate.arity) {
-                val argument = derefIn(words, goalArgument(words, goal, i))
+            // (the places declared first, the narrowest; candidates this few are not worth hashing the rest of the goal)
+            for (i in predicate.places.indices.reversed()) {
+                if (bestSize <= SCANNED) break
+                val place = predicate.places[i]
+                val argument = placed(words, derefIn(words, goalArgument(words, goal, place.argument)), place.steps)
                 val key = topKey(words, argument)
                 if (key == 0) continue
                 val position = predicate.position(i)
@@ -566,6 +589,18 @@ internal class ClauseStore private constructor(
     }
 
     companion object {
+        private val NO_STEPS = IntArray(0)
+
+        // The places looked up by inside the clauses of a predicate, besides its arguments: the claim of an argument of
+        // the graph, argument([Rules, TopRule, [Claim], Body, Info])
+        private val PLACES = mapOf("argument/1" to listOf(Place(0, intArrayOf(1, 1, 0, 0))))
+
+        /** The places a lookup names (context_by/3, context_matching/3): the conclusion of an argument, as above */
+        val KEYS = mapOf("conclusion" to Place(0, intArrayOf(1, 1, 0)))
+
+        // A variable for what no cell leads to: a term with another shape has no key there
+        private const val NOWHERE = 0
+
         // At most this many clauses are tried in turn, with no index
         private const val SCANNED = 4
 
@@ -609,6 +644,26 @@ internal class ClauseStore private constructor(
                 LIST -> 2
                 else -> 0
             }
+
+        // The term at the end of [steps] from the dereferenced term [from] of [words], NOWHERE if they lead to no term
+        private fun placed(
+            words: IntArray,
+            from: Int,
+            steps: IntArray,
+        ): Int {
+            var w = from
+            for (step in steps) {
+                if (tag(w) != LIST) return NOWHERE
+                w = derefIn(words, words[payload(w) + step])
+            }
+            return w
+        }
+
+        private fun hashOf(
+            program: Program,
+            words: IntArray,
+            w: Int,
+        ): Long = if (tag(w) == REF) NOT_GROUND else groundHash(program, words, w)
 
         private fun goalArgument(
             words: IntArray,

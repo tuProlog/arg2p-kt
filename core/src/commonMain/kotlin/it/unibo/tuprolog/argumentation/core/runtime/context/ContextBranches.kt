@@ -144,6 +144,9 @@ internal class ContextBranches {
     /** The identifier of [term] if it has one already (see [identifier]) */
     fun knownIdentifier(term: Term): Int? = identifiers[encoded(Record.of(term)).key]
 
+    /** The record with identifier [identifier], as first given an identifier; null if none has it */
+    fun record(identifier: Int): Record? = records.getOrNull(identifier)
+
     /** The term with identifier [identifier], as first given an identifier; null if none has it */
     fun term(identifier: Int): Term? = records.getOrNull(identifier)?.term
 }
