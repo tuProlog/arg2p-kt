@@ -39,8 +39,12 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
 - `Record`: a term off the heap as the words of a program (relative addresses, its variables fresh each time it is
   put back), what the context and the cache of arg2p keep: a native takes one from the heap and puts it back, enters
   a goal with records as the clauses of its predicate, or runs a nested run (`findall`, a count of solutions) for
-  itself. The stores are bound to the solver's program when it is built, so their records copy to and from the heap
-  without a term; the other solvers read them as terms.
+  itself. The stores are bound to the solver's program when it is built, so their records are in the words of the
+  machine: a lookup unifies the head of a record with the goal where it is on the heap, copying only what a variable
+  of the heap is bound to, and leaves no choice point when no other record can match (see `Machine.storeGoal`). A
+  predicate of a store is indexed by the top symbol of each argument position, a hash of the ground arguments when a
+  bucket is large, and a hash of the whole head for goals with all their arguments bound, each index built when first
+  needed and kept across assertions and removals (see `ClauseStore`). The other solvers read the records as terms.
 - `SharedPrograms`: the clauses of the libraries are compiled once per process, into a base program per set of
   libraries; a solver's program starts as a copy of the base (its symbols and its code) and compiles the theory of
   the user alone. A base program grows as modules are first called; a solver uses the scopes compiled before its

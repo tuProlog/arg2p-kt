@@ -120,11 +120,12 @@ internal class Worker(
     private val attack = goal("attackBuilder::directAttack(T, B, X)")
 
     // A message handled: a failure (an error of the theory, as a Prolog check that raises one) told to the catalog,
-    // which gives up the graph being built and answers the clients with it, rather than left waiting for a reply
+    // which gives up the graph being built and answers the clients with it, rather than left waiting for a reply (out
+    // of memory too: a reply lost to it would leave them waiting for ever)
     override fun receive(message: KbMessage) {
         try {
             handle(message)
-        } catch (failure: Exception) {
+        } catch (failure: Throwable) {
             network.send(Address.CATALOG, Failed(index, failure.message ?: failure.toString()))
         }
     }

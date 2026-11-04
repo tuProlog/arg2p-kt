@@ -175,11 +175,11 @@ internal class Catalog(
         )
 
     // A message handled: an error (a theory that cannot be read, or that its profile refuses) answers the jobs waiting
-    // with it, and the theory is read anew for the next ones
+    // with it (out of memory too, or they would wait for ever), and the theory is read anew for the next ones
     override fun receive(message: KbMessage) {
         try {
             handle(message)
-        } catch (error: Exception) {
+        } catch (error: Throwable) {
             jobs.toList().also { jobs.clear() }.forEach { network.send(it.replyTo, it.failed(error.message ?: error.toString())) }
             // the graph being built is given up (a session of its own, with no worker), the theory read anew
             network.building(0)
