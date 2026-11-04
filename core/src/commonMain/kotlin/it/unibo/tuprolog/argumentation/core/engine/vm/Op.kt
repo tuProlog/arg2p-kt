@@ -77,6 +77,11 @@ internal object Op {
     const val IDENTICAL = 54
     const val IDENTICAL_C = 55
 
+    // arg/3 with a constant index (the index, the term as an operand, the target kind and operand) and functor/3 (the term
+    // as an operand, then the targets of the name and of the arity), anything but the common case left to the builtin
+    const val ARG = 56
+    const val FUNCTOR = 57
+
     // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
     // constant
     const val T_X = 1
@@ -84,6 +89,7 @@ internal object Op {
     const val T_NEW_X = 3
     const val T_NEW_Y = 4
     const val T_CONST = 5
+    const val T_VOID = 6
 
     // The elements of an expression
     const val E_X = 1

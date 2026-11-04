@@ -263,6 +263,8 @@ internal class Machine(
     private val ifThenElseBlock = compiler.ifThenElseBlock()
     private val negationBlock = compiler.negationBlock()
     private val restoreScopeBlock = compiler.restoreScopeBlock()
+    private val fArg = program.functor("arg", 3)
+    private val fFunctor = program.functor("functor", 3)
 
     init {
         builtin("true", 0) { CONTINUE }
@@ -1198,14 +1200,13 @@ internal class Machine(
                         }
                     } else {
                         // The builtin: the target and the expression as words in the registers, which are kept
+                        val target = targetWord(code[at + 1], code[at + 2])
+                        val expression = build(code, at + 4, n)
                         val a0 = regs[0]
                         val a1 = regs[1]
-                        regs[0] = targetWord(code[at + 1], code[at + 2])
-                        regs[1] = build(code, at + 4, n)
-                        continuation = ip
-                        cutBarrier = cpTop
-                        pc = ip
-                        when (call(fIs, 2)) {
+                        regs[0] = target
+                        regs[1] = expression
+                        when (callBehindInstruction(fIs, 2, ip)) {
                             FAILED -> return false
                             JUMPED -> ip = pc
                             else -> Unit
@@ -1233,14 +1234,13 @@ internal class Machine(
                             }
                         if (!holds) return false
                     } else {
+                        val left = build(code, at + 3, nA)
+                        val right = build(code, at + 4 + nA, nB)
                         val a0 = regs[0]
                         val a1 = regs[1]
-                        regs[0] = build(code, at + 3, nA)
-                        regs[1] = build(code, at + 4 + nA, nB)
-                        continuation = ip
-                        cutBarrier = cpTop
-                        pc = ip
-                        when (call(comparisonFunctors[code[at + 1]], 2)) {
+                        regs[0] = left
+                        regs[1] = right
+                        when (callBehindInstruction(comparisonFunctors[code[at + 1]], 2, ip)) {
                             FAILED -> return false
                             JUMPED -> ip = pc
                             else -> Unit
@@ -1265,6 +1265,59 @@ internal class Machine(
                 Op.IDENTICAL_C -> {
                     if ((deref(operand(code[at + 2])) == code[at + 3]) == (code[at + 1] != 0)) return false
                     ip = at + 4
+                }
+                Op.ARG -> {
+                    ip = at + 5
+                    when (inlineArg(code[at + 1], operand(code[at + 2]), code[at + 3], code[at + 4])) {
+                        FAILED -> return false
+                        CONTINUE -> Unit
+                        else -> {
+                            val term = operand(code[at + 2])
+                            val target = targetWord(code[at + 3], code[at + 4])
+                            val a0 = regs[0]
+                            val a1 = regs[1]
+                            val a2 = regs[2]
+                            regs[0] = program.intWord(code[at + 1].toLong())
+                            regs[1] = term
+                            regs[2] = target
+                            when (callBehindInstruction(fArg, 3, ip)) {
+                                FAILED -> return false
+                                JUMPED -> ip = pc
+                                else -> Unit
+                            }
+                            regs[0] = a0
+                            regs[1] = a1
+                            regs[2] = a2
+                            code = program.code
+                        }
+                    }
+                }
+                Op.FUNCTOR -> {
+                    ip = at + 6
+                    when (inlineFunctor(operand(code[at + 1]), code[at + 2], code[at + 3], code[at + 4], code[at + 5])) {
+                        FAILED -> return false
+                        CONTINUE -> Unit
+                        else -> {
+                            val term = operand(code[at + 1])
+                            val name = targetWord(code[at + 2], code[at + 3])
+                            val arity = targetWord(code[at + 4], code[at + 5])
+                            val a0 = regs[0]
+                            val a1 = regs[1]
+                            val a2 = regs[2]
+                            regs[0] = term
+                            regs[1] = name
+                            regs[2] = arity
+                            when (callBehindInstruction(fFunctor, 3, ip)) {
+                                FAILED -> return false
+                                JUMPED -> ip = pc
+                                else -> Unit
+                            }
+                            regs[0] = a0
+                            regs[1] = a1
+                            regs[2] = a2
+                            code = program.code
+                        }
+                    }
                 }
                 Op.INIT_Y -> {
                     local[frame + FRAME + code[at + 1]] = ref(newVariable(code[at + 2]))
@@ -1402,6 +1455,26 @@ internal class Machine(
     }
 
     // The target of an ARITH_IS as a word (a first occurrence created where it lives)
+    // The builtin an inline instruction leaves a case to, going on at [next]: the continuation and the barrier of the
+    // clause stay, as the clause may have no frame to find them in
+    private fun callBehindInstruction(
+        functor: Int,
+        arity: Int,
+        next: Int,
+    ): Int {
+        val savedContinuation = continuation
+        val savedBarrier = cutBarrier
+        continuation = next
+        cutBarrier = cpTop
+        pc = next
+        val outcome = call(functor, arity)
+        if (outcome == CONTINUE) {
+            continuation = savedContinuation
+            cutBarrier = savedBarrier
+        }
+        return outcome
+    }
+
     // The word of an operand of an inline builtin: a register, or a slot as -1 - slot
     private fun operand(o: Int): Int = if (o >= 0) regs[o] else local[frame + FRAME - 1 - o]
 
@@ -1414,8 +1487,95 @@ internal class Machine(
             Op.T_Y -> local[frame + FRAME + operand]
             Op.T_NEW_X -> ref(newVariable()).also { regs[operand] = it }
             Op.T_NEW_Y -> ref(newVariable()).also { local[frame + FRAME + operand] = it }
+            Op.T_VOID -> ref(newVariable())
             else -> operand
         }
+
+    // The word [w] as the value of a target
+    private fun toTarget(
+        kind: Int,
+        operand: Int,
+        w: Int,
+    ): Boolean =
+        when (kind) {
+            Op.T_X -> unify(regs[operand], w)
+            Op.T_Y -> unify(local[frame + FRAME + operand], w)
+            Op.T_NEW_X -> {
+                regs[operand] = w
+                true
+            }
+            Op.T_NEW_Y -> {
+                local[frame + FRAME + operand] = w
+                true
+            }
+            Op.T_VOID -> true
+            else -> unify(operand, w)
+        }
+
+    // arg/3 with the index [i]: [CONTINUE] or [FAILED], [NOT_INLINE] for what is left to the builtin (what is not compound)
+    private fun inlineArg(
+        i: Int,
+        term0: Int,
+        kind: Int,
+        operand: Int,
+    ): Int {
+        val term = deref(term0)
+        val w =
+            when (tag(term)) {
+                STR -> {
+                    val a = payload(term)
+                    if (i < 1 || i > program.arity(heap[a])) return FAILED
+                    heap[a + i]
+                }
+                LIST -> {
+                    if (i < 1 || i > 2) return FAILED
+                    heap[payload(term) + i - 1]
+                }
+                else -> return NOT_INLINE
+            }
+        return if (toTarget(kind, operand, w)) CONTINUE else FAILED
+    }
+
+    // functor/3 of a term that is bound: [CONTINUE] or [FAILED], [NOT_INLINE] for what is left to the builtin (a term to build, an arity that is not one)
+    private fun inlineFunctor(
+        term0: Int,
+        nameKind: Int,
+        nameOperand: Int,
+        arityKind: Int,
+        arityOperand: Int,
+    ): Int {
+        val term = deref(term0)
+        val t = tag(term)
+        if (t == REF) return NOT_INLINE
+        if (arityKind == Op.T_X || arityKind == Op.T_Y || arityKind == Op.T_CONST) {
+            val arity = deref(targetWord(arityKind, arityOperand))
+            if (tag(arity) != REF && (tag(arity) != INT || payload(arity) < 0)) return NOT_INLINE
+        }
+        val name: Int
+        val n: Int
+        when (t) {
+            STR -> {
+                val f = heap[payload(term)]
+                name = word(ATOM, program.functorNames[payload(f)])
+                n = program.arity(f)
+            }
+            LIST -> {
+                name = program.dotWord
+                n = 2
+            }
+            else -> {
+                name = term
+                n = 0
+            }
+        }
+        return if (toTarget(nameKind, nameOperand, name) &&
+            toTarget(arityKind, arityOperand, program.intWord(n.toLong()))
+        ) {
+            CONTINUE
+        } else {
+            FAILED
+        }
+    }
 
     // The structure [f] against [w]: entered in read mode, or built in write mode
     private fun getStructure(
@@ -3152,6 +3312,9 @@ internal class Machine(
         const val FAILED = 0
         const val CONTINUE = 1
         const val JUMPED = 2
+
+        // An inline builtin leaving the call to the builtin itself
+        private const val NOT_INLINE = -1
 
         // The outcomes of unwinding a ball
         private const val UNCAUGHT = 0

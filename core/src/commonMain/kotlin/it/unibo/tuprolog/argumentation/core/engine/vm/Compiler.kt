@@ -339,6 +339,12 @@ internal class Compiler(
         val shape =
             when (goal.arity) {
                 1 -> goal.functor in TYPE_TESTS && goal[0] is Var
+                3 ->
+                    when (goal.functor) {
+                        "arg" -> goal[0].let { it is Integer && smallInteger(it) } && goal[1] is Var && simple(goal[2])
+                        "functor" -> goal[0] is Var && simple(goal[1]) && simple(goal[2])
+                        else -> false
+                    }
                 2 ->
                     when (goal.functor) {
                         "==", "\\==" -> (goal[0] is Var || goal[1] is Var) && simple(goal[0]) && simple(goal[1])
@@ -358,6 +364,19 @@ internal class Compiler(
     ): Boolean = variable is Var && (other is Var || variable !in LinkedHashSet<Var>().also { collectVariables(other, it) })
 
     private fun emitBuiltin(goal: Struct) {
+        if (goal.arity == 3) {
+            val term = goal[if (goal.functor == "arg") 1 else 0] as Var
+            created(term)
+            if (goal.functor == "arg") {
+                program.emit(Op.ARG, (goal[0] as Integer).value.toInt(), operand(term))
+                emitTarget(goal[2])
+            } else {
+                program.emit(Op.FUNCTOR, operand(term))
+                emitTarget(goal[1])
+                emitTarget(goal[2])
+            }
+            return
+        }
         if (goal.arity == 1) {
             val variable = goal[0] as Var
             created(variable)
@@ -378,6 +397,28 @@ internal class Compiler(
             first is Var && second is Var -> program.emit(Op.IDENTICAL, negated, operand(first), operand(second))
             first is Var -> program.emit(Op.IDENTICAL_C, negated, operand(first), constant(second))
             else -> program.emit(Op.IDENTICAL_C, negated, operand(second as Var), constant(first))
+        }
+    }
+
+    // Where an inline builtin puts a value: the kind of the target and its operand
+    private fun emitTarget(term: Term) {
+        if (term !is Var) {
+            program.emit(Op.T_CONST, constant(term))
+            return
+        }
+        val info = vars[term]!!
+        when {
+            info.seen -> program.emit(if (info.permanent) Op.T_Y else Op.T_X, info.register)
+            info.occurrences == 1 -> program.emit(Op.T_VOID, 0)
+            info.permanent -> {
+                info.seen = true
+                program.emit(Op.T_NEW_Y, info.register)
+            }
+            else -> {
+                info.seen = true
+                info.register = temporary(info)
+                program.emit(Op.T_NEW_X, info.register)
+            }
         }
     }
 

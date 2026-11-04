@@ -57,6 +57,26 @@ class InlineBuiltinsTest {
         below(X) :- atom(X).
         atom(1).
         over(X) :- X == 7.
+        lt(X, Y) :- Y < X.
+        isf(X, Y) :- Y is X + 1.5.
+        isn(X, R) :- Y is X * 2.5, R = Y.
+        cutf(X, R) :- member(R, [1, 2]), X > 0.5, !.
+        ltcut(X, Y) :- X < Y, !.
+        ltcut(_, _).
+        a1(T, R) :- arg(1, T, R).
+        a2(T, R) :- arg(2, T, R).
+        a0(T, R) :- arg(0, T, R).
+        av(T) :- arg(1, T, _).
+        ac(T) :- arg(1, T, a).
+        ak(T, R) :- arg(1, T, X), keep(X, X, Y, _), R = Y.
+        ae(T, R) :- arg(1, T, X), arg(2, T, Y), R = p(X, Y).
+        af(T, A, R) :- arg(1, T, X), q2(A, X, R).
+        f3(T, N, A) :- functor(T, N, A).
+        fn(T, N) :- functor(T, N, _).
+        fa(T, A) :- functor(T, _, A).
+        fc(T) :- functor(T, g, 2).
+        fk(T, R) :- functor(T, N, A), keep(N, A, X, Y), R = p(X, Y).
+        fb(N, A, R) :- functor(T, N, A), R = T.
         """.trimIndent()
 
     private val solver by lazy { solverWithTheory(theory) }
@@ -176,6 +196,85 @@ class InlineBuiltinsTest {
         assertEquals("2", answer("dis(b, R)"))
         assertEquals("1", answer("cutted(a, R)"))
         assertEquals("2", answer("cutted(b, R)"))
+    }
+
+    // What the goal answers, or the error it raises
+    private fun outcome(goal: String): String {
+        val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
+        return when {
+            solution.isHalt -> "error " + solution.exception!!::class.simpleName
+            solution.isYes ->
+                solution.substitution.entries
+                    .filter { it.key.name == "R" }
+                    .joinToString { it.value.toString() }
+                    .ifEmpty { "yes" }
+            else -> "no"
+        }
+    }
+
+    @Test
+    fun argAsCalledAtRunTime() {
+        val cases =
+            listOf(
+                "a1(g(1, 2), R)" to "arg(1, g(1, 2), R)",
+                "a2(g(1, 2), R)" to "arg(2, g(1, 2), R)",
+                "a2(g(1), R)" to "arg(2, g(1), R)",
+                "a0(g(1), R)" to "arg(0, g(1), R)",
+                "a1([x, y], R)" to "arg(1, [x, y], R)",
+                "a2([x, y], R)" to "arg(2, [x, y], R)",
+                "a1(a, R)" to "arg(1, a, R)",
+                "a1(1, R)" to "arg(1, 1, R)",
+                "a1(_, R)" to "arg(1, _, R)",
+                "av(g(1))" to "arg(1, g(1), _)",
+                "ac(g(a))" to "arg(1, g(a), a)",
+                "ac(g(b))" to "arg(1, g(b), a)",
+            )
+        for ((inline, called) in cases) assertEquals(outcome("call(($called))"), outcome(inline), inline)
+        assertEquals("1", answer("ak(g(1), R)"))
+        assertEquals("p(1, 2)", answer("ae(g(1, 2), R)"))
+        assertEquals("r(b, 1)", answer("af(g(1), b, R)"))
+        assertEquals("v", answer("X = g(v), a1(X, R)"))
+        assertTrue(holds("a1(g(X), Y), X = 1, Y == 1"))
+    }
+
+    @Test
+    fun functorAsCalledAtRunTime() {
+        val cases =
+            listOf(
+                "fn(g(1, 2), R)" to "functor(g(1, 2), R, _)",
+                "fa(g(1, 2), R)" to "functor(g(1, 2), _, R)",
+                "fn([x], R)" to "functor([x], R, _)",
+                "fa([x], R)" to "functor([x], _, R)",
+                "fn(a, R)" to "functor(a, R, _)",
+                "fa(a, R)" to "functor(a, _, R)",
+                "fn(1, R)" to "functor(1, R, _)",
+                "fa(2.5, R)" to "functor(2.5, _, R)",
+                "fn([], R)" to "functor([], R, _)",
+                "fc(g(1, 2))" to "functor(g(1, 2), g, 2)",
+                "fc(g(1))" to "functor(g(1), g, 2)",
+                "f3(g(1), h, _)" to "functor(g(1), h, _)",
+                "f3(g(1), _, a)" to "functor(g(1), _, a)",
+                "f3(_, _, _)" to "functor(_, _, _)",
+                "f3(_, g, a)" to "functor(_, g, a)",
+                "f3(_, g, -1)" to "functor(_, g, -1)",
+            )
+        for ((inline, called) in cases) assertEquals(outcome("call(($called))"), outcome(inline), inline)
+        assertEquals("p(g, 1)", answer("fk(g(a), R)"))
+        assertTrue(holds("fc(T), T = g(1, 2)"))
+        assertTrue(holds("fb(g, 2, T), T = g(1, 2)"))
+        assertEquals("a", answer("fb(a, 0, R)"))
+    }
+
+    // Outside small integers the arithmetic goes through the builtin, the registers read as they were
+    @Test
+    fun arithmeticOnFloatsReadsItsOperands() {
+        assertTrue(holds("lt(1.5, 0.5)"))
+        assertFalse(holds("lt(0.5, 1.5)"))
+        assertEquals("3.0", answer("isf(1.5, R)"))
+        assertEquals("5.0", answer("isn(2, R)"))
+        assertEquals("1", answer("cutf(1.5, R)"))
+        assertEquals(1, solver.solve(Struct.parse("cutf(1.5, R)", solver.operators)).count { it.isYes })
+        assertEquals(1, solver.solve(Struct.parse("ltcut(0.5, 1.5)", solver.operators)).count { it.isYes })
     }
 
     @Test
