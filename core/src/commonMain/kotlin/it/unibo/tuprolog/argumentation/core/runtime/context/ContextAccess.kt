@@ -34,6 +34,3 @@ internal fun NativeCall.contextBranch(
     val branch = from.asInteger()?.intValue?.toInt() ?: throw TypeError.forGoal(context, signature, TypeError.Expected.INTEGER, from)
     return contextLibrary.branch(branch) != null
 }
-
-/** The terms asserted in the active branch, in order (context_assert_all/1) */
-internal fun NativeCall.contextAssertAll(terms: List<Term>) = contextLibrary.assertAll(terms)

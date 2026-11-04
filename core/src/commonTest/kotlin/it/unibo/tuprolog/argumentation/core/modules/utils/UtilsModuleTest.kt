@@ -51,7 +51,7 @@ class UtilsModuleTest {
         arg2pScope {
             testGoal(
                 "catch"(
-                    "utils" call "containsAny"("notAList", listOf("a")),
+                    "utils" call "uniqueByFirst"("notAList", "X"),
                     "error"("type_error"("list", "Culprit"), "_"),
                     "true",
                 ),

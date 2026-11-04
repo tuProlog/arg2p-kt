@@ -262,7 +262,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         reached([B|_], _, B) :- !.
         reached([A|Frontier], Visited, B) :-
             findall(C, (attack(_, A, C, _), \+ member(C, [A|Visited]), \+ member(C, Frontier)), Next),
-            utils::appendFast(Frontier, Next, Queue),
+            append(Frontier, Next, Queue),
             reached(Queue, [A|Visited], B).
 
         %--------------------------------------------------------------------------

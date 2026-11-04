@@ -9,14 +9,11 @@ import it.unibo.tuprolog.argumentation.core.flags.OpenConclusions
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BoundByQuery
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologStrictRules
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClause
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClauseNatural
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
@@ -39,9 +36,6 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 BpsNew.signature to BpsNew,
                 PrologPremises.signature to PrologPremises,
                 PrologDefeasibleRules.signature to PrologDefeasibleRules,
-                ExtractId.signature to ExtractId,
-                BoundByQuery.signature to BoundByQuery,
-                RuleIds.signature to RuleIds,
                 RuleToClause.signature to RuleToClause,
                 RuleToClauseNatural.signature to RuleToClauseNatural,
             )
@@ -123,7 +117,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 \+ member(sup(X, Z), Sup)
             ), New),
             utils::deduplicate(New, Fresh),
-            (Fresh == [] -> Closed = Sup ; utils::appendFast(Sup, Fresh, Next), supClosure(Next, Closed)).
+            (Fresh == [] -> Closed = Sup ; append(Sup, Fresh, Next), supClosure(Next, Closed)).
 
         naturalRules(Rules, Clauses, StrictIds, MappedIds) :-
             user::naturalTerms,
@@ -162,10 +156,10 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         strictRules(Others, CtrRules, Ids) :-
             findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesOld),
             prologStrictRules(StrictRulesNew),
-            utils::appendFast(StrictRulesOld, StrictRulesNew, StrictRules),
+            append(StrictRulesOld, StrictRulesNew, StrictRules),
             ruleIds(StrictRules, StrictIds),
             ruleIds(Others, OtherIds),
-            utils::appendFast(StrictIds, OtherIds, Taken),
+            append(StrictIds, OtherIds, Taken),
             transposition::transpose(StrictRules, StrictRules, Taken, CtrRules),
             extractId(CtrRules, Ids).
 
@@ -196,7 +190,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         axiomPremises(Axioms, Ids) :-
             findall([RuleName, Effect], user::(RuleName :-> Effect), AxiomsOld),
             prologAxioms(AxiomsNew),
-            utils::appendFast(AxiomsOld, AxiomsNew, Axioms),
+            append(AxiomsOld, AxiomsNew, Axioms),
             extractId(Axioms, Ids).
 
 
@@ -302,6 +296,63 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             findall(premiseOf(P, C), (rule(_, Premises, [C]), member(P, Premises)), Index),
             assertFromLast(Index),
             context_assert(premisesIndexed).
+
+        % ruleIds(+Rules, -Ids): the identifiers of Rules, the lists [Id, ...], in their order
+        ruleIds([], []).
+        ruleIds([[Id|_]|Rules], [Id|Ids]) :- !, ruleIds(Rules, Ids).
+        ruleIds([_|Rules], Ids) :- ruleIds(Rules, Ids).
+
+        % extractId(+Rules, -Ids): strict(Id) for the identifier of each of Rules
+        extractId([], []).
+        extractId([[Id|_]|Rules], [strict(Id)|Ids]) :- extractId(Rules, Ids).
+
+        % boundByQuery(+Rules, -Ids, -Constraints): of Rules, as read from the theory ([Id, Premises, Conclusion], the
+        % premises a conjunction, a list or [], and [Id, Conclusion] for a premise of the theory), Ids are those whose
+        % arguments a query could bind otherwise than the whole graph derives them: a variable of the conclusion that no
+        % ordinary premise has, or one that a Prolog check (prolog(Goal)) uses before the ordinary premises written before
+        % it bind it (X is Expr binds X). For the others the search steered by a query finds the arguments the whole graph
+        % has; contraries and constraints ({ C }) bind nothing. Constraints is yes if a premise is a constraint.
+        boundByQuery([], [], no).
+        boundByQuery([Rule|Rules], Ids, Constraints) :-
+            boundByQuery(Rules, OtherIds, OtherConstraints),
+            ruleParts(Rule, Id, Premises, Conclusion), !,
+            (\+ \+ bindsMore(Premises, Conclusion) -> Ids = [Id|OtherIds] ; Ids = OtherIds),
+            (member(Premise, Premises), nonvar(Premise), Premise = {_} -> Constraints = yes ; Constraints = OtherConstraints).
+        boundByQuery([_|Rules], Ids, Constraints) :-
+            boundByQuery(Rules, Ids, Constraints).
+
+        ruleParts([Id, Premises, Conclusion], Id, List, Conclusion) :- premisesOf(Premises, List, []).
+        ruleParts([Id, Conclusion], Id, [], Conclusion).
+
+        % The premises of a rule, a list or a conjunction, as a list (difference list)
+        premisesOf(Premises, [Premises|Tail], Tail) :- var(Premises), !.
+        premisesOf([], Tail, Tail) :- !.
+        premisesOf([Premise|Premises], [Premise|List], Tail) :- !, premisesOf(Premises, List, Tail).
+        premisesOf((A, B), List, Tail) :- !, premisesOf(A, List, Middle), premisesOf(B, Middle, Tail).
+        premisesOf(Premise, [Premise|Tail], Tail).
+
+        % The variables are bound as they are met, what is ground is what the premises so far bind (asked within \+ \+)
+        bindsMore([], Conclusion) :- \+ ground(Conclusion).
+        bindsMore([Premise|Premises], Conclusion) :-
+            nonvar(Premise), Premise = prolog(Goal), !,
+            (checked(Goal) -> bindsMore(Premises, Conclusion) ; true).
+        bindsMore([Premise|Premises], Conclusion) :-
+            nonvar(Premise), (Premise = ~(_) ; Premise = {_}), !,
+            bindsMore(Premises, Conclusion).
+        bindsMore([Premise|Premises], Conclusion) :-
+            bindAll(Premise),
+            bindsMore(Premises, Conclusion).
+
+        % A check has its variables bound when it runs: a conjunction in its order, X is Expr binding X
+        checked(Goal) :- nonvar(Goal), Goal = (A, B), !, checked(A), checked(B).
+        checked(Goal) :- nonvar(Goal), Goal = (X is Expr), var(X), !, ground(Expr), bindAll(X).
+        checked(Goal) :- ground(Goal).
+
+        bindAll(Term) :- var(Term), !, Term = bound.
+        bindAll(Term) :- atomic(Term), !.
+        bindAll(Term) :- Term =.. [_|Args], bindEach(Args).
+        bindEach([]).
+        bindEach([Arg|Args]) :- bindAll(Arg), bindEach(Args).
 
         %! boundByQuery(?Id)
         %  A query could bind the arguments of the rule or premise Id otherwise than the whole graph derives them: its

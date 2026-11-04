@@ -62,9 +62,6 @@ internal class Context : ArgLibrary {
     /** The store of the given branch, the active one if null; null for a branch that does not exist */
     fun store(branch: Int? = null): ClauseStore? = if (branch == null) branches.selected else branches.storeOf(branch)
 
-    /** The terms asserted in the active branch, in order (utils::assertAll/1) */
-    fun assertAll(terms: Iterable<Term>) = terms.forEach { branches.selected.assertA(it) }
-
     /** The identifier of [term] if it has one already, without giving it one */
     fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
 

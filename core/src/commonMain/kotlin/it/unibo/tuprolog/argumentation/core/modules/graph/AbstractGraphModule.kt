@@ -22,8 +22,7 @@ internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentati
 
         %! save(+Arguments, +Attacks)
         %  The abstract framework of Arguments (atoms) and Attacks (att(A, B) terms) saved in the context, each argument
-        %  as abstractArgument/2 makes it. The lists are visited natively (forEach): as the goal of a findall, every step
-        %  of the saving would visit them. The goals of forEach are solved in the module utils: they name the modules of
+        %  as abstractArgument/2 makes it. The goals of forEach are solved in the module utils: they name the modules of
         %  their predicates.
         save(Arguments, Attacks) :-
             utils::forEach(A, Arguments, (
@@ -46,7 +45,7 @@ internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentati
         arguments(Arguments) :-
             findall(A, user::arg(A), Stated),
             findall(A, (theoryClause(A, true), atom(A)), Atoms),
-            utils::appendFast(Stated, Atoms, Arguments).
+            append(Stated, Atoms, Arguments).
         attacks(Attacks) :-
             findall(att(A, B), user::att(A, B), Stated),
             findall(att(A, B), (theoryClause((A -> B), Body), user::call(Body)), Forward),

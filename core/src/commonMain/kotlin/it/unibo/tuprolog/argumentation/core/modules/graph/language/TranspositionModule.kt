@@ -28,7 +28,7 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
             (conflict::declaredCounted -> context_assert(transposing(declared)) ; true),
             reverse(Rules, Reversed),
             findall(TrH, (member(H, Reversed), transposition(H, Taken, TrH)), Tran),
-            utils::appendFast(TempCtrRules, Tran, All),
+            append(TempCtrRules, Tran, All),
             utils::uniqueByFirst(All, CtrRules),
             context_retract(transposing(_)).
 
@@ -52,7 +52,7 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
             % the premises before X in the order they are written (Skipped has them reversed): a Prolog check among them
             % comes after the premises binding its variables, as in the rule
             reverse(Skipped, Before),
-            utils::appendFast(Before, T, CleanedPrec),
+            append(Before, T, CleanedPrec),
             contradictories(X, Effect, XNegated, EffectNegated, Kind),
             listToTuple([EffectNegated|CleanedPrec], NewPrec),
             newIdentifier(Skipped, Id, Taken, BaseId),

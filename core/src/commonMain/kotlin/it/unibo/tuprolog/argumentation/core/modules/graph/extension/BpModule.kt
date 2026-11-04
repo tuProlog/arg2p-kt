@@ -35,7 +35,7 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
         createBpArguments([(Bp, Burdened)|Others], [(Conflict, Burdened)|BpPairs]) :-
             argument::rules(Bp, BpRules),
             argument::rules(Burdened, Rules),
-            utils::appendFast(BpRules, Rules, AllRules),
+            append(BpRules, Rules, AllRules),
             argument::conclusion(Burdened, Conclusion),
             argument::infoParts(Info, [artificial], [artificial], []),
             argument::new([artificial|AllRules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
