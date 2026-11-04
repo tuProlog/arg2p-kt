@@ -82,6 +82,9 @@ internal object Op {
     const val ARG = 56
     const val FUNCTOR = 57
 
+    // From here on, an instruction stands for an entry of a clause compiled (see Program.compileHot)
+    const val COMPILED = 1 shl 16
+
     // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
     // constant
     const val T_X = 1
