@@ -18,6 +18,7 @@ import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import it.unibo.tuprolog.theory.Theory
+import kotlin.concurrent.Volatile
 
 /**
  * A program of the machine (spike): the symbol tables (atoms, functors, floats and large integers, each once, so that
@@ -162,6 +163,7 @@ internal class Program() {
 
         /** Whether compiling it was tried and cannot be done */
         var notGenerated = false
+
         val key: Int get() = if (keys.isEmpty()) 0 else keys[0]
 
         /** Whether an argument beyond the first is keyed */
@@ -237,7 +239,63 @@ internal class Program() {
         private fun changed() {
             all = null
             byKey = null
+            deepIndexes = null
+            deepAsks = 0
             version++
+        }
+
+        // The indexes of the arguments beyond the first, by the position of the argument: each made once goals keep
+        // asking for it with the clauses unchanged (replaced as a whole, for the threads reading a frozen predicate)
+        @Volatile
+        private var deepIndexes: Array<DeepIndex?>? = null
+        private var deepAsks = 0
+
+        /** The clauses a goal may match by the key of an argument beyond the first; no table: it would not help */
+        private class DeepIndex(
+            val byKey: WordTable<IntArray>?,
+            val miss: IntArray,
+        )
+
+        /**
+         * The indexes of the clauses a goal with [key] in its argument [position] (beyond the first) may match, in
+         * order; null if no index of that argument says
+         */
+        fun candidatesAt(
+            position: Int,
+            key: Int,
+        ): IntArray? {
+            val index = deepIndexes?.get(position)
+            if (index == null) {
+                if (++deepAsks < DEEP_INDEX_AFTER) return null
+                return locked(this) { deepIndex(position) }.let { made -> made.byKey?.let { it[key] ?: made.miss } }
+            }
+            val table = index.byKey ?: return null
+            return table[key] ?: index.miss
+        }
+
+        private fun deepIndex(position: Int): DeepIndex {
+            deepIndexes?.get(position)?.let { return it }
+            val n = clauses.size
+            val groups = HashMap<Int, ArrayList<Int>>()
+            val miss = ArrayList<Int>()
+            for (i in 0 until n) {
+                val keys = clauses[i].keys
+                val key = if (position < keys.size) keys[position] else 0
+                if (key == 0) miss.add(i) else groups.getOrPut(key) { ArrayList() }.add(i)
+            }
+            // (clauses with no key are candidates for every key: with more than a few, the index is not worth its lists)
+            val worthIt = groups.size >= 2 && miss.size <= DEEP_INDEX_MISSES
+            val table = if (worthIt) WordTable<IntArray>() else null
+            if (table != null) {
+                for ((key, group) in groups) {
+                    table[key] = (if (miss.isEmpty()) group else (group + miss).sorted()).toIntArray()
+                }
+            }
+            val index = DeepIndex(table, miss.toIntArray())
+            val updated = deepIndexes?.copyOf() ?: arrayOfNulls<DeepIndex>(MAX_DEEP_POSITION + 1)
+            updated[position] = index
+            deepIndexes = updated
+            return index
         }
 
         /**
@@ -277,6 +335,12 @@ internal class Program() {
 
         companion object {
             const val INDEXED_FROM = 8
+
+            /** The last argument an index is made for */
+            const val MAX_DEEP_POSITION = 3
+
+            private const val DEEP_INDEX_AFTER = 16
+            private const val DEEP_INDEX_MISSES = 8
         }
     }
 

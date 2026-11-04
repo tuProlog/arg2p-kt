@@ -82,6 +82,9 @@ internal object Op {
     const val ARG = 56
     const val FUNCTOR = 57
 
+    // The cut of a clause with no frame: no goal was called before it, the barrier is still where the call left it
+    const val CUT_NECK = 58
+
     // From here on, an instruction stands for an entry of a clause compiled (see Program.compileHot)
     const val COMPILED = 1 shl 16
 

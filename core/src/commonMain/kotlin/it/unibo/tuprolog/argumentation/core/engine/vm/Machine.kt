@@ -714,9 +714,8 @@ internal class Machine(
                     val key = cps[base + 12]
                     val source = cps[base + 16]
                     cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
-                    popChoicePoint()
                     val predicate = if (source == THEORY) program.theory.predicate(functor)!! else predicateOf(functor)!!
-                    if (tryClauses(predicate, nextClause, arity, barrier, key, source)) return true
+                    if (retryClauses(predicate, nextClause, arity, barrier, key, base)) return true
                 }
             }
         }
@@ -740,46 +739,133 @@ internal class Machine(
     private fun predicateOf(functor: Int): Program.Predicate? =
         (if (theoryVisible) program.theory.predicate(functor) else null) ?: scope.predicate(functor)
 
-    // Enters the first clause of [predicate] from the position [from] among the candidates for [key] (the first
-    // argument's, computed when [from] is 0), leaving a choice point if another may match (the keys of every
-    // argument of its head are matched against the arguments, as the engine left no choice point for a clause whose
-    // head did not unify); false when none does
+    // Enters the first clause of [predicate] the goal on the registers may match, leaving a choice point if another
+    // may too (by the keys of every argument of the clauses, the engine leaving no choice point for a clause whose head
+    // did not unify); false when none does
     private fun tryClauses(
         predicate: Program.Predicate,
-        from: Int,
         arity: Int,
         barrier: Int,
-        key0: Int,
-        source: Int,
     ): Boolean {
         val n = predicate.size
         if (++predicate.heat and (Program.HOT_CALLS - 1) == 0) program.compileHot(predicate)
         // (one clause: its head decides, with no key to look at)
-        if (n == 1 && from == 0) {
+        if (n == 1) {
             cutBarrier = barrier
             if (ClauseObservers.active) ClauseObservers.resolved(predicate.clauses[0].source)
             pc = predicate.starts[0]
             return true
         }
-        val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
-        if (key != 0 && n >= Program.Predicate.INDEXED_FROM) return tryIndexed(predicate, from, arity, barrier, key, source)
-        // The clauses in order, over the flat tables: the first candidate by its first argument, its head deciding
-        // the rest; the lookahead for another by every argument the clause keys
+        val key = if (arity > 0) keyOfHeap(regs[0]) else 0
+        if (n >= Program.Predicate.INDEXED_FROM) {
+            val candidates = if (key != 0) predicate.candidates(key) else deepCandidates(predicate, arity)
+            if (candidates != null) return tryCandidates(predicate, candidates, arity, barrier, key)
+        }
+        // The clauses in order, over the flat tables: the first candidate by its first argument, its head deciding the
+        // rest; the lookahead for another by every argument the clause keys
         val firstKeys = predicate.firstKeys
-        var i = from
-        if (n - from > 1) {
-            while (i < n && !matches(firstKeys[i], key)) i++
-            if (i == n) return false
-            var j = i + 1
-            if (predicate.deep) {
-                val clauses = predicate.clauses
-                while (j < n && !matches(clauses[j], key, arity)) j++
-            } else {
-                while (j < n && !matches(firstKeys[j], key)) j++
+        var i = 0
+        while (i < n && !matches(firstKeys[i], key)) i++
+        if (i == n) return false
+        val j = nextCandidate(predicate, i + 1, key, arity)
+        if (j < n) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, MERGED)
+        cutBarrier = barrier
+        if (ClauseObservers.active) ClauseObservers.resolved(predicate.clauses[i].source)
+        pc = predicate.starts[i]
+        return true
+    }
+
+    // The clauses of a large [predicate] a goal with no first argument may match, if the index of the next bound
+    // argument that has one says
+    private fun deepCandidates(
+        predicate: Program.Predicate,
+        arity: Int,
+    ): IntArray? {
+        if (!predicate.deep) return null
+        val end = minOf(arity - 1, Program.Predicate.MAX_DEEP_POSITION)
+        var position = 1
+        while (position <= end) {
+            val k = keyOfHeap(regs[position])
+            if (k != 0) predicate.candidatesAt(position, k)?.let { return it }
+            position++
+        }
+        return null
+    }
+
+    // [tryClauses] over the clauses an index gave
+    private fun tryCandidates(
+        predicate: Program.Predicate,
+        candidates: IntArray,
+        arity: Int,
+        barrier: Int,
+        key: Int,
+    ): Boolean {
+        val clauses = predicate.clauses
+        val size = candidates.size
+        var i = 0
+        while (i < size && !matches(clauses[candidates[i]].key, key)) i++
+        if (i == size) return false
+        var j = i + 1
+        while (j < size && !matches(clauses[candidates[j]], key, arity)) j++
+        if (j < size) pushChoicePoint(predicate.functor, candidates[j], arity, barrier, 0, key, MERGED)
+        cutBarrier = barrier
+        val clause = clauses[candidates[i]]
+        if (ClauseObservers.active) ClauseObservers.resolved(clause.source)
+        pc = clause.start
+        return true
+    }
+
+    // The next clause of the choice point on top (at [base]) from the clause [from], the registers holding its
+    // arguments: the choice point stays for the clause after it, if any, and goes otherwise; false when none is left
+    private fun retryClauses(
+        predicate: Program.Predicate,
+        from: Int,
+        arity: Int,
+        barrier: Int,
+        key0: Int,
+        base: Int,
+    ): Boolean {
+        val n = predicate.size
+        // (from the first clause: the alternatives a builtin left, no key computed yet)
+        val key = if (from == 0 && arity > 0) keyOfHeap(regs[0]) else key0
+        val candidates =
+            when {
+                n < Program.Predicate.INDEXED_FROM -> null
+                key != 0 -> predicate.candidates(key)
+                else -> deepCandidates(predicate, arity)
             }
-            if (j < n) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
-        } else if (i == n) {
-            return false
+        val i: Int
+        val j: Int
+        if (candidates != null) {
+            val clauses = predicate.clauses
+            val size = candidates.size
+            var p = if (from == 0) 0 else firstFrom(candidates, from)
+            while (p < size && !matches(clauses[candidates[p]], key, arity)) p++
+            if (p >= size) {
+                popChoicePoint()
+                return false
+            }
+            var q = p + 1
+            while (q < size && !matches(clauses[candidates[q]], key, arity)) q++
+            i = candidates[p]
+            j = if (q < size) candidates[q] else n
+        } else {
+            val firstKeys = predicate.firstKeys
+            var first = from
+            while (first < n && !matches(firstKeys[first], key)) first++
+            if (first >= n) {
+                popChoicePoint()
+                return false
+            }
+            i = first
+            j = nextCandidate(predicate, i + 1, key, arity)
+        }
+        if (j < n) {
+            truncateCalls(cps[base + 10])
+            cps[base + 7] = j
+            cps[base + 12] = key
+        } else {
+            popChoicePoint()
         }
         cutBarrier = barrier
         if (ClauseObservers.active) ClauseObservers.resolved(predicate.clauses[i].source)
@@ -787,33 +873,37 @@ internal class Machine(
         return true
     }
 
-    // The candidates of [key] (the clauses of an indexed predicate it may match), in order
-    private fun tryIndexed(
+    // The first clause from [from] on the keys of all its arguments do not exclude
+    private fun nextCandidate(
         predicate: Program.Predicate,
         from: Int,
-        arity: Int,
-        barrier: Int,
         key: Int,
-        source: Int,
-    ): Boolean {
-        val clauses = predicate.clauses
-        val candidates = predicate.candidates(key)
-        val size = candidates.size
-        var i = from
-        if (size - from > 1) {
-            while (i < size && !matches(clauses[candidates[i]].key, key)) i++
-            if (i == size) return false
-            var j = i + 1
-            while (j < size && !matches(clauses[candidates[j]], key, arity)) j++
-            if (j < size) pushChoicePoint(predicate.functor, j, arity, barrier, 0, key, source)
-        } else if (i == size) {
-            return false
+        arity: Int,
+    ): Int {
+        val n = predicate.size
+        var j = from
+        if (predicate.deep) {
+            val clauses = predicate.clauses
+            while (j < n && !matches(clauses[j], key, arity)) j++
+        } else {
+            val firstKeys = predicate.firstKeys
+            while (j < n && !matches(firstKeys[j], key)) j++
         }
-        cutBarrier = barrier
-        val clause = clauses[candidates[i]]
-        if (ClauseObservers.active) ClauseObservers.resolved(clause.source)
-        pc = clause.start
-        return true
+        return j
+    }
+
+    // The position in the ascending [candidates] of the first clause from [clause] on
+    private fun firstFrom(
+        candidates: IntArray,
+        clause: Int,
+    ): Int {
+        var low = 0
+        var high = candidates.size
+        while (low < high) {
+            val middle = (low + high) ushr 1
+            if (candidates[middle] < clause) low = middle + 1 else high = middle
+        }
+        return low
     }
 
     private fun matches(
@@ -852,7 +942,7 @@ internal class Machine(
         }
         // (a cut in a clause of the predicate cuts its alternatives alone, whatever the goal is transparent to)
         val predicate = predicateOf(functor) ?: return callPrimitiveOf(functor, arity)
-        return if (tryClauses(predicate, 0, arity, cpTop, 0, MERGED)) JUMPED else FAILED
+        return if (tryClauses(predicate, arity, cpTop)) JUMPED else FAILED
     }
 
     // Every so many calls, or the heap above its threshold: the collection, the deadline and the interruption
@@ -1142,6 +1232,10 @@ internal class Machine(
                     ip = continuation
                 }
                 Op.PROCEED -> ip = continuation
+                Op.CUT_NECK -> {
+                    cutTo(cutBarrier)
+                    ip = at + 1
+                }
                 Op.CUT -> {
                     cutTo(local[frame + 2])
                     ip = at + 1
@@ -1876,6 +1970,42 @@ internal class Machine(
     fun jContinuation(): Int = continuation
 
     fun jCut() = cutTo(local[frame + 2])
+
+    fun jCutNeck() = cutTo(cutBarrier)
+
+    // The integer in a word, [NOT_INTEGER] if it holds none
+    private fun integerOf(w0: Int): Long {
+        val w = deref(w0)
+        return when (tag(w)) {
+            INT -> payload(w).toLong()
+            BIG -> program.bigs[payload(w)]
+            else -> NOT_INTEGER
+        }
+    }
+
+    fun jIntX(r: Int): Long = integerOf(regs[r])
+
+    fun jIntY(slot: Int): Long = integerOf(local[frame + FRAME + slot])
+
+    fun jIsNewX(
+        value: Long,
+        r: Int,
+    ) {
+        regs[r] = program.intWord(value)
+    }
+
+    fun jIsNewY(
+        value: Long,
+        slot: Int,
+    ) {
+        local[frame + FRAME + slot] = program.intWord(value)
+    }
+
+    fun jIsTarget(
+        value: Long,
+        kind: Int,
+        operand: Int,
+    ): Boolean = toTarget(kind, operand, program.intWord(value))
 
     fun jGetLevel(a: Int) {
         local[frame + FRAME + a] = Words.int(cpTop)
@@ -3720,10 +3850,11 @@ internal class Machine(
         const val CONTINUE = 1
         const val JUMPED = 2
 
-        // Every so many calls of a predicate, its clauses are compiled if they are not yet
-
         // An inline builtin leaving the call to the builtin itself
         private const val NOT_INLINE = -1
+
+        /** What stands for no integer among the values of an expression in generated code (see [jIntX]); an integer that is it takes the slow way */
+        const val NOT_INTEGER = Long.MIN_VALUE
 
         // The outcomes of unwinding a ball
         private const val UNCAUGHT = 0

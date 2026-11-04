@@ -77,7 +77,7 @@ internal class Compiler(
     private var chunk = 0
     private var leafGoals = 0
     private var hasControl = false
-    private var hasCut = false
+    private var cutAfterGoal = false
     private var levels = 0
     private var maxArity = 0
     private var nextTemp = 0
@@ -140,7 +140,7 @@ internal class Compiler(
         chunk = 0
         leafGoals = 0
         hasControl = false
-        hasCut = false
+        cutAfterGoal = false
         levels = 0
         maxArity = head.arity
         val body = parse(bodyTerm)
@@ -152,7 +152,7 @@ internal class Compiler(
             info.permanent = info.chunks.size > 1
             if (info.permanent) info.register = permanents++
         }
-        needsEnv = permanents > 0 || leafGoals > 1 || hasControl || hasCut
+        needsEnv = permanents > 0 || leafGoals > 1 || hasControl || cutAfterGoal
         preferRegisters(head)
         nextTemp = maxArity
         nextLevel = permanents
@@ -302,7 +302,7 @@ internal class Compiler(
                     analyze(body.goal, first = false, region = true)
                     inlineOpen = false
                 }
-            Body.Cut -> hasCut = true
+            Body.Cut -> if (leafGoals > 0) cutAfterGoal = true
             Body.True -> Unit
         }
     }
@@ -685,7 +685,11 @@ internal class Compiler(
             }
             Body.Cut -> {
                 // (a cut inside a negation or a condition is local to it: the choice point of the construct stays)
-                if (cutLevels.isEmpty()) program.emit(Op.CUT) else program.emit(Op.CUT_LOCAL, cutLevels[cutLevels.size - 1])
+                when {
+                    cutLevels.isNotEmpty() -> program.emit(Op.CUT_LOCAL, cutLevels[cutLevels.size - 1])
+                    needsEnv -> program.emit(Op.CUT)
+                    else -> program.emit(Op.CUT_NECK)
+                }
                 return false
             }
             Body.True -> return false
