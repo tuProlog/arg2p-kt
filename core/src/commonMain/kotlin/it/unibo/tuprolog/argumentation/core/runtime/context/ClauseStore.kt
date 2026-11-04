@@ -28,7 +28,7 @@ import it.unibo.tuprolog.core.Var
  *
  * A lookup reads the goal where it is, on the heap of the machine or in a record ([candidates]): each argument position
  * of a predicate is indexed, when first looked up by, by the top symbol of the stored arguments and, for large buckets,
- * by a hash of the ground ones, and so is each place inside its clauses declared for it ([PLACES]). What it gives are
+ * by a hash of the ground ones, and so is each place inside its clauses declared for it ([ContextSchema]). What it gives are
  * candidates, which the unification of their heads decides.
  *
  * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they
@@ -294,16 +294,10 @@ internal class ClauseStore private constructor(
         fun candidates(): Candidates = if (size == 0) Candidates.NONE else Candidates(items, size)
     }
 
-    /** A place inside the clauses of a predicate: an argument of the head and the way from it through list cells, each step 0 for the head of a cell and 1 for its tail */
-    class Place(
-        val argument: Int,
-        val steps: IntArray,
-    )
-
     // The index of an argument position or of a place, built when first looked up by: by the top symbol of the stored
     // terms there, and for the ground ones by a hash of the whole of them (that one built when a bucket turns out to be large)
     private class Position(
-        val place: Place,
+        val place: ContextSchema.Place,
     ) {
         private fun termOf(record: Record): Int = placed(record.words, argumentOf(record, place.argument), place.steps)
 
@@ -385,7 +379,7 @@ internal class ClauseStore private constructor(
         // The data that can change it: the other data holding it have it from a copy, and make their own before a change
         val owner: Data,
         // The arguments, then the places declared for it
-        val places: Array<Place>,
+        val places: Array<ContextSchema.Place>,
     ) {
         var all = Bucket()
         var positions = arrayOfNulls<Position>(places.size)
@@ -478,8 +472,15 @@ internal class ClauseStore private constructor(
             record: Record,
         ): Predicate {
             val arity = arityOf(record, record.head)
-            val declared = if (tag(key) == FUN) PLACES["${record.program!!.functorName(key)}/$arity"].orEmpty() else emptyList()
-            val places = Array(arity + declared.size) { if (it < arity) Place(it, NO_STEPS) else declared[it - arity] }
+            val declared =
+                if (tag(key) ==
+                    FUN
+                ) {
+                    ContextSchema.indexed["${record.program!!.functorName(key)}/$arity"].orEmpty()
+                } else {
+                    emptyList()
+                }
+            val places = Array(arity + declared.size) { if (it < arity) ContextSchema.Place(it, NO_STEPS) else declared[it - arity] }
             return Predicate(arity, this, places)
         }
 
@@ -584,13 +585,6 @@ internal class ClauseStore private constructor(
 
     companion object {
         private val NO_STEPS = IntArray(0)
-
-        // The places looked up by inside the clauses of a predicate, besides its arguments: the claim of an argument of
-        // the graph, argument([Rules, TopRule, [Claim], Body, Info])
-        private val PLACES = mapOf("argument/1" to listOf(Place(0, intArrayOf(1, 1, 0, 0))))
-
-        /** The places a lookup names (context_by/3, context_matching/3): the conclusion of an argument, as above */
-        val KEYS = mapOf("conclusion" to Place(0, intArrayOf(1, 1, 0)))
 
         // A variable for what no cell leads to: a term with another shape has no key there
         private const val NOWHERE = 0

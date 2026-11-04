@@ -4,13 +4,13 @@ import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.attempts
 import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
+import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.solve.Signature
 
 // The term [w] with [key] at the place: through the cells it has, the others made with fresh variables around
 private fun NativeCall.unifyAt(
-    place: ClauseStore.Place,
+    place: ContextSchema.Place,
     w0: Int,
     key: Int,
 ): Boolean {
@@ -26,16 +26,16 @@ private fun NativeCall.unifyAt(
     return unify(w, built)
 }
 
-private fun NativeCall.placeOf(name: Int): ClauseStore.Place? =
+private fun NativeCall.placeOf(name: Int): ContextSchema.Place? =
     if (kind(name) ==
         NativeCall.ATOM
     ) {
-        ClauseStore.KEYS[atomName(name)]
+        ContextSchema.keys[atomName(name)]
     } else {
         null
     }
 
-/** context_by(+Name, ?Key, +Fact): the solutions of Fact in the active branch, Key at the place named Name of it (see [ClauseStore.KEYS]) */
+/** context_by(+Name, ?Key, +Fact): the solutions of Fact in the active branch, Key at the place named Name of it (see [ContextSchema.keys]) */
 internal class ContextBy(
     private val branches: ContextBranches,
 ) : AbstractNativePrimitive(Signature("context_by", 3)) {
@@ -57,7 +57,7 @@ internal class ContextBy(
 
 /**
  * context_matching(+Name, +Key, ?Fact): Fact is a fact of the active branch, as stored, whose place named Name unifies
- * with Key, which it does not bind (see [ClauseStore.KEYS])
+ * with Key, which it does not bind (see [ContextSchema.keys])
  */
 internal class ContextMatching(
     private val branches: ContextBranches,

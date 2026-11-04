@@ -46,8 +46,10 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
   bucket is large, and a hash of the whole head for goals with all their arguments bound, each index built when first
   needed and kept across assertions and removals (see `ClauseStore`). The places inside the clauses declared for a
   predicate are indexed the same way, and named ones are looked up with `context_by/3` and `context_matching/3`. A term
-  with an identifier (`context_id/2`) is kept once: a branch asserts its record (`context_assert_id/1`), and
-  `context_term/2` reads it back. The other solvers read the records as terms.
+  with an identifier (`context_id/2`) is kept once: a branch asserts its record (`context_assert_id/1`), a fact of
+  another name may share it (`Record.named`), and `context_term/2` reads it back. What the context knows of the model is
+  in `ContextSchema`: those places, and the relations of the graph answered from the identifiers. The other solvers read
+  the records as terms.
 - `SharedPrograms`: the clauses of the libraries are compiled once per process, into a base program per set of
   libraries; a solver's program starts as a copy of the base (its symbols and its code) and compiles the theory of
   the user alone. A base program grows as modules are first called; a solver uses the scopes compiled before its

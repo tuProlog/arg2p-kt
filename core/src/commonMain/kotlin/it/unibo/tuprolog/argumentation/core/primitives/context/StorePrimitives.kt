@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.items
 import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
+import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
@@ -13,26 +14,12 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 
 // The lookups of the primitives of the stores (the branches of the context, the cache), as the machine runs them
 
-// The relations of the graph kept by the identifiers of their arguments: looked up in the context, a goal of the module
-// graphStore answers them, of the active branch or of a given one (unless clauses were asserted for them)
-private class View(
-    val arity: Int,
-    val active: String,
-    val inBranch: String,
-)
-
-private val VIEWS =
-    mapOf(
-        "support" to View(2, "support", "supportIn"),
-        "attack" to View(4, "attackFound", "attackFoundIn"),
-    )
-
 private fun viewOf(
     goal: Term,
     store: ClauseStore,
-): View? =
+): ContextSchema.View? =
     (goal as? Struct)?.let { struct ->
-        VIEWS[struct.functor]?.takeIf { it.arity == struct.arity && store.candidates(Record.of(struct)).isEmpty() }
+        ContextSchema.views[struct.functor]?.takeIf { it.arity == struct.arity && store.candidates(Record.of(struct)).isEmpty() }
     }
 
 /** Whether [goal], looked up in [store], is one of the relations of the graph kept by identifiers */
@@ -53,7 +40,7 @@ internal fun NativeCall.lookupOrView(
 ): Int {
     val goal = arg(i)
     if (kind(goal) != NativeCall.STRUCT) return lookup(store, wrap, i)
-    val view = VIEWS[functorName(goal)]?.takeIf { it.arity == arityOf(goal) && store.candidates(record(goal)).isEmpty() }
+    val view = ContextSchema.views[functorName(goal)]?.takeIf { it.arity == arityOf(goal) && store.candidates(record(goal)).isEmpty() }
     if (view == null) return lookup(store, wrap, i)
     val arguments = IntArray(view.arity) { argOf(goal, it) }
     val answer =
@@ -62,7 +49,7 @@ internal fun NativeCall.lookupOrView(
         } else {
             struct(view.inBranch, intArrayOf(int(branch.toLong())) + arguments)
         }
-    return inline(struct("::", intArrayOf(atom("graphStore"), answer)), libraries, theoryVisible = false)
+    return inline(struct("::", intArrayOf(atom(ContextSchema.MODULE), answer)), libraries, theoryVisible = false)
 }
 
 /** The lookup of a goal in a branch: context_check(Branch, Goal) */
