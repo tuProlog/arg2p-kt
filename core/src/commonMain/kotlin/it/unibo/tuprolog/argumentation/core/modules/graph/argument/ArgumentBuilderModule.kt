@@ -18,13 +18,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             mode(Mode),
             buildArgumentsFromPremises(Mode),
             buildArgumentsFromEmptyRules(Mode),
-            findall([RuleID, RuleBody, RuleHead], (
-                parser::rule(RuleID, RuleBody, RuleHead),
-                \+ emptyRule([RuleID, RuleBody, RuleHead])
-            ), Rules),
-            context_retract(graphRule(_, _)),
-            context_retract(ruleUses(_, _)),
-            storeRules(Rules, 0),
             findall(X, graphStore::newConclusion(a, [X]), N),
             buildArgumentsFromRules(N, b, Mode).
 
@@ -33,16 +26,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         % constraints were not there
         mode(constrained) :- parser::constrained, !.
         mode(base).
-
-        % The rules are kept in the context by their place, with the statements each of them uses: a round reaches the
-        % rules using its conclusions through these (ruleUses/2), rather than going through all the rules.
-        storeRules([], _).
-        storeRules([Rule|Rules], Place) :-
-            context_assert(graphRule(Place, Rule)),
-            Rule = [_, Body, _],
-            findall(_, (member(Statement, Body), context_assert(ruleUses(Statement, Place))), _),
-            Next is Place + 1,
-            storeRules(Rules, Next).
 
         buildArgumentsFromPremises(Mode) :-
             findall(_, (
@@ -74,14 +57,15 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             mode(Mode),
             buildArgumentsFromRules(N, Tn, Mode).
 
-        % A round fires every rule whose body uses a conclusion derived in the previous round (N), in the order of the
-        % rules, tagging the new conclusions with Tn: the rounds go on while they derive something
+        % A round fires every rule whose body uses a conclusion derived in the previous round (N), reached through the
+        % index of the parser rather than going through all the rules, in their order, tagging the new conclusions with
+        % Tn: the rounds go on while they derive something
         buildArgumentsFromRules(N, Tn, Mode) :-
-            findall(Place, (member(Conclusion, N), context_check(ruleUses(Conclusion, Place))), Reached),
+            findall(Place, (member(Conclusion, N), parser::ruleUsingAt(Conclusion, Place)), Reached),
             utils::deduplicate(Reached, Places),
             findall(_, (
                 member(Place, Places),
-                context_check(graphRule(Place, [Id, Body, Conc])),
+                parser::ruleAt(Place, [Id, Body, Conc]),
                 buildArgumentsFromRule(Tn, [Id, Body, Conc], Mode)
             ), _),
             (graphStore::newConclusion(Tn, _) -> nextRound(Tn, Mode) ; true).

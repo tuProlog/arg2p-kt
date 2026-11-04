@@ -312,18 +312,45 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
         %! ruleUsing(?Premise, ?Conclusion)
         %  A rule concludes Conclusion (a statement) from Premise, among others: rule/3 and member/2 over its
-        %  premises, through an index of the premises of the rules built once in the active context.
+        %  premises, through the index of the rules built once in the active context.
         ruleUsing(Premise, Conclusion) :-
-            premisesIndexed,
-            context_check(premiseOf(Premise, Conclusion)).
+            rulesIndexed,
+            context_check(premiseOf(Premise, Conclusion, _)).
 
-        % The index: premiseOf/2 facts asserted from the last, as context_check returns the newest clauses first, so
+        %! ruleUsingAt(?Premise, ?Place)
+        %  The rule at Place (see ruleAt/2) has Premise among its premises.
+        ruleUsingAt(Premise, Place) :-
+            rulesIndexed,
+            context_check(premiseOf(Premise, _, Place)).
+
+        %! ruleAt(?Place, ?Rule)
+        %  Rule, [Id, Premises, Conclusion], is the one at Place in the order of rule/3.
+        ruleAt(Place, Rule) :-
+            rulesPlaced,
+            context_check(ruleAt(Place, Rule)).
+
+        % The index: premiseOf/3 facts asserted from the last, as context_check returns the newest clauses first, so
         % that lookups give the rules in the order of rule/3
-        premisesIndexed :- context_check(premisesIndexed), !.
-        premisesIndexed :-
-            findall(premiseOf(P, C), (rule(_, Premises, [C]), member(P, Premises)), Index),
+        rulesIndexed :- context_check(rulesIndexed), !.
+        rulesIndexed :-
+            findall(premiseOf(P, C, Place), (placedRule(Place, [_, Premises, [C]]), member(P, Premises)), Index),
             assertFromLast(Index),
-            context_assert(premisesIndexed).
+            context_assert(rulesIndexed).
+
+        % The rules themselves, only for who reads them by their places
+        rulesPlaced :- context_check(rulesPlaced), !.
+        rulesPlaced :-
+            findall(_, (placedRule(Place, Rule), context_assert(ruleAt(Place, Rule))), _),
+            context_assert(rulesPlaced).
+
+        placedRule(Place, Rule) :-
+            findall([Id, Premises, Conclusion], rule(Id, Premises, Conclusion), Rules),
+            placed(Rules, 0, Place, Rule).
+
+        placed([Rule|_], Place, Place, Rule).
+        placed([_|Rules], At, Place, Rule) :-
+            Next is At + 1,
+            placed(Rules, Next, Place, Rule).
 
         % ruleIds(+Rules, -Ids): the identifiers of Rules, the lists [Id, ...], in their order
         ruleIds([], []).
