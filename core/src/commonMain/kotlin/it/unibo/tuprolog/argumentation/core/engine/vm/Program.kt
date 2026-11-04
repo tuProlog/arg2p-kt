@@ -52,11 +52,15 @@ internal class Program() {
     private var base: Program? = null
     private var baseCodeTop = 0
 
-    // The scopes of a base program by the aliases of their libraries, each with the libraries (with clauses) it was
-    // compiled from and where its code ends
-    private val sharedScopes = HashMap<List<String>, Scope>()
+    // The code of the libraries: of a base program by the source of the module, of any other by the library
+    private val sharedCodes = HashMap<String, LibraryCode>()
+    private val localCodes = HashMap<IdentityKey, LibraryCode>()
 
-    /** A program starting as a copy of [base]: its symbols, its code, its scopes (compiled once, for every solver) */
+    /** How many times the clauses of the theory of the user changed since the program was made */
+    var theoryVersion = 0L
+        private set
+
+    /** A program starting as a copy of [base]: its symbols and its code (the modules compiled once, for every solver) */
     constructor(base: Program) : this() {
         // (the tables as the base has them: those the primary constructor made are its first entries too)
         atoms.clear()
@@ -116,6 +120,9 @@ internal class Program() {
         val clauses = ArrayList<ClauseCode>()
         private var all: IntArray? = null
         private var byKey: HashMap<Int, IntArray>? = null
+
+        // The clauses with no key, for the keys a frozen predicate does not have
+        private var frozenMiss: IntArray? = null
 
         /** The first-argument key and the start of each clause, flat, for the selection to read */
         var firstKeys = IntArray(4)
@@ -181,6 +188,7 @@ internal class Program() {
          */
         fun candidates(key: Int): IntArray {
             if (key == 0 || clauses.size < INDEXED_FROM) return all ?: IntArray(clauses.size) { it }.also { all = it }
+            frozenMiss?.let { miss -> return byKey!![key] ?: miss }
             val index = byKey ?: HashMap<Int, IntArray>().also { byKey = it }
             return index.getOrPut(key) {
                 val matching = ArrayList<Int>()
@@ -190,6 +198,24 @@ internal class Program() {
                 }
                 matching.toIntArray()
             }
+        }
+
+        /** Everything [candidates] may need computed now: the predicate is then only read, by any thread */
+        fun freeze() {
+            val n = clauses.size
+            all = IntArray(n) { it }
+            if (n < INDEXED_FROM) return
+            val index = HashMap<Int, IntArray>()
+            for (clause in clauses) {
+                val key = clause.key
+                if (key != 0 &&
+                    key !in index
+                ) {
+                    index[key] = (0 until n).filter { clauses[it].key == 0 || clauses[it].key == key }.toIntArray()
+                }
+            }
+            byKey = index
+            frozenMiss = (0 until n).filter { clauses[it].key == 0 }.toIntArray()
         }
 
         companion object {
@@ -205,15 +231,8 @@ internal class Program() {
         private val program: Program,
         val libraries: Runtime?,
         val id: Int,
-        predicates: Array<Predicate?> = arrayOfNulls(1 shl 8),
     ) {
-        var predicates = predicates
-
-        /** Where the code of the clauses compiled for the scope ends (a scope of a base program) */
-        var codeEnd = 0
-
-        /** The libraries with clauses the scope was compiled from, for another program to check before sharing it */
-        var sources: List<Library> = emptyList()
+        var predicates = arrayOfNulls<Predicate>(1 shl 8)
         private var primitives = arrayOfNulls<Primitive>(0)
         private var looked = BooleanArray(0)
 
@@ -251,6 +270,25 @@ internal class Program() {
             grow(program.functorNames.size)
             val predicate = predicates[functor] ?: Predicate(functor).also { predicates[functor] = it }
             predicate.add(compiled, onTop)
+            if (this === program.theory) program.theoryVersion++
+        }
+
+        /** The predicates of a library added to the scope: shared as they are, those it has already joined in a new one */
+        internal fun merge(code: LibraryCode) {
+            grow(program.functorNames.size)
+            for (predicate in code.predicates) {
+                val functor = predicate.functor
+                val present = predicates[functor]
+                predicates[functor] =
+                    if (present == null) {
+                        predicate
+                    } else {
+                        Predicate(functor).also { joined ->
+                            present.clauses.forEach { joined.add(it, false) }
+                            predicate.clauses.forEach { joined.add(it, false) }
+                        }
+                    }
+            }
         }
 
         /** Removes the first dynamic clause equal to [clause] (variables apart); false if there is none */
@@ -260,6 +298,7 @@ internal class Program() {
             val index = predicate.clauses.indexOfFirst { it.dynamic && it.source.equals(clause, false) }
             if (index < 0) return false
             predicate.removeAt(index)
+            if (this === program.theory) program.theoryVersion++
             return true
         }
     }
@@ -291,7 +330,6 @@ internal class Program() {
             val functors = functorNames.size
             theory.grow(functors)
             for (scope in scopes) scope.grow(functors)
-            for (scope in sharedScopes.values) scope.grow(functors)
             id
         }
     }
@@ -381,56 +419,57 @@ internal class Program() {
     }
 
     /**
-     * The scope of [libraries]: made when first asked for, its clauses compiled, or taken from the base program when
-     * it compiled a scope of the same libraries (the clauses of a module are the same objects in every solver)
+     * The scope of [libraries], made when first asked for: the code of each library, compiled once for this program,
+     * or taken from the base program for a module it compiled before this program was made
      */
     fun scopeOf(libraries: Runtime): Scope {
         for (scope in scopes) if (scope.libraries === libraries) return scope
-        val base = base
-        if (base != null) {
-            val shared = base.sharedScopeOf(libraries)
-            if (shared != null && shared.codeEnd <= baseCodeTop) {
-                val scope = Scope(this, libraries, scopes.size + 1, shared.predicates)
-                scope.grow(functorNames.size)
-                scopes.add(scope)
-                return scope
-            }
-        }
         val scope = Scope(this, libraries, scopes.size + 1)
         scope.grow(functorNames.size)
         scopes.add(scope)
-        compileInto(scope, libraries)
+        for (library in libraries.libraries) codeOf(library)?.let { scope.merge(it) }
         return scope
     }
 
-    private fun compileInto(
-        scope: Scope,
-        libraries: Runtime,
-    ) {
-        for (library in libraries.libraries) for (clause in library.clauses) scope.add(clause)
-        scope.codeEnd = codeTop
-        scope.sources = libraries.libraries.filter { it.clauses.iterator().hasNext() }
+    private fun codeOf(library: Library): LibraryCode? {
+        if (library.clauses.none()) return null
+        val base = base
+        if (library is SharedLibrary && base != null) {
+            val shared = locked(SharedPrograms) { base.sharedCodes.getOrPut(library.codeKey) { base.compiled(library, frozen = true) } }
+            if (shared.codeEnd <= baseCodeTop) return shared
+        }
+        return localCodes.getOrPut(IdentityKey(library)) { compiled(library, frozen = false) }
     }
 
-    // The scope of a base program for [libraries]: the one compiled for the same aliases, if its libraries with
-    // clauses are the same objects, else one compiled now (under the lock of the shared programs: a base program is
-    // read by every solver derived from it)
-    private fun sharedScopeOf(libraries: Runtime): Scope? =
-        locked(SharedPrograms) {
-            val key = libraries.libraries.map { it.alias }
-            val known = sharedScopes[key]
-            val sources = libraries.libraries.filter { it.clauses.iterator().hasNext() }
-            if (known != null) {
-                if (known.sources.size == sources.size && known.sources.indices.all { known.sources[it] === sources[it] }) known else null
-            } else {
-                val scope = Scope(this, libraries, sharedScopes.size + 1)
-                scope.grow(functorNames.size)
-                // (registered first: the functors its clauses intern grow it with the others)
-                sharedScopes[key] = scope
-                compileInto(scope, libraries)
-                scope
-            }
+    // The clauses of [library] compiled into this program, by predicate (frozen: for other programs to read at once)
+    private fun compiled(
+        library: Library,
+        frozen: Boolean,
+    ): LibraryCode {
+        val predicates = LinkedHashMap<Int, Predicate>()
+        for (clause in library.clauses) {
+            val head = clause.head ?: continue
+            val functor = functor(head.functor, head.arity)
+            val code = compiler.compile(clause, false)
+            predicates.getOrPut(functor) { Predicate(functor) }.add(code, false)
         }
+        if (frozen) predicates.values.forEach { it.freeze() }
+        return LibraryCode(predicates.values.toList(), codeTop)
+    }
+
+    /** The code of a library: its predicates, and where the code of its clauses ends */
+    internal class LibraryCode(
+        val predicates: List<Predicate>,
+        val codeEnd: Int,
+    )
+
+    private class IdentityKey(
+        val library: Library,
+    ) {
+        override fun equals(other: Any?): Boolean = other is IdentityKey && other.library === library
+
+        override fun hashCode(): Int = library.alias.hashCode()
+    }
 
     /** The scope of [id] (see [Scope.id]): the theory of the user for 0 */
     fun scope(id: Int): Scope = if (id == 0) theory else scopes[id - 1]
@@ -445,17 +484,25 @@ internal class Program() {
 }
 
 /**
- * The base programs of the solvers, one per set of libraries (by their aliases): the clauses of the libraries are
- * compiled once into it, and every solver with those libraries starts from a copy of it ([derived]), so a solver
- * compiles its own theory alone
+ * The base program of the solvers: the clauses of each module (see [SharedLibrary]) are compiled once into it, when a
+ * solver first asks for them, and every solver starts from a copy of it, compiling the rest alone. It grows with the
+ * modules there are, by their source, whatever the solvers, their flags and their theories: it keeps no solver.
  */
 internal object SharedPrograms {
-    private val bases = HashMap<List<String>, Program>()
+    private val base = Program()
 
-    /** A program for a solver with [libraries], derived from their base program */
-    fun derived(libraries: Runtime): Program =
-        locked(this) {
-            val base = bases.getOrPut(libraries.libraries.map { it.alias }) { Program() }
-            Program(base)
-        }
+    /** A program for a solver */
+    fun derived(): Program = locked(this) { Program(base) }
+
+    /** The words of code of the base program */
+    val codeSize: Int get() = locked(this) { base.codeTop }
 }
+
+/**
+ * The library of a module whose clauses are the same for every instance of it, [codeKey] telling them apart: its code
+ * is compiled once per process (see [SharedPrograms]), rather than for each solver
+ */
+internal class SharedLibrary(
+    private val library: Library,
+    val codeKey: String,
+) : Library by library

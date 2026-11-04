@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -35,7 +36,10 @@ abstract class PrologModule(
         get() = OperatorSet()
 
     override val baseContent: Library by lazy {
-        Library.of(alias = alias, clauses = prologTheory, primitives = primitives, operators = libraryOperators)
+        SharedLibrary(
+            Library.of(alias = alias, clauses = prologTheory, primitives = primitives, operators = libraryOperators),
+            alias + "\n" + prologRawTheory,
+        )
     }
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>

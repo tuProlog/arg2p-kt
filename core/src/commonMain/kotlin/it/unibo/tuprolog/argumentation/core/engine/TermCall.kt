@@ -131,6 +131,8 @@ internal class TermCall(
 
     override val context: ExecutionContext get() = request.context
 
+    override val theoryVersion: Long? get() = null
+
     override val libraries: Runtime get() = request.context.libraries
 
     override val rootLibraries: Runtime

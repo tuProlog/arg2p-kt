@@ -1999,6 +1999,8 @@ internal class Machine(
 
     override val libraries: Runtime get() = scope.libraries ?: environment!!.libraries
 
+    override val theoryVersion: Long? get() = program.theoryVersion
+
     override val rootLibraries: Runtime get() = environment!!.libraries
 
     override fun sourced(

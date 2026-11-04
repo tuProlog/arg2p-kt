@@ -51,6 +51,9 @@ internal class ClauseStore private constructor(
         for (record in stored) data.add(Record.encoded(record, program))
     }
 
+    /** Whether no clause is stored */
+    fun isEmpty(): Boolean = data.isEmpty()
+
     fun fork(): ClauseStore {
         shared = true
         return ClauseStore(data, true, encoding)

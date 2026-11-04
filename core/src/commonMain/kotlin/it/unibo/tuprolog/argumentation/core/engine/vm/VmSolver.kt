@@ -112,7 +112,7 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
     private fun program(): Program {
         val current = program
         if (current != null && !outdated) return current
-        val built = SharedPrograms.derived(libraries)
+        val built = SharedPrograms.derived()
         built.add(staticKb)
         for (clause in dynamicKb.clauses) built.theory.add(clause, dynamic = true)
         program = built

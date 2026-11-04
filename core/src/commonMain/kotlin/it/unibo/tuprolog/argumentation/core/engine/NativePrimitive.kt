@@ -114,6 +114,9 @@ interface NativeCall {
     /** The context of the call, for errors and for what the libraries keep (its procedure not materialised) */
     val context: ExecutionContext
 
+    /** A number that changes whenever the theory of the user does; null where the solver cannot tell */
+    val theoryVersion: Long?
+
     /** The libraries the call is made with (those of the module, within a module call) */
     val libraries: Runtime
 

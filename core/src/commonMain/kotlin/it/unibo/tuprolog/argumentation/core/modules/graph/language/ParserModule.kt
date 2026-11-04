@@ -71,9 +71,13 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %! convertAllRules
         %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1
         %  clauses, strict/1, sup/2, abstractBp/1), asserted. What the pipeline calls: a term as large as the theory
-        %  bound in a resolution (as the Rules of convertAllRules/1) weighs on every binding made after it.
+        %  bound in a resolution (as the Rules of convertAllRules/1) weighs on every binding made after it. Converted
+        %  once per solver: the branch is kept as a template, and the solves after the first start from a copy of it.
         convertAllRules :-
-            \+ \+ convertAllRules(_).
+            context_template_restore, !.
+        convertAllRules :-
+            \+ \+ convertAllRules(_),
+            context_template_save.
 
         %! convertAllRules(-Rules)
         %  As convertAllRules/0, with Rules what was asserted.

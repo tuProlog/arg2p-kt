@@ -13,10 +13,47 @@ internal class ContextBranches {
     private var encoding: Program? = null
     private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore())
 
+    // The converted theory of the solver, kept as a template every solve starts from (context_template_save/0,
+    // context_template_restore/0): the conversion is a function of the theory and of the flags, so the template holds
+    // for the program it was made in (rebuilt when the flags or the knowledge bases change through the solver) and for
+    // the version of its theory. Only a conversion starting from an empty branch is kept, and only an empty branch is
+    // replaced by it: what a branch holds is never lost
+    private var template: ClauseStore? = null
+    private var templateVersion: Long? = null
+    private var templateIdentifiers: Map<Term, Int> = emptyMap()
+    private var templateTerms: List<Term> = emptyList()
+    private var convertingEmpty = false
+
     /** The stores on the words of [program]: those there, and those made from now on */
     fun bind(program: Program) {
+        if (encoding !== program) template = null
         encoding = program
         stores.values.forEach { it.bind(program) }
+    }
+
+    /** The active branch kept as the template, if the conversion started from an empty one and [version] is known */
+    fun saveTemplate(version: Long?) {
+        if (!convertingEmpty || version == null) return
+        template = selected.fork()
+        templateVersion = version
+        templateIdentifiers = HashMap(identifiers)
+        templateTerms = ArrayList(terms)
+    }
+
+    /**
+     * The active branch, empty, replaced by a copy of the template of [version], the identifiers as they were saved;
+     * false if it is not empty or there is no such template: the conversion is to be run
+     */
+    fun restoreTemplate(version: Long?): Boolean {
+        convertingEmpty = selected.isEmpty()
+        val template = template ?: return false
+        if (!convertingEmpty || version == null || version != templateVersion) return false
+        stores[active] = template.fork()
+        identifiers.clear()
+        identifiers.putAll(templateIdentifiers)
+        terms.clear()
+        terms.addAll(templateTerms)
+        return true
     }
 
     private val identifiers: MutableMap<Term, Int> = mutableMapOf()
