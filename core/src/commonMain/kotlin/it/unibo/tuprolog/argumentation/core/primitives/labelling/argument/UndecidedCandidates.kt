@@ -2,11 +2,13 @@ package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termArg
-import it.unibo.tuprolog.argumentation.core.engine.termsArg
+import it.unibo.tuprolog.argumentation.core.engine.intArg
+import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -15,13 +17,14 @@ import it.unibo.tuprolog.solve.Signature
  */
 internal object UndecidedCandidates : AbstractNativePrimitive(Signature("undecidedCandidates", 3)) {
     override fun call(call: NativeCall): Int {
-        val scc = call.termsArg(0, signature)
-        val undecided = call.labelledIds("und", call.termArg(1))
-        val attackers = call.attackGraph().attackers
+        val scc = call.idsArg(0, signature)
+        val members = IdSet.of(scc)
+        val undecided = call.labelledIds("und", call.intArg(1, signature).toInt())
+        val graph = call.attackGraph()
         val candidates =
             scc.filter { id ->
-                id in undecided && attackers[id].orEmpty().none { it !in scc && it in undecided }
+                id in undecided && graph.attackers(id).none { it !in members && it in undecided }
             }
-        return call.replyTerms(2, candidates)
+        return call.replyWord(2, call.idList(candidates.toIntArray()))
     }
 }

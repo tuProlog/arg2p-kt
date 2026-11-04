@@ -7,9 +7,9 @@ import it.unibo.tuprolog.core.Term
 /** An attack by the identifiers of its arguments: of [type], of [attacker] on [attacked], on its sub-argument [on] */
 internal data class AttackIds(
     val type: Term,
-    val attacker: Term,
-    val attacked: Term,
-    val on: Term,
+    val attacker: Int,
+    val attacked: Int,
+    val on: Int,
 )
 
 /**
@@ -23,14 +23,14 @@ internal data class AttackIds(
  */
 internal class ExpandedAttacks(
     saved: List<AttackIds>,
-    private val supported: Map<Term, List<Term>>,
+    private val supported: Map<Int, List<Int>>,
 ) {
-    private val above = mutableMapOf<Term, List<Term>>()
+    private val above = HashMap<Int, List<Int>>()
 
     // The arguments built on an argument, directly or not, each once
-    private fun superArguments(argument: Term): List<Term> =
+    private fun superArguments(argument: Int): List<Int> =
         above.getOrPut(argument) {
-            val found = LinkedHashSet<Term>()
+            val found = LinkedHashSet<Int>()
             val pending = ArrayDeque(supported[argument].orEmpty())
             while (pending.isNotEmpty()) {
                 val next = pending.removeFirst()
@@ -48,37 +48,36 @@ internal class ExpandedAttacks(
                 }
             }.toList()
 
-    val byAttacker: Map<Term, List<AttackIds>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy { it.attacker } }
+    val byAttacker: Map<Int, List<AttackIds>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy { it.attacker } }
 
-    val byAttacked: Map<Term, List<AttackIds>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy { it.attacked } }
+    val byAttacked: Map<Int, List<AttackIds>> by lazy(LazyThreadSafetyMode.NONE) { attacks.groupBy { it.attacked } }
 
     /** The attacks as (attacker, attacked) pairs */
-    val graph: AttackGraph by lazy(LazyThreadSafetyMode.NONE) { AttackGraph(attacks.map { it.attacker to it.attacked }) }
-
-    /** The conflicts between the arguments */
-    val conflicts: ConflictGraph<Term> by lazy(LazyThreadSafetyMode.NONE) { ConflictGraph(graph.attacks) }
+    val graph: AttackGraph by lazy(LazyThreadSafetyMode.NONE) {
+        AttackGraph(IntArray(attacks.size) { attacks[it].attacker }, IntArray(attacks.size) { attacks[it].attacked })
+    }
 }
 
 // The expansion of the saved attacks of a branch, kept with them and redone when the supports change
 private class Expansion(
     val saved: List<AttackIds>,
 ) {
-    var supported: Map<Term, List<Term>>? = null
+    var supported: Map<Int, List<Int>>? = null
     var attacks: ExpandedAttacks? = null
 }
 
 // No support at all: the same map every time, so that the expansion is kept
-private val NO_SUPPORTS: Map<Term, List<Term>> = emptyMap()
+private val NO_SUPPORTS: Map<Int, List<Int>> = emptyMap()
 
 /** The attacks of the given branch (the active one if null), the saved ones and those they extend to */
 internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks {
     val supported =
-        contextLibrary.derived("supportId/2", "supported", branch) { clauses ->
-            clauses.groupBy({ it.head!![0] }, { it.head!![1] }).ifEmpty { NO_SUPPORTS }
+        contextLibrary.derived("supportId/2", "supported", branch) { stored ->
+            stored.map { it.clause.head!! }.groupBy({ it[0].id() }, { it[1].id() }).ifEmpty { NO_SUPPORTS }
         }
     val expansion =
-        contextLibrary.derived("attackId/4", "expansion", branch) { clauses ->
-            Expansion(clauses.map { it.head!!.let { head -> AttackIds(head[0], head[1], head[2], head[3]) } })
+        contextLibrary.derived("attackId/4", "expansion", branch) { stored ->
+            Expansion(stored.map { it.clause.head!!.let { head -> AttackIds(head[0], head[1].id(), head[2].id(), head[3].id()) } })
         }
     if (expansion.supported !== supported) {
         expansion.attacks = ExpandedAttacks(expansion.saved, supported)
@@ -86,3 +85,5 @@ internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks {
     }
     return expansion.attacks!!
 }
+
+private fun Term.id(): Int = castToInteger().intValue.toInt()

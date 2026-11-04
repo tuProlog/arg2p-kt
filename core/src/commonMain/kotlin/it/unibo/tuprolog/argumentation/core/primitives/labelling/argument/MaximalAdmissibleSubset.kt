@@ -2,9 +2,11 @@ package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termsArg
+import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -13,18 +15,14 @@ import it.unibo.tuprolog.solve.Signature
  */
 internal object MaximalAdmissibleSubset : AbstractNativePrimitive(Signature("maximalAdmissibleSubset", 2)) {
     override fun call(call: NativeCall): Int {
-        val attackers = call.attackGraph().attackers
-        var subset = call.termsArg(0, signature)
+        val graph = call.attackGraph()
+        var subset = call.idsArg(0, signature)
         while (true) {
-            val defended =
-                subset.filter { h ->
-                    attackers[h].orEmpty().all { attacker ->
-                        attackers[attacker].orEmpty().any { defendant -> defendant in subset && defendant != attacker }
-                    }
-                }
+            val members = IdSet.of(subset)
+            val defended = subset.filter { graph.defended(it, members) }.toIntArray()
             if (defended.size == subset.size) break
             subset = defended
         }
-        return call.replyTerms(1, subset)
+        return call.replyWord(1, call.idList(subset))
     }
 }

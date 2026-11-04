@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -13,17 +13,17 @@ import it.unibo.tuprolog.solve.Signature
  */
 internal object StronglyAdmissibleSet : AbstractNativePrimitive(Signature("stronglyAdmissibleSet", 0)) {
     override fun call(call: NativeCall): Int {
-        val attackers = call.attackGraph().attackers
-        val built = mutableSetOf<Term>()
-        var pending = call.labelledIds("in")
+        val graph = call.attackGraph()
+        val built = IdSet()
+        var pending = call.labelledIds("in").toIntArray()
         while (pending.isNotEmpty()) {
             val added =
                 pending.filter { h ->
-                    attackers[h].orEmpty().all { attacker -> attackers[attacker].orEmpty().any { it in built } }
+                    graph.attackers(h).all { attacker -> graph.attackers(attacker).any { it in built } }
                 }
             if (added.isEmpty()) return NativeCall.FAIL
-            built += added
-            pending = pending - added.toSet()
+            added.forEach { built.add(it) }
+            pending = pending.filter { it !in built }.toIntArray()
         }
         return NativeCall.CONTINUE
     }

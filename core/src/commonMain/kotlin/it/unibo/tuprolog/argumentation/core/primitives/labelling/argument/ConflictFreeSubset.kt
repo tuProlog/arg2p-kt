@@ -3,9 +3,10 @@ package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.answers
-import it.unibo.tuprolog.argumentation.core.engine.termsArg
-import it.unibo.tuprolog.argumentation.core.primitives.graph.conflictGraph
-import it.unibo.tuprolog.core.Term
+import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.core.List as LogicList
 
@@ -16,14 +17,14 @@ import it.unibo.tuprolog.core.List as LogicList
  */
 internal object ConflictFreeSubset : AbstractNativePrimitive(Signature("conflictFreeSubset", 3)) {
     override fun call(call: NativeCall): Int {
-        val args = call.termsArg(0, signature)
-        val forced = call.termsArg(1, signature).toSet()
-        val graph = call.conflictGraph()
+        val args = call.idsArg(0, signature)
+        val forced = IdSet.of(call.idsArg(1, signature))
+        val graph = call.attackGraph()
 
         fun subsets(
             i: Int,
-            chosen: List<Term>,
-        ): Sequence<List<Term>> =
+            chosen: List<Int>,
+        ): Sequence<List<Int>> =
             sequence {
                 if (i == args.size) {
                     yield(chosen)
@@ -33,6 +34,6 @@ internal object ConflictFreeSubset : AbstractNativePrimitive(Signature("conflict
                 if (!graph.selfAttacking(a) && chosen.none { graph.conflict(a, it) }) yieldAll(subsets(i + 1, chosen + a))
                 if (a !in forced) yieldAll(subsets(i + 1, chosen))
             }
-        return call.answers(2, subsets(0, emptyList()).map { LogicList.of(it) }.iterator())
+        return call.answers(2, subsets(0, emptyList()).map { set -> LogicList.of(set.map { Integer.of(it) }) }.iterator())
     }
 }

@@ -4,15 +4,14 @@ import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.answersMatching
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
-import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 
 // The attacks to look at: those on the attacked argument or by the attacker if given, all of them otherwise
 private fun ExpandedAttacks.candidates(
-    attacker: Term?,
-    attacked: Term?,
+    attacker: Int?,
+    attacked: Int?,
 ): List<AttackIds> =
     when {
         attacked != null -> byAttacked[attacked].orEmpty()
@@ -20,18 +19,72 @@ private fun ExpandedAttacks.candidates(
         else -> attacks
     }
 
+// Whether the attack may answer the arguments of the call, read as they are: only unifying them can tell otherwise
+// when a variable is met twice with different identifiers, which is told here as well
+private fun NativeCall.matches(
+    attack: AttackIds,
+    type: Int,
+    attacker: Int,
+    attacked: Int,
+    on: Int,
+): Boolean =
+    (kind(type) != NativeCall.ATOM || atomName(type) == attack.type.castToAtom().value) &&
+        idMatches(attacker, attack.attacker) &&
+        idMatches(attacked, attack.attacked) &&
+        idMatches(on, attack.on) &&
+        (attacker != attacked || attack.attacker == attack.attacked) &&
+        (attacker != on || attack.attacker == attack.on) &&
+        (attacked != on || attack.attacked == attack.on)
+
+private fun NativeCall.idMatches(
+    w: Int,
+    id: Int,
+): Boolean = kind(w) == NativeCall.VAR || (kind(w) == NativeCall.INT && intValue(w) == id.toLong())
+
+// The attacks from place [from] on answering the call, in turn: no alternative left after the last of them
+private fun NativeCall.answerAttacks(
+    attacks: List<AttackIds>,
+    from: Int,
+): Int {
+    val type = arg(0)
+    val attacker = arg(1)
+    val attacked = arg(2)
+    val on = arg(3)
+    var i = from
+    while (i < attacks.size && !matches(attacks[i], type, attacker, attacked, on)) i++
+    if (i >= attacks.size) return NativeCall.FAIL
+    var next = i + 1
+    while (next < attacks.size && !matches(attacks[next], type, attacker, attacked, on)) next++
+    if (next < attacks.size) alternatives { it.answerAttacks(attacks, next) }
+    val attack = attacks[i]
+    return if (unify(type, word(attack.type)) &&
+        unify(attacker, int(attack.attacker.toLong())) &&
+        unify(attacked, int(attack.attacked.toLong())) &&
+        unify(on, int(attack.on.toLong()))
+    ) {
+        NativeCall.CONTINUE
+    } else {
+        NativeCall.FAIL
+    }
+}
+
+/** graphStore::expandedAttackById(?Type, ?IdAttacker, ?IdAttacked, ?IdOn): the attacks, saved or extended (see [ExpandedAttacks]) */
+internal object ExpandedAttackById : AbstractNativePrimitive(Signature("expandedAttackById", 4)) {
+    override fun call(call: NativeCall): Int {
+        val attacker = call.arg(1)
+        val attacked = call.arg(2)
+        val attacks =
+            call.expandedAttacks().candidates(
+                attacker.takeIf { call.kind(it) == NativeCall.INT }?.let { call.intValue(it).toInt() },
+                attacked.takeIf { call.kind(it) == NativeCall.INT }?.let { call.intValue(it).toInt() },
+            )
+        return call.answerAttacks(attacks, 0)
+    }
+}
+
 // The arguments of a reader, from [from] on, as terms, the variables among them null
 private fun NativeCall.readerArguments(from: Int): List<Term?> =
     (from until arity).map { i -> arg(i).let { w -> if (kind(w) == NativeCall.VAR) null else term(w) } }
-
-/** graphStore::expandedAttackById(?Type, ?IdAttacker, ?IdAttacked, ?IdOn): the attacks, saved or extended (see [ExpandedAttacks]), by identifiers */
-internal object ExpandedAttackById : AbstractNativePrimitive(Signature("expandedAttackById", 4)) {
-    override fun call(call: NativeCall): Int {
-        val (_, attacker, attacked, _) = call.readerArguments(0)
-        val attacks = call.expandedAttacks().candidates(attacker, attacked)
-        return call.answersMatching(0, attacks.asSequence().map { listOf(it.type, it.attacker, it.attacked, it.on) }.iterator())
-    }
-}
 
 // The attacks, saved or extended, as arguments rather than identifiers (those of argument/1 terms, see context_id/2),
 // in the given branch (the active one if null), unified with the arguments of the call from [from] on
@@ -45,15 +98,9 @@ private fun NativeCall.attacksByTerms(
     // with variables may be (the variables of a conclusion bound by an attack)
     val (idAttacker, idAttacked) =
         listOf(attacker, attacked).map { argument ->
-            argument?.takeIf { it.isGround }?.let { context.knownIdentifier(Struct.of("argument", it)) }?.let { Integer.of(it) }
+            argument?.takeIf { it.isGround }?.let { context.knownIdentifier(Struct.of("argument", it)) }
         }
-    val argument = { id: Term ->
-        id
-            .asInteger()
-            ?.let { context.term(it.intValue.toInt()) }
-            ?.castToStruct()
-            ?.get(0)
-    }
+    val argument = { id: Int -> context.term(id)?.castToStruct()?.get(0) }
     val attacks = expandedAttacks(branch).candidates(idAttacker, idAttacked)
     return answersMatching(
         from,

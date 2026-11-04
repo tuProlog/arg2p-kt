@@ -21,7 +21,6 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextUnifiable
-import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -54,11 +53,14 @@ internal class Context : ArgLibrary {
         key: String,
         name: String,
         branch: Int? = null,
-        compute: (kotlin.collections.List<Clause>) -> T,
+        compute: (kotlin.collections.List<ClauseStore.Stored>) -> T,
     ): T {
         val store = if (branch == null) branches.selected else branches.storeOf(branch) ?: return compute(emptyList())
         return store.derived(key, name, compute)
     }
+
+    /** The store of the given branch, the active one if null; null for a branch that does not exist */
+    fun store(branch: Int? = null): ClauseStore? = if (branch == null) branches.selected else branches.storeOf(branch)
 
     /** The terms asserted in the active branch, in order (utils::assertAll/1) */
     fun assertAll(terms: Iterable<Term>) = terms.forEach { branches.selected.assertA(it) }

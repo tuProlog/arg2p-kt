@@ -3,10 +3,12 @@ package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.atomArg
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termsArg
+import it.unibo.tuprolog.argumentation.core.engine.listArg
+import it.unibo.tuprolog.argumentation.core.engine.replyWord
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -17,21 +19,19 @@ internal object Selection : AbstractNativePrimitive(Signature("selection", 4)) {
     override fun call(call: NativeCall): Int {
         val accepted =
             call
-                .termsArg(2, signature)
-                .map { it.castToStruct() }
-                .filter { (it[1] as? Atom)?.value == "true" }
-                .map { it[0] }
+                .listArg(2, signature)
+                .filter { call.kind(call.argOf(it, 1)) == NativeCall.ATOM && call.atomName(call.argOf(it, 1)) == "true" }
+                .map { call.intValue(call.argOf(it, 0)).toInt() }
         val selected =
-            when (call.atomArg(0, signature)) {
-                "maximal" -> {
-                    val scc = call.termsArg(1, signature).toSet()
-                    val local = accepted.associateWith { call.labelledIds("in", it).intersect(scc) }
-                    accepted.filter { state ->
-                        local.values.none { other -> other != local[state] && other.containsAll(local.getValue(state)) }
-                    }
+            if (call.atomArg(0, signature) == "maximal" && accepted.size > 1) {
+                val scc = IdSet.of(call.idsArg(1, signature))
+                val local = accepted.map { call.labelledIds("in", it).intersect(scc) }
+                accepted.filterIndexed { i, _ ->
+                    local.none { other -> !other.sameAs(local[i]) && other.containsAll(local[i]) }
                 }
-                else -> accepted
+            } else {
+                accepted
             }
-        return call.replyTerms(3, selected)
+        return call.replyWord(3, call.idList(selected.toIntArray()))
     }
 }

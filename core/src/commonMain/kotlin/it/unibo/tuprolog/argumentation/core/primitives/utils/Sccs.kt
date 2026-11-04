@@ -2,12 +2,12 @@ package it.unibo.tuprolog.argumentation.core.primitives.utils
 
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termsArg
-import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentIds
+import it.unibo.tuprolog.argumentation.core.engine.replyItems
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
+import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.stronglyConnectedComponents
-import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.solve.Signature
 
 /**
@@ -20,9 +20,9 @@ internal class Sccs(
     arity: Int,
 ) : AbstractNativePrimitive(Signature("sccs", arity)) {
     override fun call(call: NativeCall): Int {
-        val nodes = if (call.arity == 1) call.argumentIds() else call.termsArg(0, signature)
-        val attacked = call.attackGraph().attacked
-        val sccs = stronglyConnectedComponents(nodes) { attacked[it].orEmpty() }
-        return call.replyTerms(call.arity - 1, sccs.map { List.of(it) })
+        val nodes = if (call.arity == 1) call.graphArguments().ids else call.idsArg(0, signature)
+        val graph = call.attackGraph()
+        val sccs = stronglyConnectedComponents(nodes) { graph.attacked(it) }
+        return call.replyItems(call.arity - 1, IntArray(sccs.size) { call.idList(sccs[it]) })
     }
 }

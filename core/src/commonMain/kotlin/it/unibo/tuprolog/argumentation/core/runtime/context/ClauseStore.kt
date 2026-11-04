@@ -3,11 +3,13 @@ package it.unibo.tuprolog.argumentation.core.runtime.context
 import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.collectVariables
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
@@ -105,13 +107,13 @@ internal class ClauseStore private constructor(
     ): Candidates = data.candidates(encoding(), words, goal)
 
     /**
-     * A value derived from the clauses of the predicate [key] (`functor/arity`, newest first), named [name]: computed
+     * A value derived from the records of the predicate [key] (`functor/arity`, newest first), named [name]: computed
      * once, until the predicate changes (the branches sharing the predicate share it)
      */
     fun <T : Any> derived(
         key: String,
         name: String,
-        compute: (List<Clause>) -> T,
+        compute: (List<Stored>) -> T,
     ): T {
         val slash = key.lastIndexOf('/')
         val arity = key.substring(slash + 1).toInt()
@@ -119,6 +121,33 @@ internal class ClauseStore private constructor(
         val encoding = encoding()
         val functor = if (arity == 0) encoding.atomWord(name0) else encoding.functorWord(name0, arity)
         return data.derived(functor, name, compute)
+    }
+
+    /** The integers of the facts `name(Integer)`, newest first, each once (the set is not to be changed) */
+    fun ids(name: String): IdSet = data.ids(encoding().functorWord(name, 1))
+
+    /** The fact `name(id)` added */
+    fun assertId(
+        name: String,
+        id: Int,
+    ) {
+        val program = encoding()
+        assertA(Record(program, intArrayOf(program.functorWord(name, 1), program.intWord(id.toLong())), word(STR, 0), null))
+    }
+
+    /** The fact `name(A)` added, for the stored clause [clause], `Head :- body(A)`: what A is, is not read */
+    fun assertArgumentOfBody(
+        name: String,
+        clause: Stored,
+    ) {
+        val program = encoding()
+        val record = clause.record
+        val argument = record.words[payload(record.body) + 1]
+        val n = record.words.size
+        val words = record.words.copyOf(n + 2)
+        words[n] = program.functorWord(name, 1)
+        words[n + 1] = argument
+        assertA(Record(program, words, word(STR, n), null))
     }
 
     // ---- the term API
@@ -310,17 +339,32 @@ internal class ClauseStore private constructor(
         // The values derived from the clauses (see ClauseStore.derived), until they change
         val derived = HashMap<String, Any>()
 
+        // The integers of the first arguments, for a predicate of identifiers (see ClauseStore.ids), until they change
+        var ids: IdSet? = null
+
+        fun readIds(): IdSet {
+            val found = IdSet(all.size)
+            for (i in all.size - 1 downTo 0) {
+                val record = all.items[i]!!.record
+                val word = record.words[payload(record.head) + 1]
+                if (tag(word) == INT) found.add(payload(word))
+            }
+            return found
+        }
+
         fun copy(): Predicate = Predicate(arity).also { it.all = all.copy() }
 
         fun add(stored: Stored) {
             derived.clear()
+            ids = null
             all.append(stored)
             for (position in positions) position?.add(stored)
         }
 
-        fun removeAll(ids: Set<Long>) {
+        fun removeAll(removed: Set<Long>) {
             derived.clear()
-            all.without(ids)
+            ids = null
+            all.without(removed)
             positions = arrayOfNulls(arity)
         }
 
@@ -381,14 +425,19 @@ internal class ClauseStore private constructor(
         fun <T : Any> derived(
             key: Int,
             name: String,
-            compute: (List<Clause>) -> T,
+            compute: (List<Stored>) -> T,
         ): T {
             val predicate = predicates[key] ?: return compute(emptyList())
             @Suppress("UNCHECKED_CAST")
             return predicate.derived.getOrPut(name) {
                 val all = predicate.all
-                compute((all.size - 1 downTo 0).map { all.items[it]!!.clause })
+                compute((all.size - 1 downTo 0).map { all.items[it]!! })
             } as T
+        }
+
+        fun ids(key: Int): IdSet {
+            val predicate = predicates[key] ?: return IdSet.NONE
+            return predicate.ids ?: predicate.readIds().also { predicate.ids = it }
         }
 
         fun candidates(
