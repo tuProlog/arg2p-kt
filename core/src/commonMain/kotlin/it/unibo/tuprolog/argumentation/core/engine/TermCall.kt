@@ -159,6 +159,10 @@ internal class TermCall(
         this.resume = resume
     }
 
+    override fun sorted(items: IntArray): IntArray? = null
+
+    override fun sortedDistinct(items: IntArray): IntArray? = null
+
     override fun record(w: Int): Record = Record.of(at(w))
 
     override fun recall(record: Record): Int = put(record.term.renamedCopy())

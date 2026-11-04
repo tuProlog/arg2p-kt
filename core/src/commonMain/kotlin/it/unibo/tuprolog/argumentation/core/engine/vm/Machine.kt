@@ -30,6 +30,7 @@ import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
+import it.unibo.tuprolog.core.compareStringsLocaleIndependently
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.Solution
@@ -866,6 +867,11 @@ internal class Machine(
         arity: Int,
     ): Int {
         val primitive = scope.primitive(functor) ?: return FAILED
+        val native = scope.native(functor)
+        if (native != null) {
+            val answer = native.run(this)
+            if (answer != StdlibNatives.NOT_NATIVE) return answer
+        }
         return callPrimitive(primitive, functor, arity)
     }
 
@@ -1451,7 +1457,7 @@ internal class Machine(
         return true
     }
 
-    private fun pushVoids(n: Int) {
+    fun pushVoids(n: Int) {
         val h = alloc(n)
         for (i in h until h + n) {
             heap[i] = ref(i)
@@ -1718,6 +1724,57 @@ internal class Machine(
         nativeNames = names
         nativeFresh = fresh
         return count
+    }
+
+    /** Whether the two unbound cells hold one variable: those read as the same variable of a term given to the machine */
+    fun sameVariable(
+        a: Int,
+        b: Int,
+    ): Boolean {
+        if (a == b) return true
+        val x = varInfo[a]
+        val y = varInfo[b]
+        return x < 0 && y < 0 && varObjects[-x - 1] == varObjects[-y - 1]
+    }
+
+    // The order of two atoms, as tuProlog's (a collation): each pair computed once
+    private val atomOrders = HashMap<Long, Int>()
+
+    /** The standard order of the atoms [a] and [b] */
+    fun atomOrder(
+        a: Int,
+        b: Int,
+    ): Int =
+        atomOrders.getOrPut((a.toLong() shl 32) or b.toLong()) {
+            compareStringsLocaleIndependently(program.atoms[a], program.atoms[b])
+        }
+
+    /** A copy of the term [w0] on the heap, its unbound variables fresh and unnamed */
+    fun copyOnHeap(w0: Int): Int {
+        val copier = Copier(IntArray(16), 0, IntArray(16))
+        val root = copier.copy(w0)
+        val n = copier.top
+        val base = alloc(n)
+        for (i in 0 until n) {
+            val w = copier.bag[i]
+            heap[base + i] = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), payload(w) + base) else w
+            varInfo[base + i] = 0
+        }
+        return if (tag(root) == REF || tag(root) == STR || tag(root) == LIST) word(tag(root), payload(root) + base) else root
+    }
+
+    override fun sorted(items: IntArray): IntArray? {
+        for (item in items) if (!StdlibNatives.ground(this, item)) return null
+        return items.sortedWith { a, b -> StdlibNatives.order(this, a, b) }.toIntArray()
+    }
+
+    override fun sortedDistinct(items: IntArray): IntArray? {
+        val sorted = sorted(items) ?: return null
+        var n = 0
+        for (i in sorted.indices) {
+            if (n == 0 || StdlibNatives.order(this, sorted[n - 1], sorted[i]) != 0) sorted[n++] = sorted[i]
+        }
+        return sorted.copyOf(n)
     }
 
     override fun record(w: Int): Record {

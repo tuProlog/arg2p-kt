@@ -2,7 +2,9 @@ package it.unibo.tuprolog.argumentation.core.primitives.data
 
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.items
 import it.unibo.tuprolog.argumentation.core.engine.reply
+import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.primitives.utils.distinctSortedTerms
@@ -21,7 +23,49 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
  * SortedRules: RuleId and the rules, as sort/2. Info: [LastDefRules, DefRules, DefPremises], each as sortDistinct/2.
  */
 internal object RulesAndInfo : AbstractNativePrimitive(Signature("rulesAndInfo", 5)) {
-    override fun call(call: NativeCall): Int {
+    override fun call(call: NativeCall): Int = onWords(call) ?: onTerms(call)
+
+    // The rules and the info on the words of the machine; null when the terms are to be read (a variable in what is
+    // sorted, a part that is not a list of lists: an error)
+    private fun onWords(call: NativeCall): Int? {
+        val parts = call.items(call.arg(2))?.takeIf { it.size == 4 } ?: return null
+        val flat =
+            parts.map { part ->
+                val lists = call.items(part) ?: return null
+                var all = IntArray(0)
+                for (list in lists) all += call.items(list) ?: return null
+                all
+            }
+        val ruleId = call.arg(0)
+        val strictWord = call.arg(1)
+        val strict = call.kind(strictWord) == NativeCall.ATOM && call.atomName(strictWord) == "strict"
+        if (flat[0].any { call.unifiable(it, ruleId) }) return NativeCall.FAIL
+        val lastDef: IntArray
+        val def: IntArray
+        if (strict) {
+            lastDef = flat[1]
+            def = flat[2]
+        } else {
+            if (call.kind(ruleId) == NativeCall.ATOM && call.atomName(ruleId) == "none") return NativeCall.FAIL
+            lastDef = intArrayOf(ruleId)
+            def = intArrayOf(ruleId) + flat[2]
+        }
+        val sortedLast = call.sortedDistinct(lastDef) ?: return null
+        val sortedDef = call.sortedDistinct(def) ?: return null
+        val sortedPremises = call.sortedDistinct(flat[3]) ?: return null
+        val sortedRules = call.sorted(intArrayOf(ruleId) + flat[0]) ?: return null
+        val info =
+            call.list(
+                intArrayOf(
+                    call.list(sortedLast.reversedArray()),
+                    call.list(sortedDef.reversedArray()),
+                    call.list(sortedPremises.reversedArray()),
+                ),
+            )
+        return if (call.unify(call.arg(3), call.list(sortedRules.reversedArray()))) call.replyWord(4, info) else NativeCall.FAIL
+    }
+
+    private fun onTerms(call: NativeCall): Int {
         val ruleId = call.termArg(0)
         val strict = call.termArg(1).let { it is Atom && it.value == "strict" }
         val partsTerm = call.termArg(2)

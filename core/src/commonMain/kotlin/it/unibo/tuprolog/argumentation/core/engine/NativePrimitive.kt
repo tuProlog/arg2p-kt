@@ -148,6 +148,12 @@ interface NativeCall {
      */
     fun alternatives(resume: NativeResume)
 
+    /** [items] in the standard order of terms, those equal in the order they came; null if a variable is in them */
+    fun sorted(items: IntArray): IntArray?
+
+    /** As [sorted], the items equal to an earlier one left out */
+    fun sortedDistinct(items: IntArray): IntArray?
+
     /** A copy of the term [w] off the heap */
     fun record(w: Int): Record
 

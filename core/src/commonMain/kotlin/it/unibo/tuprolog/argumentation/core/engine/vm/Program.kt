@@ -234,6 +234,7 @@ internal class Program() {
     ) {
         var predicates = arrayOfNulls<Predicate>(1 shl 8)
         private var primitives = arrayOfNulls<Primitive>(0)
+        private var natives = arrayOfNulls<StdlibNative>(0)
         private var looked = BooleanArray(0)
 
         fun predicate(functor: Int): Predicate? = if (functor < predicates.size) predicates[functor] else null
@@ -244,15 +245,20 @@ internal class Program() {
             if (functor >= primitives.size) {
                 val size = maxOf(program.functorNames.size, functor + 1)
                 primitives = primitives.copyOf(size)
+                natives = natives.copyOf(size)
                 looked = looked.copyOf(size)
             }
             if (!looked[functor]) {
                 looked[functor] = true
-                primitives[functor] =
-                    libraries.primitives[Signature(program.nameOfFunctor(functor), program.functorArities[functor])]
+                val signature = Signature(program.nameOfFunctor(functor), program.functorArities[functor])
+                primitives[functor] = libraries.primitives[signature]
+                natives[functor] = StdlibNatives.of(signature, primitives[functor])
             }
             return primitives[functor]
         }
+
+        /** The native standing in for the primitive of [functor], looked up by [primitive] */
+        fun native(functor: Int): StdlibNative? = natives[functor]
 
         internal fun grow(functors: Int) {
             if (functors > predicates.size) predicates = predicates.copyOf(maxOf(predicates.size * 2, functors))
