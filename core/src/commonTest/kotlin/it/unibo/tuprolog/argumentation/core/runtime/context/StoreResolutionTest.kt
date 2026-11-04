@@ -217,6 +217,27 @@ class StoreResolutionTest {
         )
     }
 
+    // Goals with all their arguments bound, on a predicate no argument alone narrows down: the index of the whole heads
+    @Test
+    fun lookupsOfWholeHeads() {
+        fun holds(goal: String): Boolean {
+            val solver = solverWithTheory("")
+            val facts = (1..12).flatMap { a -> (1..12).map { b -> "context_assert(e($a, $b))" } }.joinToString(", ")
+            return solver.solve(Struct.parse("context_reset, $facts, context_assert(e(X, X, open)), $goal", solver.operators)).first().isYes
+        }
+        assertTrue(holds("context_check(e(3, 4))"))
+        assertFalse(holds("context_check(e(3, 13))"))
+        assertTrue(holds("context_retract(e(3, 5)), context_absent(e(3, 5)), context_check(e(3, 4))"))
+        assertTrue(
+            holds(
+                "context_check(e(3, 4)), context_retract(e(3, 4)), context_absent(e(3, 4)), context_assert(e(3, 4)), context_check(e(3, 4))",
+            ),
+        )
+        assertTrue(holds("context_check(e(3, 4)), context_assert(e(20, 21)), context_check(e(20, 21))"))
+        assertTrue(holds("context_assert(e(Y, Y)), context_check(e(13, 13)), context_absent(e(13, 14))"))
+        assertTrue(holds("context_check(e(3, 4)), context_assert(e(_, 99)), context_check(e(3, 99)), context_absent(e(3, 98))"))
+    }
+
     @Test
     fun aRemovalInABranchLeavesTheOthersAlone() {
         val solver = solverWithTheory("")

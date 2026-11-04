@@ -348,6 +348,34 @@ internal class ClauseStore private constructor(
         }
     }
 
+    // The clauses by a hash of their whole head, the ground ones: what a goal with all its arguments bound goes through,
+    // when none of them alone narrows the clauses down
+    private class Heads {
+        val ground = HashMap<Long, Bucket>()
+        val nonGround = Bucket()
+
+        private fun bucketOf(stored: Stored): Bucket? {
+            val record = stored.record
+            val hash = groundHash(record.program!!, record.words, record.head)
+            return if (hash == NOT_GROUND) nonGround else ground[hash]
+        }
+
+        fun add(stored: Stored) {
+            val record = stored.record
+            val hash = groundHash(record.program!!, record.words, record.head)
+            (if (hash == NOT_GROUND) nonGround else ground.getOrPut(hash) { Bucket() }).append(stored)
+        }
+
+        fun removeAll(
+            stored: List<Stored>,
+            ids: LongArray,
+        ) {
+            val affected = HashSet<Bucket>()
+            for (one in stored) bucketOf(one)?.let { affected += it }
+            for (bucket in affected) bucket.without(ids)
+        }
+    }
+
     private class Predicate(
         val arity: Int,
         // The data that can change it: the other data holding it have it from a copy, and make their own before a change
@@ -355,6 +383,13 @@ internal class ClauseStore private constructor(
     ) {
         var all = Bucket()
         var positions = arrayOfNulls<Position>(arity)
+        private var builtHeads: Heads? = null
+
+        fun heads(): Heads =
+            builtHeads ?: Heads().also { heads ->
+                for (i in 0 until all.size) heads.add(all.items[i]!!)
+                builtHeads = heads
+            }
 
         // The values derived from the clauses (see ClauseStore.derived), until they change
         val derived = HashMap<String, Any>()
@@ -379,6 +414,7 @@ internal class ClauseStore private constructor(
             ids = null
             all.append(stored)
             for (position in positions) position?.add(stored)
+            builtHeads?.add(stored)
         }
 
         fun removeAll(stored: List<Stored>) {
@@ -391,8 +427,10 @@ internal class ClauseStore private constructor(
             all.without(removed)
             if (rebuild) {
                 positions = arrayOfNulls(arity)
+                builtHeads = null
             } else {
                 for (position in positions) position?.removeAll(stored, removed)
+                builtHeads?.removeAll(stored, removed)
             }
         }
 
@@ -493,6 +531,14 @@ internal class ClauseStore private constructor(
                     bestSize = size
                     best = bucket
                     other = rest
+                }
+            }
+            if (bestSize > GROUNDED_FROM && predicate.arity > 1) {
+                val hash = groundHash(program, words, goal)
+                if (hash != NOT_GROUND) {
+                    val heads = predicate.heads()
+                    best = heads.ground[hash]
+                    other = heads.nonGround
                 }
             }
             return when {

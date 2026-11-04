@@ -105,10 +105,38 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         assertIds([]).
         assertIds([Id|Ids]) :- context_assert(boundByQueryRule(Id)), assertIds(Ids).
 
+        % The closure of ground preferences: a round joins the preferences last added (Fresh) with all of them, in the
+        % store, by either end: a pair of older ones gave what it gives in an earlier round
+        groundSupClosure(Sup, Fresh, Closed) :-
+            findall(sup(X, Z), (
+                (
+                    member(sup(X, Y), Fresh),
+                    context_check(supEdge(Y, Z))
+                ;
+                    member(sup(Y, Z), Fresh),
+                    context_check(supEdge(X, Y))
+                ),
+                X \== Z,
+                context_absent(supEdge(X, Z))
+            ), New),
+            utils::deduplicate(New, Added),
+            (Added == [] ->
+                Closed = Sup
+            ;
+                findall(_, (member(sup(X, Z), Added), context_assert(supEdge(X, Z))), _),
+                append(Sup, Added, Next),
+                groundSupClosure(Next, Added, Closed)
+            ).
+
         %! supClosure(+Stated, -Closed)
         %  The preferences stated, closed transitively: the ordering of rules and premises is a strict partial order
         %  (no sup(X, X) is added, should the stated ones make a cycle). The preferences concluded by arguments
         %  (defeasiblePref) are closed by a rule of the theory instead, as sup(X, Y), sup(Y, Z) -> sup(X, Z).
+        supClosure(Sup, Closed) :-
+            ground(Sup), !,
+            findall(_, (member(sup(X, Y), Sup), context_assert(supEdge(X, Y))), _),
+            groundSupClosure(Sup, Sup, Closed),
+            context_retract(supEdge(_, _)).
         supClosure(Sup, Closed) :-
             findall(sup(X, Z), (
                 member(sup(X, Y), Sup),
