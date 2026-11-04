@@ -10,6 +10,10 @@ import it.unibo.tuprolog.solve.Signature
 internal class ContextAbsent(
     private val branches: ContextBranches,
 ) : AbstractNativePrimitive(Signature("context_absent", 1)) {
-    override fun call(call: NativeCall): Int =
-        call.reply(call.countSolutions(call.struct("context_check", intArrayOf(call.arg(0))), 1) == 0)
+    override fun call(call: NativeCall): Int {
+        val goal = call.arg(0)
+        return call.reply(
+            call.absentFrom(branches.selected, goal) ?: (call.countSolutions(call.struct("context_check", intArrayOf(goal)), 1) == 0),
+        )
+    }
 }

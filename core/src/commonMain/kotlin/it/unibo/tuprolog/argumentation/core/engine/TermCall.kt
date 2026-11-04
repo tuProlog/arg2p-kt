@@ -5,14 +5,11 @@ import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Cons
-import it.unibo.tuprolog.core.Fact
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Real
-import it.unibo.tuprolog.core.Rule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Tuple
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Solution
@@ -166,35 +163,6 @@ internal class TermCall(
     override fun record(w: Int): Record = Record.of(at(w))
 
     override fun recall(record: Record): Int = put(record.term.renamedCopy())
-
-    override fun sourcedRecords(
-        goal: Int,
-        records: List<Record>,
-        wrap: GoalWrapper?,
-    ): Int {
-        val clauses =
-            records.map { record ->
-                val copy = record.term.renamedCopy()
-                if (record.isRule) {
-                    val rule = copy as Struct
-                    Rule.of(rule[0].castToStruct(), if (wrap == null) rule[1] else wrapped(rule[1], wrap))
-                } else {
-                    Fact.of(copy.castToStruct())
-                }
-            }
-        entered = Entered(at(goal).castToStruct(), null, false, ClauseSource { _, _ -> clauses })
-        return NativeCall.JUMPED
-    }
-
-    private fun wrapped(
-        body: Term,
-        wrap: GoalWrapper,
-    ): Term =
-        when {
-            body is Struct && body.functor == "," && body.arity == 2 -> Tuple.of(wrapped(body[0], wrap), wrapped(body[1], wrap))
-            body.isTrue -> body
-            else -> at(wrap.wrap(this, put(body)))
-        }
 
     override fun findall(
         template: Int,

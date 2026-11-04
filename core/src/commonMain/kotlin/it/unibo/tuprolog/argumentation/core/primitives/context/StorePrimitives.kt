@@ -2,8 +2,8 @@ package it.unibo.tuprolog.argumentation.core.primitives.context
 
 import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.attempts
 import it.unibo.tuprolog.argumentation.core.engine.items
+import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
@@ -31,7 +31,7 @@ internal fun NativeCall.lookup(
         NativeCall.STRUCT ->
             when {
                 functorName(goal) == "," && arityOf(goal) == 2 -> inline(wrappedConjunction(goal, wrap), libraries, theoryVisible = false)
-                functorName(goal) == "clause" && arityOf(goal) == 2 -> clauseLookup(store, goal, i)
+                functorName(goal) == "clause" && arityOf(goal) == 2 -> clauseLookup(store, goal)
                 else -> enter(store, wrap, goal)
             }
         else -> enter(store, wrap, goal)
@@ -42,7 +42,7 @@ private fun NativeCall.enter(
     store: ClauseStore,
     wrap: GoalWrapper,
     goal: Int,
-): Int = sourcedRecords(goal, store.candidates(record(goal)).map { it.record }, wrap)
+): Int = (this as Machine).storeGoal(goal, store, wrap)
 
 // The goals of a conjunction each wrapped
 private fun NativeCall.wrappedConjunction(
@@ -56,29 +56,35 @@ private fun NativeCall.wrappedConjunction(
         else -> wrap.wrap(this, goal)
     }
 
-// clause(Head, Body): a `clause(h, b)` answer for each record stored for Head that unifies with the goal
+// clause(Head, Body): the clauses stored for Head that unify with them
 private fun NativeCall.clauseLookup(
     store: ClauseStore,
     goal: Int,
-    i: Int,
 ): Int {
     val head = argOf(goal, 0)
-    if (kind(head) == NativeCall.VAR) return NativeCall.FAIL
-    val matching =
-        store.candidates(record(head)).filter { stored ->
-            val w = recall(stored.record)
-            unifiable(goal, struct("clause", intArrayOf(headOf(stored.record, w), bodyOf(stored.record, w))))
+    return if (isCallable(head)) (this as Machine).storeClause(head, argOf(goal, 1), store) else NativeCall.FAIL
+}
+
+/**
+ * Whether the goal [goal] has no answer in [store], asked without entering it where only facts or clause heads can
+ * answer; null when a rule may answer: its body is to be solved
+ */
+internal fun NativeCall.absentFrom(
+    store: ClauseStore,
+    goal: Int,
+): Boolean? {
+    val machine = this as? Machine ?: return null
+    val isClause = kind(goal) == NativeCall.STRUCT && functorName(goal) == "clause" && arityOf(goal) == 2
+    return when {
+        isClause -> {
+            val head = argOf(goal, 0)
+            if (!isCallable(head)) true else machine.storeHolds(head, argOf(goal, 1), store)?.not()
         }
-    return attempts(
-        matching
-            .asSequence()
-            .map { stored ->
-                { call: NativeCall ->
-                    val w = call.recall(stored.record)
-                    call.unify(call.arg(i), call.struct("clause", intArrayOf(call.headOf(stored.record, w), call.bodyOf(stored.record, w))))
-                }
-            }.iterator(),
-    )
+        kind(goal) == NativeCall.ATOM && atomName(goal) == "true" -> false
+        kind(goal) == NativeCall.STRUCT && functorName(goal) == "," && arityOf(goal) == 2 -> null
+        isCallable(goal) -> machine.storeHolds(goal, null, store)?.not()
+        else -> true
+    }
 }
 
 /** The head of the record recalled as [w] */
@@ -130,7 +136,7 @@ internal fun NativeCall.retractAll(
                 }
             unifiable(pattern, against)
         }
-    matching.forEach { store.remove(it) }
+    store.removeAll(matching)
 }
 
 /** The branches the list argument [i] names (a type error otherwise, from the primitive of [signature]) */

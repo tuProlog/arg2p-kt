@@ -21,6 +21,7 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ref
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
+import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
@@ -182,11 +183,17 @@ internal class Machine(
         var pending: Exception? = null,
     )
 
-    // A lookup with clauses left to try: terms, or records (the goals of their bodies wrapped)
+    // A lookup with clauses left to try
     private class SourcedCall(
-        val clauses: List<Clause>?,
-        val records: List<Record>?,
+        val clauses: List<Clause>,
+    )
+
+    // A lookup in a store with clauses left to try: the goals of their bodies wrapped; for `clause(Head, Body)`, its
+    // Body in the register after the arguments of Head, unified with the stored body
+    private class StoredCall(
+        val candidates: ClauseStore.Candidates,
         val wrap: GoalWrapper?,
+        val asClause: Boolean,
     )
 
     // The arity of the native primitive being called, and the variables its [term]s gave the cells (one call)
@@ -685,13 +692,19 @@ internal class Machine(
                     }
                 }
                 SOURCED -> {
-                    val call = calls[nextClause] as SourcedCall
+                    val call = calls[nextClause]
                     val argsBase = cps[base + 9]
                     val arity = cps[base + 11]
                     val from = cps[base + 12]
                     cpArgs.copyInto(regs, 0, argsBase, argsBase + arity)
                     popChoicePoint()
-                    if (trySourced(call, from, arity, nextClause) != FAILED) return true
+                    val answer =
+                        if (call is StoredCall) {
+                            tryStored(call, from, arity, nextClause)
+                        } else {
+                            trySourced(call as SourcedCall, from, arity, nextClause)
+                        }
+                    if (answer != FAILED) return true
                 }
                 else -> {
                     val argsBase = cps[base + 9]
@@ -2079,25 +2092,304 @@ internal class Machine(
             regs[0] = heap[a]
             regs[1] = heap[a + 1]
         }
-        val call = SourcedCall(clauses, null, null)
+        val call = SourcedCall(clauses)
         val index = calls.size
         calls.add(call)
         return trySourced(call, 0, goalArity, index)
     }
 
-    override fun sourcedRecords(
+    /** Enters the goal [goal] resolved with the clauses of [store] for it: their heads unified in place */
+    fun storeGoal(
         goal: Int,
-        records: List<Record>,
+        store: ClauseStore,
         wrap: GoalWrapper?,
     ): Int {
-        if (records.isEmpty()) return FAILED
+        store.bind(program)
         val g = deref(goal)
-        val goalArity = loadArguments(g)
-        val call = SourcedCall(null, records, wrap)
-        val index = calls.size
-        calls.add(call)
-        return trySourced(call, 0, goalArity, index)
+        val candidates = store.candidates(heap, g)
+        if (candidates.size == 0) return FAILED
+        val arity = loadArguments(g)
+        return tryStored(StoredCall(candidates, wrap, false), candidates.size - 1, arity, NONE)
     }
+
+    /** Answers `clause(Head, Body)`, for a callable [head]: the clauses of [store] whose head and body unify with them */
+    fun storeClause(
+        head: Int,
+        body: Int,
+        store: ClauseStore,
+    ): Int {
+        store.bind(program)
+        val g = deref(head)
+        val candidates = store.candidates(heap, g)
+        if (candidates.size == 0) return FAILED
+        val arity = loadArguments(g)
+        if (arity + 1 > regs.size) regs = regs.copyOf((arity + 1) * 2)
+        regs[arity] = body
+        return tryStored(StoredCall(candidates, null, true), candidates.size - 1, arity + 1, NONE)
+    }
+
+    /**
+     * Whether a fact of [store] unifies with [goal] (or, with [body], whether a clause does with `clause(goal, body)`),
+     * nothing left bound; null when a rule may answer, whose body is to be solved
+     */
+    fun storeHolds(
+        goal: Int,
+        body: Int?,
+        store: ClauseStore,
+    ): Boolean? {
+        store.bind(program)
+        val g = deref(goal)
+        val candidates = store.candidates(heap, g)
+        val items = candidates.items
+        val arity = loadArguments(g)
+        val savedTop = top
+        val savedBarrier = heapBarrier
+        val mark = trailTop
+        for (i in candidates.size - 1 downTo 0) {
+            val record = items[i]!!.record
+            if (!headMayMatch(record, arity)) continue
+            if (body == null && record.isRule) return null
+            heapBarrier = Int.MAX_VALUE
+            enterRecord(record)
+            val holds = unifyHead(record, arity) && (body == null || unify(body, copyRecord(record.words, record.body)))
+            undoTrail(mark)
+            heapBarrier = savedBarrier
+            top = savedTop
+            if (holds) return true
+        }
+        return false
+    }
+
+    // Tries the clauses of [call] from position [from] down: past the heads that cannot match, a choice point left if
+    // another may. [index] is that of the call among [calls], once it has one
+    private fun tryStored(
+        call: StoredCall,
+        from: Int,
+        arity: Int,
+        index: Int,
+    ): Int {
+        val items = call.candidates.items
+        val headArity = if (call.asClause) arity - 1 else arity
+        var i = from
+        while (i >= 0 && !headMayMatch(items[i]!!.record, headArity)) i--
+        if (i < 0) return FAILED
+        var next = i - 1
+        while (next >= 0 && !headMayMatch(items[next]!!.record, headArity)) next--
+        if (next >= 0) {
+            val at =
+                if (index != NONE) {
+                    index
+                } else {
+                    calls.add(call)
+                    calls.size - 1
+                }
+            pushChoicePoint(SOURCED, at, arity, 0, continuation, next)
+        }
+        val record = items[i]!!.record
+        enterRecord(record)
+        if (!unifyHead(record, headArity)) return FAILED
+        if (call.asClause) return if (unify(regs[headArity], copyRecord(record.words, record.body))) CONTINUE else FAILED
+        if (!record.isRule) return CONTINUE
+        val body = copyRecord(record.words, record.body)
+        val wrap = call.wrap
+        cutBarrier = cpTop
+        return callTerm(if (wrap == null) body else wrapped(body, wrap))
+    }
+
+    // ---- a record against the heap, in place: nothing is copied but what a variable of the heap is bound to
+
+    // The variables of the record at hand, by their relative addresses: their words on the heap, for this stamp
+    private var recordVariables = IntArray(64)
+    private var recordStamps = IntArray(64)
+    private var recordStamp = 0
+
+    private fun enterRecord(record: Record) {
+        val n = record.words.size
+        if (n > recordStamps.size) {
+            recordVariables = IntArray(n * 2)
+            recordStamps = IntArray(n * 2)
+            recordStamp = 0
+        }
+        recordStamp++
+    }
+
+    // The arguments of the head of [record] against the registers
+    private fun unifyHead(
+        record: Record,
+        arity: Int,
+    ): Boolean {
+        val words = record.words
+        val head = record.head
+        val offset = if (tag(head) == LIST) payload(head) else payload(head) + 1
+        for (i in 0 until arity) if (!unifyRecord(words, words[offset + i], regs[i])) return false
+        return true
+    }
+
+    // Whether the head of [record] may unify with the arguments in the registers: all that binds nothing told apart
+    private fun headMayMatch(
+        record: Record,
+        arity: Int,
+    ): Boolean {
+        val words = record.words
+        val head = record.head
+        val offset = if (tag(head) == LIST) payload(head) else payload(head) + 1
+        for (i in 0 until arity) if (!mayMatch(words, words[offset + i], regs[i])) return false
+        return true
+    }
+
+    private fun mayMatch(
+        words: IntArray,
+        r0: Int,
+        w0: Int,
+    ): Boolean {
+        var r = r0
+        var w = w0
+        while (true) {
+            val t = tag(r)
+            if (t == REF) return true
+            val d = deref(w)
+            val td = tag(d)
+            if (td == REF) return true
+            if (t != td) return false
+            when (t) {
+                STR -> {
+                    val a = payload(r)
+                    val b = payload(d)
+                    val f = words[a]
+                    if (f != heap[b]) return false
+                    val n = program.arity(f)
+                    for (i in 1 until n) if (!mayMatch(words, words[a + i], heap[b + i])) return false
+                    r = words[a + n]
+                    w = heap[b + n]
+                }
+                LIST -> {
+                    val a = payload(r)
+                    val b = payload(d)
+                    if (!mayMatch(words, words[a], heap[b])) return false
+                    r = words[a + 1]
+                    w = heap[b + 1]
+                }
+                else -> return r == d
+            }
+        }
+    }
+
+    private fun unifyRecord(
+        words: IntArray,
+        r0: Int,
+        w0: Int,
+    ): Boolean {
+        var r = r0
+        var w = w0
+        while (true) {
+            when (tag(r)) {
+                REF -> {
+                    val a = payload(r)
+                    if (recordStamps[a] == recordStamp) return unify(recordVariables[a], w)
+                    recordStamps[a] = recordStamp
+                    recordVariables[a] = w
+                    return true
+                }
+                STR -> {
+                    val d = deref(w)
+                    when (tag(d)) {
+                        REF -> {
+                            bind(payload(d), copyRecord(words, r))
+                            return true
+                        }
+                        STR -> {
+                            val a = payload(r)
+                            val b = payload(d)
+                            val f = words[a]
+                            if (f != heap[b]) return false
+                            val n = program.arity(f)
+                            for (i in 1 until n) if (!unifyRecord(words, words[a + i], heap[b + i])) return false
+                            r = words[a + n]
+                            w = heap[b + n]
+                        }
+                        else -> return false
+                    }
+                }
+                LIST -> {
+                    val d = deref(w)
+                    when (tag(d)) {
+                        REF -> {
+                            bind(payload(d), copyRecord(words, r))
+                            return true
+                        }
+                        LIST -> {
+                            val a = payload(r)
+                            val b = payload(d)
+                            if (!unifyRecord(words, words[a], heap[b])) return false
+                            r = words[a + 1]
+                            w = heap[b + 1]
+                        }
+                        else -> return false
+                    }
+                }
+                else -> {
+                    val d = deref(w)
+                    if (d == r) return true
+                    if (tag(d) != REF) return false
+                    bind(payload(d), r)
+                    return true
+                }
+            }
+        }
+    }
+
+    // The term [r] of a record on the heap, its variables those met so far or fresh ones
+    private fun copyRecord(
+        words: IntArray,
+        r: Int,
+    ): Int =
+        when (tag(r)) {
+            REF -> {
+                val a = payload(r)
+                if (recordStamps[a] == recordStamp) {
+                    recordVariables[a]
+                } else {
+                    val v = ref(newVariable(0))
+                    recordStamps[a] = recordStamp
+                    recordVariables[a] = v
+                    v
+                }
+            }
+            STR -> {
+                val a = payload(r)
+                val f = words[a]
+                val n = program.arity(f)
+                val h = alloc(n + 1)
+                heap[h] = f
+                for (i in 1..n) {
+                    val argument = copyRecord(words, words[a + i])
+                    heap[h + i] = argument
+                }
+                word(STR, h)
+            }
+            LIST -> {
+                val first = alloc(2)
+                var cell = first
+                var a = payload(r)
+                while (true) {
+                    val item = copyRecord(words, words[a])
+                    heap[cell] = item
+                    val tail = words[a + 1]
+                    if (tag(tail) == LIST) {
+                        val next = alloc(2)
+                        heap[cell + 1] = word(LIST, next)
+                        cell = next
+                        a = payload(tail)
+                    } else {
+                        val last = copyRecord(words, tail)
+                        heap[cell + 1] = last
+                        break
+                    }
+                }
+                word(LIST, first)
+            }
+            else -> r
+        }
 
     // The arguments of the goal [g] (dereferenced) in the registers; its arity
     private fun loadArguments(g: Int): Int =
@@ -2241,32 +2533,7 @@ internal class Machine(
         arity: Int,
         index: Int,
     ): Int {
-        val records = call.records
-        if (records != null) {
-            if (from == records.size) return FAILED
-            if (from + 1 < records.size) pushChoicePoint(SOURCED, index, arity, 0, continuation, from + 1)
-            val record = records[from]
-            val w = recall(record)
-            val head = deref(if (record.isRule) heap[payload(w) + 1] else w)
-            when (tag(head)) {
-                STR -> {
-                    val a = payload(head)
-                    for (i in 0 until arity) if (!unify(heap[a + 1 + i], regs[i])) return FAILED
-                }
-                LIST -> {
-                    val a = payload(head)
-                    if (!unify(heap[a], regs[0]) || !unify(heap[a + 1], regs[1])) return FAILED
-                }
-                else -> Unit
-            }
-            if (!record.isRule) return CONTINUE
-            val body = heap[payload(w) + 2]
-            val wrap = call.wrap
-            val goal = if (wrap == null) body else wrapped(body, wrap)
-            cutBarrier = cpTop
-            return callTerm(goal)
-        }
-        val clauses = call.clauses!!
+        val clauses = call.clauses
         if (from == clauses.size) return FAILED
         if (from + 1 < clauses.size) pushChoicePoint(SOURCED, index, arity, 0, continuation, from + 1)
         val clause = clauses[from]

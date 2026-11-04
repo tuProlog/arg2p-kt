@@ -311,6 +311,10 @@ internal class Program() {
 
     val emptyList: Int = atomWord("[]")
 
+    /** The word of `true`, and the functor word of `:-/2` */
+    val trueWord: Int = atomWord("true")
+    val ruleFunctor: Int = functorWord(":-", 2)
+
     fun atom(name: String): Int =
         atomIds.getOrPut(name) {
             atoms.add(name)

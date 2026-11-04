@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.context
 
 import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
@@ -21,11 +22,15 @@ import it.unibo.tuprolog.core.Var
  * Clause database backing the argumentation context: records (the words of the machine, off its heap, see
  * [Record]), only ever asserted (asserta order), retracted and looked up, in the encoding of one program (the
  * machine's once [bind] is called, a private one until then).
- * Every argument position of a stored head is indexed by the preorder path of its words, up to the first variable:
- * lookups only consider the records whose paths are compatible with the goal's, and a ground argument is also found
- * by a hash of the whole of it.
+ *
+ * A lookup reads the goal where it is, on the heap of the machine or in a record ([candidates]): each argument position
+ * of a predicate is indexed, when first looked up by, by the top symbol of the stored arguments and, for large buckets,
+ * by a hash of the ground ones. What it gives are candidates, which the unification of their heads decides.
+ *
  * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they
- * modify. The term API (the methods on terms) serves the solvers that are not the machine, and the derived data.
+ * modify. A lookup sees the clauses as they are when it is made (logical update view): appending writes past the end
+ * a lookup holds, and removing makes a new array. The term API (the methods on terms) serves the solvers that are not
+ * the machine, and the derived data.
  */
 internal class ClauseStore private constructor(
     private var data: Data,
@@ -40,6 +45,9 @@ internal class ClauseStore private constructor(
 
     private fun encoding(): Program = encoding ?: Program().also { encoding = it }
 
+    /** Whether no clause is stored */
+    fun isEmpty(): Boolean = data.isEmpty()
+
     /** The records re-encoded in the words of [program] (the machine's) */
     fun bind(program: Program) {
         if (encoding === program) return
@@ -50,9 +58,6 @@ internal class ClauseStore private constructor(
         shared = false
         for (record in stored) data.add(Record.encoded(record, program))
     }
-
-    /** Whether no clause is stored */
-    fun isEmpty(): Boolean = data.isEmpty()
 
     fun fork(): ClauseStore {
         shared = true
@@ -69,18 +74,35 @@ internal class ClauseStore private constructor(
 
     /** asserta: the new record is found before the existing ones */
     fun assertA(record: Record) {
-        writable().add(Record.encoded(record, encoding()))
+        val encoded = Record.encoded(record, encoding())
+        val head = encoded.head
+        // (a clause must have a callable head: reading it as a clause raises the error)
+        if (tag(head) == REF || !isCallable(head)) encoded.clause
+        writable().add(encoded)
     }
+
+    private fun isCallable(head: Int) = tag(head) == STR || tag(head) == LIST || tag(head) == ATOM
 
     fun assertA(term: Term) = assertA(Record.of(term))
 
-    /** [stored] removed, if it is here */
-    fun remove(stored: Stored) {
-        if (data.contains(stored)) writable().remove(stored)
+    /** [stored] removed, those that are here */
+    fun removeAll(stored: Collection<Stored>) {
+        if (stored.isEmpty()) return
+        val present = stored.filter { data.contains(it) }
+        if (present.isNotEmpty()) writable().removeAll(present)
     }
 
     /** The stored records whose head may unify with [head] (a record of the head alone), newest first */
-    fun candidates(head: Record): List<Stored> = data.candidates(Record.encoded(head, encoding()))
+    fun candidates(head: Record): List<Stored> {
+        val encoded = Record.encoded(head, encoding())
+        return candidates(encoded.words, encoded.root).toList()
+    }
+
+    /** The stored records whose head may unify with the term [goal] (dereferenced) of [words]: the heap of the machine or a record */
+    fun candidates(
+        words: IntArray,
+        goal: Int,
+    ): Candidates = data.candidates(encoding(), words, goal)
 
     /**
      * A value derived from the clauses of the predicate [key] (`functor/arity`, newest first), named [name]: computed
@@ -106,13 +128,13 @@ internal class ClauseStore private constructor(
         val pattern = term.asStruct() ?: return
         val (head, body) = if (pattern.isRule()) pattern[0] to pattern[1] else pattern to null
         val headStruct = head.asStruct() ?: return
-        val matching =
+        removeAll(
             candidates(Record.of(headStruct)).filter { stored ->
                 val fresh = stored.clause.renamedCopy()
                 val unifier = Arg2pUnificator.mgu(headStruct, fresh.head!!)
                 unifier.isSuccess && (body == null || Arg2pUnificator.mgu(body.apply(unifier), fresh.body.apply(unifier)).isSuccess)
-            }
-        matching.forEach { remove(it) }
+            },
+        )
     }
 
     /** The stored clauses whose head may unify with the given one, newest first, as stored */
@@ -198,177 +220,114 @@ internal class ClauseStore private constructor(
         val clause: Clause get() = record.clause
     }
 
-    // ---- the index, on the words of the records
-
-    private class Node {
-        val children = HashMap<Int, Node>()
-        val here = LinkedHashSet<Long>()
-
-        fun copy(): Node =
-            Node().also { node ->
-                node.here.addAll(here)
-                children.forEach { (key, child) -> node.children[key] = child.copy() }
-            }
-
-        fun collectAll(target: MutableSet<Long>) {
-            target.addAll(here)
-            children.values.forEach { it.collectAll(target) }
-        }
-
-        fun add(
-            path: Path,
-            id: Long,
-        ) {
-            var node = this
-            for (i in 0 until path.size) node = node.children.getOrPut(path.symbols[i]) { Node() }
-            node.here.add(id)
-        }
-
-        fun remove(
-            path: Path,
-            id: Long,
-        ) {
-            var node = this
-            for (i in 0 until path.size) node = node.children[path.symbols[i]] ?: return
-            node.here.remove(id)
-        }
-
-        /** Ids of the stored arguments whose path is compatible with the given one */
-        fun compatible(
-            path: Path,
-            target: MutableSet<Long>,
-        ) {
-            var node: Node? = this
-            for (i in 0 until path.size) {
-                // stored arguments with a variable (or truncated) at this point are compatible
-                target.addAll(node!!.here)
-                node = node.children[path.symbols[i]]
-                if (node == null) break
-            }
-            // stored arguments extending the (truncated or variable-ending) query path are compatible
-            if (node != null) {
-                if (path.complete) target.addAll(node.here) else node.collectAll(target)
-            }
-        }
-    }
-
-    /**
-     * Index of an argument position: ground arguments are looked up exactly, by a hash of the whole of them, the
-     * others by the path of their words (which is truncated, so that it would not tell apart large terms sharing a
-     * prefix). The paths of the ground arguments are only needed by partially instantiated lookups: they are
-     * indexed on the first of them, so that positions only looked up by ground terms or variables (as labels) do not
-     * pay for them.
-     */
-    private class Position {
-        val ground = HashMap<Long, LinkedHashSet<Long>>()
-        val nonGround = Node()
-        private var groundPaths: Node? = null
-
-        fun copy(): Position =
-            Position().also { position ->
-                ground.forEach { (hash, ids) -> position.ground[hash] = LinkedHashSet(ids) }
-                position.nonGround.children.putAll(nonGround.copy().children)
-                position.nonGround.here.addAll(nonGround.here)
-                position.groundPaths = groundPaths?.copy()
-            }
-
-        fun add(
-            arg: Argument,
-            id: Long,
-        ) {
-            if (arg.ground) {
-                ground.getOrPut(arg.hash) { LinkedHashSet() }.add(id)
-                groundPaths?.add(arg.path, id)
-            } else {
-                nonGround.add(arg.path, id)
-            }
-        }
-
-        fun remove(
-            arg: Argument,
-            id: Long,
-        ) {
-            if (arg.ground) {
-                ground[arg.hash]?.let {
-                    it.remove(id)
-                    if (it.isEmpty()) ground.remove(arg.hash)
-                }
-                groundPaths?.remove(arg.path, id)
-            } else {
-                nonGround.remove(arg.path, id)
-            }
-        }
-
-        // built from the ground arguments stored so far, then kept up to date: a cache, also on shared data
-        private fun groundPaths(
-            predicate: Predicate,
-            position: Int,
-        ): Node =
-            groundPaths ?: Node().also { node ->
-                for (stored in predicate.clauses.values) {
-                    val arg = predicate.arguments(stored)[position]
-                    if (arg.ground) node.add(arg.path, stored.id)
-                }
-                groundPaths = node
-            }
-
-        /** Ids of the stored arguments which may unify with the given one, or null when it does not restrict them */
-        fun candidates(
-            arg: Argument,
-            predicate: Predicate,
-            position: Int,
-        ): Set<Long>? {
-            if (arg.path.size == 0) return null
-            val found = LinkedHashSet<Long>()
-            if (arg.ground) {
-                ground[arg.hash]?.let { found.addAll(it) }
-            } else {
-                groundPaths(predicate, position).compatible(arg.path, found)
-            }
-            nonGround.compatible(arg.path, found)
-            return found
-        }
-    }
-
-    /** The preorder words of an argument up to its first variable, complete when the whole of it was visited */
-    private class Path(
-        val symbols: IntArray,
+    /** Stored clauses a lookup is to try: the first [size] of [items], the newest last, as they are when it is made */
+    class Candidates(
+        val items: Array<Stored?>,
         val size: Int,
-        val complete: Boolean,
-    )
+    ) {
+        /** Newest first */
+        fun toList(): List<Stored> = (size - 1 downTo 0).map { items[it]!! }
 
-    /** An argument of a head, as the index sees it: its path, and the hash of the whole of it if it is ground */
-    private class Argument(
-        val path: Path,
-        val ground: Boolean,
-        val hash: Long,
-    )
+        companion object {
+            val NONE = Candidates(arrayOfNulls(0), 0)
+        }
+    }
+
+    // Clauses in the order they were asserted. An append past the end of what a lookup holds does not disturb it; a
+    // removal makes a new array. An array two predicates share (a copy of one) is copied by the first that appends
+    private class Bucket(
+        var items: Array<Stored?> = arrayOfNulls(4),
+        var size: Int = 0,
+        var sharedItems: Boolean = false,
+    ) {
+        fun append(stored: Stored) {
+            if (sharedItems || size == items.size) {
+                items = items.copyOf(maxOf(4, size * 2))
+                sharedItems = false
+            }
+            items[size++] = stored
+        }
+
+        fun without(removed: Set<Long>) {
+            val kept = arrayOfNulls<Stored>(maxOf(4, size))
+            var n = 0
+            for (i in 0 until size) {
+                val stored = items[i]!!
+                if (stored.id !in removed) kept[n++] = stored
+            }
+            items = kept
+            size = n
+            sharedItems = false
+        }
+
+        fun copy(): Bucket {
+            sharedItems = true
+            return Bucket(items, size, true)
+        }
+
+        fun candidates(): Candidates = if (size == 0) Candidates.NONE else Candidates(items, size)
+    }
+
+    // The index of an argument position, built when first looked up by: by the top symbol of the stored arguments, and
+    // for the ground ones by a hash of the whole of them (that one built when a bucket turns out to be large)
+    private class Position(
+        val index: Int,
+    ) {
+        val byKey = HashMap<Int, Bucket>()
+        val variables = Bucket()
+        var groundByHash: HashMap<Long, Bucket>? = null
+        var nonGround: Bucket? = null
+
+        fun add(stored: Stored) {
+            val argument = argumentOf(stored.record, index)
+            val key = topKey(stored.record.words, argument)
+            if (key == 0) variables.append(stored) else byKey.getOrPut(key) { Bucket() }.append(stored)
+            val ground = groundByHash ?: return
+            val hash = groundHash(stored.record.program!!, stored.record.words, argument)
+            if (hash == NOT_GROUND) nonGround!!.append(stored) else ground.getOrPut(hash) { Bucket() }.append(stored)
+        }
+
+        fun buildGround(all: Bucket) {
+            if (groundByHash != null) return
+            val ground = HashMap<Long, Bucket>()
+            val rest = Bucket()
+            for (i in 0 until all.size) {
+                val stored = all.items[i]!!
+                val hash = groundHash(stored.record.program!!, stored.record.words, argumentOf(stored.record, index))
+                if (hash == NOT_GROUND) rest.append(stored) else ground.getOrPut(hash) { Bucket() }.append(stored)
+            }
+            groundByHash = ground
+            nonGround = rest
+        }
+    }
 
     private class Predicate(
-        arity: Int,
+        val arity: Int,
     ) {
-        val clauses = LinkedHashMap<Long, Stored>()
-        val indexes = Array(arity) { Position() }
-
-        // Whole ground heads, for the exact lookup of ground goals
-        val groundHeads = HashMap<Long, LinkedHashSet<Long>>()
-        val nonGroundHeads = LinkedHashSet<Long>()
+        var all = Bucket()
+        var positions = arrayOfNulls<Position>(arity)
 
         // The values derived from the clauses (see ClauseStore.derived), until they change
         val derived = HashMap<String, Any>()
 
-        // The arguments of the stored heads as the index sees them, computed once
-        private val arguments = HashMap<Long, Array<Argument>>()
+        fun copy(): Predicate = Predicate(arity).also { it.all = all.copy() }
 
-        fun arguments(stored: Stored): Array<Argument> = arguments.getOrPut(stored.id) { argumentsOf(stored.record) }
+        fun add(stored: Stored) {
+            derived.clear()
+            all.append(stored)
+            for (position in positions) position?.add(stored)
+        }
 
-        fun copy(): Predicate =
-            Predicate(indexes.size).also { predicate ->
-                predicate.clauses.putAll(clauses)
-                indexes.forEachIndexed { i, position -> predicate.indexes[i] = position.copy() }
-                groundHeads.forEach { (hash, ids) -> predicate.groundHeads[hash] = LinkedHashSet(ids) }
-                predicate.nonGroundHeads.addAll(nonGroundHeads)
-                predicate.arguments.putAll(arguments)
+        fun removeAll(ids: Set<Long>) {
+            derived.clear()
+            all.without(ids)
+            positions = arrayOfNulls(arity)
+        }
+
+        fun position(index: Int): Position =
+            positions[index] ?: Position(index).also { position ->
+                for (i in 0 until all.size) position.add(all.items[i]!!)
+                positions[index] = position
             }
     }
 
@@ -382,16 +341,20 @@ internal class ClauseStore private constructor(
 
         fun copy(): Data = Data(HashMap(predicates), nextId)
 
-        fun isEmpty(): Boolean = predicates.values.all { it.clauses.isEmpty() }
+        fun isEmpty(): Boolean = predicates.values.all { it.all.size == 0 }
 
         /** Every record, oldest first */
         fun all(): List<Record> =
             predicates.values
-                .flatMap { it.clauses.values }
+                .flatMap { predicate -> (0 until predicate.all.size).map { predicate.all.items[it]!! } }
                 .sortedBy { it.id }
                 .map { it.record }
 
-        fun contains(stored: Stored): Boolean = predicates[headKey(stored.record)]?.clauses?.containsKey(stored.id) == true
+        fun contains(stored: Stored): Boolean {
+            val all = predicates[headKey(stored.record.words, stored.record.head)]?.all ?: return false
+            for (i in 0 until all.size) if (all.items[i] === stored) return true
+            return false
+        }
 
         /** The predicate stored under key, copied the first time this data modifies it */
         private fun writable(
@@ -404,34 +367,14 @@ internal class ClauseStore private constructor(
         }
 
         fun add(record: Record) {
-            val stored = Stored(nextId++, record)
-            val predicate = writable(headKey(record), headArity(record))
-            predicate.derived.clear()
-            predicate.clauses[stored.id] = stored
-            val arguments = predicate.arguments(stored)
-            arguments.forEachIndexed { i, arg -> predicate.indexes[i].add(arg, stored.id) }
-            if (arguments.all { it.ground }) {
-                predicate.groundHeads.getOrPut(headHash(arguments)) { LinkedHashSet() }.add(stored.id)
-            } else {
-                predicate.nonGroundHeads.add(stored.id)
-            }
+            val head = record.head
+            writable(headKey(record.words, head), arityOf(record, head)).add(Stored(nextId++, record))
         }
 
-        fun remove(stored: Stored) {
-            val record = stored.record
-            val predicate = writable(headKey(record), headArity(record))
-            predicate.derived.clear()
-            predicate.clauses.remove(stored.id)
-            val arguments = predicate.arguments(stored)
-            arguments.forEachIndexed { i, arg -> predicate.indexes[i].remove(arg, stored.id) }
-            if (arguments.all { it.ground }) {
-                val hash = headHash(arguments)
-                predicate.groundHeads[hash]?.let {
-                    it.remove(stored.id)
-                    if (it.isEmpty()) predicate.groundHeads.remove(hash)
-                }
-            } else {
-                predicate.nonGroundHeads.remove(stored.id)
+        fun removeAll(stored: List<Stored>) {
+            for ((key, group) in stored.groupBy { headKey(it.record.words, it.record.head) }) {
+                val record = group.first().record
+                writable(key, arityOf(record, record.head)).removeAll(group.mapTo(HashSet()) { it.id })
             }
         }
 
@@ -443,180 +386,183 @@ internal class ClauseStore private constructor(
             val predicate = predicates[key] ?: return compute(emptyList())
             @Suppress("UNCHECKED_CAST")
             return predicate.derived.getOrPut(name) {
-                val clauses = predicate.clauses.values.map { it.clause }
-                compute(clauses.asReversed())
+                val all = predicate.all
+                compute((all.size - 1 downTo 0).map { all.items[it]!!.clause })
             } as T
         }
 
-        /** Stored records whose head may unify with [head], newest first */
-        fun candidates(head: Record): List<Stored> {
-            val predicate = predicates[headKey(head)] ?: return emptyList()
-            val arguments = argumentsOf(head)
-            if (arguments.all { it.ground } && predicate.nonGroundHeads.size <= MAX_NON_GROUND_SCAN) {
-                val ids = LinkedHashSet<Long>()
-                predicate.groundHeads[headHash(arguments)]?.let { ids.addAll(it) }
-                ids.addAll(predicate.nonGroundHeads)
-                return ids.sortedDescending().mapNotNull { predicate.clauses[it] }
+        fun candidates(
+            program: Program,
+            words: IntArray,
+            goal: Int,
+        ): Candidates {
+            val predicate = predicates[headKey(words, goal)] ?: return Candidates.NONE
+            val all = predicate.all
+            if (predicate.arity == 0 || all.size <= SCANNED) return all.candidates()
+            var bestSize = all.size
+            var best: Bucket? = all
+            var other: Bucket? = null
+            for (i in 0 until predicate.arity) {
+                val argument = derefIn(words, goalArgument(words, goal, i))
+                val key = topKey(words, argument)
+                if (key == 0) continue
+                val position = predicate.position(i)
+                var bucket = position.byKey[key]
+                var rest: Bucket? = position.variables
+                var size = (bucket?.size ?: 0) + rest!!.size
+                if (size == 0) return Candidates.NONE
+                if (size > GROUNDED_FROM && (tag(argument) == STR || tag(argument) == LIST)) {
+                    val hash = groundHash(program, words, argument)
+                    if (hash != NOT_GROUND) {
+                        position.buildGround(all)
+                        bucket = position.groundByHash!![hash]
+                        rest = position.nonGround
+                        size = (bucket?.size ?: 0) + rest!!.size
+                        if (size == 0) return Candidates.NONE
+                    }
+                }
+                if (size < bestSize) {
+                    bestSize = size
+                    best = bucket
+                    other = rest
+                }
             }
-            var best: Set<Long>? = null
-            arguments.forEachIndexed { i, arg ->
-                val found = predicate.indexes[i].candidates(arg, predicate, i) ?: return@forEachIndexed
-                if (best.let { it == null || found.size < it.size }) best = found
+            return when {
+                other == null || other.size == 0 -> best?.candidates() ?: Candidates.NONE
+                best == null || best.size == 0 -> other.candidates()
+                else -> merged(best, other)
             }
-            // all the clauses: in the order of their ids (they are added in that order), the newest first
-            val ids =
-                best ?: return predicate.clauses.values
-                    .toList()
-                    .asReversed()
-            return ids.sortedDescending().mapNotNull { predicate.clauses[it] }
+        }
+
+        // Two buckets as one, in the order of their clauses
+        private fun merged(
+            a: Bucket,
+            b: Bucket,
+        ): Candidates {
+            val n = a.size + b.size
+            val items = arrayOfNulls<Stored>(n)
+            var i = 0
+            var j = 0
+            for (k in 0 until n) {
+                items[k] =
+                    if (j == b.size || (i < a.size && a.items[i]!!.id < b.items[j]!!.id)) a.items[i++] else b.items[j++]
+            }
+            return Candidates(items, n)
         }
     }
 
     companion object {
-        private const val MAX_PATH = 16
+        // At most this many clauses are tried in turn, with no index
+        private const val SCANNED = 4
 
-        // Ground goals are looked up by their whole head, plus every stored clause with a non-ground head: when
-        // these are more, the lookup goes through the argument indexes instead
-        private const val MAX_NON_GROUND_SCAN = 8
+        // The candidates by top symbol from which a ground argument is hashed as a whole
+        private const val GROUNDED_FROM = 8
         private const val MAX_DEPTH = 64
+        private const val NOT_GROUND = Long.MIN_VALUE
 
         private fun Term.isRule() = this is Struct && functor == ":-" && arity == 2
 
-        // The key of the predicate of a record's head: the functor word of a structure, the word of an atom (or of a
-        // number, head or not), a key of its own for a list cell
-        private fun headKey(record: Record): Int {
-            val head = record.head
-            return when (tag(head)) {
-                STR -> record.words[payload(head)]
+        private fun derefIn(
+            words: IntArray,
+            w0: Int,
+        ): Int {
+            var w = w0
+            while (tag(w) == REF) {
+                val c = words[payload(w)]
+                if (c == w) return w
+                w = c
+            }
+            return w
+        }
+
+        // The key of the predicate of a head: the functor word of a structure, the word of an atom, a key of its own for a list cell
+        private fun headKey(
+            words: IntArray,
+            head: Int,
+        ): Int =
+            when (tag(head)) {
+                STR -> words[payload(head)]
                 LIST -> Program.LIST_KEY
                 else -> head
             }
-        }
 
-        private fun headArity(record: Record): Int {
-            val head = record.head
-            return when (tag(head)) {
+        private fun arityOf(
+            record: Record,
+            head: Int,
+        ): Int =
+            when (tag(head)) {
                 STR -> record.program!!.arity(record.words[payload(head)])
                 LIST -> 2
                 else -> 0
             }
-        }
 
-        private fun headHash(arguments: Array<Argument>): Long {
-            var h = 17L
-            for (arg in arguments) h = h * 31 + arg.hash
-            return h
-        }
-
-        // The arguments of the head of [record] (encoded), as the index sees them
-        private fun argumentsOf(record: Record): Array<Argument> {
-            val head = record.head
-            val words = record.words
-            return when (tag(head)) {
-                STR -> {
-                    val a = payload(head)
-                    val n = record.program!!.arity(words[a])
-                    Array(n) { argumentOf(record, words[a + 1 + it]) }
-                }
-                LIST -> {
-                    val a = payload(head)
-                    arrayOf(argumentOf(record, words[a]), argumentOf(record, words[a + 1]))
-                }
-                else -> emptyArray()
-            }
-        }
+        private fun goalArgument(
+            words: IntArray,
+            goal: Int,
+            i: Int,
+        ): Int = if (tag(goal) == LIST) words[payload(goal) + i] else words[payload(goal) + 1 + i]
 
         private fun argumentOf(
             record: Record,
-            w: Int,
-        ): Argument {
-            val words = record.words
-            val program = record.program!!
-            // The path: preorder words up to the first variable, at most MAX_PATH; the hash of the whole, and whether
-            // it is ground, by a full visit
-            val symbols = IntArray(MAX_PATH)
-            var size = 0
-            var complete = true
-            var ground = true
-            var hash = 7L
-            val stack = IntArray(64).let { ArrayDequeInt(it) }
-            stack.push(w)
-            var visited = 0
-            var pathOpen = true
-            while (stack.isNotEmpty()) {
-                val current = stack.pop()
-                when (tag(current)) {
-                    REF -> {
-                        ground = false
-                        if (pathOpen) {
-                            complete = false
-                            pathOpen = false
-                        }
-                        hash = hash * 31 + 1
-                        continue
-                    }
+            i: Int,
+        ): Int = derefIn(record.words, goalArgument(record.words, record.head, i))
+
+        // The top symbol of a dereferenced argument of a head or of a goal, the same whether stored or on the heap: 0
+        // for a variable, which has none
+        private fun topKey(
+            words: IntArray,
+            argument: Int,
+        ): Int =
+            when (tag(argument)) {
+                REF -> 0
+                STR -> words[payload(argument)]
+                LIST -> Program.LIST_KEY
+                else -> argument
+            }
+
+        private fun mix(
+            hash: Long,
+            word: Int,
+        ): Long = (hash xor word.toLong()) * -7046029254386353131L
+
+        // A hash of the term [w0] of [words], the same wherever it is laid out; NOT_GROUND with a variable in it
+        private fun groundHash(
+            program: Program,
+            words: IntArray,
+            w0: Int,
+        ): Long = hashInto(program, words, w0, 1125899906842597L)
+
+        private fun hashInto(
+            program: Program,
+            words: IntArray,
+            w0: Int,
+            seed: Long,
+        ): Long {
+            var hash = seed
+            var w = derefIn(words, w0)
+            while (true) {
+                when (tag(w)) {
+                    REF -> return NOT_GROUND
                     STR -> {
-                        val a = payload(current)
-                        val functor = words[a]
-                        if (pathOpen) {
-                            if (visited == MAX_PATH) {
-                                complete = false
-                                pathOpen = false
-                            } else {
-                                symbols[size++] = functor
-                                visited++
-                            }
+                        val a = payload(w)
+                        val f = words[a]
+                        hash = mix(hash, f)
+                        val n = program.arity(f)
+                        for (i in 1 until n) {
+                            hash = hashInto(program, words, words[a + i], hash)
+                            if (hash == NOT_GROUND) return NOT_GROUND
                         }
-                        hash = hash * 31 + functor
-                        val n = program.arity(functor)
-                        for (i in n downTo 1) stack.push(words[a + i])
+                        w = derefIn(words, words[a + n])
                     }
                     LIST -> {
-                        val a = payload(current)
-                        if (pathOpen) {
-                            if (visited == MAX_PATH) {
-                                complete = false
-                                pathOpen = false
-                            } else {
-                                symbols[size++] = Program.LIST_KEY
-                                visited++
-                            }
-                        }
-                        hash = hash * 31 + Program.LIST_KEY
-                        stack.push(words[a + 1])
-                        stack.push(words[a])
+                        val a = payload(w)
+                        hash = hashInto(program, words, words[a], mix(hash, Program.LIST_KEY))
+                        if (hash == NOT_GROUND) return NOT_GROUND
+                        w = derefIn(words, words[a + 1])
                     }
-                    else -> {
-                        if (pathOpen) {
-                            if (visited == MAX_PATH) {
-                                complete = false
-                                pathOpen = false
-                            } else {
-                                symbols[size++] = current
-                                visited++
-                            }
-                        }
-                        hash = hash * 31 + current
-                    }
+                    else -> return mix(hash, w)
                 }
             }
-            return Argument(Path(symbols, size, complete), ground, hash)
         }
-    }
-
-    // A stack of ints
-    private class ArrayDequeInt(
-        private var items: IntArray,
-    ) {
-        private var size = 0
-
-        fun isNotEmpty() = size > 0
-
-        fun push(v: Int) {
-            if (size == items.size) items = items.copyOf(size * 2)
-            items[size++] = v
-        }
-
-        fun pop(): Int = items[--size]
     }
 }

@@ -1,0 +1,187 @@
+package it.unibo.tuprolog.argumentation.core.runtime.context
+
+import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+/**
+ * A lookup in a store unifies the heads of the records in place, on the heap of the machine: what it answers is what
+ * the unification of a copy of each clause answers. The store of terms ([ClauseStore.solve], which renames and unifies
+ * terms) gives the expected answers, for facts of all the shapes an index and a unification tell apart. (No goal builds
+ * a cyclic term: the store of terms checks occurrences, the machine does not.)
+ */
+class StoreResolutionTest {
+    private val clauses =
+        listOf(
+            "f(a, 1)",
+            "f(b, 2.5)",
+            "f(c, 10000000000)",
+            "f(g(a), [1, 2])",
+            "f(g(b), [1 | T])",
+            "f(g(X), X)",
+            "f(X, X)",
+            "f(h(X, Y), k(Y, X))",
+            "f([A, B | C], [C, B, A])",
+            "f([], [])",
+            "f(g(g(g(a))), deep)",
+            "m(1)",
+            "m(2)",
+            "m(3)",
+            "m(4)",
+            "m(5)",
+            "m(6)",
+            "m(7)",
+            "m(8)",
+            "m(9)",
+            "m(g(1))",
+            "m(g(2))",
+            "m(g(3))",
+            "m(g(4))",
+            "m(g(5))",
+            "m(g(6))",
+            "m(g(7))",
+            "m(g(8))",
+            "m(g(9))",
+            "m(g(V))",
+            "m(_)",
+            "zero",
+            "[x, y]",
+            "[x, Z]",
+        )
+
+    private val goals =
+        listOf(
+            "f(a, X)",
+            "f(X, 1)",
+            "f(X, Y)",
+            "f(b, 2.5)",
+            "f(b, 2.6)",
+            "f(c, 10000000000)",
+            "f(c, 10000000001)",
+            "f(g(a), X)",
+            "f(g(Q), [1, 2])",
+            "f(g(Q), [1, 2, 3])",
+            "f(h(1, 2), X)",
+            "f(h(1, Q), k(2, R))",
+            "f(h(Q, Q), k(R, 1))",
+            "f([1, 2, 3], X)",
+            "f([1, 2], [Q, R, S])",
+            "f([1], X)",
+            "f([], X)",
+            "f(g(g(g(a))), X)",
+            "f(g(g(g(Q))), R)",
+            "m(5)",
+            "m(g(5))",
+            "m(g(Q))",
+            "m(h(1))",
+            "m(Q)",
+            "zero",
+            "one",
+            "[x, y]",
+            "[x, Q]",
+            "[Q, Q]",
+        )
+
+    private val setup get() = "context_reset, " + clauses.joinToString(", ") { "context_assert($it)" }
+
+    private fun normalized(term: String): String = term.replace(Regex("(?<![A-Za-z0-9_'])(_\\w*|[A-Z]\\w*_\\d+)"), "_")
+
+    private fun onMachine(goal: String): List<String> {
+        val solver = solverWithTheory("")
+        val solution = solver.solve(Struct.parse("$setup, findall($goal, context_check($goal), L)", solver.operators)).first()
+        assertTrue(solution.isYes, goal)
+        val answers =
+            solution.substitution.entries
+                .first { it.key.name == "L" }
+                .value
+        return answers
+            .castToList()
+            .toList()
+            .map { normalized(it.toString()) }
+    }
+
+    private fun onTerms(goal: String): List<String> {
+        val solver = solverWithTheory("")
+        val store = ClauseStore()
+        clauses.forEach { store.assertA(Struct.parse(it, solver.operators)) }
+        val parsed = Struct.parse(goal, solver.operators)
+        return store.solve(parsed).map { normalized(parsed.apply(it).toString()) }.toList()
+    }
+
+    @Test
+    fun answersAsTheUnificationOfTerms() {
+        for (goal in goals) assertEquals(onTerms(goal), onMachine(goal), goal)
+    }
+
+    private fun holds(goal: String): Boolean {
+        val solver = solverWithTheory("")
+        return solver.solve(Struct.parse("$setup, $goal", solver.operators)).first().isYes
+    }
+
+    @Test
+    fun absentAsNoAnswer() {
+        for (goal in goals) {
+            val expected = onTerms(goal).isEmpty()
+            assertEquals(expected, holds("context_absent($goal)"), goal)
+            assertEquals(expected, !holds("context_check($goal)"), goal)
+        }
+    }
+
+    @Test
+    fun absentLeavesNothingBound() {
+        assertTrue(holds("X = 1, Y = X, \\+ context_absent(f(a, Y)), Y == 1"))
+        assertTrue(holds("\\+ context_absent(f(a, Y)), var(Y)"))
+        assertTrue(holds("context_absent(f(a, 2)), V = 1, V == 1"))
+        assertTrue(holds("context_assert(r(A) :- m(A)), \\+ context_absent(r(Q)), var(Q)"))
+        assertTrue(holds("context_assert(r2(A) :- missing(A)), context_absent(r2(_))"))
+        assertTrue(holds("context_assert(r3(A) :- body(A)), \\+ context_absent(clause(r3(Q), W)), var(Q), var(W)"))
+        assertTrue(holds("context_assert(r4(A) :- body(A)), context_absent(clause(r4(_), other))"))
+    }
+
+    @Test
+    fun theVariablesOfAClauseAreTheSameAcrossItsHeadAndItsBody() {
+        val solver = solverWithTheory("")
+        val goal =
+            "context_reset, context_assert(p(1)), context_assert(p(2)), context_assert((q(X, g(X, Y)) :- p(X), p(Y))), " +
+                "findall([A, B], context_check(q(A, g(B, 2))), L)"
+        val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
+        assertEquals(
+            "[[2, 2], [1, 1]]",
+            solution.substitution.entries
+                .first { it.key.name == "L" }
+                .value
+                .toString(),
+        )
+    }
+
+    @Test
+    fun clauseOfAFactIsTrue() {
+        assertTrue(holds("context_assert(c(1)), context_check(clause(c(1), B)), B == true"))
+        assertTrue(holds("context_assert(c(X, X)), context_check(clause(c(1, Q), true)), Q == 1"))
+        assertFalse(holds("context_assert(c(1)), context_check(clause(c(1), false))"))
+    }
+
+    @Test
+    fun aClauseMustHaveACallableHead() {
+        for (clause in listOf("1", "2.5", "_", "(1 :- a)", "(_ :- a)")) {
+            val solver = solverWithTheory("")
+            val solution =
+                solver.solve(Struct.parse("catch(context_assert($clause), _, Raised = yes), Raised == yes", solver.operators)).first()
+            assertTrue(solution.isYes, clause)
+        }
+    }
+
+    @Test
+    fun identifiersUpToTheNamesOfVariables() {
+        assertTrue(holds("context_id(f(X, Y, X), I), context_id(f(A, B, A), I)"))
+        assertFalse(holds("context_id(f(X, Y, X), I), context_id(f(A, B, B), I)"))
+        assertFalse(holds("context_id(f(X, X, Y), I), context_id(f(A, B, B), I)"))
+        assertTrue(holds("context_id([1, 2.5, a | T], I), context_id([1, 2.5, a | R], I)"))
+        assertFalse(holds("context_id([1, 2], I), context_id('[|]'(1, 2), I)"))
+        assertFalse(holds("context_id(a, I), context_id(a(1), I)"))
+    }
+}

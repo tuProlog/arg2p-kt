@@ -1,7 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.Record
+import it.unibo.tuprolog.argumentation.core.engine.RecordKey
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
-import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.core.Term
 
 /**
@@ -20,15 +21,21 @@ internal class ContextBranches {
     // replaced by it: what a branch holds is never lost
     private var template: ClauseStore? = null
     private var templateVersion: Long? = null
-    private var templateIdentifiers: Map<Term, Int> = emptyMap()
-    private var templateTerms: List<Term> = emptyList()
+    private var templateIdentifiers: Map<RecordKey, Int> = emptyMap()
+    private var templateRecords: List<Record> = emptyList()
     private var convertingEmpty = false
 
     /** The stores on the words of [program]: those there, and those made from now on */
     fun bind(program: Program) {
-        if (encoding !== program) template = null
+        if (encoding === program) return
+        template = null
         encoding = program
         stores.values.forEach { it.bind(program) }
+        // the identifiers as they are, for the words of the program
+        val known = records.toList()
+        records.clear()
+        identifiers.clear()
+        known.forEach { identifier(it) }
     }
 
     /** The active branch kept as the template, if the conversion started from an empty one and [version] is known */
@@ -37,7 +44,7 @@ internal class ContextBranches {
         template = selected.fork()
         templateVersion = version
         templateIdentifiers = HashMap(identifiers)
-        templateTerms = ArrayList(terms)
+        templateRecords = ArrayList(records)
     }
 
     /**
@@ -51,13 +58,13 @@ internal class ContextBranches {
         stores[active] = template.fork()
         identifiers.clear()
         identifiers.putAll(templateIdentifiers)
-        terms.clear()
-        terms.addAll(templateTerms)
+        records.clear()
+        records.addAll(templateRecords)
         return true
     }
 
-    private val identifiers: MutableMap<Term, Int> = mutableMapOf()
-    private val terms: MutableList<Term> = mutableListOf()
+    private val identifiers = HashMap<RecordKey, Int>()
+    private val records = ArrayList<Record>()
 
     /** The active branch */
     var active: Int = 0
@@ -85,7 +92,7 @@ internal class ContextBranches {
         stores.clear()
         stores[0] = ClauseStore(encoding)
         identifiers.clear()
-        terms.clear()
+        records.clear()
     }
 
     /** [branch] made active; false if there is no such branch */
@@ -118,19 +125,25 @@ internal class ContextBranches {
         stores.keys.removeAll { it > after && it !in keep && it != active }
     }
 
+    private fun encoded(record: Record): Record = Record.encoded(record, encoding ?: Program().also { encoding = it })
+
     /**
-     * The identifier of [term], shared by all the copies of the term which only differ in variable names (variables
+     * The identifier of [record], shared by all the copies of the term which only differ in variable names (variables
      * get renamed whenever a term is read back from the context)
      */
-    fun identifier(term: Term): Int =
-        identifiers.getOrPut(term.canonical()) {
-            terms += term
-            terms.size - 1
+    fun identifier(record: Record): Int {
+        val encoded = encoded(record)
+        return identifiers.getOrPut(encoded.key) {
+            records += encoded
+            records.size - 1
         }
+    }
+
+    fun identifier(term: Term): Int = identifier(Record.of(term))
 
     /** The identifier of [term] if it has one already (see [identifier]) */
-    fun knownIdentifier(term: Term): Int? = identifiers[term.canonical()]
+    fun knownIdentifier(term: Term): Int? = identifiers[encoded(Record.of(term)).key]
 
     /** The term with identifier [identifier], as first given an identifier; null if none has it */
-    fun term(identifier: Int): Term? = terms.getOrNull(identifier)
+    fun term(identifier: Int): Term? = records.getOrNull(identifier)?.term
 }

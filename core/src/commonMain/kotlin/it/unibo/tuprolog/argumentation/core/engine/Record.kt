@@ -52,14 +52,24 @@ class Record internal constructor(
         if (program == null) {
             term.let { it is Struct && it.functor == ":-" && it.arity == 2 }
         } else {
-            tag(root) == STR && words[payload(root)] == program.functorWord(":-", 2)
+            tag(root) == STR && words[payload(root)] == program.ruleFunctor
         }
 
     /** The head: the term itself for a fact (relative word; only with a program) */
     internal val head: Int get() = if (isRule) words[payload(root) + 1] else root
 
     /** The body: `true` for a fact (relative word; only with a program) */
-    internal val body: Int get() = if (isRule) words[payload(root) + 2] else program!!.atomWord("true")
+    internal val body: Int get() = if (isRule) words[payload(root) + 2] else program!!.trueWord
+
+    /**
+     * The record as a key: the same for two terms up to the names of their variables, however they are laid out (in the
+     * words of one program)
+     */
+    internal val key: RecordKey by lazy(LazyThreadSafetyMode.NONE) {
+        val flat = Flattened(program!!, words)
+        flat.add(root)
+        RecordKey(flat.items.copyOf(flat.size))
+    }
 
     private fun decode(
         w: Int,
@@ -178,7 +188,64 @@ class Record internal constructor(
     }
 }
 
-/** The goals of a body wrapped as a native primitive asks (see [NativeCall.sourcedRecords]) */
+/** A term up to the names of its variables: see [Record.key] */
+internal class RecordKey(
+    private val flat: IntArray,
+) {
+    private val hash = flat.contentHashCode()
+
+    override fun hashCode(): Int = hash
+
+    override fun equals(other: Any?): Boolean = other is RecordKey && other.flat.contentEquals(flat)
+}
+
+// A term in preorder: the words of its symbols, a variable as the order it first came in
+private class Flattened(
+    private val program: Program,
+    private val words: IntArray,
+) {
+    var items = IntArray(32)
+    var size = 0
+    private var variables: HashMap<Int, Int>? = null
+
+    private fun push(w: Int) {
+        if (size == items.size) items = items.copyOf(size * 2)
+        items[size++] = w
+    }
+
+    fun add(w0: Int) {
+        var w = w0
+        while (true) {
+            when (tag(w)) {
+                REF -> {
+                    val known = variables ?: HashMap<Int, Int>().also { variables = it }
+                    push(ref(known.getOrPut(payload(w)) { known.size }))
+                    return
+                }
+                STR -> {
+                    val a = payload(w)
+                    val f = words[a]
+                    push(f)
+                    val n = program.arity(f)
+                    for (i in 1 until n) add(words[a + i])
+                    w = words[a + n]
+                }
+                LIST -> {
+                    val a = payload(w)
+                    push(Program.LIST_KEY)
+                    add(words[a])
+                    w = words[a + 1]
+                }
+                else -> {
+                    push(w)
+                    return
+                }
+            }
+        }
+    }
+}
+
+/** The goals of a body wrapped as a native primitive asks (see the lookups of the stores) */
 fun interface GoalWrapper {
     fun wrap(
         call: NativeCall,
