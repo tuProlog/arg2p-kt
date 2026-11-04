@@ -70,7 +70,6 @@ internal object StdlibNatives {
             Signature("arg", 3) to StdlibNative(::arg),
             Signature("=..", 2) to StdlibNative(::univ),
             Signature("copy_term", 2) to StdlibNative { m -> answer(m.unify(m.copyOnHeap(m.regs[0]), m.regs[1])) },
-            Signature("length", 2) to StdlibNative(::length),
             Signature("reverse", 2) to StdlibNative(::reverse),
             Signature("atom_length", 2) to StdlibNative(::atomLength),
             Signature("atom_concat", 3) to StdlibNative(::atomConcat),
@@ -347,19 +346,6 @@ internal object StdlibNatives {
             w = m.deref(m.heap[payload(w) + 1])
         }
         return if (w == m.program.emptyList) items.copyOf(n) else null
-    }
-
-    private fun length(m: Machine): Int {
-        val size = m.deref(m.regs[1])
-        if (tag(size) != REF && (tag(size) != INT || payload(size) < 0)) return NOT_NATIVE
-        var n = 0L
-        var w = m.deref(m.regs[0])
-        while (tag(w) == LIST) {
-            n++
-            w = m.deref(m.heap[payload(w) + 1])
-        }
-        if (w != m.program.emptyList) return NOT_NATIVE
-        return answer(m.unify(size, m.program.intWord(n)))
     }
 
     private fun reverse(m: Machine): Int {
