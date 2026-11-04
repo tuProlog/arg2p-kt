@@ -1657,23 +1657,23 @@ internal class Machine(
                         else -> run(cpBase)
                     }
                 }
-        var bag = IntArray(64)
-        var bagInfo = IntArray(64)
-        var bagTop = 0
+        // The instances go on the bag of the machine, above those of the runs this one is nested in, addressed from
+        // [bagBase]: what the nested runs of the goal leave there is gone by the next instance
+        val bagBase = copier.top
         var roots = IntArray(16)
         var count = 0
-        while (found) {
-            if (pinnedTemplate != NONE) {
-                if (count == roots.size) roots = roots.copyOf(count * 2)
-                val copier = Copier(bag, bagTop, bagInfo)
-                val root = copier.copy(deref(pinnedWords[pinnedTemplate]))
-                bag = copier.bag
-                bagInfo = copier.bagInfo
-                bagTop = copier.top
-                roots[count] = root
+        try {
+            while (found) {
+                if (pinnedTemplate != NONE) {
+                    if (count == roots.size) roots = roots.copyOf(count * 2)
+                    roots[count] = copier.copy(deref(pinnedWords[pinnedTemplate]))
+                }
+                count++
+                found = count < limit && nested(cpBase) { backtrack(cpBase) && run(cpBase) }
             }
-            count++
-            found = count < limit && nested(cpBase) { backtrack(cpBase) && run(cpBase) }
+        } catch (raised: Raised) {
+            copier.top = bagBase
+            throw raised
         }
         // (the run stopped at the limit leaves choice points above the barrier: cut, then the barrier restores)
         cutTo(cpBase)
@@ -1685,21 +1685,17 @@ internal class Machine(
             return count
         }
         // The bag onto the heap, its addresses shifted
-        val base = alloc(bagTop)
-        for (i in 0 until bagTop) {
-            val w = bag[i]
-            heap[base + i] = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), payload(w) + base) else w
-            varInfo[base + i] = bagInfo[i]
-        }
+        val shift = copier.toHeap(bagBase)
         var list = program.emptyList
         for (k in count - 1 downTo 0) {
             val cell = alloc(2)
             val r = roots[k]
-            heap[cell] = if (tag(r) == REF || tag(r) == STR || tag(r) == LIST) word(tag(r), payload(r) + base) else r
+            heap[cell] = if (tag(r) == REF || tag(r) == STR || tag(r) == LIST) word(tag(r), payload(r) + shift) else r
             heap[cell + 1] = list
             list = word(LIST, cell)
         }
         collectedList = list
+        copier.top = bagBase
         return count
     }
 
@@ -1751,34 +1747,114 @@ internal class Machine(
     }
 
     // The order of two atoms, as tuProlog's (a collation): each pair computed once
-    private val atomOrders = HashMap<Long, Int>()
+    // The atoms ordered so far by the standard order: their ranks by atom (0 for one not met yet), the atoms of each
+    // rank. Two atoms with the same rank are equal for the order. An atom met costs a binary search among them
+    private var atomRanks = IntArray(64)
+    private var rankedAtoms = IntArray(64)
+    private var ranks = 0
+    private var metAtoms = IntArray(64)
+    private var met = 0
+
+    private fun meet(
+        atom: Int,
+        rank: Int,
+    ): Int {
+        atomRanks[atom] = rank
+        if (met == metAtoms.size) metAtoms = metAtoms.copyOf(met * 2)
+        metAtoms[met++] = atom
+        return rank
+    }
+
+    private fun rankOf(atom: Int): Int {
+        if (atom >= atomRanks.size) atomRanks = atomRanks.copyOf(maxOf(atom + 1, atomRanks.size * 2))
+        val known = atomRanks[atom]
+        if (known != 0) return known
+        val name = program.atoms[atom]
+        var low = 0
+        var high = ranks - 1
+        while (low <= high) {
+            val middle = (low + high) ushr 1
+            val order = compareStringsLocaleIndependently(name, program.atoms[rankedAtoms[middle]])
+            when {
+                order == 0 -> return meet(atom, middle + 1)
+                order < 0 -> high = middle - 1
+                else -> low = middle + 1
+            }
+        }
+        // Below the others from [low] on, whose ranks move up
+        if (ranks == rankedAtoms.size) rankedAtoms = rankedAtoms.copyOf(ranks * 2)
+        rankedAtoms.copyInto(rankedAtoms, low + 1, low, ranks)
+        rankedAtoms[low] = atom
+        ranks++
+        for (i in 0 until met) if (atomRanks[metAtoms[i]] > low) atomRanks[metAtoms[i]]++
+        return meet(atom, low + 1)
+    }
 
     /** The standard order of the atoms [a] and [b] */
     fun atomOrder(
         a: Int,
         b: Int,
-    ): Int =
-        atomOrders.getOrPut((a.toLong() shl 32) or b.toLong()) {
-            compareStringsLocaleIndependently(program.atoms[a], program.atoms[b])
-        }
+    ): Int {
+        rankOf(a)
+        rankOf(b)
+        // (the rank of the first may have moved up when the second was met)
+        return atomRanks[a].compareTo(atomRanks[b])
+    }
 
     /** A copy of the term [w0] on the heap, its unbound variables fresh and unnamed */
     fun copyOnHeap(w0: Int): Int {
-        val copier = Copier(IntArray(16), 0, IntArray(16))
+        val bagBase = copier.top
         val root = copier.copy(w0)
-        val n = copier.top
-        val base = alloc(n)
-        for (i in 0 until n) {
-            val w = copier.bag[i]
-            heap[base + i] = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), payload(w) + base) else w
-            varInfo[base + i] = 0
-        }
-        return if (tag(root) == REF || tag(root) == STR || tag(root) == LIST) word(tag(root), payload(root) + base) else root
+        val shift = copier.toHeap(bagBase, named = false)
+        copier.top = bagBase
+        return if (tag(root) == REF || tag(root) == STR || tag(root) == LIST) word(tag(root), payload(root) + shift) else root
     }
 
     override fun sorted(items: IntArray): IntArray? {
+        var integers = true
+        for (i in items.indices) {
+            val item = deref(items[i])
+            if (tag(item) != INT) {
+                integers = false
+                break
+            }
+        }
+        if (integers) {
+            // (the words of the small integers are ordered as they are)
+            val sorted = IntArray(items.size) { deref(items[it]) }
+            sorted.sort()
+            return sorted
+        }
         for (item in items) if (!StdlibNatives.ground(this, item)) return null
-        return items.sortedWith { a, b -> StdlibNatives.order(this, a, b) }.toIntArray()
+        val sorted = items.copyOf()
+        sortStably(sorted)
+        return sorted
+    }
+
+    // In the standard order, keeping the order of the equal ones: by insertion when few, merging otherwise
+    private fun sortStably(items: IntArray) {
+        if (items.size <= 12) {
+            for (i in 1 until items.size) {
+                val item = items[i]
+                var at = i - 1
+                while (at >= 0 && StdlibNatives.order(this, items[at], item) > 0) {
+                    items[at + 1] = items[at]
+                    at--
+                }
+                items[at + 1] = item
+            }
+            return
+        }
+        val left = items.copyOfRange(0, items.size / 2)
+        val right = items.copyOfRange(items.size / 2, items.size)
+        sortStably(left)
+        sortStably(right)
+        var l = 0
+        var r = 0
+        for (i in items.indices) {
+            items[i] =
+                if (r == right.size || (l < left.size && StdlibNatives.order(this, left[l], right[r]) <= 0)) left[l++] else right[r++]
+        }
     }
 
     override fun sortedDistinct(items: IntArray): IntArray? {
@@ -1791,9 +1867,23 @@ internal class Machine(
     }
 
     override fun record(w: Int): Record {
-        val copier = Copier(IntArray(16), 0, IntArray(16))
+        val bagBase = copier.top
         val root = copier.copy(w)
-        return Record(program, copier.bag.copyOf(copier.top), root, null)
+        val words = copier.relativeTo(bagBase)
+        copier.top = bagBase
+        return Record(
+            program,
+            words,
+            if (tag(root) == REF ||
+                tag(root) == STR ||
+                tag(root) == LIST
+            ) {
+                word(tag(root), payload(root) - bagBase)
+            } else {
+                root
+            },
+            null,
+        )
     }
 
     override fun recall(record: Record): Int {
@@ -1827,12 +1917,19 @@ internal class Machine(
         }
 
     // A copy of a term of the heap into a bag of its own (relative addresses), its unbound variables fresh
-    private inner class Copier(
-        var bag: IntArray,
-        var top: Int,
-        var bagInfo: IntArray,
-    ) {
-        private val variables = HashMap<Int, Int>()
+    // The terms copied off the heap: findall's instances and the records. A bag with its addresses, as a stack: a copy
+    // goes above what is there, and whoever made it takes it away. A copy is made in one go, nothing runs meanwhile
+    private val copier = Copier()
+
+    private inner class Copier {
+        var bag = IntArray(256)
+        var bagInfo = IntArray(256)
+        var top = 0
+
+        // The variables met in the copy at hand: addresses on the heap and in the bag, in a table as they are few
+        private val seen = IntArray(64)
+        private var seenTop = 0
+        private var seenMany: HashMap<Int, Int>? = null
 
         private fun allocBag(cells: Int): Int {
             if (top + cells > bag.size) {
@@ -1844,25 +1941,84 @@ internal class Machine(
             return start
         }
 
+        private fun variable(address: Int): Int {
+            val many = seenMany
+            if (many != null) {
+                many[address]?.let { return it }
+            } else {
+                var i = 0
+                while (i < seenTop) {
+                    if (seen[i] == address) return seen[i + 1]
+                    i += 2
+                }
+            }
+            val a = allocBag(1)
+            bag[a] = ref(a)
+            bagInfo[a] = varInfo[address]
+            if (many != null) {
+                many[address] = a
+            } else if (seenTop < seen.size) {
+                seen[seenTop++] = address
+                seen[seenTop++] = a
+            } else {
+                // too many to look through
+                val all = HashMap<Int, Int>()
+                var i = 0
+                while (i < seenTop) {
+                    all[seen[i]] = seen[i + 1]
+                    i += 2
+                }
+                all[address] = a
+                seenMany = all
+            }
+            return a
+        }
+
+        /** What is above [from] on the heap: how much to add to its addresses */
+        fun toHeap(
+            from: Int,
+            named: Boolean = true,
+        ): Int {
+            val n = top - from
+            val base = alloc(n)
+            val shift = base - from
+            for (i in 0 until n) {
+                val w = bag[from + i]
+                val t = tag(w)
+                heap[base + i] = if (t == REF || t == STR || t == LIST) word(t, payload(w) + shift) else w
+                varInfo[base + i] = if (named && t == REF && payload(w) == from + i) bagInfo[from + i] else 0
+            }
+            return shift
+        }
+
+        /** What is above [from], addressed from there */
+        fun relativeTo(from: Int): IntArray {
+            val n = top - from
+            return IntArray(n) { i ->
+                val w = bag[from + i]
+                val t = tag(w)
+                if (t == REF || t == STR || t == LIST) word(t, payload(w) - from) else w
+            }
+        }
+
+        /** A copy of the term [w0] on the bag: its word, with the addresses of the bag */
         fun copy(w0: Int): Int {
+            seenTop = 0
+            seenMany = null
+            return copyTerm(w0)
+        }
+
+        private fun copyTerm(w0: Int): Int {
             val w = deref(w0)
             return when (tag(w)) {
-                REF ->
-                    ref(
-                        variables.getOrPut(payload(w)) {
-                            val a = allocBag(1)
-                            bag[a] = ref(a)
-                            bagInfo[a] = varInfo[payload(w)]
-                            a
-                        },
-                    )
+                REF -> ref(variable(payload(w)))
                 STR -> {
                     val a = payload(w)
                     val n = program.arity(heap[a])
                     val s = allocBag(n + 1)
                     bag[s] = heap[a]
                     for (i in 1..n) {
-                        val arg = copy(heap[a + i])
+                        val arg = copyTerm(heap[a + i])
                         bag[s + i] = arg
                     }
                     word(STR, s)
@@ -1872,7 +2028,7 @@ internal class Machine(
                     var s = first
                     var a = payload(w)
                     while (true) {
-                        val head = copy(heap[a])
+                        val head = copyTerm(heap[a])
                         bag[s] = head
                         val t = deref(heap[a + 1])
                         if (tag(t) == LIST) {
@@ -1881,7 +2037,7 @@ internal class Machine(
                             s = s2
                             a = payload(t)
                         } else {
-                            val tail = copy(t)
+                            val tail = copyTerm(t)
                             bag[s + 1] = tail
                             break
                         }
