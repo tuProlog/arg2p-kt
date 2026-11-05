@@ -2,12 +2,12 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.core.engine.vm.locked
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
-import it.unibo.tuprolog.argumentation.core.flags.DebugOutput
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
@@ -15,7 +15,6 @@ import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
-import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.solve.library.Library
@@ -101,12 +100,6 @@ class Flags private constructor(
     /** Whether the rules are arguments as well */
     fun metaRules(on: Boolean): Flags = switch(MetaRules, on)
 
-    /** Whether the theory has the temporal axioms (the module temporal), over regions of time */
-    fun temporal(on: Boolean): Flags = switch(Temporal, on)
-
-    /** Whether the modules print their debug output */
-    fun debug(on: Boolean): Flags = switch(DebugOutput, on)
-
     /** The flags as the facts stating them, Prolog text */
     override fun toString(): String = facts.values.flatten().joinToString("") { "$it.\n" }
 
@@ -138,7 +131,7 @@ class Flags private constructor(
                 if (libraries.size >= LIBRARIES_KEPT) {
                     plain
                 } else {
-                    SharedLibrary(plain, "$ALIAS:$text").also { libraries[text] = it }
+                    SharedLibrary(plain, CodeKey("$ALIAS:$text")).also { libraries[text] = it }
                 }
             }
         }

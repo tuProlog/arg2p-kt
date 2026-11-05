@@ -68,6 +68,14 @@ class InlineBuiltinsTest {
         cutStaysIn(R) :- member(R, [1, 2]), id(!, G), call(G).
         cutAfter(R) :- member(R, [1, 2]), id(true, G), call(G), !.
         notCalled(G) :- \+ call(G).
+        calc(X, Y, R) :- R is (X + Y) * (X - Y).
+        calcDiv(X, Y, R) :- R is X // Y.
+        calcMod(X, Y, R) :- R is X mod Y.
+        calcMul(X, Y, R) :- R is X * Y.
+        calcAdd(X, Y, R) :- R is X + Y.
+        calcNeg(X, R) :- R is -X.
+        calcLt(X, Y) :- X * X < Y.
+        calcDeep(X, R) :- R is X + (X + (X + (X + (X + (X + (X + (X + (X + (X + X))))))))).
         same0(0) :- !.
         same0(_).
         nested(f(g(A, B), h(C, D)), k(l(A, C), m(B, D))).
@@ -879,6 +887,39 @@ class InlineBuiltinsTest {
         assertEquals("1", answer("cutf(1.5, R)"))
         assertEquals(1, solver.solve(Struct.parse("cutf(1.5, R)", solver.operators)).count { it.isYes })
         assertEquals(1, solver.solve(Struct.parse("ltcut(0.5, 1.5)", solver.operators)).count { it.isYes })
+    }
+
+    @Test
+    fun arithmeticGivesTheSameInIntsAndBeyond() {
+        assertEquals("21", answer("calc(5, 2, R)"))
+        assertEquals("2", answer("calcDiv(7, 3, R)"))
+        assertEquals("-2", answer("calcDiv(-7, 3, R)"))
+        assertEquals("-2", answer("calcDiv(7, -3, R)"))
+        assertEquals("1", answer("calcMod(7, 3, R)"))
+        assertEquals("2", answer("calcMod(-7, 3, R)"))
+        assertEquals("-2", answer("calcMod(7, -3, R)"))
+        assertEquals("-1", answer("calcMod(-7, -3, R)"))
+        // beyond the small integers, beyond 32 bits, and on past a product that overflows an Int
+        assertEquals("268435456", answer("calcAdd(268435455, 1, R)"))
+        assertEquals("-268435457", answer("calcAdd(-268435456, -1, R)"))
+        assertEquals("2147483648", answer("calcAdd(2147483647, 1, R)"))
+        assertEquals("-2147483649", answer("calcAdd(-2147483648, -1, R)"))
+        assertEquals("2147395600", answer("calcMul(46340, 46340, R)"))
+        assertEquals("2147488281", answer("calcMul(46341, 46341, R)"))
+        assertEquals("10000000000", answer("calcMul(100000, 100000, R)"))
+        assertEquals("2147483648", answer("calcNeg(-2147483648, R)"))
+        assertEquals("2147483648", answer("calcDiv(-2147483648, -1, R)"))
+        assertEquals("0", answer("calcMod(-2147483648, -1, R)"))
+        assertEquals("11", answer("calcDeep(1, R)"))
+        assertTrue(holds("calcLt(3, 10)"))
+        assertFalse(holds("calcLt(4, 10)"))
+        assertTrue(holds("calcLt(100000, 10000000001)"))
+        assertFalse(holds("calcLt(100000, 10000000000)"))
+        // the errors are the builtin's
+        assertEquals(outcome("X is 1 // 0"), outcome("calcDiv(1, 0, R)"))
+        assertEquals(outcome("X is 1 mod 0"), outcome("calcMod(1, 0, R)"))
+        assertEquals(outcome("X is foo + 1"), outcome("calcAdd(foo, 1, R)"))
+        assertEquals(outcome("X is _ + 1"), outcome("calcAdd(_, 1, R)"))
     }
 
     @Test

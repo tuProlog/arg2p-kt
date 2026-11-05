@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
@@ -38,7 +39,7 @@ abstract class PrologModule(
     override val baseContent: Library by lazy {
         SharedLibrary(
             Library.of(alias = alias, clauses = prologTheory, primitives = primitives, operators = libraryOperators),
-            alias + "\n" + prologRawTheory,
+            CodeKey.of(alias, prologRawTheory),
         )
     }
 

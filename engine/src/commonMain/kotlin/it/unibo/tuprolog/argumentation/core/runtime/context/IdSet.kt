@@ -4,9 +4,9 @@ package it.unibo.tuprolog.argumentation.core.runtime.context
 internal class IdSet private constructor(
     private var items: IntArray,
     size: Int,
-    private var bits: LongArray,
+    private var bits: IntArray,
 ) {
-    constructor(capacity: Int = 8) : this(IntArray(maxOf(capacity, 1)), 0, LongArray(1))
+    constructor(capacity: Int = 8) : this(IntArray(maxOf(capacity, 1)), 0, IntArray(1))
 
     var size: Int = size
         private set
@@ -14,16 +14,16 @@ internal class IdSet private constructor(
     operator fun get(index: Int): Int = items[index]
 
     operator fun contains(id: Int): Boolean {
-        val block = id ushr 6
-        return block < bits.size && (bits[block] ushr id) and 1L != 0L
+        val block = id ushr 5
+        return block < bits.size && (bits[block] ushr id) and 1 != 0
     }
 
     /** Whether [id] was added now, rather than being here already */
     fun add(id: Int): Boolean {
         if (id in this) return false
-        val block = id ushr 6
+        val block = id ushr 5
         if (block >= bits.size) bits = bits.copyOf(maxOf(block + 1, bits.size * 2))
-        bits[block] = bits[block] or (1L shl id)
+        bits[block] = bits[block] or (1 shl id)
         if (size == items.size) items = items.copyOf(size * 2)
         items[size++] = id
         return true

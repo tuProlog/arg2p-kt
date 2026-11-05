@@ -9,7 +9,7 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `graphBuildMode(P)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free` |
 | `argumentLabellingMode(S)` | `grounded` | `grounded`, `complete`, `preferred`, `stable`, `semistable`, `ideal`, `eager`, `naive`, `stage`, `cf2`, `stage2`, `conflictfree`, `admissible`, `stronglyadmissible`, `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete` |
 | `statementLabellingMode(M)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`, `constraints` (open conclusions hold for every value of their variables, constrained by `{ }` premises: `{T > 1}`, `{member(X, [a, b])}`; without it a rule must bind every variable of its conclusion); `graphExtension(none).` states none |
+| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
 | `orderingPrinciple(P)` | `last` | `last`, `weakest` |
 | `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
 | `conflictModel(M)` (may repeat) | all four parts (`declared` alone under `aba`, `aba_plus`) | `negation` (`a` vs `-a`), `deontic` (`o`/`p` pairs), `preference` (`sup(X, Y)` vs `sup(Y, X)`), `declared` (`conflict/2,3`); `builtin` for all four, `conflictModel(none).` for none (only the contraries of the languages) |
@@ -18,10 +18,8 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 | `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
 | `metaRules`, `metaConflicts` | off (on under `meta`) | present: rules fire only when argued `applicable(Rule)`, conflicts only when argued `conflict(A, B)` |
-| `temporal` | off | present: the axioms of time over `happens(E, T)`, `initiates(E, U)`, `terminates(E, U)` (with the graph extension `constraints`): `holdsAt(U, T)` holds for the times of a period, an open conclusion with `{T > T1}`, `{T =< T2}` constraints; see <https://tuprolog.github.io/arg2p-kt/docs/modules/temporal/> |
 | `graphBuilder(B)` | `ruleGraph` | `ruleGraph`, `abstractGraph`: set by the profile |
 | `graphLanguage(L)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`: set by the profile |
-| `debug` | off | present: `bp_grounded_partial` writes the steps of its labelling |
 | `naturalTerms.` (a predicate of the theory, not a flag) | off | present in the theory: natural-language-like terms are normalised as the rules are parsed |
 | `modulesPath(P)` | `none` | a directory or a base URL `call_module/2` loads modules from |
 

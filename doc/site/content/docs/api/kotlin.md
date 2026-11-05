@@ -47,6 +47,9 @@ From Java, `Arg2p.of(theory)` and `Arg2p.of(theory, flags)` are static methods a
 standard output otherwise). `add(text)` adds clauses to the theory, `load(text)` replaces it, and `theory` is the
 theory as Prolog text. `Arg2p.version()` is the version of Arg2P.
 
+`Arg2p.warmUp(milliseconds)` solves a small theory for that long (300 ms by default), for the JVM to optimize the code of the
+solvers: the first solves of a process take many times the later ones otherwise.
+
 ### Flags
 
 `Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default (none stated: the theory,
@@ -76,7 +79,7 @@ val flags =
 | `graphBuilder` | `GraphBuilder` |
 | `modulesPath` | a path |
 | `answerMode` | `AnswerMode`: `ENUMERATE`, `CREDULOUS`, `SKEPTICAL` |
-| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `temporal`, `debug` | on or off |
+| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules` | on or off |
 
 Each value has the atom stating it in a theory (`Semantics.PREFERRED.value` is `preferred`); `toString()` writes the
 flags as the facts stating them. A flag the theory states overrides the one of the solver.
@@ -137,6 +140,14 @@ Arguments receive synthetic identifiers (`A0`, `A1`, …) assigned in a stable o
 produces the same names.
 
 ---
+
+### Huge graphs
+
+For a graph too large for the objects of `graphs()`, `compactGraphs()` and `compactGraph()` give all it tells as arrays (a
+`CompactGraph`), with no object for an argument: an argument is a position in `conclusions`, `topRules` and `labels`, a text a position
+in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
+`attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
+an argument as a graph does, and `argument(p)` makes the object of one. It holds no reference to the solver.
 
 ## Prolog goals and values
 

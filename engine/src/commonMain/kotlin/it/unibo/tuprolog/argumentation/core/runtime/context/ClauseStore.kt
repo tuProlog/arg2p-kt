@@ -28,7 +28,7 @@ import it.unibo.tuprolog.core.Var
  *
  * A lookup reads the goal where it is, on the heap of the machine or in a record ([candidates]): each argument position
  * of a predicate is indexed, when first looked up by, by the top symbol of the stored arguments and, for large buckets,
- * by a hash of the ground ones, and so is each place inside its clauses declared for it ([ContextSchema]). What it gives are
+ * by a hash of the ground ones, and so is each place inside its clauses declared for it ([declared]). What it gives are
  * candidates, which the unification of their heads decides.
  *
  * Branches share their data until one of them is modified (copy-on-write), and then only copy the predicates they
@@ -40,8 +40,19 @@ internal class ClauseStore private constructor(
     private var data: Data,
     private var shared: Boolean,
     encoding: Program?,
+    // The places the predicates (`functor/arity`) are looked up by, besides their arguments
+    private val declared: Map<String, List<Place>>,
 ) {
-    constructor(encoding: Program? = null) : this(Data(), false, encoding)
+    constructor(
+        encoding: Program? = null,
+        declared: Map<String, List<Place>> = emptyMap(),
+    ) : this(Data(declared), false, encoding, declared)
+
+    /** A place inside the clauses of a predicate: an argument of the head and the way from it through list cells, each step 0 for the head of a cell, 1 for its tail */
+    class Place(
+        val argument: Int,
+        val steps: IntArray,
+    )
 
     /** The program whose words the records are in */
     var encoding: Program? = encoding
@@ -58,14 +69,14 @@ internal class ClauseStore private constructor(
         encoding = program
         if (data.isEmpty()) return
         val stored = data.all()
-        data = Data()
+        data = Data(declared)
         shared = false
         for (record in stored) data.add(Record.encoded(record, program))
     }
 
     fun fork(): ClauseStore {
         shared = true
-        return ClauseStore(data, true, encoding)
+        return ClauseStore(data, true, encoding, declared)
     }
 
     private fun writable(): Data {
@@ -115,13 +126,24 @@ internal class ClauseStore private constructor(
         name: String,
         compute: (List<Stored>) -> T,
     ): T {
-        val slash = key.lastIndexOf('/')
-        val arity = key.substring(slash + 1).toInt()
-        val name0 = key.substring(0, slash)
         val encoding = encoding()
-        val functor = if (arity == 0) encoding.atomWord(name0) else encoding.functorWord(name0, arity)
+        if (derivedOf !== encoding) {
+            derivedOf = encoding
+            derivedKeys.clear()
+        }
+        val functor =
+            derivedKeys.getOrPut(key) {
+                val slash = key.lastIndexOf('/')
+                val arity = key.substring(slash + 1).toInt()
+                val name0 = key.substring(0, slash)
+                if (arity == 0) encoding.atomWord(name0) else encoding.functorWord(name0, arity)
+            }
         return data.derived(functor, name, compute)
     }
+
+    // The words of the keys of [derived], for the program they are of
+    private var derivedOf: Program? = null
+    private val derivedKeys = HashMap<String, Int>()
 
     /** The integers of the facts `name(Integer)`, newest first, each once (the set is not to be changed) */
     fun ids(name: String): IdSet = data.ids(encoding().functorWord(name, 1))
@@ -146,20 +168,6 @@ internal class ClauseStore private constructor(
 
     // ---- the term API
 
-    /** retractall: removes every clause whose head (and body, for a `:-` pattern) unifies with the given term */
-    fun retractAll(term: Term) {
-        val pattern = term.asStruct() ?: return
-        val (head, body) = if (pattern.isRule()) pattern[0] to pattern[1] else pattern to null
-        val headStruct = head.asStruct() ?: return
-        removeAll(
-            candidates(Record.of(headStruct)).filter { stored ->
-                val fresh = stored.clause.renamedCopy()
-                val unifier = Arg2pUnificator.mgu(headStruct, fresh.head!!)
-                unifier.isSuccess && (body == null || Arg2pUnificator.mgu(body.apply(unifier), fresh.body.apply(unifier)).isSuccess)
-            },
-        )
-    }
-
     /** The stored clauses whose head may unify with the given one, newest first, as stored */
     fun clausesFor(head: Term): List<Clause> =
         head.asStruct()?.let { struct -> candidates(Record.of(struct)).map { it.clause } } ?: emptyList()
@@ -175,26 +183,6 @@ internal class ClauseStore private constructor(
                 resolve(struct, Substitution.empty(), 0)
             }
         return solutions.map { unifier -> unifier.filter { v, _ -> v in variables } }
-    }
-
-    /**
-     * Bodies of the clauses whose head unifies with the given one, as stored: the head bindings are not applied,
-     * so variables in the stored clauses are left untouched
-     */
-    fun unifiableBodies(
-        head: Term,
-        body: Term,
-    ): Sequence<Substitution> {
-        val headStruct = head.asStruct() ?: return emptySequence()
-        val variables = HashSet<Var>().also { body.collectVariables(it) }
-        return candidates(Record.of(headStruct)).asSequence().mapNotNull { stored ->
-            val fresh = stored.clause.renamedCopy()
-            if (!Arg2pUnificator.mgu(headStruct, fresh.head!!).isSuccess) return@mapNotNull null
-            Arg2pUnificator
-                .mgu(body, fresh.body)
-                .takeIf { it.isSuccess }
-                ?.filter { v, _ -> v in variables }
-        }
     }
 
     private fun lookupClause(
@@ -237,7 +225,7 @@ internal class ClauseStore private constructor(
 
     /** A record stored, with its identity in the store */
     class Stored(
-        val id: Long,
+        val id: Int,
         val record: Record,
     ) {
         val clause: Clause get() = record.clause
@@ -272,14 +260,21 @@ internal class ClauseStore private constructor(
         }
 
         // (the items of a bucket, as [removed], are by ascending identifiers)
-        fun without(removed: LongArray) {
+        fun without(removed: IntArray) {
             val kept = arrayOfNulls<Stored>(maxOf(4, size))
             var n = 0
-            var next = 0
+            var from = 0
             for (i in 0 until size) {
                 val stored = items[i]!!
-                while (next < removed.size && removed[next] < stored.id) next++
-                if (next == removed.size || removed[next] != stored.id) kept[n++] = stored
+                // (found by halves: many buckets, each with little of what is removed, are not to walk it all)
+                var low = from
+                var high = removed.size
+                while (low < high) {
+                    val middle = (low + high) ushr 1
+                    if (removed[middle] < stored.id) low = middle + 1 else high = middle
+                }
+                from = low
+                if (from == removed.size || removed[from] != stored.id) kept[n++] = stored
             }
             items = kept
             size = n
@@ -297,13 +292,13 @@ internal class ClauseStore private constructor(
     // The index of an argument position or of a place, built when first looked up by: by the top symbol of the stored
     // terms there, and for the ground ones by a hash of the whole of them (that one built when a bucket turns out to be large)
     private class Position(
-        val place: ContextSchema.Place,
+        val place: Place,
     ) {
         private fun termOf(record: Record): Int = placed(record.words, argumentOf(record, place.argument), place.steps)
 
         val byKey = WordTable<Bucket>()
         val variables = Bucket()
-        var groundByHash: HashMap<Long, Bucket>? = null
+        var groundByHash: HashMap<Int, Bucket>? = null
         var nonGround: Bucket? = null
 
         fun add(stored: Stored) {
@@ -318,7 +313,7 @@ internal class ClauseStore private constructor(
         // The buckets holding [stored] without them ([ids], ascending, are their identifiers)
         fun removeAll(
             stored: List<Stored>,
-            ids: LongArray,
+            ids: IntArray,
         ) {
             val affected = HashSet<Bucket>()
             for (one in stored) {
@@ -334,7 +329,7 @@ internal class ClauseStore private constructor(
 
         fun buildGround(all: Bucket) {
             if (groundByHash != null) return
-            val ground = HashMap<Long, Bucket>()
+            val ground = HashMap<Int, Bucket>()
             val rest = Bucket()
             for (i in 0 until all.size) {
                 val stored = all.items[i]!!
@@ -349,7 +344,7 @@ internal class ClauseStore private constructor(
     // The clauses by a hash of their whole head, the ground ones: what a goal with all its arguments bound goes through,
     // when none of them alone narrows the clauses down
     private class Heads {
-        val ground = HashMap<Long, Bucket>()
+        val ground = HashMap<Int, Bucket>()
         val nonGround = Bucket()
 
         private fun bucketOf(stored: Stored): Bucket? {
@@ -366,7 +361,7 @@ internal class ClauseStore private constructor(
 
         fun removeAll(
             stored: List<Stored>,
-            ids: LongArray,
+            ids: IntArray,
         ) {
             val affected = HashSet<Bucket>()
             for (one in stored) bucketOf(one)?.let { affected += it }
@@ -379,7 +374,7 @@ internal class ClauseStore private constructor(
         // The data that can change it: the other data holding it have it from a copy, and make their own before a change
         val owner: Data,
         // The arguments, then the places declared for it
-        val places: Array<ContextSchema.Place>,
+        val places: Array<Place>,
     ) {
         var all = Bucket()
         var positions = arrayOfNulls<Position>(places.size)
@@ -420,7 +415,7 @@ internal class ClauseStore private constructor(
         fun removeAll(stored: List<Stored>) {
             derived.clear()
             ids = null
-            val removed = LongArray(stored.size) { stored[it].id }
+            val removed = IntArray(stored.size) { stored[it].id }
             removed.sort()
             // (most of the clauses gone: looked up again, the index costs no more than taking them out one by one)
             val rebuild = stored.size * 4 > all.size
@@ -442,10 +437,11 @@ internal class ClauseStore private constructor(
     }
 
     private class Data(
+        private val declared: Map<String, List<Place>>,
         private val predicates: WordTable<Predicate> = WordTable(),
-        private var nextId: Long = 0,
+        private var nextId: Int = 0,
     ) {
-        fun copy(): Data = Data(predicates.copy(), nextId)
+        fun copy(): Data = Data(declared, predicates.copy(), nextId)
 
         fun isEmpty(): Boolean = predicates.values().all { it.all.size == 0 }
 
@@ -476,11 +472,11 @@ internal class ClauseStore private constructor(
                 if (tag(key) ==
                     FUN
                 ) {
-                    ContextSchema.indexed["${record.program!!.functorName(key)}/$arity"].orEmpty()
+                    declared["${record.program!!.functorName(key)}/$arity"].orEmpty()
                 } else {
                     emptyList()
                 }
-            val places = Array(arity + declared.size) { if (it < arity) ContextSchema.Place(it, NO_STEPS) else declared[it - arity] }
+            val places = Array(arity + declared.size) { if (it < arity) Place(it, NO_STEPS) else declared[it - arity] }
             return Predicate(arity, this, places)
         }
 
@@ -539,10 +535,15 @@ internal class ClauseStore private constructor(
                     val hash = groundHash(program, words, argument)
                     if (hash != NOT_GROUND) {
                         position.buildGround(all)
-                        bucket = position.groundByHash!![hash]
-                        rest = position.nonGround
-                        size = (bucket?.size ?: 0) + rest!!.size
-                        if (size == 0) return Candidates.NONE
+                        val ground = position.groundByHash!![hash]
+                        val open = position.nonGround
+                        val narrowed = (ground?.size ?: 0) + open!!.size
+                        if (narrowed == 0) return Candidates.NONE
+                        if (narrowed < size) {
+                            bucket = ground
+                            rest = open
+                            size = narrowed
+                        }
                     }
                 }
                 if (size < bestSize) {
@@ -595,7 +596,7 @@ internal class ClauseStore private constructor(
         // The candidates by top symbol from which a ground argument is hashed as a whole
         private const val GROUNDED_FROM = 8
         private const val MAX_DEPTH = 64
-        private const val NOT_GROUND = Long.MIN_VALUE
+        private const val NOT_GROUND = Int.MIN_VALUE
 
         private fun Term.isRule() = this is Struct && functor == ":-" && arity == 2
 
@@ -653,7 +654,7 @@ internal class ClauseStore private constructor(
             program: Program,
             words: IntArray,
             w: Int,
-        ): Long = if (tag(w) == REF) NOT_GROUND else groundHash(program, words, w)
+        ): Int = if (tag(w) == REF) NOT_GROUND else groundHash(program, words, w)
 
         private fun goalArgument(
             words: IntArray,
@@ -680,23 +681,27 @@ internal class ClauseStore private constructor(
             }
 
         private fun mix(
-            hash: Long,
+            hash: Int,
             word: Int,
-        ): Long = (hash xor word.toLong()) * -7046029254386353131L
+        ): Int {
+            val mixed = (hash xor word) * -1640531527
+            // (never the mark of what is not ground: it would only look so, which costs but a longer search)
+            return (mixed xor (mixed ushr 15)).let { if (it == NOT_GROUND) 1 else it }
+        }
 
         // A hash of the term [w0] of [words], the same wherever it is laid out; NOT_GROUND with a variable in it
         private fun groundHash(
             program: Program,
             words: IntArray,
             w0: Int,
-        ): Long = hashInto(program, words, w0, 1125899906842597L)
+        ): Int = hashInto(program, words, w0, 1125899)
 
         private fun hashInto(
             program: Program,
             words: IntArray,
             w0: Int,
-            seed: Long,
-        ): Long {
+            seed: Int,
+        ): Int {
             var hash = seed
             var w = derefIn(words, w0)
             while (true) {

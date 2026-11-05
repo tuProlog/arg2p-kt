@@ -58,9 +58,9 @@ private fun NativeCall.answerAttacks(
     if (next < attacks.size) alternatives { it.answerAttacks(attacks, next) }
     val attack = attacks[i]
     return if (unify(type, word(attack.type)) &&
-        unify(attacker, int(attack.attacker.toLong())) &&
-        unify(attacked, int(attack.attacked.toLong())) &&
-        unify(on, int(attack.on.toLong()))
+        unify(attacker, int(attack.attacker)) &&
+        unify(attacked, int(attack.attacked)) &&
+        unify(on, int(attack.on))
     ) {
         NativeCall.CONTINUE
     } else {

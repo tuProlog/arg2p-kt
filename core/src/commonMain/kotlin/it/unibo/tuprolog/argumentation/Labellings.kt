@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -19,10 +18,10 @@ const val LABELLINGS: String = "buildLabelSetsSilent"
  * an Arg2pException if the evaluation halts (a theory its profile refuses)
  */
 @InternalArg2pApi
-fun graphsOf(
+fun <G : Any> graphsOf(
     solutions: Iterator<LogicSolution>,
-    graph: () -> Graph,
-): List<Graph> =
+    graph: () -> G,
+): List<G> =
     solutions
         .asSequence()
         .mapNotNull { solution -> if (checked(solution).isYes) graph() else null }

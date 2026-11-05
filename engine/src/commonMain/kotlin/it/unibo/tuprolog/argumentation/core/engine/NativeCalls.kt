@@ -12,20 +12,30 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 
 /** The items of [list] if it is a proper list, null otherwise */
 fun NativeCall.items(list: Int): IntArray? {
-    var items = IntArray(8)
+    val n = listLength(list)
+    if (n < 0) return null
+    val items = IntArray(n)
+    var w = list
+    for (i in 0 until n) {
+        items[i] = argOf(w, 0)
+        w = argOf(w, 1)
+    }
+    return items
+}
+
+// How long the proper list [list] is, -1 if it is none
+private fun NativeCall.listLength(list: Int): Int {
     var n = 0
     var w = list
     while (kind(w) == NativeCall.LIST) {
-        if (n == items.size) items = items.copyOf(n * 2)
-        items[n++] = argOf(w, 0)
+        n++
         w = argOf(w, 1)
     }
-    if (kind(w) != NativeCall.ATOM || atomName(w) != "[]") return null
-    return items.copyOf(n)
+    return if (kind(w) == NativeCall.ATOM && atomName(w) == "[]") n else -1
 }
 
 /** Whether [w] is a proper list */
-fun NativeCall.isList(w: Int): Boolean = items(w) != null
+fun NativeCall.isList(w: Int): Boolean = listLength(w) >= 0
 
 /** The items of the argument [i], a list (a type error otherwise, from the primitive of [signature]) */
 fun NativeCall.listArg(
@@ -61,12 +71,6 @@ fun NativeCall.atomArg(
 
 /** The argument [i] as a term */
 fun NativeCall.termArg(i: Int): Term = term(arg(i))
-
-/** The argument [i], a list, as terms (a type error otherwise) */
-fun NativeCall.termsArg(
-    i: Int,
-    signature: Signature,
-): List<Term> = listArg(i, signature).map { term(it) }
 
 fun NativeCall.words(terms: List<Term>): IntArray = IntArray(terms.size) { word(terms[it]) }
 

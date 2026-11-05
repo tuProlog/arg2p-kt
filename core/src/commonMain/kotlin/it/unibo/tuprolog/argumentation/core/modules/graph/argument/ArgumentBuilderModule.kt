@@ -44,8 +44,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             ), _).
 
         % A rule with no premise to support with an argument: only contraries, Prolog checks and constraints (as
-        % parser::argued/1 tells them, checked here: backtracking into a call to another module, for every premise of
-        % every rule, costs 2% of the memory of a whole graph)
+        % parser::argued/1 tells them, checked here)
         emptyRule([RuleID, Body, RuleHead]) :-
             parser::rule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_), X \= '{}'(_)).
@@ -97,10 +96,8 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
 
         % ruleBodyIsSupported(Body, rule(RuleID, RuleHead, RuleBody), Parts, Argument): Argument is built from RuleID by
         % supporting each statement in Body with a saved argument, collecting the rules and premises of the supports
-        % (Parts, see argument::accumulated/3); its conclusion is ground. Only Body is matched in the clause heads,
-        % everything else is unpacked in the bodies: matching heads with many arguments against every clause is what
-        % makes this predicate expensive. A theory with constraints has a recursion of its own
-        % (constrainedBodyIsSupported/5): tracking the supports and the mode here costs the base mode 2% more memory.
+        % (Parts, see argument::accumulated/3); its conclusion is ground. A theory with constraints has a recursion of its
+        % own (constrainedBodyIsSupported/5).
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ground(RuleHead),

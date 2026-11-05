@@ -11,6 +11,7 @@ import it.unibo.tuprolog.argumentation.core.model.mining.arguments
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.argumentation.goalOf
 import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.federation.EvaluationStats
@@ -44,7 +45,6 @@ import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.Partitioning
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
 import it.unibo.tuprolog.argumentation.termOf
-import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -52,9 +52,6 @@ import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.channel.OutputChannel
-import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
-import it.unibo.tuprolog.unify.Unificator
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import it.unibo.tuprolog.core.List as PlList
@@ -138,8 +135,6 @@ internal class Catalog(
 
     // The graph built, as the modules of the solver save it: the arguments and their supports, the attacks; and what
     // the goal solved needs that is not built yet
-    private var saved: Pair<Term, Term>? = null
-    private var savedAttacks: Term? = null
     private var need: Need? = null
 
     // What a goal needs the workers to build: the whole graph, or the arguments for a statement in query mode
@@ -162,11 +157,10 @@ internal class Catalog(
     private var argumentsReported = 0
 
     private var solver = newSolver()
-    private val unificator = Unificator.default
 
     // The arguments whose claim unifies with a statement, read as they are (those for it are kept, see
     // sameUpToVariables), and the size of the graph labelled
-    private val argumentsFor = Goal("graphStore::argument(A), \\+ \\+ argument::claim(A, S)", solver.operators)
+    private val argumentsFor = Goal("graphStore::argumentUnifiable([S], A)", solver.operators)
     private val size =
         Goal(
             "graphStore::argumentIds(Ids), length(Ids, Arguments), findall(T, graphStore::attackById(T, _, _, _), Ts), " +
@@ -349,7 +343,7 @@ internal class Catalog(
                 Partitioning("", emptyList(), converted = false, catalog = theory.toString())
             }
         solver.resetStaticKb()
-        solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
+        solver.loadStaticKb(RuleAnnotations.parse(partitioning.catalog, solver.operators, solver.unificator))
         solver.solveOnce("context_reset, parser:::convertAllRules")
         central = !solver.holds("structuredWhole::builder(B), B == ruleGraph")
         partial = if (central) null else locality()
@@ -433,7 +427,8 @@ internal class Catalog(
     private fun explore(goals: List<Term>) {
         explored += goals
         interests.forEach { interest ->
-            val theirs = goals.filter { goal -> interest.conclusions.any { unificator.match(it, goal) } }
+            val concluded = ClaimIndex(interest.conclusions, { it })
+            val theirs = goals.filter { concluded.anyMatching(it) }
             if (theirs.isNotEmpty()) {
                 awaited++
                 network.send(Address.worker(interest.worker), Explore(-1, theirs))
@@ -453,17 +448,6 @@ internal class Catalog(
     // The graph built, kept as the modules of the solver save it (the attacks as attackBuilder saves them): the jobs
     // waiting are done on it
     private fun finished() {
-        val supported =
-            supports.map { (support, argument) ->
-                Struct.of("support", arguments.getValue(support), arguments.getValue(argument))
-            } + boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument)) }
-        val attacks =
-            directAttacks.distinct().map { (type, attacker, target) ->
-                val attacked = arguments.getValue(target)
-                Struct.of("attack", Atom.of(type), arguments.getValue(attacker), attacked, attacked)
-            }
-        saved = PlList.of(arguments.values) to PlList.of(supported)
-        savedAttacks = PlList.of(attacks)
         built = true
         stage = Stage.READY
         work()
@@ -500,16 +484,32 @@ internal class Catalog(
 
     // The graph built, for the modules of the solver: what a goal needs and the workers did not build is asked for
     private inner class Built : BuiltGraph {
-        override fun arguments(need: Term): Pair<Term, Term>? {
+        // The identifiers of the arguments in the solver, by their global ones
+        private var identifiers = emptyMap<String, Int>()
+
+        override fun arguments(need: Term): Collection<Term>? {
             val wanted = if (need is Struct && need.functor == "explore") Need.Explored(need[0]) else Need.Whole
             if (!met(wanted)) {
                 this@Catalog.need = wanted
                 return null
             }
-            return saved
+            return this@Catalog.arguments.values
         }
 
-        override val attacks: Term? get() = savedAttacks
+        override fun identified(ids: IntArray) {
+            identifiers = HashMap<String, Int>(ids.size * 2).also { map -> arguments.keys.forEachIndexed { i, id -> map[id] = ids[i] } }
+        }
+
+        override fun supports(): List<Pair<Int, Int>> =
+            supports.map { (support, argument) -> identifiers.getValue(support) to identifiers.getValue(argument) }
+
+        override fun boundSupports(): Term =
+            PlList.of(boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument)) })
+
+        override fun attacks(): List<Triple<String, Int, Int>> =
+            directAttacks.distinct().map { (type, attacker, target) ->
+                Triple(type, identifiers.getValue(attacker), identifiers.getValue(target))
+            }
     }
 
     // A goal solved for a client, read by [read] (with the operators of the theory) the first time it is solved: the

@@ -30,5 +30,5 @@ object RuleTerm {
         }
     }
 
-    private const val HEAD = "rl"
+    const val HEAD = "rl"
 }

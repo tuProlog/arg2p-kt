@@ -11,7 +11,6 @@ import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * module_defines(+Module, +Name/Arity): whether Module, one of the solver, defines the predicate Name/Arity, as a
@@ -34,14 +33,14 @@ internal class ModuleDefines(
         if (predicate == null || arity == null) {
             throw TypeError.forArgument(call.context, signature, TypeError.Expected.PREDICATE_INDICATOR, indicator, 1)
         }
-        val context = call.context
-        val libraries = loader.modules.of(name) { Solve.Request(signature, listOf(Atom.of(name), indicator), context) }.libraries
+        val libraries = loader.modules.of(name) { call.context }.libraries
         val clauses =
             defined.getOrPut(name) {
                 // (the clauses visited as they are: a theory indexed over all of them cost more than the first solve)
                 libraries.libraries.flatMap { library -> library.clauses.mapNotNull { it.head?.indicator } }.toSet()
             }
-        val isDefined = libraries.hasPrimitive(Signature(predicate.value, arity)) || Indicator.of(predicate.value, arity) in clauses
+        val primitive = Signature(predicate.value, arity)
+        val isDefined = libraries.libraries.any { primitive in it.primitives } || Indicator.of(predicate.value, arity) in clauses
         return call.reply(isDefined)
     }
 

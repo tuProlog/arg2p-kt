@@ -9,9 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  *
  * An argument is the same term as the graph builder makes (see the module argumentBuilder): its rules and info from
  * those of its sub-arguments (argument::rulesAndInfo/5), its body the premises of its rule as written. Its parts are
- * collected in `found(Body, TopRule, Rules, Info, Supports)`, built in the clause bodies, so that clause heads only
- * match the conclusion or the premises (matching many arguments against every clause head is what makes resolution
- * expensive).
+ * collected in `found(Body, TopRule, Rules, Info, Supports)`, built in the clause bodies.
  */
 object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.search", "argumentSearch") {
     override val prologRawTheory: String =

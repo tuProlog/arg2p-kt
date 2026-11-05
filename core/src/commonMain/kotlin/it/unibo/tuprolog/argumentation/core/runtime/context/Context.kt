@@ -22,13 +22,12 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextLast
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextMatching
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextReset
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
+import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetractAll
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextStoredId
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTerm
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextUnifiable
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
@@ -68,6 +67,9 @@ internal class Context : ArgLibrary {
     /** The store of the given branch, the active one if null; null for a branch that does not exist */
     fun store(branch: Int? = null): ClauseStore? = if (branch == null) branches.selected else branches.storeOf(branch)
 
+    /** The identifier of [term], given one if it has none */
+    internal fun identifier(term: Term): Int = branches.identifier(term)
+
     /** The identifier of [term] if it has one already, without giving it one */
     fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
 
@@ -80,7 +82,7 @@ internal class Context : ArgLibrary {
     /** The stores on the words of [program] (the machine's) */
     internal fun bind(program: Program) = branches.bind(program)
 
-    override val alias = "prolog.argumentation.context"
+    override val alias = ALIAS
 
     override val baseContent: Library
         get() =
@@ -97,12 +99,12 @@ internal class Context : ArgLibrary {
                 ContextAssert(branches),
                 ContextAssertId(branches),
                 ContextRetract(branches),
+                ContextRetractAll(branches),
                 ContextCheck(branches),
                 ContextCheckIn(branches),
-                ContextAll(2, branches, this),
+                ContextAll(this),
                 ContextId(branches),
                 ContextTerm(branches),
-                ContextUnifiable(branches),
                 ContextBy(branches),
                 ContextStoredId(branches),
                 ContextMatching(branches),
@@ -119,11 +121,16 @@ internal class Context : ArgLibrary {
         get() = emptyList()
 
     companion object {
-        /** The context library of the solver of the given context, if it is reachable (through context_all/2) */
-        fun of(context: ExecutionContext): Context? = of(context.libraries)
-
         /** The context library among the given libraries, if any (through context_all/2) */
-        fun of(libraries: Runtime): Context? = (libraries.primitives[CONTEXT_ALL] as? ContextAll)?.owner
+        fun of(libraries: Runtime): Context? {
+            // (by its library: the primitives of a runtime are a map of all of them, made for each runtime asked)
+            for (library in libraries.libraries) {
+                if (library.alias == ALIAS) return (library.primitives[CONTEXT_ALL] as? ContextAll)?.owner
+            }
+            return null
+        }
+
+        private const val ALIAS = "prolog.argumentation.context"
 
         private val CONTEXT_ALL = Signature("context_all", 2)
     }

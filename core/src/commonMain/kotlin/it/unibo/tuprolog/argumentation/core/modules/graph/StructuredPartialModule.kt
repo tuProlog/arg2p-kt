@@ -128,7 +128,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
             utils::appendLists([In, Out, Und], Result).
 
         %! answer(?Label, ?Goal)
-        %  A statement labelled Label answering Goal: one unifying with it, or (constraints) one of its instances, as an
+        %  A statement labelled Label answering Goal: one unifying with it, or one of its instances, as an
         %  argument holding for more values than Goal asks about says nothing of them alone (its instance for Goal does).
         answer(Label, Goal) :-
             parser::instances, !,

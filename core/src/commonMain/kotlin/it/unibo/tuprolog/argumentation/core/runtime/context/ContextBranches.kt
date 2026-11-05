@@ -12,7 +12,7 @@ import it.unibo.tuprolog.core.Term
 internal class ContextBranches {
     private var next: Int = 1
     private var encoding: Program? = null
-    private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore())
+    private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore(declared = ContextSchema.indexed))
 
     // The converted theory of the solver, kept as a template every solve starts from (context_template_save/0,
     // context_template_restore/0): the conversion is a function of the theory and of the flags, so the template holds
@@ -90,7 +90,7 @@ internal class ContextBranches {
         active = 0
         next = 1
         stores.clear()
-        stores[0] = ClauseStore(encoding)
+        stores[0] = ClauseStore(encoding, ContextSchema.indexed)
         identifiers.clear()
         records.clear()
     }
@@ -141,6 +141,12 @@ internal class ContextBranches {
     }
 
     fun identifier(term: Term): Int = identifier(Record.of(term))
+
+    /** The identifier of the term with [key] in the words of [program], if it has one already and they are the ones here */
+    internal fun knownIdentifier(
+        key: RecordKey,
+        program: Program?,
+    ): Int? = if (program != null && program === encoding) identifiers[key] else null
 
     /** The identifier of [term] if it has one already (see [identifier]) */
     fun knownIdentifier(term: Term): Int? = identifiers[encoded(Record.of(term)).key]

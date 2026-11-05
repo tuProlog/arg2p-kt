@@ -4,13 +4,14 @@ import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.attempts
 import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
+import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.solve.Signature
 
 // The term [w] with [key] at the place: through the cells it has, the others made with fresh variables around
 private fun NativeCall.unifyAt(
-    place: ContextSchema.Place,
+    place: ClauseStore.Place,
     w0: Int,
     key: Int,
 ): Boolean {
@@ -26,11 +27,11 @@ private fun NativeCall.unifyAt(
     return unify(w, built)
 }
 
-private fun NativeCall.placeOf(name: Int): ContextSchema.Place? =
+private fun NativeCall.placeOf(name: Int): ClauseStore.Place? =
     if (kind(name) ==
         NativeCall.ATOM
     ) {
-        ContextSchema.keys[atomName(name)]
+        ContextSchema.key(atomName(name))
     } else {
         null
     }
@@ -106,7 +107,7 @@ internal class ContextStoredId(
             matching
                 .asSequence()
                 .filter { it.record.identifier >= 0 }
-                .map { stored -> { c: NativeCall -> c.unify(c.arg(1), c.int(stored.record.identifier.toLong())) } }
+                .map { stored -> { c: NativeCall -> c.unify(c.arg(1), c.int(stored.record.identifier)) } }
                 .iterator(),
         )
     }

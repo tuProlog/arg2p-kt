@@ -46,7 +46,7 @@ The table below lists the flags, with their defaults.
 | `conflictModel(Part)` | all the parts (`builtin`) | `negation`, `deontic`, `preference`, `declared` (several), `builtin` for all of them |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
 | `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`, `constraints` |
+| `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` |
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
@@ -55,8 +55,6 @@ The table below lists the flags, with their defaults.
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
-| `temporal` | disabled | the fact is present or absent: the [axioms of time]({{% ref "/docs/modules/temporal" %}}), concluding what holds for the times of a period (with the graph extension `constraints`) |
-| `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
 
 ---
@@ -110,7 +108,7 @@ the conflicts are those the arguments conclude, whatever the parts.
 
 Post-processing steps applied to the graph once it has been built. Unlike the other flags, `graphExtension`
 **may appear several times**: every occurrence adds an extension, and all of them are applied, in a fixed order
-whatever the order they are stated in: `constraints` (with the copies of `metaConflicts` after it), then
+whatever the order they are stated in: the copies of `metaConflicts`, then
 `rebutRestriction`, the preference mode, `bp`. The preference modes (`standardPref`, `defeasiblePref`,
 `defeasibleAllPref`, `abaPref`) exclude one another: a theory stating two of them is refused, as is one stating
 `abaPref` outside an ABA theory (`graphLanguage(abaLanguage)`, as the profiles `aba` and `aba_plus` state).
@@ -122,7 +120,6 @@ whatever the order they are stated in: `constraints` (with the copies of `metaCo
 | `defeasibleAllPref` | The richer model, which also supports comparators that need several superiorities at once. |
 | `rebutRestriction` | Applies the *restricted rebut* constraint: an argument cannot rebut a conclusion drawn by a strict rule. |
 | `abaPref` | The preferences between assumptions of ABA<sup>+</sup>, `sup(Stronger, Weaker)`: an attack from a weaker assumption is reversed. See [profiles]({{% ref "/docs/profiles#aba" %}}). |
-| `constraints` | Open conclusions (with free variables, constrained by `{ }` premises) hold for every value of their variables; the instances a rule uses, or a conflict binds, are arguments of their own. See [Constraints]({{% ref "/docs/modules/constraints" %}}). |
 | `bp` | Makes the burden of persuasion arguable: the burden is concluded by a rule, e.g. `r : [] => bp(something).`, instead of being declared as a fact. See [Meta-argumentation]({{% ref "/docs/modules/meta" %}}). |
 
 The defeasible preference models and the meta-argumentation treatment of the burden of persuasion are
@@ -264,13 +261,12 @@ network.
 
 ## Flags of the theory alone
 
-`naturalTerms` is read only from the theory text; `Flags` has no method for it (`debug` has one, `debug(true)`).
+`naturalTerms` is read only from the theory text; `Flags` has no method for it.
 Write the facts directly in your theory:
 
 | Flag | Meaning |
 | --- | --- |
 | `naturalTerms` | Enables normalisation of natural-language-like terms while parsing rules. |
-| `debug` | `bp_grounded_partial` writes the steps of its labelling. |
 
 ---
 

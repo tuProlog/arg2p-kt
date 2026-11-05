@@ -25,8 +25,8 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
         minimalUndOf(Semantics, Branch) :-
             findall(Und-In, (
                 Semantics:::argumentLabelling,
-                findall(A, graphStore::argumentLabelById(und, A), Und),
-                findall(A, graphStore::argumentLabelById(in, A), In)
+                graphStore::labelledIds(und, Und),
+                graphStore::labelledIds(in, In)
             ), Labellings),
             utils::minimalBySet(Labellings, Minimal),
             member(In, Minimal),
@@ -38,7 +38,7 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
         maximalAdmissibleCommonOf(Semantics, Branch) :-
             findall(In, (
                 Semantics:::argumentLabelling,
-                findall(A, graphStore::argumentLabelById(in, A), In)
+                graphStore::labelledIds(in, In)
             ), Labellings),
             utils::intersectionOf(Labellings, Common),
             maximalAdmissibleSubset(Common, Maximal),

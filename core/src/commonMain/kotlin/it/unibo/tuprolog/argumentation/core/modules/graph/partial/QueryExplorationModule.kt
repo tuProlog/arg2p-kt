@@ -86,8 +86,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
 
         % exploredAs(+Statement, -Explored): Explored is explored and unifies with Statement, as it was explored
         exploredAs(Statement, Explored) :-
-            context_check(explored(Explored)),
-            \+ \+ Explored = Statement.
+            context_matching(explored, Statement, explored(Explored)).
 
         unseen([], Seen, [], Seen).
         unseen([S|Ss], Seen, New, Seen1) :-
@@ -159,7 +158,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         %  For the connected locality, the arguments whose labels may depend on the ones built (see dependant/2), with
         %  those they depend on in turn, until none is new.
         expand(connected) :-
-            findall(Id, (graphStore::argumentById(Id, _), context_absent(expanded(Id))), Ids),
+            findall(Id, (graphStore::savedId(Id), context_absent(expanded(Id))), Ids),
             Ids \== [], !,
             findall(_, (
                 member(Id, Ids),
@@ -191,12 +190,10 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
 
         extend([], _) :- !.
         extend(Steps, Locality) :-
-            graphStore::argumentIds(Before),
+            graphStore::savedCount(N),
             findall(S, (graphStore::argumentById(_, A), member(Step, Steps), related(Locality, Step, A, S)), Statements),
             findall(_, (member(S, Statements), explore(S)), _),
-            graphStore::argumentIds(After),
-            length(Before, N),
-            length(After, M),
+            graphStore::savedCount(M),
             (N == M -> true ; again(Locality), extend(Steps, Locality)).
 
         related(_, Step, Argument, S) :- Step::queryDependencies(Argument, S).

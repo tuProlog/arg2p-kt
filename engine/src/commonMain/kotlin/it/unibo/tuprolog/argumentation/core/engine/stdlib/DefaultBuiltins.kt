@@ -56,7 +56,7 @@ private object NativeLength : AbstractNativePrimitive(Signature("length", 2)) {
                 }
             call.kind(tail) != NativeCall.ATOM || call.atomName(tail) != "[]" ->
                 throw TypeError.forArgument(call.context, signature, TypeError.Expected.LIST, call.term(call.arg(0)), 0)
-            call.unify(size, call.int(items.toLong())) -> NativeCall.CONTINUE
+            call.unify(size, call.int(items)) -> NativeCall.CONTINUE
             else -> NativeCall.FAIL
         }
     }
@@ -74,7 +74,7 @@ private object NativeLength : AbstractNativePrimitive(Signature("length", 2)) {
             tail = call.argOf(tail, 1)
         }
         call.alternatives { each(it, length + 1) }
-        return if (completed(call, tail, length - items) == NativeCall.CONTINUE && call.unify(call.arg(1), call.int(length.toLong()))) {
+        return if (completed(call, tail, length - items) == NativeCall.CONTINUE && call.unify(call.arg(1), call.int(length))) {
             NativeCall.CONTINUE
         } else {
             NativeCall.FAIL

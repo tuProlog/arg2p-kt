@@ -3,8 +3,6 @@ package it.unibo.tuprolog.argumentation.core.engine.vm
 import it.unibo.tuprolog.argumentation.core.engine.AbstractSolver
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
-import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
-import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -116,9 +114,9 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
         built.add(staticKb)
         for (clause in dynamicKb.clauses) built.theory.add(clause, dynamic = true)
         program = built
-        // (the stores of arg2p keep their records in the words of the program)
-        Context.of(libraries)?.bind(built)
-        Cache.of(libraries)?.bind(built)
+        for (library in libraries.libraries) {
+            for (primitive in library.primitives.values) (primitive as? ProgramStore)?.bind(built)
+        }
         outdated = false
         return built
     }

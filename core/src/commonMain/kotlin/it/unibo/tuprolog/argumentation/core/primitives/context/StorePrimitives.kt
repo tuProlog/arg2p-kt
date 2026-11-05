@@ -40,21 +40,20 @@ internal fun NativeCall.lookupOrView(
 ): Int {
     val goal = arg(i)
     if (kind(goal) != NativeCall.STRUCT) return lookup(store, wrap, i)
-    val view = ContextSchema.views[functorName(goal)]?.takeIf { it.arity == arityOf(goal) && store.candidates(record(goal)).isEmpty() }
+    val view = ContextSchema.view(functorName(goal))?.takeIf { it.arity == arityOf(goal) && store.candidates(record(goal)).isEmpty() }
     if (view == null) return lookup(store, wrap, i)
     val arguments = IntArray(view.arity) { argOf(goal, it) }
     val answer =
         if (branch == null) {
             struct(view.active, arguments)
         } else {
-            struct(view.inBranch, intArrayOf(int(branch.toLong())) + arguments)
+            struct(view.inBranch, intArrayOf(int(branch)) + arguments)
         }
     return inline(struct("::", intArrayOf(atom(ContextSchema.MODULE), answer)), libraries, theoryVisible = false)
 }
 
 /** The lookup of a goal in a branch: context_check(Branch, Goal) */
-internal fun branchLookup(branch: Int) =
-    GoalWrapper { call, goal -> call.struct("context_check", intArrayOf(call.int(branch.toLong()), goal)) }
+internal fun branchLookup(branch: Int) = GoalWrapper { call, goal -> call.struct("context_check", intArrayOf(call.int(branch), goal)) }
 
 /**
  * The lookup of the argument [i] in [store]: a conjunction as the lookup of each goal (through [wrap]), a
@@ -163,22 +162,26 @@ internal fun NativeCall.candidatesOf(
 internal fun NativeCall.retractAll(
     store: ClauseStore,
     pattern: Int,
-) {
+) = store.removeAll(matching(store, pattern))
+
+/** The stored clauses unifying with the pattern [pattern] */
+internal fun NativeCall.matching(
+    store: ClauseStore,
+    pattern: Int,
+): List<ClauseStore.Stored> {
     val isRule = kind(pattern) == NativeCall.STRUCT && functorName(pattern) == ":-" && arityOf(pattern) == 2
-    val matching =
-        candidatesOf(store, pattern).filter { stored ->
-            val w = recall(stored.record)
-            val against =
-                if (!isRule) {
-                    headOf(stored.record, w)
-                } else if (stored.record.isRule) {
-                    w
-                } else {
-                    struct(":-", intArrayOf(w, atom("true")))
-                }
-            unifiable(pattern, against)
-        }
-    store.removeAll(matching)
+    return candidatesOf(store, pattern).filter { stored ->
+        val w = recall(stored.record)
+        val against =
+            if (!isRule) {
+                headOf(stored.record, w)
+            } else if (stored.record.isRule) {
+                w
+            } else {
+                struct(":-", intArrayOf(w, atom("true")))
+            }
+        unifiable(pattern, against)
+    }
 }
 
 /** The branches the list argument [i] names (a type error otherwise, from the primitive of [signature]) */

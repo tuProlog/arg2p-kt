@@ -7,9 +7,7 @@ import it.unibo.tuprolog.argumentation.core.primitives.cache.CacheAssert
 import it.unibo.tuprolog.argumentation.core.primitives.cache.CacheCheck
 import it.unibo.tuprolog.argumentation.core.primitives.cache.CacheRetract
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
-import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.solve.library.Runtime
 
 /** Facts shared across context branches (cache_assert/1, cache_retract/1, cache_check/1), kept in the same indexed store as the context */
 class Cache : ArgLibrary {
@@ -31,11 +29,4 @@ class Cache : ArgLibrary {
 
     /** The store on the words of [program] (the machine's) */
     internal fun bind(program: Program) = store.bind(program)
-
-    companion object {
-        /** The cache library among the given libraries, if any (through cache_check/1) */
-        internal fun of(libraries: Runtime): Cache? = (libraries.primitives[CACHE_CHECK] as? CacheCheck)?.owner
-
-        private val CACHE_CHECK = Signature("cache_check", 1)
-    }
 }

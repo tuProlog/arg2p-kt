@@ -10,8 +10,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The whole argumentation graph of a theory and its labellings, as the flags select them (module `structuredWhole`): the graph
- * builder (graphBuilder, which graphBuildMode sets), the steps changing the graph (constraints with that graphExtension
- * or temporal, the copies of metaConflicts, the other graph extensions; see modifyGraph/0), the semantics
+ * builder (graphBuilder, which graphBuildMode sets), the steps changing the graph (the copies of metaConflicts, the graph
+ * extensions; see modifyGraph/0), the semantics
  * (argumentLabellingMode) and the statement labelling (statementLabellingMode). Query mode builds only a part of the
  * graph (see the module structuredPartial), then changes and labels it through this module as well.
  */
@@ -110,7 +110,7 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         %! modifyGraph
         %  The graph changed by the steps the flags select (see active/1), in the order of steps/1 whatever the order the
         %  flags state them in: first those adding the arguments derived from the others, each with their attacks (the
-        %  instances of constraints, also with temporal, then the copies of metaConflicts), then those changing the
+        %  copies of metaConflicts), then those changing the
         %  attacks (rebutRestriction, the preference mode, bp). Any other graph extension (a module of the user) comes
         %  last, in the order stated.
         modifyGraph :-
@@ -147,8 +147,8 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
         step(Step) :- steps(Steps), member(Step, Steps).
 
         %! active(+Step)
-        %  Step applies: constraints with the instances of the theory (see parser::instances/0), conflictArguments when
-        %  its conflicts are arguments (see conflict::argued/0), the others when they are graph extensions; any other
+        %  Step applies: conflictArguments when its conflicts are arguments (see conflict::argued/0), the others when they
+        %  are graph extensions; any other
         %  graph extension is (see others/1).
         active(constraints) :- !, parser::instances.
         active(conflictArguments) :- !, conflict::argued.

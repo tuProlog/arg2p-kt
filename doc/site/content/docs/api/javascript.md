@@ -112,6 +112,14 @@ from 0: `activeBranch` is the last one, `graph()` and `graphAt(branch)` the grap
 
 ---
 
+### Huge graphs
+
+For a graph too large for the objects of `graphs()`, `compactGraphs()` and `compactGraph()` give all it tells as arrays (a
+`CompactGraph`), with no object for an argument: an argument is a position in `conclusions`, `topRules` and `labels`, a text a position
+in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
+`attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
+an argument as a graph does, and `argument(p)` makes the object of one. It holds no reference to the solver.
+
 ## Prolog goals
 
 `solve(goal)` gives the solutions of a goal, computed one at a time as they are asked for, with `hasNext()` and
@@ -138,6 +146,9 @@ while (solutions.hasNext()) {
 ```
 
 `add(text)` adds clauses to the theory, `load(text)` replaces it.
+
+`Arg2p.warmUp(milliseconds)` solves a small theory for that long (300 ms by default), for the engine of JavaScript to
+optimize the code of the solvers: the first solves take many times the later ones otherwise. In a page, call it in a worker.
 
 ---
 

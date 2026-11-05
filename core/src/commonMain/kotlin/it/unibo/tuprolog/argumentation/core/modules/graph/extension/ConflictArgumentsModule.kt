@@ -41,7 +41,7 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             graphStore::argumentId(Copy, Id),
             context_assert(conflictCopy(Id)),
             graphStore::saveSupport(ConflictArgument, Copy),
-            cloneSupports(Argument, Copy),
+            graphStore::copySupports(Argument, Id),
             fail.
         buildCopy.
 
@@ -50,11 +50,6 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             graphStore::argumentFor([conflict(A, _, _)], ConflictArgument).
         conflictArgument([A], ConflictArgument) :-
             graphStore::argumentFor([conflict(A, _)], ConflictArgument).
-
-        % The supports of Original also support Copy
-        cloneSupports(Original, Copy) :-
-            findall(Support, graphStore::support(Support, Original), Supports),
-            graphStore::saveSupporters(Copy, Supports).
 
         %==============================================================================
         % QUERY MODE

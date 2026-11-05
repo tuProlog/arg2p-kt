@@ -4,11 +4,13 @@ import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.engine.ClauseSource
 import it.unibo.tuprolog.argumentation.core.engine.ExecutionEnvironment
 import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
+import it.unibo.tuprolog.argumentation.core.engine.MachineCall
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeResume
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.core.engine.Record
+import it.unibo.tuprolog.argumentation.core.engine.RecordKey
 import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalCall
 import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalPrimitive
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
@@ -73,7 +75,8 @@ internal class Machine(
     val program: Program,
     // The heap cells above which a call collects (the threshold then follows the cells kept)
     private val gcMinimum: Int = GC_MIN,
-) : RegisterGoalCall {
+) : RegisterGoalCall,
+    MachineCall {
     private val pooled = MachineArrays.take()
     var heap = pooled.heap
     var top = 0
@@ -158,7 +161,7 @@ internal class Machine(
 
     // Garbage collection
     private var gcThreshold = gcMinimum
-    private var marks = LongArray(0)
+    private var marks = IntArray(0)
     private var counts = IntArray(0)
     private var markStack = IntArray(1 shl 10)
     private var frameVisited = BooleanArray(0)
@@ -207,6 +210,9 @@ internal class Machine(
     // of a clause copied, say): the same variable the same cell within the call
     private var nativeFresh: HashMap<Var, Int>? = null
 
+    // How many of [nativeNames] are in [nativeFresh] already
+    private var nativeMerged = 0
+
     // Those of the native calls a nested run is under, for a collection to find
     private val heldNames = ArrayList<HashMap<Int, Var>>()
     private val heldFresh = ArrayList<HashMap<Var, Int>>()
@@ -251,6 +257,7 @@ internal class Machine(
     // The stacks of the inline arithmetic: the values being computed, the words of an expression being built for the
     // builtin when the machine cannot compute it, and whether the last evaluation could not
     private var values = LongArray(32)
+    private val smallValues = IntArray(32)
     private var exprWords = IntArray(32)
 
     // The instances of the runs of findall, those of the nested ones above: where each instance starts in the bag
@@ -267,12 +274,25 @@ internal class Machine(
     // The code of the control constructs called as goals at run time, of the end of a run, of the return from an
     // inlined goal
     private val compiler = Compiler(program)
-    private val stopAddress = compiler.stopBlock()
-    private val conjunctionBlock = compiler.conjunctionBlock()
-    private val disjunctionBlock = compiler.disjunctionBlock()
-    private val ifThenElseBlock = compiler.ifThenElseBlock()
-    private val negationBlock = compiler.negationBlock()
-    private val restoreScopeBlock = compiler.restoreScopeBlock()
+
+    // (once for each program: a machine for each solve would leave them behind in its code)
+    private val controlBlocks =
+        program.controlBlocks {
+            intArrayOf(
+                compiler.stopBlock(),
+                compiler.conjunctionBlock(),
+                compiler.disjunctionBlock(),
+                compiler.ifThenElseBlock(),
+                compiler.negationBlock(),
+                compiler.restoreScopeBlock(),
+            )
+        }
+    private val stopAddress = controlBlocks[0]
+    private val conjunctionBlock = controlBlocks[1]
+    private val disjunctionBlock = controlBlocks[2]
+    private val ifThenElseBlock = controlBlocks[3]
+    private val negationBlock = controlBlocks[4]
+    private val restoreScopeBlock = controlBlocks[5]
     private val fArg = program.functor("arg", 3)
     private val fFunctor = program.functor("functor", 3)
 
@@ -867,8 +887,9 @@ internal class Machine(
                     copyWords(cpArgs, argsBase, regs, 0, arity)
                     popChoicePoint()
                     nativeArity = arity
-                    nativeNames = alternatives.names?.let { names -> HashMap(names.filterKeys { it < top }) }
+                    nativeNames = alternatives.names?.let { names -> namesBelowTop(names) }
                     nativeFresh = null
+                    nativeMerged = 0
                     val outcome =
                         try {
                             alternatives.resume.resume(this)
@@ -1877,7 +1898,7 @@ internal class Machine(
                     Op.IS_VC -> {
                         val a = dereferenced(operand(code[at + 1]))
                         if (tag(a) == INT) {
-                            val w = program.intWord(payload(a).toLong() + code[at + 2])
+                            val w = program.sumWord(payload(a), code[at + 2])
                             val operand = code[at + 6]
                             when (val kind = code[at + 5]) {
                                 Op.T_NEW_X -> regs[operand] = w
@@ -1892,9 +1913,8 @@ internal class Machine(
                     Op.ARITH_IS -> {
                         val n = code[at + 3]
                         ip = at + 4 + n
-                        val value = evaluate(code, at + 4, n)
-                        if (!evalFailed) {
-                            val w = program.intWord(value)
+                        val w = arithmeticWord(code, at + 4, n)
+                        if (w != 0) {
                             val operand = code[at + 2]
                             when (code[at + 1]) {
                                 Op.T_X -> if (!unify(regs[operand], w)) break@dispatch
@@ -1916,20 +1936,9 @@ internal class Machine(
                         val nA = code[at + 2]
                         val nB = code[at + 3 + nA]
                         ip = at + 4 + nA + nB
-                        val a = evaluate(code, at + 3, nA)
-                        val b = if (evalFailed) 0L else evaluate(code, at + 4 + nA, nB)
-                        if (!evalFailed) {
-                            val holds =
-                                when (code[at + 1]) {
-                                    Op.C_LT -> a < b
-                                    Op.C_GT -> a > b
-                                    Op.C_LE -> a <= b
-                                    Op.C_GE -> a >= b
-                                    Op.C_EQ -> a == b
-                                    else -> a != b
-                                }
-                            if (!holds) break@dispatch
-                        } else {
+                        val answer = comparison(code, at, nA, nB)
+                        if (answer == 0) break@dispatch
+                        if (answer < 0) {
                             settleHere()
                             val left = build(code, at + 3, nA)
                             ip = builtinBehind(comparisonFunctors[code[at + 1]], left, build(code, at + 4 + nA, nB), ip)
@@ -1965,7 +1974,7 @@ internal class Machine(
                             else -> {
                                 val term = operand(code[at + 2])
                                 val target = targetWord(code[at + 3], code[at + 4])
-                                ip = builtinBehind3(fArg, program.intWord(code[at + 1].toLong()), term, target, ip)
+                                ip = builtinBehind3(fArg, program.smallWord(code[at + 1]), term, target, ip)
                                 if (ip < 0) break@dispatch
                                 code = program.code
                             }
@@ -2072,6 +2081,115 @@ internal class Machine(
             Op.C_EQ -> a == b
             else -> a != b
         }
+
+    // The word of the value of the expression code at [from] ([n] words): 0 for what is left to the builtin
+    private fun arithmeticWord(
+        code: IntArray,
+        from: Int,
+        n: Int,
+    ): Int {
+        val small = evaluateSmall(code, from, n)
+        if (small != NOT_SMALL) return program.smallWord(small)
+        val value = evaluate(code, from, n)
+        return if (evalFailed) 0 else program.intWord(value)
+    }
+
+    // Whether the comparison ARITH_CMP at [at] holds: 1 or 0, -1 for what is left to the builtin
+    private fun comparison(
+        code: IntArray,
+        at: Int,
+        nA: Int,
+        nB: Int,
+    ): Int {
+        val smallA = evaluateSmall(code, at + 3, nA)
+        if (smallA != NOT_SMALL) {
+            val smallB = evaluateSmall(code, at + 4 + nA, nB)
+            if (smallB != NOT_SMALL) return if (holds(code[at + 1], smallA, smallB)) 1 else 0
+        }
+        val a = evaluate(code, at + 3, nA)
+        val b = if (evalFailed) 0L else evaluate(code, at + 4 + nA, nB)
+        if (evalFailed) return -1
+        val holds =
+            when (code[at + 1]) {
+                Op.C_LT -> a < b
+                Op.C_GT -> a > b
+                Op.C_LE -> a <= b
+                Op.C_GE -> a >= b
+                Op.C_EQ -> a == b
+                else -> a != b
+            }
+        return if (holds) 1 else 0
+    }
+
+    // [evaluate] within 32 bits, with no Long (a BigInt on JS): [NOT_SMALL] for an operand that is no small integer, for a
+    // step out of them, or for an error: [evaluate] then says what it is
+    private fun evaluateSmall(
+        code: IntArray,
+        from: Int,
+        n: Int,
+    ): Int {
+        val stack = smallValues
+        var sp = 0
+        var i = from
+        val end = from + n
+        while (i < end) {
+            val kind = code[i]
+            val operand = code[i + 1]
+            i += 2
+            when (kind) {
+                Op.E_X, Op.E_Y -> {
+                    val w = dereferenced(if (kind == Op.E_X) regs[operand] else local[frame + FRAME + operand])
+                    if (tag(w) != INT || sp == stack.size) return NOT_SMALL
+                    stack[sp++] = payload(w)
+                }
+                Op.E_CONST -> {
+                    if (sp == stack.size) return NOT_SMALL
+                    stack[sp++] = payload(operand)
+                }
+                Op.E_ADD -> {
+                    sp--
+                    val x = stack[sp - 1]
+                    val y = stack[sp]
+                    val r = x + y
+                    if ((x xor r) and (y xor r) < 0) return NOT_SMALL
+                    stack[sp - 1] = r
+                }
+                Op.E_SUB -> {
+                    sp--
+                    val x = stack[sp - 1]
+                    val y = stack[sp]
+                    val r = x - y
+                    if ((x xor y) and (x xor r) < 0) return NOT_SMALL
+                    stack[sp - 1] = r
+                }
+                Op.E_MUL -> {
+                    sp--
+                    val x = stack[sp - 1]
+                    val y = stack[sp]
+                    if (x < -SMALL_FACTOR || x > SMALL_FACTOR || y < -SMALL_FACTOR || y > SMALL_FACTOR) return NOT_SMALL
+                    stack[sp - 1] = x * y
+                }
+                Op.E_IDIV -> {
+                    sp--
+                    val x = stack[sp - 1]
+                    val y = stack[sp]
+                    if (y == 0 || x == Int.MIN_VALUE) return NOT_SMALL
+                    stack[sp - 1] = x / y
+                }
+                Op.E_MOD -> {
+                    sp--
+                    val y = stack[sp]
+                    if (y == 0) return NOT_SMALL
+                    stack[sp - 1] = stack[sp - 1].mod(y)
+                }
+                else -> {
+                    if (stack[sp - 1] == Int.MIN_VALUE) return NOT_SMALL
+                    stack[sp - 1] = -stack[sp - 1]
+                }
+            }
+        }
+        return stack[0]
+    }
 
     // The value of the expression code at [from] ([n] words): [evalFailed] when an operand is not an integer (the
     // builtin then raises the error, or computes it)
@@ -2432,7 +2550,7 @@ internal class Machine(
             }
         }
         return if (toTarget(nameKind, nameOperand, name) &&
-            toTarget(arityKind, arityOperand, program.intWord(n.toLong()))
+            toTarget(arityKind, arityOperand, program.smallWord(n))
         ) {
             CONTINUE
         } else {
@@ -3115,7 +3233,7 @@ internal class Machine(
         val a0 = regs[0]
         val a1 = regs[1]
         val a2 = regs[2]
-        regs[0] = program.intWord(code[at + 1].toLong())
+        regs[0] = program.smallWord(code[at + 1])
         regs[1] = term
         regs[2] = target
         return afterBuiltin(fArg, 3, following, a0, a1, a2)
@@ -3432,6 +3550,8 @@ internal class Machine(
         nativeFunctor = functor
         nativeNames = names
         nativeFresh = fresh
+        // (merged again: a collection in the nested run may have dropped names, and more may come to the same number)
+        nativeMerged = 0
         return count
     }
 
@@ -3584,6 +3704,65 @@ internal class Machine(
             if (n == 0 || StdlibNatives.order(this, sorted[n - 1], sorted[i]) != 0) sorted[n++] = sorted[i]
         }
         return sorted.copyOf(n)
+    }
+
+    override val recordProgram: Program get() = program
+
+    override fun int(value: Int): Int = program.smallWord(value)
+
+    // The words of the key of a record, as Flattened reads them: of no use past the lookup at hand
+    private var keyWords = IntArray(256)
+    private var keySize = 0
+    private val keyVariables = IntArray(64)
+    private var keyVariablesTop = 0
+
+    override fun recordKey(w: Int): RecordKey? {
+        keySize = 0
+        keyVariablesTop = 0
+        return if (flattened(w)) RecordKey(keyWords, keySize) else null
+    }
+
+    private fun pushKey(w: Int) {
+        if (keySize == keyWords.size) keyWords = keyWords.copyOf(keySize * 2)
+        keyWords[keySize++] = w
+    }
+
+    // False for more variables than kept: the record then says
+    private fun flattened(w0: Int): Boolean {
+        var w = dereferenced(w0)
+        while (true) {
+            when (tag(w)) {
+                REF -> {
+                    val address = payload(w)
+                    var i = 0
+                    while (i < keyVariablesTop && keyVariables[i] != address) i++
+                    if (i == keyVariablesTop) {
+                        if (i == keyVariables.size) return false
+                        keyVariables[keyVariablesTop++] = address
+                    }
+                    pushKey(ref(i))
+                    return true
+                }
+                STR -> {
+                    val a = payload(w)
+                    val f = heap[a]
+                    pushKey(f)
+                    val n = program.arity(f)
+                    for (i in 1 until n) if (!flattened(heap[a + i])) return false
+                    w = dereferenced(heap[a + n])
+                }
+                LIST -> {
+                    val a = payload(w)
+                    pushKey(Program.LIST_KEY)
+                    if (!flattened(heap[a])) return false
+                    w = dereferenced(heap[a + 1])
+                }
+                else -> {
+                    pushKey(w)
+                    return true
+                }
+            }
+        }
     }
 
     override fun record(w: Int): Record {
@@ -3848,6 +4027,7 @@ internal class Machine(
         nativeArity = arity
         nativeNames = null
         nativeFresh = null
+        nativeMerged = 0
         return try {
             primitive.call(this)
         } catch (raised: Raised) {
@@ -3945,13 +4125,26 @@ internal class Machine(
     override fun word(term: Term): Int {
         val names = nativeNames
         val cells = nativeFresh ?: HashMap<Var, Int>().also { nativeFresh = it }
-        if (names != null) for ((cell, variable) in names) cells[variable] = cell
+        if (names != null && names.size != nativeMerged) {
+            for ((cell, variable) in names) cells[variable] = cell
+            nativeMerged = names.size
+        }
         return fromTerm(term, cells)
     }
 
     override val context: ExecutionContext get() = PrologExecutionContext(environmentSeen())
 
     override val libraries: Runtime get() = scope.libraries ?: environment!!.libraries
+
+    override fun libraryValue(compute: (Runtime) -> Any?): Any? {
+        val scope = scope
+        val libraries = scope.libraries ?: return compute(environment!!.libraries)
+        if (!scope.libraryValueKnown) {
+            scope.libraryValue = compute(libraries)
+            scope.libraryValueKnown = true
+        }
+        return scope.libraryValue
+    }
 
     override val theoryVersion: Long? get() = program.theoryVersion
 
@@ -4377,6 +4570,7 @@ internal class Machine(
         nativeArity = 0
         nativeNames = null
         nativeFresh = null
+        nativeMerged = 0
         return try {
             primitive.callOnRegisters(this, module)
         } catch (raised: Raised) {
@@ -4535,9 +4729,9 @@ internal class Machine(
     fun collect(arity: Int) {
         collections++
         collectedFrom = top
-        val blocks = (top + 63) ushr 6
-        if (marks.size < blocks) marks = LongArray(maxOf(blocks, (heap.size + 63) ushr 6))
-        marks.fill(0L, 0, blocks)
+        val blocks = (top + 31) ushr 5
+        if (marks.size < blocks) marks = IntArray(maxOf(blocks, (heap.size + 31) ushr 5))
+        marks.fill(0, 0, blocks)
         if (counts.size <= blocks) counts = IntArray(maxOf(blocks + 1, counts.size * 2))
         // Marking: the cells reachable from the roots
         for (i in 0 until arity) markWord(regs[i])
@@ -4575,8 +4769,8 @@ internal class Machine(
         var f = 0
         for (b in 0 until blocks) {
             var bits = marks[b]
-            val base = b shl 6
-            while (bits != 0L) {
+            val base = b shl 5
+            while (bits != 0) {
                 val i = base + bits.countTrailingZeroBits()
                 heap[f] = relocated(heap[i])
                 varInfo[f] = varInfo[i]
@@ -4590,7 +4784,14 @@ internal class Machine(
     }
 
     // The cells the variables of native calls were given, each map once: what no root keeps is gone
+    private fun namesBelowTop(names: HashMap<Int, Var>): HashMap<Int, Var> {
+        val below = HashMap<Int, Var>(names.size * 2)
+        for ((cell, variable) in names) if (cell < top) below[cell] = variable
+        return below
+    }
+
     private fun relocateNativeCells() {
+        nativeMerged = 0
         val named = ArrayList<HashMap<Int, Var>>()
         val keep = { names: HashMap<Int, Var>? -> if (names != null && named.none { it === names }) named.add(names) }
         keep(nativeNames)
@@ -4652,18 +4853,18 @@ internal class Machine(
         return if (a >= collectedFrom || !marked(a)) UNSET else relocated(w)
     }
 
-    private fun marked(c: Int): Boolean = (marks[c ushr 6] ushr (c and 63)) and 1L != 0L
+    private fun marked(c: Int): Boolean = (marks[c ushr 5] ushr (c and 31)) and 1 != 0
 
     private fun mark(c: Int) {
-        marks[c ushr 6] = marks[c ushr 6] or (1L shl (c and 63))
+        marks[c ushr 5] = marks[c ushr 5] or (1 shl (c and 31))
     }
 
     // The new address of a cell kept, or of a mark [address] (the first cell at or after it kept): the cells kept
     // below it
     private fun newAddress(address: Int): Int {
         if (address >= collectedFrom) return collectedTo
-        val b = address ushr 6
-        return counts[b] + (marks[b] and ((1L shl (address and 63)) - 1)).countOneBits()
+        val b = address ushr 5
+        return counts[b] + (marks[b] and ((1 shl (address and 31)) - 1)).countOneBits()
     }
 
     private fun relocated(w: Int): Int = if (tag(w) == REF || tag(w) == STR || tag(w) == LIST) word(tag(w), newAddress(payload(w))) else w
@@ -4800,8 +5001,8 @@ internal class Machine(
         val w = deref(w0)
         return when (tag(w)) {
             REF -> names.getOrPut(payload(w)) { variableOf(payload(w)) }
-            ATOM -> Atom.of(program.atoms[payload(w)])
-            INT -> Integer.of(payload(w))
+            ATOM -> program.atomTerm(payload(w))
+            INT -> program.integerTerm(payload(w))
             BIG -> Integer.of(program.bigInteger(payload(w)))
             FLT -> program.floats[payload(w)]
             STR -> {
@@ -4959,6 +5160,12 @@ internal class Machine(
         // The outcomes of unwinding a ball
         private const val UNCAUGHT = 0
         private const val RESUMED = 1
+
+        // (no value of evaluateSmall: Int.MIN_VALUE as a value only takes the longer way)
+        private const val NOT_SMALL = Int.MIN_VALUE
+
+        // Up to this, a product fits in an Int
+        private const val SMALL_FACTOR = 46340
         private const val EXHAUSTED = 2
 
         // The heap cells above which a call collects

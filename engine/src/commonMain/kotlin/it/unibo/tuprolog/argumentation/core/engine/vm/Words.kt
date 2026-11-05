@@ -37,7 +37,8 @@ internal object Words {
     const val INT_MIN = -(1 shl 28)
     const val INT_MAX = (1 shl 28) - 1
 
-    fun fitsInt(value: Long): Boolean = value in INT_MIN..INT_MAX
+    // (compared, not `in`: on JS the range would be an object for each call)
+    fun fitsInt(value: Long): Boolean = value >= INT_MIN && value <= INT_MAX
 }
 
 @Suppress("NOTHING_TO_INLINE")

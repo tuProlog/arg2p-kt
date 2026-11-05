@@ -238,9 +238,12 @@ class PrologReference(
             Area("Labelling", "The semantics labelling the arguments, and the statements from them.", ModuleRegistry.labellings),
         )
 
+    // The modules not documented yet, as they may change: no page, and no link to them
+    private val unpublished = setOf("constraint", "constraints", "temporal")
+
     val modules: List<ModuleDoc> =
         areas.flatMap { area ->
-            area.modules.filterIsInstance<Loadable>().map { module ->
+            area.modules.filterIsInstance<Loadable>().filter { it.identifier() !in unpublished }.map { module ->
                 ModuleDoc(module as ArgLibrary, area, kdocs)
             }
         }
@@ -362,11 +365,14 @@ class PrologReference(
                 appendLine(module.description)
                 appendLine()
             }
-            val uses = module.calls.keys.sorted()
+            val uses = (module.calls.keys - unpublished).sorted()
             if (uses.isNotEmpty()) appendLine("- **Calls:** " + uses.joinToString(", ") { link(it) })
             val callers = callers(module).map { it.identifier }
             if (callers.isNotEmpty()) appendLine("- **Called by:** " + callers.joinToString(", ") { link(it) })
-            val flags = module.module.baseFlags.map { it.predicate() }
+            val flags =
+                module.module.baseFlags
+                    .filterNot { it.isInternal }
+                    .map { it.predicate() }
             if (flags.isNotEmpty()) {
                 appendLine("- **Flags:** " + flags.joinToString(", ") { "`$it`" } + " (see [Flags]({{% ref \"/docs/api/flags\" %}}))")
             }

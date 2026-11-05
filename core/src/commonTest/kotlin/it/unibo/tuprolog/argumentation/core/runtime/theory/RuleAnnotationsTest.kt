@@ -1,8 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.runtime.theory
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.core.operators.Operator
+import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.core.operators.Specifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class RuleAnnotationsTest {
     private fun identifiers(text: String) =
@@ -27,5 +31,24 @@ class RuleAnnotationsTest {
         // a comment of many words, one on the line after, one before the full stop, a % in a quoted atom
         val text = "a :- b. % the rule of a\nb.\n% r3\nc :- d % r4\n    .\nd('%r5')."
         assertEquals(listOf(null, null, null, null), identifiers(text))
+    }
+
+    @Test
+    fun theSameTextParsedAgainGivesTheSameClausesWithTheirIdentifiers() {
+        val text = "a :- b. % first\nc :- d.\n"
+        val first = RuleAnnotations.parse(text, OperatorSet.DEFAULT).clauses.toList()
+        val again = RuleAnnotations.parse(text, OperatorSet.DEFAULT).clauses.toList()
+        assertEquals(first.map { it.toString() }, again.map { it.toString() })
+        assertEquals(first.map { RuleAnnotations.of(it) }, again.map { RuleAnnotations.of(it) })
+        assertEquals("first", RuleAnnotations.of(again[0]))
+    }
+
+    @Test
+    fun aTextIsReadByItsOperatorsNotByWhatItWasReadWithBefore() {
+        val text = "a myop b.\n"
+        val operators = OperatorSet.DEFAULT + Operator("myop", Specifier.XFX, 700)
+        assertEquals(1, RuleAnnotations.parse(text, operators).clauses.count())
+        assertFailsWith<Exception> { RuleAnnotations.parse(text, OperatorSet.DEFAULT).clauses.count() }
+        assertEquals(1, RuleAnnotations.parse(text, operators).clauses.count())
     }
 }

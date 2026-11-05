@@ -1,6 +1,10 @@
 ---
 title: Constraints
 weight: 40
+bookHidden: true
+bookSearchExclude: true
+sitemap:
+  disable: true
 ---
 
 ## Arguments for sets of values

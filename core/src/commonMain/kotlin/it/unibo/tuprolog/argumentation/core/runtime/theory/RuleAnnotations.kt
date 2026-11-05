@@ -1,12 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.runtime.theory
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.locked
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.parser.PrologLexer
 import it.unibo.tuprolog.parser.sources.SourceText
 import it.unibo.tuprolog.parser.tokens.TokenKind
 import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
+import it.unibo.tuprolog.theory.parsing.parseAsClausesLazily
+import it.unibo.tuprolog.unify.Unificator
 
 /**
  * The identifiers a theory gives its clauses in comments: a clause followed, on the line of its full stop, by a
@@ -26,25 +28,75 @@ object RuleAnnotations {
     fun parse(
         text: String,
         operators: OperatorSet,
-    ): Theory = annotate(Theory.parse(text, operators), text)
+    ): Theory = Theory.of(Unificator.default, clauses(text, operators))
 
-    /** The clauses of [theory], parsed from [text], tagged with the identifiers of their comments in [text] */
-    fun annotate(
-        theory: Theory,
+    /**
+     * The theory of [text] for a solver of [unificator] reading its clauses, which the machine does by its own index: listed, with
+     * no index of it to build for each solver
+     */
+    fun parse(
         text: String,
-    ): Theory {
+        operators: OperatorSet,
+        unificator: Unificator,
+    ): Theory = Theory.listedOf(unificator, clauses(text, operators))
+
+    // The clauses of [text]: read off the text, as those of an indexed theory take a time growing with their square to read
+    private fun clauses(
+        text: String,
+        operators: OperatorSet,
+    ): List<Clause> {
+        // (the same text comes again and again from a server or a page, and reading it is the largest part of a first solve)
+        val known = locked(parsed) { parsed.firstOrNull { it.text == text && it.operators == operators } }
+        if (known != null) return known.clauses
+        val clauses = tagged(text.parseAsClausesLazily(operators).toList(), text)
+        if (text.length <= PARSED_TEXT_LIMIT) {
+            locked(parsed) {
+                if (parsed.size >= PARSED_KEPT) parsed.removeAt(0)
+                parsed.add(Parsed(text, operators, clauses))
+            }
+        }
+        return clauses
+    }
+
+    private class Parsed(
+        val text: String,
+        val operators: OperatorSet,
+        val clauses: List<Clause>,
+    )
+
+    // The texts parsed last, the terms of a clause being immutable: a theory is made of them for each solver
+    private val parsed = ArrayList<Parsed>()
+    private const val PARSED_KEPT = 8
+    private const val PARSED_TEXT_LIMIT = 1 shl 20
+
+    // [clauses], parsed from [text], tagged with the identifiers of their comments
+    private fun tagged(
+        clauses: List<Clause>,
+        text: String,
+    ): List<Clause> {
         // (the identifiers are in comments: with none, the text need not be read again)
-        if ('%' !in text) return theory
+        if (!mayHaveIdentifiers(text)) return clauses
         val identifiers = identifiers(text)
-        val clauses = theory.clauses.toList()
         // the clauses are those of the full stops: if they are not (a theory not parsed from text), nothing is tagged
-        if (identifiers.all { it == null } || identifiers.size != clauses.size) return theory
-        return Theory.of(
-            theory.unificator,
-            clauses.mapIndexed { index, clause ->
-                identifiers[index]?.let { clause.replaceTags(clause.tags + (RULE to it)) as Clause } ?: clause
-            },
-        )
+        if (identifiers.all { it == null } || identifiers.size != clauses.size) return clauses
+        return clauses.mapIndexed { index, clause ->
+            identifiers[index]?.let { clause.replaceTags(clause.tags + (RULE to it)) as Clause } ?: clause
+        }
+    }
+
+    // Whether a comment after a full stop may be an identifier (a line with no such comment needs no lexer)
+    private fun mayHaveIdentifiers(text: String): Boolean {
+        var at = text.indexOf('%')
+        while (at >= 0) {
+            var before = at - 1
+            while (before >= 0 && (text[before] == ' ' || text[before] == '\t')) before--
+            if (before >= 0 && text[before] == '.') {
+                val end = text.indexOf('\n', at).let { if (it < 0) text.length else it }
+                if (identifier.matches(text.substring(at + 1, end).trim())) return true
+            }
+            at = text.indexOf('%', at + 1)
+        }
+        return false
     }
 
     /** The identifier [clause] is tagged with, if any */

@@ -13,7 +13,6 @@ import it.unibo.tuprolog.core.Fact
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
@@ -86,7 +85,6 @@ class Settings(
 
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
         if (viewOf !== context.staticKb) {
-            val libraries = context.libraries.asTheory(context.unificator)
             val undeclared =
                 context.libraries.libraries
                     .firstOrNull { it.alias == Flags.ALIAS }
@@ -97,8 +95,10 @@ class Settings(
             if (undeclared.isNotEmpty()) {
                 throw IllegalArgumentException("Not a flag: ${undeclared.distinct().joinToString()} (${flags.keys.joinToString()})")
             }
-            val theory = flags.mapValues { (_, flag) -> stated(flag, context.staticKb) }
-            val solver = flags.mapValues { (_, flag) -> stated(flag, libraries) }
+            val inTheory = flagFacts(context.staticKb.clauses)
+            val inLibraries = flagFacts(context.libraries.libraries.flatMap { it.clauses })
+            val theory = flags.mapValues { (_, flag) -> stated(flag, inTheory) }
+            val solver = flags.mapValues { (_, flag) -> stated(flag, inLibraries) }
             val mode = theory[GraphBuildMode.predicate()].orEmpty().ifEmpty { solver[GraphBuildMode.predicate()].orEmpty() }
             val profile =
                 if (mode.isEmpty()) {
@@ -142,13 +142,24 @@ class Settings(
     }
 
     // The values of a flag stated by the facts of a theory: none or off for one stated with no value
+    // The facts of [clauses] on the predicate of a flag, by the predicate, in their order
+    private fun flagFacts(clauses: Iterable<Clause>): Map<String, List<Struct>> {
+        val facts = HashMap<String, MutableList<Struct>>()
+        for (clause in clauses) {
+            val head = clause.head ?: continue
+            if (head.arity <= 1 && clause.isFact && head.functor in flags) facts.getOrPut(head.functor) { ArrayList() }.add(head)
+        }
+        return facts
+    }
+
     private fun stated(
         flag: ArgsFlag<*, *>,
-        theory: Theory,
+        facts: Map<String, List<Struct>>,
     ): List<Term> {
-        val valued = theory[Struct.of(flag.predicate(), Var.of("Value"))].filter { it.isFact }.map { it.head[0] }
+        val heads = facts[flag.predicate()].orEmpty()
+        val valued = heads.filter { it.arity == 1 }.map { it[0] }
         if (!flag.isSwitch) return expanded(flag, valued.toList())
-        return theory[Atom.of(flag.predicate())].filter { it.isFact }.map { Truth.TRUE }.toList() + valued.filter { it == OFF }
+        return heads.filter { it.arity == 0 }.map { Truth.TRUE } + valued.filter { it == OFF }
     }
 
     // The values of a flag, those standing for others replaced by them (see ArgsFlag.aliases), each once
@@ -188,7 +199,7 @@ class Settings(
             ?: throw DomainError.forArgument(context, signature, DomainError.Expected.FLAG, name, 0)
     }
 
-    override val alias = "prolog.argumentation.settings"
+    override val alias = ALIAS
 
     override val baseContent: Library
         get() =
@@ -203,11 +214,20 @@ class Settings(
         get() = emptyList()
 
     companion object {
+        private const val ALIAS = "prolog.argumentation.settings"
+
         // The values stating a flag with no value, and a switch off
         private val NONE = Atom.of("none")
         private val OFF = Atom.of("off")
 
         /** The settings of the solver of [context], if they are reachable */
-        fun of(context: ExecutionContext): Settings? = (context.libraries.primitives[SettingSwitch.SIGNATURE] as? SettingSwitch)?.owner
+        fun of(context: ExecutionContext): Settings? =
+            (
+                context.libraries.libraries
+                    .firstOrNull {
+                        it.alias == ALIAS
+                    }?.primitives
+                    ?.get(SettingSwitch.SIGNATURE) as? SettingSwitch
+            )?.owner
     }
 }

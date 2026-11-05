@@ -52,6 +52,10 @@ arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], wri
 describes one in full (`theory`, `flags`, `output`, then `build()`). `add(text)` adds clauses to the theory,
 `load(text)` replaces it.
 
+The first solver of a process warms the JVM up for a moment, as the first solves of a process take many times the later
+ones otherwise: `ARG2P_WARM_UP` tells how long, in milliseconds (`300` by default, `0` for not at all), and
+`Arg2p.warm_up(milliseconds)` does it at any time.
+
 `Flags.defaults()` (none stated: the theory, its profile and the defaults decide; `Flags.none()` is the same) and
 `Flags.parse(text)` are the flags of a
 solver; each flag has a method, taking a value of its enumeration (`Profile`, `Semantics`, `StatementLabelling`,
@@ -96,6 +100,11 @@ graph.attacks[0].attacker.identifier          # 'A1'
 A graph has its `arguments`, `attacks`, `supports` and `labellings`, and `label(argument)`, `labelled(label)` and
 `conclusions(label)`. `active_branch`, `graph()`, `graph_at(branch)` and `context_facts(branch, goal)` read the
 stages of the last resolution.
+
+For a graph too large for these objects, `compact_graphs()` and `compact_graph()` give all it tells as arrays, with no object for
+an argument: an argument is a position in `conclusions`, `top_rules` and `labels`, and in the lists of `rules(p)`, `groundings(p)` and
+so on; `attackers`, `targets`, `on` and `attack_type_of` are parallel, as `supporters` and `supported`. `identifier(p)` and
+`descriptor(p)` name an argument as a graph does. It holds no reference to the solver.
 
 ---
 

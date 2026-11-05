@@ -118,9 +118,6 @@ enum class GraphExtension(
 
     /** The preferences of ABA+, reversing attacks */
     ABA_PREF("abaPref"),
-
-    /** The instances of the arguments holding for sets of values (free variables, { } constraints), for the values used */
-    CONSTRAINTS("constraints"),
 }
 
 /** A language extending the one of arg2p (graphLanguage) */

@@ -8,9 +8,16 @@ plugins {
     )
 }
 
+// The machine (the project :engine, no package of its own yet) compiled into this library
+fun engineSources(sourceSet: String) = rootProject.file("engine/src/$sourceSet/kotlin")
+
 kotlin {
     sourceSets {
+        jvmMain { kotlin.srcDir(engineSources("jvmMain")) }
+        jsMain { kotlin.srcDir(engineSources("jsMain")) }
+
         commonMain {
+            kotlin.srcDir(engineSources("commonMain"))
             dependencies {
                 api(libs.tuprolog.dsl.solve)
                 api(libs.tuprolog.parser.theory)
@@ -26,6 +33,18 @@ kotlin {
                 implementation(libs.tuprolog.test.solve)
                 // tuProlog's own solver, for the tests of the libraries of arg2p on an engine other than its own
                 implementation(libs.tuprolog.solve.prolog)
+            }
+        }
+    }
+}
+
+// The machine is no part of the reference of the library
+plugins.withId("org.jetbrains.dokka") {
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+        dokkaSourceSets.configureEach {
+            perPackageOption {
+                matchingRegex.set(""".*\.core\.engine(\..*)?""")
+                suppress.set(true)
             }
         }
     }

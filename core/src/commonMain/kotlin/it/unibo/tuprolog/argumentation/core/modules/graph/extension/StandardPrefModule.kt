@@ -12,20 +12,16 @@ object StandardPrefModule : PrologModule("prolog.argumentation.graph.preferences
         """
         %! modifyArgumentationGraph
         %  The attacks failing for the preferences are removed. Attacks are visited by argument identifiers, and
-        %  arguments are compared by their info only: the whole arguments are only retrieved to remove an attack.
+        %  arguments are compared by their info only.
         modifyArgumentationGraph :-
-            findall(_, (
-                graphStore::attackById(T, IdA, IdB, IdC),
-                checkStandardPreference(T, IdA, IdB, IdC)
-            ), _).
+            findall(a(T, IdA, IdC), (
+                graphStore::attackById(T, IdA, IdC, IdC),
+                failing(T, IdA, IdC)
+            ), Failing),
+            graphStore::removeAttackIds(Failing).
 
-        % Negation is written as cut and fail: \+ would go through call/1, which visits the whole goal before running it
-        checkStandardPreference(T, IdA, _, IdC) :- standardPreferences(T, IdA, IdC), !, fail.
-        checkStandardPreference(T, IdA, IdB, IdC) :-
-            graphStore::argumentById(IdA, A),
-            graphStore::argumentById(IdB, B),
-            graphStore::argumentById(IdC, C),
-            graphStore::removeAttack(T, A, B, C).
+        failing(T, IdA, IdC) :- standardPreferences(T, IdA, IdC), !, fail.
+        failing(_, _, _).
 
         % The attack types preferences do not apply to. Everything else is weighed against the preference order: rebuts
         % and undermines, and the attacks of a graph extension of the user.
@@ -33,21 +29,23 @@ object StandardPrefModule : PrologModule("prolog.argumentation.graph.preferences
         standardPreferences(contrary_undermine, _, _) :- !.
         standardPreferences(undercut, _, _) :- !.
         standardPreferences(_, IdA, IdC) :-
-            graphStore::argumentInfo(IdA, InfoIdA, InfoA),
-            graphStore::argumentInfo(IdC, InfoIdC, InfoC),
-            superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA), !,
+            graphStore::argumentInfoId(IdA, InfoIdA),
+            graphStore::argumentInfoId(IdC, InfoIdC),
+            superiorInfo(InfoIdC, InfoIdA), !,
             fail.
         standardPreferences(_, _, _).
 
         % Superiority only depends on the info of the arguments, shared by many of them: it is buffered by their
-        % identifiers, so that each pair is compared once
-        superiorInfo(InfoIdC, _, InfoIdA, _) :-
+        % identifiers, so that each pair is read and compared once
+        superiorInfo(InfoIdC, InfoIdA) :-
             context_check(infoSuperior(InfoIdC, InfoIdA, Result)), !,
             Result == yes.
-        superiorInfo(InfoIdC, InfoC, InfoIdA, InfoA) :-
-            superiority::superiorInfo(InfoC, InfoA, _), !,
+        superiorInfo(InfoIdC, InfoIdA) :-
+            graphStore::infoById(InfoIdC, InfoC),
+            graphStore::infoById(InfoIdA, InfoA),
+            superiority::compareInfo(InfoC, InfoA, _), !,
             context_assert(infoSuperior(InfoIdC, InfoIdA, yes)).
-        superiorInfo(InfoIdC, _, InfoIdA, _) :-
+        superiorInfo(InfoIdC, InfoIdA) :-
             context_assert(infoSuperior(InfoIdC, InfoIdA, no)),
             fail.
         """.trimIndent()

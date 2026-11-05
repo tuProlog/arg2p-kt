@@ -103,7 +103,7 @@ class TheoryPartitionerTest {
                 Arg2pSolverFactory
                     .default(
                         theory = partitioning.theoryOf(index),
-                        settings = Flags.defaults().temporal(true).library(),
+                        settings = Flags.parse("temporal.").library(),
                     ).also {
                         it.solve(Struct.parse("context_reset, parser:::convertAllRules(_)", it.operators)).first()
                     }

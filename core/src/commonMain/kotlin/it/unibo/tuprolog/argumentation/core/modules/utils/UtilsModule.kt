@@ -37,14 +37,6 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
         """
         % Lists Utils
 
-        %! writeList(+List)
-        %  The items of List written one after the other, then a new line.
-        writeList([]) :- nl.
-        writeList([X|Others]) :-
-            write(X),
-            writeList(Others).
-
-
         %! writeListNl(+List)
         %  The items of List written each on a line.
         writeListNl([]).
@@ -68,11 +60,6 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
         appendLists([List|Lists], Result) :-
             append(List, Rest, Result),
             appendLists(Lists, Rest).
-
-        %! containsAny(+Elements, +List)
-        %  An element of List matches one of Elements (which are not bound).
-        containsAny(Elements, List) :-
-            \+ \+ (member(Element, List), member(Element, Elements)).
 
         % The others (contains/2, subtract/3, sortDistinct/2, deduplicate/2, sortDescending/2, intersectionOf/2, ...) are native primitives
         """.trimIndent()

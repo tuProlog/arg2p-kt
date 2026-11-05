@@ -47,6 +47,16 @@ class Record internal constructor(
     val term: Term get() = decoded ?: (source ?: decode(root, HashMap())).also { decoded = it }
     private var decoded: Term? = null
 
+    /** The term of the word [w] of the record, decoded now and not kept */
+    internal fun termAt(w: Int): Term = decode(w, HashMap())
+
+    /** The key of the term of the word [w] of the record: the same for two terms up to the names of their variables */
+    internal fun keyAt(w: Int): RecordKey {
+        val flat = Flattened(program!!, words)
+        flat.add(w)
+        return RecordKey(flat.items, flat.size)
+    }
+
     /** The clause: `Head :- Body` read as a rule, anything else as a fact */
     val clause: Clause get() = clauseRead ?: readClause().also { clauseRead = it }
     private var clauseRead: Clause? = null
@@ -83,7 +93,7 @@ class Record internal constructor(
     private fun readKey(): RecordKey {
         val flat = Flattened(program!!, words)
         flat.add(root)
-        return RecordKey(flat.items.copyOf(flat.size))
+        return RecordKey(flat.items, flat.size)
     }
 
     private fun decode(
@@ -93,8 +103,8 @@ class Record internal constructor(
         val program = program!!
         return when (tag(w)) {
             REF -> variables.getOrPut(payload(w)) { Var.of("V") }
-            ATOM -> Atom.of(program.atoms[payload(w)])
-            INT -> Integer.of(payload(w))
+            ATOM -> program.atomTerm(payload(w))
+            INT -> program.integerTerm(payload(w))
             BIG -> Integer.of(program.bigInteger(payload(w)))
             FLT -> program.floats[payload(w)]
             STR -> {
@@ -207,12 +217,23 @@ class Record internal constructor(
 /** A term up to the names of its variables: see [Record.key] */
 internal class RecordKey(
     private val flat: IntArray,
+    private val size: Int,
 ) {
-    private val hash = flat.contentHashCode()
+    private val hash: Int
+
+    init {
+        var h = 1
+        for (i in 0 until size) h = 31 * h + flat[i]
+        hash = h
+    }
 
     override fun hashCode(): Int = hash
 
-    override fun equals(other: Any?): Boolean = other is RecordKey && other.flat.contentEquals(flat)
+    override fun equals(other: Any?): Boolean {
+        if (other !is RecordKey || other.size != size || other.hash != hash) return false
+        for (i in 0 until size) if (other.flat[i] != flat[i]) return false
+        return true
+    }
 }
 
 // A term in preorder: the words of its symbols, a variable as the order it first came in
@@ -220,7 +241,8 @@ private class Flattened(
     private val program: Program,
     private val words: IntArray,
 ) {
-    var items = IntArray(32)
+    // (a symbol of the term for each of its words at most, but for an atom as the term)
+    var items = IntArray(words.size + 1)
     var size = 0
     private var variables: HashMap<Int, Int>? = null
 

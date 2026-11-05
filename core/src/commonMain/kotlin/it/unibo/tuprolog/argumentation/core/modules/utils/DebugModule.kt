@@ -1,16 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.flags.DebugOutput
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
- * The output of the labellings (module `debug`): printed by buildLabelSets/0, and written when the debug switch is on.
+ * The output of the labellings (module `debug`), printed by buildLabelSets/0
  */
 object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(DebugOutput)
-
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -50,12 +45,5 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
             utils::writeListNl(Ni),
             write('HERE THE STATEMENTS LABELLED UND: '),nl,
             utils::writeListNl(Und).
-
-        %! writeDebug(+List)
-        %  The debug output is written with the debug switch on (setting(debug))
-        writeDebug(List) :-
-            setting(debug), !,
-            utils::writeList(List).
-        writeDebug(_).
         """.trimIndent()
 }

@@ -1,6 +1,10 @@
 ---
 title: Time
 weight: 45
+bookHidden: true
+bookSearchExclude: true
+sitemap:
+  disable: true
 ---
 
 ## The axioms of time

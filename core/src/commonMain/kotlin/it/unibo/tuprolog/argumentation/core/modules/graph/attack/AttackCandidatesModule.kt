@@ -22,6 +22,14 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             context_assert(possibleAttackersOf(Id, Statements)),
             member(Statement, Statements).
 
+        %! attackersOf(+Id, +Argument, -Statement)
+        %  As possibleAttackers/3, what is found not kept: for who looks once, as the builder of a whole graph.
+        attackersOf(Id, _, Statement) :-
+            context_check(possibleAttackersOf(Id, Statements)), !,
+            member(Statement, Statements).
+        attackersOf(_, Argument, Statement) :-
+            findPossibleAttackers(Argument, Statement).
+
         %! forgetPossibleAttackers
         %  The possible attackers looked for forgotten: with arguments for conflicts built since (metaConflicts), they
         %  may be more.
@@ -70,6 +78,6 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
-        attackedStatement(Rule, Statement) :- parser::rule(Rule, _, [Statement]).
+        attackedStatement(Rule, Statement) :- parser::ruleConclusion(Rule, Statement).
         """.trimIndent()
 }

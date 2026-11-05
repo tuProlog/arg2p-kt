@@ -18,29 +18,41 @@ fun Solver.graph(): Graph = graph(activeBranch())
 
 /** The graph of the context branch [context]: its arguments, labelled, their attacks and supports */
 fun Solver.graph(context: Int): Graph =
-    arguments(context).let {
-        Graph.of(labels(context, it), attacks(context, it), supports(context, it))
+    argumentsAndSupports(context).let { (arguments, supports) ->
+        Graph.of(
+            labels(context, arguments),
+            attacks(context, arguments),
+            supports.map { (supporter, supported) ->
+                Support(supporter, supported)
+            },
+        )
     }
 
 /**
  * The arguments of the context branch [context], with the arguments supporting them ([Argument.supports]), identified
  * as A0, A1, ... in order of their number of supporters, rules, conclusion and top rule
  */
-fun Solver.arguments(context: Int): List<Argument> {
+fun Solver.arguments(context: Int): List<Argument> = argumentsAndSupports(context).first
+
+// The arguments of the context branch [context], as [arguments], and the supports between them, read once
+private fun Solver.argumentsAndSupports(context: Int): Pair<List<Argument>, List<Pair<Argument, Argument>>> {
     val arguments =
         arg2pScope {
-            this@arguments
+            this@argumentsAndSupports
                 .solve("graphStore" call "argumentIn"(context, X))
                 .filter { it.isYes }
                 .map { Argument.of(it.substitution[X]!!) }
                 .toList()
         }
-    supportsBetween(context, arguments).forEach { (supporter, supported) -> supported.supports.add(supporter) }
+    val supports = supportsBetween(context, arguments)
+    supports.forEach { (supporter, supported) -> supported.supports.add(supporter) }
     // ordered by the conclusion as tuProlog writes it ('-'(a)), as arguments always were
     val claims = arguments.associateWith { ArgumentTerm.parts(it.termRepresentation())!!.claim.toString() }
-    return arguments
-        .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { claims.getValue(it) }, { it.topRule }))
-        .onEachIndexed { index, argument -> argument.identifier = "A$index" }
+    val sorted =
+        arguments
+            .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { claims.getValue(it) }, { it.topRule }))
+            .onEachIndexed { index, argument -> argument.identifier = "A$index" }
+    return sorted to supports
 }
 
 /** The attacks between [arguments] in the context branch [context] */

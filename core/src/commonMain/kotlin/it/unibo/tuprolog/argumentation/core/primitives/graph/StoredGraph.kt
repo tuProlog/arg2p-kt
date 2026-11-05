@@ -85,4 +85,4 @@ internal fun NativeCall.idsArg(
 }
 
 /** The list of the identifiers [ids] */
-internal fun NativeCall.idList(ids: IntArray): Int = list(IntArray(ids.size) { int(ids[it].toLong()) })
+internal fun NativeCall.idList(ids: IntArray): Int = list(IntArray(ids.size) { int(ids[it]) })

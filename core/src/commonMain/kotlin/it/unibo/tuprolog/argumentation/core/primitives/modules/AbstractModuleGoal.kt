@@ -31,10 +31,10 @@ internal abstract class AbstractModuleGoal(
 ) : PrimitiveWithSignature,
     NativePrimitive,
     RegisterGoalPrimitive {
-    /** What the call does before its goal is solved, in [module]; [request] made only if it is needed */
+    /** What the call does before its goal is solved, in [module]; [context] asked for only if it is needed */
     protected abstract fun enter(
         module: Module,
-        request: () -> Solve.Request<ExecutionContext>,
+        context: () -> ExecutionContext,
     )
 
     // The machine: the module's libraries entered on the goal as a word, no term built
@@ -49,9 +49,8 @@ internal abstract class AbstractModuleGoal(
         }
         val moduleName = call.atomName(name)
         if (moduleName == USER) return call.inline(goal, call.rootLibraries, theoryVisible = true)
-        val request = { Solve.Request(signature, listOf(call.term(name), call.term(goal)), call.context) }
-        val module = loader.modules.of(moduleName, request)
-        enter(module, request)
+        val module = loader.modules.of(moduleName) { call.context }
+        enter(module) { call.context }
         return call.inline(goal, module.libraries, theoryVisible = false)
     }
 
@@ -62,9 +61,8 @@ internal abstract class AbstractModuleGoal(
     ): Int {
         val moduleName = call.atomName(module)
         if (moduleName == USER) return call.inlineOnRegisters(call.rootLibraries, theoryVisible = true)
-        val request = { Solve.Request(signature, listOf(call.term(module), call.term(call.goalOnRegisters())), call.context) }
-        val entered = loader.modules.of(moduleName, request)
-        enter(entered, request)
+        val entered = loader.modules.of(moduleName) { call.context }
+        enter(entered) { call.context }
         return call.inlineOnRegisters(entered.libraries, theoryVisible = false)
     }
 
@@ -91,7 +89,7 @@ internal abstract class AbstractModuleGoal(
                 )
             } else {
                 val module = loader.modules.of(request, name)
-                enter(module) { request }
+                enter(module) { request.context }
                 loader.solverOf(request, module)
             }
         // the time the resolution has left

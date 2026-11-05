@@ -170,6 +170,25 @@ abstract class EquivalenceScenarios {
     @Test
     fun conflictsArgued() = assertSameLabels("metaConflicts.\nr0 : [] => conflict(a, b).\nf1 :=> a.\nf2 :=> b.", "a", "b")
 
+    // a conflict argued with a rule: the catalog, with no rule of the theory, finds the attacks of the copies of its arguments
+    @Test
+    fun aRuleUndercutByAConflictArgued() =
+        assertSameLabels("metaConflicts.\nr0 : [] => conflict(c, r1).\nf1 :=> a.\nf2 :=> c.\nr1 : a => b.", "a", "b", "c")
+
+    // candidates that unify and are different arguments: each an attacker
+    @Test
+    fun attackersUnifyingWithOneAnother() =
+        assertSameLabels(
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints)."),
+            "f1 :-> s(Z).\nf2 :-> s(5).\nr1(T) : s(T) => p(T).\nf3 :=> a.\nq1 : a => -p(5).",
+            "p(5)",
+            "-p(5)",
+        )
+
+    // a negated variable unifies with any negated statement
+    @Test
+    fun aNegatedVariable() = assertSameLabels("f1 :=> -a.\nf2 :=> b.\nf3 :=> -c(1).", "-X", "b")
+
     // a graph not built from rules: by the catalog, as the standard solver builds it
     @Test
     fun abstractFrameworks() = assertSameLabels("graphBuildMode(abstract).\nd.\na -> b.\nb -> c.\n", "a", "b", "c", "d")
@@ -207,7 +226,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun constraints() =
         bothModes(
-            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.CONSTRAINTS),
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints)."),
             "f1 :=> s.\nr0 : s, {T > 1} => holdsAt(f, T).\nr1 : holdsAt(f, 5) => ok.\nc1 :=> -holdsAt(f, 7).\nc2 :=> -holdsAt(f, 0).",
             "ok",
             "holdsAt(f, 7)",
@@ -218,7 +237,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun temporal() =
         bothModes(
-            Flags.defaults().temporal(true),
+            Flags.parse("temporal."),
             "e1 :=> happens(load, 1).\ne2 :=> happens(shoot, 4).\ni1 :=> initiates(load, loaded).\n" +
                 "t1 :=> terminates(shoot, loaded).\nq1 : holdsAt(loaded, 3) => canShoot.\nq2 : holdsAt(loaded, 6) => stillLoaded.",
             "canShoot",
@@ -230,7 +249,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun conflictsArguedOnInstances() =
         bothModes(
-            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.CONSTRAINTS).metaConflicts(true),
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints). metaConflicts."),
             "r0 : [] => conflict(p(7), q).\nf1 :=> s.\nr1 : s, {T > 1} => p(T).\nf2 :=> q.\nr2 : p(5) => ok.",
             "ok",
             "q",

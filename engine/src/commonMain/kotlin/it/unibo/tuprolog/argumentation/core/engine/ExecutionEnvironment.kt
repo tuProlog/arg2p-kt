@@ -90,10 +90,3 @@ data class ExecutionEnvironment(
             theoryVisible == other.theoryVisible &&
             root === other.root
 }
-
-/** This store without its ephemeral data: itself when it has none (`discardEphemeral` copies it in any case) */
-internal fun CustomDataStore.withoutEphemeral(): CustomDataStore = if (ephemeral.isEmpty()) this else discardEphemeral()
-
-/** This store with its persistent data alone: itself when it has nothing else (`preservePersistent` copies it in any case) */
-internal fun CustomDataStore.persistentOnly(): CustomDataStore =
-    if (durable.isEmpty() && ephemeral.isEmpty()) this else preservePersistent()

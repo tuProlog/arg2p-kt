@@ -18,6 +18,6 @@ internal class ContextCount(
         val limitWord = call.arg(1)
         val limit = if (call.kind(limitWord) == NativeCall.INT) call.intValue(limitWord).toInt() else Int.MAX_VALUE
         val count = call.countSolutions(call.struct("context_check", intArrayOf(call.arg(0))), limit)
-        return call.replyWord(2, call.int(count.toLong()))
+        return call.replyWord(2, call.int(count))
     }
 }

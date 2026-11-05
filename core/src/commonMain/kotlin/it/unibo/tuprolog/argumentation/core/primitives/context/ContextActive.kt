@@ -10,5 +10,5 @@ import it.unibo.tuprolog.solve.Signature
 internal class ContextActive(
     private val branches: ContextBranches,
 ) : AbstractNativePrimitive(Signature("context_active", 1)) {
-    override fun call(call: NativeCall): Int = call.replyWord(0, call.int(branches.active.toLong()))
+    override fun call(call: NativeCall): Int = call.replyWord(0, call.int(branches.active))
 }

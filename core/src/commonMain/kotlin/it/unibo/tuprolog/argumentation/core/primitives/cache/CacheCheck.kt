@@ -3,6 +3,8 @@ package it.unibo.tuprolog.argumentation.core.primitives.cache
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
+import it.unibo.tuprolog.argumentation.core.engine.vm.ProgramStore
 import it.unibo.tuprolog.argumentation.core.primitives.context.lookup
 import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
@@ -18,7 +20,10 @@ internal class CacheCheck(
     private val store: ClauseStore,
     /** The cache this primitive reads, for the solver to bind its store (see [Cache.of]) */
     val owner: Cache,
-) : AbstractNativePrimitive(Signature("cache_check", 1)) {
+) : AbstractNativePrimitive(Signature("cache_check", 1)),
+    ProgramStore {
+    override fun bind(program: Program) = owner.bind(program)
+
     override fun call(call: NativeCall): Int = call.lookup(store, LOOKUP, 0)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =

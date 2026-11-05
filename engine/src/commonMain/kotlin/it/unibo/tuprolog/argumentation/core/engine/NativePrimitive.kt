@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -29,6 +30,18 @@ interface RegisterGoalPrimitive {
         call: RegisterGoalCall,
         module: Int,
     ): Int
+}
+
+/** What the machine adds to a [NativeCall] for the primitives of arg2p, past what a call on terms can do */
+internal interface MachineCall : NativeCall {
+    /** What [compute] finds in [libraries], kept for them (one value: the context library) */
+    fun libraryValue(compute: (Runtime) -> Any?): Any?
+
+    /** The key [record] of the term [w] would have, with no copy of it, valid for this call; null if it takes the record */
+    fun recordKey(w: Int): RecordKey?
+
+    /** The program the words of this call are of */
+    val recordProgram: Program
 }
 
 /** What a [RegisterGoalPrimitive] finds in the machine */
@@ -121,6 +134,9 @@ interface NativeCall {
     fun atom(name: String): Int
 
     fun int(value: Long): Int
+
+    /** The word of the integer [value], with no Long where the solver can (a BigInt on JS) */
+    fun int(value: Int): Int = int(value.toLong())
 
     fun struct(
         name: String,

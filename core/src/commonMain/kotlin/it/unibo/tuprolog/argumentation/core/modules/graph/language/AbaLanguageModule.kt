@@ -36,7 +36,7 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
             throw(error(domain_error(aba_theory, premise), 'aba: the theory has ordinary premises (f :=> a.): the premises of ABA are its assumptions (assumption/1), its facts strict (f :-> a.)')).
         check :-
             parser::rule(_, _, [A]),
-            parser::premise(asm(A), _), !,
+            parser::premise(asm(A), [A]), !,
             throw(error(domain_error(flat_aba_theory, A), 'aba: a rule concludes an assumption (the theory is not flat)')).
         check.
         """.trimIndent()

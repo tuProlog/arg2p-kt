@@ -7,7 +7,9 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FUN
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.runtime.context.WordTable
+import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
+import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Var
@@ -42,7 +44,22 @@ internal class Program() {
     private val recentNames = arrayOfNulls<String>(RECENT)
     private val recentArities = IntArray(RECENT)
     private val recentFunctors = IntArray(RECENT)
-    private val functorIds = HashMap<Long, Int>()
+    private val functorIds = HashMap<Int, Int>()
+
+    // The symbols of the base program when this one was made, shared by the programs of the solvers as they are never changed:
+    // putting them in a map for each solver hashed all the names of all the modules
+    private var baseAtomIds: Map<String, Int>? = null
+    private var baseFunctorIds: Map<Int, Int>? = null
+    private var sharedAtoms: Map<String, Int>? = null
+    private var sharedFunctors: Map<Int, Int>? = null
+
+    private fun atomsToShare(): Map<String, Int> =
+        sharedAtoms?.takeIf { it.size == atomIds.size } ?: HashMap(atomIds).also { sharedAtoms = it }
+
+    private fun functorsToShare(): Map<Int, Int> =
+        sharedFunctors?.takeIf { it.size == functorIds.size } ?: HashMap(functorIds).also { sharedFunctors = it }
+
+    private val wideFunctorIds = HashMap<Long, Int>()
 
     // (the floats as tuProlog reads them: a float read from "61.167" and the double 61.167 are two values, and the
     // first must come out as it went in)
@@ -115,7 +132,7 @@ internal class Program() {
     private var baseCodeTop = 0
 
     // The code of the libraries: of a base program by the source of the module, of any other by the library
-    private val sharedCodes = HashMap<String, LibraryCode>()
+    private val sharedCodes = HashMap<CodeKey, LibraryCode>()
 
     // The scope last asked for by its libraries
     private var latestScope: Scope? = null
@@ -131,12 +148,13 @@ internal class Program() {
         atoms.clear()
         atoms.addAll(base.atoms)
         atomIds.clear()
-        atomIds.putAll(base.atomIds)
+        baseAtomIds = base.atomsToShare()
         functorNames.clear()
         functorNames.addAll(base.functorNames)
         functorArities = base.functorArities.copyOf()
         functorIds.clear()
-        functorIds.putAll(base.functorIds)
+        baseFunctorIds = base.functorsToShare()
+        wideFunctorIds.putAll(base.wideFunctorIds)
         floats.clear()
         floats.addAll(base.floats)
         floatIds.clear()
@@ -159,6 +177,11 @@ internal class Program() {
     }
 
     private val compiler = Compiler(this)
+
+    // The addresses of the blocks of control every machine of this program runs (see Machine)
+    private var controlBlocks: IntArray? = null
+
+    fun controlBlocks(make: () -> IntArray): IntArray = controlBlocks ?: make().also { controlBlocks = it }
 
     /** The predicates of the theory of the user (its static and dynamic clauses) */
     val theory = Scope(this, null, 0)
@@ -426,6 +449,10 @@ internal class Program() {
     ) {
         var predicates = arrayOfNulls<Predicate>(1 shl 8)
 
+        /** See NativeCall.libraryValue */
+        var libraryValue: Any? = null
+        var libraryValueKnown = false
+
         private var primitives = arrayOfNulls<Primitive>(0)
         private var natives = arrayOfNulls<StdlibNative>(0)
         private var looked = BooleanArray(0)
@@ -452,10 +479,17 @@ internal class Program() {
 
         // As the map of the primitives of all the libraries would say, last library first, with no such map made for each
         // scope; only a name qualified by a library needs it
+        private var primitiveMaps: List<Map<Signature, Primitive>>? = null
+
         private fun primitiveOf(signature: Signature): Primitive? {
             val libraries = libraries ?: return null
-            val all = libraries.libraries.toList()
-            for (i in all.indices.reversed()) all[i].primitives[signature]?.let { return it }
+            val maps =
+                primitiveMaps ?: libraries.libraries
+                    .map { it.primitives }
+                    .filter { it.isNotEmpty() }
+                    .reversed()
+                    .also { primitiveMaps = it }
+            for (map in maps) map[signature]?.let { return it }
             return if (signature.name.length > 1 && Library.ALIAS_SEPARATOR in signature.name) libraries.primitives[signature] else null
         }
 
@@ -521,7 +555,7 @@ internal class Program() {
     val ruleFunctor: Int = functorWord(":-", 2)
 
     fun atom(name: String): Int =
-        atomIds.getOrPut(name) {
+        baseAtomIds?.get(name) ?: atomIds.getOrPut(name) {
             atoms.add(name)
             atoms.size - 1
         }
@@ -580,8 +614,8 @@ internal class Program() {
         nameAtom: Int,
         arity: Int,
     ): Int {
-        val key = (nameAtom.toLong() shl 32) or arity.toLong()
-        return functorIds.getOrPut(key) {
+        // (an Int for most, with no Long: a BigInt on JS, asked for by each functor not seen last)
+        val makeNew = {
             functorNames.add(nameAtom)
             val id = functorNames.size - 1
             if (id == functorArities.size) functorArities = functorArities.copyOf(id * 2)
@@ -590,6 +624,12 @@ internal class Program() {
             theory.grow(functors)
             for (scope in scopes) scope.grow(functors)
             id
+        }
+        return if (nameAtom < 1 shl 21 && arity < 1 shl 10) {
+            val key = (nameAtom shl 10) or arity
+            baseFunctorIds?.get(key) ?: functorIds.getOrPut(key, makeNew)
+        } else {
+            wideFunctorIds.getOrPut((nameAtom.toLong() shl 32) or arity.toLong(), makeNew)
         }
     }
 
@@ -625,8 +665,41 @@ internal class Program() {
     /** The word of an integer: a small one as it is, a large one by the table */
     fun intWord(value: Long): Int = if (Words.fitsInt(value)) word(INT, value.toInt()) else bigWord(value)
 
+    // The terms of the atoms, and of the small integers from 0: read for each answer and each argument of a primitive, and immutable
+    private var atomTerms = arrayOfNulls<Atom>(256)
+    private val integerTerms = arrayOfNulls<Integer>(256)
+
+    /** The term of the atom of id [id] */
+    fun atomTerm(id: Int): Atom {
+        if (id >= atomTerms.size) atomTerms = atomTerms.copyOf(maxOf(id + 1, atomTerms.size * 2))
+        return atomTerms[id] ?: Atom.of(atoms[id]).also { atomTerms[id] = it }
+    }
+
+    /** The term of the integer [value] */
+    fun integerTerm(value: Int): Integer {
+        if (value < 0 || value >= integerTerms.size) return Integer.of(value)
+        return integerTerms[value] ?: Integer.of(value).also { integerTerms[value] = it }
+    }
+
+    /** The word of the integer [value], with no Long unless it takes one (a Long is a BigInt on JS) */
+    fun smallWord(value: Int): Int = if (value >= Words.INT_MIN && value <= Words.INT_MAX) word(INT, value) else bigWord(value.toLong())
+
+    /** The word of the sum of two Ints, with no Long unless it takes one */
+    fun sumWord(
+        a: Int,
+        b: Int,
+    ): Int {
+        val sum = a + b
+        return if (sum >= Words.INT_MIN && sum <= Words.INT_MAX && (a xor sum) and (b xor sum) >= 0) {
+            word(INT, sum)
+        } else {
+            bigWord(a.toLong() + b)
+        }
+    }
+
     /** The word of the integer [value], of any size */
     fun integerWord(value: BigInteger): Int {
+        if (value.bitLength <= 28) return word(INT, value.toInt())
         val small = value.toLong()
         if (BigInteger.of(small) == value) return intWord(small)
         val index =
@@ -699,11 +772,15 @@ internal class Program() {
     fun scopeOf(libraries: Runtime): Scope {
         val latest = latestScope
         if (latest != null && latest.libraries === libraries) return latest
-        for (scope in scopes) {
+        // (with no iterator: the calls of modules alternate, and each comes here)
+        var i = scopes.size - 1
+        while (i >= 0) {
+            val scope = scopes[i]
             if (scope.libraries === libraries) {
                 latestScope = scope
                 return scope
             }
+            i--
         }
         val scope = Scope(this, libraries, scopes.size + 1)
         scope.grow(functorNames.size)
@@ -796,10 +873,43 @@ internal object SharedPrograms {
 }
 
 /**
+ * The key of the code of a library: its text is long, and a string is hashed anew at each lookup on JS. [of] keeps one for
+ * each alias, for the text of a module to be hashed once in a process
+ */
+internal class CodeKey(
+    private val text: String,
+) {
+    private val hash = text.hashCode()
+
+    override fun hashCode(): Int = hash
+
+    override fun equals(other: Any?): Boolean = other === this || (other is CodeKey && other.hash == hash && other.text == text)
+
+    companion object {
+        private val known = HashMap<String, Pair<String, CodeKey>>()
+
+        fun of(
+            alias: String,
+            theory: String,
+        ): CodeKey =
+            locked(known) {
+                known[alias]?.takeIf { it.first == theory }?.second
+                    ?: CodeKey(alias + "\n" + theory).also { known[alias] = theory to it }
+            }
+    }
+}
+
+/**
  * The library of a module whose clauses are the same for every instance of it, [codeKey] telling them apart: its code
  * is compiled once per process (see [SharedPrograms]), rather than for each solver
  */
+
 internal class SharedLibrary(
     private val library: Library,
-    val codeKey: String,
-) : Library by library
+    val codeKey: CodeKey,
+) : Library by library {
+    // (the hash of a library goes through all it holds, and each runtime made of it asks for it)
+    private val hash by lazy { library.hashCode() }
+
+    override fun hashCode(): Int = hash
+}

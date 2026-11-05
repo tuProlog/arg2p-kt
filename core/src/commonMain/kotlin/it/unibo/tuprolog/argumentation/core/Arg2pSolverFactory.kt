@@ -35,7 +35,7 @@ object Arg2pSolverFactory {
         unificator = Arg2pUnificator,
         otherLibraries = arg2p.to2pLibraries() + extra,
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
-        staticKb = RuleAnnotations.parse(theory, arg2p.operators()),
+        staticKb = RuleAnnotations.parse(theory, arg2p.operators(), Arg2pUnificator),
         stdOut = output,
     )
 }

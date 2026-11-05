@@ -399,3 +399,20 @@ def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile()
     assert abstract.setting("queryMode") == []
     with pytest.raises(Arg2pError):
         aspic.setting("noSuchFlag")
+
+
+def test_warm_up_solves_nothing_of_the_callers():
+    Arg2p.warm_up(1)
+    assert Arg2p.of("f :=> a.").answer("a")[0].in_statements == ["a"]
+
+
+def test_a_compact_graph_is_the_graph():
+    arg2p = Arg2p.of("f1 :=> a.\nf2 :=> -a.\nr1 : a => b.\nf3 :=> c.\n")
+    (graph,) = arg2p.graphs()
+    (compact,) = arg2p.compact_graphs()
+    assert compact.size == len(graph.arguments)
+    assert len(compact.attackers) == len(graph.attacks)
+    assert len(compact.supporters) == len(graph.supports)
+    assert sorted(compact.conclusion(it) for it in compact.labelled("in")) == sorted(graph.conclusions("in"))
+    assert sorted(compact.conclusion(it) for it in compact.labelled("und")) == sorted(graph.conclusions("und"))
+    assert sorted(compact.descriptor(it) for it in range(compact.size)) == sorted(it.descriptor for it in graph.arguments)

@@ -18,36 +18,39 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         """
         %! transpose(+Rules, +StrictRules, +Taken, -Transposed)
         %  Transposed are StrictRules with the transpositions of Rules, with autoTransposition; StrictRules otherwise.
-        %  Taken are the names of the rules and premises of the theory, which no transposition takes (see suffixed/4).
+        %  Taken are the names of the rules and premises of the theory, which no transposition takes (see suffixed/3).
         transpose(_, CtrRules, _, CtrRules) :- \+ setting(autoTransposition), !.
+        transpose([], CtrRules, _, CtrRules) :- !.
         % The rules followed by the transpositions of each one, from the last rule to the first, keeping the last rule
         % with each name: what merging the transpositions of a rule at a time, and deduplicating each time, amounts to,
         % in a single pass rather than merging and deduplicating the lists once for each rule (cubic in the number of
         % rules).
         transpose(Rules, TempCtrRules, Taken, CtrRules) :-
             (conflict::declaredCounted -> context_assert(transposing(declared)) ; true),
+            findall(_, (member(Name, Taken), atom(Name), context_assert(transpositionTaken(Name))), _),
             reverse(Rules, Reversed),
-            findall(TrH, (member(H, Reversed), transposition(H, Taken, TrH)), Tran),
+            findall(TrH, (member(H, Reversed), transposition(H, TrH)), Tran),
             append(TempCtrRules, Tran, All),
             utils::uniqueByFirst(All, CtrRules),
-            context_retract(transposing(_)).
+            context_retract(transposing(_)),
+            context_retract(transpositionTaken(_)).
 
-        transposition([Id, Prec, Effect], _, [Id, Prec, Effect]).
-        transposition([Id, Prec, Effect], Taken, [NewId, NewPrec ,XNegated]) :-
+        transposition([Id, Prec, Effect], [Id, Prec, Effect]).
+        transposition([Id, Prec, Effect], [NewId, NewPrec ,XNegated]) :-
             compound(Prec),
             parser::tupleToList(Prec, LPrec),!,
-            transpositionSequential(LPrec, LPrec, Effect, Id, Taken, [], NewPrec, XNegated, NewId).
-        transposition([Id, Prec, Effect], Taken, [NewId, EffectNegated ,XNegated]) :-
+            transpositionSequential(LPrec, LPrec, Effect, Id, [], NewPrec, XNegated, NewId).
+        transposition([Id, Prec, Effect], [NewId, EffectNegated ,XNegated]) :-
             \+ compound(Prec),
             Prec \== [],
             prologEscape(Prec),
             contradictories(Prec, Effect, XNegated, EffectNegated, Kind),
-            suffixed(Id, '_i', Taken, BaseId),
+            suffixed(Id, '_i', BaseId),
             named(Kind, BaseId, [EffectNegated, XNegated], NewId).
 
-        transpositionSequential(LPrec, [H|T], Effect, Id, Taken, Skipped, NewPrec, XNegated, NewId) :-
-            transpositionSequential(LPrec, T, Effect, Id, Taken, [H|Skipped], NewPrec, XNegated, NewId).
-        transpositionSequential(LPrec, [X|T], Effect, Id, Taken, Skipped, NewPrec, XNegated, NewId) :-
+        transpositionSequential(LPrec, [H|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
+            transpositionSequential(LPrec, T, Effect, Id, [H|Skipped], NewPrec, XNegated, NewId).
+        transpositionSequential(LPrec, [X|T], Effect, Id, Skipped, NewPrec, XNegated, NewId) :-
             prologEscape(X),
             % the premises before X in the order they are written (Skipped has them reversed): a Prolog check among them
             % comes after the premises binding its variables, as in the rule
@@ -55,7 +58,7 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
             append(Before, T, CleanedPrec),
             contradictories(X, Effect, XNegated, EffectNegated, Kind),
             listToTuple([EffectNegated|CleanedPrec], NewPrec),
-            newIdentifier(Skipped, Id, Taken, BaseId),
+            newIdentifier(Skipped, Id, BaseId),
             named(Kind, BaseId, [EffectNegated, XNegated], NewId).
 
         % The contradictories of a premise and of the conclusion of a rule: their negations (negation), or a pair of
@@ -83,15 +86,15 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         named(negation, Id, _, Id).
         named(declared, Id, Contradictories, transposed(Id, Contradictories)).
 
-        newIdentifier(List, OldId, Taken, NewId) :-
+        newIdentifier(List, OldId, NewId) :-
             modifier(List, Mod),
-            suffixed(OldId, Mod, Taken, NewId).
+            suffixed(OldId, Mod, NewId).
 
         % The identifier of a transposition: the one of the rule with a suffix, transposition(Id, Suffix) for a rule
         % whose identifier is no atom (a rule with parameters, t(X, Y)) or when a rule or premise of the theory has the
-        % name with the suffix (Taken): a transposition never takes the place of a rule of the theory
-        suffixed(Id, Suffix, Taken, NewId) :- atom(Id), atom_concat(Id, Suffix, NewId), \+ member(NewId, Taken), !.
-        suffixed(Id, Suffix, _, transposition(Id, Suffix)).
+        % name with the suffix (transpositionTaken/1): a transposition never takes the place of a rule of the theory
+        suffixed(Id, Suffix, NewId) :- atom(Id), atom_concat(Id, Suffix, NewId), context_absent(transpositionTaken(NewId)), !.
+        suffixed(Id, Suffix, transposition(Id, Suffix)).
 
         modifier([], '_i').
         modifier([_|Tail], Index):-

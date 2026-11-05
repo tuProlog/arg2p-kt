@@ -239,9 +239,7 @@ variables (`prolog(X >= 18), age(X)` raises an instantiation error). A query nev
 `queryMode` an argument is the one the whole graph has.
 
 A conclusion is ground: a rule whose premises leave a variable of its conclusion unbound (`r : q => p(X).`, or a
-fact `f :=> p(X).`) concludes nothing, whatever value a query asks for. With the graph extension
-[`constraints`]({{% ref "/docs/modules/constraints" %}}) it holds for every value, and `{ }` premises constrain them
-(`r : s, {T > 1} => holdsAt(f, T).`).
+fact `f :=> p(X).`) concludes nothing, whatever value a query asks for.
 
 ## Theories in plain Prolog
 

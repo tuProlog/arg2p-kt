@@ -69,7 +69,7 @@ implementation exists.
 | --- | --- | --- |
 | Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
-| Change the graph, in a fixed order: add the arguments derived from the others (the instances of `constraints`, the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `constraints`, `conflictArguments`, one per extension | `graphExtension`, `temporal`, `metaConflicts` |
+| Change the graph, in a fixed order: add the arguments derived from the others (the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `conflictArguments`, one per extension | `graphExtension`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
@@ -94,12 +94,12 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`constraints`, `conflictArguments`). |
+| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
-| `debug` | Prints graphs and labellings (`buildLabelSets/0`), and the trace of `bp_grounded_partial` with the `debug` flag. |
+| `debug` | Prints graphs and labellings (`buildLabelSets/0`). |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
 ### Labelling modules
@@ -115,10 +115,9 @@ one per value of `statementLabellingMode`. They all expose the same entry point,
 
 ### Graph extension modules
 
-`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` and `constraints` all
-expose `modifyArgumentationGraph/0`, and are applied after the graph has been built: `constraints` (on with
-`temporal` as well) first, and `conflictArguments` after it with `metaConflicts`, as they add arguments whose attacks
-the others change.
+`standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp` and `abaPref` all expose
+`modifyArgumentationGraph/0`, and are applied after the graph has been built: `conflictArguments` first with
+`metaConflicts`, as it adds arguments whose attacks the others change.
 
 ---
 

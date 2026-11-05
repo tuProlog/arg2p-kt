@@ -224,7 +224,7 @@ class ArgumentsInContextTest {
                 graphStore::argumentFor([p(a)], _),
                 \+ graphStore::saveArgument([p(a)], A),
                 graphStore::argumentByIdIn(Branch, I, B), B == A,
-                graphStore::includeArgument(I, A),
+                graphStore::includeArgument(I),
                 graphStore::argumentById(I, _)
                 """.trimIndent(),
             ),

@@ -27,7 +27,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         % bindings of their conflict, see constraint::compatible/2)
         buildDirectAttack(Constrained) :-
             graphStore::argumentById(IdA, A),
-            attackCandidates::possibleAttackers(IdA, A, Conflict),
+            attackCandidates::attackersOf(IdA, A, Conflict),
             findAttacker(Conflict, B),
             directAttack(Constrained, T, B, A),
             graphStore::argumentId(B, IdB),
@@ -45,6 +45,8 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             findall(_, buildAddedAttack(Constrained), _),
             context_retract(addedArgument(_)).
 
+        % (from every argument to its attackers, not from those added to what they attack: the catalog of the parallel solver has
+        % no rule, which that way goes through)
         buildAddedAttack(Constrained) :-
             graphStore::argumentById(IdA, A),
             attackCandidates::possibleAttackers(IdA, A, Conflict),
@@ -56,13 +58,20 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             fail.
         buildAddedAttack(_).
 
-        %! directAttack(-Type, +Attacker, +Attacked)
-        %  Attacker attacks Attacked directly, with an attack of Type, as the graph is built: Attacker may attack (with
-        %  the conflicts argued only the copies carrying one do, see conflict::attacker/1), and the two satisfy their constraints
-        %  together (see constraint::compatible/2). The check of the workers of the parallel solver as well.
-        directAttack(T, B, A) :-
+        %! attacksOn(+Ids, -Attacks)
+        %  The direct attacks on the saved arguments with identifiers Ids, by any saved argument, not saved: each
+        %  a(Type, IdAttacker, IdAttacked). What the workers of the parallel solver find.
+        attacksOn(Ids, Attacks) :-
             (parser::constrained -> Constrained = yes ; Constrained = no),
-            directAttack(Constrained, T, B, A).
+            findall(a(T, IdB, IdA), attackOn(Constrained, Ids, T, IdB, IdA), Attacks).
+
+        attackOn(Constrained, Ids, T, IdB, IdA) :-
+            member(IdA, Ids),
+            graphStore::argumentById(IdA, A),
+            attackCandidates::possibleAttackers(IdA, A, Conflict),
+            findAttacker(Conflict, B),
+            directAttack(Constrained, T, B, A),
+            graphStore::argumentId(B, IdB).
 
         % (Constrained: whether the theory may have constraints, found once for all the attacks of a graph.) Attacks are
         % checked on copies, so that the arguments are saved exactly as they are stored: binding their variables would

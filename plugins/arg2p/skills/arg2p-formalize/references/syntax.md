@@ -75,8 +75,7 @@ if-then-else. Recursive counting or summing rules make argument construction sta
 closed-form indices and one flat sum.
 
 A conclusion must be ground: a rule (or a fact) leaving a variable of its conclusion unbound by its premises
-concludes nothing, even when a query asks for a value. With `graphExtension(constraints).` it holds for every value,
-constrained by `{ }` premises: `r : s, {T > 1} => holdsAt(f, T).`
+concludes nothing, even when a query asks for a value.
 
 ## Burden of persuasion
 

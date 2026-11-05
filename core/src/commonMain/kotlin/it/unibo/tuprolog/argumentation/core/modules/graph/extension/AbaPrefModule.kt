@@ -37,7 +37,7 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
             findall(A, (member(A, Support), parser::preference(Beta, A)), Weaker),
             member(Alpha, Weaker),
             \+ (member(Other, Weaker), Other \== Alpha, parser::preference(Alpha, Other)),
-            graphStore::attack(undermine, D, Premise, Premise),
+            graphStore::directAttack(undermine, D, Premise),
             argument::claim(Premise, Alpha),
             support(D, Deduction),
             \+ member(Alpha, Deduction),

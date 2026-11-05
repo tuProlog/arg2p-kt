@@ -1,6 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
+import it.unibo.tuprolog.argumentation.core.engine.vm.tag
+import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
+import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
 import it.unibo.tuprolog.core.Term
 
@@ -70,14 +75,26 @@ private class Expansion(
 private val NO_SUPPORTS: Map<Int, List<Int>> = emptyMap()
 
 /** The attacks of the given branch (the active one if null), the saved ones and those they extend to */
-internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks {
-    val supported =
-        contextLibrary.derived("supportId/2", "supported", branch) { stored ->
-            stored.map { it.clause.head!! }.groupBy({ it[0].id() }, { it[1].id() }).ifEmpty { NO_SUPPORTS }
-        }
+internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks = contextLibrary.expandedAttacks(branch)
+
+/** The arguments each argument supports directly, by their identifiers, in the given branch (the active one if null) */
+internal fun Context.supportedBy(branch: Int? = null): Map<Int, List<Int>> =
+    derived("supportId/2", "supported", branch) { stored ->
+        stored.groupBy({ it.idAt(0) }, { it.idAt(1) }).ifEmpty { NO_SUPPORTS }
+    }
+
+/** The supports of the given branch (the active one if null), newest first: the supporter, then the supported, of each */
+internal fun Context.supportPairs(branch: Int? = null): IntArray =
+    derived("supportId/2", "supportPairs", branch) { stored ->
+        IntArray(stored.size * 2) { i -> stored[i / 2].idAt(i % 2) }
+    }
+
+/** The attacks of the given branch (the active one if null), the saved ones and those they extend to */
+internal fun Context.expandedAttacks(branch: Int? = null): ExpandedAttacks {
+    val supported = supportedBy(branch)
     val expansion =
-        contextLibrary.derived("attackId/4", "expansion", branch) { stored ->
-            Expansion(stored.map { it.clause.head!!.let { head -> AttackIds(head[0], head[1].id(), head[2].id(), head[3].id()) } })
+        derived("attackId/4", "expansion", branch) { stored ->
+            Expansion(stored.map { AttackIds(it.typeAt(0), it.idAt(1), it.idAt(2), it.idAt(3)) })
         }
     if (expansion.supported !== supported) {
         expansion.attacks = ExpandedAttacks(expansion.saved, supported)
@@ -86,4 +103,21 @@ internal fun NativeCall.expandedAttacks(branch: Int? = null): ExpandedAttacks {
     return expansion.attacks!!
 }
 
-private fun Term.id(): Int = castToInteger().intValue.toInt()
+// The argument [i] of a stored fact, an identifier, read off its words
+private fun ClauseStore.Stored.idAt(i: Int): Int {
+    val word = record.words[payload(record.head) + 1 + i]
+    return if (tag(word) == Words.INT) {
+        payload(word)
+    } else {
+        record.clause.head!![i]
+            .castToInteger()
+            .intValue
+            .toInt()
+    }
+}
+
+// The argument [i] of a stored fact, a type of attack: the term the program keeps for an atom
+private fun ClauseStore.Stored.typeAt(i: Int): Term {
+    val word = record.words[payload(record.head) + 1 + i]
+    return if (tag(word) == Words.ATOM) record.program!!.atomTerm(payload(word)) else record.clause.head!![i]
+}

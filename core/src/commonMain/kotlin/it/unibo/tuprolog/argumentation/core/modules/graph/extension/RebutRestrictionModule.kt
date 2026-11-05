@@ -13,14 +13,13 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
         %! modifyArgumentationGraph
         %  The restricted attacks on an argument whose top rule is strict are removed.
         modifyArgumentationGraph :-
-            findall(_, (
-                graphStore::directAttack(T, A, C),
-                checkRebutRestriction(T, A, C, C)
-            ), _).
-
-        checkRebutRestriction(T, A, B, C) :-
-            \+ rebutRestriction(T, A, B, C),
-            graphStore::removeAttack(T, A, B, C).
+            findall(a(T, IdA, IdC), (
+                graphStore::attackById(T, IdA, IdC, IdC),
+                graphStore::argumentById(IdA, A),
+                graphStore::argumentById(IdC, C),
+                \+ rebutRestriction(T, A, C, C)
+            ), Restricted),
+            graphStore::removeAttackIds(Restricted).
 
         % The attack types the restriction does not apply to. Everything else is restricted: rebuts, and the attacks
         % of a graph extension of the user.

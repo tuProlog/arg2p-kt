@@ -51,7 +51,17 @@ abstract class AbstractSolver<E : ExecutionContext>(
     protected abstract var currentContext: E
 
     init {
-        val staticKb = initialStaticKb.setUnificator(unificator).toImmutableTheory()
+        // (setting a unificator indexes the theory anew: not for the one it has)
+        val staticKb =
+            (
+                if (initialStaticKb.unificator ===
+                    unificator
+                ) {
+                    initialStaticKb
+                } else {
+                    initialStaticKb.setUnificator(unificator)
+                }
+            ).toImmutableTheory()
         val dynamicKb = initialDynamicKb.setUnificator(unificator).toMutableTheory()
         currentContext =
             initializeContext(

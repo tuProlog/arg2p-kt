@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.engine.vm.VmSolver
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
 import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
@@ -105,7 +106,7 @@ internal object CallModule : AbstractNativePrimitive(Signature("call_module", 2)
     ): Theory {
         val text = read(context, location)
         return try {
-            RuleAnnotations.parse(text, TermValues.operators)
+            RuleAnnotations.parse(text, TermValues.operators, Arg2pUnificator)
         } catch (e: ParseException) {
             throw SyntaxError.of(context, "$location: ${SyntaxProblem.of(e)}")
         }

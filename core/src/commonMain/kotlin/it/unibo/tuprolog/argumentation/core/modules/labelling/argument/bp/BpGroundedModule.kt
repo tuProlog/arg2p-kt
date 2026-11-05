@@ -89,16 +89,15 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         %! allAttacksOUT(+Argument)
         %  Every attacker of Argument is OUT.
         allAttacksOUT(A) :-
-            \+ ( graphStore::attack(_, B, A, _), \+ (graphStore::argumentLabel(out, B))).
+            graphStore::argumentId(A, Id),
+            \+ (graphStore::attacksById(B, Id), \+ graphStore::argumentLabelById(out, B)).
 
         %! oneAttackIN(+Argument)
         %  An attacker of Argument is IN, or Argument attacks an IN argument.
         oneAttackIN(A) :-
-            graphStore::attack(_, B, A, _),
-            graphStore::argumentLabel(in, B), !.
-        oneAttackIN(A) :-
-            graphStore::attack(_, A, B, _),
-            graphStore::argumentLabel(in, B), !.
+            graphStore::argumentId(A, Id),
+            (graphStore::attacksById(B, Id) ; graphStore::attacksById(Id, B)),
+            graphStore::argumentLabelById(in, B), !.
 
         %! isInBurdenOfProof(+Conclusion)
         %  A burden of persuasion is on Conclusion.
@@ -154,7 +153,7 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         % The literals of a burden, each the conclusion of a saved argument (instantiated jointly) unless it is ground
         fillTemplate([], []).
         fillTemplate([H|T], [[H]|R]) :-
-            (ground(H) -> true ; argument::claim(Argument, H), graphStore::argument(Argument)),
+            (ground(H) -> true ; graphStore::argumentFor([H], _)),
             fillTemplate(T, R).
         """.trimIndent()
 }

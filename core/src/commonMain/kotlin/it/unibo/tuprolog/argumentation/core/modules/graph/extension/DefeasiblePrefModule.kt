@@ -36,8 +36,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         %  those the theory states: only the concluded ones count.
         assertAllSup :-
             findall(sup(RuleOne, RuleTwo), (
-                argument::claim(Argument, sup(RuleOne, RuleTwo)),
-                graphStore::argument(Argument)
+                graphStore::argumentFor([sup(RuleOne, RuleTwo)], Argument)
             ), Concluded),
             utils::deduplicate(Concluded, Preferences),
             parser::statePreferences(Preferences).
@@ -85,8 +84,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         %  AttackArgument is the saved argument for the attack attack(Type, A, B, C).
         attackArgument(AttackArgument, Type, A, B, C) :-
             argument::topRule(AttackArgument, attack),
-            argument::claim(AttackArgument, attack(Type, A, B, C)),
-            graphStore::argument(AttackArgument).
+            graphStore::argumentFor([attack(Type, A, B, C)], AttackArgument).
 
         % The arguments for the preferences invalidating an attack, by any of its justifications, attack its argument
         % (and so what it supports): each of them (each), or one for all of them together (all), for each choice of
@@ -95,8 +93,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             attackArgument(Attack, T, A, B, C),
             invalid(T, A, B, C, Preferences),
             member(X, Preferences),
-            argument::claim(Preference, X),
-            graphStore::argument(Preference),
+            graphStore::argumentFor([X], Preference),
             graphStore::saveAttack(pref, Preference, Attack, Attack),
             fail.
         buildPrefAttacks(all) :-
@@ -111,8 +108,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         % Supports is each choice of one argument for each of Preferences, in their order
         argumentsFor([], []).
         argumentsFor([X|Xs], [Support|Supports]) :-
-            argument::claim(Support, X),
-            graphStore::argument(Support),
+            graphStore::argumentFor([X], Support),
             argumentsFor(Xs, Supports).
 
         % The argument for preference(Preferences) supported by Supports, one argument for each of them, and so attacked
@@ -147,7 +143,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             (Rule = X ; Rule = Y),
             ruleConclusion(Rule, S).
 
-        ruleConclusion(Rule, S) :- parser::rule(Rule, _, [S]).
+        ruleConclusion(Rule, S) :- parser::ruleConclusion(Rule, S).
         ruleConclusion(Rule, S) :- parser::premise(Rule, [S]).
         """.trimIndent()
 }

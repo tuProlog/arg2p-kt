@@ -33,7 +33,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
         partialBpLabelling([]).
         partialBpLabelling(Arguments) :-
             mostGroundedArgument(Arguments, A),
-            debug::writeDebug(['Evaluating ', A]),
             demonstration(Arguments, A, [A], Evaluated),
             utils::subtract(Arguments, [Evaluated], NewArgs),
             partialBpLabelling(NewArgs).
@@ -53,7 +52,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
                 graphStore::support(X, A),
                 graphStore::argumentLabel(out, X)
             ),
-            debug::writeDebug(['Adding argument: ', A, ' to IN* (2.a.i)']),
             graphStore::labelArgument(in, A).
 
         /*
@@ -71,7 +69,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
                 graphStore::support(X, A),
                 \+ graphStore::argumentLabel(in, X)
             ),
-            debug::writeDebug(['Adding argument: ', A, ' to IN* (2.a.ii)']),
             graphStore::labelArgument(in, A).
 
         /*
@@ -82,7 +79,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
             \+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
             superiorOrEqualComplementArgument(A, B),
             \+ graphStore::argumentLabel(out, B),
-            debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.1)']),
             graphStore::labelArgument(out, A).
 
         /*
@@ -93,7 +89,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
             graphStore::support(X, A),
             \+ graphStore::argumentLabel(in, X),
-            debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.i.2)']),
             graphStore::labelArgument(out, A).
 
         /*
@@ -104,7 +99,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
             \+ notEvaluatedSuperiorComplementArgument(Arguments, A, Resolving, _),
             superiorComplementArgument(A, B),
             graphStore::argumentLabel(in, B),
-            debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.ii.1)']),
             graphStore::labelArgument(out, A).
 
         /*
@@ -115,7 +109,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
             \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
             graphStore::support(X, A),
             graphStore::argumentLabel(out, X),
-            debug::writeDebug(['Adding argument: ', A, ' to OUT* (2.b.ii.2)']),
             graphStore::labelArgument(out, A).
 
         /*
@@ -175,7 +168,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
             (c) A is labelled UND* otherwise.
         */
         demonstration(Arguments, A, Resolving, A) :-
-            debug::writeDebug(['Adding argument: ', A, ' to UND* (2.c)']),
             graphStore::labelArgument(und, A).
 
         %==============================================================================
@@ -230,7 +222,6 @@ object BpGroundedPartialModule : PrologModule("prolog.argumentation.graph.labell
         % B is a saved argument for the complement of the conclusion of A
         complementArgument(A, B) :-
             complement(A, Complement),
-            argument::conclusion(B, Complement),
-            graphStore::argument(B).
+            graphStore::argumentFor(Complement, B).
         """.trimIndent()
 }

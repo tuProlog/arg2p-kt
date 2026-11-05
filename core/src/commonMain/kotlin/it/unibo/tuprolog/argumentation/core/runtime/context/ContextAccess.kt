@@ -1,30 +1,22 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.core.engine.MachineCall
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.items
-import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.ExistenceError
 import it.unibo.tuprolog.solve.exception.error.TypeError
+import it.unibo.tuprolog.solve.library.Runtime
 
 // The context of the solver of a native call, for the primitives reaching it without solving goals
 
 /** The context library of the solver, every arg2p solver has one (an existence error for context_all/2 otherwise) */
 internal val NativeCall.contextLibrary: Context
-    get() = Context.of(libraries) ?: throw ExistenceError.forProcedure(context, Signature("context_all", 2))
+    get() =
+        (if (this is MachineCall) libraryValue(CONTEXT_OF) as Context? else Context.of(libraries))
+            ?: throw ExistenceError.forProcedure(context, Signature("context_all", 2))
 
-/** Instances of goal in the given branch (the active one by default, none for a branch that does not exist) */
-internal fun NativeCall.contextInstances(
-    goal: Struct,
-    branch: Term? = null,
-): List<Struct> {
-    val index = branch?.let { it.asInteger()?.intValue?.toInt() ?: return emptyList() }
-    val g = word(goal)
-    val lookup =
-        if (index == null) struct("context_check", intArrayOf(g)) else struct("context_check", intArrayOf(int(index.toLong()), g))
-    return items(findall(g, lookup))!!.map { term(it).castToStruct() }
-}
+private val CONTEXT_OF: (Runtime) -> Any? = { Context.of(it) }
 
 /** A new branch of the given one, made active (context_branch/2): false if there is no such branch */
 internal fun NativeCall.contextBranch(

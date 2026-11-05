@@ -37,7 +37,7 @@ class GraphStoreModuleTest {
         module.run(
             "graphStore::saveArguments(t, [$a, $b, $c, $a])",
             "graphStore::saveSupports([support($a, $b), support($a, $b)])",
-            "graphStore::saveAttacks([attack(rebut, $c, $b, $a)])",
+            "graphStore::saveAttack(rebut, $c, $b, $a)",
         )
         assertEquals(3, module.solutions("context_check(argument(X))").count { it.isYes })
         assertTrue(module.holds("graphStore::argumentFor([b], X), X == $b"))

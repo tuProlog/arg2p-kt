@@ -337,6 +337,17 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             assertFromLast(Index),
             context_assert(rulesIndexed).
 
+        %! ruleConclusion(?Id, ?Conclusion)
+        %  The rule with identifier Id concludes Conclusion: looked up by its identifier, not among all the rules.
+        ruleConclusion(Id, Conclusion) :-
+            ruleIds,
+            context_check(ruleIdOf(Id, Conclusion)).
+
+        ruleIds :- context_check(ruleIds), !.
+        ruleIds :-
+            findall(_, (rule(Id, _, [Conclusion]), context_assert(ruleIdOf(Id, Conclusion))), _),
+            context_assert(ruleIds).
+
         % The rules themselves, only for who reads them by their places
         rulesPlaced :- context_check(rulesPlaced), !.
         rulesPlaced :-
@@ -433,8 +444,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             context_assert(Fact).
 
         %! instances
-        %  The arguments holding for sets of values get their instances (see the module constraints): with the graph
-        %  extension constraints, with temporal, or with openConclusions (internal: for a theory already converted).
+        %  The arguments may hold for sets of values, and get their instances.
         instances :- context_check(theoryKind(instances, Kind)), !, Kind == yes.
         instances :-
             (open -> Kind = yes ; Kind = no),
@@ -446,8 +456,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         open :- setting(openConclusions).
 
         %! constrained
-        %  An argument may have open conclusions or constraints to keep: with instances, or a rule with a { } premise.
-        %  Otherwise every argument concludes a ground statement, and the builders leave the constraints aside.
+        %  An argument may have an open conclusion. Otherwise every argument concludes a ground statement.
         constrained :- context_check(theoryKind(constrained, Kind)), !, Kind == yes.
         % (without indexRules/2)
         constrained :-

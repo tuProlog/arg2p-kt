@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator, Optional
 
@@ -9,10 +11,32 @@ import jpype
 
 from . import _jvm
 from .flags import Flags
-from .model import Graph, graph_from_jvm
+from .model import CompactGraph, Graph, graph_from_jvm
 from .values import Value, from_jvm
 
 _API = "it.unibo.tuprolog.argumentation"
+
+_warming = threading.Lock()
+_warmed = False
+
+
+def _warm_up() -> None:
+    """
+    The JVM warmed up once in a process, by the first solver made (see Arg2p.warm_up): as long as ``ARG2P_WARM_UP`` says, in
+    milliseconds, 0 for not at all. It costs about what the first solve would take otherwise.
+    """
+    global _warmed
+    with _warming:
+        if _warmed:
+            return
+        _warmed = True
+        milliseconds = os.environ.get("ARG2P_WARM_UP")
+        if milliseconds == "0":
+            return
+        try:
+            Arg2p.warm_up(None if milliseconds is None else int(milliseconds))
+        except (ValueError, Arg2pError, jpype.JException):
+            pass  # only a warm-up: the solver made is what tells of a problem
 
 
 @dataclass(frozen=True)
@@ -252,6 +276,16 @@ class Arg2p:
         return Builder()
 
     @staticmethod
+    def warm_up(milliseconds: Optional[int] = None) -> None:
+        """
+        Solves a small theory over and over for about [milliseconds], for the JVM to optimize the code of the solvers: the
+        first solves of a process take many times the later ones otherwise. The first solver of a process does it by
+        itself, for a moment (``ARG2P_WARM_UP`` tells how long, in milliseconds; 0 for not at all).
+        """
+        arg2p = _jvm.jclass(f"{_API}.Arg2p")
+        call(lambda: arg2p.warmUp() if milliseconds is None else arg2p.warmUp(milliseconds))
+
+    @staticmethod
     def check_theory(theory: str) -> Optional[SyntaxProblem]:
         """Where [theory], Prolog text (a theory, or flags), does not parse; None if it does. Nothing is solved."""
         return call(lambda: problem_from_jvm(_jvm.jclass(f"{_API}.Arg2p").checkTheory(theory)))
@@ -295,6 +329,17 @@ class Arg2p:
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
         return call(lambda: [graph_from_jvm(graph) for graph in self._arg2p.graphs()])
+
+    def compact_graphs(self) -> list[CompactGraph]:
+        """
+        The graph of each labelling as arrays of identifiers, off the store, with no object for an argument: for a graph too large
+        for graphs (see CompactGraph).
+        """
+        return call(lambda: [CompactGraph(graph) for graph in self._arg2p.compactGraphs()])
+
+    def compact_graph(self) -> CompactGraph:
+        """The graph of the last resolution as arrays of identifiers: the one of its last stage (see CompactGraph)."""
+        return CompactGraph(call(self._arg2p.compactGraph))
 
     def graph(self) -> Graph:
         """The graph of the last resolution: the one of its last stage."""
@@ -348,4 +393,5 @@ class Builder:
         return self
 
     def build(self) -> Arg2p:
+        _warm_up()
         return Arg2p(call(self._builder.build))

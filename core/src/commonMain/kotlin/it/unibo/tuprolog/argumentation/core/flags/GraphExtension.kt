@@ -8,5 +8,5 @@ object GraphExtension : ArgsFlag<Iterable<String>, Iterable<String>> {
     override val isOpen: Boolean = true
 
     override fun values(): Iterable<String> =
-        listOf("rebutRestriction", "bp", "standardPref", "defeasiblePref", "defeasibleAllPref", "abaPref", "constraints")
+        listOf("rebutRestriction", "bp", "standardPref", "defeasiblePref", "defeasibleAllPref", "abaPref")
 }

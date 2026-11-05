@@ -21,7 +21,7 @@ from .flags import (
     Semantics,
     StatementLabelling,
 )
-from .model import Argument, Attack, Graph, LabelledArgument, Support
+from .model import Argument, Attack, CompactGraph, Graph, LabelledArgument, Support
 from .parallel import (
     ClusterSolver,
     EvaluationResponse,
@@ -51,6 +51,7 @@ __all__ = [
     "Attack",
     "Builder",
     "Causality",
+    "CompactGraph",
     "ClusterSolver",
     "ConflictModel",
     "EvaluationResponse",
