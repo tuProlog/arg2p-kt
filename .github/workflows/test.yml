@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.50
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.51
         with:
           java-version: ${{ env.JAVA_VERSION }}
           build-command: true
@@ -82,7 +82,7 @@ jobs:
     steps:
       - name: Checkout
         uses: DanySK/action-checkout@0.2.31
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.50
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.51
         with:
           java-version: ${{ env.JAVA_VERSION }}
           build-command: ./gradlew jsMainClasses jsTestClasses
@@ -105,7 +105,7 @@ jobs:
           python-version-file: .python-version
           cache: pip
           cache-dependency-path: python/pyproject.toml
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.50
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.51
         with:
           java-version: ${{ env.JAVA_VERSION }}
           # the package as a wheel bundles it: its jars, its version, its Java runtime
@@ -127,7 +127,7 @@ jobs:
           node-version-file: package.json
           cache: npm
           cache-dependency-path: vscode/package-lock.json
-      - uses: DanySK/build-check-deploy-gradle-action@4.0.50
+      - uses: DanySK/build-check-deploy-gradle-action@4.0.51
         with:
           java-version: ${{ env.JAVA_VERSION }}
           # the extension carries the language server: its tests run it, through JSON-RPC, and the extension in VS Code
