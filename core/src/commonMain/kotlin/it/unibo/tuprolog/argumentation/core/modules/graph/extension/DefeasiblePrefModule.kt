@@ -15,38 +15,42 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         // language=Prolog
         """
         %! modifyArgumentationGraph
-        %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.
+        %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences, each
+        %  on its own (see modifyArgumentationGraph/1).
         modifyArgumentationGraph :-
+            modifyArgumentationGraph(each).
+
+        %! modifyArgumentationGraph(+Model)
+        %  As modifyArgumentationGraph/0, the attack arguments attacked by an argument for each preference invalidating
+        %  them (Model each), or for all of them together, preference(Preferences) (Model all, the extension
+        %  defeasibleAllPref).
+        modifyArgumentationGraph(Model) :-
             assertAllSup,
-            graphStore::attacks(Attacks),
+            graphStore::directAttacks(Attacks),
             filterSupRelatedAttacks(Attacks, InvalidAttacks),
-            convertAttacks(InvalidAttacks),
-            buildPrefAttacks.
+            conversion(InvalidAttacks),
+            buildPrefAttacks(Model).
 
         %! assertAllSup
-        %  The preferences concluded by the arguments, as sup/2 facts of the context (see the module superiority): the
-        %  superiorities computed with the previous ones are forgotten.
+        %  The preferences concluded by the arguments, as the preferences (see parser::statePreferences/1), in place of
+        %  those the theory states: only the concluded ones count.
         assertAllSup :-
-            context_retract(sup(_, _)),
-            context_retract(superior(_, _, _, _)),
-            context_retract(justified(_, _, _)),
-            findall(_, (
-                argument::claim(Argument, sup(RuleOne, RuleTwo)),
-                graphStore::argument(Argument),
-                context_absent(sup(RuleOne, RuleTwo)),
-                context_assert(sup(RuleOne, RuleTwo))
-            ), _).
+            findall(sup(RuleOne, RuleTwo), (
+                graphStore::argumentFor([sup(RuleOne, RuleTwo)], Argument)
+            ), Concluded),
+            utils::deduplicate(Concluded, Preferences),
+            parser::statePreferences(Preferences).
 
         %! filterSupRelatedAttacks(+Attacks, -Invalid)
         %  Invalid are the attacks among Attacks that the preferences invalidate. Those invalid whatever the
         %  preferences (C superior to A with none) are removed, as standardPref does: no argument could save them.
         filterSupRelatedAttacks([], []).
-        filterSupRelatedAttacks([(T, A, B, C)|Attacks], Invalid) :-
-            invalid(T, A, B, C, []), !,
-            graphStore::removeAttack(T, A, B, C),
+        filterSupRelatedAttacks([(T, A, C)|Attacks], Invalid) :-
+            invalid(T, A, C, C, []), !,
+            graphStore::removeAttack(T, A, C, C),
             filterSupRelatedAttacks(Attacks, Invalid).
-        filterSupRelatedAttacks([(T, A, B, C)|Attacks], [(T, A, B, C)|Invalid]) :-
-            invalid(T, A, B, C, _), !,
+        filterSupRelatedAttacks([(T, A, C)|Attacks], [(T, A, C)|Invalid]) :-
+            invalid(T, A, C, C, _), !,
             filterSupRelatedAttacks(Attacks, Invalid).
         filterSupRelatedAttacks([_|Attacks], Invalid) :-
             filterSupRelatedAttacks(Attacks, Invalid).
@@ -57,15 +61,12 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         invalid(rebut, A, _, C, Preferences) :- superiority::superiorArgument(C, A, Preferences).
         invalid(undermine, A, _, C, Preferences) :- superiority::superiorArgument(C, A, Preferences).
 
-        %! convertAttacks(+Attacks)
+        %! conversion(+Attacks)
         %  Each attack becomes an argument for it: an attack of A on B becomes the argument X for attack(T, A, B, B),
         %  supported by A and attacking B. If A attacks B through C, a sub-argument of B, the argument for the attack
         %  on C attacks B, as the attacks on C extend to the arguments built on it (see the module graphStore).
-        convertAttacks(Attacks) :-
-            conversion(Attacks).
-
         conversion(List) :-
-            member((T, A, B, B), List),
+            member((T, A, B), List),
             generateDirectAttackArgument(T, A, B, B),
             fail.
         conversion(_).
@@ -74,7 +75,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         generateDirectAttackArgument(T, A, B, B) :-
             argument::infoParts(Info, [attack], [attack], []),
             argument::new([attack], attack, [attack(T, A, B, B)], [], Info, AttackArgument),
-            graphStore::saveArgument(a, [attack(T, A, B, B)], AttackArgument),
+            graphStore::saveArgument([attack(T, A, B, B)], AttackArgument),
             graphStore::saveSupport(A, AttackArgument),
             graphStore::saveAttack(T, AttackArgument, B, B),
             graphStore::removeAttack(T, A, B, B).
@@ -83,21 +84,46 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
         %  AttackArgument is the saved argument for the attack attack(Type, A, B, C).
         attackArgument(AttackArgument, Type, A, B, C) :-
             argument::topRule(AttackArgument, attack),
-            argument::claim(AttackArgument, attack(Type, A, B, C)),
-            graphStore::argument(AttackArgument).
+            graphStore::argumentFor([attack(Type, A, B, C)], AttackArgument).
 
-        %! buildPrefAttacks
-        %  The arguments for the preferences invalidating an attack, by any of its justifications, attack its
-        %  argument (and so what it supports).
-        buildPrefAttacks :-
+        % The arguments for the preferences invalidating an attack, by any of its justifications, attack its argument
+        % (and so what it supports): each of them (each), or one for all of them together (all), for each choice of
+        % an argument for each preference (see argumentsFor/2), each standing or falling with its own
+        buildPrefAttacks(each) :-
             attackArgument(Attack, T, A, B, C),
             invalid(T, A, B, C, Preferences),
             member(X, Preferences),
-            argument::claim(Preference, X),
-            graphStore::argument(Preference),
+            graphStore::argumentFor([X], Preference),
             graphStore::saveAttack(pref, Preference, Attack, Attack),
             fail.
-        buildPrefAttacks.
+        buildPrefAttacks(all) :-
+            attackArgument(Attack, T, A, B, C),
+            invalid(T, A, B, C, Preferences),
+            argumentsFor(Preferences, Supports),
+            createSuperiorityArgument(Preferences, Supports, Argument),
+            graphStore::saveAttack(pref, Argument, Attack, Attack),
+            fail.
+        buildPrefAttacks(_).
+
+        % Supports is each choice of one argument for each of Preferences, in their order
+        argumentsFor([], []).
+        argumentsFor([X|Xs], [Support|Supports]) :-
+            graphStore::argumentFor([X], Support),
+            argumentsFor(Xs, Supports).
+
+        % The argument for preference(Preferences) supported by Supports, one argument for each of them, and so attacked
+        % as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
+        createSuperiorityArgument(Preferences, Supports, Argument) :-
+            mergeIds(Supports, MergedId),
+            argument::infoParts(Info, [pref], MergedId, []),
+            argument::new(MergedId, pref, [preference(Preferences)], [], Info, Argument),
+            (graphStore::saveArgument([preference(Preferences)], Argument) -> graphStore::saveSupporters(Argument, Supports) ; true).
+
+        % The rules of the arguments, after pref
+        mergeIds([], [pref]).
+        mergeIds(Arguments, [pref|MergedId]) :-
+            findall(Rules, (member(A, Arguments), argument::rules(A, Rules)), Res),
+            utils::appendLists(Res, MergedId).
 
         %==============================================================================
         % QUERY MODE
@@ -117,7 +143,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             (Rule = X ; Rule = Y),
             ruleConclusion(Rule, S).
 
-        ruleConclusion(Rule, S) :- parser::classicRule(Rule, _, [S]).
-        ruleConclusion(Rule, S) :- parser::classicRule(Rule, [S]).
+        ruleConclusion(Rule, S) :- parser::ruleConclusion(Rule, S).
+        ruleConclusion(Rule, S) :- parser::premise(Rule, [S]).
         """.trimIndent()
 }

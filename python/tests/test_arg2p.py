@@ -34,15 +34,15 @@ CONFLICT = "r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2)."
 
 
 def test_a_query_is_answered():
-    answer = Arg2p.of(CONFLICT).answer("a")
+    answer = Arg2p.of(CONFLICT).answer("a")[0]
     assert answer.in_statements == ["a"]
     assert answer.label("a") == "in"
-    negated = Arg2p.of(CONFLICT).answer("-a")
+    negated = Arg2p.of(CONFLICT).answer("-a")[0]
     assert [str(it) for it in negated.out_statements] == ["-a"]
     assert negated.out_statements == [Struct("-", ("a",))]
     assert negated.label("-a") == "out"
     # a statement is compared as a term: '1' is not 1
-    assert Arg2p.of("f1 :=> p(1).").answer("p(X)").label("p('1')") is None
+    assert Arg2p.of("f1 :=> p(1).").answer("p(X)")[0].label("p('1')") is None
 
 
 def test_the_graph_of_each_labelling():
@@ -129,9 +129,9 @@ def test_texts_that_do_not_parse_tell_where():
 def test_the_theory_changes():
     arg2p = Arg2p.of("f1 :=> a.")
     arg2p.add("f2 :=> b.")
-    assert arg2p.answer("b").in_statements == ["b"]
+    assert arg2p.answer("b")[0].in_statements == ["b"]
     arg2p.load("f3 :=> c.")
-    assert arg2p.answer("b") == Answer()
+    assert arg2p.answer("b") == [Answer()]
     assert "f3" in arg2p.theory
 
 
@@ -146,7 +146,7 @@ def test_flags_are_facts():
     assert str(Flags.none().argument_labelling_mode(Semantics.PREFERRED)) == "argumentLabellingMode(preferred).\n"
     assert str(Flags.none().graph_extensions().query_mode(True)) == "graphExtension(none).\nqueryMode.\n"
     assert Flags.none().graph_build_mode(Profile.ABA_PLUS) == Flags.parse("graphBuildMode(aba_plus).")
-    assert "graphBuildMode(aspic_plus)." in str(Flags.defaults())
+    assert str(Flags.defaults()) == ""
 
 
 def test_the_conflict_model_takes_several_parts():
@@ -162,8 +162,8 @@ def test_the_conflict_model_takes_several_parts():
     assert Arg2p.of("conflictModel(declared).").setting("conflictModel") == ["declared"]
     # a negation conflicts with the part negation alone
     theory = "f1 :=> d.\nf2 :=> -d.\n"
-    assert Arg2p.of(theory + "conflictModel(negation).").answer("d").und_statements == ["d"]
-    assert Arg2p.of(theory + "conflictModel(declared).").answer("d").in_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(negation).").answer("d")[0].und_statements == ["d"]
+    assert Arg2p.of(theory + "conflictModel(declared).").answer("d")[0].in_statements == ["d"]
 
 
 @pytest.mark.parametrize(
@@ -178,7 +178,7 @@ def test_the_values_of_the_flags_are_those_of_arg2p(values):
 
 def test_the_flags_of_the_solver_are_the_ones_it_uses():
     theory = "f1 :=> d.\nf2 :=> -d."
-    assert Arg2p.of(theory).answer("d").und_statements == ["d"]
+    assert Arg2p.of(theory).answer("d")[0].und_statements == ["d"]
     stable = Arg2p.of(theory, Flags.defaults().argument_labelling_mode(Semantics.STABLE)).graphs()
     assert sorted(graph.conclusions("in") for graph in stable) == [["-d"], ["d"]]
 
@@ -202,7 +202,7 @@ def test_the_command_line(tmp_path, capsys):
     assert main([str(theory), "-q", "a"]) == 0
     assert capsys.readouterr().out.strip() == "a: in [a], out [], und []"
     assert main([str(theory), "-s", "preferred"]) == 0
-    assert "in: a" in capsys.readouterr().out
+    assert "in: [a]" in capsys.readouterr().out
 
 
 def test_a_file_the_command_line_cannot_read_or_write_is_told(tmp_path, capsys):
@@ -246,7 +246,7 @@ def test_the_mcp_server():
     finally:
         server.kill()
     assert answers[1]["result"]["serverInfo"]["name"] == "arg2p"
-    assert answers[2]["result"]["structuredContent"]["in"] == ["a"]
+    assert answers[2]["result"]["structuredContent"]["answers"][0]["in"] == ["a"]
 
 
 def test_a_command_run_by_the_command_line_gives_its_exit_status():
@@ -399,3 +399,20 @@ def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile()
     assert abstract.setting("queryMode") == []
     with pytest.raises(Arg2pError):
         aspic.setting("noSuchFlag")
+
+
+def test_warm_up_solves_nothing_of_the_callers():
+    Arg2p.warm_up(1)
+    assert Arg2p.of("f :=> a.").answer("a")[0].in_statements == ["a"]
+
+
+def test_a_compact_graph_is_the_graph():
+    arg2p = Arg2p.of("f1 :=> a.\nf2 :=> -a.\nr1 : a => b.\nf3 :=> c.\n")
+    (graph,) = arg2p.graphs()
+    (compact,) = arg2p.compact_graphs()
+    assert compact.size == len(graph.arguments)
+    assert len(compact.attackers) == len(graph.attacks)
+    assert len(compact.supporters) == len(graph.supports)
+    assert sorted(compact.conclusion(it) for it in compact.labelled("in")) == sorted(graph.conclusions("in"))
+    assert sorted(compact.conclusion(it) for it in compact.labelled("und")) == sorted(graph.conclusions("und"))
+    assert sorted(compact.descriptor(it) for it in range(compact.size)) == sorted(it.descriptor for it in graph.arguments)

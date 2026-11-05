@@ -5,10 +5,11 @@ import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
+import it.unibo.tuprolog.argumentation.core.flags.OpenConclusions
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
+import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.ExtractId
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
@@ -23,21 +24,20 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * The rules of a theory, read by the graph builders (module `parser`): convertAllRules/1 converts the rules,
- * premises, preferences and burdens of the theory, which classicRule/2,3 and the other predicates read.
+ * The rules of a theory, read by the graph builders (module `parser`): convertAllRules/0 converts the rules,
+ * premises, preferences and burdens of the theory, which rule/3, premise/2 and the other predicates read.
  */
 object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
     override val primitives: Map<Signature, Primitive>
         get() =
             mapOf(
-                PrologStrictRules::descriptionPair.get(),
-                PrologAxioms::descriptionPair.get(),
-                BpsNew::descriptionPair.get(),
-                PrologPremises::descriptionPair.get(),
-                PrologDefeasibleRules::descriptionPair.get(),
-                ExtractId::descriptionPair.get(),
-                RuleToClause::descriptionPair.get(),
-                RuleToClauseNatural::descriptionPair.get(),
+                PrologStrictRules.signature to PrologStrictRules,
+                PrologAxioms.signature to PrologAxioms,
+                BpsNew.signature to BpsNew,
+                PrologPremises.signature to PrologPremises,
+                PrologDefeasibleRules.signature to PrologDefeasibleRules,
+                RuleToClause.signature to RuleToClause,
+                RuleToClauseNatural.signature to RuleToClauseNatural,
             )
 
     // The operators of the rules of a theory, for the theory of the parser and the solvers using it
@@ -48,7 +48,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         get() = super.theoryOperators.plus(operators())
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage)
+        get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage, Temporal, OpenConclusions)
 
     fun operators() =
         OperatorSet(
@@ -62,27 +62,81 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
     override val prologRawTheory: String =
         // language=Prolog
         """
+        %! convertAllRules
+        %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1
+        %  clauses, strict/1, sup/2, abstractBp/1), asserted. What the pipeline calls: a term as large as the theory
+        %  bound in a resolution (as the Rules of convertAllRules/1) weighs on every binding made after it. Converted
+        %  once per solver: the branch is kept as a template, and the solves after the first start from a copy of it.
+        convertAllRules :-
+            context_template_restore, !.
+        convertAllRules :-
+            \+ \+ convertAllRules(_),
+            context_template_save.
+
         %! convertAllRules(-Rules)
-        %  The rules, premises, preferences and burdens of the theory, in the formats the graph builders read (rl/1 clauses, strict/1, sup/2, abstractBp/1), asserted; Rules are what was asserted.
+        %  As convertAllRules/0, with Rules what was asserted.
         convertAllRules(ArgRules) :-
             defeasibleRules(DefeasibleRules),
-            strictRules(StrictRules, RulesIds),
             ordinaryPremises(Premises),
             axiomPremises(Axioms, AxiomsIds),
-            specialRules(SpecialRules),
+            utils::appendLists([DefeasibleRules, Premises, Axioms], Others),
+            strictRules(Others, StrictRules, RulesIds),
+            bpsNew(SpecialRules),
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
-            findall(sup(X, Y), sup(X, Y), Stated),
+            findall(sup(X, Y), user::sup(X, Y), Stated),
             supClosure(Stated, Sup),
             languageConflicts(Conflicts),
             utils::appendLists([Clauses, MappedIds, Sup, SpecialRules, Conflicts], ArgRules),
-            utils::assertAll(ArgRules), !.
+            utils::assertAll(ArgRules),
+            boundByQuery(Rules, BoundIds, Constraints),
+            indexRules(BoundIds, Constraints), !.
+
+        % indexRules(+BoundIds, +Constraints): those of the rules and premises as written that a query could bind
+        % (boundByQuery/1), and whether the theory may have constraints (constrained/0), kept in the context with the
+        % rules: computed by a single native visit of them in convertAllRules/1 (see boundByQuery/3)
+        indexRules(BoundIds, Constraints) :-
+            assertIds(BoundIds),
+            context_assert(boundByQueryIndexed),
+            (instances -> Kind = yes ; Kind = Constraints),
+            context_assert(theoryKind(constrained, Kind)).
+
+        assertIds([]).
+        assertIds([Id|Ids]) :- context_assert(boundByQueryRule(Id)), assertIds(Ids).
+
+        % The closure of ground preferences: a round joins the preferences last added (Fresh) with all of them, in the
+        % store, by either end: a pair of older ones gave what it gives in an earlier round
+        groundSupClosure(Sup, Fresh, Closed) :-
+            findall(sup(X, Z), (
+                (
+                    member(sup(X, Y), Fresh),
+                    context_check(supEdge(Y, Z))
+                ;
+                    member(sup(Y, Z), Fresh),
+                    context_check(supEdge(X, Y))
+                ),
+                X \== Z,
+                context_absent(supEdge(X, Z))
+            ), New),
+            utils::deduplicate(New, Added),
+            (Added == [] ->
+                Closed = Sup
+            ;
+                findall(_, (member(sup(X, Z), Added), context_assert(supEdge(X, Z))), _),
+                append(Sup, Added, Next),
+                groundSupClosure(Next, Added, Closed)
+            ).
 
         %! supClosure(+Stated, -Closed)
         %  The preferences stated, closed transitively: the ordering of rules and premises is a strict partial order
         %  (no sup(X, X) is added, should the stated ones make a cycle). The preferences concluded by arguments
         %  (defeasiblePref) are closed by a rule of the theory instead, as sup(X, Y), sup(Y, Z) -> sup(X, Z).
+        supClosure(Sup, Closed) :-
+            ground(Sup), !,
+            findall(_, (member(sup(X, Y), Sup), context_assert(supEdge(X, Y))), _),
+            groundSupClosure(Sup, Sup, Closed),
+            context_retract(supEdge(_, _)).
         supClosure(Sup, Closed) :-
             findall(sup(X, Z), (
                 member(sup(X, Y), Sup),
@@ -91,14 +145,14 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
                 \+ member(sup(X, Z), Sup)
             ), New),
             utils::deduplicate(New, Fresh),
-            (Fresh == [] -> Closed = Sup ; utils::appendFast(Sup, Fresh, Next), supClosure(Next, Closed)).
+            (Fresh == [] -> Closed = Sup ; append(Sup, Fresh, Next), supClosure(Next, Closed)).
 
         naturalRules(Rules, Clauses, StrictIds, MappedIds) :-
-            naturalTerms,
+            user::naturalTerms,
             ruleToClauseNatural(Rules, Clauses),
             mapIds(Rules, Clauses, StrictIds, MappedIds).
         naturalRules(Rules, Clauses, StrictIds, StrictIds) :-
-            \+ naturalTerms,
+            \+ user::naturalTerms,
             ruleToClause(Rules, Clauses).
 
         recoverId(Head :- Body, Id) :- rule::rule(Id, _, _, Head, Body).
@@ -116,19 +170,29 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             mapIds(T, TT, Ids, RR).
 
         defeasibleRules(DefeasibleRules) :-
-            findall([RuleName, Preconditions, Effect], (RuleName : Preconditions => Effect), DefeasibleRulesOld),
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions => Effect), DefeasibleRulesOld),
             prologDefeasibleRules(DefeasibleRulesNew),
-            utils::appendFast(DefeasibleRulesOld, DefeasibleRulesNew, DefeasibleRules).
+            temporalRules(TemporalRules),
+            utils::appendLists([DefeasibleRulesOld, DefeasibleRulesNew, TemporalRules], DefeasibleRules).
 
-        strictRules(CtrRules, Ids) :-
-            findall([RuleName, Preconditions, Effect], (RuleName : Preconditions -> Effect), StrictRulesOld),
+        % The axioms of the module temporal, with temporal
+        temporalRules(Rules) :- setting(temporal), !, temporal::rules(Rules).
+        temporalRules([]).
+
+        % The strict rules with their transpositions, whose names are none of those of the rules and premises of the
+        % theory (Others are the other rules and premises)
+        strictRules(Others, CtrRules, Ids) :-
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesOld),
             prologStrictRules(StrictRulesNew),
-            utils::appendFast(StrictRulesOld, StrictRulesNew, StrictRules),
-            transposition::transpose(StrictRules, StrictRules, CtrRules),
+            append(StrictRulesOld, StrictRulesNew, StrictRules),
+            ruleIds(StrictRules, StrictIds),
+            ruleIds(Others, OtherIds),
+            append(StrictIds, OtherIds, Taken),
+            transposition::transpose(StrictRules, StrictRules, Taken, CtrRules),
             extractId(CtrRules, Ids).
 
         ordinaryPremises(Premises) :-
-            findall([RuleName, Effect], ((RuleName :=> Effect), atom(RuleName)), PremisesOld),
+            findall([RuleName, Effect], user::(RuleName :=> Effect), PremisesOld),
             prologPremises(PremisesNew),
             languagePremises(PremisesLanguages),
             utils::appendLists([PremisesOld, PremisesNew, PremisesLanguages], Premises).
@@ -152,19 +216,43 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             utils::forEach(L, Languages, L:::check).
 
         axiomPremises(Axioms, Ids) :-
-            findall([RuleName, Effect], ((RuleName :-> Effect), atom(RuleName)), AxiomsOld),
+            findall([RuleName, Effect], user::(RuleName :-> Effect), AxiomsOld),
             prologAxioms(AxiomsNew),
-            utils::appendFast(AxiomsOld, AxiomsNew, Axioms),
+            append(AxiomsOld, AxiomsNew, Axioms),
             extractId(Axioms, Ids).
 
-        specialRules(SpecialRules) :-
-            bpsNew(SpecialRules).
 
 
+        %! holds(+Check)
+        %  Check, a Prolog premise of a rule, holds in the theory of the user.
+        holds(Check) :-
+            (callable(Check) -> user::call(Check) ; user::Check).
 
-        %! rule(?Id, ?Premises, ?Conclusion)
-        %  The rule Id as converted (see convertAllRules/1), concluding Conclusion from Premises.
-        rule(Id, PP, [Conclusion]) :-
+        %! strictness(+Id, -Strictness)
+        %  The rule Id is strict or defeasible (see checkStrict/1).
+        strictness(Id, strict) :- checkStrict(Id), !.
+        strictness(_, defeasible).
+
+        %! preference(?Rule, ?Other)
+        %  Rule is preferred to Other: the preferences the theory states (sup/2), closed transitively (see
+        %  supClosure/2), or those stated in their place (see statePreferences/1).
+        preference(Rule, Other) :-
+            context_check(sup(Rule, Other)).
+
+        %! statePreferences(+Preferences)
+        %  Preferences, sup(Rule, Other) terms, as the preferences, in place of those stated so far: the extension
+        %  defeasiblePref states the preferences concluded by arguments, which alone count then.
+        statePreferences(Preferences) :-
+            context_retract(sup(_, _)),
+            utils::assertAll(Preferences).
+
+        %! burden(?Literals)
+        %  The theory states a burden of persuasion on Literals, a list (bp/N facts, abstractBp/1).
+        burden(Literals) :-
+            context_check(abstractBp(Literals)).
+
+        % The rule Id as written (and converted, see convertAllRules/0), concluding Conclusion from Premises
+        ruleWritten(Id, PP, [Conclusion]) :-
             rule::rule(Id, Premises, Conclusion, Head, Body),
             context_check(clause(Head, Body)),
             tupleToList(Premises, P),
@@ -189,10 +277,14 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %  Premise, as [prolog(Goal)], is a Prolog check.
         prolog([prolog(Term)], Term).
         %! argued(+Premise)
-        %  Premise, of a rule, is supported by an argument: neither a Prolog check nor a contrary.
+        %  Premise, of a rule, is supported by an argument: neither a Prolog check, nor a contrary, nor a constraint.
         argued(Premise) :-
             \+ prolog([Premise], _),
-            \+ contrary([Premise], _).
+            \+ contrary([Premise], _),
+            \+ constraint([Premise], _).
+        %! constraint(?Premise, ?Constraint)
+        %  Premise, as [{ Constraint }], is a constraint (see the module constraint).
+        constraint(['{}'(Constraint)], Constraint).
         %! contrary(?Premise, ?Statement)
         %  Premise, as [~(Statement)], is a contrary premise.
         contrary([~(Term)], Term).
@@ -212,32 +304,164 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         ff([[X]], [X]) :- !.
         ff(X, X).
 
-        %! classicRule(?Id, ?Premises, ?Conclusion)
-        %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its first premise.
-        classicRule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, rule(X, Y, Z).
-        classicRule(X, Y, Z) :- rule(X, Y, Z).
-        %! classicRule(?Id, ?Conclusion)
-        %  The premise Id concludes Conclusion ([Statement]).
-        classicRule(X, Y) :- premise(X, Y).
+        %! rule(?Id, ?Premises, ?Conclusion)
+        %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its
+        %  first premise.
+        rule(X, [applicable(X)|Y], Z) :- setting(metaRules), !, ruleWritten(X, Y, Z).
+        rule(X, Y, Z) :- ruleWritten(X, Y, Z).
 
         %! ruleUsing(?Premise, ?Conclusion)
-        %  A rule concludes Conclusion (a statement) from Premise, among others: classicRule/3 and member/2 over its
-        %  premises, through an index of the premises of the rules built once in the active context.
+        %  A rule concludes Conclusion (a statement) from Premise, among others: rule/3 and member/2 over its
+        %  premises, through the index of the rules built once in the active context.
         ruleUsing(Premise, Conclusion) :-
-            premisesIndexed,
-            context_check(premiseOf(Premise, Conclusion)).
+            rulesIndexed,
+            context_check(premiseOf(Premise, Conclusion, _)).
 
-        % The index: premiseOf/2 facts asserted from the last, as context_check returns the newest clauses first, so
-        % that lookups give the rules in the order of classicRule/3
-        premisesIndexed :- context_check(premisesIndexed), !.
-        premisesIndexed :-
-            findall(premiseOf(P, C), (classicRule(_, Premises, [C]), member(P, Premises)), Index),
+        %! ruleUsingAt(?Premise, ?Place)
+        %  The rule at Place (see ruleAt/2) has Premise among its premises.
+        ruleUsingAt(Premise, Place) :-
+            rulesIndexed,
+            context_check(premiseOf(Premise, _, Place)).
+
+        %! ruleAt(?Place, ?Rule)
+        %  Rule, [Id, Premises, Conclusion], is the one at Place in the order of rule/3.
+        ruleAt(Place, Rule) :-
+            rulesPlaced,
+            context_check(ruleAt(Place, Rule)).
+
+        % The index: premiseOf/3 facts asserted from the last, as context_check returns the newest clauses first, so
+        % that lookups give the rules in the order of rule/3
+        rulesIndexed :- context_check(rulesIndexed), !.
+        rulesIndexed :-
+            findall(premiseOf(P, C, Place), (placedRule(Place, [_, Premises, [C]]), member(P, Premises)), Index),
             assertFromLast(Index),
-            context_assert(premisesIndexed).
+            context_assert(rulesIndexed).
+
+        %! ruleConclusion(?Id, ?Conclusion)
+        %  The rule with identifier Id concludes Conclusion: looked up by its identifier, not among all the rules.
+        ruleConclusion(Id, Conclusion) :-
+            ruleIds,
+            context_check(ruleIdOf(Id, Conclusion)).
+
+        ruleIds :- context_check(ruleIds), !.
+        ruleIds :-
+            findall(_, (rule(Id, _, [Conclusion]), context_assert(ruleIdOf(Id, Conclusion))), _),
+            context_assert(ruleIds).
+
+        % The rules themselves, only for who reads them by their places
+        rulesPlaced :- context_check(rulesPlaced), !.
+        rulesPlaced :-
+            findall(_, (placedRule(Place, Rule), context_assert(ruleAt(Place, Rule))), _),
+            context_assert(rulesPlaced).
+
+        placedRule(Place, Rule) :-
+            findall([Id, Premises, Conclusion], rule(Id, Premises, Conclusion), Rules),
+            placed(Rules, 0, Place, Rule).
+
+        placed([Rule|_], Place, Place, Rule).
+        placed([_|Rules], At, Place, Rule) :-
+            Next is At + 1,
+            placed(Rules, Next, Place, Rule).
+
+        % ruleIds(+Rules, -Ids): the identifiers of Rules, the lists [Id, ...], in their order
+        ruleIds([], []).
+        ruleIds([[Id|_]|Rules], [Id|Ids]) :- !, ruleIds(Rules, Ids).
+        ruleIds([_|Rules], Ids) :- ruleIds(Rules, Ids).
+
+        % extractId(+Rules, -Ids): strict(Id) for the identifier of each of Rules
+        extractId([], []).
+        extractId([[Id|_]|Rules], [strict(Id)|Ids]) :- extractId(Rules, Ids).
+
+        % boundByQuery(+Rules, -Ids, -Constraints): of Rules, as read from the theory ([Id, Premises, Conclusion], the
+        % premises a conjunction, a list or [], and [Id, Conclusion] for a premise of the theory), Ids are those whose
+        % arguments a query could bind otherwise than the whole graph derives them: a variable of the conclusion that no
+        % ordinary premise has, or one that a Prolog check (prolog(Goal)) uses before the ordinary premises written before
+        % it bind it (X is Expr binds X). For the others the search steered by a query finds the arguments the whole graph
+        % has; contraries and constraints ({ C }) bind nothing. Constraints is yes if a premise is a constraint.
+        boundByQuery([], [], no).
+        boundByQuery([Rule|Rules], Ids, Constraints) :-
+            boundByQuery(Rules, OtherIds, OtherConstraints),
+            ruleParts(Rule, Id, Premises, Conclusion), !,
+            (\+ \+ bindsMore(Premises, Conclusion) -> Ids = [Id|OtherIds] ; Ids = OtherIds),
+            (member(Premise, Premises), nonvar(Premise), Premise = {_} -> Constraints = yes ; Constraints = OtherConstraints).
+        boundByQuery([_|Rules], Ids, Constraints) :-
+            boundByQuery(Rules, Ids, Constraints).
+
+        ruleParts([Id, Premises, Conclusion], Id, List, Conclusion) :- premisesOf(Premises, List, []).
+        ruleParts([Id, Conclusion], Id, [], Conclusion).
+
+        % The premises of a rule, a list or a conjunction, as a list (difference list)
+        premisesOf(Premises, [Premises|Tail], Tail) :- var(Premises), !.
+        premisesOf([], Tail, Tail) :- !.
+        premisesOf([Premise|Premises], [Premise|List], Tail) :- !, premisesOf(Premises, List, Tail).
+        premisesOf((A, B), List, Tail) :- !, premisesOf(A, List, Middle), premisesOf(B, Middle, Tail).
+        premisesOf(Premise, [Premise|Tail], Tail).
+
+        % The variables are bound as they are met, what is ground is what the premises so far bind (asked within \+ \+)
+        bindsMore([], Conclusion) :- \+ ground(Conclusion).
+        bindsMore([Premise|Premises], Conclusion) :-
+            nonvar(Premise), Premise = prolog(Goal), !,
+            (checked(Goal) -> bindsMore(Premises, Conclusion) ; true).
+        bindsMore([Premise|Premises], Conclusion) :-
+            nonvar(Premise), (Premise = ~(_) ; Premise = {_}), !,
+            bindsMore(Premises, Conclusion).
+        bindsMore([Premise|Premises], Conclusion) :-
+            bindAll(Premise),
+            bindsMore(Premises, Conclusion).
+
+        % A check has its variables bound when it runs: a conjunction in its order, X is Expr binding X
+        checked(Goal) :- nonvar(Goal), Goal = (A, B), !, checked(A), checked(B).
+        checked(Goal) :- nonvar(Goal), Goal = (X is Expr), var(X), !, ground(Expr), bindAll(X).
+        checked(Goal) :- ground(Goal).
+
+        bindAll(Term) :- var(Term), !, Term = bound.
+        bindAll(Term) :- atomic(Term), !.
+        bindAll(Term) :- Term =.. [_|Args], bindEach(Args).
+        bindEach([]).
+        bindEach([Arg|Args]) :- bindAll(Arg), bindEach(Args).
+
+        %! boundByQuery(?Id)
+        %  A query could bind the arguments of the rule or premise Id otherwise than the whole graph derives them: its
+        %  conclusion, or a Prolog check, has a variable its ordinary premises written before leave unbound (see
+        %  boundByQuery/3).
+        boundByQuery(Id) :-
+            boundByQueryIndexed,
+            context_check(boundByQueryRule(Id)).
+
+        % The index: boundByQueryRule/1 facts, built with the rules (indexRules/2), or else once in the active context
+        boundByQueryIndexed :- context_check(boundByQueryIndexed), !.
+        boundByQueryIndexed :-
+            findall([Id, Premises, C], rule(Id, Premises, [C]), Rules),
+            findall([Id, C], premise(Id, [C]), Facts),
+            utils::appendLists([Rules, Facts], All),
+            boundByQuery(All, Ids, _),
+            assertIds(Ids),
+            context_assert(boundByQueryIndexed).
 
         assertFromLast([]).
         assertFromLast([Fact|Facts]) :-
             assertFromLast(Facts),
             context_assert(Fact).
+
+        %! instances
+        %  The arguments may hold for sets of values, and get their instances.
+        instances :- context_check(theoryKind(instances, Kind)), !, Kind == yes.
+        instances :-
+            (open -> Kind = yes ; Kind = no),
+            context_assert(theoryKind(instances, Kind)),
+            Kind == yes.
+
+        open :- setting(graphExtension, constraints), !.
+        open :- setting(temporal), !.
+        open :- setting(openConclusions).
+
+        %! constrained
+        %  An argument may have an open conclusion. Otherwise every argument concludes a ground statement.
+        constrained :- context_check(theoryKind(constrained, Kind)), !, Kind == yes.
+        % (without indexRules/2)
+        constrained :-
+            (instances -> Kind = yes ; rule(_, Premises, _), member(P, Premises), constraint([P], _) -> Kind = yes ; Kind = no),
+            context_assert(theoryKind(constrained, Kind)),
+            Kind == yes.
         """.trimIndent()
 }

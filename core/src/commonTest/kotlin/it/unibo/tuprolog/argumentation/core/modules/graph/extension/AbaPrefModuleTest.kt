@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.extension
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.random.Random
@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
  */
 class AbaPrefModuleTest {
     private fun solutions(theory: String) =
-        Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create()).let { solver ->
+        Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library()).let { solver ->
             solver.solve(Struct.parse("buildLabelSets(I, _, _)", solver.operators)).toList()
         }
 
@@ -164,5 +164,23 @@ class AbaPrefModuleTest {
             }
         }
         assertTrue(nonFlat >= 5, "$nonFlat theories not flat")
+    }
+
+    // {a2, a3} concludes p0, the contrary of a4, and a3 is weaker than a4: the attack is reversed, a4 attacking p0. The
+    // argument for a4 is not among those p0 depends on: query mode explores it as the reversal relates them
+    @Test
+    fun theReversalReachesTheArgumentsOfTheAssumptionsAttackedInQueryMode() {
+        val theory =
+            "graphBuildMode(aba_plus).\nargumentLabellingMode(grounded).\n" +
+                "assumption(a0).\nassumption(a1).\nassumption(a2).\nassumption(a3).\nassumption(a4).\n" +
+                "contrary(a0, p0).\ncontrary(a1, p0).\ncontrary(a2, p1).\ncontrary(a3, p1).\ncontrary(a4, p0).\n" +
+                "r0 : a2, a3 -> p0.\nr1 : a2 -> p1.\nsup(a1, a3).\nsup(a2, a3).\nsup(a0, a3).\nsup(a2, a4).\nsup(a4, a3).\n"
+        val labels = { flags: String ->
+            val solver = Arg2pSolverFactory.default(theory = theory + flags, settings = Flags.defaults().library())
+            val solution = solver.solve(Struct.parse("answerQuery(p0, I, O, U), L = [I, O, U]", solver.operators)).first()
+            solution.substitution.getByName("L").toString()
+        }
+        assertEquals("[[], [p0], []]", labels("queryMode(off).\n"))
+        assertEquals("[[], [p0], []]", labels("queryMode.\n"))
     }
 }

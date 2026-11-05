@@ -8,6 +8,7 @@ import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import kotlin.js.JsExport
 import kotlin.js.JsName
+import it.unibo.tuprolog.core.List as PlList
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /** The statements for a query labelled in, out and und (see [Arg2p.answer]) */
@@ -43,7 +44,7 @@ data class Answer(
 
 /**
  * The answer of a query as the solvers of arg2p give it: the goal answerQuery(Query, In, Out, Und), and the [Answer]
- * its first yes solution gives
+ * each of its yes solutions gives (one for each labelling, or the one across them all, see the flag answerMode)
  */
 @InternalArg2pApi
 class AnswerQuery(
@@ -51,18 +52,34 @@ class AnswerQuery(
 ) {
     private val labels = listOf(Var.of("In"), Var.of("Out"), Var.of("Und"))
 
+    private val all = Var.of("Answers")
+
     /** The goal answering the query */
     val goal: Struct = Struct.of("answerQuery", listOf(query) + labels)
 
-    /** The answer [solution] gives, the first yes solution of [goal] (none for no solution) */
+    /** The goal answering the query with all its answers at once, as the list [[In, Out, Und], ...] */
+    val allGoal: Struct = Struct.of("findall", PlList.of(labels), goal, all)
+
+    /** The answer [solution] gives, a yes solution of [goal] (none for no solution) */
     fun answer(solution: LogicSolution?): Answer {
         if (solution == null) return Answer(emptyList(), emptyList(), emptyList())
+        return answerOf(labels.map { solution.substitution[it]!! })
+    }
+
+    /** The statements [solution], a yes solution of [goal], labels in, out and und, as terms */
+    fun statements(solution: LogicSolution): List<List<Term>> = labels.map { solution.substitution[it]!!.castToList().toList() }
+
+    /** The answers [solution] gives, the yes solution of [allGoal] */
+    fun answers(solution: LogicSolution): List<Answer> =
+        solution.substitution[all]!!
+            .castToList()
+            .toList()
+            .map { answerOf(it.castToList().toList()) }
+
+    private fun answerOf(labelled: List<Term>): Answer {
         val (statementsIn, statementsOut, statementsUnd) =
-            labels.map { label ->
-                solution.substitution[label]!!
-                    .castToList()
-                    .toList()
-                    .map { TermValues.of(it) }
+            labelled.map { statements ->
+                statements.castToList().toList().map { TermValues.of(it) }
             }
         return Answer(statementsIn, statementsOut, statementsUnd)
     }

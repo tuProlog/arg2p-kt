@@ -1,7 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.runtime.settings
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
@@ -17,9 +19,9 @@ class ProfilesTest {
     // The first solution of buildLabelSets, by a solver with the default settings
     private fun labelling(
         theory: String,
-        settings: FlagsBuilder = FlagsBuilder(),
+        settings: Flags = Flags.defaults(),
     ): Solution {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = settings.create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = settings.library())
         return solver.solve(Struct.parse("buildLabelSets(I, O, U), L = [I, O, U]", solver.operators)).first()
     }
 
@@ -28,14 +30,14 @@ class ProfilesTest {
         theory: String,
         goal: String,
     ): Solution {
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().queryMode(true).create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().queryMode(true).library())
         return solver.solve(Struct.parse("answerQuery($goal, I, O, U), L = [I, O, U]", solver.operators)).first()
     }
 
     // The statements labelled in, out and und
     private fun labels(
         theory: String,
-        settings: FlagsBuilder = FlagsBuilder(),
+        settings: Flags = Flags.defaults(),
     ): String? =
         labelling(theory, settings)
             .takeIf { it.isYes }
@@ -45,7 +47,7 @@ class ProfilesTest {
 
     @Test
     fun aspicPlusIsTheDefault() {
-        assertEquals(Profiles.ASPIC_PLUS.name, FlagsBuilder().graphBuildMode)
+        assertEquals(Profiles.ASPIC_PLUS.name, GraphBuildMode.default())
         val module = ModuleTesting("")
         assertTrue(module.holds("setting(autoTransposition)"))
         assertEquals(listOf("standardPref", "rebutRestriction"), module.values("setting(graphExtension, X)", "X"))
@@ -62,7 +64,6 @@ class ProfilesTest {
 
     @Test
     fun aspicPlusWeighsPreferencesAndAspicDoesNot() {
-        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "graphBuildMode(aspic_plus).\n"))
         assertEquals("[[], [], [['-'(a)], [a]]]", labels(preferred + "graphBuildMode(aspic).\n"))
     }
 
@@ -73,7 +74,7 @@ class ProfilesTest {
 
     @Test
     fun theSolverSettingsChooseAProfileAsWell() {
-        assertEquals("[[], [], [['-'(a)], [a]]]", labels(preferred, FlagsBuilder().graphBuildMode("aspic")))
+        assertEquals("[[], [], [['-'(a)], [a]]]", labels(preferred, Flags.parse("graphBuildMode(aspic).")))
     }
 
     @Test
@@ -82,6 +83,35 @@ class ProfilesTest {
         assertTrue(module.holds("setting(metaRules)"))
         assertTrue(module.holds("setting(metaConflicts)"))
         assertEquals(listOf("defeasiblePref"), module.values("setting(graphExtension, X)", "X"))
+    }
+
+    @Test
+    fun aTheoryHasOnePreferenceModeAtMost() {
+        val both = preferred + "graphExtension(standardPref).\ngraphExtension(defeasiblePref).\n"
+        val refused = labelling(both)
+        assertTrue(refused.isHalt, refused.toString())
+        assertTrue(refused.exception.toString().contains("one_preference_mode"), refused.exception.toString())
+        assertTrue(answer(both, "a").isHalt)
+    }
+
+    @Test
+    fun abaPrefIsForAbaTheoriesAlone() {
+        val refused = labelling(preferred + "graphExtension(abaPref).\n")
+        assertTrue(refused.isHalt, refused.toString())
+        assertTrue(refused.exception.toString().contains("aba_theory"), refused.exception.toString())
+    }
+
+    @Test
+    fun theStepsChangingTheGraphApplyInTheirOrder() {
+        // whatever the order the flags state them in: the arguments added first, then the attacks changed
+        val module =
+            ModuleTesting(
+                "metaConflicts.\ngraphExtension(bp).\ngraphExtension(standardPref).\ngraphExtension(rebutRestriction).\ntemporal.\n",
+            )
+        assertEquals(
+            listOf("constraints", "conflictArguments", "rebutRestriction", "standardPref", "bp"),
+            module.values("structuredWhole::step(S), structuredWhole::active(S)", "S"),
+        )
     }
 
     @Test
@@ -110,13 +140,21 @@ class ProfilesTest {
         assertTrue(labelling(strict + "conflict([d], [c]).\ngraphBuildMode(free).\n").isYes)
     }
 
+    // Predicates of the theory named as the helpers of the check, or of the guards of the conflicts, change neither
+    @Test
+    fun thePredicatesOfTheTheoryLeaveTheChecksAsTheyAre() {
+        val strict = "f1 :-> b.\ns1 : b -> c.\nr1 : [] => d.\n"
+        assertTrue(labelling(strict + "contrary(d, c).\ndeclared(d, c).\nstrictly(c).\n").isYes)
+        assertTrue(labelling(strict + "holds(x).\nconflict([d], [e], fail).\nr2 : [] => e.\n").isYes)
+    }
+
     @Test
     fun theSettingsOfTheSolverOverrideTheProfile() {
-        val solver = Arg2pSolverFactory.default(theory = "", settings = FlagsBuilder().metaRules(true).create())
+        val solver = Arg2pSolverFactory.default(theory = "", settings = Flags.defaults().metaRules(true).library())
         assertTrue(solver.solve(Struct.parse("setting(metaRules)", solver.operators)).first().isYes)
-        // but a value the default of its flag states leaves the profile in charge
-        val default = Arg2pSolverFactory.default(theory = "", settings = FlagsBuilder(autoTransposition = false).create())
-        assertTrue(default.solve(Struct.parse("setting(autoTransposition)", default.operators)).first().isYes)
+        // a switch stated off as well, over the profile presetting it on
+        val off = Arg2pSolverFactory.default(theory = "", settings = Flags.defaults().autoTransposition(false).library())
+        assertFalse(off.solve(Struct.parse("setting(autoTransposition)", off.operators)).first().isYes)
     }
 
     @Test
@@ -230,5 +268,18 @@ class ProfilesTest {
         assertTrue(labelling("graphBuildMode(abstract).\n[a] -> b.\n").isHalt)
         // an argument may have the name of a burden or of a preference
         assertEquals("[[[bp]], [[sup]], []]", labels("graphBuildMode(abstract).\nbp -> sup.\n"))
+    }
+
+    // The flags of ASPIC+ and those of ABA do not mix: a preference mode between rules, or the meta-argumentation,
+    // on an ABA theory is refused
+    @Test
+    fun theFlagsOfAspicAndOfAbaAreExclusive() {
+        val aba = "graphBuildMode(aba).\nassumption(a).\ncontrary(a, na).\nr1 : [] -> na.\n"
+        assertEquals("[[[na]], [[a]], []]", labels(aba))
+        listOf("graphExtension(standardPref).", "graphExtension(defeasiblePref).", "metaConflicts.", "metaRules.").forEach {
+            val refused = labelling("$aba$it\n")
+            assertTrue(refused.isHalt, "$it: $refused")
+            assertTrue(refused.exception.toString().contains("aba"), "$it: ${refused.exception}")
+        }
     }
 }

@@ -127,6 +127,6 @@ describe.skipIf(server === null)('The MCP server, as an assistant runs it', func
             answers.get(2).result.tools.map((it: { name: string }) => it.name),
             ['solve', 'answer', 'check', 'settings', 'explore'],
         );
-        deepEqual(answers.get(3).result.structuredContent.out, ['flies(tweety)']);
+        deepEqual(answers.get(3).result.structuredContent.answers[0].out, ['flies(tweety)']);
     });
 });

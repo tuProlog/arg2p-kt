@@ -53,6 +53,14 @@ class Semantics(_FlagValue):
     BP_GROUNDED_COMPLETE = "bp_grounded_complete"
 
 
+class AnswerMode(_FlagValue):
+    """How a query is answered for a semantics with several labellings (answerMode): for each, or across them all."""
+
+    ENUMERATE = "enumerate"
+    CREDULOUS = "credulous"
+    SKEPTICAL = "skeptical"
+
+
 class StatementLabelling(_FlagValue):
     """The labelling of the statements from that of the arguments (statementLabellingMode)."""
 
@@ -127,9 +135,10 @@ def _array(cls: type, values: tuple) -> Any:
 
 class Flags:
     """
-    The flags of a solver, as the facts stating them: defaults() (those of arg2p), none() (only those the theory
-    states), or parse(text). A flag set replaces what the flags stated for it; the theory may state flags as well,
-    which override these. The profile of the theory (graph_build_mode) presets the flags its definition needs.
+    The flags of a solver, as the facts stating them: defaults() (none stated: the theory, its profile and the
+    defaults decide; none() is the same), or parse(text) (those stated by Prolog text). A flag set here is stated
+    (a switch set to False stated off); the theory may state flags as well, which override these, and these override
+    what the profile of the theory (graph_build_mode) presets.
     """
 
     def __init__(self, flags: Any) -> None:
@@ -161,6 +170,10 @@ class Flags:
     def argument_labelling_mode(self, semantics: Semantics) -> Flags:
         """The semantics of the argument labelling."""
         return self._set(self._flags.argumentLabellingMode(semantics.jvm()))
+
+    def answer_mode(self, mode: AnswerMode) -> Flags:
+        """How a query is answered for a semantics with several labellings: for each, or across them all."""
+        return self._set(self._flags.answerMode(mode.jvm()))
 
     def statement_labelling_mode(self, labelling: StatementLabelling) -> Flags:
         """The labelling of the statements."""
@@ -216,10 +229,6 @@ class Flags:
     def meta_rules(self, on: bool) -> Flags:
         """Whether the rules are arguments as well."""
         return self._set(self._flags.metaRules(on))
-
-    def debug(self, on: bool) -> Flags:
-        """Whether the modules print their debug output."""
-        return self._set(self._flags.debug(on))
 
     def _set(self, flags: Any) -> Flags:
         self._flags = flags

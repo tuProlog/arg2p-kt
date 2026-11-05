@@ -13,10 +13,8 @@ Common mistakes, and what they look like when they happen.
 
 **Symptom.** A query silently fails, or `graph()` returns an empty graph.
 
-Most often one of the required flags is missing. `graphBuildMode`, `argumentLabellingMode`,
-`statementLabellingMode`, `orderingPrinciple` and `orderingComparator` must all have a value. `FlagsBuilder()`
-supplies them, but a theory evaluated with `FlagsBuilder().empty(true)` — or a [JavaScript]({{% ref "/docs/api/javascript" %}}) solver given its flags as
-text — has to declare every one of them itself.
+Most often the theory is refused by its profile, or a flag has a value it does not take: the evaluation halts with
+an error telling which (an `Arg2pException`, a halt solution of a goal); every flag has a default otherwise.
 
 The other frequent cause is reading the graph before running a query: `graph()` mines the *current* evaluation
 context, so a query such as `arg2p::solve` has to succeed first.
@@ -27,7 +25,7 @@ context, so a query such as `arg2p::solve` has to succeed first.
 
 **Symptom.** Queries fail where they should succeed, or the flags seem ignored.
 
-A solver assembled by hand has no flags: add the flags library (`FlagsBuilder().create().content()`) to its
+A solver assembled by hand has no flags: add the flags library (`Flags.defaults().library().baseContent`) to its
 libraries, as in [Building a solver by hand]({{% ref "/docs/api/kotlin" %}}). Build it with
 `Arg2pPrologSolverFactory`, the engine of Arg2P: the solver of 2P-Kt (`PrologSolverFactory`) runs the module calls
 of Arg2P through a slower path. `Arg2pSolverFactory` does all of this for you.
@@ -109,7 +107,7 @@ nested).
 This is expected: with `graphExtension(standardPref)` an attack only succeeds as a defeat if the attacker is
 not weaker than its target, so some attacks disappear. The outcome also depends on `orderingPrinciple` and
 `orderingComparator`. To evaluate without any preference handling, pass an empty extension list
-(`FlagsBuilder(graphExtensions = emptyList())`).
+(`Flags.defaults().graphExtensions()`).
 
 ---
 

@@ -8,10 +8,7 @@ import kotlin.test.assertTrue
 class AttackCandidatesModuleTest {
     private val b = "[[r2], r2, [b], [~(c)], [[r2], [r2], []]]"
 
-    private fun module() =
-        ModuleTesting("r1 : [] => -b.\nr2 : ~(c) => b.\nr3 : ~(b) => d.").also {
-            it.run("context_reset", "parser:::convertAllRules(_)")
-        }
+    private fun module() = ModuleTesting.parsed("r1 : [] => -b.\nr2 : ~(c) => b.\nr3 : ~(b) => d.")
 
     @Test
     fun theAttackersOfAnArgumentConcludeConflictsOrUndercuts() {

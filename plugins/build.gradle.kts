@@ -2,14 +2,14 @@ plugins {
     base
 }
 
-// The plugins of Arg2P for AI assistants (see README.md): their skills, and the MCP server they run. A release attaches
+// The plugins of Arg2P for AI assistants (see arg2p/README.md): their skills, and the MCP server they run. A release attaches
 // them as zips, for the clients that take them uploaded: a skill each (its folder at the root, as claude.ai asks), and
 // the whole plugin.
 
 val skills = layout.projectDirectory.dir("arg2p/skills")
 
-// The Node.js of the build of Kotlin/JS, which runs version.mjs
-val nodeJs = the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>()
+// The Node.js of the build of Kotlin/JS (that of the root project), which runs version.mjs
+val nodeJs = rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>()
 
 // The manifests of the plugin and of its MCP server, each as its client reads it: those plugins/arg2p/plugin.json states
 // (see version.mjs, which writes them from it)
@@ -17,7 +17,7 @@ val checkManifests =
     tasks.register<Exec>("checkManifests") {
         group = "verification"
         description = "Checks that the manifests of the plugin and of the MCP Registry state what plugins/arg2p/plugin.json does"
-        dependsOn("kotlinNodeJsSetup")
+        dependsOn(":kotlinNodeJsSetup")
         workingDir = rootDir
         executable(nodeJs.executable.get())
         args("plugins/version.mjs", "--check")

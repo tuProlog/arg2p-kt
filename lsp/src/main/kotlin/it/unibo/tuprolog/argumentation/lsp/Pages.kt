@@ -36,8 +36,8 @@ internal object Pages {
         return PLACEHOLDER.replace(resource(name)) { all[it.groupValues[1]] ?: it.value }
     }
 
-    /** The resource [name] of the pages, as text */
-    fun resource(name: String): String =
+    // The resource [name] of the pages, as text
+    private fun resource(name: String): String =
         Pages::class.java
             .getResourceAsStream(name)
             ?.use { it.readBytes().toString(Charsets.UTF_8) }

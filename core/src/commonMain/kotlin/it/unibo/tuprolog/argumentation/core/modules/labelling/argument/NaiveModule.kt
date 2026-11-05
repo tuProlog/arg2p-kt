@@ -26,7 +26,7 @@ object NaiveModule : PrologModule("prolog.argumentation.graph.labelling.naive", 
         argumentLabelling :-
             context_active(Branch),
             conflictfree::candidates(Args, Forced),
-            findall(A, graphStore::argumentLabelById(in, A), In),
+            graphStore::labelledIds(in, In),
             naiveSubset(Args, Forced, In, Set),
             conflictfree::labelSet(Branch, Set).
         """.trimIndent()

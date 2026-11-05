@@ -5,5 +5,7 @@ object ModulesPath : ArgsFlag<String, Unit> {
 
     override fun default(): String = "none"
 
+    override val isOpen: Boolean = true
+
     override fun values() {}
 }

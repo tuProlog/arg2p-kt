@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.store
 
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
-import it.unibo.tuprolog.argumentation.core.primitives.ids
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -19,7 +18,7 @@ class GraphStoreModuleTest {
         assertTrue(module.holds("context_check(argument($a))"))
         assertTrue(module.holds("graphStore::argumentFor([a], X), X == $a"))
         assertTrue(module.holds("context_id(argument($a), Id), graphStore::argumentById(Id, X), X == $a"))
-        assertTrue(module.holds("context_id(argument($a), Id), context_check(argInfo(Id, _, [[r1], [r1], []]))"))
+        assertTrue(module.holds("context_id(argument($a), Id), graphStore::argumentInfo(Id, _, [[r1], [r1], []])"))
         assertTrue(module.holds("context_check(newConc(tag, [a]))"))
     }
 
@@ -38,7 +37,7 @@ class GraphStoreModuleTest {
         module.run(
             "graphStore::saveArguments(t, [$a, $b, $c, $a])",
             "graphStore::saveSupports([support($a, $b), support($a, $b)])",
-            "graphStore::saveAttacks([attack(rebut, $c, $b, $a)])",
+            "graphStore::saveAttack(rebut, $c, $b, $a)",
         )
         assertEquals(3, module.solutions("context_check(argument(X))").count { it.isYes })
         assertTrue(module.holds("graphStore::argumentFor([b], X), X == $b"))

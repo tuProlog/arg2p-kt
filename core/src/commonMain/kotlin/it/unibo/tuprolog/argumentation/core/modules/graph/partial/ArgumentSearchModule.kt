@@ -9,9 +9,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  *
  * An argument is the same term as the graph builder makes (see the module argumentBuilder): its rules and info from
  * those of its sub-arguments (argument::rulesAndInfo/5), its body the premises of its rule as written. Its parts are
- * collected in `found(Body, TopRule, Rules, Info, Supports)`, built in the clause bodies, so that clause heads only
- * match the conclusion or the premises (matching many arguments against every clause head is what makes resolution
- * expensive).
+ * collected in `found(Body, TopRule, Rules, Info, Supports)`, built in the clause bodies.
  */
 object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.search", "argumentSearch") {
     override val prologRawTheory: String =
@@ -23,19 +21,59 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             findArgument(Conclusion, found(Body, TopRule, Rules, Info, Supports)),
             argument::new(Rules, TopRule, Conclusion, Body, Info, Argument).
 
-        % From a premise
+        % The arguments are those the whole graph has (see the module argumentBuilder): Conclusion only steers the search,
+        % and an argument concludes what its premises and rule derive, which may not be open (a statement with free
+        % variables, but with the graph extension constraints) whatever Conclusion binds.
+
+        % From a premise: one with variables (parser::boundByQuery/1) concludes an open statement, with instances alone
         findArgument(Conclusion, Found) :-
-            parser::classicRule(Id, Conclusion),
-            premiseInfo(Id, Info),
+            parser::premise(Id, Conclusion),
+            (parser::boundByQuery(Id) -> parser::instances ; true),
+            argument::premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
 
-        % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise)
-        findArgument(Conclusion, Found) :-
-            parser::classicRule(Id, Premises, Conclusion),
+        % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise), and the rule
+        % derives Conclusion from the arguments supporting its premises (see derivable/3)
+        findArgument([Claim], Found) :-
+            parser::rule(Id, Premises, [Claim]),
             findPremises(Premises, premises(Parts, Supports)),
-            ruleStrictness(Id, Strict),
+            derivable(Id, Claim, Supports),
+            parser::strictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
-            Found = found(Premises, Id, Rules, Info, Supports).
+            (parser::constrained -> constraint::extend(Premises, Supports, Body) ; Body = Premises),
+            Found = found(Body, Id, Rules, Info, Supports).
+
+        % derivable(+Id, +Claim, +Supports): the rule Id derives Claim from Supports alone. The search steered by the query
+        % finds that for most rules; a rule a query could bind otherwise (parser::boundByQuery/1) is taken again as
+        % written (a rule whose identifier unifies with Id, concluding a statement with the functor of Claim) and its
+        % conclusion derived from the claims of Supports
+        derivable(Id, _, _) :- \+ parser::boundByQuery(Id), !.
+        derivable(Id, Claim, Supports) :-
+            functor(Claim, Name, Arity),
+            functor(General, Name, Arity),
+            parser::rule(Written, Premises, [General]),
+            \+ \+ Written = Id,
+            derived(rule(Written, Premises, General), Supports, rule(Id, Claim)).
+
+        % derived(+Rule, +Supports, ?Derived): Rule, a copy of the rule as written, derives its conclusion from the claims of
+        % Supports alone, its checks run in their order; the conclusion is concludable, and only then the one of Derived
+        derived(rule(Id, Premises, Claim), Supports, rule(DerivedId, DerivedClaim)) :-
+            fromSupports(Premises, Supports),
+            constraint::concludable([Claim]),
+            Claim = DerivedClaim,
+            Id = DerivedId.
+
+        fromSupports([], []).
+        fromSupports([Premise|Premises], Supports) :-
+            parser::prolog([Premise], Check), !,
+            parser::holds(Check),
+            fromSupports(Premises, Supports).
+        fromSupports([Premise|Premises], Supports) :-
+            \+ parser::argued(Premise), !,
+            fromSupports(Premises, Supports).
+        fromSupports([Premise|Premises], [Support|Supports]) :-
+            argument::claim(Support, Premise),
+            fromSupports(Premises, Supports).
 
         % The premises of a rule are supported one at a time, most selective first (see nextPremise/2): with the
         % bindings of the conclusion and of the premises supported so far, rather than in the order they are written,
@@ -78,7 +116,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             parser::prolog([Premise], _),
             (Supported == true ; ground(Premise)), !.
         readyCheck([slot(Premise, Result)|Slots], Supported, Slot) :-
-            (var(Result), ordinaryPremise(Premise) -> Next = false ; Next = Supported),
+            (var(Result), parser::argued(Premise) -> Next = false ; Next = Supported),
             readyCheck(Slots, Next, Slot).
 
         % The pending ordinary premise concluded by the fewest rules: each count stops at the best one so far
@@ -86,7 +124,7 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         mostSelective([Slot|Slots], Best, Selected) :-
             Slot = slot(Premise, Result),
             var(Result),
-            ordinaryPremise(Premise), !,
+            parser::argued(Premise), !,
             countLimit(Best, Limit),
             parser::candidates(Premise, Limit, Count),
             selective(Slot, Count, Best, Next),
@@ -101,17 +139,16 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         selective(Slot, Count, best(_, Min), best(Slot, Count)) :- Count < Min, !.
         selective(_, _, Best, Best).
 
-        ordinaryPremise(Premise) :-
-            \+ parser::prolog([Premise], _),
-            \+ parser::contrary([Premise], _).
-
         supportPremise(slot(Premise, Result)) :-
             parser::prolog([Premise], Term), !,
-            (callable(Term) -> call(Term); Term),
+            parser::holds(Term),
             Result = check.
         supportPremise(slot(Premise, Result)) :-
             parser::contrary([Premise], _), !,
             Result = contrary.
+        supportPremise(slot(Premise, Result)) :-
+            parser::constraint([Premise], _), !,
+            Result = constraint.
         supportPremise(slot(Premise, Result)) :-
             argument::claim(Sub, _),
             queryExploration::buildSubGraph(Premise, Sub),
@@ -126,21 +163,12 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
             collectPremises(Slots, Found).
         collectPremises([slot(_, contrary)|Slots], Found) :- !,
             collectPremises(Slots, Found).
+        collectPremises([slot(_, constraint)|Slots], Found) :- !,
+            collectPremises(Slots, Found).
         collectPremises([slot(_, argument(Sub))|Slots], Found) :-
-            collectPremises(Slots, premises([Rules, LastDefRules, DefRules, DefPremises], Supports)),
-            argument::rules(Sub, SubRules),
-            argument::info(Sub, Info),
-            argument::infoParts(Info, SubLastDefRules, SubDefRules, SubDefPremises),
-            Found = premises(
-                [[SubRules|Rules], [SubLastDefRules|LastDefRules], [SubDefRules|DefRules], [SubDefPremises|DefPremises]],
-                [Sub|Supports]
-            ).
+            collectPremises(Slots, premises(Parts, Supports)),
+            argument::accumulated(Sub, Parts, Accumulated),
+            Found = premises(Accumulated, [Sub|Supports]).
 
-        % The info of an argument made of the premise Id: none of its premises defeasible if it is strict
-        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, argument::infoParts(Info, [], [], []).
-        premiseInfo(Id, Info) :- argument::infoParts(Info, [], [], [Id]).
-
-        ruleStrictness(Id, strict) :- parser::checkStrict(Id), !.
-        ruleStrictness(_, defeasible).
         """.trimIndent()
 }

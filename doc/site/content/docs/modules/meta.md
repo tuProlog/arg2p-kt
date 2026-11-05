@@ -95,10 +95,9 @@ built-in table off, an argument for `-conflict(a, b)` does not attack `conflict(
 ## Arguable preferences
 
 `sup/2` facts are static. To let rules *argue* about priority, enable one of the defeasible preference
-models:
+models in place of `standardPref` (a theory has one preference mode):
 
 ```prolog
-graphExtension(standardPref).
 graphExtension(defeasiblePref).
 
 r1 : p => q.
@@ -117,7 +116,9 @@ Out = [[- q]]
 
 `q` prevails because an argument establishes that `r1` outranks `r2`. Under the plain
 `graphExtension(standardPref)` the same theory leaves both conclusions undecided: static preference handling
-reads `sup/2` facts only, and ignores a `sup/2` that is merely concluded.
+reads `sup/2` facts only, and ignores a `sup/2` that is merely concluded. The other way round, under
+`defeasiblePref` and `defeasibleAllPref` only the concluded preferences count: a preference that always holds is
+written as a rule with no premise (`p1 : [] => sup(r1, r2).`), not as a `sup/2` fact.
 
 Concluded preferences are not closed transitively by Arg2P, as the stated `sup/2` facts are: the theory closes
 them with a rule of its own, whose arguments then justify each derived preference by the chain behind it. Name
@@ -127,7 +128,7 @@ the rule after its ends, so that an argument can use it once for each step of a 
 t(X, Z) : sup(X, Y), sup(Y, Z) -> sup(X, Z).
 ```
 
-[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Ars%20%3A%20%5B%5D%20%3D%3E%20sup%28r1%2C%20r2%29.&query=arg2p%3A%3Asolve%28In%2C%20Out%2C%20Und%29&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AgraphExtension%28defeasiblePref%29.)
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=r1%20%3A%20p%20%3D%3E%20q.%0Ar2%20%3A%20s%20%3D%3E%20-q.%0Af1%20%3A%3D%3E%20p.%0Af2%20%3A%3D%3E%20s.%0Ars%20%3A%20%5B%5D%20%3D%3E%20sup%28r1%2C%20r2%29.&query=arg2p%3A%3Asolve%28In%2C%20Out%2C%20Und%29&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28grounded%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28defeasiblePref%29.)
 — switch the extension to `standardPref` alone and the preference stops applying.
 
 `defeasiblePref` covers comparisons that rest on a **single** superiority. When the comparator has to weigh

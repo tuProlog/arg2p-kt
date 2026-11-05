@@ -51,7 +51,7 @@ internal class PageEngine(
         val printed: StringBuilder,
     ) {
         // What it printed since last asked
-        fun output(): List<Answer> {
+        fun output(): List<PageMessage> {
             val text = synchronized(printed) { printed.toString().also { printed.clear() } }
             return if (text.isEmpty()) emptyList() else listOf(answer("output", "id" to id, "text" to text))
         }
@@ -91,7 +91,7 @@ internal class PageEngine(
         session: String,
         request: JsonObject,
         limit: Duration = Duration.INFINITE,
-    ): CompletableFuture<List<Answer>> {
+    ): CompletableFuture<List<PageMessage>> {
         expire()
         val type = request.requiredText("type")
         if (type == "close") {
@@ -126,6 +126,7 @@ internal class PageEngine(
                 val reqId = request.requiredInteger("reqId")
                 val text = request.text("text") ?: ""
                 val kind = request.text("kind") ?: "theory"
+                if (kind !in Solvers.KINDS) throw InvalidParams("kind is not one of ${Solvers.KINDS.joinToString()}")
                 submit(limit) { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
             }
             "settings" -> {
@@ -167,8 +168,8 @@ internal class PageEngine(
         id: Long,
         replacing: Boolean,
         limit: Duration,
-        work: () -> List<Answer>,
-    ): CompletableFuture<List<Answer>> {
+        work: () -> List<PageMessage>,
+    ): CompletableFuture<List<PageMessage>> {
         val solved =
             synchronized(sessions) {
                 if (replacing) page.stop()
@@ -213,7 +214,7 @@ internal class PageEngine(
         query: String,
         flags: String,
         inParallel: Boolean,
-    ): List<Answer> {
+    ): List<PageMessage> {
         synchronized(sessions) { page.run = null }
         if (query.isBlank()) return listOf(failed(id, ErrorData("Query error", "Query is a mandatory field.")))
         // the flags, the theory and the query are read in turn: the error tells which one it is about
@@ -245,7 +246,7 @@ internal class PageEngine(
     }
 
     // The next solution of [run], with the graph of its stage, and whether there may be another one
-    private fun next(run: Run): List<Answer> =
+    private fun next(run: Run): List<PageMessage> =
         synchronized(run) {
             val (solution, hasNext) =
                 try {
@@ -286,7 +287,7 @@ internal class PageEngine(
         private fun answer(
             type: String,
             vararg fields: Pair<String, Any?>,
-        ): Answer = mapOf("type" to type, *fields)
+        ): PageMessage = mapOf("type" to type, *fields)
 
         /** The answer of the request [id] of a query that failed for [error] */
         internal fun failed(
@@ -294,6 +295,6 @@ internal class PageEngine(
             error: ErrorData,
         ) = answer("failed", "id" to id, "error" to error)
 
-        private fun done(vararg answers: Answer) = CompletableFuture.completedFuture(answers.toList())
+        private fun done(vararg answers: PageMessage) = CompletableFuture.completedFuture(answers.toList())
     }
 }

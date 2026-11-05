@@ -12,27 +12,28 @@ object StatementModule : PrologModule("prolog.argumentation.graph.labelling.stat
         """
         %! statementLabelling
         %  The labels of the statements (see graphStore::labelStatement/2): IN those with an argument IN, then OUT those
-        %  with an argument OUT, then UND those with an argument UND.
+        %  with an argument OUT, then UND those with an argument UND, each statement as it is written: one with variables
+        %  and its instances are labelled each on its own (see graphStore::statementLabelled/2).
         statementLabelling :-
             findall(_, (
                 argument::conclusion(A, Conc),
                 graphStore::argumentLabel(in, A),
-                \+ graphStore::statementLabel(in, Conc),
+                \+ graphStore::statementLabelled(in, Conc),
                 graphStore::labelStatement(in, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
                 graphStore::argumentLabel(out, A),
-                \+ graphStore::statementLabel(in, Conc),
-                \+ graphStore::statementLabel(out, Conc),
+                \+ graphStore::statementLabelled(in, Conc),
+                \+ graphStore::statementLabelled(out, Conc),
                 graphStore::labelStatement(out, Conc)
             ), _),
             findall(_, (
                 argument::conclusion(A, Conc),
                 graphStore::argumentLabel(und, A),
-                \+ graphStore::statementLabel(in, Conc),
-                \+ graphStore::statementLabel(out, Conc),
-                \+ graphStore::statementLabel(und, Conc),
+                \+ graphStore::statementLabelled(in, Conc),
+                \+ graphStore::statementLabelled(out, Conc),
+                \+ graphStore::statementLabelled(und, Conc),
                 graphStore::labelStatement(und, Conc)
             ), _).
         """.trimIndent()

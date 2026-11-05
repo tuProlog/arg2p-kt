@@ -1,8 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.core.Substitution
+import it.unibo.tuprolog.argumentation.core.engine.Record
+import it.unibo.tuprolog.argumentation.core.engine.RecordKey
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 
 /**
  * The branches of a context: each a store of clauses (see [ClauseStore]), one of them active, a new one forked from
@@ -10,9 +11,60 @@ import it.unibo.tuprolog.core.Var
  */
 internal class ContextBranches {
     private var next: Int = 1
-    private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore())
-    private val identifiers: MutableMap<Term, Int> = mutableMapOf()
-    private val terms: MutableList<Term> = mutableListOf()
+    private var encoding: Program? = null
+    private val stores: MutableMap<Int, ClauseStore> = mutableMapOf(0 to ClauseStore(declared = ContextSchema.indexed))
+
+    // The converted theory of the solver, kept as a template every solve starts from (context_template_save/0,
+    // context_template_restore/0): the conversion is a function of the theory and of the flags, so the template holds
+    // for the program it was made in (rebuilt when the flags or the knowledge bases change through the solver) and for
+    // the version of its theory. Only a conversion starting from an empty branch is kept, and only an empty branch is
+    // replaced by it: what a branch holds is never lost
+    private var template: ClauseStore? = null
+    private var templateVersion: Long? = null
+    private var templateIdentifiers: Map<RecordKey, Int> = emptyMap()
+    private var templateRecords: List<Record> = emptyList()
+    private var convertingEmpty = false
+
+    /** The stores on the words of [program]: those there, and those made from now on */
+    fun bind(program: Program) {
+        if (encoding === program) return
+        template = null
+        encoding = program
+        stores.values.forEach { it.bind(program) }
+        // the identifiers as they are, for the words of the program
+        val known = records.toList()
+        records.clear()
+        identifiers.clear()
+        known.forEach { identifier(it) }
+    }
+
+    /** The active branch kept as the template, if the conversion started from an empty one and [version] is known */
+    fun saveTemplate(version: Long?) {
+        if (!convertingEmpty || version == null) return
+        template = selected.fork()
+        templateVersion = version
+        templateIdentifiers = HashMap(identifiers)
+        templateRecords = ArrayList(records)
+    }
+
+    /**
+     * The active branch, empty, replaced by a copy of the template of [version], the identifiers as they were saved;
+     * false if it is not empty or there is no such template: the conversion is to be run
+     */
+    fun restoreTemplate(version: Long?): Boolean {
+        convertingEmpty = selected.isEmpty()
+        val template = template ?: return false
+        if (!convertingEmpty || version == null || version != templateVersion) return false
+        stores[active] = template.fork()
+        identifiers.clear()
+        identifiers.putAll(templateIdentifiers)
+        records.clear()
+        records.addAll(templateRecords)
+        return true
+    }
+
+    private val identifiers = HashMap<RecordKey, Int>()
+    private val records = ArrayList<Record>()
 
     /** The active branch */
     var active: Int = 0
@@ -38,9 +90,9 @@ internal class ContextBranches {
         active = 0
         next = 1
         stores.clear()
-        stores[0] = ClauseStore()
+        stores[0] = ClauseStore(encoding, ContextSchema.indexed)
         identifiers.clear()
-        terms.clear()
+        records.clear()
     }
 
     /** [branch] made active; false if there is no such branch */
@@ -73,31 +125,35 @@ internal class ContextBranches {
         stores.keys.removeAll { it > after && it !in keep && it != active }
     }
 
+    private fun encoded(record: Record): Record = Record.encoded(record, encoding ?: Program().also { encoding = it })
+
     /**
-     * The identifier of [term], shared by all the copies of the term which only differ in variable names (variables
+     * The identifier of [record], shared by all the copies of the term which only differ in variable names (variables
      * get renamed whenever a term is read back from the context)
      */
-    fun identifier(term: Term): Int =
-        identifiers.getOrPut(canonical(term)) {
-            terms += term
-            terms.size - 1
+    fun identifier(record: Record): Int {
+        val encoded = encoded(record)
+        return identifiers.getOrPut(encoded.key) {
+            encoded.identifier = records.size
+            records += encoded
+            records.size - 1
         }
+    }
+
+    fun identifier(term: Term): Int = identifier(Record.of(term))
+
+    /** The identifier of the term with [key] in the words of [program], if it has one already and they are the ones here */
+    internal fun knownIdentifier(
+        key: RecordKey,
+        program: Program?,
+    ): Int? = if (program != null && program === encoding) identifiers[key] else null
 
     /** The identifier of [term] if it has one already (see [identifier]) */
-    fun knownIdentifier(term: Term): Int? = identifiers[canonical(term)]
+    fun knownIdentifier(term: Term): Int? = identifiers[encoded(Record.of(term)).key]
+
+    /** The record with identifier [identifier], as first given an identifier; null if none has it */
+    fun record(identifier: Int): Record? = records.getOrNull(identifier)
 
     /** The term with identifier [identifier], as first given an identifier; null if none has it */
-    fun term(identifier: Int): Term? = terms.getOrNull(identifier)
-
-    // The variables of the canonical terms, the i-th variable of a term replaced by the i-th of them: variables of their
-    // own, which no term given has (an atom in their place would make a term with that atom the same as one with a
-    // variable)
-    private val canonicalVariables: MutableList<Var> = mutableListOf()
-
-    private fun canonical(term: Term): Term {
-        val variables = term.variables.distinct().toList()
-        if (variables.isEmpty()) return term
-        while (canonicalVariables.size < variables.size) canonicalVariables += Var.of("V${canonicalVariables.size}")
-        return term.apply(Substitution.of(variables.mapIndexed { i, v -> v to canonicalVariables[i] }.toMap()))
-    }
+    fun term(identifier: Int): Term? = records.getOrNull(identifier)?.term
 }

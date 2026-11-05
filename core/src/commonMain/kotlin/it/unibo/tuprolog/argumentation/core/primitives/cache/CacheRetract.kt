@@ -1,19 +1,17 @@
 package it.unibo.tuprolog.argumentation.core.primitives.cache
 
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.primitives.context.retractAll
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
-import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /** cache_retract(+Clause): the clauses of the cache unifying with Clause removed */
 internal class CacheRetract(
     private val store: ClauseStore,
-) : PrimitiveWithSignature {
-    override val signature = Signature("cache_retract", 1)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        store.retractAll(request.arguments[0].castToStruct())
-        return sequenceOf(request.replyWith(true))
+) : AbstractNativePrimitive(Signature("cache_retract", 1)) {
+    override fun call(call: NativeCall): Int {
+        call.retractAll(store, call.arg(0))
+        return NativeCall.CONTINUE
     }
 }

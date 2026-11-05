@@ -189,17 +189,23 @@ def evaluate(argv: list[str]) -> int:
     arg2p = Arg2p.of(theory, flags)
     if arguments.query:
         for query in arguments.query:
-            answer = arg2p.answer(query)
-            print(
-                f"{query}: in {text(answer.in_statements)}, out {text(answer.out_statements)}, "
-                f"und {text(answer.und_statements)}"
-            )
+            for answer in arg2p.answer(query):
+                print(
+                    f"{query}: in {text(answer.in_statements)}, out {text(answer.out_statements)}, "
+                    f"und {text(answer.und_statements)}"
+                )
     else:
-        for index, graph in enumerate(arg2p.graphs()):
-            if index:
+        first = True
+        for solution in arg2p.solve("arg2p::solve(In, Out, Und)"):
+            if solution.is_halt:
+                raise _Failure(solution.error or "the evaluation halted")
+            if not solution.is_yes:
+                continue
+            if not first:
                 print()
-            for label in ("in", "out", "und"):
-                print(f"{label}: {', '.join(sorted(graph.conclusions(label)))}")
+            first = False
+            for label, name in (("in", "In"), ("out", "Out"), ("und", "Und")):
+                print(f"{label}: {', '.join(sorted(text(statement) for statement in solution.value(name) or []))}")
     return 0
 
 

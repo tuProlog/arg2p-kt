@@ -13,6 +13,11 @@ class ModuleTesting(
 ) {
     val solver = TestingUtils.solverWithTheory(theory)
 
+    companion object {
+        /** A module tested on [theory], its rules converted (as the pipeline starts) */
+        fun parsed(theory: String): ModuleTesting = ModuleTesting(theory).also { it.run("context_reset", "parser:::convertAllRules") }
+    }
+
     /** The solutions of [goal] */
     fun solutions(goal: String): List<Solution> = solver.solve(Struct.parse(goal, solver.operators)).toList()
 

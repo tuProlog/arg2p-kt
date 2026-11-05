@@ -8,6 +8,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import it.unibo.tuprolog.argumentation.Arg2p
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.Solution
 import java.io.BufferedReader
@@ -117,11 +118,15 @@ internal class McpServer(
         "ping" -> respond(id, JsonObject())
         "tools/list" -> respond(id, JsonObject().apply { add("tools", json.toJsonTree(tools())) })
         "tools/call" -> call(id, params)
-        "resources/list" -> respond(id, JsonObject().apply { add("resources", json.toJsonTree(listOf(RESOURCE))) })
+        "resources/list" ->
+            respond(
+                id,
+                JsonObject().apply { add("resources", json.toJsonTree(if (apps) listOf(RESOURCE) else emptyList())) },
+            )
         "resources/templates/list" -> respond(id, JsonObject().apply { add("resourceTemplates", JsonArray()) })
         "resources/read" -> {
             val uri = params.requiredText("uri")
-            if (uri == McpApp.URI) {
+            if (uri == McpApp.URI && apps) {
                 respond(id, JsonObject().apply { add("contents", json.toJsonTree(listOf(RESOURCE + ("text" to McpApp.page)))) })
             } else {
                 respond(id, error = error(RESOURCE_NOT_FOUND, "Resource not found: $uri"))
@@ -215,7 +220,7 @@ internal class McpServer(
             "check" -> {
                 val text = arguments.requiredText("text")
                 val kind = arguments.text("kind") ?: "theory"
-                if (kind !in KINDS) throw InvalidParams("kind is not one of ${KINDS.joinToString()}")
+                if (kind !in Solvers.KINDS) throw InvalidParams("kind is not one of ${Solvers.KINDS.joinToString()}")
                 tool {
                     val problem = Solvers.check(text, kind)
                     Found(mapOf("parses" to (problem == null), "problem" to problem))
@@ -226,8 +231,7 @@ internal class McpServer(
                 val flags = flagsOf(arguments)
                 tool {
                     parsing(theory)
-                    Flags.parse(flags)
-                    Found(Solvers.settings(theory, flags))
+                    Found(Solvers.settingsOf(Solvers.of(theory, Flags.parse(flags))))
                 }
             }
             "explore" -> {
@@ -250,7 +254,8 @@ internal class McpServer(
         most: Int,
         deadline: Deadline,
     ): Found {
-        val solver = Solvers.of(theory, Flags.parse(flags))
+        val printed = StringBuilder()
+        val solver = Solvers.of(theory, Flags.parse(flags)) { printed.append(it) }
         val profile = Solvers.profileOf(solver)
         val solutions = solver.solve(query)
         val found = mutableListOf<Solution>()
@@ -258,8 +263,9 @@ internal class McpServer(
         // the solutions asked for, no more: whether there may be others is known without looking for them
         while (found.size < most && solutions.hasNext()) {
             val solution = solutions.next()
-            // out of time, the resolution halts
+            // out of time, the resolution halts; halted otherwise, an error of the tool
             if (solution.isHalt && deadline.expired) break
+            if (solution.isHalt) throw Arg2pException(solution.error ?: solution.toString())
             found += solution
             if (solution.isYes) {
                 graph =
@@ -279,6 +285,7 @@ internal class McpServer(
                 "more" to (deadline.expired || solutions.hasNext()),
                 "timedOut" to deadline.expired,
                 "graph" to graph,
+                "output" to printed.toString(),
             )
         return if (deadline.expired) {
             Found(content, "Out of time: the solutions found until then. " + json.toJson(content), outOfTime = true)
@@ -292,12 +299,17 @@ internal class McpServer(
         query: String,
         flags: String,
     ): Found {
-        val answer = Solvers.of(theory, Flags.parse(flags)).answer(query)
+        val answers = Solvers.of(theory, Flags.parse(flags)).answer(query)
         return Found(
             mapOf(
-                "in" to answer.inStatements.map { it.toString() },
-                "out" to answer.outStatements.map { it.toString() },
-                "und" to answer.undStatements.map { it.toString() },
+                "answers" to
+                    answers.map { answer ->
+                        mapOf(
+                            "in" to answer.inStatements.map { it.toString() },
+                            "out" to answer.outStatements.map { it.toString() },
+                            "und" to answer.undStatements.map { it.toString() },
+                        )
+                    },
             ),
         )
     }
@@ -317,7 +329,6 @@ internal class McpServer(
                 "theory" to theory,
                 "query" to query,
                 "flags" to flags,
-                "profile" to Solvers.profileOf(Solvers.of(theory, Flags.parse(flags))),
                 "playground" to playground,
                 "timeoutSeconds" to timeout,
             )
@@ -416,9 +427,6 @@ internal class McpServer(
         private const val INTERNAL_ERROR = -32603
         private const val RESOURCE_NOT_FOUND = -32002
 
-        // What a text to check is
-        private val KINDS = listOf("theory", "query")
-
         private const val THEORY =
             "The theory, in the language of arg2p: rules `r1 : bird(X) => flies(X).` (defeasible) and `r2 : a -> b.` " +
                 "(strict), premises `f1 :=> bird(tweety).`, axioms `f2 :-> a.`, preferences `sup(r1, r2).`, negation " +
@@ -460,9 +468,9 @@ internal class McpServer(
                         "Solves a query on a theory of arg2p: its first solutions (yes, no, or halt with an error), with " +
                         "their bindings, and the argument graph of the last yes (every argument with its conclusion, top " +
                         "rule, sub-arguments and label in, out or und; every attack with its type); more tells whether the " +
-                        "search has alternatives left (they may give other solutions, or no). The default query, " +
-                        "arg2p::solve(In, Out, Und), gives the statements labelled in, out and und. Out of time, it gives " +
-                        "the solutions found until then (timedOut).",
+                        "search has alternatives left (they may give other solutions, or no), and output is what the " +
+                        "theory printed. The default query, arg2p::solve(In, Out, Und), gives the statements labelled in, " +
+                        "out and und. Out of time, it gives the solutions found until then (timedOut).",
                     "inputSchema" to
                         schema(
                             "theory" to text(THEORY),
@@ -478,7 +486,9 @@ internal class McpServer(
                     "title" to "Label the statements of a query",
                     "description" to
                         "The statements matching a query (a literal, as flies(X) or -flies(tweety)) labelled in " +
-                        "(justified), out (rejected) and und (undecided) by the theory, under its semantics.",
+                        "(justified), out (rejected) and und (undecided) by the theory, under its semantics: answers, " +
+                        "one for each labelling, or one across them all with the flag answerMode(credulous) or " +
+                        "answerMode(skeptical).",
                     "inputSchema" to
                         schema(
                             "theory" to text(THEORY),
@@ -498,7 +508,7 @@ internal class McpServer(
                             "kind" to
                                 mapOf(
                                     "type" to "string",
-                                    "enum" to KINDS,
+                                    "enum" to Solvers.KINDS,
                                     "description" to "What the text is (default theory)",
                                 ),
                             required = listOf("text"),

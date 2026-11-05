@@ -3,16 +3,14 @@ package it.unibo.tuprolog.argumentation.core.modules.graph.partial
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class QueryExplorationModuleTest {
     // b depends on a, d on c, and -a attacks a
     private val theory = "r1 : a => b.\nr2 : [] => a.\nr3 : c => d.\nr4 : [] => c.\nr5 : [] => -a.\nqueryMode."
 
-    private fun module() =
-        ModuleTesting(theory).also {
-            it.run("context_reset", "parser:::convertAllRules(_)")
-        }
+    private fun module() = ModuleTesting.parsed(theory)
 
     private fun ModuleTesting.claims() = values("context_check(argument(A)), argument::claim(A, C)", "C").toSet()
 
@@ -68,5 +66,40 @@ class QueryExplorationModuleTest {
             )
         val statIn = module.value("answerQuery(t(X, Y), I, _, _)", "I")!!
         assertTrue("t(a, a)" in statIn && "t(a, b)" in statIn, statIn)
+    }
+
+    // A query derives what the whole graph does: ac checks D before anything binds it, so after(D) is derived for no
+    // date, the one t(rita) asks for included, whatever the order of the rules
+    @Test
+    fun aQueryDoesNotBindWhatARuleChecks() {
+        val rules =
+            listOf(
+                "va(P, D) : after(D), born(P, D) -> t(P).",
+                "vb(P, D) : born(P, D), after(D) -> t(P).",
+            )
+        listOf(rules, rules.reversed()).forEach { ordered ->
+            val module =
+                ModuleTesting(
+                    "a0 :-> commencement(date(1983, 1, 1)).\na1 :-> born(rita, date(1986, 1, 1)).\n" +
+                        "ac : commencement(F), prolog(D @>= F) -> after(D).\n" + ordered.joinToString("\n") +
+                        "\nqueryMode.\nstatementLabellingMode(statement).\nargumentLabellingMode(grounded).",
+                )
+            val statIn = module.value("answerQuery(t(rita), I, _, _)", "I")!!
+            assertFalse("t(rita)" in statIn, statIn)
+            assertEquals(0, module.solutions("context_check(argument(A)), argument::claim(A, t(rita))").count { it.isYes })
+        }
+    }
+
+    // r concludes p(X) for no X in particular: an open conclusion, which a rule derives only with the graph extension
+    // constraints, whatever value the query asks for
+    @Test
+    fun aQueryDoesNotBindAnOpenConclusion() {
+        val module =
+            ModuleTesting(
+                "f1 :=> q.\nr : q => p(X).\ns : p(a) => t.\nqueryMode.\nstatementLabellingMode(statement).\n" +
+                    "argumentLabellingMode(grounded).",
+            )
+        assertEquals("[]", module.value("answerQuery(t, I, _, _)", "I"))
+        assertEquals("[]", module.value("answerQuery(p(a), I, _, _)", "I"))
     }
 }

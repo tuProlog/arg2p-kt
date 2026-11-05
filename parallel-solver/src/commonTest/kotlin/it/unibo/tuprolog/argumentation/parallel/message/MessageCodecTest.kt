@@ -30,7 +30,6 @@ class MessageCodecTest {
                 RequireSolution("run_1", text, "client_2"),
                 RequireSolution("run_1", null, "client_3"),
                 RequireAnswer(text, "client_4"),
-                EvaluationResponse(listOf(Response(text, listOf(text, ""))), emptyList(), listOf(Response("b", emptyList()))),
                 Subscribe(2, listOf(statement, argument), listOf(statement)),
                 Build(listOf(Interest(0, listOf(statement), emptyList()), Interest(1, emptyList(), listOf(statement)))),
                 Build(listOf(Interest(0, emptyList(), listOf(statement))), "connected"),

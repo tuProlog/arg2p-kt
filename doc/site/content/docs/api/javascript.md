@@ -53,10 +53,11 @@ const solver = Arg2p.builder()
     .build()
 ```
 
-`Flags.defaults()` are the flags of arg2p by default, `Flags.none()` only those the theory states, and
+`Flags.defaults()` are the flags of arg2p by default (none stated: the theory, its profile and the defaults
+decide; `Flags.none()` is the same), and
 `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of its enumeration
 (`Profile`, `Semantics`, `StatementLabelling`, `OrderingPrinciple`, `OrderingComparator`, `GraphExtension`,
-`GraphLanguage`, `GraphBuilder`, `ConflictModel`), a boolean for a switch:
+`GraphLanguage`, `GraphBuilder`, `ConflictModel`, `AnswerMode`), a boolean for a switch:
 
 ```js
 Flags.defaults()
@@ -83,9 +84,12 @@ Flags.defaults().conflictModels([ConflictModel.NEGATION, ConflictModel.DECLARED]
 parses).
 
 ```js
-const answer = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
+const [answer] = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')
 answer.inStatements.map(String)    // ['a']
 ```
+
+`answer` gives an answer for each labelling (one under `grounded`), or the one across them all with the flag
+`answerMode(credulous)` or `answerMode(skeptical)` (see [answerMode]({{% ref "/docs/api/flags#answermodemode" %}})).
 
 `graphs()` gives the graph of each labelling of the theory: one, or several for a semantics with several (preferred,
 stable, ...). A graph has its `arguments`, `attacks`, `supports` and `labellings` (each argument with its label), and
@@ -107,6 +111,14 @@ from 0: `activeBranch` is the last one, `graph()` and `graphAt(branch)` the grap
 `contextFacts(branch, goal)` what a branch stores.
 
 ---
+
+### Huge graphs
+
+For a graph too large for the objects of `graphs()`, `compactGraphs()` and `compactGraph()` give all it tells as arrays (a
+`CompactGraph`), with no object for an argument: an argument is a position in `conclusions`, `topRules` and `labels`, a text a position
+in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
+`attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
+an argument as a graph does, and `argument(p)` makes the object of one. It holds no reference to the solver.
 
 ## Prolog goals
 
@@ -134,6 +146,9 @@ while (solutions.hasNext()) {
 ```
 
 `add(text)` adds clauses to the theory, `load(text)` replaces it.
+
+`Arg2p.warmUp(milliseconds)` solves a small theory for that long (300 ms by default), for the engine of JavaScript to
+optimize the code of the solvers: the first solves take many times the later ones otherwise. In a page, call it in a worker.
 
 ---
 

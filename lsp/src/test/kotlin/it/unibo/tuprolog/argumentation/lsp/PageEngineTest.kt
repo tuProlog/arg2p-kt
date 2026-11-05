@@ -32,7 +32,7 @@ class PageEngineTest {
         session: String = "page",
         engine: PageEngine = this.engine,
         limit: Duration = Duration.INFINITE,
-    ): CompletableFuture<List<Answer>> = engine.handle(session, JsonParser.parseString(request).asJsonObject, limit)
+    ): CompletableFuture<List<PageMessage>> = engine.handle(session, JsonParser.parseString(request).asJsonObject, limit)
 
     // The answers to [request] of [session], as JSON
     private fun ask(
@@ -41,7 +41,7 @@ class PageEngineTest {
         engine: PageEngine = this.engine,
     ): List<JsonObject> = answered(send(request, session, engine))
 
-    private fun answered(answers: CompletableFuture<List<Answer>>) =
+    private fun answered(answers: CompletableFuture<List<PageMessage>>) =
         json.toJsonTree(answers.get(60, TimeUnit.SECONDS)).asJsonArray.map {
             it.asJsonObject
         }
@@ -169,7 +169,8 @@ class PageEngineTest {
         ) = ask("""{"type":"settings","reqId":1,"theory":"$theory","flags":"$flags"}""").of("settings").getAsJsonObject("settings")
         val settings = settings("graphBuildMode(abstract).\\na -> b.", flags)
         assertEquals("abstract", settings.getAsJsonArray("graphBuildMode")[0].asString)
-        assertTrue(settings.getAsJsonArray("queryMode").isEmpty)
+        // the flags given state query mode, over the profile abstract, which presets it off
+        assertEquals("true", settings.getAsJsonArray("queryMode")[0].asString)
         assertEquals("grounded", settings.getAsJsonArray("argumentLabellingMode")[0].asString)
         // a theory that does not parse: the flags alone; flags that do not: nothing
         assertEquals("aspic_plus", settings("a :=> b", flags).getAsJsonArray("graphBuildMode")[0].asString)

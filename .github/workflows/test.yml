@@ -87,7 +87,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           build-command: ./gradlew jsMainClasses jsTestClasses
           check-command: ./gradlew jsTest --continue
-          clean-command: ./gradlew cleanTest
+          clean-command: ./gradlew cleanJsTest
           should-run-codecov: false
 
   test-python:

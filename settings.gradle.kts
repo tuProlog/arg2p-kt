@@ -54,6 +54,7 @@ gitHooks {
 
 rootProject.name = "arg2p"
 
+include("engine")
 include("core")
 include("doc")
 include("actor-solver")

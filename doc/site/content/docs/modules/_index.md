@@ -46,6 +46,18 @@ This is how multi-extension semantics work: `preferred`, `stable`, `cf2` and `st
 extensions by branching with `:::`, each branch holding one labelling. When you iterate over the solutions of
 such a query, you are iterating over those branches.
 
+### The theory is the module `user`
+
+The theory you write is a module of its own, `user`, and its predicates are its own: the modules of Arg2P keep
+theirs inside, so a theory can define any predicate (`member/2`, `holds/1`, `contrary/2`, ...) without changing
+how the engine works, and a predicate the theory defines is the one its goals call, whatever a library names the
+same way. The modules reach the theory only through `user::Goal`, the way they read its rules, preferences and
+conflicts, and run its `prolog/1` checks:
+
+```prolog
+?- user::findall(X, member(X, [a, b]), L).
+```
+
 ---
 
 ## The pipeline
@@ -57,12 +69,16 @@ implementation exists.
 | --- | --- | --- |
 | Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
-| Apply graph extensions (preferences, restrictions) | one per extension | `graphExtension` |
+| Change the graph, in a fixed order: add the arguments derived from the others (the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `conflictArguments`, one per extension | `graphExtension`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
 The `structuredWhole` module runs the sequence on the whole graph, and `structuredPartial` implements the goal-directed variant
-used when `queryMode` is enabled.
+used when `queryMode` is enabled. That variant differs in the second stage alone: it builds the part of the graph the
+query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
+for a connected semantics what they attack and support), then through what the steps changing the graph relate them
+to (`queryDependencies/2` and `queryDependants/2` of the modules defining them), the attacks between
+them after. The other stages are the same.
 
 ---
 
@@ -78,13 +94,12 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`), those derived from them (`conflictArguments`) and the attacks between them (`attackBuilder`). |
+| `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
-| `debug` | Prints graphs and labellings (`buildLabelSets/0`), and the trace of `bp_grounded_partial` with the `debug` flag. |
-| `interpreter` | Meta-interpreter, used to trace how facts were derived. |
+| `debug` | Prints graphs and labellings (`buildLabelSets/0`). |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
 ### Labelling modules
@@ -101,7 +116,8 @@ one per value of `statementLabellingMode`. They all expose the same entry point,
 ### Graph extension modules
 
 `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp` and `abaPref` all expose
-`modifyArgumentationGraph/0`, and are applied after the graph has been built.
+`modifyArgumentationGraph/0`, and are applied after the graph has been built: `conflictArguments` first with
+`metaConflicts`, as it adds arguments whose attacks the others change.
 
 ---
 
@@ -193,7 +209,7 @@ Res = [in(d)]
 
 Inside the call:
 
-- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of `FlagsBuilder`, not
+- the [flags]({{% ref "/docs/api/flags" %}}) the calling solver was given apply (those of its `Flags`, not
   those written in its theory), so the module is evaluated under the same semantics, ordering and preferences,
   unless the module states its own;
 - the theory of the calling solver is **not** visible: the module is evaluated on its own content alone;

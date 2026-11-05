@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator, Optional
 
@@ -9,10 +11,32 @@ import jpype
 
 from . import _jvm
 from .flags import Flags
-from .model import Graph, graph_from_jvm
+from .model import CompactGraph, Graph, graph_from_jvm
 from .values import Value, from_jvm
 
 _API = "it.unibo.tuprolog.argumentation"
+
+_warming = threading.Lock()
+_warmed = False
+
+
+def _warm_up() -> None:
+    """
+    The JVM warmed up once in a process, by the first solver made (see Arg2p.warm_up): as long as ``ARG2P_WARM_UP`` says, in
+    milliseconds, 0 for not at all. It costs about what the first solve would take otherwise.
+    """
+    global _warmed
+    with _warming:
+        if _warmed:
+            return
+        _warmed = True
+        milliseconds = os.environ.get("ARG2P_WARM_UP")
+        if milliseconds == "0":
+            return
+        try:
+            Arg2p.warm_up(None if milliseconds is None else int(milliseconds))
+        except (ValueError, Arg2pError, jpype.JException):
+            pass  # only a warm-up: the solver made is what tells of a problem
 
 
 @dataclass(frozen=True)
@@ -107,6 +131,11 @@ class Solution:
 
     def __init__(self, solution: Any) -> None:
         self._solution = solution
+
+    @property
+    def result(self) -> str:
+        """What the solution is: yes, no or halt."""
+        return str(self._solution.getResult())
 
     @property
     def is_yes(self) -> bool:
@@ -225,7 +254,7 @@ class Arg2p:
     A solver of arg2p for a theory, as Prolog text, with its flags: it answers queries (answer), gives the graph of
     each labelling (graphs), solves Prolog goals (solve) and tests causality (causality).
 
-        >>> Arg2p.of("r1 : [] => a.\\nr2 : [] => -a.\\nsup(r1, r2).").answer("a").in_statements
+        >>> Arg2p.of("r1 : [] => a.\\nr2 : [] => -a.\\nsup(r1, r2).").answer("a")[0].in_statements
         ['a']
 
     The context of the solver keeps a branch for every stage of a resolution, numbered from 0: active_branch is the
@@ -245,6 +274,16 @@ class Arg2p:
     def builder() -> Builder:
         """A solver of arg2p, as it is described."""
         return Builder()
+
+    @staticmethod
+    def warm_up(milliseconds: Optional[int] = None) -> None:
+        """
+        Solves a small theory over and over for about [milliseconds], for the JVM to optimize the code of the solvers: the
+        first solves of a process take many times the later ones otherwise. The first solver of a process does it by
+        itself, for a moment (``ARG2P_WARM_UP`` tells how long, in milliseconds; 0 for not at all).
+        """
+        arg2p = _jvm.jclass(f"{_API}.Arg2p")
+        call(lambda: arg2p.warmUp() if milliseconds is None else arg2p.warmUp(milliseconds))
 
     @staticmethod
     def check_theory(theory: str) -> Optional[SyntaxProblem]:
@@ -279,13 +318,28 @@ class Arg2p:
         """
         return [str(value) for value in call(lambda: self._arg2p.setting(flag))]
 
-    def answer(self, query: str) -> Answer:
-        """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
-        return answer_from_jvm(call(lambda: self._arg2p.answer(query)))
+    def answer(self, query: str) -> list[Answer]:
+        """
+        The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
+        answerMode(enumerate) (the default; one with a semantics of one labelling, as grounded), the one across them all
+        with answerMode(credulous) or answerMode(skeptical) (raises Arg2pError if it halts).
+        """
+        return call(lambda: [answer_from_jvm(answer) for answer in self._arg2p.answer(query)])
 
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
         return call(lambda: [graph_from_jvm(graph) for graph in self._arg2p.graphs()])
+
+    def compact_graphs(self) -> list[CompactGraph]:
+        """
+        The graph of each labelling as arrays of identifiers, off the store, with no object for an argument: for a graph too large
+        for graphs (see CompactGraph).
+        """
+        return call(lambda: [CompactGraph(graph) for graph in self._arg2p.compactGraphs()])
+
+    def compact_graph(self) -> CompactGraph:
+        """The graph of the last resolution as arrays of identifiers: the one of its last stage (see CompactGraph)."""
+        return CompactGraph(call(self._arg2p.compactGraph))
 
     def graph(self) -> Graph:
         """The graph of the last resolution: the one of its last stage."""
@@ -339,4 +393,5 @@ class Builder:
         return self
 
     def build(self) -> Arg2p:
+        _warm_up()
         return Arg2p(call(self._builder.build))

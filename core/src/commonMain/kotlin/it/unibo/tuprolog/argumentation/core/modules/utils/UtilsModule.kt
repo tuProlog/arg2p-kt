@@ -1,13 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.utils.AppendFast
-import it.unibo.tuprolog.argumentation.core.primitives.utils.AppendLists
-import it.unibo.tuprolog.argumentation.core.primitives.utils.AssertAll
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Contains
-import it.unibo.tuprolog.argumentation.core.primitives.utils.ContainsAny
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Deduplicate
-import it.unibo.tuprolog.argumentation.core.primitives.utils.ForEach
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Intersection
 import it.unibo.tuprolog.argumentation.core.primitives.utils.MinimalBySet
 import it.unibo.tuprolog.argumentation.core.primitives.utils.Sccs
@@ -19,25 +14,20 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * Utilities on lists and on the labels of the context (module `utils`), most of them native primitives.
+ * Utilities on lists and on the labels of the context (module `utils`).
  */
 object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
     override val primitives: Map<Signature, Primitive>
         get() =
             mapOf(
-                AppendFast.signature to AppendFast,
-                AppendLists.signature to AppendLists,
-                AssertAll.signature to AssertAll,
-                ForEach.signature to ForEach,
+                Sort.signature to Sort,
+                Deduplicate.signature to Deduplicate,
+                SortDistinct.signature to SortDistinct,
+                MinimalBySet.signature to MinimalBySet,
+                UniqueByFirst.signature to UniqueByFirst,
+                Intersection.signature to Intersection,
                 Contains.signature to Contains,
-                ContainsAny.signature to ContainsAny,
-                Sort.descriptionPair,
-                Deduplicate.descriptionPair,
-                SortDistinct.descriptionPair,
-                MinimalBySet.descriptionPair,
-                UniqueByFirst.descriptionPair,
-                Intersection.descriptionPair,
-                Subtract.descriptionPair,
+                Subtract.signature to Subtract,
                 Sccs(1).let { it.signature to it },
                 Sccs(2).let { it.signature to it },
             )
@@ -47,14 +37,6 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
         """
         % Lists Utils
 
-        %! writeList(+List)
-        %  The items of List written one after the other, then a new line.
-        writeList([]) :- nl.
-        writeList([X|Others]) :-
-            write(X),
-            writeList(Others).
-
-
         %! writeListNl(+List)
         %  The items of List written each on a line.
         writeListNl([]).
@@ -62,6 +44,23 @@ object UtilsModule : PrologModule("prolog.argumentation.utils", "utils") {
             write(X),nl,
             writeListNl(Others).
 
-        % sortDistinct/2, deduplicate/2, sort/2 and subtract/3 are native primitives (see primitives/utils)
+        %! forEach(?Element, +List, +Goal)
+        %  Goal, all its solutions, for each element of List. Goal runs in this module: other modules are called through ::.
+        forEach(Element, List, Goal) :-
+            findall(_, (member(Element, List), Goal), _).
+
+        %! assertAll(+Clauses)
+        %  Each of Clauses asserted in the context, in order.
+        assertAll(Clauses) :-
+            findall(_, (member(Clause, Clauses), context_assert(Clause)), _).
+
+        %! appendLists(+Lists, -Result)
+        %  Result is the concatenation of the lists in Lists.
+        appendLists([], []).
+        appendLists([List|Lists], Result) :-
+            append(List, Rest, Result),
+            appendLists(Lists, Rest).
+
+        % The others (contains/2, subtract/3, sortDistinct/2, deduplicate/2, sortDescending/2, intersectionOf/2, ...) are native primitives
         """.trimIndent()
 }

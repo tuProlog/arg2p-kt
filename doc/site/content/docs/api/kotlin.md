@@ -36,19 +36,26 @@ fun main() {
         sup(r1, r2).
         """.trimIndent(),
     )
-    println(arg2p.answer("a").inStatements)   // [a]
+    println(arg2p.answer("a").single().inStatements)   // [a]
 }
 ```
+
+`answer` gives an answer for each labelling (one under `grounded`), or the one across them all with the flag
+`answerMode(credulous)` or `answerMode(skeptical)` (see [answerMode]({{% ref "/docs/api/flags#answermodemode" %}})).
 
 From Java, `Arg2p.of(theory)` and `Arg2p.of(theory, flags)` are static methods as well. `Arg2p.builder()` describes one in full: its `theory`, its `flags`, and the `output` receiving what it prints (the
 standard output otherwise). `add(text)` adds clauses to the theory, `load(text)` replaces it, and `theory` is the
 theory as Prolog text. `Arg2p.version()` is the version of Arg2P.
 
+`Arg2p.warmUp(milliseconds)` solves a small theory for that long (300 ms by default), for the JVM to optimize the code of the
+solvers: the first solves of a process take many times the later ones otherwise.
+
 ### Flags
 
-`Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default, `Flags.none()` only those
-the theory states, and `Flags.parse(text)` those stated by Prolog facts. Each flag has a method, taking a value of
-its enumeration, or a boolean for a switch:
+`Flags.defaults()` are the [flags]({{% ref "/docs/api/flags" %}}) of Arg2P by default (none stated: the theory,
+its profile and the defaults decide; `Flags.none()` is the same), and `Flags.parse(text)` those stated by Prolog
+facts on top of them. Each flag has a method, taking a value of its enumeration, or a boolean for a switch (false
+states it off, over the profile):
 
 ```kotlin
 val flags =
@@ -71,7 +78,8 @@ val flags =
 | `conflictModel` | `ConflictModel` (several): `NEGATION`, `DEONTIC`, `PREFERENCE`, `DECLARED`, or `BUILTIN` for all of them; none: no argument |
 | `graphBuilder` | `GraphBuilder` |
 | `modulesPath` | a path |
-| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules`, `debug` | on or off |
+| `answerMode` | `AnswerMode`: `ENUMERATE`, `CREDULOUS`, `SKEPTICAL` |
+| `queryMode`, `autoTransposition`, `prologStrictCompatibility`, `metaConflicts`, `metaRules` | on or off |
 
 Each value has the atom stating it in a theory (`Semantics.PREFERRED.value` is `preferred`); `toString()` writes the
 flags as the facts stating them. A flag the theory states overrides the one of the solver.
@@ -133,6 +141,14 @@ produces the same names.
 
 ---
 
+### Huge graphs
+
+For a graph too large for the objects of `graphs()`, `compactGraphs()` and `compactGraph()` give all it tells as arrays (a
+`CompactGraph`), with no object for an argument: an argument is a position in `conclusions`, `topRules` and `labels`, a text a position
+in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
+`attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
+an argument as a graph does, and `argument(p)` makes the object of one. It holds no reference to the solver.
+
 ## Prolog goals and values
 
 `solve(goal)` gives the solutions of a Prolog goal, computed one at a time as they are asked for (`hasNext()` and
@@ -172,15 +188,6 @@ The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}
 
 ---
 
-## Earlier entry points
-
-`Arg2pSolverFactory.evaluate(theory, flags)` (package `it.unibo.tuprolog.argumentation.core`), the graph of each
-labelling of a theory with the flags of a `FlagsBuilder` (an `Arg2pException` if the evaluation halts, as for a
-theory its profile refuses), is still there, as `FlagsBuilder` is, for the 2P-Kt integration below:
-`Flags.of(builder)` are the flags of a builder.
-
----
-
 ## Building a solver by hand
 
 Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (`core`, `core-jvm` for the JVM):
@@ -190,12 +197,12 @@ Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Arg2pSolver.default(listOf(FlagsBuilder().create())).to2pLibraries(),
+    otherLibraries = Arg2pSolver.default(listOf(Flags.defaults().library())).to2pLibraries(),
     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```
@@ -235,9 +242,9 @@ A hand-built solver has no flags unless the library set includes them, as above.
 the libraries afterwards:
 
 ```kotlin
-val settings = FlagsBuilder().create()
+val settings = Flags.defaults().library()
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
-    otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.content(),
+    otherLibraries = Arg2pSolver.default().to2pLibraries() + settings.baseContent,
     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
 )
 ```

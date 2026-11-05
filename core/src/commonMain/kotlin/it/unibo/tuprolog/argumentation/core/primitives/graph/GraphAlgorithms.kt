@@ -5,50 +5,70 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
  * every edge between two components goes from an earlier one to a later one. Nodes keep their input order
  * within a component, and successors outside nodes are ignored.
  */
-internal fun <T> stronglyConnectedComponents(
-    nodes: Iterable<T>,
-    successors: (T) -> Iterable<T>,
-): List<List<T>> {
-    val order = nodes.withIndex().associate { (i, node) -> node to i }
-    val index = HashMap<T, Int>()
-    val lowLink = HashMap<T, Int>()
-    val onStack = HashSet<T>()
-    val stack = ArrayDeque<T>()
-    val components = mutableListOf<List<T>>()
-    for (root in order.keys) {
-        if (root in index) continue
-        // explicit call stack of (node, iterator over its successors)
-        val calls = ArrayDeque<Pair<T, Iterator<T>>>()
+internal fun stronglyConnectedComponents(
+    nodes: IntArray,
+    successors: (Int) -> IntArray,
+): List<IntArray> {
+    val places = IntArray((nodes.maxOrNull() ?: -1) + 1) { -1 }
+    for (i in nodes.indices) places[nodes[i]] = i
+    val index = IntArray(nodes.size) { -1 }
+    val lowLink = IntArray(nodes.size)
+    val onStack = BooleanArray(nodes.size)
+    val stack = IntArray(nodes.size)
+    var stackTop = 0
+    // the explicit call stack: a place, its successors, the next of them to look at
+    val callPlaces = IntArray(nodes.size)
+    val callSuccessors = arrayOfNulls<IntArray>(nodes.size)
+    val callNext = IntArray(nodes.size)
+    var callTop = 0
+    var visited = 0
+    val components = ArrayList<IntArray>()
 
-        fun visit(node: T) {
-            index[node] = index.size
-            lowLink[node] = index.getValue(node)
-            stack.addLast(node)
-            onStack += node
-            calls.addLast(node to successors(node).filter { it in order }.iterator())
-        }
+    fun visit(place: Int) {
+        index[place] = visited
+        lowLink[place] = visited
+        visited++
+        stack[stackTop++] = place
+        onStack[place] = true
+        callPlaces[callTop] = place
+        callSuccessors[callTop] = successors(nodes[place])
+        callNext[callTop] = 0
+        callTop++
+    }
+    for (root in nodes.indices) {
+        if (index[root] != -1 || places[nodes[root]] != root) continue
         visit(root)
-        while (calls.isNotEmpty()) {
-            val (node, next) = calls.last()
-            if (next.hasNext()) {
-                val successor = next.next()
-                if (successor !in index) {
+        while (callTop > 0) {
+            val top = callTop - 1
+            val place = callPlaces[top]
+            val next = callSuccessors[top]!!
+            if (callNext[top] < next.size) {
+                val id = next[callNext[top]++]
+                val successor = if (id < places.size) places[id] else -1
+                if (successor == -1) continue
+                if (index[successor] == -1) {
                     visit(successor)
-                } else if (successor in onStack) {
-                    lowLink[node] = minOf(lowLink.getValue(node), index.getValue(successor))
+                } else if (onStack[successor]) {
+                    lowLink[place] = minOf(lowLink[place], index[successor])
                 }
                 continue
             }
-            calls.removeLast()
-            calls.lastOrNull()?.let { (caller, _) -> lowLink[caller] = minOf(lowLink.getValue(caller), lowLink.getValue(node)) }
-            if (lowLink[node] == index[node]) {
-                val component = mutableListOf<T>()
+            callTop--
+            callSuccessors[top] = null
+            if (callTop > 0) {
+                val caller = callPlaces[callTop - 1]
+                lowLink[caller] = minOf(lowLink[caller], lowLink[place])
+            }
+            if (lowLink[place] == index[place]) {
+                var first = stackTop
                 do {
-                    val member = stack.removeLast()
-                    onStack -= member
-                    component += member
-                } while (member != node)
-                components += component.sortedBy { order.getValue(it) }
+                    first--
+                    onStack[stack[first]] = false
+                } while (stack[first] != place)
+                val members = stack.copyOfRange(first, stackTop)
+                members.sort()
+                components += IntArray(members.size) { nodes[members[it]] }
+                stackTop = first
             }
         }
     }

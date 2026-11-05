@@ -10,45 +10,52 @@ import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
-import kotlin.js.JsName
 
 // The graph of a context branch, read through graphStore: its arguments, their labels, attacks and supports
 
 /** The graph of the active context branch */
-@JsName("mineActiveGraph")
 fun Solver.graph(): Graph = graph(activeBranch())
 
 /** The graph of the context branch [context]: its arguments, labelled, their attacks and supports */
-@JsName("mineGraph")
 fun Solver.graph(context: Int): Graph =
-    arguments(context).let {
-        Graph.of(labels(context, it), attacks(context, it), supports(context, it))
+    argumentsAndSupports(context).let { (arguments, supports) ->
+        Graph.of(
+            labels(context, arguments),
+            attacks(context, arguments),
+            supports.map { (supporter, supported) ->
+                Support(supporter, supported)
+            },
+        )
     }
 
 /**
  * The arguments of the context branch [context], with the arguments supporting them ([Argument.supports]), identified
  * as A0, A1, ... in order of their number of supporters, rules, conclusion and top rule
  */
-@JsName("mineArguments")
-fun Solver.arguments(context: Int): List<Argument> {
+fun Solver.arguments(context: Int): List<Argument> = argumentsAndSupports(context).first
+
+// The arguments of the context branch [context], as [arguments], and the supports between them, read once
+private fun Solver.argumentsAndSupports(context: Int): Pair<List<Argument>, List<Pair<Argument, Argument>>> {
     val arguments =
         arg2pScope {
-            this@arguments
+            this@argumentsAndSupports
                 .solve("graphStore" call "argumentIn"(context, X))
                 .filter { it.isYes }
                 .map { Argument.of(it.substitution[X]!!) }
                 .toList()
         }
-    supportsBetween(context, arguments).forEach { (supporter, supported) -> supported.supports.add(supporter) }
+    val supports = supportsBetween(context, arguments)
+    supports.forEach { (supporter, supported) -> supported.supports.add(supporter) }
     // ordered by the conclusion as tuProlog writes it ('-'(a)), as arguments always were
     val claims = arguments.associateWith { ArgumentTerm.parts(it.termRepresentation())!!.claim.toString() }
-    return arguments
-        .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { claims.getValue(it) }, { it.topRule }))
-        .onEachIndexed { index, argument -> argument.identifier = "A$index" }
+    val sorted =
+        arguments
+            .sortedWith(compareBy({ it.supports.size }, { it.rules.size }, { claims.getValue(it) }, { it.topRule }))
+            .onEachIndexed { index, argument -> argument.identifier = "A$index" }
+    return sorted to supports
 }
 
 /** The attacks between [arguments] in the context branch [context] */
-@JsName("mineAttacks")
 fun Solver.attacks(
     context: Int,
     arguments: List<Argument>,
@@ -72,14 +79,12 @@ fun Solver.attacks(
 }
 
 /** The supports between [arguments] in the context branch [context] */
-@JsName("mineSupports")
 fun Solver.supports(
     context: Int,
     arguments: List<Argument>,
 ): List<Support> = supportsBetween(context, arguments).map { (supporter, supported) -> Support(supporter, supported) }
 
 /** [arguments] with their labels in the context branch [context] (na, when an argument has none) */
-@JsName("mineLabels")
 fun Solver.labels(
     context: Int,
     arguments: List<Argument>,
@@ -99,7 +104,6 @@ fun Solver.labels(
 }
 
 /** The number of the active context branch: the one of the last stage of the last resolution */
-@JsName("mineActiveBranch")
 fun Solver.activeBranch(): Int =
     arg2pScope {
         this@activeBranch

@@ -143,8 +143,8 @@ class ThreadedCluster private constructor(
     }
 
     /**
-     * The arguments for [statement], as Prolog text, by label: the evaluations of several callers run in parallel (an
-     * Arg2pException if the cluster closes meanwhile)
+     * The statements answering [statement], as Prolog text, by label, each with the arguments for it: the evaluations
+     * of several callers run in parallel (an Arg2pException if the cluster closes meanwhile)
      */
     fun solve(statement: String): EvaluationResponse = answered(replies.replied { site.solve(statement, it) })
 

@@ -555,8 +555,6 @@ class ArgumentLabellingTest {
                         .solve(labeller call "argumentLabelling")
                         .filter { res -> res.isYes }
                         .map { _ ->
-                            println(expected)
-                            println(mapper(solver.graph().labellings))
                             assertTrue(expected.any { it == mapper(solver.graph().labellings) })
                         }.count()
                         .also { count ->

@@ -13,28 +13,33 @@ class ConflictArgumentsModuleTest {
     @Test
     fun withoutMetaConflictsEveryArgumentAttacks() {
         val module = ModuleTesting()
-        assertTrue(module.holds("conflictArguments::canAttack($plain)"))
+        assertTrue(module.holds("conflict::attacker($plain)"))
     }
 
     @Test
     fun withMetaConflictsOnlyTheCopiesAttack() {
         val module = ModuleTesting("metaConflicts.")
-        assertTrue(module.holds("conflictArguments::canAttack($copy)"))
-        assertFalse(module.holds("conflictArguments::canAttack($plain)"))
-        assertEquals("conflict(a, b)", module.value("conflictArguments::conflictOf($copy, C)", "C"))
-        assertFalse(module.holds("conflictArguments::conflictOf($plain, _)"))
+        assertTrue(module.holds("conflict::attacker($copy)"))
+        assertFalse(module.holds("conflict::attacker($plain)"))
+        assertEquals("conflict(a, b)", module.value("conflict::carried($copy, C)", "C"))
+        assertFalse(module.holds("conflict::carried($plain, _)"))
     }
 
     @Test
     fun aCopyIsMadeForEachConflictArgument() {
         val module = ModuleTesting("metaConflicts.\nr1 : [] => a.\nr2 : [] => b.\nr3 : [] => conflict(a, b).\nr4 : [] => conflict(a, c).")
-        module.run("context_reset", "parser:::convertAllRules(_)", "ruleGraph:::buildArguments", "ruleGraph::buildAdditionalArguments")
-        val conflicts = module.values("graphStore::argumentFor([a], A), conflictArguments::conflictOf(A, C)", "C").toSet()
+        module.run(
+            "context_reset",
+            "parser:::convertAllRules(_)",
+            "ruleGraph:::buildArguments",
+            "conflictArguments::buildAdditionalArguments",
+        )
+        val conflicts = module.values("graphStore::argumentFor([a], A), conflict::carried(A, C)", "C").toSet()
         assertEquals(setOf("conflict(a, b)", "conflict(a, c)"), conflicts)
         // each copy is supported by its conflict argument
         assertTrue(
             module.holds(
-                "graphStore::argumentFor([a], A), conflictArguments::conflictOf(A, conflict(a, b)), " +
+                "graphStore::argumentFor([a], A), conflict::carried(A, conflict(a, b)), " +
                     "graphStore::argumentFor([conflict(a, b)], C), context_check(support(C, A))",
             ),
         )

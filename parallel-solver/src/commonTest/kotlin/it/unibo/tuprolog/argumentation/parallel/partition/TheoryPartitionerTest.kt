@@ -1,5 +1,10 @@
 package it.unibo.tuprolog.argumentation.parallel.partition
 
+import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.parse
+import it.unibo.tuprolog.solve.Solver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -85,4 +90,29 @@ class TheoryPartitionerTest {
 
     @Test
     fun aTheoryWithNoRuleHasNoPartition() = assertEquals(emptyList(), TheoryPartitioner.partition("sup(r1, r2).").partitions)
+
+    // The axioms of temporal are rules of the theory converted, partitioned as the others: a worker does not add them
+    // again, its arguments concluding open statements all the same, nor does the catalog
+    @Test
+    fun theAxiomsOfTimeArePartitionedOnce() {
+        val theory = "temporal.\ne1 :=> happens(load, 1).\ni1 :=> initiates(load, loaded).\nq1 : holdsAt(loaded, 3) => canShoot."
+        val partitioning = TheoryPartitioner.partition(theory)
+        assertTrue(partitioning.temporal)
+        val workers =
+            partitioning.partitions.indices.map { index ->
+                Arg2pSolverFactory
+                    .default(
+                        theory = partitioning.theoryOf(index),
+                        settings = Flags.parse("temporal.").library(),
+                    ).also {
+                        it.solve(Struct.parse("context_reset, parser:::convertAllRules(_)", it.operators)).first()
+                    }
+            }
+        val axioms = { solver: Solver ->
+            solver.solve(Struct.parse("parser::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
+        }
+        assertEquals(1, workers.sumOf(axioms))
+        workers.forEach { assertTrue(it.solve(Struct.parse("parser::instances", it.operators)).first().isYes) }
+        assertTrue(partitioning.catalog.contains("openConclusions"))
+    }
 }

@@ -99,7 +99,7 @@ class QueryExplorationTest {
             "b",
         )
 
-    // the conflicts are arguments as well: those the labels depend on are explored through their hooks
+    // the conflicts are arguments as well: those the labels depend on are explored through their query relations
     @Test
     fun conflictsArgued() =
         assertSameExploration("metaConflicts.\nr0 : [] => conflict(a, b).\nf1 :=> a.\nf2 :=> b.\nr1 : b => c.", "a", "b", "c")

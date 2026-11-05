@@ -16,23 +16,32 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
     override val prologRawTheory: String =
         // language=Prolog
         """
+        %! modifyArgumentationGraph
+        %  With metaConflicts, the copies (see buildAdditionalArguments/0) and their attacks, the only ones.
+        modifyArgumentationGraph :-
+            buildAdditionalArguments,
+            findall(Id, context_check(conflictCopy(Id)), Ids),
+            context_retract(conflictCopy(_)),
+            attackBuilder::buildAttacksOf(Ids).
+
         %! buildAdditionalArguments
         %  With metaConflicts, the copies of the saved arguments for each argument for a conflict on their conclusion.
         buildAdditionalArguments :-
             findall(_, buildCopy, _).
 
         buildCopy :-
-            setting(metaConflicts),
             conflictArgument(Conclusion, ConflictArgument),
             argument::claim(ConflictArgument, Conflict),
             graphStore::argumentId(ConflictArgument, ConflictId),
             graphStore::argumentFor(Conclusion, Argument),
-            \+ conflictOf(Argument, _),
+            \+ conflict::carried(Argument, _),
             argument::rules(Argument, Rules),
             argument::withRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
-            graphStore::saveArgument(a, Conclusion, Copy),
+            graphStore::saveArgument(Conclusion, Copy),
+            graphStore::argumentId(Copy, Id),
+            context_assert(conflictCopy(Id)),
             graphStore::saveSupport(ConflictArgument, Copy),
-            cloneSupports(Argument, Copy),
+            graphStore::copySupports(Argument, Id),
             fail.
         buildCopy.
 
@@ -42,22 +51,30 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
         conflictArgument([A], ConflictArgument) :-
             graphStore::argumentFor([conflict(A, _)], ConflictArgument).
 
-        % The supports of Original also support Copy
-        cloneSupports(Original, Copy) :-
-            findall(_, (
-                graphStore::support(Support, Original),
-                graphStore::saveSupport(Support, Copy)
-            ), _).
+        %==============================================================================
+        % QUERY MODE
+        %==============================================================================
 
-        %! conflictOf(+Argument, -Conflict)
-        %  Argument is a copy made for an argument for Conflict.
-        conflictOf(Argument, Conflict) :-
-            argument::rules(Argument, [mc(_, Conflict)|_]).
+        %! queryDependencies(+Argument, -Statement)
+        %  The conflicts are themselves conclusions: Argument depends on the arguments for Statement, which make others
+        %  conflict with it.
+        queryDependencies(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::statement(_, Conclusion, Statement).
+        queryDependencies(Argument, Statement) :-
+            argument::topRule(Argument, Rule),
+            Rule \== none,
+            conflict::statement(_, [Rule], Statement).
 
-        %! canAttack(+Argument)
-        %  Argument may attack others: with metaConflicts only the copies do.
-        canAttack(Argument) :- setting(metaConflicts), !,
-            conflictOf(Argument, _).
-        canAttack(_).
+        %! queryDependants(+Argument, -Statement)
+        %  The arguments for Statement depend on Argument: those its conclusion makes conflict with others, and, for an
+        %  argument for a conflict, those it makes conflict.
+        queryDependants(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::statement(Conclusion, _, Statement).
+        queryDependants(Argument, Statement) :-
+            argument::claim(Argument, Conflict),
+            conflict::statement([A], [B], Conflict),
+            (Statement = A ; Statement = B).
         """.trimIndent()
 }

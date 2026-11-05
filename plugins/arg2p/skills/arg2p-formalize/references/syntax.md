@@ -42,7 +42,9 @@ default ordering (`orderingPrinciple(last)`, `orderingComparator(elitist)`), an 
 premise is stronger than one with some, whatever the preferences.
 
 Preferences can be concluded by rules (`r : condition => sup(r1, r2).`): add `graphExtension(defeasiblePref).` (or
-`defeasibleAllPref` for comparators needing several superiorities) to the flags.
+`defeasibleAllPref` for comparators needing several superiorities) to the flags, in place of `standardPref` (one
+preference mode at most). Then only concluded preferences count: a fixed one is a rule with no premise
+(`p1 : [] => sup(r1, r2).`).
 
 ## Custom conflicts
 
@@ -71,6 +73,9 @@ A `prolog/1` premise is a computation, never attacked. Write it **after** the pr
 (`prolog(X >= 18), age(X)` raises an instantiation error). `min/2` and `max/2` are not available inside it: use
 if-then-else. Recursive counting or summing rules make argument construction stall after a few levels: prefer
 closed-form indices and one flat sum.
+
+A conclusion must be ground: a rule (or a fact) leaving a variable of its conclusion unbound by its premises
+concludes nothing, even when a query asks for a value.
 
 ## Burden of persuasion
 
