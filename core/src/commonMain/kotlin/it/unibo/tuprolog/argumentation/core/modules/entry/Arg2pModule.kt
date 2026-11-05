@@ -41,19 +41,21 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         %  The statements and the arguments of the theory labelled IN, OUT and UND, as [In, Out, Und] lists.
         buildLabelSets([StatIn, StatOut, StatUnd], [ArgsIn, ArgsOut, ArgsUnd]) :-
             context_reset,
-            parser:::convertAllRules(_),
+            parser:::convertAllRules,
             structuredWhole::computeGlobalAcceptance(_, [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]).
 
         %! buildLabelSets(-StatIn, -StatOut, -StatUnd)
         %  The statements of the theory labelled IN, OUT and UND.
         buildLabelSets(StatIn, StatOut, StatUnd) :-
-            buildLabelSets([StatIn, StatOut, StatUnd], _).
+            context_reset,
+            parser:::convertAllRules,
+            structuredWhole::computeStatementLabels(StatIn, StatOut, StatUnd).
 
         %! buildLabelSets
         %  The labelling of the theory, printed: the graph, the labels of the arguments and those of the statements.
         buildLabelSets :-
             context_reset,
-            parser:::convertAllRules(ArgRules),
+            parser:::convertAllRules,
             structuredWhole::computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]),
             debug::printArgumentationGraph(Arguments, Attacks, Supports),
             debug::printArgumentLabelling([ArgsIn, ArgsOut, ArgsUnd]),
@@ -61,31 +63,32 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
 
         %! answerQuery(+Goal, -Yes, -No, -Und)
         %  The statements unifying with Goal labelled IN, OUT and UND: with queryMode only the part of the graph they depend on is built.
+        %  With several labellings, answerMode states how: one solution for each (enumerate), or one across them all
+        %  (credulous, skeptical).
         answerQuery(Goal, Yes, No, Und) :-
             context_reset,
-            parser:::convertAllRules(_),
+            parser:::convertAllRules,
             structuredPartial:::computeStatementAcceptance(Goal, Yes, No, Und).
 
         %! answerQuery(+Goal, -Result)
         %  The labels of the statements unifying with Goal, as in(S), out(S) and und(S) terms.
         answerQuery(Goal, Res) :-
             context_reset,
-            parser:::convertAllRules(_),
+            parser:::convertAllRules,
             structuredPartial:::computeStatementAcceptance(Goal, Res).
 
         %! answerQuery(+Goal)
-        %  Goal is a statement labelled IN.
+        %  Goal is a statement labelled IN (as answerMode states, see answerQuery/4).
         answerQuery(Goal) :-
             context_reset,
-            parser:::convertAllRules(_),
-            structuredPartial:::computeStatementAcceptance(Goal),
-            graphStore::statementLabel(in, [Goal]).
+            parser:::convertAllRules,
+            structuredPartial:::accepted(Goal).
 
         %! buildLabelSetsSilent
         %  The labelling of the theory, in the context.
         buildLabelSetsSilent :-
             context_reset,
-            parser:::convertAllRules(ArgRules),
+            parser:::convertAllRules,
             structuredWhole::computeGlobalAcceptance.
         """.trimIndent()
 }

@@ -113,9 +113,9 @@ Rule names are unique atoms. Without `sup/2`, two conflicting defeasible conclus
 ## Step 5: choose the flags
 
 Flags are Prolog facts, given to the solver beside the theory (or written in the theory). With no flags, the solver
-uses `argumentLabellingMode(grounded).`, `statementLabellingMode(statement).` and `queryMode.`; flags you give
-**replace** those three, and what they leave out takes the value of the profile (query mode is then off unless you
-state `queryMode.`). Every flag is in `references/flags.md`; the choices that matter:
+is given `argumentLabellingMode(grounded).`, `statementLabellingMode(statement).` and `queryMode.`; the flags you give
+override only the flags they state, the others keep the value their profile presets or their default (query mode stays
+on unless you state `queryMode(off).`). Every flag is in `references/flags.md`; the choices that matter:
 
 - **Semantics**, `argumentLabellingMode(S)`:
   - `grounded` (the default): skeptical, always exactly one labelling. "What must be accepted?"
@@ -123,9 +123,11 @@ state `queryMode.`). Every flag is in `references/flags.md`; the choices that ma
     defensible?" `stable` may have none.
   - `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete`: **required** when the theory declares `bp/N`.
 - **Preferences concluded by rules** (`sup/2` in the head of a rule): `graphExtension(defeasiblePref).` (one
-  superiority) or `graphExtension(defeasibleAllPref).` (comparators needing several). A theory stating
-  `graphExtension` replaces the profile's: restate `graphExtension(standardPref).` if you still want static
-  preferences.
+  superiority) or `graphExtension(defeasibleAllPref).` (comparators needing several), in place of
+  `standardPref`: a theory has one preference mode, and stating two is refused. Under them only concluded
+  preferences count: write a fixed one as a rule with no premise (`p1 : [] => sup(r1, r2).`), not a `sup/2` fact. A
+  theory stating `graphExtension` replaces the profile's: restate `graphExtension(rebutRestriction).` if you still
+  want it.
 - **Ordering**: `orderingPrinciple(last).` (the default) or `weakest.`; `orderingComparator(elitist).` (the default),
   `democrat.` or `normal.`
 - **`queryMode.`**: goal-directed evaluation: only the arguments relevant to the query are built, which is faster on

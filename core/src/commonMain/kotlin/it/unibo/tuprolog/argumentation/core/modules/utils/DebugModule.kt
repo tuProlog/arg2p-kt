@@ -1,16 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.flags.DebugOutput
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
- * The output of the labellings (module `debug`): printed by buildLabelSets/0, and written when the debug switch is on.
+ * The output of the labellings (module `debug`), printed by buildLabelSets/0
  */
 object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(DebugOutput)
-
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -24,7 +19,7 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
             ),
             findall((A1, ' SUPPORTS ', A2), member((A1, A2), Supports), SupportsToPrint),
             findall((A1, ' ', T, ' ', A2, ' ON ', A3),  member((T, A1, A2, A3), Attacks),  AttacksToPrint),
-            write('HERE THE GROUNDED SEMI-ABSTRACT ARGUMENTATION GRAPH'),nl,
+            write('HERE THE ARGUMENTATION GRAPH'),nl,
             utils::writeListNl(ArgumentsToPrint),
             utils::writeListNl(SupportsToPrint),
             utils::writeListNl(AttacksToPrint).
@@ -46,16 +41,9 @@ object DebugModule : PrologModule("prolog.argumentation.debug", "debug") {
         printStatementLabelling([In, Ni, Und]) :-
             write('HERE THE STATEMENTS LABELLED IN: '),nl,
             utils::writeListNl(In),
-            write('HERE THE STATEMENTS LABELLED NI: '),nl,
+            write('HERE THE STATEMENTS LABELLED OUT: '),nl,
             utils::writeListNl(Ni),
             write('HERE THE STATEMENTS LABELLED UND: '),nl,
             utils::writeListNl(Und).
-
-        %! writeDebug(+List)
-        %  The debug output is written with the debug switch on (setting(debug))
-        writeDebug(List) :-
-            setting(debug), !,
-            utils::writeList(List).
-        writeDebug(_).
         """.trimIndent()
 }

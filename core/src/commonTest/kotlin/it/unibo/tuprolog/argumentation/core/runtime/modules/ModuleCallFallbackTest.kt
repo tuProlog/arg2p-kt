@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.runtime.modules
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore
@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
  */
 class ModuleCallFallbackTest {
     private val solver =
-        Arg2pSolver.default(listOf(FlagsBuilder().empty(true).create())).let {
+        Arg2pSolver.default(listOf(Flags.none().library())).let {
             PrologSolverFactory.mutableSolverWithDefaultBuiltins(
                 unificator = Arg2pUnificator,
                 otherLibraries = it.to2pLibraries(),

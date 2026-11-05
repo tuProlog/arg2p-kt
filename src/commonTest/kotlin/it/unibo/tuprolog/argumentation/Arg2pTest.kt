@@ -13,10 +13,35 @@ class Arg2pTest {
 
     @Test
     fun aQueryIsAnswered() {
-        val answer = Arg2p.of(conflict).answer("a")
+        val answer = Arg2p.of(conflict).answer("a").single()
         assertEquals(listOf(Value.Atom("a")), answer.inStatements)
         assertEquals("in", answer.label("a"))
-        assertEquals(Answer(emptyList(), listOf(Value.parse("-a")), emptyList()), Arg2p.of(conflict).answer("-a"))
+        assertEquals(Answer(emptyList(), listOf(Value.parse("-a")), emptyList()), Arg2p.of(conflict).answer("-a").single())
+    }
+
+    // Two preferred labellings, one with d IN and one with -d IN, c IN in both: an answer for each (enumerate), or one across
+    // them, d and -d IN as each is in some (credulous), OUT as each is out in some (skeptical)
+    @Test
+    fun aQueryIsAnsweredForEachLabellingOrAcrossThem() {
+        val theory = "f1 :=> d.\nf2 :=> -d.\nf3 :=> c."
+        val flags = Flags.defaults().argumentLabellingMode(Semantics.PREFERRED)
+        val labels = { answer: Answer ->
+            listOf(answer.inStatements, answer.outStatements, answer.undStatements).map { it.map(Value::toString).toSet() }
+        }
+        val enumerated =
+            Arg2p
+                .of(theory, flags)
+                .answer("X")
+                .map(labels)
+                .toSet()
+        assertEquals(setOf(listOf(setOf("c", "d"), setOf("-d"), emptySet()), listOf(setOf("c", "-d"), setOf("d"), emptySet())), enumerated)
+        val credulous = Arg2p.of(theory, flags.answerMode(AnswerMode.CREDULOUS))
+        assertEquals(listOf(setOf("c", "d", "-d"), emptySet(), emptySet()), labels(credulous.answer("X").single()))
+        assertEquals(1, credulous.answer("X").size)
+        val skeptical = Arg2p.of(theory, flags.answerMode(AnswerMode.SKEPTICAL))
+        assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X").single()))
+        assertTrue(skeptical.solve("answerQuery(c)").hasNext())
+        assertFalse(skeptical.solve("answerQuery(d)").next().isYes)
     }
 
     @Test
@@ -109,14 +134,15 @@ class Arg2pTest {
         assertEquals(all, Arg2p.of("conflictModel(builtin).").setting("conflictModel"))
         assertEquals(listOf("declared"), Arg2p.of("conflictModel(declared).").setting("conflictModel"))
         assertEquals(emptyList(), Arg2p.of("conflictModel(none).").setting("conflictModel"))
-        // the flags of the solver: several parts, none, or all of them, which leave the profile its own (ABA)
+        // the flags of the solver: several parts, none, or all of them; the profile has its own (ABA) unless they state some
         val parts = Flags.none().conflictModel(ConflictModel.NEGATION, ConflictModel.PREFERENCE)
         assertEquals("conflictModel(negation).\nconflictModel(preference).\n", parts.toString())
         assertEquals(listOf("negation", "preference"), Arg2p.of("", parts).setting("conflictModel"))
         assertEquals(emptyList(), Arg2p.of("", Flags.none().conflictModel()).setting("conflictModel"))
         val aba = { flags: Flags -> Arg2p.of("graphBuildMode(aba).", flags).setting("conflictModel") }
-        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(ConflictModel.BUILTIN)))
-        assertEquals(listOf("declared"), aba(Flags.defaults().conflictModel(*ConflictModel.entries.toTypedArray())))
+        assertEquals(listOf("declared"), aba(Flags.defaults()))
+        assertEquals(all, aba(Flags.defaults().conflictModel(ConflictModel.BUILTIN)))
+        assertEquals(all, aba(Flags.defaults().conflictModel(*ConflictModel.entries.toTypedArray())))
         assertEquals(listOf("negation"), aba(Flags.defaults().conflictModel(ConflictModel.NEGATION)))
     }
 
@@ -142,9 +168,15 @@ class Arg2pTest {
     fun theTheoryChanges() {
         val arg2p = Arg2p.of("f1 :=> a.")
         arg2p.add("f2 :=> b.")
-        assertEquals(listOf(Value.Atom("b")), arg2p.answer("b").inStatements)
+        assertEquals(listOf(Value.Atom("b")), arg2p.answer("b").single().inStatements)
         arg2p.load("f3 :=> c.")
-        assertTrue(arg2p.answer("b").inStatements.isEmpty())
+        assertTrue(
+            arg2p
+                .answer("b")
+                .single()
+                .inStatements
+                .isEmpty(),
+        )
         assertTrue("f3" in arg2p.theory)
     }
 
@@ -176,7 +208,7 @@ class Arg2pTest {
                 .toString(),
         )
         assertEquals(
-            "",
+            "queryMode(off).\n",
             Flags
                 .none()
                 .queryMode(true)
@@ -184,13 +216,14 @@ class Arg2pTest {
                 .toString(),
         )
         assertEquals(Flags.none().graphBuildMode(Profile.ABA_PLUS), Flags.parse("graphBuildMode(aba_plus)."))
-        assertTrue("graphBuildMode(aspic_plus)." in Flags.defaults().toString())
+        // the defaults state nothing: the theory, its profile and the defaults of the flags decide
+        assertEquals("", Flags.defaults().toString())
     }
 
     @Test
     fun theFlagsOfTheSolverAreTheOnesItUses() {
         val theory = "f1 :=> d.\nf2 :=> -d."
-        val grounded = Arg2p.of(theory).answer("d")
+        val grounded = Arg2p.of(theory).answer("d").single()
         assertEquals(listOf(Value.Atom("d")), grounded.undStatements)
         val stable = Arg2p.of(theory, Flags.defaults().argumentLabellingMode(Semantics.STABLE)).graphs()
         assertEquals(setOf(listOf("d"), listOf("-d")), stable.map { it.conclusions("in") }.toSet())

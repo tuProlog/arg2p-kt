@@ -1,13 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.ModuleTesting
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class TranspositionModuleTest {
     private val rules = "[[s1, (a, b), c]]"
@@ -17,7 +18,7 @@ class TranspositionModuleTest {
         val module = ModuleTesting("autoTransposition.")
         val transposed =
             module
-                .value("transposition::transpose($rules, $rules, T)", "T")!!
+                .value("transposition::transpose($rules, $rules, [], T)", "T")!!
                 .let { Term.parse(it, module.solver.operators) }
                 .castToList()
                 .toList()
@@ -34,7 +35,7 @@ class TranspositionModuleTest {
         val module = ModuleTesting("autoTransposition.\nconflict([c], [d]).\nconflict([d], [c]).\nconflict([a], [e]).")
         val transposed =
             module
-                .value("transposition::transpose($rules, $rules, T)", "T")!!
+                .value("transposition::transpose($rules, $rules, [], T)", "T")!!
                 .let { Term.parse(it, module.solver.operators) }
                 .castToList()
                 .toList()
@@ -56,7 +57,7 @@ class TranspositionModuleTest {
         val module = ModuleTesting("autoTransposition.\nconflictModel(negation).\nconflict([c], [d]).\nconflict([d], [c]).")
         val transposed =
             module
-                .value("transposition::transpose($rules, $rules, T)", "T")!!
+                .value("transposition::transpose($rules, $rules, [], T)", "T")!!
                 .let { Term.parse(it, module.solver.operators) }
                 .castToList()
                 .toList()
@@ -72,17 +73,60 @@ class TranspositionModuleTest {
     @Test
     fun theDeclaredContradictoriesKeepTheConclusionsConsistent() {
         val theory = "r1 : [] => a.\ns1 : a -> c.\nf1 :-> d.\nconflict([c], [d]).\nconflict([d], [c]).\n"
-        val solver = Arg2pSolverFactory.default(theory = theory, settings = FlagsBuilder().create())
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library())
         val solution = solver.solve(Struct.parse("buildLabelSets(I, O, _)", solver.operators)).first()
         assertEquals("[['-'(a)], [d]]", solution.substitution.getByName("I").toString())
         assertEquals("[[c], [a]]", solution.substitution.getByName("O").toString())
+    }
+
+    // a rule of the theory is named s1_i: the transposition takes another name, rather than the place of the rule
+    @Test
+    fun aTranspositionNeverTakesTheNameOfARuleOfTheTheory() {
+        val module = ModuleTesting("autoTransposition.")
+        val transposed =
+            module
+                .value("transposition::transpose($rules, $rules, [s1_i], T)", "T")!!
+                .let { Term.parse(it, module.solver.operators) }
+                .castToList()
+                .toList()
+                .toSet()
+        assertEquals(
+            setOf("[s1, (a, b), c]", "[transposition(s1, '_i'), ('-'(c), b), '-'(a)]", "[s1_ii, ('-'(c), a), '-'(b)]")
+                .map { Term.parse(it) }
+                .toSet(),
+            transposed,
+        )
+    }
+
+    // s_i, a strict rule of the theory, keeps concluding e beside the transpositions of s
+    @Test
+    fun aRuleNamedAsATranspositionKeepsItsArguments() {
+        val theory = "s : a, b -> c.\ns_i : d -> e.\nf1 :=> a.\nf2 :=> b.\nf3 :=> d.\n"
+        val solver = Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library())
+        val solution = solver.solve(Struct.parse("buildLabelSets(I, _, _)", solver.operators)).first()
+        assertTrue("e" in solution.substitution.getByName("I").toString())
+    }
+
+    // The premises other than the one transposed keep their order: the check of r1 comes after l(L), which binds L
+    @Test
+    fun theOtherPremisesKeepTheirOrder() {
+        val module = ModuleTesting("autoTransposition.")
+        val rules = "[[r1, (l(L), prolog(member(Y, L)), d(Y)), c(Y)]]"
+        val transposed =
+            module
+                .value("transposition::transpose($rules, $rules, [], T)", "T")!!
+                .let { Term.parse(it, module.solver.operators) }
+                .castToList()
+                .toList()
+        val forD = transposed.map { it.castToList().toList() }.single { it[2].toString().contains("d(") }
+        assertEquals("('-'(c(Y)), l(L), prolog(member(Y, L)))", forD[1].toString().replace(Regex("_[A-Za-z0-9_]+"), "").let { it })
     }
 
     @Test
     fun withoutAutoTranspositionTheRulesStayAsTheyAre() {
         // on in the profile aspic_plus, the default
         val module = ModuleTesting("autoTransposition(off).")
-        assertEquals(Term.parse(rules), Term.parse(module.value("transposition::transpose($rules, $rules, T)", "T")!!))
+        assertEquals(Term.parse(rules), Term.parse(module.value("transposition::transpose($rules, $rules, [], T)", "T")!!))
     }
 
     // Matched as they are: -X, the permissions p/1 and nothing else

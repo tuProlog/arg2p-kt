@@ -12,15 +12,15 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * and writing them in the context; the terms are those of the data modules (argument, support, attack, label,
  * statement).
  *
- * Besides the graph itself (`argument/1`, `support/2`, `attack/4` terms), the context keeps:
- * - `conc(Conclusion) :- argument(A)` and `arg(Id) :- argument(A)`, the arguments by conclusion and by identifier
- *   (`context_id`);
+ * An argument is kept once, as the term of its identifier (`context_id`, `context_term`): `argument/1` holds that record,
+ * looked up by the claim inside it, and the rest of the graph refers to it by the identifier. The context keeps:
+ * - `arg(Id)`, the arguments of the graph the labellings label;
  * - `newConc(Tag, Conclusion)`, the conclusions of the arguments saved under a tag (the round of the graph builder);
- * - a compact copy of the graph by argument identifiers: `argInfo(Id, InfoId, Info)`, `supportId(IdA, IdB)`,
- *   `attackId(Type, IdA, IdB, IdOn)`. Loops over the graph go through it, so that resolution steps carry integers
- *   rather than whole arguments; InfoId identifies the info of the arguments (see the module argument), what the
- *   preferences weigh;
- * - the labels of the arguments and of the statements (see the module label).
+ * - the graph by these identifiers: `argInfo(Id, InfoId)`, `supportId(IdA, IdB)`, `attackId(Type, IdA, IdB, IdOn)`; InfoId
+ *   identifies the info of the argument (see the module argument), what the preferences weigh;
+ * - the labels of the arguments and of the statements (see the module label): `in(A)` shares the record of `argument(A)`.
+ *
+ * `support/2` and `attack/4`, looked up in the context, are answered from the identifiers, each argument read on its own.
  *
  * Only the attacks found are saved: an attack on an argument is an attack on every argument built on it as well, and
  * the attacks are read with those (attack/4, attackById/4, attacksById/2, attackIn/5, and the attack graph of the
@@ -37,18 +37,43 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         % Arguments
         %--------------------------------------------------------------------------
 
-        %! saveArgument(+Tag, +Conclusion, +Argument)
-        %  Argument, for Conclusion, is saved under Tag, unless it already is.
-        saveArgument(Tag, Conclusion, Argument) :-
-            context_absent(clause(conc(Conclusion), argument(Argument))),
-            context_assert(newConc(Tag, Conclusion)),
+        %! saveArgument(+Conclusion, +Argument)
+        %  Argument, whose conclusion is Conclusion, is saved, unless it already is.
+        saveArgument(Conclusion, Argument) :-
+            context_absent(argument(Argument)),
+            argument::conclusion(Argument, Conclusion),
             context_id(argument(Argument), Id),
-            context_assert(argument(Argument)),
-            context_assert(conc(Conclusion) :- argument(Argument)),
-            context_assert(arg(Id) :- argument(Argument)),
+            store(Argument, Id).
+
+        %! saveArgument(+Tag, +Conclusion, +Argument)
+        %  As saveArgument/2, Conclusion noted as new under Tag (see newConclusion/2): the rounds of the graph builder.
+        saveArgument(Tag, Conclusion, Argument) :-
+            saveArgument(Conclusion, Argument),
+            context_assert(newConc(Tag, Conclusion)).
+
+        %! saveInstance(+Conclusion, +Argument)
+        %  As saveArgument/2, unless an argument with the identifier of Argument is saved: Argument is saved even when an
+        %  argument it is an instance of is.
+        saveInstance(Conclusion, Argument) :-
+            context_id(argument(Argument), Id),
+            context_absent(arg(Id)),
+            argument::conclusion(Argument, Conclusion),
+            store(Argument, Id).
+
+        store(Argument, Id) :-
+            context_assert_id(Id),
+            context_assert(arg(Id)),
             argument::info(Argument, Info),
             context_id(info(Info), InfoId),
-            context_assert(argInfo(Id, InfoId, Info)).
+            context_assert(argInfo(Id, InfoId)).
+
+        %! savedAfter(+Last, -Id, -Argument, -Supporters)
+        %  Argument was saved with identifier Id above Last, supported by the saved arguments of identifiers Supporters.
+        savedAfter(Last, Id, Argument, Supporters) :-
+            context_check(arg(Id)),
+            Id > Last,
+            argumentById(Id, Argument),
+            findall(S, (context_check(supportId(S, Id)), context_check(arg(S))), Supporters).
 
         %! saveArguments(+Tag, +Arguments)
         %  Each of Arguments saved under Tag, for its conclusion (see saveArgument/3).
@@ -72,17 +97,33 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentFor(?Conclusion, ?Argument)
         %  Argument is saved for Conclusion.
         argumentFor(Conclusion, Argument) :-
-            context_check(clause(conc(Conclusion), argument(Argument))).
+            context_by(conclusion, Conclusion, argument(Argument)).
 
         %! argumentUnifiable(+Conclusion, -Argument)
         %  Argument is saved for a conclusion unifying with Conclusion, which it is not bound to.
         argumentUnifiable(Conclusion, Argument) :-
-            context_unifiable(conc(Conclusion), argument(Argument)).
+            context_matching(conclusion, Conclusion, argument(Argument)).
 
         %! argumentById(?Id, ?Argument)
         %  Argument is saved with the identifier Id.
         argumentById(Id, Argument) :-
-            context_check(clause(arg(Id), argument(Argument))).
+            context_check(arg(Id)),
+            context_term(Id, argument(Argument)).
+
+        %! savedId(?Id)
+        %  An argument is saved with the identifier Id: no argument read.
+        savedId(Id) :-
+            context_check(arg(Id)).
+
+        %! savedCount(-Count)
+        %  Count arguments are saved.
+        savedCount(Count) :-
+            context_count(arg(_), all, Count).
+
+        %! savedIdIn(+Branch, ?Id)
+        %  An argument is saved with the identifier Id in the context branch Branch.
+        savedIdIn(Branch, Id) :-
+            context_check(Branch, arg(Id)).
 
         %! argumentId(+Argument, -Id)
         %  Id is the identifier of Argument (see context_id/2).
@@ -92,27 +133,39 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentIds(-Ids)
         %  Ids are the identifiers of the saved arguments.
         argumentIds(Ids) :-
-            findall(Id, context_check(clause(arg(Id), _)), Ids).
+            findall(Id, context_check(arg(Id)), Ids).
 
         %! argumentByIdIn(+Branch, ?Id, ?Argument)
         %  Argument is saved with the identifier Id in the context branch Branch.
         argumentByIdIn(Branch, Id, Argument) :-
-            context_check(Branch, clause(arg(Id), argument(Argument))).
+            context_check(Branch, arg(Id)),
+            context_term(Id, argument(Argument)).
 
         %! excludeArguments
         %  The saved arguments are left out of the graph the labellings label (by their identifiers), until included.
         excludeArguments :-
-            context_retract(arg(_) :- argument(_)).
+            context_retract(arg(_)).
 
-        %! includeArgument(+Id, +Argument)
-        %  Argument, with identifier Id, is in the graph the labellings label again.
-        includeArgument(Id, Argument) :-
-            context_assert(arg(Id) :- argument(Argument)).
+        %! includeArgument(+Id)
+        %  The argument with identifier Id is in the graph the labellings label again.
+        includeArgument(Id) :-
+            context_assert(arg(Id)).
+
+        %! argumentInfoId(?Id, ?InfoId)
+        %  The argument with identifier Id has the info with identifier InfoId.
+        argumentInfoId(Id, InfoId) :-
+            context_check(argInfo(Id, InfoId)).
+
+        %! infoById(+InfoId, -Info)
+        %  Info is the info with identifier InfoId.
+        infoById(InfoId, Info) :-
+            context_term(InfoId, info(Info)).
 
         %! argumentInfo(?Id, ?InfoId, ?Info)
         %  The argument with identifier Id has the info Info, with identifier InfoId.
         argumentInfo(Id, InfoId, Info) :-
-            context_check(argInfo(Id, InfoId, Info)).
+            context_check(argInfo(Id, InfoId)),
+            context_term(InfoId, info(Info)).
 
         %! newConclusion(?Tag, ?Conclusion)
         %  An argument for Conclusion was saved under Tag.
@@ -129,13 +182,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %--------------------------------------------------------------------------
 
         %! saveSupport(+Supporter, +Supported)
-        %  Supporter, a sub-argument of Supported, is saved as supporting it, unless it already is.
+        %  Supporter, a sub-argument of Supported, is saved as supporting it, unless it already is: by their identifiers,
+        %  as the support of an instance of Supported by one of Supporter (for fewer values) is another one.
         saveSupport(Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_absent(Support),
-            context_assert(Support),
             context_id(argument(Supporter), IdSupporter),
             context_id(argument(Supported), IdSupported),
+            context_absent(supportId(IdSupporter, IdSupported)),
             context_assert(supportId(IdSupporter, IdSupported)).
 
         %! saveSupports(+Supports)
@@ -143,21 +195,53 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         saveSupports(Supports) :-
             findall(_, (member(support(Supporter, Supported), Supports), (saveSupport(Supporter, Supported) -> true ; true)), _).
 
+        %! saveSupportIds(+Supports)
+        %  Each of Supports, s(IdSupporter, IdSupported), saved: the supports the workers of the parallel solver found.
+        saveSupportIds(Supports) :-
+            findall(_, (member(s(S, A), Supports), (context_absent(supportId(S, A)) -> context_assert(supportId(S, A)) ; true)), _).
+
+        %! copySupports(+Original, +IdCopy)
+        %  The supports of Original also support the argument with identifier IdCopy.
+        copySupports(Original, IdCopy) :-
+            argumentId(Original, IdOriginal),
+            findall(s(S, IdCopy), context_check(supportId(S, IdOriginal)), Supports),
+            saveSupportIds(Supports).
+
+        %! saveSupporters(+Argument, +Supporters)
+        %  Each of Supporters saved as a support of Argument (see saveSupport/2).
+        saveSupporters(Argument, Supporters) :-
+            findall(_, (member(Supporter, Supporters), saveSupport(Supporter, Argument)), _).
+
         %! support(?Supporter, ?Supported)
         %  Supporter supports Supported.
         support(Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_check(Support).
+            nonvar(Supported), !,
+            context_stored_id(argument(Supported), IdSupported),
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+        support(Supporter, Supported) :-
+            nonvar(Supporter), !,
+            context_stored_id(argument(Supporter), IdSupporter),
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+        support(Supporter, Supported) :-
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+
+        supportOf(IdSupporter, Supporter, IdSupported, Supported) :-
+            context_term(IdSupporter, argument(Supporter)),
+            context_term(IdSupported, argument(Supported)).
 
         %! supports(-Supports)
         %  Supports are the (Supporter, Supported) pairs saved.
         supports(Supports) :-
             findall((Supporter, Supported), support(Supporter, Supported), Supports).
 
-        %! supportedById(+Id, -SuperId)
-        %  The argument with identifier SuperId is supported by the one with identifier Id, directly or not.
-        supportedById(Id, SuperId) :-
-            context_closure(supportId, Id, SuperId).
+        %! supportersOf(+Argument, -Supporters)
+        %  Supporters are the saved arguments supporting Argument directly, by their identifiers.
+        supportersOf(Argument, Supporters) :-
+            context_id(argument(Argument), Id),
+            findall(S, (context_check(supportId(IdS, Id)), argumentById(IdS, S)), Supporters).
 
         %--------------------------------------------------------------------------
         % Attacks
@@ -172,28 +256,44 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(On), IdOn),
             saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
-        %! saveAttacks(+Attacks)
-        %  Each of Attacks, attack(Type, Attacker, Attacked, On), saved (see saveAttack/4).
-        saveAttacks(Attacks) :-
-            findall(_, (member(attack(Type, Attacker, Attacked, On), Attacks), (saveAttack(Type, Attacker, Attacked, On) -> true ; true)), _).
+        %! saveAttackIds(+Attacks)
+        %  Each of Attacks, a(Type, IdAttacker, IdAttacked), a direct attack, saved: those the workers of the parallel solver found.
+        saveAttackIds(Attacks) :-
+            findall(_, (member(a(T, B, A), Attacks), (saveAttackById(T, B, _, A, _, A, _) -> true ; true)), _).
 
         %! saveAttackById(+Type, +IdAttacker, +Attacker, +IdAttacked, +Attacked, +IdOn, +On)
         %  As saveAttack/4, with the identifiers of the arguments known.
         saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
             context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_assert(Attack).
+            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
-        %  The attack is removed, in all its forms.
+        %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
+        %  is done for an attack not saved (an extended one, say).
         removeAttack(Type, Attacker, Attacked, On) :-
-            attack::new(Type, Attacker, Attacked, On, Attack),
-            context_retract(Attack),
             context_id(argument(Attacker), IdAttacker),
             context_id(argument(Attacked), IdAttacked),
             context_id(argument(On), IdOn),
             context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+
+        %! removeAttackIds(+Attacks)
+        %  Each of Attacks, a(Type, IdAttacker, IdAttacked), a direct attack, removed, all at once: one at a time, each would copy
+        %  what holds the others.
+        removeAttackIds(Attacks) :-
+            findall(attackId(T, B, A, A), member(a(T, B, A), Attacks), Facts),
+            context_retract_all(Facts).
+
+        %! attackFound(?Type, ?Attacker, ?Attacked, ?On)
+        %  The attack is saved, as it was found (attack/4 extends it): what context_check(attack(Type, Attacker, Attacked, On))
+        %  answers, as context_check(support(Supporter, Supported)) support/2.
+        attackFound(Type, Attacker, Attacked, On) :-
+            context_check(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
+
+        attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
+            context_term(IdAttacker, argument(Attacker)),
+            context_term(IdAttacked, argument(Attacked)),
+            context_term(IdOn, argument(On)).
 
         %! attack(?Type, ?Attacker, ?Attacked, ?On)
         %  Attacker attacks Attacked on On, with an attack of Type: saved, or extended to Attacked from On, which it is
@@ -216,22 +316,52 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         attacksById(IdAttacker, IdAttacked) :-
             expandedAttackById(_, IdAttacker, IdAttacked, _).
 
+        %! directAttack(?Type, ?Attacker, ?Attacked)
+        %  Attacker attacks Attacked itself, with an attack of Type: an attack saved, which attack/4 extends to the
+        %  arguments built on Attacked. The steps changing the attacks read these: the extended ones follow. (The
+        %  arguments are given as they are saved, as attack/4 gives them: removing an attack identifies them, see
+        %  context_id.)
+        directAttack(Type, Attacker, Attacked) :-
+            context_check(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
+            context_term(IdAttacker, argument(Attacker)),
+            context_term(IdAttacked, argument(Attacked)).
+
+        %! directAttacks(-Attacks)
+        %  Attacks are the (Type, Attacker, Attacked) attacks saved (see directAttack/3).
+        directAttacks(Attacks) :-
+            findall((Type, Attacker, Attacked), directAttack(Type, Attacker, Attacked), Attacks).
+
+        %! reaches(+A, +B)
+        %  B is A or an argument reached from A through attacks: the arguments are visited breadth first, each once
+        %  (attack cycles are common, rebuttals being mutual).
+        reaches(A, B) :-
+            argumentId(A, IdA),
+            argumentId(B, IdB),
+            reached([IdA], [], IdB), !.
+
+        reached([B|_], _, B) :- !.
+        reached([A|Frontier], Visited, B) :-
+            findall(C, (attacksById(A, C), \+ member(C, [A|Visited]), \+ member(C, Frontier)), Next),
+            append(Frontier, Next, Queue),
+            reached(Queue, [A|Visited], B).
+
         %--------------------------------------------------------------------------
         % Labels
         %--------------------------------------------------------------------------
 
         %! labelArgument(+Label, +Argument)
-        %  Argument is labelled with Label (in, out or und).
+        %  Argument is labelled with Label (in, out or und), by itself and by its identifier.
         labelArgument(Label, Argument) :-
-            label::argument(Label, Argument, Fact),
-            context_assert(Fact).
+            argumentId(Argument, Id),
+            labelArgument(Label, Argument, Id).
 
         %! labelArgument(+Label, +Argument, +Id)
         %  Argument, with identifier Id, is labelled with Label, by itself and by its identifier.
         labelArgument(Label, Argument, Id) :-
-            labelArgument(Label, Argument),
-            label::identifier(Label, Id, Fact),
-            context_assert(Fact).
+            label::argument(Label, Argument, Fact),
+            context_assert(Fact),
+            label::identifier(Label, Id, FactId),
+            context_assert(FactId).
 
         %! unlabelArguments(+Label)
         %  The arguments labelled with Label no longer are, by themselves and by their identifiers.
@@ -265,10 +395,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(Fact).
 
         %! labelStatement(+Label, +Statement)
-        %  Statement is labelled with Label.
+        %  Statement is labelled with Label, by the identifier of the label as well (see statementLabelled/2).
         labelStatement(Label, Statement) :-
             label::statement(Label, Statement, Fact),
-            context_assert(Fact).
+            context_id(Fact, Key),
+            context_assert_id(Key),
+            context_assert(statementKey(Key)).
 
         %! statementLabel(?Label, ?Statement)
         %  Statement is labelled with Label.
@@ -276,13 +408,23 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             label::statement(Label, Statement, Fact),
             context_check(Fact).
 
+        %! statementLabelled(+Label, +Statement)
+        %  Statement, as it is written (up to the names of its variables), is labelled with Label: unlike
+        %  statementLabel/2, a statement with variables is not labelled by those of its instances labelled, nor they by
+        %  it.
+        statementLabelled(Label, Statement) :-
+            label::statement(Label, Statement, Fact),
+            context_id(Fact, Key),
+            context_check(statementKey(Key)).
+
         %! labelledArguments(+Label, -Arguments)
         %  Arguments are those labelled with Label.
         labelledArguments(Label, Arguments) :-
             findall(Argument, argumentLabel(Label, Argument), Arguments).
 
         %--------------------------------------------------------------------------
-        % The graph and its labels in a given context branch, rather than the active one
+        % The graph and its labels in a given context branch, rather than the active one (read by Kotlin, see
+        % GraphMining)
         %--------------------------------------------------------------------------
 
         %! argumentIn(+Branch, ?Argument)
@@ -291,8 +433,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         %! supportIn(+Branch, ?Supporter, ?Supported)
         supportIn(Branch, Supporter, Supported) :-
-            support::new(Supporter, Supported, Support),
-            context_check(Branch, Support).
+            context_check(Branch, supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+
+        %! attackFoundIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
+        attackFoundIn(Branch, Type, Attacker, Attacked, On) :-
+            context_check(Branch, attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
         %! attackIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
         attackIn(Branch, Type, Attacker, Attacked, On) :-
@@ -304,6 +451,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(Branch, Fact).
 
         %--------------------------------------------------------------------------
+
+        %--------------------------------------------------------------------------
         % The whole graph and its labels, sorted
         %--------------------------------------------------------------------------
 
@@ -313,9 +462,9 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             arguments(AllArguments),
             attacks(AllAttacks),
             supports(AllSupports),
-            utils::sort(AllArguments, Arguments),
-            utils::sort(AllAttacks, Attacks),
-            utils::sort(AllSupports, Supports).
+            utils::sortDescending(AllArguments, Arguments),
+            utils::sortDescending(AllAttacks, Attacks),
+            utils::sortDescending(AllSupports, Supports).
 
         %! argumentLabelling(-In, -Out, -Und)
         %  The arguments labelled IN, OUT and UND, each sorted.
@@ -340,7 +489,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         sortedLabelled(Kind, Label, Sorted) :-
             findall(X, labelledAs(Kind, Label, X), All),
-            utils::sort(All, Sorted).
+            utils::sortDescending(All, Sorted).
 
         labelledAs(argumentLabel, Label, Argument) :- argumentLabel(Label, Argument).
         labelledAs(statementLabel, Label, Statement) :- statementLabel(Label, Statement).

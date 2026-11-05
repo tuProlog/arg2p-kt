@@ -22,6 +22,14 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             context_assert(possibleAttackersOf(Id, Statements)),
             member(Statement, Statements).
 
+        %! attackersOf(+Id, +Argument, -Statement)
+        %  As possibleAttackers/3, what is found not kept: for who looks once, as the builder of a whole graph.
+        attackersOf(Id, _, Statement) :-
+            context_check(possibleAttackersOf(Id, Statements)), !,
+            member(Statement, Statements).
+        attackersOf(_, Argument, Statement) :-
+            findPossibleAttackers(Argument, Statement).
+
         %! forgetPossibleAttackers
         %  The possible attackers looked for forgotten: with arguments for conflicts built since (metaConflicts), they
         %  may be more.
@@ -39,9 +47,11 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             conflict::unguarded(Statement, Conclusion).
         findPossibleAttackers(Argument, [Statement]) :-
             argument::body(Argument, Body),
-            member(~(Statement), Body).
+            member(~(Statement), Body),
+            attackRelation::static.
         findPossibleAttackers(Argument, [undercut(Rule)]) :-
-            argument::topRule(Argument, Rule).
+            argument::topRule(Argument, Rule),
+            attackRelation::static.
         findPossibleAttackers(Argument, Statement) :-
             argument::topRule(Argument, Rule),
             conflict::guarded(Statement, [Rule], _).
@@ -59,36 +69,15 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             attackedStatement(Conflicting, Statement).
         possiblyAttacked(Argument, Statement) :-
             argument::claim(Argument, Claim),
-            parser::ruleUsing(~(Claim), Statement).
+            parser::ruleUsing(~(Claim), Statement),
+            attackRelation::static.
 
         conflicting(Conclusion, Statement) :- conflict::guarded(Conclusion, [Statement], _).
         conflicting(Conclusion, Statement) :- conflict::unguarded(Conclusion, [Statement]).
-        conflicting([undercut(Rule)], Rule).
+        conflicting([undercut(Rule)], Rule) :- attackRelation::static.
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
-        attackedStatement(Rule, Statement) :- parser::classicRule(Rule, _, [Statement]).
-
-        %! attackDependency(+Argument, -Statement)
-        %  With metaConflicts the conflicts are themselves conclusions: Argument depends on the arguments for Statement,
-        %  which make others conflict with it.
-        attackDependency(Argument, Statement) :-
-            argument::conclusion(Argument, Conclusion),
-            conflict::statement(_, Conclusion, Statement).
-        attackDependency(Argument, Statement) :-
-            argument::topRule(Argument, Rule),
-            Rule \== none,
-            conflict::statement(_, [Rule], Statement).
-
-        %! attackDependant(+Argument, -Statement)
-        %  With metaConflicts, the arguments for Statement depend on Argument: those its conclusion makes conflict with
-        %  others, and, for an argument for a conflict, those it makes conflict.
-        attackDependant(Argument, Statement) :-
-            argument::conclusion(Argument, Conclusion),
-            conflict::statement(Conclusion, _, Statement).
-        attackDependant(Argument, Statement) :-
-            argument::claim(Argument, Conflict),
-            conflict::statement([A], [B], Conflict),
-            (Statement = A ; Statement = B).
+        attackedStatement(Rule, Statement) :- parser::ruleConclusion(Rule, Statement).
         """.trimIndent()
 }

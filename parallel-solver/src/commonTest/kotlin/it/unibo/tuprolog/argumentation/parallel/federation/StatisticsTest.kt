@@ -60,12 +60,12 @@ class StatisticsTest {
         assertEquals(2, first.added)
         assertEquals(first.added, first.workers.sumOf { it.arguments })
         assertEquals(2, first.arguments)
-        // query mode: a later evaluation explores further, one it covers builds nothing
+        // query mode: a later evaluation builds its graph anew, the same one again builds nothing
         cluster.solve("d")
         assertEquals(3, cluster.stats.evaluation!!.added)
-        assertEquals(5, cluster.stats.evaluation!!.arguments)
+        assertEquals(3, cluster.stats.evaluation!!.arguments)
         assertEquals(2, cluster.stats.evaluation!!.attacks)
-        cluster.solve("a")
+        cluster.solve("d")
         assertEquals(0, cluster.stats.evaluation!!.added)
         // the whole graph, for a goal asking for it
         cluster.solver.solve("buildLabelSets(In, Out, Und)").next()

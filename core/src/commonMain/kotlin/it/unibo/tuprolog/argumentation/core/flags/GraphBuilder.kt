@@ -10,5 +10,7 @@ object GraphBuilder : ArgsFlag<String, Iterable<String>> {
 
     override fun default(): String = "ruleGraph"
 
+    override val isOpen: Boolean = true
+
     override fun values(): Iterable<String> = listOf("ruleGraph", "abstractGraph")
 }

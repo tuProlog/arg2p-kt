@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
@@ -9,9 +7,6 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * labelled by the semantics of argumentLabellingMode.
  */
 object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = listOf(ArgumentLabellingMode)
-
     override val prologRawTheory: String =
         // language=Prolog
         """
@@ -22,25 +17,15 @@ object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract"
             graphStore::claimLabelling(I, O, U).
 
         %! solve(+Arguments, +Attacks)
-        %  The labelling of the abstract framework of Arguments and Attacks, in the context.
-        %  The lists are visited natively (forEach): as the goal of a findall, every step of the saving would visit them.
-        %  The goals of forEach are solved in the module utils: they name the modules of their predicates.
+        %  The labelling of the abstract framework of Arguments and Attacks, in the context: the framework saved as the
+        %  graph builder of abstract theories saves it (see abstractGraph::save/2), then changed by the graph extensions
+        %  stated and labelled, as the pipeline of a theory is (see structuredWhole::computeGlobalAcceptance/0).
         solve(Arguments, Attacks) :-
             context_reset,
-            utils::forEach(A, Arguments, (
-                abstract::abstractArgument(A, Argument),
-                graphStore::saveArgument(graph, [A], Argument)
-            )),
-            utils::forEach((X, Y), Attacks, (
-                abstract::abstractArgument(X, XX),
-                abstract::abstractArgument(Y, YY),
-                graphStore::saveAttack(abstract, XX, YY, YY)
-            )),
+            structuredWhole::checkProfile,
+            findall(att(X, Y), member((X, Y), Attacks), Atts),
+            abstractGraph::save(Arguments, Atts),
+            structuredWhole::modifyGraph,
             structuredWhole::buildArgumentLabelling.
-
-        % The argument for the abstract argument A: the strict rule A alone, concluding A
-        abstractArgument(A, Argument) :-
-            argument::infoParts(Info, [], [], []),
-            argument::new([A], A, [A], [], Info, Argument).
         """.trimIndent()
 }

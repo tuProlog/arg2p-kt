@@ -20,7 +20,7 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         %  The attacks on assumptions by arguments resting on weaker ones reversed, the theory satisfying Weak
         %  Contraposition.
         modifyArgumentationGraph :-
-            findall(attack(undermine, X, Y, On), graphStore::attack(undermine, X, Y, On), Attacks),
+            findall(attack(undermine, X, On, On), graphStore::directAttack(undermine, X, On), Attacks),
             utils::forEach(attack(_, X, _, On), Attacks, abaPref::contraposed(X, On)),
             utils::forEach(attack(T, X, Y, On), Attacks, abaPref::reverse(T, X, Y, On)).
 
@@ -34,10 +34,10 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         contraposed(X, On) :-
             argument::claim(On, Beta),
             support(X, Support),
-            findall(A, (member(A, Support), context_check(sup(Beta, A))), Weaker),
+            findall(A, (member(A, Support), parser::preference(Beta, A)), Weaker),
             member(Alpha, Weaker),
-            \+ (member(Other, Weaker), Other \== Alpha, context_check(sup(Alpha, Other))),
-            graphStore::attack(undermine, D, Premise, Premise),
+            \+ (member(Other, Weaker), Other \== Alpha, parser::preference(Alpha, Other)),
+            graphStore::directAttack(undermine, D, Premise),
             argument::claim(Premise, Alpha),
             support(D, Deduction),
             \+ member(Alpha, Deduction),
@@ -70,7 +70,7 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
             argument::claim(On, Assumption),
             support(Attacker, Support),
             member(Weaker, Support),
-            context_check(sup(Assumption, Weaker)), !.
+            parser::preference(Assumption, Weaker), !.
 
         %! support(+Argument, -Assumptions)
         %  The assumptions Argument rests on: those of its premises asm(Assumption).
@@ -80,5 +80,32 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
 
         contained([], _).
         contained([A|As], Others) :- member(A, Others), !, contained(As, Others).
+
+        %==============================================================================
+        % QUERY MODE
+        %==============================================================================
+
+        %! queryDependencies(+Argument, -Statement)
+        %  An argument resting on an assumption weaker than another, Beta, may attack Beta through its contrary, and
+        %  have that attack reversed onto every argument resting on what it rests on, Argument among them: Argument
+        %  depends on the arguments for Beta and for its contraries.
+        queryDependencies(Argument, Statement) :-
+            support(Argument, Support),
+            member(Weaker, Support),
+            parser::preference(Beta, Weaker),
+            (Statement = Beta ; contrary(Beta, Statement)).
+
+        %! queryDependants(+Argument, -Statement)
+        %  The argument for an assumption attacks, by a reversal, the arguments resting on the assumptions weaker than
+        %  it: those for the statements their rules conclude depend on it.
+        queryDependants(Argument, Statement) :-
+            argument::rules(Argument, [asm(Beta)]),
+            parser::preference(Beta, Weaker),
+            (Statement = Weaker ; parser::ruleUsing(Weaker, Statement)).
+
+        % Contrary is a contrary of the assumption Beta: the arguments for it attack the argument for Beta
+        contrary(Beta, Contrary) :-
+            (conflict::guarded([Contrary], [Beta], _) ; conflict::unguarded([Contrary], [Beta])),
+            nonvar(Contrary).
         """.trimIndent()
 }

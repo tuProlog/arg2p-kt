@@ -275,7 +275,7 @@ slow.
         session: String = "page",
     ) = answers(engine.handle(session, JsonParser.parseString(request).asJsonObject))
 
-    private fun answers(answers: CompletableFuture<List<Answer>>) =
+    private fun answers(answers: CompletableFuture<List<PageMessage>>) =
         json.toJsonTree(answers.get(60, TimeUnit.SECONDS)).asJsonArray.map { it.asJsonObject }
 
     private fun awaitUntil(condition: () -> Boolean) {

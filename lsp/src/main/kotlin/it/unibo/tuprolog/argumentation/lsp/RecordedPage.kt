@@ -67,8 +67,8 @@ object RecordedPage {
         val theory: String,
         val query: String,
         val flags: String,
-        val solve: List<Answer>,
-        val next: List<List<Answer>>,
+        val solve: List<PageMessage>,
+        val next: List<List<PageMessage>>,
         val settings: Any?,
         val more: Boolean,
         val timedOut: Boolean,
@@ -89,7 +89,7 @@ object RecordedPage {
                 var timedOut = false
 
                 // The answers to [request], none if the time runs out first, which stops it
-                fun ask(vararg request: Pair<String, Any>): List<Answer>? {
+                fun ask(vararg request: Pair<String, Any>): List<PageMessage>? {
                     val asked = engine.handle(SESSION, json.toJsonTree(mapOf(*request)).asJsonObject)
                     return try {
                         asked.get(end - System.nanoTime(), TimeUnit.NANOSECONDS)
@@ -104,7 +104,7 @@ object RecordedPage {
                 val solve =
                     ask("type" to "solve", "id" to ID, "theory" to theory, "query" to query, "flags" to flags)
                         ?: listOf(PageEngine.failed(ID, ErrorData("Error", TimedOut(timeout).message!!)))
-                val next = mutableListOf<List<Answer>>()
+                val next = mutableListOf<List<PageMessage>>()
                 var more = solve.any { it["type"] == "started" }
                 while (more && next.size < most) {
                     val answers = ask("type" to "next", "id" to ID) ?: break

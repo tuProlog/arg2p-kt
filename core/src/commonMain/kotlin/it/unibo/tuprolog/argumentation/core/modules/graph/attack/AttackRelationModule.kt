@@ -12,7 +12,9 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
         // language=Prolog
         """
         %! attacks(?Type, +Attacker, +Attacked)
-        %  Attacker attacks Attacked directly, Type being the first kind of attack that applies.
+        %  Attacker attacks Attacked directly, Type being the first kind of attack that applies. With metaConflicts
+        %  every attack goes through a conflict concluded by an argument (see the module conflictArguments): the
+        %  contraries and the undercuts by undercut(Rule), which no such conflict states, do not apply (see static/0).
         attacks(rebut, A, B) :- rebuts(A, B), !.
         attacks(contrary_rebut, A, B) :- contraryRebuts(A, B), !.
         attacks(undermine, A, B) :- undermines(A, B), !.
@@ -34,7 +36,8 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             \+ argument::isPremise(B),
             argument::claim(A, Claim),
             argument::body(B, Body),
-            utils::contains(~(Claim), Body).
+            utils::contains(~(Claim), Body),
+            static.
 
         %! undermines(+A, +B)
         %  The conclusion of A conflicts with B, a defeasible premise (or its copy for a conflict, see the module
@@ -52,16 +55,23 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             \+ argument::isPremise(B),
             argument::claim(A, Claim),
             argument::body(B, Body),
-            utils::contains(~(Claim), Body).
+            utils::contains(~(Claim), Body),
+            static.
 
         %! undercuts(+A, +B)
         %  A concludes undercut(Rule), or a statement conflicting with [Rule], Rule being the defeasible top rule of B.
         undercuts(A, B) :-
             defeasibleTopRule(B, Rule),
-            argument::claim(A, undercut(Rule)).
+            argument::claim(A, undercut(Rule)),
+            static.
         undercuts(A, B) :-
             defeasibleTopRule(B, Rule),
             conflictsWith(A, [Rule]).
+
+        %! static
+        %  The attacks no conflict states apply (contraries, undercut(Rule)): unless the conflicts are concluded by
+        %  arguments (see conflict::argued/0).
+        static :- \+ conflict::argued.
 
         % The top rule of the argument, if it is its last defeasible rule
         defeasibleTopRule(Argument, Rule) :-
@@ -69,10 +79,10 @@ object AttackRelationModule : PrologModule("prolog.argumentation.attack", "attac
             argument::lastDefeasibleRules(Argument, [Rule]).
 
         %! conflictsWith(+Argument, ?Statement)
-        %  The conclusion of Argument conflicts with Statement: only through its own conflict for the copy of an argument
-        %  made for a conflict argument (see the module conflictArguments), through any conflict otherwise.
+        %  The conclusion of Argument conflicts with Statement: only through the conflict Argument carries if it does
+        %  (see conflict::carried/2), through any conflict otherwise.
         conflictsWith(Argument, Statement) :-
-            conflictArguments::conflictOf(Argument, Conflict), !,
+            conflict::carried(Argument, Conflict), !,
             argument::conclusion(Argument, Conclusion),
             conflict::stated(Conflict, Conclusion, Statement).
         conflictsWith(Argument, Statement) :-

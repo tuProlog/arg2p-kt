@@ -11,44 +11,45 @@ internal object AbstractGraphModule : AbstractNotationModule("prolog.argumentati
         // language=Prolog
         """
         %! buildArgumentationGraph
-        %  The arguments and the attacks of the theory, saved in the context.
+        %  The arguments and the attacks of the theory, saved in the context: an argument attacking or attacked is an
+        %  argument as well.
         buildArgumentationGraph :-
             arguments(Stated),
             attacks(Attacks),
             findall(A, (member(A, Stated) ; member(att(A, _), Attacks) ; member(att(_, A), Attacks)), All),
             utils::sortDistinct(All, Arguments),
+            save(Arguments, Attacks).
+
+        %! save(+Arguments, +Attacks)
+        %  The abstract framework of Arguments (atoms) and Attacks (att(A, B) terms) saved in the context, each argument
+        %  as abstractArgument/2 makes it. The goals of forEach are solved in the module utils: they name the modules of
+        %  their predicates.
+        save(Arguments, Attacks) :-
             utils::forEach(A, Arguments, (
-                abstract::abstractArgument(A, Argument),
+                abstractGraph::abstractArgument(A, Argument),
                 graphStore::saveArgument(graph, [A], Argument)
             )),
             utils::forEach(att(X, Y), Attacks, (
-                abstract::abstractArgument(X, XX),
-                abstract::abstractArgument(Y, YY),
+                abstractGraph::abstractArgument(X, XX),
+                abstractGraph::abstractArgument(Y, YY),
                 graphStore::saveAttack(abstract, XX, YY, YY)
             )).
 
-        %! buildArguments
-        %  As buildArgumentationGraph: an abstract theory has its attacks with its arguments.
-        buildArguments :- buildArgumentationGraph.
-
-        %! buildAdditionalArguments
-        %  As buildArgumentationGraph, in query mode: exploring the query finds no argument in an abstract theory, which
-        %  has no rule, so the graph is the whole one.
-        buildAdditionalArguments :- buildArgumentationGraph.
-
-        %! buildAttacks
-        %  None more: the attacks are saved with the arguments.
-        buildAttacks.
+        %! abstractArgument(+A, -Argument)
+        %  The argument for the abstract argument A: the strict rule A alone, concluding A.
+        abstractArgument(A, Argument) :-
+            argument::infoParts(Info, [], [], []),
+            argument::new([A], A, [A], [], Info, Argument).
 
         % The arguments and the attacks the theory states or derives, in either notation
         arguments(Arguments) :-
-            catch(findall(A, arg(A), Stated), error(existence_error(_, _), _), Stated = []),
+            findall(A, user::arg(A), Stated),
             findall(A, (theoryClause(A, true), atom(A)), Atoms),
-            utils::appendFast(Stated, Atoms, Arguments).
+            append(Stated, Atoms, Arguments).
         attacks(Attacks) :-
-            catch(findall(att(A, B), att(A, B), Stated), error(existence_error(_, _), _), Stated = []),
-            findall(att(A, B), (theoryClause((A -> B), Body), call(Body)), Forward),
-            findall(att(A, B), (theoryClause((X <-> Y), Body), call(Body), (A = X, B = Y ; A = Y, B = X)), Mutual),
+            findall(att(A, B), user::att(A, B), Stated),
+            findall(att(A, B), (theoryClause((A -> B), Body), user::call(Body)), Forward),
+            findall(att(A, B), (theoryClause((X <-> Y), Body), user::call(Body), (A = X, B = Y ; A = Y, B = X)), Mutual),
             utils::appendLists([Stated, Forward, Mutual], Attacks).
         """.trimIndent()
 }

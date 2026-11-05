@@ -6,12 +6,11 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Attack
 import it.unibo.tuprolog.argumentation.core.model.Graph
-import it.unibo.tuprolog.argumentation.core.model.Rule
 import it.unibo.tuprolog.argumentation.core.model.Support
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class ArgumentationGraphTest {
+    // the solver of the theory, its rules converted
     private fun solver() =
         solverWithTheory(
             """
@@ -19,8 +18,12 @@ class ArgumentationGraphTest {
                 graphExtension(standardPref).
                 orderingPrinciple(last).
                 orderingComparator(democrat).
+                r0 : -c => a.
+                r1 : a => c.
+                r2 : [] => -a.
+                r3 : [] => -c.
             """,
-        )
+        ).also { arg2pScope { it.solve("context_reset" and ("parser" call "convertAllRules")).first() } }
 
     private fun prepareGraph(): Graph {
         val arg1 =
@@ -81,48 +84,22 @@ class ArgumentationGraphTest {
         )
     }
 
-    private fun prepareTheory() =
-        listOf(
-            Rule("r0", listOf("-c"), "a"),
-            Rule("r1", listOf("a"), "c"),
-            Rule("r2", listOf(), "-a"),
-            Rule("r3", listOf(), "-c"),
-        )
-
     @Test
     fun buildArgumentationGraph() {
-        prepareTheory().also { theory ->
-            arg2pScope {
-                solver().also {
-                    TestingUtils.prepareContext(it, theory)
-                    it.solve("ruleGraph" call "buildArgumentationGraph").first()
-                    TestingUtils.checkResults(it, prepareGraph())
-                }
+        arg2pScope {
+            solver().also {
+                it.solve("ruleGraph" call "buildArgumentationGraph").first()
+                TestingUtils.checkResults(it, prepareGraph())
             }
         }
     }
 
     @Test
     fun buildArguments() {
-        prepareTheory().also { theory ->
-            arg2pScope {
-                solver().also { solver ->
-                    TestingUtils.prepareContext(solver, theory)
-                    solver.solve("ruleGraph" call "buildArguments").first()
-                    TestingUtils.checkResults(solver, prepareGraph().let { Graph(it.arguments, emptyList(), it.supports) })
-                }
-            }
-        }
-    }
-
-    @Test
-    @Ignore
-    fun buildAttacks() {
         arg2pScope {
             solver().also { solver ->
-                TestingUtils.prepareContext(solver, prepareGraph().let { Graph(it.arguments, emptyList(), it.supports) })
-                solver.solve("ruleGraph" call "buildAttacks").first()
-                TestingUtils.checkResults(solver, prepareGraph())
+                solver.solve("ruleGraph" call "buildArguments").first()
+                TestingUtils.checkResults(solver, prepareGraph().let { Graph(it.arguments, emptyList(), it.supports) })
             }
         }
     }

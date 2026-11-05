@@ -17,7 +17,7 @@ def test_a_cluster_labels_as_the_standard_solver():
     with ThreadedCluster(threads=2) as cluster:
         cluster.load(THEORY)
         for statement in ("b", "-b", "d"):
-            answer = arg2p.answer(statement)
+            (answer,) = arg2p.answer(statement)
             labels = claims(cluster.solve(statement))
             expected = [len(answer.in_statements), len(answer.out_statements), len(answer.und_statements)]
             assert expected == [len(labels[label]) for label in ("in_args", "out_args", "und_args")]
@@ -79,7 +79,7 @@ def test_a_cluster_is_a_solver_of_arg2p():
         solution = solver.solve("buildLabelSets(In, Out, Und)").next()
         assert [expected.text(it) for it in ("In", "Out", "Und")] == [solution.text(it) for it in ("In", "Out", "Und")]
         assert sorted(it.label for it in arg2p.graph().labellings) == sorted(it.label for it in solver.graph().labellings)
-        assert solver.answer("b").in_statements == arg2p.answer("b").in_statements
+        assert solver.answer("b") == arg2p.answer("b")
 
 
 def test_the_statistics_of_a_cluster():
@@ -98,7 +98,7 @@ def test_the_flags_of_a_cluster_change():
     cluster.load(THEORY)
     flags = Flags.defaults().argument_labelling_mode(Semantics.COMPLETE).query_mode(False)
     cluster.flags = flags
-    assert "queryMode" not in str(cluster.flags.jvm().toString())
+    assert "queryMode(off)." in str(cluster.flags.jvm().toString())
     expected = Arg2p.of(THEORY, flags).solve("buildLabelSets(In, Out, Und)").next()
     assert str(expected) == str(cluster.solver.solve("buildLabelSets(In, Out, Und)").next())
 

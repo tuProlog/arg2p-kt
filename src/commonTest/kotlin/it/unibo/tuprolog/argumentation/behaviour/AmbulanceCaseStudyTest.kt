@@ -1,9 +1,6 @@
 package it.unibo.tuprolog.argumentation.behaviour
 
 import kotlin.test.Test
-import kotlin.time.DurationUnit
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
 class AmbulanceCaseStudyTest {
     private val baseTheory: String =
@@ -115,40 +112,6 @@ class AmbulanceCaseStudyTest {
     ) {
         Behaviour.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
         Behaviour.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
-    }
-
-    @Test
-    @ExperimentalTime
-    fun abstractResolutionSpeedTest() {
-        val time =
-            measureTime {
-                Behaviour.answerQuery(
-                    baseTheory,
-                    "responsible(X)",
-                    "[responsible(pino)]",
-                    "[responsible(lisa)]",
-                    "[responsible(demers)]",
-                )
-            }
-
-        println(time.toDouble(DurationUnit.SECONDS))
-    }
-
-    @Test
-    @ExperimentalTime
-    fun structuredResolutionSpeedTest() {
-        val time =
-            measureTime {
-                Behaviour.answerQuery(
-                    structuredTheory,
-                    "responsible(X)",
-                    "[responsible(pino)]",
-                    "[responsible(lisa)]",
-                    "[responsible(demers)]",
-                )
-            }
-
-        println(time.toDouble(DurationUnit.SECONDS))
     }
 
     @Test

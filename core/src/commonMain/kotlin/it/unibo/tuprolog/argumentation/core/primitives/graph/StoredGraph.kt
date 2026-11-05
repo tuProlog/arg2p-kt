@@ -1,52 +1,88 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
-import it.unibo.tuprolog.argumentation.core.runtime.context.contextAssertAll
-import it.unibo.tuprolog.argumentation.core.runtime.context.contextInstances
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
-import it.unibo.tuprolog.solve.primitive.Solve
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.listArg
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
+import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
+import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.exception.error.TypeError
 
 // The graph kept in the active context and its labels, for the native primitives: the Kotlin side of the module
-// graphStore, reading the same facts
+// graphStore, reading the same facts, by the identifiers of the arguments
 
-/** The identifiers of the arguments of the graph */
-internal fun Solve.Request<ExecutionContext>.argumentIds(): List<Term> =
-    arg2pScope { contextInstances("clause"("arg"(`_`), `_`)).map { it[0].castToStruct()[0] } }
+/** The arguments of the graph of a branch, `arg(Id)`, newest first */
+internal class GraphArguments(
+    stored: List<ClauseStore.Stored>,
+) {
+    /** The identifiers of the arguments */
+    val ids: IntArray =
+        IntArray(stored.size) { i ->
+            val record = stored[i].record
+            payload(record.words[payload(record.head) + 1])
+        }
 
-/** The arguments of the graph, as (identifier, argument) pairs */
-internal fun Solve.Request<ExecutionContext>.storedArguments(): List<Pair<Term, Term>> =
-    arg2pScope {
-        contextInstances("clause"("arg"(`_`), "argument"(`_`)))
-            .map { it[0].castToStruct()[0] to it[1].castToStruct()[0] }
-    }
+    private val positions =
+        IntArray((ids.maxOrNull() ?: -1) + 1) { -1 }.also { positions ->
+            for (i in ids.indices) positions[ids[i]] = i
+        }
+
+    /** The place of the argument with identifier [id], -1 if there is none */
+    fun position(id: Int): Int = if (id < positions.size) positions[id] else -1
+}
+
+/** The arguments of the graph of the active branch, read once until they change */
+internal fun NativeCall.graphArguments(): GraphArguments = contextLibrary.derived("arg/1", "arguments") { GraphArguments(it) }
 
 /**
  * The attack graph of the active branch, the saved attacks and those they extend to (see [ExpandedAttacks]): built
  * once until they change (the native labellings read it at each step of their search)
  */
-internal fun Solve.Request<ExecutionContext>.attackGraph(): AttackGraph = expandedAttacks().graph
-
-/** Attacks as (attacker, attacked) argument identifiers */
-internal fun Solve.Request<ExecutionContext>.attacks(): List<Pair<Term, Term>> = attackGraph().attacks
-
-/** The conflicts between the arguments of the active branch (see [ConflictGraph]), built once until the attacks change */
-internal fun Solve.Request<ExecutionContext>.conflictGraph(): ConflictGraph<Term> = expandedAttacks().conflicts
+internal fun NativeCall.attackGraph(): AttackGraph = expandedAttacks().graph
 
 /** The identifiers of the arguments labelled with [label] (in, out or und), in the given or the active branch */
-internal fun Solve.Request<ExecutionContext>.labelledIds(
+internal fun NativeCall.labelledIds(
     label: String,
-    branch: Term? = null,
-): Set<Term> = arg2pScope { contextInstances(LabelTerm.identifier(label, `_`), branch).map { it[0] }.toSet() }
+    branch: Int? = null,
+): IdSet = contextLibrary.store(branch)?.ids(idFact(label)) ?: IdSet.NONE
 
-/**
- * The arguments labelled, by themselves and by their identifiers, in a single assertion: for each label in turn, its
- * (identifier, argument) pairs
- */
-internal fun Solve.Request<ExecutionContext>.labelArguments(labels: List<Pair<String, List<Pair<Term, Term>>>>) =
-    contextAssertAll(
-        labels.flatMap { (label, arguments) ->
-            arguments.flatMap { (id, argument) -> listOf(LabelTerm.argument(label, argument), LabelTerm.identifier(label, id)) }
-        },
-    )
+private fun idFact(label: String): String =
+    when (label) {
+        "in" -> "inId"
+        "out" -> "outId"
+        "und" -> "undId"
+        else -> "${label}Id"
+    }
+
+/** The arguments at the given [positions] of [arguments] labelled with [label], by themselves and by their identifiers */
+internal fun NativeCall.labelArguments(
+    arguments: GraphArguments,
+    label: String,
+    positions: IntArray,
+) {
+    val context = contextLibrary
+    val store = context.store()!!
+    val idFact = idFact(label)
+    for (position in positions) {
+        val id = arguments.ids[position]
+        store.assertNamed(label, context.record(id)!!)
+        store.assertId(idFact, id)
+    }
+}
+
+/** The argument [i], a list of identifiers (a type error otherwise, from the primitive of [signature]) */
+internal fun NativeCall.idsArg(
+    i: Int,
+    signature: Signature,
+): IntArray {
+    val items = listArg(i, signature)
+    return IntArray(items.size) { index ->
+        val item = items[index]
+        if (kind(item) != NativeCall.INT) throw TypeError.forArgument(context, signature, TypeError.Expected.INTEGER, term(item), i)
+        intValue(item).toInt()
+    }
+}
+
+/** The list of the identifiers [ids] */
+internal fun NativeCall.idList(ids: IntArray): Int = list(IntArray(ids.size) { int(ids[it]) })

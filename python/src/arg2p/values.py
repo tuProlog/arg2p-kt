@@ -40,7 +40,8 @@ def from_jvm(value: Any) -> Value:
     """The Python value of [value], a Value of the library of the JVM."""
     kind = str(value.getKind())
     if kind == "atom":
-        return str(value.getName())
+        # as arg2p writes it: quoted where Prolog needs quotes
+        return str(value.toString())
     if kind == "integer":
         return int(value.getValue())
     if kind == "real":

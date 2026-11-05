@@ -1,9 +1,4 @@
-import org.gradle.kotlin.dsl.assign
-import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
-
-val jvmStackSize: String = property("jvmStackSize").toString()
-val jvmMaxHeapSize: String = property("jvmMaxHeapSize").toString()
 
 plugins {
     id(
@@ -13,21 +8,16 @@ plugins {
     )
 }
 
-kotlin {
-    js {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions.freeCompilerArgs
-                    .add("-Xir-minimized-member-names=false")
-            }
-        }
-        binaries.library()
-        // ES modules, as the npm package of arg2p (the aggregate project, which alone is published on npm)
-        useEsModules()
-    }
+// The machine (the project :engine, no package of its own yet) compiled into this library
+fun engineSources(sourceSet: String) = rootProject.file("engine/src/$sourceSet/kotlin")
 
+kotlin {
     sourceSets {
+        jvmMain { kotlin.srcDir(engineSources("jvmMain")) }
+        jsMain { kotlin.srcDir(engineSources("jsMain")) }
+
         commonMain {
+            kotlin.srcDir(engineSources("commonMain"))
             dependencies {
                 api(libs.tuprolog.dsl.solve)
                 api(libs.tuprolog.parser.theory)
@@ -48,9 +38,16 @@ kotlin {
     }
 }
 
-tasks.withType<KotlinJvmTest> {
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
+// The machine is no part of the reference of the library
+plugins.withId("org.jetbrains.dokka") {
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+        dokkaSourceSets.configureEach {
+            perPackageOption {
+                matchingRegex.set(""".*\.core\.engine(\..*)?""")
+                suppress.set(true)
+            }
+        }
+    }
 }
 
 // Timing benchmarks live with the JVM tests but only run through jvmBenchmark (-Pbenchmark.* options)
@@ -86,8 +83,6 @@ tasks.register<Test>("jvmPrologCoverage") {
             },
         )
     filter.includeTestsMatching(coverageTests)
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }
 }
@@ -108,6 +103,30 @@ tasks.register<JavaExec>("prologDocs") {
     )
 }
 
+// What a change to the machine must not break, in seconds: the engine, the labels, the modules. Not a substitute for the
+// JVM tests of every project before a commit
+tasks.register<Test>("jvmQuickTest") {
+    group = "verification"
+    description = "Runs the fast tests of the engine and of the labels"
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    dependsOn("jvmTestClasses")
+    testClassesDirs = jvmTest.testClassesDirs
+    classpath = jvmTest.classpath
+    filter.excludeTestsMatching(benchmarkTests)
+    filter.excludeTestsMatching(coverageTests)
+    listOf(
+        "*.AbaPrefModuleTest",
+        "*.SharedProgramsTest",
+        "*.VmSpikeTest.inferenceRate",
+        "*.StdlibNativesTest",
+        "*.StandardEngineTest",
+        "*.SemanticsReferenceTest",
+        "*.InlinedCallLibrariesTest",
+        "*.ConcurrentSolversTest",
+    ).forEach { filter.excludeTestsMatching(it) }
+    outputs.upToDateWhen { false }
+}
+
 tasks.register<Test>("jvmBenchmark") {
     group = "verification"
     description = "Times the argument labelling semantics on growing abstract frameworks"
@@ -116,14 +135,7 @@ tasks.register<Test>("jvmBenchmark") {
     testClassesDirs = jvmTest.testClassesDirs
     classpath = jvmTest.classpath
     filter.includeTestsMatching(benchmarkTests)
-    maxHeapSize = jvmMaxHeapSize
-    jvmArgs("-Xss$jvmStackSize")
     systemProperties(project.properties.filterKeys { it.startsWith("benchmark.") })
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }
-}
-
-// The description of the module in the Kotlin & JS reference of the documentation site
-extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-    dokkaSourceSets.configureEach { includes.from("Module.md") }
 }

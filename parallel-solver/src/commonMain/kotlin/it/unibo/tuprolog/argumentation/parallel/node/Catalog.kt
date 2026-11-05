@@ -3,14 +3,17 @@ package it.unibo.tuprolog.argumentation.parallel.node
 import it.unibo.tuprolog.argumentation.AnswerQuery
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.SyntaxProblem
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
+import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.goalOf
+import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.federation.EvaluationStats
 import it.unibo.tuprolog.argumentation.parallel.federation.WorkerStats
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
@@ -24,6 +27,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.Configure
 import it.unibo.tuprolog.argumentation.parallel.message.DirectAttack
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Explore
+import it.unibo.tuprolog.argumentation.parallel.message.Failed
 import it.unibo.tuprolog.argumentation.parallel.message.Interest
 import it.unibo.tuprolog.argumentation.parallel.message.KbMessage
 import it.unibo.tuprolog.argumentation.parallel.message.Load
@@ -40,19 +44,14 @@ import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
 import it.unibo.tuprolog.argumentation.parallel.partition.Partitioning
 import it.unibo.tuprolog.argumentation.parallel.partition.TheoryPartitioner
-import it.unibo.tuprolog.core.Atom
-import it.unibo.tuprolog.core.Integer
+import it.unibo.tuprolog.argumentation.termOf
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.channel.OutputChannel
-import it.unibo.tuprolog.theory.Theory
-import it.unibo.tuprolog.theory.parsing.parse
-import it.unibo.tuprolog.unify.Unificator
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import it.unibo.tuprolog.core.List as PlList
@@ -70,7 +69,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  *    of the statements a goal evaluates depend on, as the semantics declares (directional or connected), explored from
  *    the workers that conclude them;
  * 3. once every Build and Explore is acknowledged, the arguments are all published: the workers find the direct attacks
- *    on their own (with metaConflicts, where the conflicts are arguments as well, the solver of the catalog finds them);
+ *    on their own, as the graph builder does (none with metaConflicts: only the copies attack, added with the graph);
  * 4. the goal is solved as the standard solver solves it, but for the graph: the graph builder of the rules and query
  *    mode of the solver (see [graphModules]) save the arguments and the attacks the workers built, the graph store
  *    extends the attacks to the arguments built on the attacked ones, and the solver derives the other arguments,
@@ -81,9 +80,9 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * mode the statements it explores) is solved again from its start once they built it, as is a goal whose solutions are
  * asked for after the solver solved another one; an evaluation of a statement reads the labels of the arguments for it
  * (see answerQuery/4). The graph is built again when the theory changes, when the network loses some of the workers of a
- * graph being built ([Rebuild]), when the flags change ([Configure]), and when a goal needs a graph of the other kind
- * (whole, or in query mode); in query mode, it grows as later goals need more of it. The evaluations stopped by their
- * clients give up the graph being built for them ([Stop]).
+ * graph being built ([Rebuild]), when the flags change ([Configure]), and when a goal needs another graph: the whole
+ * one, or in query mode the one of the statement it explores, built for each statement as the standard solver builds
+ * it. The evaluations stopped by their clients give up the graph being built for them ([Stop]).
  */
 internal class Catalog(
     private val network: Network,
@@ -95,12 +94,11 @@ internal class Catalog(
     private var workers = 0
 
     // The theory split for as many workers as the network ran when it was split, and how the solver builds the graph:
-    // by the catalog alone (a graph not built from rules), the attacks by the solver (with metaConflicts), and the
-    // locality query mode explores (null for the whole graph)
+    // by the catalog alone (a graph not built from rules), and the locality query mode explores (null for the whole
+    // graph)
     private var partitioning: Partitioning? = null
     private var partitionedFor: Int? = null
     private var central = false
-    private var centralAttacks = false
     private var partial: String? = null
 
     // The graph built: whether it is (complete, for the theory as it is), its locality (null for the whole graph), and
@@ -129,13 +127,14 @@ internal class Catalog(
     internal val graphArguments: List<Term> get() = solver.arguments(solver.activeBranch()).map { it.termRepresentation() }
     private val supports = mutableListOf<Pair<String, String>>()
 
+    // The supports bound as the arguments use them (with constraints), not arguments themselves, and the arguments
+    private val boundSupports = mutableListOf<Pair<Term, String>>()
+
     // The direct attacks the workers found
     private val directAttacks = mutableListOf<DirectAttack>()
 
-    // The graph built, as the modules of the solver save it: the arguments and their supports, the attacks (none if the
-    // workers do not find them); and what the goal solved needs that is not built yet
-    private var saved: Pair<Term, Term>? = null
-    private var savedAttacks: Term? = null
+    // The graph built, as the modules of the solver save it: the arguments and their supports, the attacks; and what
+    // the goal solved needs that is not built yet
     private var need: Need? = null
 
     // What a goal needs the workers to build: the whole graph, or the arguments for a statement in query mode
@@ -154,16 +153,14 @@ internal class Catalog(
     private var current: Run? = null
     private val printed = StringBuilder()
 
-    // Whether the solver holds the labels of the graph built (an evaluation of a statement labelled it, and no goal was
-    // solved since), and the arguments of the graph last reported (see EvaluationStats)
-    private var labelled = false
+    // The arguments of the graph last reported (see EvaluationStats)
     private var argumentsReported = 0
 
     private var solver = newSolver()
-    private val unificator = Unificator.default
 
-    // The arguments for a statement read, by label, and the size of the graph labelled
-    private val argumentsLabelled = Goal("graphStore::argumentLabel(L, A), argument::claim(A, S)", solver.operators)
+    // The arguments whose claim unifies with a statement, read as they are (those for it are kept, see
+    // sameUpToVariables), and the size of the graph labelled
+    private val argumentsFor = Goal("graphStore::argumentUnifiable([S], A)", solver.operators)
     private val size =
         Goal(
             "graphStore::argumentIds(Ids), length(Ids, Arguments), findall(T, graphStore::attackById(T, _, _, _), Ts), " +
@@ -172,15 +169,19 @@ internal class Catalog(
         )
 
     // A message handled: an error (a theory that cannot be read, or that its profile refuses) answers the jobs waiting
-    // with it, and the theory is read anew for the next ones
+    // with it (out of memory too, or they would wait for ever), and the theory is read anew for the next ones
     override fun receive(message: KbMessage) {
         try {
             handle(message)
-        } catch (error: Exception) {
+        } catch (error: Throwable) {
             jobs.toList().also { jobs.clear() }.forEach { network.send(it.replyTo, it.failed(error.message ?: error.toString())) }
+            // the graph being built is given up (a session of its own, with no worker), the theory read anew
+            network.building(0)
+            forget()
             stage = Stage.READY
             changed = true
             need = null
+            current = null
         }
     }
 
@@ -189,7 +190,7 @@ internal class Catalog(
             Reset -> change { theory.clear() }
             // a graph lost some of its workers: built again now if being built, at the next goal needing it otherwise
             // (its workers are those of a site that left)
-            Rebuild -> if (stage != Stage.READY) start(explored.toList(), whole = locality == null) else built = false
+            Rebuild -> if (stage != Stage.READY) start((explored + pending).toList(), whole = locality == null) else built = false
             is Load -> change { theory.clear().append(message.theory).append('\n') }
             is Configure ->
                 change {
@@ -209,15 +210,16 @@ internal class Catalog(
             is RequireSolution -> {
                 val run =
                     if (message.goal == null) {
-                        runs[message.run]
+                        // asked for again: the last to be evicted
+                        runs.remove(message.run)?.also { runs[message.run] = it }
                     } else {
-                        Run { goal(message.goal, it) }.also {
+                        Run { goalOf(message.goal, it) }.also {
                             runs[message.run] = it
                             if (runs.size > MAX_RUNS) runs.remove(runs.keys.first())
                         }
                     }
                 if (run == null) {
-                    network.send(message.replyTo, SolutionResponse(message.run, null, NO_GRAPH, false, "", "This goal is no longer solved"))
+                    network.send(message.replyTo, SolutionResponse(message.run, null, NO_GRAPH, "", "This goal is no longer solved"))
                 } else {
                     enqueue(Solving(message.run, run, message.replyTo))
                 }
@@ -238,6 +240,7 @@ internal class Catalog(
                     // saved as the argument builder saves them, the last premise first: the graph store gives them
                     // back in the order of the worker
                     argument.supports.asReversed().forEach { supports += it to argument.id }
+                    argument.bound.forEach { boundSupports += it to argument.id }
                     arguments[argument.id] = argument.argument
                 }
                 network.send(Address.worker(message.worker), Ack(-1))
@@ -247,6 +250,8 @@ internal class Catalog(
                 directAttacks += message.attacks
                 if (--awaited == 0) finished()
             }
+            // the graph being built given up, the jobs waiting answered with the failure (see receive)
+            is Failed -> throw Arg2pException("worker ${message.worker}: ${message.error}")
             else -> Unit
         }
     }
@@ -290,7 +295,7 @@ internal class Catalog(
             if (current !== job.run) solver.solveOnce("context_assert($MARK)")
             val answer =
                 try {
-                    job.shortcut() ?: next(job.run).let { solution ->
+                    next(job.run).let { solution ->
                         val wanted = need ?: return@let job.answer(solution)
                         need = null
                         return build(wanted)
@@ -309,10 +314,10 @@ internal class Catalog(
     // already left out (and what was printed computing them); null if it has no more, or needs a graph not built yet
     private fun next(run: Run): LogicSolution? {
         if (current !== run) {
+            val goal = run.goal(solver)
             current = run
-            labelled = false
             printed.clear()
-            run.solutions = solver.solve(run.goal(solver)).iterator()
+            run.solutions = solver.solve(goal).iterator()
             repeat(run.given) { pull(run) ?: return null }
         }
         return pull(run)?.also { run.given++ }
@@ -325,28 +330,24 @@ internal class Catalog(
         return solution.takeIf { need == null }
     }
 
-    // Whether [run] has more solutions: if knowing needs a graph not built yet, it is built when they are asked for
-    private fun hasNext(run: Run): Boolean {
-        val more = run.solutions?.hasNext() ?: false
-        if (need == null) return more
-        need = null
-        current = null
-        return true
-    }
-
     // The solver given the theory, changed: the part of the catalog (see TheoryPartitioner), and how it builds the graph;
     // the graph of the theory before forgotten
     private fun prepare() {
         forget()
-        val partitioning = partitioning()
+        val partitioning =
+            try {
+                partitioning()
+            } catch (refusal: Arg2pException) {
+                // a theory its profile refuses: the catalog has it whole, no worker, and refuses it itself when a
+                // goal builds its graph (the other goals are solved as the standard solver solves them)
+                Partitioning("", emptyList(), converted = false, catalog = theory.toString())
+            }
         solver.resetStaticKb()
-        solver.loadStaticKb(Theory.parse(partitioning.catalog, solver.operators))
-        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        solver.loadStaticKb(RuleAnnotations.parse(partitioning.catalog, solver.operators, solver.unificator))
+        solver.solveOnce("context_reset, parser:::convertAllRules")
         central = !solver.holds("structuredWhole::builder(B), B == ruleGraph")
-        centralAttacks = central || solver.holds("setting(metaConflicts)")
         partial = if (central) null else locality()
         changed = false
-        labelled = false
         current = null
     }
 
@@ -360,28 +361,20 @@ internal class Catalog(
         }
     }
 
-    // [need] built by the workers: the whole graph, the statement explored further in query mode on the graph built,
-    // or explored on a graph built anew
-    private fun build(need: Need) {
-        when {
-            need is Need.Explored && built && locality != null && locality == partial -> {
-                stage = Stage.BUILDING
-                built = false
-                awaited = 0
-                explore(listOf(need.statement))
-                if (awaited == 0) published()
-            }
-            need is Need.Explored -> start(listOf(need.statement), whole = false)
-            else -> start(emptyList(), whole = true)
+    // [need] built by the workers, anew: the whole graph, or in query mode the graph of the statement explored
+    private fun build(need: Need) =
+        when (need) {
+            is Need.Explored -> start(listOf(need.statement), whole = false)
+            Need.Whole -> start(emptyList(), whole = true)
         }
-    }
 
-    // Whether the graph built has what [need] asks for
+    // Whether the graph built is the one [need] asks for: the whole graph, or in query mode the one explored for the
+    // same statement (a graph for each statement, as the standard solver builds it: kept for the statement asked again)
     private fun met(need: Need) =
         built &&
             when (need) {
                 Need.Whole -> locality == null
-                is Need.Explored -> locality == partial && (locality == null || explored.any { covers(it, need.statement) })
+                is Need.Explored -> locality != null && locality == partial && explored.any { sameUpToVariables(it, need.statement) }
             }
 
     // The workers loaded with their rules and the flags (the theory split again if they changed), and the locality of
@@ -413,6 +406,7 @@ internal class Catalog(
         pending.clear()
         arguments.clear()
         supports.clear()
+        boundSupports.clear()
         directAttacks.clear()
         argumentsReported = 0
     }
@@ -423,8 +417,7 @@ internal class Catalog(
     private fun locality(): String? =
         solver
             .solveOnce(
-                "setting(queryMode), structuredWhole::builder(B), B == ruleGraph, setting(argumentLabellingMode, S), " +
-                    "S::locality(L), L \\== whole_graph",
+                "setting(queryMode), structuredPartial::locality(L), L \\== whole_graph",
             ).takeIf { it.isYes }
             ?.substitution
             ?.getByName("L")
@@ -434,7 +427,8 @@ internal class Catalog(
     private fun explore(goals: List<Term>) {
         explored += goals
         interests.forEach { interest ->
-            val theirs = goals.filter { goal -> interest.conclusions.any { unificator.match(it, goal) } }
+            val concluded = ClaimIndex(interest.conclusions, { it })
+            val theirs = goals.filter { concluded.anyMatching(it) }
             if (theirs.isNotEmpty()) {
                 awaited++
                 network.send(Address.worker(interest.worker), Explore(-1, theirs))
@@ -442,31 +436,19 @@ internal class Catalog(
         }
     }
 
-    // The arguments all published: the workers find the attacks, but with metaConflicts
+    // The arguments all published: the workers find the attacks
     private fun published() {
         directAttacks.clear()
-        if (workers == 0 || centralAttacks) return finished()
+        if (workers == 0 || solver.holds("conflict::argued")) return finished()
         stage = Stage.ATTACKING
         awaited = workers
         repeat(workers) { network.send(Address.worker(it), Attack) }
     }
 
-    // The graph built, kept as the modules of the solver save it (the attacks as attackBuilder saves them, none if the
-    // workers did not find them): the jobs waiting are done on it
+    // The graph built, kept as the modules of the solver save it (the attacks as attackBuilder saves them): the jobs
+    // waiting are done on it
     private fun finished() {
-        val supported =
-            supports.map { (support, argument) ->
-                Struct.of("support", arguments.getValue(support), arguments.getValue(argument))
-            }
-        val attacks =
-            directAttacks.distinct().map { (type, attacker, target) ->
-                val attacked = arguments.getValue(target)
-                Struct.of("attack", Atom.of(type), arguments.getValue(attacker), attacked, attacked)
-            }
-        saved = PlList.of(arguments.values) to PlList.of(supported)
-        savedAttacks = PlList.of(attacks).takeUnless { centralAttacks }
         built = true
-        labelled = false
         stage = Stage.READY
         work()
     }
@@ -477,7 +459,7 @@ internal class Catalog(
         val published = arguments.keys.groupingBy { it.substringBefore(':').toInt() }.eachCount()
         val found = directAttacks.distinct().groupingBy { it.target.substringBefore(':').toInt() }.eachCount()
         val built = List(workers) { WorkerStats(it, network.siteOf(Address.worker(it)), published[it] ?: 0, found[it] ?: 0) }
-        val (graphArguments, graphAttacks) = size.solutions(solver).first().let { it.count("Arguments") to it.count("Attacks") }
+        val (graphArguments, graphAttacks) = size.solutions(solver).first().let { it.integer("Arguments") to it.integer("Attacks") }
         val added = arguments.size - argumentsReported
         argumentsReported = arguments.size
         network.evaluated(
@@ -492,8 +474,6 @@ internal class Catalog(
         )
     }
 
-    private fun Map<String, Term>.count(name: String) = (getValue(name) as Integer).intValue.toInt()
-
     // The graph of the last solution, none for a solution that labels none
     private fun mined(): Graph =
         try {
@@ -504,16 +484,32 @@ internal class Catalog(
 
     // The graph built, for the modules of the solver: what a goal needs and the workers did not build is asked for
     private inner class Built : BuiltGraph {
-        override fun arguments(need: Term): Pair<Term, Term>? {
+        // The identifiers of the arguments in the solver, by their global ones
+        private var identifiers = emptyMap<String, Int>()
+
+        override fun arguments(need: Term): Collection<Term>? {
             val wanted = if (need is Struct && need.functor == "explore") Need.Explored(need[0]) else Need.Whole
             if (!met(wanted)) {
                 this@Catalog.need = wanted
                 return null
             }
-            return saved
+            return this@Catalog.arguments.values
         }
 
-        override val attacks: Term? get() = savedAttacks
+        override fun identified(ids: IntArray) {
+            identifiers = HashMap<String, Int>(ids.size * 2).also { map -> arguments.keys.forEachIndexed { i, id -> map[id] = ids[i] } }
+        }
+
+        override fun supports(): List<Pair<Int, Int>> =
+            supports.map { (support, argument) -> identifiers.getValue(support) to identifiers.getValue(argument) }
+
+        override fun boundSupports(): Term =
+            PlList.of(boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument)) })
+
+        override fun attacks(): List<Triple<String, Int, Int>> =
+            directAttacks.distinct().map { (type, attacker, target) ->
+                Triple(type, identifiers.getValue(attacker), identifiers.getValue(target))
+            }
     }
 
     // A goal solved for a client, read by [read] (with the operators of the theory) the first time it is solved: the
@@ -530,8 +526,7 @@ internal class Catalog(
         fun goal(solver: Solver): Struct = goal ?: read(solver.operators).also { goal = it }
     }
 
-    // A job: the next solution of [run], answered to [replyTo] (shortcut if the solver need not solve it), or the
-    // error that kept it from one; it waits [since]
+    // A job: the next solution of [run], answered to [replyTo], or the error that kept it from one; it waits [since]
     private abstract inner class Job(
         val replyTo: String,
     ) {
@@ -539,14 +534,13 @@ internal class Catalog(
 
         val since = TimeSource.Monotonic.markNow()
 
-        open fun shortcut(): KbMessage? = null
-
         abstract fun answer(solution: LogicSolution?): KbMessage
 
         abstract fun failed(error: String): KbMessage
     }
 
-    // The next solution of the goal of the client, with the graph of its resolution and what the solver printed
+    // The next solution of the goal of the client, with the graph of its resolution and what the solver printed: the
+    // one after it is not computed until the client asks for it
     private inner class Solving(
         private val id: String,
         override val run: Run,
@@ -554,65 +548,69 @@ internal class Catalog(
     ) : Job(replyTo) {
         override fun answer(solution: LogicSolution?): KbMessage {
             val graph = solution?.let { mined() } ?: NO_GRAPH
-            val more = solution != null && hasNext(run)
             val output = printed.substring(minOf(run.printed, printed.length))
             run.printed += output.length
-            return SolutionResponse(id, solution, graph, more, output)
+            return SolutionResponse(id, solution, graph, output)
         }
 
-        override fun failed(error: String) = SolutionResponse(id, null, NO_GRAPH, false, "", error)
+        override fun failed(error: String) = SolutionResponse(id, null, NO_GRAPH, "", error)
     }
 
-    // The statements for a query by label, as the standard solver answers them
+    // The statements for a query by label, as the standard solver answers them: every answer at once
     private inner class Answering(
         request: RequireAnswer,
     ) : Job(request.replyTo) {
-        private val query by lazy { AnswerQuery(term(request.query, solver.operators)) }
+        private val query by lazy { AnswerQuery(termOf(request.query, solver.operators)) }
 
-        override val run = Run { query.goal }
+        override val run = Run { query.allGoal }
 
         override fun answer(solution: LogicSolution?): KbMessage =
             if (solution?.isHalt == true) {
-                failed(solution.exception?.message ?: solution.toString())
+                failed(solution.haltMessage())
             } else {
-                AnswerResponse(query.answer(solution?.takeIf { it.isYes }))
+                // the graph may hold more than the query depends on (that of the goals before): a labelling of what
+                // it does not depend on answers the same
+                AnswerResponse(solution?.takeIf { it.isYes }?.let { query.answers(it).distinct() }.orEmpty())
             }
 
         override fun failed(error: String) = AnswerResponse(null, error)
     }
 
-    // The arguments for a statement by label: the graph labelled for it (see answerQuery/4), or as it was if the solver
-    // labelled the graph built and it has them
+    // The statements answering a statement, by label, with the arguments for each, as answerQuery/4 answers them (see
+    // the flag answerMode)
     private inner class Evaluating(
         private val request: RequireEvaluation,
         private val statement: Term,
     ) : Job(request.replyTo) {
-        override val run = Run { Struct.of("answerQuery", statement, Var.anonymous(), Var.anonymous(), Var.anonymous()) }
+        private val query by lazy { AnswerQuery(statement) }
 
-        override fun shortcut(): KbMessage? = if (labelled && met(needed)) labels() else null
+        override val run = Run { query.goal }
 
         override fun answer(solution: LogicSolution?): KbMessage {
             if (solution == null) return EvaluationResponse(emptyList(), emptyList(), emptyList())
-            if (solution.isHalt) return failed(solution.exception?.message ?: solution.toString())
-            labelled = true
-            return labels()
+            if (solution.isHalt) return failed(solution.haltMessage())
+            return labels(query.statements(solution).map { PlList.of(it) })
         }
 
         override fun failed(error: String) = EvaluationResponse(emptyList(), emptyList(), emptyList(), error)
 
-        // what answering the statement needs: the whole graph, unless query mode explores it
-        private val needed: Need get() = if (partial == null) Need.Whole else Need.Explored(statement)
-
-        private fun labels(): EvaluationResponse {
-            // the statement bound as a term, its variables apart from those of the goal
-            val found =
-                argumentsLabelled
-                    .solutions(solver, "S" to statement)
-                    .map { it.getValue("L").toString() to it.getValue("A").toString() }
-                    .distinct()
-            val labelled = { label: String -> found.filter { it.first == label }.map { Response(request.elem, listOf(it.second)) } }
-            val und = if (found.isEmpty()) listOf(Response(request.elem, emptyList())) else labelled("und")
-            return EvaluationResponse(labelled("in"), labelled("out"), und)
+        // The statements answering the one asked, labelled in, out and und ([In, Out, Und] lists), each with the
+        // arguments for it; a statement no argument concludes is UND, for no argument
+        private fun labels(labelled: List<Term>): EvaluationResponse {
+            val responses =
+                labelled.map { statements ->
+                    statements.castToList().toList().map { labelledStatement ->
+                        val arguments =
+                            argumentsFor
+                                .solutions(solver, "S" to labelledStatement)
+                                .map { it.getValue("A") }
+                                .filter { sameUpToVariables(claimOf(it), labelledStatement) }
+                        Response(TermValues.format(labelledStatement), arguments.map { it.toString() }.distinct())
+                    }
+                }
+            val (inStatements, outStatements, undStatements) = responses
+            val none = responses.all { it.isEmpty() }
+            return EvaluationResponse(inStatements, outStatements, if (none) listOf(Response(request.elem, emptyList())) else undStatements)
         }
     }
 
@@ -622,17 +620,5 @@ internal class Catalog(
 
         // The fact marking the context of the solver before a goal: gone after it if the goal labelled a graph
         const val MARK = "catalog_mark"
-
-        // A query, Prolog text, read as the standard solver reads it
-        fun term(
-            text: String,
-            operators: OperatorSet,
-        ): Term = SyntaxProblem.parsing("Query") { Term.parse(text.trim().removeSuffix("."), operators) }
-
-        // A goal, Prolog text, read as the standard solver reads it
-        fun goal(
-            text: String,
-            operators: OperatorSet,
-        ): Struct = term(text, operators).let { it as? Struct ?: throw Arg2pException("Not a goal: $text") }
     }
 }

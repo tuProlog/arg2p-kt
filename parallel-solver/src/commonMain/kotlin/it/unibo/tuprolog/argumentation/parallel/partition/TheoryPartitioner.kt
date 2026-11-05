@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.partition
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.parallel.node.checked
 import it.unibo.tuprolog.argumentation.parallel.node.holds
 import it.unibo.tuprolog.argumentation.parallel.node.solutions
 import it.unibo.tuprolog.argumentation.parallel.node.solveOnce
@@ -28,15 +28,21 @@ data class Partitioning(
     val converted: Boolean = true,
     /** The theory of the catalog: its shared part, or the whole theory when it is not split */
     val catalog: String = shared,
+    /** The theory has the axioms of temporal, among the rules of the partitions: not added again */
+    val temporal: Boolean = false,
 ) {
     /**
      * The theory of the worker of the partition [index]: the conversions turned off if applied, whatever the profile
      * of the theory presets
      */
-    fun theoryOf(index: Int) = "$shared\n${if (converted) CONVERTED else ""}${partitions[index]}"
+    fun theoryOf(index: Int) = "$shared\n${if (converted) CONVERTED else ""}${if (temporal) TEMPORAL else ""}${partitions[index]}"
 
-    private companion object {
+    internal companion object {
         const val CONVERTED = "autoTransposition(off).\nprologStrictCompatibility(off).\n"
+
+        // The axioms of temporal, among the rules converted, not added again: the arguments may conclude open
+        // statements all the same (openConclusions, an internal flag)
+        const val TEMPORAL = "temporal(off).\nopenConclusions.\n"
     }
 }
 
@@ -47,13 +53,14 @@ data class Partitioning(
  * together as far as the number of partitions allows, so that fewer arguments travel between workers.
  *
  * The rules are those the theory converts to (see the module parser): with their identifiers, their transpositions
- * (autoTransposition), and the Prolog clauses argued (prologStrictCompatibility), each written back as a rule of arg2p.
+ * (autoTransposition), the Prolog clauses argued (prologStrictCompatibility) and the axioms of time (temporal), each
+ * written back as a rule of arg2p.
  * Everything else in the theory is shared by every partition (flags, preferences, conflicts, burdens, the Prolog
  * predicates the rules check), but the flags of the conversion, already applied (the workers are told to apply them
  * no further, whatever the profile). A theory with naturalTerms is left whole, in a single partition.
  */
 object TheoryPartitioner {
-    private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility")
+    private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility", "temporal")
 
     /**
      * The partitions of [theory], converted with [flags] and the flags of the theory: the groups of rules that
@@ -72,7 +79,7 @@ object TheoryPartitioner {
         if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) {
             return Partitioning("", listOf(theory), converted = false, catalog = theory)
         }
-        solver.solveOnce("context_reset, parser:::convertAllRules(_)")
+        solver.solveOnce("context_reset, parser:::convertAllRules")
         // a theory its profile refuses is refused here, as by the standard solver
         checked(solver.solveOnce("structuredWhole::checkProfile"))
         val rules = rules(solver)
@@ -80,10 +87,15 @@ object TheoryPartitioner {
         val groups =
             components(rules.indices.toList(), supporters)
                 .let { if (parts == null) it else split(pack(balanced(it, supporters, rules.size, parts), parts), parts) }
-        val shared = clauses.filterNot { isRule(it) || (it.isFact && it.head.let { h -> h is Atom && h.value in conversionFlags }) }
+        val shared = clauses.filterNot { isRule(it) || isConversionFlag(it) }
+        val sharedText = if (shared.isEmpty()) "" else Theory.of(shared).toString(asPrologText = true)
+        // the axioms of temporal are among the rules converted: the catalog, and the workers, do not add them again
+        val temporal = solver.holds("setting(temporal)")
         return Partitioning(
-            if (shared.isEmpty()) "" else Theory.of(shared).toString(asPrologText = true),
+            sharedText,
             groups.map { group -> group.joinToString("\n") { "${rules[it].text}." } },
+            catalog = if (temporal) "$sharedText\n${Partitioning.TEMPORAL}" else sharedText,
+            temporal = temporal,
         )
     }
 
@@ -267,6 +279,9 @@ object TheoryPartitioner {
 
     // A rule or a premise written in the language of arg2p (Id : Body => Conclusion parses as =>(:(Id, Body),
     // Conclusion)): it is converted, the rules of the partitions replace it
+    // A flag of the conversion stated by its name alone (autoTransposition.): applied, the workers turn it off
+    private fun isConversionFlag(clause: Clause): Boolean = clause.isFact && clause.head.let { it is Atom && it.value in conversionFlags }
+
     private fun isRule(clause: Clause): Boolean {
         if (!clause.isFact) return false
         val head = clause.head ?: return false

@@ -4,23 +4,26 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
+import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
- * The labels of the arguments for a statement are the same in a distributed solver, its theory partitioned among
- * workers, and in the standard solver answering it with the same flags (on the part of the graph the statement depends
- * on, in query mode): each subclass runs them on a way of running the nodes
+ * The statements answering a statement are labelled the same in a distributed solver, its theory partitioned among
+ * workers, and in the standard solver answering it with the same flags (answerQuery/4, on the part of the graph the
+ * statement depends on in query mode): each subclass runs them on a way of running the nodes
  */
 abstract class EquivalenceScenarios {
-    // The number of arguments for a statement labelled in, out and und
+    // The statements labelled in, out and und, as text, their variables named in the order they appear
     data class Labels(
-        val inArgs: Int,
-        val outArgs: Int,
-        val undArgs: Int,
+        val inStatements: Set<String>,
+        val outStatements: Set<String>,
+        val undStatements: Set<String>,
     )
 
     /** The evaluation of the statements of [theory], by a distributed solver labelling as the standard one with [flags] */
@@ -29,21 +32,28 @@ abstract class EquivalenceScenarios {
         flags: Flags,
     ): (String) -> EvaluationResponse
 
+    private fun named(statement: String): String {
+        val names = mutableMapOf<String, String>()
+        return Regex("""\b(_[A-Za-z0-9_]*|[A-Z][A-Za-z0-9_]*)\b""").replace(statement) { names.getOrPut(it.value) { "V${names.size}" } }
+    }
+
     private fun centralised(
         theory: String,
         statement: String,
         flags: Flags,
     ): Labels {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
-        // the graph the standard solver builds to answer: in query mode, the part the statement depends on
-        solver.solve(Struct.parse("answerQuery(($statement), _, _, _)", solver.operators)).first()
-        // the arguments whose claim unifies with the statement, as the workers look for them
-        val count = { label: String ->
-            solver
-                .solve(Struct.parse("graphStore::argumentLabel($label, A), argument::claim(A, $statement)", solver.operators))
-                .count { it.isYes }
+        val solution = solver.solve(Struct.parse("answerQuery(($statement), In, Out, Und)", solver.operators)).first()
+        // the statements as arg2p writes them, as the distributed solver gives its claims
+        val labelled = { name: String ->
+            solution.substitution
+                .getByName(name)!!
+                .castToList()
+                .toList()
+                .map { named(TermValues.format(it)) }
+                .toSet()
         }
-        return Labels(count("in"), count("out"), count("und"))
+        return Labels(labelled("In"), labelled("Out"), labelled("Und"))
     }
 
     private fun assertSameLabels(
@@ -59,19 +69,21 @@ abstract class EquivalenceScenarios {
         val solve = distributed(theory, flags)
         statements.forEach { statement ->
             val response = solve(statement)
-            // a statement with no argument is reported as one und, for no argument
-            val actual =
-                if (response.undArgs.size == 1 &&
+            // a statement with no argument is reported as one und, for no argument; every other with its arguments
+            val none =
+                response.undArgs.size == 1 &&
                     response.undArgs
                         .first()
                         .queryChain
                         .isEmpty()
-                ) {
-                    Labels(0, 0, 0)
-                } else {
-                    Labels(response.inArgs.size, response.outArgs.size, response.undArgs.size)
+            val labelled = { responses: List<Response> -> if (none) emptySet() else responses.map { named(it.claim) }.toSet() }
+            val actual = Labels(labelled(response.inArgs), labelled(response.outArgs), labelled(response.undArgs))
+            assertEquals(centralised(theory, statement, flags), actual, "the statements answering $statement")
+            if (!none) {
+                (response.inArgs + response.outArgs + response.undArgs).forEach {
+                    assertTrue(it.queryChain.isNotEmpty(), "the arguments for ${it.claim}")
                 }
-            assertEquals(centralised(theory, statement, flags), actual, "the arguments for $statement")
+            }
         }
     }
 
@@ -149,7 +161,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun defeasiblePreferences() =
         assertSameLabels(
-            Flags.defaults().graphExtensions(GraphExtension.STANDARD_PREF, GraphExtension.DEFEASIBLE_PREF),
+            Flags.defaults().graphExtensions(GraphExtension.DEFEASIBLE_PREF),
             "r1 : p => q.\nr2 : s => -q.\nf1 :=> p.\nf2 :=> s.\nrs : [] => sup(r1, r2).",
             "q",
             "-q",
@@ -157,6 +169,25 @@ abstract class EquivalenceScenarios {
 
     @Test
     fun conflictsArgued() = assertSameLabels("metaConflicts.\nr0 : [] => conflict(a, b).\nf1 :=> a.\nf2 :=> b.", "a", "b")
+
+    // a conflict argued with a rule: the catalog, with no rule of the theory, finds the attacks of the copies of its arguments
+    @Test
+    fun aRuleUndercutByAConflictArgued() =
+        assertSameLabels("metaConflicts.\nr0 : [] => conflict(c, r1).\nf1 :=> a.\nf2 :=> c.\nr1 : a => b.", "a", "b", "c")
+
+    // candidates that unify and are different arguments: each an attacker
+    @Test
+    fun attackersUnifyingWithOneAnother() =
+        assertSameLabels(
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints)."),
+            "f1 :-> s(Z).\nf2 :-> s(5).\nr1(T) : s(T) => p(T).\nf3 :=> a.\nq1 : a => -p(5).",
+            "p(5)",
+            "-p(5)",
+        )
+
+    // a negated variable unifies with any negated statement
+    @Test
+    fun aNegatedVariable() = assertSameLabels("f1 :=> -a.\nf2 :=> b.\nf3 :=> -c(1).", "-X", "b")
 
     // a graph not built from rules: by the catalog, as the standard solver builds it
     @Test
@@ -178,5 +209,50 @@ abstract class EquivalenceScenarios {
             "bp(guilty).\nr1 : evidence => guilty.\nr2 : alibi => -guilty.\nf1 :=> evidence.\nf2 :=> alibi.",
             "guilty",
             "-guilty",
+        )
+
+    // The instances of the arguments for sets of values, which the catalog adds as the standard solver does: those the
+    // workers' arguments rest on, and those a conflict binds; on the whole graph, and in query mode (each statement on a
+    // graph of its own, in both solvers)
+    private fun bothModes(
+        flags: Flags,
+        theory: String,
+        vararg statements: String,
+    ) {
+        assertSameLabels(flags.queryMode(false), theory, *statements)
+        assertSameLabels(flags.queryMode(true), theory, *statements)
+    }
+
+    @Test
+    fun constraints() =
+        bothModes(
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints)."),
+            "f1 :=> s.\nr0 : s, {T > 1} => holdsAt(f, T).\nr1 : holdsAt(f, 5) => ok.\nc1 :=> -holdsAt(f, 7).\nc2 :=> -holdsAt(f, 0).",
+            "ok",
+            "holdsAt(f, 7)",
+            "holdsAt(f, 5)",
+            "holdsAt(f, 0)",
+        )
+
+    @Test
+    fun temporal() =
+        bothModes(
+            Flags.parse("temporal."),
+            "e1 :=> happens(load, 1).\ne2 :=> happens(shoot, 4).\ni1 :=> initiates(load, loaded).\n" +
+                "t1 :=> terminates(shoot, loaded).\nq1 : holdsAt(loaded, 3) => canShoot.\nq2 : holdsAt(loaded, 6) => stillLoaded.",
+            "canShoot",
+            "stillLoaded",
+            "holdsAt(loaded, 3)",
+            "holdsAt(loaded, 6)",
+        )
+
+    @Test
+    fun conflictsArguedOnInstances() =
+        bothModes(
+            Flags.parse("graphExtension(standardPref). graphExtension(constraints). metaConflicts."),
+            "r0 : [] => conflict(p(7), q).\nf1 :=> s.\nr1 : s, {T > 1} => p(T).\nf2 :=> q.\nr2 : p(5) => ok.",
+            "ok",
+            "q",
+            "p(7)",
         )
 }

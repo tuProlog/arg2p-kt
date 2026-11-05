@@ -10,27 +10,30 @@ import kotlin.js.JsName
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
- * An argument for the statement evaluated ([claim], the statement), with the argument itself in [queryChain] (none
- * for a statement no argument concludes), as Prolog text
+ * A statement answering the one evaluated ([claim]: the statement itself, or, with constraints, one of its instances),
+ * with the arguments for it in [queryChain] (none for a statement no argument concludes), as Prolog text
  */
 @JsExport
 data class Response(
     val claim: String,
     @JsExport.Ignore @JsName("queryChainList") val queryChain: List<String>,
 ) {
-    /** The argument, as Prolog text (an array in JavaScript) */
+    /** The arguments for the statement, as Prolog text (an array in JavaScript) */
     @JsName("queryChain")
     val queryChainArray: Array<String> get() = queryChain.toTypedArray()
 }
 
 /**
  * An argument, by its global identifier ([id], the worker that built it and its identifier there), with the identifiers
- * of the arguments it rests on directly ([supports], from a worker to the catalog only)
+ * of the arguments it rests on directly ([supports]) and those it rests on for fewer values than they hold for, bound
+ * as it uses them ([bound], with constraints: their instances, which the catalog adds when it changes the graph), from
+ * a worker to the catalog only
  */
 internal data class SharedArgument(
     val id: String,
     val argument: Term,
     val supports: List<String> = emptyList(),
+    val bound: List<Term> = emptyList(),
 )
 
 /** The premises of the rules of [worker], and their conclusions */
@@ -69,8 +72,7 @@ internal data class DirectAttack(
  *    sends them to the catalog ([AttacksFound]), which extends them to the arguments built on the attacked ones and
  *    labels the graph.
  *
- * In query mode a later evaluation needing more of the graph explores it further ([Explore]), then the attacks are
- * found again.
+ * In query mode the graph is built for each statement evaluated, as the standard solver builds it.
  *
  * The goals of the clients ([RequireSolution], [RequireAnswer], [RequireEvaluation]) are solved by the catalog, on the
  * graph the workers built for them as above (see Catalog).
@@ -108,13 +110,16 @@ internal data class Add(
     val elem: String,
 ) : KbMessage
 
-/** To the catalog: the labels of the arguments for the statement [elem], to send to the client [replyTo] */
+/** To the catalog: the labels of the statements answering the statement [elem], to send to the client [replyTo] */
 internal data class RequireEvaluation(
     val elem: String,
     val replyTo: String,
 ) : KbMessage
 
-/** To a client: the arguments for the statement it asked about, by label, or the [error] that kept it from an answer */
+/**
+ * To a client: the statements answering the statement it asked about, by label, as answerQuery/4 labels them, each with
+ * the arguments for it, or the [error] that kept it from an answer
+ */
 @JsExport
 data class EvaluationResponse(
     @JsExport.Ignore @JsName("inArgsList") val inArgs: List<Response>,
@@ -122,15 +127,15 @@ data class EvaluationResponse(
     @JsExport.Ignore @JsName("undArgsList") val undArgs: List<Response>,
     val error: String? = null,
 ) : KbMessage {
-    /** The arguments labelled in (an array in JavaScript) */
+    /** The statements labelled in (an array in JavaScript) */
     @JsName("inArgs")
     val inArray: Array<Response> get() = inArgs.toTypedArray()
 
-    /** The arguments labelled out (an array in JavaScript) */
+    /** The statements labelled out (an array in JavaScript) */
     @JsName("outArgs")
     val outArray: Array<Response> get() = outArgs.toTypedArray()
 
-    /** The arguments labelled und (an array in JavaScript) */
+    /** The statements labelled und (an array in JavaScript) */
     @JsName("undArgs")
     val undArray: Array<Response> get() = undArgs.toTypedArray()
 }
@@ -152,20 +157,22 @@ internal data class RequireAnswer(
 ) : KbMessage
 
 /**
- * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, whether the goal
- * has more solutions, and what the solver printed computing it; or the [error] that kept it from one (a goal that
- * cannot be read, a theory that cannot be read); or, [stopped], none as the evaluation was stopped. Only for the
- * clients of the site of the catalog: never written.
+ * To a client: a solution of the goal of [run] (none if it has no more), the graph of its resolution, and what the
+ * solver printed computing it; or the [error] that kept it from one (a goal that cannot be read, a theory that cannot
+ * be read); or, [stopped], none as the evaluation was stopped. Only for the clients of the site of the catalog: never
+ * written.
  */
 internal data class SolutionResponse(
     val run: String,
     val solution: LogicSolution?,
     val graph: Graph,
-    val hasNext: Boolean,
     val output: String,
     val error: String? = null,
     val stopped: Boolean = false,
-) : KbMessage
+) : KbMessage {
+    /** Whether the goal has no more solutions: no solution here, no error, not stopped */
+    val exhausted: Boolean get() = solution == null && error == null && !stopped
+}
 
 /** The graph of a solution that labels none */
 internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
@@ -173,9 +180,9 @@ internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
 /** Why an evaluation stopped by its client has no answer */
 internal const val STOPPED = "The evaluation was stopped"
 
-/** To a client: the [answer] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
+/** To a client: the [answers] of a query, or the [error] that kept it from one. Only for the clients of the site of the catalog: never written. */
 internal data class AnswerResponse(
-    val answer: Answer?,
+    val answers: List<Answer>?,
     val error: String? = null,
 ) : KbMessage
 
@@ -237,6 +244,12 @@ internal data class Wanted(
 internal data class Candidates(
     val worker: Int,
     val arguments: List<SharedArgument>,
+) : KbMessage
+
+/** To the catalog: handling a message failed on [worker] with [error]: the graph being built is given up */
+internal data class Failed(
+    val worker: Int,
+    val error: String,
 ) : KbMessage
 
 /** To the catalog: the direct attacks on the arguments of [worker] */

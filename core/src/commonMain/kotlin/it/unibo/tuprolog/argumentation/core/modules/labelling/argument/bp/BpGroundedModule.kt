@@ -5,6 +5,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 /**
  * The grounded labelling with burdens of persuasion (module `bp_grounded`, an argumentLabellingMode, ICAIL): as the
  * grounded one, but an argument for a statement under a burden of persuasion that is not IN is OUT rather than UND.
+ * Part of the semantics, it changes the graph it labels: a rebut or undermine by an argument under a burden of
+ * persuasion fails unless the argument is superior to the one attacked (see filterBpDefeats/0).
  */
 object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpgrounded", "bp_grounded") {
     override val prologRawTheory: String =
@@ -20,7 +22,8 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         locality(connected).
 
         %! argumentLabelling
-        %  The labelling, in the active context, the burdens of persuasion (abstractBp/1) reified first.
+        %  The labelling, in the active context, the burdens of persuasion (abstractBp/1) reified first, and the
+        %  attacks failing for them removed (see filterBpDefeats/0).
         argumentLabelling :-
             reifyBurdenOfProofs,
             filterBpDefeats,
@@ -42,7 +45,7 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             bpLabelling(NewArguments).
         bpLabelling(Arguments) :-
             context_active(Branch),
-            mostGroundedBpUnd(Arguments, A),
+            mostGroundedBpUnd(Arguments, A), !,
             context_branch(Branch, _),
             graphStore::labelArgument(out, A),
             utils::subtract(Arguments, [A], NewArguments),
@@ -86,16 +89,15 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         %! allAttacksOUT(+Argument)
         %  Every attacker of Argument is OUT.
         allAttacksOUT(A) :-
-            \+ ( graphStore::attack(_, B, A, _), \+ (graphStore::argumentLabel(out, B))).
+            graphStore::argumentId(A, Id),
+            \+ (graphStore::attacksById(B, Id), \+ graphStore::argumentLabelById(out, B)).
 
         %! oneAttackIN(+Argument)
         %  An attacker of Argument is IN, or Argument attacks an IN argument.
         oneAttackIN(A) :-
-            graphStore::attack(_, B, A, _),
-            graphStore::argumentLabel(in, B), !.
-        oneAttackIN(A) :-
-            graphStore::attack(_, A, B, _),
-            graphStore::argumentLabel(in, B), !.
+            graphStore::argumentId(A, Id),
+            (graphStore::attacksById(B, Id) ; graphStore::attacksById(Id, B)),
+            graphStore::argumentLabelById(in, B), !.
 
         %! isInBurdenOfProof(+Conclusion)
         %  A burden of persuasion is on Conclusion.
@@ -109,10 +111,13 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             argument::conclusion(Argument, Conclusion),
             isInBurdenOfProof(Conclusion).
 
+        %! filterBpDefeats
+        %  The rebuts and undermines by an argument under a burden of persuasion removed from the graph, unless it is
+        %  superior to the argument attacked: a burden is met by winning, not by drawing.
         filterBpDefeats :-
             findall(_, (
-                graphStore::attack(T, A, B, C),
-                filterBpDefeat(T, A, B, C)
+                graphStore::directAttack(T, A, C),
+                filterBpDefeat(T, A, C, C)
             ), _).
 
         filterBpDefeat(T, B, A, C) :-
@@ -127,33 +132,19 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
             \+ (
                 member(A, Arguments), Arg \= A,
                 isArgumentInBurdenOfProof(A),
-                argumentChain(A, Arg)
+                graphStore::reaches(A, Arg)
             ).
-
-        %! argumentChain(+A, +B)
-        %  B is A or an argument reached from A through attacks; the arguments are visited breadth
-        %  first, each once (attack cycles are common: rebuttals are mutual)
-        argumentChain(A, B) :- reaches([A], [], B), !.
-
-        reaches([B|_], _, B) :- !.
-        reaches([A|Frontier], Visited, B) :-
-            findall(C, (
-                graphStore::attack(_, A, C, _),
-                \+ member(C, [A|Visited]),
-                \+ member(C, Frontier)
-            ), Next),
-            utils::appendFast(Frontier, Next, Queue),
-            reaches(Queue, [A|Visited], B).
 
         %==============================================================================
         % BURDEN OF PROOF REIFICATION
         %==============================================================================
 
         %! reifyBurdenOfProofs
-        %  The burdens of persuasion of the theory (abstractBp/1) on the conclusions of the saved arguments, as reifiedBp/1 in the context.
+        %  The burdens of persuasion of the theory (see parser::burden/1) on the conclusions of the saved arguments, as
+        %  reifiedBp/1 in the context.
         reifyBurdenOfProofs :-
             findall(_, (
-                context_check(abstractBp(AbstractBp)),
+                parser::burden(AbstractBp),
                 fillTemplate(AbstractBp, R),
                 context_absent(reifiedBp(R)),
                 context_assert(reifiedBp(R))
@@ -162,7 +153,7 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         % The literals of a burden, each the conclusion of a saved argument (instantiated jointly) unless it is ground
         fillTemplate([], []).
         fillTemplate([H|T], [[H]|R]) :-
-            (ground(H) -> true ; argument::claim(Argument, H), graphStore::argument(Argument)),
+            (ground(H) -> true ; graphStore::argumentFor([H], _)),
             fillTemplate(T, R).
         """.trimIndent()
 }

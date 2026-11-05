@@ -18,12 +18,14 @@ class QueryModeTest {
         val cluster = cluster(Flags.defaults().graphExtensions())
         assertEquals(1, cluster.solve("b").inArgs.size)
         assertEquals(2, cluster.site.argumentsBuilt)
-        // a later query needing more: the graph grows
+        // a later query builds its own graph, as the standard solver does
         assertEquals(1, cluster.solve("d").undArgs.size)
-        assertEquals(5, cluster.site.argumentsBuilt)
-        // and one it covers leaves it as it is
+        assertEquals(3, cluster.site.argumentsBuilt)
         assertEquals(1, cluster.solve("a").inArgs.size)
-        assertEquals(5, cluster.site.argumentsBuilt)
+        assertEquals(1, cluster.site.argumentsBuilt)
+        // the same query again is answered on the graph built for it
+        assertEquals(1, cluster.solve("a").inArgs.size)
+        assertEquals(0, cluster.stats.evaluation!!.added)
     }
 
     @Test

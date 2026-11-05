@@ -4,9 +4,9 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The burdens of proof as part of the graph (module `bp`, a graphExtension): for an argument for `bp(Statement)` and
- * an argument for Statement, the burdened one, an argument for `-burdmet(Conclusion)` (top rule `artificial`) is
- * attacked as the burden of proof is, and rebuts or is rebutted by the burdened argument, depending on whether the
- * grounded labelling labels it IN.
+ * an argument for Statement, the burdened one, an argument for `-burdmet(Conclusion)` (top rule `artificial`, one for
+ * each of the two) is attacked as the burden of proof is, and rebuts or is rebutted by the burdened argument,
+ * depending on whether the grounded labelling labels it IN.
  */
 object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
     override val prologRawTheory: String =
@@ -25,24 +25,23 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
 
         checkBpArguments([]) :- !.
         checkBpArguments(BurdenedPairs) :-
-            createBpArguments(BurdenedPairs, Pairs),
-            utils::deduplicate(Pairs, BpPairs),
+            createBpArguments(BurdenedPairs, BpPairs),
             createBpAttacks(BpPairs).
 
-        % The conflict argument of a burdened argument is the same for every burden of proof on it: it is saved once, and
-        % supported by each of them, so attacked as they are (see the module graphStore)
+        % The conflict argument of a burdened argument for each argument for a burden of proof on it (its rules those
+        % of both, after artificial): supported by that burden argument, so attacked as it is (see the module
+        % graphStore), the other burden arguments standing on their own
         createBpArguments([], []).
         createBpArguments([(Bp, Burdened)|Others], [(Conflict, Burdened)|BpPairs]) :-
+            argument::rules(Bp, BpRules),
             argument::rules(Burdened, Rules),
+            append(BpRules, Rules, AllRules),
             argument::conclusion(Burdened, Conclusion),
             argument::infoParts(Info, [artificial], [artificial], []),
-            argument::new([artificial|Rules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
-            ignore(graphStore::saveArgument(a, [-burdmet(Conclusion)], Conflict)),
-            ignore(graphStore::saveSupport(Bp, Conflict)),
+            argument::new([artificial|AllRules], artificial, [-burdmet(Conclusion)], [], Info, Conflict),
+            graphStore::saveArgument([-burdmet(Conclusion)], Conflict),
+            graphStore::saveSupport(Bp, Conflict),
             createBpArguments(Others, BpPairs).
-
-        ignore(Goal) :- call(Goal), !.
-        ignore(_).
 
         createBpAttacks(BpPairs) :-
             generateBpsEvaluationChain(BpPairs, OrderedBpPairs),
@@ -57,7 +56,7 @@ object BpModule : PrologModule("prolog.argumentation.graph.meta.bp", "bp") {
 
         insertBpPair(BpPair, [], [BpPair]).
         insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(BpL, BurdenedL)|Return]) :-
-            bp_grounded::argumentChain(BurdenedL, Burdened),
+            graphStore::reaches(BurdenedL, Burdened),
             insertBpPair((Bp, Burdened), Others, Return), !.
         insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, BurdenedL)|Others]]).
 

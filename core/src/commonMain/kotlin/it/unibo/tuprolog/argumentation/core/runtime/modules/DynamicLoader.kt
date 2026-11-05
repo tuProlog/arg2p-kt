@@ -3,8 +3,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.modules
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.modules.ArgLoader
-import it.unibo.tuprolog.argumentation.core.primitives.modules.LoaderReset
+import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleDefines
 import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoal
 import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoalInBranch
 import it.unibo.tuprolog.core.operators.Operator
@@ -18,8 +17,7 @@ import it.unibo.tuprolog.theory.Theory
 
 internal class DynamicLoader(
     solver: Arg2pSolver,
-) : ArgLibrary,
-    ArgLoader {
+) : ArgLibrary {
     /** The modules loaded so far */
     internal val modules = Modules(solver)
 
@@ -44,18 +42,11 @@ internal class DynamicLoader(
                 }
             }
 
-    /** Forgets the modules loaded so far, and their solvers */
-    internal fun reset() {
-        modules.clear()
-        moduleSolvers.clear()
-        loadedKb.clear()
-    }
-
     override val alias = "prolog.argumentation.loader"
 
     override val baseContent: Library
         get() =
-            listOf(ModuleGoal(this), ModuleGoalInBranch(this), LoaderReset(this)).let {
+            listOf(ModuleGoal(this), ModuleGoalInBranch(this), ModuleDefines(this)).let {
                 Library.of(
                     alias = this.alias,
                     primitives = it.associateBy { prim -> prim.signature },
@@ -65,7 +56,7 @@ internal class DynamicLoader(
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
 
-    override var theoryOperators = operators()
+    override val theoryOperators = operators()
 
     companion object {
         fun operators() =

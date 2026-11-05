@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object QueryExplorationModule : PrologModule("prolog.argumentation.structured.exploration", "queryExploration") {
     override val primitives: Map<Signature, Primitive>
-        get() = mapOf(GroundVars.descriptionPair)
+        get() = mapOf(GroundVars.signature to GroundVars)
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -33,6 +33,16 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
                 true
             ).
 
+        %! explore(+Query, +Locality)
+        %  The part of the graph the labels of the arguments for Query depend on, as Locality goes (see
+        %  structuredPartial::locality/1): the arguments for Query and those they depend on (explore/1), those depending
+        %  on them for the connected locality (expand/1), then what the steps changing the graph relate to them
+        %  (extend/1).
+        explore(Query, Locality) :-
+            explore(Query),
+            expand(Locality),
+            extend(Locality).
+
         % A solver given arguments built elsewhere (as a worker of the parallel solver, which has some of the rules) carries
         % on its exploration as they come: resume/1 explores again what they may support, restart/0 forgets it all.
 
@@ -43,6 +53,17 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             builtOn(Statements, [], Affected),
             findall(_, (member(S, Affected), context_retract(explored(S))), _),
             findall(_, (member(S, Affected), explore(S)), _).
+
+        %! resumed(+Statements, +Queries)
+        %  The exploration of Queries carried on once arguments for Statements, built elsewhere, are saved: from scratch
+        %  when the conflicts are argued (see conflict::argued/0), as those for conflicts may make others possible
+        %  attackers (see restart/0), or else exploring again what they may support (see resume/1).
+        resumed(_, Queries) :-
+            conflict::argued, !,
+            restart,
+            exploreAll(Queries).
+        resumed(Statements, _) :-
+            resume(Statements).
 
         %! restart
         %  The exploration forgotten, not the arguments it built: exploring again finds all that the arguments saved
@@ -65,8 +86,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
 
         % exploredAs(+Statement, -Explored): Explored is explored and unifies with Statement, as it was explored
         exploredAs(Statement, Explored) :-
-            context_check(explored(Explored)),
-            \+ \+ Explored = Statement.
+            context_matching(explored, Statement, explored(Explored)).
 
         unseen([], Seen, [], Seen).
         unseen([S|Ss], Seen, New, Seen1) :-
@@ -90,7 +110,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         %  all at once, so that they are built side by side (the bindings of the others leave them as they are).
         premiseOfExplored(Premise) :-
             context_check(explored(Statement)),
-            parser::classicRule(_, Premises, [Statement]),
+            parser::rule(_, Premises, [Statement]),
             member(Premise, Premises),
             ground(Premise),
             parser::argued(Premise).
@@ -131,17 +151,14 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         exploreStatement(_, _).
 
         % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
-        % it): those that make others conflict with it (metaConflicts), those of its possible attackers, and those the
-        % graph extensions relate it to. The conflicts come first, as the possible attackers are only looked for once.
-        dependency(_, Argument, S) :- attackCandidates::attackDependency(Argument, S).
+        % it): those of its possible attackers. The steps changing the graph relate it to others in turn (see extend/1).
         dependency(Id, Argument, S) :- attackCandidates::possibleAttackers(Id, Argument, [S]).
-        dependency(_, Argument, S) :- setting(graphExtension, X), X::queryDependencies(Argument, S).
 
         %! expand(+Locality)
         %  For the connected locality, the arguments whose labels may depend on the ones built (see dependant/2), with
         %  those they depend on in turn, until none is new.
         expand(connected) :-
-            findall(Id, (graphStore::argumentById(Id, _), context_absent(expanded(Id))), Ids),
+            findall(Id, (graphStore::savedId(Id), context_absent(expanded(Id))), Ids),
             Ids \== [], !,
             findall(_, (
                 member(Id, Ids),
@@ -153,25 +170,51 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
             expand(connected).
         expand(_).
 
-        % The statements whose arguments may depend on an argument: those it may attack, those its conclusion makes
-        % conflict (metaConflicts), those of its super-arguments, and those the graph extensions relate to it
+        % The statements whose arguments may depend on an argument: those it may attack, and those of its
+        % super-arguments. The steps changing the graph relate others to it in turn (see extend/1).
         dependant(Argument, S) :- attackCandidates::possiblyAttacked(Argument, S).
-        dependant(Argument, S) :- attackCandidates::attackDependant(Argument, S).
         dependant(Argument, S) :-
             argument::claim(Argument, Claim),
             parser::ruleUsing(Claim, S).
-        dependant(Argument, S) :- setting(graphExtension, X), X::queryDependants(Argument, S).
+
+        %! extend(+Locality)
+        %  The exploration extended by the steps changing the graph (see structuredWhole::querySteps/1), as they extend
+        %  the graph in whole mode: the statements each relates to the arguments built (queryDependencies/2, and for the
+        %  connected locality queryDependants/2, which a step relating statements both defines) explored, until no
+        %  argument is new. When the conflicts are arguments
+        %  (see conflict::argued/0), the arguments built may make more of the others possible attackers or dependants:
+        %  those are looked for again.
+        extend(Locality) :-
+            structuredWhole::querySteps(Steps),
+            extend(Steps, Locality).
+
+        extend([], _) :- !.
+        extend(Steps, Locality) :-
+            graphStore::savedCount(N),
+            findall(S, (graphStore::argumentById(_, A), member(Step, Steps), related(Locality, Step, A, S)), Statements),
+            findall(_, (member(S, Statements), explore(S)), _),
+            graphStore::savedCount(M),
+            (N == M -> true ; again(Locality), extend(Steps, Locality)).
+
+        related(_, Step, Argument, S) :- Step::queryDependencies(Argument, S).
+        related(connected, Step, Argument, S) :- Step::queryDependants(Argument, S).
+
+        % Once arguments are added: if the conflicts are arguments, the possible attackers and the dependants of all
+        % of them looked for again; those of the new ones otherwise
+        again(Locality) :-
+            conflict::argued, !,
+            attackCandidates::forgetPossibleAttackers,
+            context_retract(expanded(_)),
+            findall(_, (graphStore::argumentById(Id, A), dependency(Id, A, S), explore(S)), _),
+            expand(Locality).
+        again(Locality) :-
+            expand(Locality).
 
         % recordArgument(+Query, +Argument, +Supports): Argument saved with its supports, unless it already was (built in
         % a previous round of explore/1, whose dependencies are explored again)
         recordArgument(Query, Argument, Supports) :-
             graphStore::saveArgument(query, [Query], Argument), !,
-            saveSupports(Argument, Supports).
+            graphStore::saveSupporters(Argument, Supports).
         recordArgument(_, _, _).
-
-        saveSupports(_, []).
-        saveSupports(Argument, [Support|Supports]) :-
-            graphStore::saveSupport(Support, Argument),
-            saveSupports(Argument, Supports).
         """.trimIndent()
 }

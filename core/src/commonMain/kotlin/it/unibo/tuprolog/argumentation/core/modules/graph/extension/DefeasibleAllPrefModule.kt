@@ -5,7 +5,8 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 /**
  * The preferences between rules as conclusions of the theory, taken together (module `defeasibleAllPref`, a
  * graphExtension): as defeasiblePref, but the attack argument is attacked by an argument for all the preferences
- * invalidating it, `preference(Preferences)`, supported by the arguments for each of them.
+ * invalidating it, `preference(Preferences)`, supported by one argument for each of them: one such argument for each
+ * choice of those arguments, each standing or falling with its own.
  */
 object DefeasibleAllPrefModule : PrologModule(
     "prolog.argumentation.graph.preferences.defeasible.generic",
@@ -15,46 +16,10 @@ object DefeasibleAllPrefModule : PrologModule(
         // language=Prolog
         """
         %! modifyArgumentationGraph
-        %  The attacks the preferences may invalidate, as arguments, attacked by the arguments for the preferences.
+        %  As defeasiblePref, the attack arguments attacked by an argument for all the preferences invalidating them
+        %  together (see defeasiblePref::modifyArgumentationGraph/1).
         modifyArgumentationGraph :-
-            defeasiblePref::assertAllSup,
-            graphStore::attacks(Attacks),
-            defeasiblePref::filterSupRelatedAttacks(Attacks, InvalidAttacks),
-            defeasiblePref::convertAttacks(InvalidAttacks),
-            buildPrefAttacks.
-
-        buildPrefAttacks :-
-            defeasiblePref::attackArgument(Attack, T, A, B, C),
-            defeasiblePref::invalid(T, A, B, C, Preferences),
-            createSuperiorityArgument(Preferences, Argument),
-            graphStore::saveAttack(pref, Argument, Attack, Attack),
-            fail.
-        buildPrefAttacks.
-
-        % The argument for preference(Preferences), supported by the arguments for each of the preferences, and so
-        % attacked as they are (see the module graphStore): saved once, for the first attack the preferences invalidate
-        createSuperiorityArgument(Preferences, Argument) :-
-            findall(Support, (
-                member(X, Preferences),
-                argument::claim(Support, X),
-                graphStore::argument(Support)
-            ), Supports),
-            mergeIds(Supports, MergedId),
-            argument::infoParts(Info, [pref], MergedId, []),
-            argument::new(MergedId, pref, [preference(Preferences)], [], Info, Argument),
-            (graphStore::saveArgument(a, [preference(Preferences)], Argument) -> saveRelations(Supports, Argument) ; true).
-
-        saveRelations(Supports, Argument) :-
-            findall(_, (
-                member(A, Supports),
-                graphStore::saveSupport(A, Argument)
-            ), _).
-
-        % The rules of the arguments, after pref
-        mergeIds([], [pref]).
-        mergeIds(Arguments, [pref|MergedId]) :-
-            findall(Rules, (member(A, Arguments), argument::rules(A, Rules)), Res),
-            utils::appendLists(Res, MergedId).
+            defeasiblePref::modifyArgumentationGraph(all).
 
         %! queryDependencies(+Argument, -Statement)
         %  Query mode: the same arguments matter as for defeasiblePref

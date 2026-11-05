@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.cache
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.cache.CacheAssert
@@ -16,7 +17,7 @@ class Cache : ArgLibrary {
 
     override val baseContent: Library
         get() =
-            listOf(CacheAssert(store), CacheRetract(store), CacheCheck(store)).let { primitives ->
+            listOf(CacheAssert(store), CacheRetract(store), CacheCheck(store, this)).let { primitives ->
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
@@ -25,4 +26,7 @@ class Cache : ArgLibrary {
 
     override val baseFlags: Iterable<ArgsFlag<*, *>>
         get() = emptyList()
+
+    /** The store on the words of [program] (the machine's) */
+    internal fun bind(program: Program) = store.bind(program)
 }

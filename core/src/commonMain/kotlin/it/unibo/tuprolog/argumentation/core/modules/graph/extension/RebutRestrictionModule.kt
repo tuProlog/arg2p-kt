@@ -13,28 +13,23 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
         %! modifyArgumentationGraph
         %  The restricted attacks on an argument whose top rule is strict are removed.
         modifyArgumentationGraph :-
-            findall(_, (
-                graphStore::attack(T, A, B, C),
-                checkRebutRestriction(T, A, B, C)
-            ), _).
+            findall(a(T, IdA, IdC), (
+                graphStore::attackById(T, IdA, IdC, IdC),
+                graphStore::argumentById(IdA, A),
+                graphStore::argumentById(IdC, C),
+                \+ rebutRestriction(T, A, C, C)
+            ), Restricted),
+            graphStore::removeAttackIds(Restricted).
 
-        checkRebutRestriction(T, A, B, C) :-
-            \+ rebutRestriction(T, A, B, C),
-            graphStore::removeAttack(T, A, B, C).
-
-        % The attack types the restriction does not apply to. Everything else is restricted, including the attack
-        % types introduced by other extensions: an unknown attack type is subject to the restriction rather than
-        % dropped, so that the result does not depend on the order in which the extensions run.
+        % The attack types the restriction does not apply to. Everything else is restricted: rebuts, and the attacks
+        % of a graph extension of the user.
         rebutRestriction(undermine, _, _, _).
         rebutRestriction(contrary_rebut, _, _, _).
         rebutRestriction(contrary_undermine, _, _, _).
         rebutRestriction(undercut, _, _, _).
-        rebutRestriction(_, _, _, C) :- restrict(C).
-
-        % The top rule of the argument is its last defeasible rule
-        restrict(Argument) :-
-            argument::topRule(Argument, TopRule),
-            argument::lastDefeasibleRules(Argument, [TopRule]),
-            TopRule \== none.
+        % the top rule of the argument is its last defeasible rule (see attackRelation::defeasibleTopRule/2)
+        rebutRestriction(_, _, _, C) :-
+            attackRelation::defeasibleTopRule(C, Rule),
+            Rule \== none.
         """.trimIndent()
 }

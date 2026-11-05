@@ -42,7 +42,7 @@
     },
     "flags": {
       "comment": "The flags of arg2p, stated as facts",
-      "match": "\\b(graphBuildMode|argumentLabellingMode|statementLabellingMode|orderingPrinciple|orderingComparator|graphExtension|graphBuilder|graphLanguage|conflictModel|modulesPath|queryMode|autoTransposition|prologStrictCompatibility|metaConflicts|metaRules|debug|naturalTerms)\\b",
+      "match": "\\b(graphBuildMode|argumentLabellingMode|statementLabellingMode|orderingPrinciple|orderingComparator|graphExtension|graphBuilder|graphLanguage|conflictModel|modulesPath|queryMode|autoTransposition|prologStrictCompatibility|metaConflicts|metaRules|naturalTerms)\\b",
       "name": "support.constant.flag.arg2p"
     },
     "strings": {

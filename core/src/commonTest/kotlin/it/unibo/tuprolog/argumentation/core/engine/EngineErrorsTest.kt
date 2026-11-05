@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -49,7 +49,7 @@ class EngineErrorsTest {
     }
 
     private fun solve(goal: String): String {
-        val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().empty(true).create(), staticLibs = listOf(Faulty))
+        val solver = Arg2pSolverFactory.default(settings = Flags.none().library(), staticLibs = listOf(Faulty))
         val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
         return when {
             solution.isYes ->
@@ -74,7 +74,7 @@ class EngineErrorsTest {
             "flat_aba_theory",
             solve("catch(throw(error(domain_error(flat_aba_theory, a), m)), error(domain_error(L, _), _), true)"),
         )
-        val solver = Arg2pSolverFactory.default(settings = FlagsBuilder().empty(true).create())
+        val solver = Arg2pSolverFactory.default(settings = Flags.none().library())
         val halted = solver.solve(Struct.parse("throw(error(domain_error(flat_aba_theory, a), 'not flat'))", solver.operators)).first()
         assertTrue(halted.isHalt)
         assertTrue("not flat" in halted.exception?.message.orEmpty(), halted.exception?.message)

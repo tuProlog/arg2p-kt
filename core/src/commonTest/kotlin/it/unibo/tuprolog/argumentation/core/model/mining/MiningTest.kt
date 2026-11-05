@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** The arguments mined from a graph, identified in order of their number of sub-arguments first */
@@ -31,5 +32,25 @@ class MiningTest {
                 .toInt()
         val order = solver.arguments(branch).map { it.conclusion }
         assertTrue(order.indexOf("c") < order.indexOf("b"), "$order")
+    }
+
+    // holdsAt(f, T) for T > 1 and its instance holdsAt(f, 7), which -holdsAt(f, 7) attacks: both OUT, each with its
+    // own attack, the open argument not taken for its instance (they unify)
+    @Test
+    fun anArgumentForAnOpenStatementIsNotItsInstance() {
+        val theory = "f1 :=> s.\nr0 : s, {T > 1} => holdsAt(f, T).\nc1 :=> -holdsAt(f, 7).\ngraphExtension(constraints).\n$config"
+        val solver = solverWithTheory(theory)
+        solver.solve(Struct.parse("buildLabelSets(_, _, _)", solver.operators)).first()
+        val graph = solver.graph()
+        val holds = graph.labellings.filter { it.argument.conclusion.startsWith("holdsAt") }
+        assertEquals(listOf("out", "out"), holds.map { it.label }, "$holds")
+        assertEquals(
+            2,
+            graph.attacks
+                .map { it.target }
+                .toSet()
+                .size,
+            "${graph.attacks}",
+        )
     }
 }

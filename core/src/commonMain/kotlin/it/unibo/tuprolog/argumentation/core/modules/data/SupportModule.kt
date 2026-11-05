@@ -14,11 +14,5 @@ object SupportModule : PrologModule("prolog.argumentation.data.support", "suppor
         %! new(?Supporter, ?Supported, ?Support)
         %  Support is made of its parts.
         new(Supporter, Supported, support(Supporter, Supported)).
-
-        %! supporter(?Support, ?Supporter)
-        supporter(support(Supporter, _), Supporter).
-
-        %! supported(?Support, ?Supported)
-        supported(support(_, Supported), Supported).
         """.trimIndent()
 }

@@ -15,12 +15,12 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
         %! premises(-Premises)
         %  The assumptions, as ordinary premises [asm(Assumption), Assumption].
         premises(Premises) :-
-            catch(findall([asm(A), A], assumption(A), Premises), error(existence_error(_, _), _), Premises = []).
+            findall([asm(A), A], user::assumption(A), Premises).
 
         %! conflicts(-Conflicts)
         %  The contraries, as the conflicts conflict([Contrary], [Assumption]).
         conflicts(Conflicts) :-
-            catch(findall(conflict([C], [A]), contrary(A, C), Conflicts), error(existence_error(_, _), _), Conflicts = []).
+            findall(conflict([C], [A]), user::contrary(A, C), Conflicts).
 
         %! check
         %  The theory is flat ABA: no defeasible rule, no ordinary premise (its premises are its assumptions, its facts
@@ -36,7 +36,7 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
             throw(error(domain_error(aba_theory, premise), 'aba: the theory has ordinary premises (f :=> a.): the premises of ABA are its assumptions (assumption/1), its facts strict (f :-> a.)')).
         check :-
             parser::rule(_, _, [A]),
-            parser::premise(asm(A), _), !,
+            parser::premise(asm(A), [A]), !,
             throw(error(domain_error(flat_aba_theory, A), 'aba: a rule concludes an assumption (the theory is not flat)')).
         check.
         """.trimIndent()

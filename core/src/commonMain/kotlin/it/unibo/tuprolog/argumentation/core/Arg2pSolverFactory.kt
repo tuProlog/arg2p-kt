@@ -1,15 +1,11 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.model.Graph
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
-import it.unibo.tuprolog.core.Atom
-import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -17,18 +13,11 @@ import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.parsing.parse
 
 object Arg2pSolverFactory {
-    fun of(
-        theory: String,
-        settings: ArgLibrary,
-        staticLibs: Iterable<ArgLibrary>,
-        dynamicLibs: Iterable<ArgLibrary>,
-    ) = solverOf(Arg2pSolver.of(staticLibs + listOf(settings), dynamicLibs), theory)
-
     fun default(
         theory: String = "",
-        settings: ArgLibrary = FlagsBuilder().create(),
+        settings: ArgLibrary = Flags.defaults().library(),
         staticLibs: Iterable<ArgLibrary> = emptyList(),
-        dynamicLibs: Iterable<ArgLibrary> = emptyList(),
+        dynamicLibs: Iterable<Loadable> = emptyList(),
     ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
     /**
@@ -46,23 +35,7 @@ object Arg2pSolverFactory {
         unificator = Arg2pUnificator,
         otherLibraries = arg2p.to2pLibraries() + extra,
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
-        staticKb = RuleAnnotations.parse(theory, arg2p.operators()),
+        staticKb = RuleAnnotations.parse(theory, arg2p.operators(), Arg2pUnificator),
         stdOut = output,
     )
-
-    /**
-     * The graph of each labelling of [kb] with [flags]: none if the theory has no labelling, an [Arg2pException] if
-     * the evaluation halts (a theory its profile refuses, say)
-     */
-    fun evaluate(
-        kb: String,
-        flags: FlagsBuilder,
-    ): Sequence<Graph> =
-        default(theory = kb, settings = flags.create()).let { solver ->
-            solver
-                .solve(Atom.of("buildLabelSetsSilent"))
-                .onEach { if (it is Solution.Halt) throw Arg2pException(it.exception.message ?: it.exception.toString()) }
-                .filter { it.isYes }
-                .map { solver.graph() }
-        }
 }

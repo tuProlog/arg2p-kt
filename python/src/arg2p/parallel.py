@@ -28,18 +28,25 @@ class Response:
 
 @dataclass(frozen=True)
 class EvaluationResponse:
-    """The arguments for a statement, by label."""
+    """The statements answering a statement, by label, each with the arguments for it; error, if one kept it from an answer."""
 
     in_args: list[Response] = field(default_factory=list)
     out_args: list[Response] = field(default_factory=list)
     und_args: list[Response] = field(default_factory=list)
+    error: Optional[str] = None
 
 
 def _response(response: Any) -> EvaluationResponse:
     def responses(of: Any) -> list[Response]:
         return [Response(str(it.getClaim()), tuple(str(argument) for argument in it.getQueryChain())) for it in of]
 
-    return EvaluationResponse(responses(response.getInArgs()), responses(response.getOutArgs()), responses(response.getUndArgs()))
+    error = response.getError()
+    return EvaluationResponse(
+        responses(response.getInArgs()),
+        responses(response.getOutArgs()),
+        responses(response.getUndArgs()),
+        None if error is None else str(error),
+    )
 
 
 @dataclass(frozen=True)
@@ -154,9 +161,9 @@ class ClusterSolver:
         """The solutions of [goal], Prolog text, computed one at a time as they are asked for."""
         return Solutions(call(lambda: self._solver.solve(goal)))
 
-    def answer(self, query: str) -> Answer:
+    def answer(self, query: str) -> list[Answer]:
         """The statements for [query], Prolog text, labelled in, out and und (raises Arg2pError if it halts)."""
-        return answer_from_jvm(call(lambda: self._solver.answer(query)))
+        return call(lambda: [answer_from_jvm(answer) for answer in self._solver.answer(query)])
 
     def graphs(self) -> list[Graph]:
         """The graph of each labelling of the theory: several for a semantics with several (preferred, stable, ...)."""
@@ -209,7 +216,7 @@ class _Cluster:
         call(self._cluster.reset)
 
     def solve(self, statement: str) -> EvaluationResponse:
-        """The arguments for [statement], as Prolog text, by label (Arg2pError for one that is not a statement)."""
+        """The statements answering [statement], as Prolog text, by label, each with the arguments for it (Arg2pError for one that is not a statement)."""
         return call(lambda: _response(self._cluster.solve(statement)))
 
     @property

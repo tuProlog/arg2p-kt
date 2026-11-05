@@ -18,7 +18,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  *
  * Each accessor is a fact relating an argument to one of its parts, so it works both ways: given an argument it
  * reads the part, given a part it builds the template of the arguments with it, to look them up in the context
- * (`argument::claim(A, sup(X, Y)), context_check(argument(A))`). Kotlin reads and builds the terms through [ArgumentTerm.parts] and
+ * (`graphStore::argumentFor([sup(X, Y)], A)`). Kotlin reads and builds the terms through [ArgumentTerm.parts] and
  * [ArgumentTerm.info], written after the same layout.
  */
 object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argument") {
@@ -64,14 +64,6 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
         %  Rules are the last defeasible rules of Argument.
         lastDefeasibleRules([_, _, _, _, [Rules, _, _]], Rules).
 
-        %! defeasibleRules(?Argument, ?Rules)
-        %  Rules are the defeasible rules of Argument.
-        defeasibleRules([_, _, _, _, [_, Rules, _]], Rules).
-
-        %! defeasiblePremises(?Argument, ?Premises)
-        %  Premises are the defeasible premises of Argument.
-        defeasiblePremises([_, _, _, _, [_, _, Premises]], Premises).
-
         %! infoParts(?Info, ?LastDefeasibleRules, ?DefeasibleRules, ?DefeasiblePremises)
         %  Info is made of its parts.
         infoParts([LastDefeasibleRules, DefeasibleRules, DefeasiblePremises], LastDefeasibleRules, DefeasibleRules, DefeasiblePremises).
@@ -79,6 +71,19 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
         %! isPremise(+Argument)
         %  Argument is made of a premise alone.
         isPremise([_, TopRule, _, _, _]) :- TopRule == none.
+
+        %! accumulated(+Support, +Parts, -Accumulated)
+        %  Parts, the rules, last defeasible rules, defeasible rules and defeasible premises of some arguments (a list of
+        %  lists each, as rulesAndInfo/5 takes them), with those of Support first in each.
+        accumulated(Support, [All, LastDef, Def, Prem], [[Rules|All], [SupportLastDef|LastDef], [SupportDef|Def], [SupportPrem|Prem]]) :-
+            rules(Support, Rules),
+            info(Support, Info),
+            infoParts(Info, SupportLastDef, SupportDef, SupportPrem).
+
+        %! premiseInfo(+Id, -Info)
+        %  The info of an argument made of the premise Id alone: none of its premises defeasible if it is strict.
+        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, infoParts(Info, [], [], []).
+        premiseInfo(Id, Info) :- infoParts(Info, [], [], [Id]).
 
         %! rulesAndInfo(+RuleId, +Strict, +Supports, -Rules, -Info)
         %  The rules and the info of the argument built from the rule RuleId (strict if Strict is strict) on sub-arguments

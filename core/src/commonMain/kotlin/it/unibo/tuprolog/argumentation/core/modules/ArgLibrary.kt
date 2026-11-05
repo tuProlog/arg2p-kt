@@ -15,8 +15,4 @@ interface ArgLibrary {
 
     val theoryOperators: OperatorSet
         get() = OperatorSet.DEFAULT
-
-    fun flags() = baseFlags
-
-    fun content() = baseContent
 }

@@ -16,21 +16,18 @@ internal object Solvers {
     /** The query solved when none is given: the statements labelled in, out and und */
     const val DEFAULT_QUERY = "arg2p::solve(In, Out, Und)"
 
-    // The flags of the default ones a theory is solved with, when none are given
-    private val SHOWN = listOf(ArgumentLabellingMode, StatementLabellingMode, QueryMode).map { it.predicate() }
+    // The flags shown among those a theory is solved with when none are given
+    private val SHOWN = listOf(ArgumentLabellingMode, StatementLabellingMode, QueryMode)
 
     /**
-     * The flags a theory is solved with when none are given: of the defaults of arg2p, the semantics, the statement
-     * labelling and the query mode, as the web playground starts with them (see links.ts there); the others have the
-     * same values unstated, and would only lengthen the flags the user is shown and the link to the playground
+     * The flags a theory is solved with when none are given, as facts stating their defaults: the semantics, the
+     * statement labelling and the query mode, as the web playground starts with them (see links.ts there); the others
+     * have their defaults unstated, and would only lengthen the flags the user is shown and the link to the playground
      */
     val DEFAULT_FLAGS: String =
-        Flags
-            .defaults()
-            .toString()
-            .lines()
-            .filter { fact -> fact.substringBefore('(').removeSuffix(".") in SHOWN }
-            .joinToString("") { "$it\n" }
+        SHOWN.joinToString("") { flag ->
+            if (flag.isSwitch) "${flag.predicate()}.\n" else "${flag.predicate()}(${flag.default()}).\n"
+        }
 
     /** A solver of [theory] with [flags], what it prints going to [output] (nowhere otherwise) */
     fun of(
@@ -64,9 +61,13 @@ internal object Solvers {
             Arg2p.checkTheory(text)?.let { ProblemData.of(it) }
         }
 
+    /** The values of the flags in effect for the theory of [solver]: an [Arg2pException] if its profile refuses it */
+    fun settingsOf(solver: Arg2p): Map<String, List<String>> = solver.knownFlags.associateWith { solver.setting(it) }
+
     /**
-     * The values of the flags in effect for [theory] solved with [flags]: those of the flags alone when the theory
-     * does not parse (as the editor of a theory asks them while it is written), none when they do not
+     * The values of the flags in effect for [theory] solved with [flags], as the editor of a theory asks them while it
+     * is written: those of the flags alone when the theory does not parse, none when they do not, none of a flag the
+     * solver refuses
      */
     fun settings(
         theory: String,
@@ -92,4 +93,7 @@ internal object Solvers {
             }
         }
     }
+
+    /** What a text to check is: a theory (or flags), or a query */
+    val KINDS = listOf("theory", "query")
 }

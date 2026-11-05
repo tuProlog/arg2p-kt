@@ -29,13 +29,10 @@ object AspicLanguageModule : PrologModule("prolog.argumentation.language.aspic",
             throw(error(domain_error(well_formed_theory, Statement), 'aspic: a contrary (a conflict declared one way) targets an axiom or the conclusion of a strict rule')).
         check.
 
-        % Contrary conflicts with Statement one way only, as the theory declares (with a guard or not)
+        % Contrary conflicts with Statement one way only, as the theory declares (see conflict::declared/2)
         contrary(Contrary, Statement) :-
-            declared(Contrary, Statement),
-            \+ declared(Statement, Contrary).
-
-        declared(X, Y) :- catch(conflict([X], [Y]), error(existence_error(_, _), _), fail).
-        declared(X, Y) :- catch(conflict([X], [Y], _), error(existence_error(_, _), _), fail).
+            conflict::declared([Contrary], [Statement]),
+            \+ conflict::declared([Statement], [Contrary]).
 
         % Statement is an axiom, or the conclusion of a strict rule
         strictly(Statement) :- parser::premise(Id, [Statement]), parser::checkStrict(Id).

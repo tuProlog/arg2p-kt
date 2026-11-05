@@ -34,12 +34,6 @@ sourceSets.main {
     resources.srcDir(files(layout.buildDirectory.dir("generated/page")).builtBy(pageVersions))
 }
 
-val jvmStackSize: String = property("jvmStackSize").toString()
-
-tasks.withType<Test>().configureEach {
-    jvmArgs("-Xss$jvmStackSize")
-}
-
 dependencies {
     implementation(project(":"))
     implementation(libs.lsp4j)

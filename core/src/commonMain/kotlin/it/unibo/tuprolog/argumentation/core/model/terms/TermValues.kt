@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.model.terms
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.Value
-import it.unibo.tuprolog.argumentation.core.Arg2pSolver
+import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -15,7 +15,7 @@ import it.unibo.tuprolog.core.parsing.parse
 @InternalArg2pApi
 object TermValues {
     /** The operators of the theories of arg2p, and the default ones */
-    val operators: OperatorSet by lazy { Arg2pSolver.default().operators() }
+    val operators: OperatorSet by lazy { Arg2pModule.theoryOperators }
 
     private val formatter by lazy { TermFormatter.prettyExpressions(operators) }
 

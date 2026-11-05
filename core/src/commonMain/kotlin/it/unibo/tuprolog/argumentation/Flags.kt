@@ -2,10 +2,12 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.CodeKey
+import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
+import it.unibo.tuprolog.argumentation.core.engine.vm.locked
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
-import it.unibo.tuprolog.argumentation.core.flags.DebugOutput
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
 import it.unibo.tuprolog.argumentation.core.flags.MetaRules
@@ -15,7 +17,6 @@ import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
@@ -23,6 +24,7 @@ import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
 import kotlin.jvm.JvmStatic
+import it.unibo.tuprolog.argumentation.core.flags.AnswerMode as AnswerModeFlag
 import it.unibo.tuprolog.argumentation.core.flags.ConflictModel as ConflictModelFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder as GraphBuilderFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphExtension as GraphExtensionFlag
@@ -31,10 +33,10 @@ import it.unibo.tuprolog.argumentation.core.flags.OrderingComparator as Ordering
 import it.unibo.tuprolog.argumentation.core.flags.OrderingPrinciple as OrderingPrincipleFlag
 
 /**
- * The flags of a solver (see the flags reference of arg2p), as the facts stating them: [defaults] (those of arg2p),
- * [none] (only those the theory states), or [parse] (as Prolog text). A flag set replaces what the flags stated for
- * it; the theory may state flags as well, which override these. The profile of the theory ([graphBuildMode]) presets
- * the flags its definition needs.
+ * The flags of a solver (see the flags reference of arg2p), as the facts stating them: those set here (a switch
+ * turned off stated off, `autoTransposition(off)`), or those [parse] reads from Prolog text; [defaults] states none.
+ * A flag the theory states wins over one set here, which wins over what the profile of the theory presets
+ * ([graphBuildMode]), which wins over the default of the flag.
  */
 @JsExport
 class Flags private constructor(
@@ -83,6 +85,9 @@ class Flags private constructor(
     /** Whether the graph is built on the arguments the query depends on alone */
     fun queryMode(on: Boolean): Flags = switch(QueryMode, on)
 
+    /** How a query is answered for a semantics with several labellings: for each, or across them all */
+    fun answerMode(mode: AnswerMode): Flags = value(AnswerModeFlag, mode.value)
+
     /** Whether the strict rules are transposed */
     fun autoTransposition(on: Boolean): Flags = switch(AutoTransposition, on)
 
@@ -95,9 +100,6 @@ class Flags private constructor(
     /** Whether the rules are arguments as well */
     fun metaRules(on: Boolean): Flags = switch(MetaRules, on)
 
-    /** Whether the modules print their debug output */
-    fun debug(on: Boolean): Flags = switch(DebugOutput, on)
-
     /** The flags as the facts stating them, Prolog text */
     override fun toString(): String = facts.values.flatten().joinToString("") { "$it.\n" }
 
@@ -105,15 +107,14 @@ class Flags private constructor(
 
     override fun hashCode(): Int = facts.hashCode()
 
-    /** The library of the flags, for a solver of arg2p */
+    /** The library of the flags, for a solver of arg2p built by hand (see Arg2pSolver and Arg2pSolverFactory) */
     @JsExport.Ignore
-    @InternalArg2pApi
     fun library(): ArgLibrary =
         object : ArgLibrary {
             override val alias = ALIAS
 
             override val baseContent: Library
-                get() = Library.of(alias = ALIAS, clauses = theory())
+                get() = libraryOf(this@Flags.toString())
 
             override val baseFlags: Iterable<ArgsFlag<*, *>>
                 get() = emptyList()
@@ -121,6 +122,19 @@ class Flags private constructor(
 
     /** The facts stating the flags, as a theory */
     internal fun theory(): Theory = Theory.parse(toString(), TermValues.operators)
+
+    // The library of the facts [text], read once: solvers with the same flags share it, and its code (see SharedLibrary)
+    private fun libraryOf(text: String): Library =
+        locked(libraries) {
+            libraries[text] ?: run {
+                val plain = Library.of(alias = ALIAS, clauses = theory())
+                if (libraries.size >= LIBRARIES_KEPT) {
+                    plain
+                } else {
+                    SharedLibrary(plain, CodeKey("$ALIAS:$text")).also { libraries[text] = it }
+                }
+            }
+        }
 
     private fun value(
         flag: ArgsFlag<*, *>,
@@ -135,23 +149,25 @@ class Flags private constructor(
     private fun switch(
         flag: ArgsFlag<*, *>,
         on: Boolean,
-    ) = apply { if (on) facts[flag.predicate()] = listOf(flag.predicate()) else facts.remove(flag.predicate()) }
+    ) = apply { facts[flag.predicate()] = listOf(if (on) flag.predicate() else "${flag.predicate()}(off)") }
 
     companion object {
-        private const val ALIAS = "prolog.argumentation.flags"
-
-        /** The flags of arg2p by default (those of [FlagsBuilder]) */
-        @JvmStatic
-        @JsStatic
-        fun defaults(): Flags = of(FlagsBuilder())
+        internal const val ALIAS = "prolog.argumentation.flags"
+        private const val LIBRARIES_KEPT = 64
+        private val libraries = HashMap<String, Library>()
 
         /**
-         * No flags: the solver has only those the theory states, and those its profile presets (graphBuildMode, ASPIC+
-         * when the theory names none); the other flags take their defaults, the switches are off
+         * The flags of arg2p by default: none stated, every flag as the theory states it, or else as its profile
+         * presets it (graphBuildMode, ASPIC+ when the theory names none), or else its default
          */
         @JvmStatic
         @JsStatic
-        fun none(): Flags = Flags(linkedMapOf())
+        fun defaults(): Flags = Flags(linkedMapOf())
+
+        /** As [defaults]: no flag stated */
+        @JvmStatic
+        @JsStatic
+        fun none(): Flags = defaults()
 
         /**
          * The flags stated by the facts of [text], Prolog text (`argumentLabellingMode(preferred). queryMode.`): an
@@ -168,32 +184,5 @@ class Flags private constructor(
                     .groupBy({ it.head.functor }, { TermValues.format(it.head) })
                     .toMutableMap(),
             )
-
-        /** The flags of [builder] */
-        @JsExport.Ignore
-        @JvmStatic
-        fun of(builder: FlagsBuilder): Flags =
-            if (builder.emptyBuilder) {
-                none()
-            } else {
-                with(builder) {
-                    Flags(linkedMapOf())
-                        // the builder lists the extensions in the order they apply, which is the reverse of the order
-                        // they are stated in (modifyGraph applies the last stated first)
-                        .values(GraphExtensionFlag, graphExtensions.toList().asReversed().ifEmpty { listOf("none") })
-                        .switch(QueryMode, queryMode)
-                        .switch(AutoTransposition, autoTransposition)
-                        .switch(PrologStrictCompatibility, prologStrictCompatibility)
-                        .switch(MetaConflicts, metaConflicts)
-                        .switch(MetaRules, metaRules)
-                        .value(GraphBuildMode, graphBuildMode)
-                        .value(GraphBuilderFlag, graphBuilder)
-                        .value(ArgumentLabellingMode, argumentLabellingMode)
-                        .value(StatementLabellingMode, statementLabellingMode)
-                        .value(OrderingPrincipleFlag, orderingPrinciple)
-                        .value(OrderingComparatorFlag, orderingComparator)
-                        .value(ModulesPath, modulesPath)
-                }
-            }
     }
 }

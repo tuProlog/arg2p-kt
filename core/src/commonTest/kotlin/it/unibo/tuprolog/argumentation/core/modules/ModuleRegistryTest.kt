@@ -15,7 +15,7 @@ class ModuleRegistryTest {
     // The predicates each module defines, by its identifier: its clauses and its native primitives
     private val definitions: Map<String, Set<Signature>> =
         ModuleRegistry.all.filterIsInstance<Loadable>().associate { module ->
-            val library = (module as ArgLibrary).content()
+            val library = (module as ArgLibrary).baseContent
             module.identifier() to library.clauses.map { it.head!!.extractSignature() }.toSet() + library.primitives.keys
         }
 
@@ -32,7 +32,7 @@ class ModuleRegistryTest {
     private val calls: List<Triple<String, String, Signature>> =
         ModuleRegistry.all.flatMap { module ->
             module
-                .content()
+                .baseContent
                 .clauses
                 .filterIsInstance<Clause>()
                 .flatMap { moduleCalls(it.body).toList() }
@@ -41,13 +41,15 @@ class ModuleRegistryTest {
 
     @Test
     fun theCallsAreFound() {
-        assertTrue(Triple(StructuredPartialModule.alias, "queryExploration", Signature("explore", 1)) in calls)
+        assertTrue(Triple(StructuredPartialModule.alias, "queryExploration", Signature("explore", 2)) in calls)
     }
 
     @Test
     fun everyModuleCallIsDefined() {
         val undefined =
             calls
+                // user:: calls reach the theory of the user, whatever it defines
+                .filter { (_, name, _) -> name != "user" }
                 .filter { (_, name, signature) -> definitions[name]?.contains(signature) != true }
                 .map { (caller, name, signature) -> "$caller: $name::${signature.toIndicator()}" }
                 .distinct()
@@ -61,12 +63,12 @@ class ModuleRegistryTest {
             ModuleRegistry.all.flatMap { module ->
                 val clauses =
                     module
-                        .content()
+                        .baseContent
                         .clauses
                         .map { it.head!!.extractSignature() }
                         .toSet()
                 module
-                    .content()
+                    .baseContent
                     .primitives.keys
                     .filter { it in clauses }
                     .map { "${module.alias}: ${it.toIndicator()}" }

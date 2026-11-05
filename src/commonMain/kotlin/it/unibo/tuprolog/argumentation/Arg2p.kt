@@ -2,17 +2,19 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.model.mining.compactGraph
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
-import it.unibo.tuprolog.argumentation.parallel.LABELLINGS
-import it.unibo.tuprolog.argumentation.parallel.checked
-import it.unibo.tuprolog.argumentation.parallel.graphsOf
+import it.unibo.tuprolog.argumentation.graphsOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -26,6 +28,7 @@ import kotlin.js.JsName
 import kotlin.js.JsStatic
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
+import kotlin.time.TimeSource
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
@@ -34,7 +37,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  *
  * ```kotlin
  * val arg2p = Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).")
- * arg2p.answer("a").inStatements      // [a]
+ * arg2p.answer("a").single().inStatements      // [a]
  * ```
  *
  * The context of the solver keeps a branch for every stage of a resolution (each module call made with `:::`),
@@ -54,11 +57,27 @@ class Arg2p private constructor(
     val theory: String get() = solver.staticKb.toString(asPrologText = true)
 
     /**
-     * The statements for [query], Prolog text, labelled in, out and und (see `answerQuery/4`)
+     * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
+     * answerMode(enumerate) (the default; one with a semantics of one labelling, as grounded), the one across them all
+     * with answerMode(credulous) or answerMode(skeptical), none for no labelling (see `answerQuery/4`)
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
-    fun answer(query: String): Answer = AnswerQuery(term(query)).let { it.answer(first(it.goal)) }
+    @JsExport.Ignore
+    @JsName("answerList")
+    fun answer(query: String): List<Answer> =
+        AnswerQuery(term(query)).let { answering ->
+            solver
+                .solve(answering.goal)
+                .map { checked(it) }
+                .filter { it.isYes }
+                .map { answering.answer(it) }
+                .toList()
+        }
+
+    /** The answers of [query] (see [answer]; an array in JavaScript) */
+    @JsName("answer")
+    fun answerArray(query: String): Array<Answer> = answer(query).toTypedArray()
 
     /**
      * The graph of each labelling of the theory: one, or several for a semantics with several labellings (preferred,
@@ -75,6 +94,23 @@ class Arg2p private constructor(
     /** The graph of each labelling of the theory (an array in JavaScript) */
     @JsName("graphs")
     fun graphArray(): Array<Graph> = graphs().toTypedArray()
+
+    /**
+     * The graph of each labelling of the theory as arrays of identifiers, off the store, with no object for an argument (see
+     * [CompactGraph]): for a graph too large for [graphs]
+     *
+     * @throws Arg2pException if the evaluation halts (a theory its profile refuses)
+     */
+    @JsExport.Ignore
+    @JsName("compactGraphsList")
+    fun compactGraphs(): List<CompactGraph> = graphsOf(solver.solve(Struct.of(LABELLINGS)).iterator()) { solver.compactGraph() }
+
+    /** The graph of each labelling of the theory as arrays of identifiers (an array in JavaScript) */
+    @JsName("compactGraphs")
+    fun compactGraphArray(): Array<CompactGraph> = compactGraphs().toTypedArray()
+
+    /** The graph of the last resolution as arrays of identifiers: the one of its last stage (see [CompactGraph]) */
+    fun compactGraph(): CompactGraph = solver.compactGraph()
 
     /** The graph of the last resolution: the one of its last stage */
     fun graph(): Graph = graphAt(activeBranch)
@@ -122,7 +158,7 @@ class Arg2p private constructor(
     @JsName("setting")
     fun settingArray(flag: String): Array<String> = setting(flag).toTypedArray()
 
-    private val declaredFlags get() = arg2p.settings.flags
+    private val declaredFlags get() = arg2p.settings.flags.filterValues { !it.isInternal }
 
     /** The solutions of [goal], Prolog text, computed one at a time as they are asked for */
     fun solve(goal: String): Solutions = solutionsOf(solver.solve(struct(goal)).iterator())
@@ -143,14 +179,15 @@ class Arg2p private constructor(
     fun load(theory: String) = solver.loadStaticKb(parsed(theory))
 
     // The clauses of [theory], read with the operators of the solver
-    private fun parsed(theory: String): Theory = SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators) }
+    private fun parsed(theory: String): Theory =
+        SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators, solver.unificator) }
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
     internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term = SyntaxProblem.parsing("Query") { TermValues.term(text, solver.operators) }
+    internal fun term(text: String): Term = termOf(text, solver.operators)
 
-    private fun struct(goal: String): Struct = term(goal).let { it as? Struct ?: throw Arg2pException("Not a goal: $goal") }
+    private fun struct(goal: String): Struct = goalOf(goal, solver.operators)
 
     /** A solver of arg2p, as it is described: its theory, its flags, and where what it prints goes */
     class Builder {
@@ -173,7 +210,11 @@ class Arg2p private constructor(
             val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
             return Arg2p(
                 SyntaxProblem.parsing("Theory") {
-                    Arg2pSolverFactory.solverOf(arg2p, theory, output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut())
+                    Arg2pSolverFactory.solverOf(
+                        arg2p,
+                        theory,
+                        output = output?.let { OutputChannel.of(it) } ?: OutputChannel.stdOut(),
+                    )
                 },
                 arg2p,
             )
@@ -181,6 +222,25 @@ class Arg2p private constructor(
     }
 
     companion object {
+        // How long warmUp runs by default, in milliseconds
+        private const val WARM_UP_TIME = 300
+
+        // What warmUp solves: rules with variables, the attacks and preferences of a theory, a check in Prolog
+        private val WARM_UP_THEORY =
+            """
+            f1 :=> p(1).
+            f2 :=> p(2).
+            f3 :=> p(3).
+            e1 :=> e(1).
+            e2 :=> e(3).
+            r1(X) : p(X) => q(X).
+            r2(X) : q(X), prolog(X > 0) => t(X).
+            r3(X) : e(X) => -t(X).
+            r4(X) : t(X) => u(X).
+            r5(X) : u(X) -> v(X).
+            sup(r2(1), r3(1)).
+            """.trimIndent()
+
         /** A solver of arg2p for [theory], Prolog text, with [flags] */
         @JvmStatic
         @JvmOverloads
@@ -194,6 +254,34 @@ class Arg2p private constructor(
         @JvmStatic
         @JsStatic
         fun builder(): Builder = Builder()
+
+        /**
+         * Solves a small theory over and over for about [milliseconds], whole and for a query, for the runtime to optimize
+         * the code of the solvers before the solvers that count: the first solves of a process take many times the later
+         * ones otherwise. Nothing is kept, and it may run while other solvers do.
+         */
+        @JvmStatic
+        @JvmOverloads
+        @JsStatic
+        fun warmUp(milliseconds: Int = WARM_UP_TIME) {
+            val start = TimeSource.Monotonic.markNow()
+            val whole = Flags.defaults().queryMode(false)
+            val preferred = Flags.defaults().argumentLabellingMode(Semantics.PREFERRED)
+            while (start.elapsedNow().inWholeMilliseconds < milliseconds) {
+                listOf(whole, preferred).forEach { flags ->
+                    builder()
+                        .theory(WARM_UP_THEORY)
+                        .flags(flags)
+                        .output { }
+                        .build()
+                        .answer("t(1)")
+                }
+                builder().theory(WARM_UP_THEORY).output { }.build().also { solver ->
+                    solver.answer("t(2)")
+                    solver.answer("u(3)")
+                }
+            }
+        }
 
         /** Where [theory], Prolog text (a theory, or flags), does not parse; null if it does. Nothing is solved. */
         @JvmStatic

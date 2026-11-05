@@ -1,31 +1,20 @@
 package it.unibo.tuprolog.argumentation.core.model.mining
 
+import it.unibo.tuprolog.argumentation.core.runtime.canonical
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.unify.Unificator
 
 /**
- * The items, looked up by the term of each ([key]). Mined terms are matched through unification, which amounts to
- * structural equality when both sides are ground: in that case a hash lookup replaces the scan of all the candidates
- * for every attack, support and label.
+ * The items, looked up by the term of each ([key]), as the graph store identifies arguments: the same term up to the
+ * names of its variables. Unification would not do: an argument for an open statement, `holdsAt(f, T)`, unifies with
+ * its instance for some values, `holdsAt(f, 7)`, and would take its label, attacks and supports.
  */
 internal class TermLookup<T>(
     items: List<T>,
     key: (T) -> Term,
 ) {
-    private val entries = items.map { key(it) to it }
+    private val index: Map<Term, T> =
+        mutableMapOf<Term, T>().also { map -> items.forEach { map.getOrPut(key(it).canonical()) { it } } }
 
-    private val index: Map<Term, T>? =
-        if (entries.all { it.first.isGround }) {
-            mutableMapOf<Term, T>().also { map -> entries.forEach { (term, item) -> map.getOrPut(term) { item } } }
-        } else {
-            null
-        }
-
-    /** The first item whose term matches [term] */
-    fun firstOrNull(term: Term): T? =
-        if (index != null && term.isGround) {
-            index[term]
-        } else {
-            entries.firstOrNull { Unificator.default.match(it.first, term) }?.second
-        }
+    /** The first item whose term is [term], up to the names of its variables */
+    fun firstOrNull(term: Term): T? = index[term.canonical()]
 }

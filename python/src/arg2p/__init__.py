@@ -3,12 +3,13 @@ Arg2P from Python: structured argumentation in Prolog (ASPIC+, ABA, abstract fra
 run through JPype, on the Java runtime the package bundles.
 
     >>> from arg2p import Arg2p
-    >>> Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).").answer("a").in_statements
+    >>> Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).").answer("a")[0].in_statements
     ['a']
 """
 
 from .arg2p import Answer, Arg2p, Arg2pError, Builder, Causality, Solution, Solutions, SyntaxProblem
 from .flags import (
+    AnswerMode,
     ConflictModel,
     Flags,
     GraphBuilder,
@@ -20,7 +21,7 @@ from .flags import (
     Semantics,
     StatementLabelling,
 )
-from .model import Argument, Attack, Graph, LabelledArgument, Support
+from .model import Argument, Attack, CompactGraph, Graph, LabelledArgument, Support
 from .parallel import (
     ClusterSolver,
     EvaluationResponse,
@@ -43,12 +44,14 @@ except ImportError:  # a package built without Gradle
 
 __all__ = [
     "Answer",
+    "AnswerMode",
     "Arg2p",
     "Arg2pError",
     "Argument",
     "Attack",
     "Builder",
     "Causality",
+    "CompactGraph",
     "ClusterSolver",
     "ConflictModel",
     "EvaluationResponse",

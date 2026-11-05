@@ -66,11 +66,3 @@ val pythonRuntime by tasks.registering(Sync::class) {
     from(rootProject.tasks.named("javaRuntime"))
     into(layout.projectDirectory.dir("src/arg2p/jre"))
 }
-
-tasks.register<Exec>("pythonTest") {
-    group = "python"
-    description = "Runs the tests of the package (with the interpreter of -Ppython, the package installed in it)"
-    dependsOn(pythonJars, pythonVersion)
-    workingDir = projectDir
-    commandLine(python, "-m", "pytest")
-}

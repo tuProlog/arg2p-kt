@@ -30,14 +30,28 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             unguarded(Statement, Other).
         between(Statement, Other) :-
             guarded(Statement, Other, Guard),
-            holds(Guard).
+            parser::holds(Guard).
 
         %! stated(+Conflict, ?Statement, ?Other)
         %  Conflict, a conflict(A, B) or conflict(A, B, Guard) term, makes Statement ([A]) conflict with Other ([B]),
         %  its guard holding.
         stated(conflict(A, B), [A], [B]).
         stated(conflict(A, B, Guard), [A], [B]) :-
-            holds(Guard).
+            parser::holds(Guard).
+
+        %! declared(?Statement, ?Other)
+        %  The theory declares Statement in conflict with Other (conflict/2, or conflict/3 whatever its guard), and the
+        %  conflict model counts the declared conflicts (see declaredCounted/0).
+        declared(Statement, Other) :-
+            declaredCounted,
+            (user::conflict(Statement, Other) ; user::conflict(Statement, Other, _)).
+
+        %! declaredCounted
+        %  The conflict model counts the conflicts the theory declares: never with metaConflicts, where the conflicts
+        %  are the conclusions of arguments.
+        declaredCounted :-
+            \+ setting(metaConflicts),
+            setting(conflictModel, declared).
 
         %! guarded(?Statement, ?Other, -Guard)
         %  Statement conflicts with Other when Guard holds.
@@ -49,7 +63,7 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             builtin(Part, Statement, Other, Guard).
         guarded(Statement, Other, Guard) :-
             setting(conflictModel, declared),
-            conflict(Statement, Other, Guard).
+            user::conflict(Statement, Other, Guard).
 
         %! unguarded(?Statement, ?Other)
         %  Statement conflicts with Other, whatever holds.
@@ -58,9 +72,26 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             graphStore::argumentFor([conflict(A, B)], _).
         unguarded(Statement, Other) :-
             setting(conflictModel, declared),
-            conflict(Statement, Other).
+            user::conflict(Statement, Other).
         unguarded(Statement, Other) :-
             context_check(conflict(Statement, Other)).
+
+        %! argued
+        %  The conflicts are the conclusions of arguments (metaConflicts): which statements conflict changes as the
+        %  graph grows, and an argument attacks through the conflicts its conclusion has with others only while their
+        %  arguments stand: through a copy of it carrying each (see the module conflictArguments).
+        argued :- setting(metaConflicts).
+
+        %! carried(+Argument, -Conflict)
+        %  Argument carries Conflict: the copy of an argument made for an argument for Conflict, mc(Id, Conflict) first
+        %  among its rules (see the module conflictArguments).
+        carried(Argument, Conflict) :-
+            argument::rules(Argument, [mc(_, Conflict)|_]).
+
+        %! attacker(+Argument)
+        %  Argument may attack others: any argument, or, with the conflicts argued, one carrying a conflict.
+        attacker(Argument) :- argued, !, carried(Argument, _).
+        attacker(_).
 
         %! statement(?Statement, ?Other, -ConflictStatement)
         %  With metaConflicts, the arguments for ConflictStatement make Statement conflict with Other.
@@ -84,8 +115,5 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
         % preference: a superiority and its converse
         builtin(preference, [sup(X, Y)], [sup(Y, X)], true).
 
-        % A guard holds: a goal that succeeds, or the term true
-        holds(Guard) :- callable(Guard), !, call(Guard).
-        holds(Guard) :- Guard.
         """.trimIndent()
 }

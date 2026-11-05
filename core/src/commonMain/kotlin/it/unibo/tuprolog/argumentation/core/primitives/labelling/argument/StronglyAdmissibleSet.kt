@@ -1,33 +1,30 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * stronglyAdmissibleSet: every IN argument is reachable from the unattacked ones, iteratively adding the IN
  * arguments whose attackers are all attacked by those added so far
  */
-internal object StronglyAdmissibleSet : Primitive {
-    val signature: Signature = Signature("stronglyAdmissibleSet", 0)
-
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        val attackers = request.attackGraph().attackers
-        val built = mutableSetOf<Term>()
-        var pending = request.labelledIds("in")
+internal object StronglyAdmissibleSet : AbstractNativePrimitive(Signature("stronglyAdmissibleSet", 0)) {
+    override fun call(call: NativeCall): Int {
+        val graph = call.attackGraph()
+        val built = IdSet()
+        var pending = call.labelledIds("in").toIntArray()
         while (pending.isNotEmpty()) {
             val added =
                 pending.filter { h ->
-                    attackers[h].orEmpty().all { attacker -> attackers[attacker].orEmpty().any { it in built } }
+                    graph.attackers(h).all { attacker -> graph.attackers(attacker).any { it in built } }
                 }
-            if (added.isEmpty()) return sequenceOf(request.replyFail())
-            built += added
-            pending = pending - added.toSet()
+            if (added.isEmpty()) return NativeCall.FAIL
+            added.forEach { built.add(it) }
+            pending = pending.filter { it !in built }.toIntArray()
         }
-        return sequenceOf(request.replyWith(true))
+        return NativeCall.CONTINUE
     }
 }

@@ -120,7 +120,7 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
             setting(orderingComparator, normal),
             member(W, RulesA),
             member(X, RulesB),
-            context_check(sup(X, W)).
+            parser::preference(X, W).
 
         weakerDemo([], _, []).
         weakerDemo([H|T], Rules, [Sup|Preferences]) :-
@@ -129,11 +129,11 @@ object SuperiorityModule : PrologModule("prolog.argumentation.superiority", "sup
 
         singleStronger(Target, Rules, sup(Rule, Target)) :-
             member(Rule, Rules),
-            context_check(sup(Rule, Target)).
+            parser::preference(Rule, Target).
 
         allStronger(_, [], []).
         allStronger(Target, [Rule|Rules], [sup(Rule, Target)|Preferences]) :-
-            context_check(sup(Rule, Target)),
+            parser::preference(Rule, Target),
             allStronger(Target, Rules, Preferences).
         """.trimIndent()
 }

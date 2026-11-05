@@ -1,16 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
+import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.argumentation.core.primitives.graph.storedArguments
-import it.unibo.tuprolog.argumentation.core.primitives.ids
-import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.primitive.Primitive
-import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
  * groundedFixpoint: extends the IN/OUT labelling of the active context to the grounded fixpoint, labelling UND
@@ -21,62 +18,67 @@ import it.unibo.tuprolog.solve.primitive.Solve
  * changed (those attacked by the arguments just labelled), rather than at all the unlabelled ones, which made a
  * chain of attacks quadratic. The labels of a round are asserted in the order of the arguments.
  */
-internal object GroundedFixpoint : Primitive {
-    val signature: Signature = Signature("groundedFixpoint", 0)
+internal object GroundedFixpoint : AbstractNativePrimitive(Signature("groundedFixpoint", 0)) {
+    override fun call(call: NativeCall): Int {
+        val arguments = call.graphArguments()
+        val ids = arguments.ids
+        val graph = call.attackGraph()
+        val inIds = call.labelledIds("in").copy()
+        val outIds = call.labelledIds("out").copy()
 
-    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
-        arg2pScope {
-            val arguments = request.storedArguments()
-            val position = arguments.withIndex().associate { (index, argument) -> argument.first to index }
-            val graph = request.attackGraph()
-            val inIds = request.labelledIds("in").toMutableSet()
-            val outIds = request.labelledIds("out").toMutableSet()
+        // the arguments here are by their places in the graph
+        fun unlabelled(place: Int) = ids[place] !in inIds && ids[place] !in outIds
 
-            // an argument of the graph not labelled yet
-            fun unlabelled(id: Term) = id in position && id !in inIds && id !in outIds
-
-            // the attackers not OUT of each unlabelled argument
-            val pending = HashMap<Term, Int>()
-            arguments.forEach { (id, _) ->
-                if (unlabelled(id)) pending[id] = graph.attackers[id].orEmpty().count { it !in outIds }
+        // the attackers not OUT of each argument unlabelled at the start, -1 for the others
+        val pending =
+            IntArray(ids.size) { place ->
+                if (unlabelled(place)) graph.attackers(ids[place]).count { it !in outIds } else -1
             }
 
-            fun label(
-                ids: Collection<Term>,
-                name: String,
-            ): List<Term> {
-                val sorted = ids.sortedBy { position.getValue(it) }
-                if (sorted.isEmpty()) return sorted
-                request.labelArguments(listOf(Pair(name, sorted.map { id -> arguments[position.getValue(id)] })))
-                return sorted
+        // The places, those unlabelled, labelled with [name] in order, each once
+        fun label(
+            places: IntArray,
+            name: String,
+        ): IntArray {
+            places.sort()
+            var n = 0
+            for (i in places.indices) {
+                if ((i == 0 || places[i] != places[i - 1])) places[n++] = places[i]
             }
-
-            // the arguments to label IN, and those to label OUT, in the next round
-            var candidatesIn: Collection<Term> = pending.filterValues { it == 0 }.keys
-            var candidatesOut: Collection<Term> =
-                arguments.map { it.first }.filter { id ->
-                    unlabelled(id) &&
-                        graph.attackers[id].orEmpty().any { it in inIds }
-                }
-            do {
-                val newIn = label(candidatesIn.filter { unlabelled(it) && pending[it] == 0 }.toSet(), "in")
-                inIds += newIn
-                val attackedByIn = newIn.flatMap { graph.attacked[it].orEmpty() }
-                val newOut = label((candidatesOut + attackedByIn).filter { unlabelled(it) }.toSet(), "out")
-                outIds += newOut
-                val released = LinkedHashSet<Term>()
-                newOut.forEach { out ->
-                    graph.attacked[out].orEmpty().forEach { target ->
-                        val count = pending[target] ?: return@forEach
-                        pending[target] = count - 1
-                        if (count == 1) released += target
-                    }
-                }
-                candidatesIn = released
-                candidatesOut = emptyList()
-            } while (newIn.isNotEmpty() || newOut.isNotEmpty())
-            label(arguments.map { it.first }.filter { unlabelled(it) }, "und")
+            val sorted = places.copyOf(n)
+            if (n > 0) call.labelArguments(arguments, name, sorted)
+            return sorted
         }
-        return sequenceOf(request.replyWith(true))
+
+        // the arguments to label IN, and those to label OUT, in the next round
+        var candidatesIn = ids.indices.filter { pending[it] == 0 }.toIntArray()
+        var candidatesOut =
+            ids.indices.filter { place -> unlabelled(place) && graph.attackers(ids[place]).any { it in inIds } }.toIntArray()
+        do {
+            val newIn = label(candidatesIn.filter { unlabelled(it) && pending[it] == 0 }.toIntArray(), "in")
+            for (place in newIn) inIds.add(ids[place])
+            val attackedByIn = ArrayList<Int>()
+            for (place in newIn) {
+                for (target in graph.attacked(ids[place])) {
+                    val at = arguments.position(target)
+                    if (at != -1) attackedByIn += at
+                }
+            }
+            val newOut = label((candidatesOut.asList() + attackedByIn).filter { unlabelled(it) }.toIntArray(), "out")
+            for (place in newOut) outIds.add(ids[place])
+            val released = IdSet()
+            for (place in newOut) {
+                for (target in graph.attacked(ids[place])) {
+                    val at = arguments.position(target)
+                    if (at == -1 || pending[at] == -1) continue
+                    pending[at]--
+                    if (pending[at] == 0) released.add(at)
+                }
+            }
+            candidatesIn = released.toIntArray()
+            candidatesOut = IntArray(0)
+        } while (newIn.isNotEmpty() || newOut.isNotEmpty())
+        call.labelArguments(arguments, "und", ids.indices.filter { unlabelled(it) }.toIntArray())
+        return NativeCall.CONTINUE
     }
 }

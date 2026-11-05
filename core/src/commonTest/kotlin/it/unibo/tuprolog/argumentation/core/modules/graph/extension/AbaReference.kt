@@ -14,8 +14,8 @@ class AbaReference(
     val contraries: Map<String, String>,
     val weaker: Set<Pair<String, String>> = emptySet(),
 ) {
-    /** The statements [set] derives, itself included */
-    fun derived(set: Set<String>): Set<String> {
+    // The statements [set] derives, itself included
+    private fun derived(set: Set<String>): Set<String> {
         val known = set.toMutableSet()
         do {
             val more = rules.filter { (head, body) -> head !in known && known.containsAll(body) }.map { it.first }

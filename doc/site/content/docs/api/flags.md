@@ -22,7 +22,9 @@ A flag stated in the theory replaces the value the solver was given for it: a th
 `autoTransposition(off).`).
 
 The [profile]({{% ref "/docs/profiles" %}}) of the theory, `graphBuildMode`, presets several flags at once. The
-theory overrides those presets, and so does a value the solver is given that differs from the default of its flag.
+theory overrides those presets, and so does a flag the solver is given (`Flags.defaults().autoTransposition(false)`
+turns transposition off under `aspic_plus`); a flag nobody states takes its default. So: the theory, then the flags
+of the solver, then the profile, then the default.
 
 A solver tells the values in effect for its theory, whichever way they came: `setting(flag)` gives the values of a
 flag (`["true"]` for a switch on, none for one off), and `knownFlags` (`known_flags` in Python) the names of the
@@ -34,7 +36,7 @@ arg2p.setting("graphBuildMode")    // [abstract]
 arg2p.setting("queryMode")         // []: the profile turns it off
 ```
 
-The table below lists the flags, with their values in `Flags.defaults()`.
+The table below lists the flags, with their defaults.
 
 | Flag | Default | Accepted values |
 | --- | --- | --- |
@@ -48,18 +50,12 @@ The table below lists the flags, with their values in `Flags.defaults()`.
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
+| `answerMode(Mode)` | `enumerate` | `enumerate`, `credulous`, `skeptical`: how a query is answered with several labellings |
 | `autoTransposition` | enabled by `aspic_plus` | the fact is present or absent |
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
-| `debug` | disabled | the fact is present or absent: `bp_grounded_partial` writes the steps of its labelling |
 | `modulesPath(Path)` | `none` | a directory path or a base URL |
-
-> [!NOTE]
-> `graphBuildMode`, `argumentLabellingMode`, `statementLabellingMode`, `orderingPrinciple` and
-> `orderingComparator` must always have a value. `Flags.defaults()` fills them in for you, so you only need to
-> write them by hand when you build a theory that supplies its own flags (see
-> [empty flag sets](#empty-flag-sets)).
 
 ---
 
@@ -111,7 +107,11 @@ the conflicts are those the arguments conclude, whatever the parts.
 ### `graphExtension(Mode)`
 
 Post-processing steps applied to the graph once it has been built. Unlike the other flags, `graphExtension`
-**may appear several times**: every occurrence adds an extension, and all of them are applied.
+**may appear several times**: every occurrence adds an extension, and all of them are applied, in a fixed order
+whatever the order they are stated in: the copies of `metaConflicts`, then
+`rebutRestriction`, the preference mode, `bp`. The preference modes (`standardPref`, `defeasiblePref`,
+`defeasibleAllPref`, `abaPref`) exclude one another: a theory stating two of them is refused, as is one stating
+`abaPref` outside an ABA theory (`graphLanguage(abaLanguage)`, as the profiles `aba` and `aba_plus` state).
 
 | Value | Effect |
 | --- | --- |
@@ -218,6 +218,20 @@ Enables the goal-directed (structured) evaluation used by [`answerQuery/4`]({{% 
 Instead of building the whole graph, the engine builds only the sub-graph relevant to the query, which is
 considerably faster on large theories. It is **enabled** in `Flags.defaults()`.
 
+### `answerMode(Mode)`
+
+How a query (`answerQuery/4`, `answer` in the APIs) is answered under a semantics with several
+labellings (`preferred`, `stable`, ...); with one labelling the three modes agree.
+
+| Value | Answer |
+| --- | --- |
+| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `answerQuery/4` has a solution for each, `answer` lists them. |
+| `credulous` | One answer: in the statements in in some labelling, out those out in every one, und the others. |
+| `skeptical` | One answer: in the statements in in every labelling, out those out in some, und the others. |
+
+`buildLabelSets` and `arg2p::solve(In, Out, Und)`, which label the whole theory, keep one solution for each
+labelling.
+
 ### `autoTransposition`
 
 Closes the theory under transposition: for every strict rule the contrapositive variants are added
@@ -247,20 +261,19 @@ network.
 
 ## Flags of the theory alone
 
-`naturalTerms` is read only from the theory text; `Flags` has no method for it (`debug` has one, `debug(true)`).
+`naturalTerms` is read only from the theory text; `Flags` has no method for it.
 Write the facts directly in your theory:
 
 | Flag | Meaning |
 | --- | --- |
 | `naturalTerms` | Enables normalisation of natural-language-like terms while parsing rules. |
-| `debug` | `bp_grounded_partial` writes the steps of its labelling. |
 
 ---
 
-## Empty flag sets
+## Flags stated by the theory alone
 
-`Flags.none()` disables the injection of *every* flag fact. The theory then has to declare all the required
-flags itself:
+`Flags.defaults()` (`Flags.none()` is the same) states no flag: every flag is as the theory states it, as its
+profile presets it, or its default. A theory may state them all:
 
 ```kotlin
 val arg2p = Arg2p.of(
@@ -279,5 +292,6 @@ val arg2p = Arg2p.of(
 )
 ```
 
-`Flags.parse(text)` states only the flags of its Prolog facts as well. With the 2P-Kt integration, the same is
-`FlagsBuilder().empty(true)`.
+`Flags.parse(text)` states the flags of its Prolog facts, the others as with `Flags.defaults()`: the text
+`argumentLabellingMode(preferred).` leaves query mode on. `Flags.library()` is the library of the flags for a solver
+built by hand (see the [2P-Kt integration]({{% ref "/docs/api/kotlin#building-a-solver-by-hand" %}})).

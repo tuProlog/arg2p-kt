@@ -27,8 +27,6 @@ import it.unibo.tuprolog.core.operators.Specifier
 internal class Profile(
     /** The value of graphBuildMode naming the profile */
     val name: String,
-    /** What the profile reads a theory as */
-    val description: String,
     presets: List<Pair<ArgsFlag<*, *>, List<Term>>>,
     /** The operators of the notation of the profile, beyond those of arg2p */
     val operators: OperatorSet = OperatorSet.EMPTY,
@@ -64,7 +62,7 @@ internal object Profiles {
     )
 
     /** No preset: every flag as the solver and the theory state it */
-    val FREE = Profile("free", "No preset: every flag as the solver and the theory state it", emptyList())
+    val FREE = Profile("free", emptyList())
 
     /**
      * ASPIC+ (Modgil and Prakken 2013, 2014): strict and defeasible rules, axioms and ordinary premises, contraries,
@@ -75,7 +73,6 @@ internal object Profiles {
     val ASPIC_PLUS =
         Profile(
             "aspic_plus",
-            "ASPIC+: strict and defeasible rules, axioms and premises, preferences, restricted rebut, transposition",
             rules(true, "standardPref", "rebutRestriction") + values(GraphLanguage, "aspicLanguage"),
         )
 
@@ -83,7 +80,6 @@ internal object Profiles {
     val ASPIC =
         Profile(
             "aspic",
-            "ASPIC+ with no preferences: every attack succeeds",
             rules(true, "rebutRestriction") + values(GraphLanguage, "aspicLanguage"),
         )
 
@@ -95,7 +91,6 @@ internal object Profiles {
     val ASPIC_DEFEASIBLE =
         Profile(
             "aspic_defeasible",
-            "The defeasible part of ASPIC+: defeasible rules alone, preferences by the last link (normal)",
             rules(false, "standardPref") +
                 listOf(
                     values(GraphLanguage, "defeasibleLanguage"),
@@ -108,7 +103,6 @@ internal object Profiles {
     val META =
         Profile(
             "meta",
-            "ASPIC+ reasoning about its rules, conflicts and preferences (metaRules, metaConflicts, defeasiblePref)",
             listOf(values(GraphBuilder, "ruleGraph"), values(GraphExtension, "defeasiblePref"), on(MetaRules), on(MetaConflicts)),
         )
 
@@ -122,7 +116,6 @@ internal object Profiles {
     val ABA =
         Profile(
             "aba",
-            "Flat ABA: strict rules, assumptions (assumption/1), their contraries (contrary/2), no preference",
             rules(false) + listOf(values(GraphLanguage, "abaLanguage"), values(ConflictModel, "declared"), off(PrologStrictCompatibility)),
         )
 
@@ -135,7 +128,6 @@ internal object Profiles {
     val ABA_PLUS =
         Profile(
             "aba_plus",
-            "ABA+: flat ABA with preferences between assumptions (sup/2), attacks from weaker ones reversed",
             rules(false, "abaPref") +
                 listOf(values(GraphLanguage, "abaLanguage"), values(ConflictModel, "declared"), off(PrologStrictCompatibility)),
         )
@@ -149,7 +141,6 @@ internal object Profiles {
     val ABSTRACT =
         Profile(
             "abstract",
-            "Dung frameworks: arguments (a.), attacks (a -> b.) and mutual attacks (a <-> b.), stated or derived",
             listOf(
                 values(GraphBuilder, "abstractGraph"),
                 values(GraphLanguage, "abstractLanguage"),

@@ -1,13 +1,12 @@
 package it.unibo.tuprolog.argumentation.causality.modules
 
+import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.causality.causality
 import it.unibo.tuprolog.argumentation.causality.isButForCause
 import it.unibo.tuprolog.argumentation.causality.isNessCause
 import it.unibo.tuprolog.argumentation.causality.isNessOriginalCause
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
-import it.unibo.tuprolog.argumentation.core.runtime.settings.FlagsBuilder
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.channel.OutputChannel
@@ -57,11 +56,10 @@ class CausalityModuleTest {
     @Test
     fun theFlagsOfTheSolverApply() {
         val solver =
-            Arg2pSolverFactory.of(
+            Arg2pSolverFactory.default(
                 "a. % f1\nb :- a. % r1",
-                FlagsBuilder(prologStrictCompatibility = true).create(),
+                Flags.defaults().prologStrictCompatibility(true).library(),
                 listOf(CausalityModule()),
-                ModuleRegistry.all,
             )
         isButForCause(solver, "a", "b")
     }
@@ -73,13 +71,13 @@ class CausalityModuleTest {
         isButForCause(solver, "a", "b")
     }
 
-    // The solver of the analysis prints where the solver testing does: a hook of the theory, which the graphs call
+    // The solver of the analysis prints where the solver testing does: a predicate of the theory, which the graphs call
     @Test
     fun theAnalysisPrintsToTheOutputOfTheSolverTesting() {
         val output = StringBuilder()
         val solver =
             Arg2pSolverFactory.solverOf(
-                Arg2pSolver.default(listOf(FlagsBuilder().create()), listOf(CausalityModule())),
+                Arg2pSolver.default(listOf(Flags.defaults().library()), listOf(CausalityModule())),
                 "r1 :=> a.\nr2 : a => b.\nconflict(_, _) :- write(hook), fail.",
                 output = OutputChannel.of { output.append(it) },
             )

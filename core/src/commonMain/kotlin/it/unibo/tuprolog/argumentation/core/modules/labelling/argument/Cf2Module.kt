@@ -66,8 +66,8 @@ object Cf2Module : PrologModule("prolog.argumentation.graph.labelling.cf2", "cf2
         
         moveArgs([], _).
         moveArgs([H|T], Branch) :-
-            graphStore::argumentByIdIn(Branch, H, HA),
-            graphStore::includeArgument(H, HA),
+            graphStore::savedIdIn(Branch, H),
+            graphStore::includeArgument(H),
             moveArgs(T, Branch).
         """.trimIndent()
 }
