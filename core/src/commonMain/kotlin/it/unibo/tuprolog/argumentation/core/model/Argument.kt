@@ -28,7 +28,7 @@ data class Argument(
     @JsExport.Ignore val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
     private val term: Term? = null,
 ) {
-    override fun hashCode(): Int = term.hashCode()
+    override fun hashCode(): Int = term?.hashCode() ?: (31 * rules.hashCode() + conclusion.hashCode())
 
     var identifier: String = ""
 
