@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.Solution
 import it.unibo.tuprolog.argumentation.checked
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
@@ -54,7 +55,20 @@ class AsyncClusterSolver internal constructor(
         replies.replied<AnswerResponse> { site.answer(query, it) }.then { solved.answer(it).toTypedArray() }
 
     /** The graph of each labelling of the theory (rejected if the evaluation halts) */
-    fun graphs(): Promise<Array<Graph>> = solve(LABELLINGS).then { graphsOf(it, emptyArray()) }.flattened()
+    fun graphs(): Promise<Array<Graph>> =
+        solve(LABELLINGS)
+            .then {
+                graphsOf(it, emptyList()) { solved.graph }.then { all ->
+                    all.toTypedArray()
+                }
+            }.flattened()
+
+    /** The graph of each labelling of the theory as arrays (rejected if the evaluation halts; see [CompactGraph]) */
+    fun compactGraphs(): Promise<Array<CompactGraph>> =
+        solve(LABELLINGS).then { graphsOf(it, emptyList()) { solved.compactGraph }.then { all -> all.toTypedArray() } }.flattened()
+
+    /** The graph of the last solution given as arrays (see [CompactGraph]), none before the first */
+    fun compactGraph(): CompactGraph = solved.compactGraph
 
     /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
     fun graph(): Graph = solved.graph
@@ -67,10 +81,11 @@ class AsyncClusterSolver internal constructor(
     fun stop() = site.stop()
 
     // The graphs of the yes [solutions] left, after [found]
-    private fun graphsOf(
+    private fun <G> graphsOf(
         solutions: AsyncSolutions,
-        found: Array<Graph>,
-    ): Promise<Array<Graph>> =
+        found: List<G>,
+        read: () -> G,
+    ): Promise<List<G>> =
         solutions
             .hasNext()
             .then { more ->
@@ -79,7 +94,7 @@ class AsyncClusterSolver internal constructor(
                 } else {
                     solutions
                         .nextSolution()
-                        .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + solved.graph else found) }
+                        .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + read() else found, read) }
                         .flattened()
                 }
             }.flattened()

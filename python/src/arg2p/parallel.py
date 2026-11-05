@@ -10,7 +10,7 @@ from typing import Any, Callable, Optional
 from . import _jvm
 from .arg2p import Answer, Solutions, answer_from_jvm, call
 from .flags import Flags
-from .model import Graph, graph_from_jvm
+from .model import CompactGraph, Graph, graph_from_jvm
 
 _CLUSTER = "it.unibo.tuprolog.argumentation.parallel.cluster"
 
@@ -172,6 +172,14 @@ class ClusterSolver:
     def graph(self) -> Graph:
         """The graph of the last solution given: the one of the last stage of its resolution."""
         return call(lambda: graph_from_jvm(self._solver.graph()))
+
+    def compact_graphs(self) -> list[CompactGraph]:
+        """The graph of each labelling as arrays: for a graph too large for graphs (see CompactGraph)."""
+        return call(lambda: [CompactGraph(graph) for graph in self._solver.compactGraphs()])
+
+    def compact_graph(self) -> CompactGraph:
+        """The graph of the last solution given as arrays (see CompactGraph)."""
+        return CompactGraph(self._solver.compactGraph())
 
     def output(self, consumer: Callable[[str], Any]) -> None:
         """Gives what the solver prints to [consumer], as the solutions are given (the standard output otherwise)."""

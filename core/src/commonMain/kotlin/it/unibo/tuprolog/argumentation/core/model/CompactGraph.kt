@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
+import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import kotlin.js.JsExport
 import kotlin.js.JsName
 
@@ -117,6 +118,17 @@ class CompactGraph internal constructor(
         ).also { it.identifier = identifier(position) }
     }
 
+    /** The graph as the objects of [Graph], made now: the same arguments, in the same order, with the same names */
+    fun toGraph(): Graph {
+        val objects = List(size) { argument(it) }
+        for (i in supported.indices) objects[supported[i]].supports.add(objects[supporters[i]])
+        return Graph.of(
+            order.map { LabelledArgument(objects[it], label(it)) },
+            attackers.indices.map { Attack(objects[attackers[it]], objects[targets[it]], attackTypes[attackTypeOf[it]], objects[on[it]]) },
+            supporters.indices.map { Support(objects[supporters[it]], objects[supported[it]]) },
+        )
+    }
+
     internal companion object {
         const val NO_LABEL = "na"
         const val IN = "in"
@@ -124,4 +136,30 @@ class CompactGraph internal constructor(
         const val UND = "und"
         const val NO_RULE = "none"
     }
+}
+
+/** The graph of no argument, of a solution that labels none */
+@InternalArg2pApi
+fun emptyCompactGraph(): CompactGraph {
+    val none = CompactLists(IntArray(1), IntArray(0))
+    val nothing = IntArray(0)
+    return CompactGraph(
+        emptyArray(),
+        nothing,
+        nothing,
+        none,
+        none,
+        none,
+        none,
+        none,
+        ByteArray(0),
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        emptyArray(),
+        nothing,
+        nothing,
+        nothing,
+    )
 }

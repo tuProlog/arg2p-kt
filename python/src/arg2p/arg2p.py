@@ -345,6 +345,10 @@ class Arg2p:
         """The graph of the last resolution: the one of its last stage."""
         return call(lambda: graph_from_jvm(self._arg2p.graph()))
 
+    def compact_graph_at(self, branch: int) -> CompactGraph:
+        """The graph of the context branch [branch] as arrays of identifiers (see CompactGraph)."""
+        return CompactGraph(call(lambda: self._arg2p.compactGraphAt(branch)))
+
     def graph_at(self, branch: int) -> Graph:
         """The graph of the context branch [branch]."""
         return call(lambda: graph_from_jvm(self._arg2p.graphAt(branch)))

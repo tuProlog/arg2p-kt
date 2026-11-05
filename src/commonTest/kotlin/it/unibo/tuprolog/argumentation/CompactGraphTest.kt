@@ -88,6 +88,27 @@ class CompactGraphTest {
     }
 
     @Test
+    fun theGraphOfABranch() {
+        val arg2p = Arg2p.of(theory)
+        arg2p.answer("c")
+        assertSame(arg2p.graphAt(arg2p.activeBranch), arg2p.compactGraphAt(arg2p.activeBranch))
+    }
+
+    @Test
+    fun theObjectsOfACompactGraph() {
+        val arg2p = Arg2p.of(theory, Flags.defaults().queryMode(false))
+        val graph = arg2p.graphs().single()
+        val made = arg2p.compactGraphs().single().toGraph()
+        assertEquals(graph.arguments.map { it.descriptor }, made.arguments.map { it.descriptor })
+        assertEquals(
+            graph.labellings.map { it.argument.identifier to it.label },
+            made.labellings.map { it.argument.identifier to it.label },
+        )
+        assertEquals(graph.attacks.map { it.toString() }.sorted(), made.attacks.map { it.toString() }.sorted())
+        assertEquals(graph.supports.map { it.toString() }.sorted(), made.supports.map { it.toString() }.sorted())
+    }
+
+    @Test
     fun theGraphOfTheLastResolution() {
         val arg2p = Arg2p.of(theory)
         arg2p.answer("c")

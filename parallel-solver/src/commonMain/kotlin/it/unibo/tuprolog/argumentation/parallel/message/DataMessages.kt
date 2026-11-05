@@ -3,7 +3,8 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.argumentation.Answer
-import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
+import it.unibo.tuprolog.argumentation.core.model.emptyCompactGraph
 import it.unibo.tuprolog.core.Term
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -165,7 +166,7 @@ internal data class RequireAnswer(
 internal data class SolutionResponse(
     val run: String,
     val solution: LogicSolution?,
-    val graph: Graph,
+    val graph: CompactGraph,
     val output: String,
     val error: String? = null,
     val stopped: Boolean = false,
@@ -175,7 +176,7 @@ internal data class SolutionResponse(
 }
 
 /** The graph of a solution that labels none */
-internal val NO_GRAPH = Graph(emptyList(), emptyList(), emptyList())
+internal val NO_GRAPH = emptyCompactGraph()
 
 /** Why an evaluation stopped by its client has no answer */
 internal const val STOPPED = "The evaluation was stopped"
