@@ -9,7 +9,7 @@ import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import it.unibo.tuprolog.argumentation.Solution
 import it.unibo.tuprolog.argumentation.SyntaxProblem
-import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment
@@ -164,24 +164,36 @@ internal data class GraphData(
     companion object {
         val EMPTY = GraphData("", emptyList(), emptyList())
 
-        /** A graph of the API, read in [profile] */
+        /** A graph of the API as arrays, read in [profile]: no object of the API for an argument */
         fun of(
-            graph: Graph,
+            graph: CompactGraph,
             profile: String,
-        ) = GraphData(
-            profile,
-            graph.labellings.map { (argument, label) ->
-                ArgumentData(
-                    id = argument.identifier,
-                    descriptor = argument.descriptor,
-                    conclusion = argument.conclusion,
-                    topRule = argument.topRule,
-                    label = label,
-                    supports = argument.supports.map { it.identifier },
-                )
-            },
-            graph.attacks.map { AttackData(it.attacker.identifier, it.target.identifier, it.type, it.on?.identifier) },
-        )
+        ): GraphData {
+            val ids = Array(graph.size) { graph.identifier(it) }
+            val supports = List(graph.size) { ArrayList<String>() }
+            for (i in graph.supported.indices) supports[graph.supported[i]].add(ids[graph.supporters[i]])
+            return GraphData(
+                profile,
+                graph.order.map { position ->
+                    ArgumentData(
+                        id = ids[position],
+                        descriptor = graph.descriptor(position),
+                        conclusion = graph.texts[graph.conclusions[position]],
+                        topRule = graph.texts[graph.topRules[position]],
+                        label = graph.label(position),
+                        supports = supports[position],
+                    )
+                },
+                graph.attackers.indices.map {
+                    AttackData(
+                        ids[graph.attackers[it]],
+                        ids[graph.targets[it]],
+                        graph.attackTypes[graph.attackTypeOf[it]],
+                        ids[graph.on[it]],
+                    )
+                },
+            )
+        }
     }
 }
 

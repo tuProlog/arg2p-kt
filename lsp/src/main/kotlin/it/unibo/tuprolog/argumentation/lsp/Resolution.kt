@@ -45,7 +45,7 @@ internal interface Resolution {
             val found = solutions.next()
             val (graph, branch) =
                 try {
-                    solver.activeBranch.let { GraphData.of(solver.graphAt(it), profile) to it }
+                    solver.activeBranch.let { GraphData.of(solver.compactGraphAt(it), profile) to it }
                 } catch (_: Exception) {
                     // no graph: a plain Prolog goal builds none
                     GraphData.EMPTY to 0
@@ -55,7 +55,7 @@ internal interface Resolution {
 
         override fun graphAt(branch: Int): GraphData =
             try {
-                GraphData.of(solver.graphAt(branch), profile)
+                GraphData.of(solver.compactGraphAt(branch), profile)
             } catch (_: Exception) {
                 GraphData.EMPTY
             }
@@ -89,7 +89,7 @@ internal interface Resolution {
             federation.request(theory, flags, output) { running ->
                 check(running === owner) { NO_LONGER_RUNNING }
                 val found = solutions.next()
-                last = GraphData.of(running.solver.graph(), profile)
+                last = GraphData.of(running.solver.compactGraph(), profile)
                 SolutionData.of(found, last, 0) to solutions.hasNext()
             }
 
