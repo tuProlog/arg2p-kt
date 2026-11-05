@@ -5,10 +5,10 @@ import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.model.mining.compactGraph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
@@ -475,9 +475,9 @@ internal class Catalog(
     }
 
     // The graph of the last solution, none for a solution that labels none
-    private fun mined(): Graph =
+    private fun mined(): CompactGraph =
         try {
-            solver.graph()
+            solver.compactGraph()
         } catch (_: Exception) {
             NO_GRAPH
         }

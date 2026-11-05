@@ -270,7 +270,7 @@ internal class McpServer(
             if (solution.isYes) {
                 graph =
                     try {
-                        GraphData.of(solver.graph(), profile)
+                        GraphData.of(solver.compactGraph(), profile)
                     } catch (failure: Exception) {
                         if (deadline.expired) break else throw failure
                     }

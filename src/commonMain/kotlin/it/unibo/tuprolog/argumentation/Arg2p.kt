@@ -112,6 +112,9 @@ class Arg2p private constructor(
     /** The graph of the last resolution as arrays of identifiers: the one of its last stage (see [CompactGraph]) */
     fun compactGraph(): CompactGraph = solver.compactGraph()
 
+    /** The graph of the context branch [branch] as arrays of identifiers (see [CompactGraph]) */
+    fun compactGraphAt(branch: Int): CompactGraph = solver.compactGraph(branch)
+
     /** The graph of the last resolution: the one of its last stage */
     fun graph(): Graph = graphAt(activeBranch)
 

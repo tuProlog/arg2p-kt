@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.parallel.cluster
 import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
@@ -33,8 +34,14 @@ internal interface Replies {
 internal class Solved {
     var output: (String) -> Unit = { print(it) }
 
-    var graph: Graph = NO_GRAPH
+    /** The graph of the last solution given, as arrays */
+    var compactGraph: CompactGraph = NO_GRAPH
         private set
+
+    private var objects: Graph? = null
+
+    /** The graph of the last solution given, its objects made when first asked for */
+    val graph: Graph get() = objects ?: compactGraph.toGraph().also { objects = it }
 
     /** [response], unless it is an error, raised */
     fun checked(response: SolutionResponse): SolutionResponse = response.also { it.error?.let { error -> throw Arg2pException(error) } }
@@ -47,7 +54,8 @@ internal class Solved {
         response: SolutionResponse,
         goal: String,
     ): LogicSolution {
-        graph = response.graph
+        compactGraph = response.graph
+        objects = null
         if (response.stopped) return LogicSolution.halt(term(goal), HaltException(message = STOPPED, context = haltContext))
         val solution = checked(response).solution ?: throw NoSuchElementException("No more solutions")
         if (response.output.isNotEmpty()) output(response.output)

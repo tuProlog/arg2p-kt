@@ -147,7 +147,8 @@ For a graph too large for the objects of `graphs()`, `compactGraphs()` and `comp
 `CompactGraph`), with no object for an argument: an argument is a position in `conclusions`, `topRules` and `labels`, a text a position
 in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
 `attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
-an argument as a graph does, and `argument(p)` makes the object of one. It holds no reference to the solver.
+an argument as a graph does, `argument(p)` makes the object of one and `toGraph()` the objects of all. It holds no reference to the solver.
+`compactGraphAt(branch)` gives the graph of a branch, and the solver of a cluster has `compactGraphs()` and `compactGraph()` as well.
 
 ## Prolog goals and values
 
