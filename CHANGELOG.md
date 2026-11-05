@@ -1,3 +1,128 @@
+## [0.24.0](https://github.com/tuProlog/arg2p-kt/compare/0.23.0...0.24.0) (2026-11-05)
+
+### Features
+
+* answer gives every answer, one for each labelling or the one across them all ([57197bc](https://github.com/tuProlog/arg2p-kt/commit/57197bc6e62c001feb587d5728c45452d482cedd))
+* compact graphs for huge theories, a warm-up, the parallel solver efficient again ([348e66d](https://github.com/tuProlog/arg2p-kt/commit/348e66d56c9202602327dc4b108f3312a54fab63))
+* **core:** a base for primitives written once against the machine, the context, cache and settings primitives on it ([22bea93](https://github.com/tuProlog/arg2p-kt/commit/22bea93c45eed020e4c1ec753722c9be946a6dfc))
+* **core:** answerMode, a query answered for each labelling or across them, credulously or skeptically ([9818f41](https://github.com/tuProlog/arg2p-kt/commit/9818f4181178724a150b5c93974a3b0c15a933f2))
+* **core:** no open conclusion but with the graph extension constraints, { } premises, query mode as the whole graph ([d141416](https://github.com/tuProlog/arg2p-kt/commit/d1414169b8b12203f3410d2210f1be9bba16d6dd))
+* **core:** primitives native to the machine, the module calls among them ([8dd06b7](https://github.com/tuProlog/arg2p-kt/commit/8dd06b7de5c1565cb7f81736e11a5e85852c1e00))
+* **core:** spike of a word-array machine for the engine (heap of tagged words, trail, choice points, first-argument keys, findall) ([9b0cafe](https://github.com/tuProlog/arg2p-kt/commit/9b0cafeefc49f010ad9d65707d51bbd602474104))
+* **core:** the axioms of time, with the flag temporal ([bf8298c](https://github.com/tuProlog/arg2p-kt/commit/bf8298cb43ccafc28bbd9fda427e2711ae34aed4))
+* **core:** the flags of the solver win over the profile when stated, and the defaults state nothing ([c318120](https://github.com/tuProlog/arg2p-kt/commit/c318120f1d419a9d90bd981a2e1cda51dc0b86f2))
+* **core:** the graph extension constraints, statements over regions of numbers ([03b7950](https://github.com/tuProlog/arg2p-kt/commit/03b79502e41684bfdf9c2f6104a47b3461daddb7))
+* **core:** the machine behind the tuProlog Solver, selectable from the builder, running the argumentation pipeline ([87cf382](https://github.com/tuProlog/arg2p-kt/commit/87cf3826bd46d7122c1afecc32472928951dc2c5))
+* **core:** the machine spike collects its heap and its continuation, and calls the primitives of the libraries through a facade ([ea5b687](https://github.com/tuProlog/arg2p-kt/commit/ea5b687207fd6469a23386011401175558a7507f))
+* **core:** the machine spike compiles its clauses to instructions, with registers for the temporary variables and frames for the permanent ones ([426aab3](https://github.com/tuProlog/arg2p-kt/commit/426aab3d3c12a1691a8bbaab91e6a440b7e3b783))
+* **core:** the machine spike throws and catches balls, switches library scopes for module calls, resolves lookups from clause sources and indexes large predicates by a hash of the first argument ([1d9bc54](https://github.com/tuProlog/arg2p-kt/commit/1d9bc54e0e72a00c26f6c80ea1710a761e4cbfd2))
+* **core:** the steps changing the graph in a fixed order, one preference mode at most ([836d723](https://github.com/tuProlog/arg2p-kt/commit/836d7236ef253b46d8a1af41d29c83b9e636d9b4))
+* **parallel-solver:** an evaluation reports the statements answering it, as answerQuery/4 labels them ([9500cf4](https://github.com/tuProlog/arg2p-kt/commit/9500cf44ce489b6ca91963dd269630a17505b3c9))
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.3.4 ([#569](https://github.com/tuProlog/arg2p-kt/issues/569)) ([38c0925](https://github.com/tuProlog/arg2p-kt/commit/38c092581aed4c6dac0f7060773efcf3adf4ee63))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.158 ([#575](https://github.com/tuProlog/arg2p-kt/issues/575)) ([d355847](https://github.com/tuProlog/arg2p-kt/commit/d35584723ad592d584d43cfc6fcdbdd252cd21fa))
+* **deps:** update dependency vitest to v5.1.0 ([#546](https://github.com/tuProlog/arg2p-kt/issues/546)) ([0bdfacc](https://github.com/tuProlog/arg2p-kt/commit/0bdfacc4b3625b6454d398af275dc2906d1e150b))
+* **deps:** update ktmpp to v6.1.1 ([#573](https://github.com/tuProlog/arg2p-kt/issues/573)) ([be590aa](https://github.com/tuProlog/arg2p-kt/commit/be590aa2d3aa95568f24cc58d07cd0ec1ede429b))
+
+### Bug Fixes
+
+* **core:** a preference or a burden argued stands on each of its arguments, ABA+ reversed in query mode, the flags checked ([c7b48ba](https://github.com/tuProlog/arg2p-kt/commit/c7b48ba357ee4899be6ea108478c6e69d8d1f0fc))
+* **core:** a start ends what the conflict model sets against it ([45643ef](https://github.com/tuProlog/arg2p-kt/commit/45643efe6654d73cd32e51ba066e1e2395c3c8bb))
+* **core:** a statement with variables and its instances labelled each on its own ([c26bdd4](https://github.com/tuProlog/arg2p-kt/commit/c26bdd49e888e90a418070b2ed9c5270e472943c))
+* **core:** a transposition keeps the other premises in the order they are written ([0429772](https://github.com/tuProlog/arg2p-kt/commit/0429772f189bc2b72b0895d472d2ea5634010a65))
+* **core:** copies keep the variables of a term apart by identity ([6cef028](https://github.com/tuProlog/arg2p-kt/commit/6cef028300bdc1e181dfa74341db98972768f6b4))
+* **core:** query mode answers whatever the order of the rules, and transpositions keep the names of the theory ([a23eb9f](https://github.com/tuProlog/arg2p-kt/commit/a23eb9f07aaf62803823a4be144d708d36e9f9c9))
+* **core:** t_still binds the start it is about ([b6ac954](https://github.com/tuProlog/arg2p-kt/commit/b6ac95430ce138424bbf44b9411770ad674d757a))
+* **core:** the code of the modules shared per module and by its source, the conversion of a theory kept per solver ([33dd56d](https://github.com/tuProlog/arg2p-kt/commit/33dd56d8969b5ecbe865eaf202c61c8fbbfbe975))
+* **core:** the graph mined identifies an argument up to the names of its variables, not by unification ([1cbec6f](https://github.com/tuProlog/arg2p-kt/commit/1cbec6f0a5e6ca7d67f532de7598c5847d1b0ff4))
+* **core:** the theory of the user is the module user, out of reach of the predicates of the engine ([a57d946](https://github.com/tuProlog/arg2p-kt/commit/a57d946adcfa8318bea2823434d1f96ef4d3f9a3))
+* **core:** with metaConflicts, no attack but through the conflicts argued ([b8427b8](https://github.com/tuProlog/arg2p-kt/commit/b8427b8387fb73cdc8f6f61e6af417fc0a1d0284))
+* **parallel-solver:** the axioms of temporal partitioned once, not added again by every worker ([b3e7ed4](https://github.com/tuProlog/arg2p-kt/commit/b3e7ed40aaf0f563536e22a8477b2863404f5aa1))
+* **parallel-solver:** the workers find the attacks and share the supports as the standard graph builder does ([540e4e5](https://github.com/tuProlog/arg2p-kt/commit/540e4e5e5ce682f3b2fab9b0bc626caa0858351a))
+* **parallel-solver:** the workers' errors reach the clients, the exploration decides itself how it is carried on ([24a5b29](https://github.com/tuProlog/arg2p-kt/commit/24a5b295e1690a17927b9036638c365a439b51e4))
+* **parallel:** a worker or the catalog out of memory answers the clients ([5450157](https://github.com/tuProlog/arg2p-kt/commit/5450157ac200e17de4407d31ad8dd16d61400a1a))
+
+### Documentation
+
+* **core:** the records of the stores in the engine README ([16069b6](https://github.com/tuProlog/arg2p-kt/commit/16069b653c852f662db53f27d4bad4e4540d7838))
+
+### Performance improvements
+
+* **causality:** the graphs of the analysis read through an index, arguments matched without the default unificator ([e6721eb](https://github.com/tuProlog/arg2p-kt/commit/e6721ebe5c551823abfb6ae4d2470b93979b33d7))
+* **core:** a list already in order, or in reverse, sorted in one pass ([3b895ef](https://github.com/tuProlog/arg2p-kt/commit/3b895efbb5d1eb398a85cb22e07e4a4206dd8589))
+* **core:** a list of two fresh temporaries entered by one instruction, unification of plain words without the stack, anonymous query variables never materialised ([eafc7de](https://github.com/tuProlog/arg2p-kt/commit/eafc7de71aeeb2930cc234ffa24ed8b8a6a75c6b))
+* **core:** a lookup in a store resolved in place on the words of the machine ([1ff1b48](https://github.com/tuProlog/arg2p-kt/commit/1ff1b48ce26dcc355896cb8f7ed6307c3b0f91a0))
+* **core:** a theory without constraints built as before them ([105ae91](https://github.com/tuProlog/arg2p-kt/commit/105ae916fc5c53923f2c30537e8524c52023a819))
+* **core:** arg/3 and functor/3 compiled inline; arithmetic on floats no longer hangs a clause ([b079fc9](https://github.com/tuProlog/arg2p-kt/commit/b079fc97396f4cac37fe241ba29405baa3a943c0))
+* **core:** arithmetic as JVM arithmetic in generated code; retries keep their choice point ([1f10444](https://github.com/tuProlog/arg2p-kt/commit/1f104442fc33c7f53e5a42557d26ac138e997549))
+* **core:** backtracking copies the context once, the bindings of a resolution kept as a plain map, the type tests of the standard library answered in the frame ([e1b980f](https://github.com/tuProlog/arg2p-kt/commit/e1b980f2e0b4593db2872ec8240ec1d98a97c118))
+* **core:** contains and subtract native on the words of the lists ([cab012c](https://github.com/tuProlog/arg2p-kt/commit/cab012cfaf5273a4a80f7a8e366eea055df11466))
+* **core:** generated code off for now; a quick test task ([90134e1](https://github.com/tuProlog/arg2p-kt/commit/90134e199eeb39361d865becd9543f8a5246ab5d))
+* **core:** identity copies in a single visit of the term ([84a840a](https://github.com/tuProlog/arg2p-kt/commit/84a840a34a4855c58980271339e7ee44bd55fa47))
+* **core:** one bag for the copies of a machine, atoms ordered by rank, a round reaches its rules directly ([d37de48](https://github.com/tuProlog/arg2p-kt/commit/d37de48ac47572979e78d054ad1eb44c6607af3c))
+* **core:** query mode derives again only the rules a query could bind ([8465fc8](https://github.com/tuProlog/arg2p-kt/commit/8465fc8ec8132ff3a79f2d8245c7decd1792ce69))
+* **core:** removing a clause keeps the index of its predicate ([92441d5](https://github.com/tuProlog/arg2p-kt/commit/92441d5734d82e6baee9d425b7ca987e9dd68649))
+* **core:** the answers of a primitive, the variables of the context store and the bindings of a solution without sequence builders and copies ([bb56549](https://github.com/tuProlog/arg2p-kt/commit/bb565499f0996021085e5ae2f9d53f66a08c34df))
+* **core:** the attack graph and the labels of the native labellings by integer identifiers ([44c00f1](https://github.com/tuProlog/arg2p-kt/commit/44c00f1ba90f5b5bc069c7c9d9aa6f5999771c06))
+* **core:** the bindings a frame leaves resolved once each, only those kept; the solutions emitted with the bindings of the query alone, the base of the solvers forked for it ([9606664](https://github.com/tuProlog/arg2p-kt/commit/9606664100a90c61fa9a76e827c090b17aba994f))
+* **core:** the bindings of a resolution in small array maps, the compound terms rebuilt without slicing their arguments, a missing procedure answered by the indexes ([3b90366](https://github.com/tuProlog/arg2p-kt/commit/3b9036684e25b5174fc73ef743cbbdb3a8cb204d))
+* **core:** the call and the clause selection kept small on their common path ([acb3091](https://github.com/tuProlog/arg2p-kt/commit/acb3091386d8aef33b478bc58afb5ab2c59aed44))
+* **core:** the call path without a boxed table and a hash for each atom goal ([4ba9463](https://github.com/tuProlog/arg2p-kt/commit/4ba94639b68bf499c1e095144c32903224f53d43))
+* **core:** the candidates of a goal filtered by their shape, the walks of the engine building a term only where a part changes and visiting the plain compound terms ([5c3cb9d](https://github.com/tuProlog/arg2p-kt/commit/5c3cb9d7ae5c5a845102172d74d292bfbc44d7fe))
+* **core:** the clauses called most compiled to methods of the JVM ([a1c5cfc](https://github.com/tuProlog/arg2p-kt/commit/a1c5cfc94488a657137b6bd3f8d10fd578e1795b))
+* **core:** the clauses of the libraries compiled once per process, a solver's program a copy of the base ([3f18f54](https://github.com/tuProlog/arg2p-kt/commit/3f18f54b04c7ce6219efcd3bf248959427c03d05))
+* **core:** the closure of the preferences through the store, ground goals through an index of whole heads ([b2d18ea](https://github.com/tuProlog/arg2p-kt/commit/b2d18ea7fb56299c1cc8bc18c5bce44b265a5d83))
+* **core:** the context and the cache keep records, the words of the machine, and the lookups run on them ([3abde6f](https://github.com/tuProlog/arg2p-kt/commit/3abde6f530e7edd7a31d67e95b8eda3518c4aee7))
+* **core:** the declared conflicts decided once per transposition, not asked of the conflict module for every pair; the test configuration of the root build reads the project properties ([8ca0b1e](https://github.com/tuProlog/arg2p-kt/commit/8ca0b1ea80bffd48850b6a5718ed91bb8e204cd8))
+* **core:** the engine builds no indicator to compare procedures, and keeps the bindings of a unification as chains resolved once ([8edeb23](https://github.com/tuProlog/arg2p-kt/commit/8edeb23972bdd302c919daa6ea52c25ebc77d70f))
+* **core:** the frames of a resolution sharing their environment, the cuts walking the frames and the choice points without building sequences ([1aa01b3](https://github.com/tuProlog/arg2p-kt/commit/1aa01b32dd1c0a290a4bdef59827474f72e1d856))
+* **core:** the goals and the clauses of a frame as a cursor over a list, the body of a clause instantiated goal by goal, a resolution failing without copying the context ([3906a73](https://github.com/tuProlog/arg2p-kt/commit/3906a73cf41fb57911e47804414dece669900a2b))
+* **core:** the instant of a state kept unboxed, the indexes keyed without building strings or signatures ([95b66c4](https://github.com/tuProlog/arg2p-kt/commit/95b66c4f48e2ab1fb90a78a76160142d4ac3d909))
+* **core:** the machine evaluates integer arithmetic itself and leaves the rest to the library, and keeps floats as tuProlog reads them ([3eeb8ef](https://github.com/tuProlog/arg2p-kt/commit/3eeb8eff64fb58fd7e75529998a737104f8d1589))
+* **core:** the machine level with SWI on the classic programs, generated code back on ([5c07002](https://github.com/tuProlog/arg2p-kt/commit/5c07002c4eaa66526ef3a6f0e40e4f9e08f5a33c))
+* **core:** the machine runs its instruction loop in place with the program counter in a local, keeps a temporary in its argument register when it can, enters lists and pairs by one instruction, evaluates integer arithmetic from the registers, selects clauses over flat tables and collects the heap by a bitmap ([ca6e178](https://github.com/tuProlog/arg2p-kt/commit/ca6e17881a869e874df883256aa7c97163aba4da))
+* **core:** the pipeline converts the rules without binding them, the decisions it mirrored read from their owners ([849f6c2](https://github.com/tuProlog/arg2p-kt/commit/849f6c2302b7b7d6a487b592c1466b9f0aa21cd1))
+* **core:** the primitives of the standard library arg2p relies on, and its sorts, on the words of the machine ([e1e7752](https://github.com/tuProlog/arg2p-kt/commit/e1e7752691862590593d91eee5829c9d43248bff))
+* **core:** the substitution of a resolution as a store of bindings resolved on read, its tuProlog unifier built only when something reads it ([6829544](https://github.com/tuProlog/arg2p-kt/commit/68295441826cca0f93395b5a2d96a33b50353bb5))
+* **core:** the substitutions of the resolution applied in a single pass ([47dc064](https://github.com/tuProlog/arg2p-kt/commit/47dc064245689f997b9fd51e9e2a6a0ac2ba4648))
+* **core:** the transitions keeping the frame advance its step in place, the meta-calls check their goal without a frame, the derived values keyed by constants ([dca410d](https://github.com/tuProlog/arg2p-kt/commit/dca410dd37d7b0c2c2cfa9155498b40162757174))
+* **core:** type tests, identity and unification compiled inline ([68568a7](https://github.com/tuProlog/arg2p-kt/commit/68568a70c6ae8a66ed6bc9710a0df91ab671dc67))
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-java action to v6.2.0 ([#581](https://github.com/tuProlog/arg2p-kt/issues/581)) ([09d2ca9](https://github.com/tuProlog/arg2p-kt/commit/09d2ca97dd6b92650dabdf051d16ca2669433dfc))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.51 ([#547](https://github.com/tuProlog/arg2p-kt/issues/547)) ([72165ff](https://github.com/tuProlog/arg2p-kt/commit/72165ff9ff36baa8aea5490f93a2a2d4a5590f95))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.7 ([#571](https://github.com/tuProlog/arg2p-kt/issues/571)) ([dd0ba84](https://github.com/tuProlog/arg2p-kt/commit/dd0ba845c6e98e508396d6d85c0c370a43aa2925))
+* **deps:** update sigstore/cosign-installer action to v4.1.3 ([#578](https://github.com/tuProlog/arg2p-kt/issues/578)) ([e479755](https://github.com/tuProlog/arg2p-kt/commit/e479755f44cf2ea798318b6d326b53c87b09617d))
+* the tests, the JavaScript and the reference of every library configured once, the plugins project no Kotlin one, the catalog entries nothing read gone ([8dcc31a](https://github.com/tuProlog/arg2p-kt/commit/8dcc31a48b57be058351a0f7814f6462f71adc0c))
+
+### Style improvements
+
+* **core:** a line of the bp test within the length ktlint allows ([8ab24cf](https://github.com/tuProlog/arg2p-kt/commit/8ab24cf73d515e0ce035cc08ec420feb3b7eebac))
+
+### Refactoring
+
+* **core:** an argument kept once in the context, looked up by the claim inside it ([b8d6e4f](https://github.com/tuProlog/arg2p-kt/commit/b8d6e4fd423a1ad9ec44aeb28f00715dde96958c))
+* **core:** every primitive of arg2p native to the machine ([f11a7c0](https://github.com/tuProlog/arg2p-kt/commit/f11a7c03d0a42489986ea9ec9bed584c08adb39a))
+* **core:** one index of the rules, in the parser ([05dec62](https://github.com/tuProlog/arg2p-kt/commit/05dec62eeeac695664c27397ffb6ba46ab5ace10))
+* **core:** query mode explores graphs built from rules alone, the leftovers of the old pipeline removed ([201922f](https://github.com/tuProlog/arg2p-kt/commit/201922fdf22076f87239613a0ab93bfe642b952b))
+* **core:** query mode explores the arguments alone, then what the steps changing the graph relate to them ([6463a4a](https://github.com/tuProlog/arg2p-kt/commit/6463a4a59227335490a467ce070e4a27fbeb9cba))
+* **core:** the builder and the search accumulate the parts of a support the same way, the empty rules built as the others ([a57f4f1](https://github.com/tuProlog/arg2p-kt/commit/a57f4f1c977c2fef67356d75836df616194cd33f))
+* **core:** the delegated-call interfaces retired, five list utilities on words ([4c165e8](https://github.com/tuProlog/arg2p-kt/commit/4c165e899e0d2c80db68ad178100f49857133699))
+* **core:** the forked primitives of the standard library deleted ([ad37306](https://github.com/tuProlog/arg2p-kt/commit/ad3730633280a3768231e1b91ea12a7f7c11bbaa))
+* **core:** the graph built of the arguments and their attacks alone, the arguments derived added when it is changed ([564d533](https://github.com/tuProlog/arg2p-kt/commit/564d533145b242dd3bd3ab9bac8c276700130d8d))
+* **core:** the graph extensions of a user apply in the order stated, whatever the API states them ([6f64171](https://github.com/tuProlog/arg2p-kt/commit/6f64171664c1bf5bd9aa11068afe8a8038209e9f))
+* **core:** the graph in the context by the identifiers of its arguments ([4e48d21](https://github.com/tuProlog/arg2p-kt/commit/4e48d213e525a8d842c77c7bbf09c51f81ac6d84))
+* **core:** the machine is the engine: the forked tuProlog resolution removed, every solver of arg2p runs on the machine ([4e9aa04](https://github.com/tuProlog/arg2p-kt/commit/4e9aa0423206a0290e92da1e4b90de720cb64e54))
+* **core:** the pipeline calls what the modules declare, the base modules depend on no extension ([21b2646](https://github.com/tuProlog/arg2p-kt/commit/21b2646c26d750a0d67137329edea62993cd0e07))
+* **core:** the primitives that were only there for the costs of the old engine back to Prolog ([48804bb](https://github.com/tuProlog/arg2p-kt/commit/48804bbd07cf3dd6da247594bf70358d9a235b74))
+* **core:** what the context knows of the model, in one place ([7aab0bc](https://github.com/tuProlog/arg2p-kt/commit/7aab0bcc24ef24625e95ea1d0b32448fd70c364e))
+* **parallel-solver:** the solutions of a goal computed as they are asked for, a graph for each statement in query mode ([5e9c999](https://github.com/tuProlog/arg2p-kt/commit/5e9c9996e84f595782a4e2f35d208fc375117876))
+* the codebase cleaned after the review: dead code gone, one owner for each decision, the model shared ([362b6d8](https://github.com/tuProlog/arg2p-kt/commit/362b6d84e0de86bfd2846733ce882655626f0c18))
+* what was written twice written once, in core ([13c0efb](https://github.com/tuProlog/arg2p-kt/commit/13c0efbfb99a3ec1938d6628473bcc251291e9c2))
+
 ## [0.23.0](https://github.com/tuProlog/arg2p-kt/compare/0.22.0...0.23.0) (2026-10-29)
 
 ### Features
