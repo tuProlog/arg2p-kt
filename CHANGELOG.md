@@ -1,3 +1,17 @@
+## [0.25.0](https://github.com/tuProlog/arg2p-kt/compare/0.24.0...0.25.0) (2026-11-05)
+
+### Features
+
+* the graph of a branch and of a cluster as arrays ([eef07f8](https://github.com/tuProlog/arg2p-kt/commit/eef07f88787c9c0f68d736fc37d3dccd3ba0c2da))
+
+### Bug Fixes
+
+* **python:** the check of the wheels reads the answers as a list ([1cfeec0](https://github.com/tuProlog/arg2p-kt/commit/1cfeec09988f7dbf395881bc82c4af6c70751e00))
+
+### Performance improvements
+
+* **lsp:** the graphs of the pages made from the compact graph ([#590](https://github.com/tuProlog/arg2p-kt/issues/590)) ([271a1d9](https://github.com/tuProlog/arg2p-kt/commit/271a1d9fb3b4b0a400358136133deb62d5e93044))
+
 ## [0.24.0](https://github.com/tuProlog/arg2p-kt/compare/0.23.0...0.24.0) (2026-11-05)
 
 ### Features
