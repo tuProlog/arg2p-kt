@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.Solutions
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.graphsOf
 import it.unibo.tuprolog.argumentation.parallel.federation.Site
@@ -71,6 +72,18 @@ class ClusterSolver internal constructor(
     /** The graph of each labelling of the theory (an array in JavaScript) */
     @JsName("graphs")
     fun graphArray(): Array<Graph> = graphs().toTypedArray()
+
+    /** The graph of each labelling of the theory as arrays (see [CompactGraph]): for a graph too large for [graphs] */
+    @JsExport.Ignore
+    @JsName("compactGraphsList")
+    fun compactGraphs(): List<CompactGraph> = graphsOf(solutions(LABELLINGS)) { solved.compactGraph }
+
+    /** The graph of each labelling of the theory as arrays (an array in JavaScript) */
+    @JsName("compactGraphs")
+    fun compactGraphArray(): Array<CompactGraph> = compactGraphs().toTypedArray()
+
+    /** The graph of the last solution given as arrays (see [CompactGraph]), none before the first */
+    fun compactGraph(): CompactGraph = solved.compactGraph
 
     /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
     fun graph(): Graph = solved.graph

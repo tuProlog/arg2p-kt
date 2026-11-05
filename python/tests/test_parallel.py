@@ -124,3 +124,14 @@ def test_a_connection_presents_the_code():
         while listening.peers != {admitted.id}:
             assert time.time() < deadline
             time.sleep(0.02)
+
+
+def test_a_compact_graph_of_a_cluster():
+    with ThreadedCluster(threads=2) as cluster:
+        cluster.load(THEORY)
+        solver = cluster.solver
+        (graph,) = solver.graphs()
+        (compact,) = solver.compact_graphs()
+        assert compact.size == len(graph.arguments)
+        assert len(compact.attackers) == len(graph.attacks)
+        assert sorted(compact.descriptor(it) for it in range(compact.size)) == sorted(it.descriptor for it in graph.arguments)

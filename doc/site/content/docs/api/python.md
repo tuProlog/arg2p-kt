@@ -104,7 +104,7 @@ stages of the last resolution.
 For a graph too large for these objects, `compact_graphs()` and `compact_graph()` give all it tells as arrays, with no object for
 an argument: an argument is a position in `conclusions`, `top_rules` and `labels`, and in the lists of `rules(p)`, `groundings(p)` and
 so on; `attackers`, `targets`, `on` and `attack_type_of` are parallel, as `supporters` and `supported`. `identifier(p)` and
-`descriptor(p)` name an argument as a graph does. It holds no reference to the solver.
+`descriptor(p)` name an argument as a graph does. It holds no reference to the solver. `compact_graph_at(branch)` gives the graph of a branch, and the solver of a cluster has `compact_graphs()` and `compact_graph()` as well.
 
 ---
 
