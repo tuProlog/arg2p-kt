@@ -1,3 +1,13 @@
+## [0.25.1](https://github.com/tuProlog/arg2p-kt/compare/0.25.0...0.25.1) (2026-11-05)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.4.0 ([#593](https://github.com/tuProlog/arg2p-kt/issues/593)) ([3cd1938](https://github.com/tuProlog/arg2p-kt/commit/3cd1938db36101308877622de9c4ff417f0fcf84))
+
+### Bug Fixes
+
+* **deps:** the extension and the solver page on @tuprolog/arg2p-ui 0.4.0 ([8a33df0](https://github.com/tuProlog/arg2p-kt/commit/8a33df01fd169450cf4a50a27a9933c363fda837))
+
 ## [0.25.0](https://github.com/tuProlog/arg2p-kt/compare/0.24.0...0.25.0) (2026-11-05)
 
 ### Features
