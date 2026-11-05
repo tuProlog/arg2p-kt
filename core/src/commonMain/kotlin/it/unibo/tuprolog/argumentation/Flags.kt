@@ -2,6 +2,8 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
+import it.unibo.tuprolog.argumentation.core.engine.vm.locked
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
@@ -119,7 +121,7 @@ class Flags private constructor(
             override val alias = ALIAS
 
             override val baseContent: Library
-                get() = Library.of(alias = ALIAS, clauses = theory())
+                get() = libraryOf(this@Flags.toString())
 
             override val baseFlags: Iterable<ArgsFlag<*, *>>
                 get() = emptyList()
@@ -127,6 +129,19 @@ class Flags private constructor(
 
     /** The facts stating the flags, as a theory */
     internal fun theory(): Theory = Theory.parse(toString(), TermValues.operators)
+
+    // The library of the facts [text], read once: solvers with the same flags share it, and its code (see SharedLibrary)
+    private fun libraryOf(text: String): Library =
+        locked(libraries) {
+            libraries[text] ?: run {
+                val plain = Library.of(alias = ALIAS, clauses = theory())
+                if (libraries.size >= LIBRARIES_KEPT) {
+                    plain
+                } else {
+                    SharedLibrary(plain, "$ALIAS:$text").also { libraries[text] = it }
+                }
+            }
+        }
 
     private fun value(
         flag: ArgsFlag<*, *>,
@@ -145,6 +160,8 @@ class Flags private constructor(
 
     companion object {
         internal const val ALIAS = "prolog.argumentation.flags"
+        private const val LIBRARIES_KEPT = 64
+        private val libraries = HashMap<String, Library>()
 
         /**
          * The flags of arg2p by default: none stated, every flag as the theory states it, or else as its profile

@@ -8,9 +8,9 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
+import it.unibo.tuprolog.argumentation.core.engine.vm.tag
+import it.unibo.tuprolog.argumentation.core.engine.vm.word
 import it.unibo.tuprolog.argumentation.core.runtime.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.core.runtime.collectVariables
 import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy

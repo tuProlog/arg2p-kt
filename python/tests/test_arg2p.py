@@ -146,7 +146,7 @@ def test_flags_are_facts():
     assert str(Flags.none().argument_labelling_mode(Semantics.PREFERRED)) == "argumentLabellingMode(preferred).\n"
     assert str(Flags.none().graph_extensions().query_mode(True)) == "graphExtension(none).\nqueryMode.\n"
     assert Flags.none().graph_build_mode(Profile.ABA_PLUS) == Flags.parse("graphBuildMode(aba_plus).")
-    assert "graphBuildMode(aspic_plus)." in str(Flags.defaults())
+    assert str(Flags.defaults()) == ""
 
 
 def test_the_conflict_model_takes_several_parts():

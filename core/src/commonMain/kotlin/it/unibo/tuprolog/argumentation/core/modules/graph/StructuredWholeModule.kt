@@ -31,6 +31,12 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             buildArgumentLabelling,
             buildStatementLabelling.
 
+        %! computeStatementLabels(-In, -Out, -Und)
+        %  As computeGlobalAcceptance/0, with the labels of the statements, one solution per labelling.
+        computeStatementLabels(StatIn, StatOut, StatUnd) :-
+            computeGlobalAcceptance,
+            graphStore::statementLabelling(StatIn, StatOut, StatUnd).
+
         %! computeGlobalAcceptance(-Graph, -ArgumentLabels, -StatementLabels)
         %  As computeGlobalAcceptance/0, with the graph ([Arguments, Attacks, Supports]) and the labels ([In, Out, Und]) collected.
         computeGlobalAcceptance([Arguments, Attacks, Supports], [ArgsIn, ArgsOut, ArgsUnd], [StatIn, StatOut, StatUnd]) :-

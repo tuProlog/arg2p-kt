@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.listArg
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary

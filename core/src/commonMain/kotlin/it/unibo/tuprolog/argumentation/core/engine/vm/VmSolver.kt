@@ -169,10 +169,14 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
                         machine.environment?.let { currentContext = currentContext.copy(environment = it) }
                         if (!found) {
                             over = true
+                            machine.release()
                             return Solution.no(goal)
                         }
                         val bindings = solutions.next()
-                        if (machine.cpTop == 0) over = true
+                        if (machine.cpTop == 0) {
+                            over = true
+                            machine.release()
+                        }
                         val reported = bindings.filterKeys { !it.isAnonymous && !(hideWildcards && it.isWildcard) }
                         return Solution.yes(goal, Substitution.unifier(reported))
                     } catch (halt: Machine.Halt) {

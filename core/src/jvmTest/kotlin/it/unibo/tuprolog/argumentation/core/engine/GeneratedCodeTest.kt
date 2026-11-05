@@ -4,7 +4,6 @@ import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -171,7 +170,6 @@ class GeneratedCodeTest {
             "city(3, R, _)",
         )
 
-    @Ignore // (generated code is off: see Program.GENERATE_CODE)
     @Test
     fun answersDoNotChange() {
         val before = goals.map(::answers)
@@ -207,6 +205,63 @@ class GeneratedCodeTest {
             )
         for ((goal, expected) in goals) {
             val fresh = solverWithTheory(theory)
+            assertEquals(
+                expected,
+                fresh
+                    .solve(Struct.parse(goal, fresh.operators))
+                    .first()
+                    .substitution.entries
+                    .firstOrNull { it.key.name == "L" }
+                    ?.value
+                    .toString(),
+                goal,
+            )
+        }
+    }
+
+    @Test
+    fun aLaterArgumentNarrowsWhatTheFirstLeaves() {
+        val theory =
+            (1..40).joinToString("\n") { "same(a, k$it, $it)." } +
+                "\nsame(a, k7, extra).\nsame(b, k7, other).\nsame(a, _, open).\n" +
+                "asked(0) :- !.\nasked(N) :- same(a, k7, _), !, M is N - 1, asked(M).\n"
+        val solver = solverWithTheory(theory)
+
+        fun answers(goal: String) =
+            solver
+                .solve(Struct.parse("findall(X, $goal, L)", solver.operators))
+                .first()
+                .substitution.entries
+                .first { it.key.name == "L" }
+                .value
+                .toString()
+
+        val expected = "[7, extra, open]"
+        assertEquals(expected, answers("same(a, k7, X)"))
+        assertEquals(expected, answers("(asked(100), same(a, k7, X))"))
+        assertEquals("[other]", answers("same(b, k7, X)"))
+        assertEquals("[open]", answers("same(a, nothing, X)"))
+        assertEquals("[]", answers("same(c, k7, X)"))
+    }
+
+    @Test
+    fun aCallRunsOnTheClausesAsTheyWereWhenItWasMade() {
+        val many = (1..12).joinToString(", ") { "assertz(s($it, k${it % 3}))" }
+        for ((goal, expected) in listOf(
+            "assertz(p(1)), assertz(p(2)), assertz(p(3)), findall(X, (p(X), retract(p(X))), L)" to "[1, 2, 3]",
+            "assertz(p(1)), assertz(p(2)), assertz(p(3)), findall(X, (p(X), retract(p(X))), _), findall(X, p(X), L)" to "[]",
+            "assertz(p(1)), assertz(p(2)), findall(X, (p(X), assertz(p(X))), L)" to "[1, 2]",
+            "assertz(p(1)), assertz(p(2)), findall(X, (p(X), assertz(p(X))), _), findall(X, p(X), L)" to "[1, 2, 1, 2]",
+            "assertz(p(1)), assertz(p(2)), findall(X, (p(X), asserta(p(0))), L)" to "[1, 2]",
+            "assertz(p(1)), assertz(p(2)), findall(X, (p(X), asserta(p(0))), _), findall(X, p(X), L)" to "[0, 0, 1, 2]",
+            "assertz(p(1)), assertz(p(2)), assertz(p(3)), findall(X, (p(X), retract(p(3))), L)" to "[1]",
+            "assertz(p(1)), assertz(p(2)), findall(X-Y, (p(X), p(Y)), L)" to "['-'(1, 1), '-'(1, 2), '-'(2, 1), '-'(2, 2)]",
+            "$many, findall(X, (s(X, k1), retract(s(X, k1))), L)" to "[1, 4, 7, 10]",
+            "$many, findall(X, (s(X, k1), assertz(s(X, k1))), L)" to "[1, 4, 7, 10]",
+            "$many, findall(X, (s(X, _), retract(s(X, _)), X > 10), L)" to "[11, 12]",
+            "$many, findall(K, (s(2, K), asserta(s(2, other))), L)" to "[k2]",
+        )) {
+            val fresh = solverWithTheory("")
             assertEquals(
                 expected,
                 fresh

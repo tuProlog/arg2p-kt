@@ -47,7 +47,9 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         %! buildLabelSets(-StatIn, -StatOut, -StatUnd)
         %  The statements of the theory labelled IN, OUT and UND.
         buildLabelSets(StatIn, StatOut, StatUnd) :-
-            buildLabelSets([StatIn, StatOut, StatUnd], _).
+            context_reset,
+            parser:::convertAllRules,
+            structuredWhole::computeStatementLabels(StatIn, StatOut, StatUnd).
 
         %! buildLabelSets
         %  The labelling of the theory, printed: the graph, the labels of the arguments and those of the statements.

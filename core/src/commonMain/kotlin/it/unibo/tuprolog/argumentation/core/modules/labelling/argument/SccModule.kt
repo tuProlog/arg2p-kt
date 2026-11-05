@@ -77,8 +77,9 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
 
         reachable(_, Branch, Branch).
         reachable(Scc, Branch, State) :-
-            findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
             undecidedCandidates(Scc, Branch, Candidates),
+            Candidates = [_ | _],
+            findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
             member(IdX, Candidates),
             utils::sortDescending([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),

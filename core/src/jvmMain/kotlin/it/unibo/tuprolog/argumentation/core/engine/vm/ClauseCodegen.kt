@@ -63,11 +63,40 @@ internal actual object ClauseCodegen {
             Op.IDENTICAL, Op.IDENTICAL_C -> 4
             Op.ARG -> 5
             Op.FUNCTOR -> 6
+            Op.PUT_Y_VAL2, Op.GET_Y_VAR2, Op.GET_CONST2, Op.GET_CONST2_PROCEED, Op.PUT_Y_VAL_DEALLOCATE_EXECUTE, Op.PUT_Y_VAL_CALL -> 5
+            Op.PUT_Y_VAR_CALL -> 6
+            Op.GET_LIST2_EXECUTE, Op.GET_LIST_VX_EXECUTE, Op.GET_LIST2_GET_X_VAL, Op.GET_LIST2_GET_X_VAL_PROCEED -> 10
+            Op.GET_LIST2_GET_LIST2 -> 15
+            Op.GET_X_VAL_PROCEED, Op.GET_CONST_PROCEED, Op.CUT_CALL -> 3
+            Op.PUT_STR2, Op.GET_STR_VV -> 9
+            Op.PUT_LIST2 -> 8
+            Op.RESTORE_SCOPE_RETURN -> 1
+            Op.GET_STRN -> 4 + code[at + 3] * 3
+            Op.GET_CONST_CUT_PROCEED -> 4
+            Op.GET_STR2_GET_STR2, Op.PUT_STR2_PUT_STR2 -> 18
+            Op.PUT_Y_VAL3_DEALLOCATE_EXECUTE -> 10
+            Op.PUT_Y_VAL2_CALL, Op.PUT_Y_VAL2_DEALLOCATE_EXECUTE, Op.ALLOCATE_GET_Y_VAR2 -> 7
+            Op.GET_X_VAR_TYPE_X -> 5
+            // (the fast forms: the general one follows, and is compiled)
+            Op.COMPARE_VV, Op.COMPARE_VC, Op.ARG_TO_SLOT -> 5
+            Op.IS_VC -> 4
+            Op.ARG_CALL -> 1
             else -> 0
         }
 
     private fun terminal(op: Int) =
-        op == Op.EXECUTE ||
+        op == Op.PUT_Y_VAL_DEALLOCATE_EXECUTE ||
+            op == Op.GET_LIST2_EXECUTE ||
+            op == Op.GET_LIST_VX_EXECUTE ||
+            op == Op.GET_LIST2_GET_X_VAL_PROCEED ||
+            op == Op.GET_X_VAL_PROCEED ||
+            op == Op.GET_CONST_PROCEED ||
+            op == Op.GET_CONST2_PROCEED ||
+            op == Op.RESTORE_SCOPE_RETURN ||
+            op == Op.GET_CONST_CUT_PROCEED ||
+            op == Op.PUT_Y_VAL3_DEALLOCATE_EXECUTE ||
+            op == Op.PUT_Y_VAL2_DEALLOCATE_EXECUTE ||
+            op == Op.EXECUTE ||
             op == Op.DEALLOCATE_EXECUTE ||
             op == Op.RETURN ||
             op == Op.PROCEED ||
@@ -91,7 +120,18 @@ internal actual object ClauseCodegen {
             val op = code[at]
             val next = at + n
             when (op) {
-                Op.CALL, Op.CALL_TERM, Op.ARITH_IS, Op.ARITH_CMP, Op.ARG, Op.FUNCTOR -> entries += next
+                Op.CALL,
+                Op.CALL_TERM,
+                Op.ARITH_IS,
+                Op.ARITH_CMP,
+                Op.ARG,
+                Op.FUNCTOR,
+                Op.PUT_Y_VAL_CALL,
+                Op.PUT_Y_VAR_CALL,
+                Op.CUT_CALL,
+                Op.PUT_Y_VAL2_CALL,
+                ->
+                    entries += next
                 Op.TRY_ELSE -> {
                     entries += code[at + 1]
                     furthest = maxOf(furthest, code[at + 1])
@@ -418,7 +458,7 @@ internal actual object ClauseCodegen {
                     sp++
                 }
                 Op.E_CONST -> {
-                    int(Words.payload(operand))
+                    int(payload(operand))
                     byte(0x85)
                     store(sp++)
                 }
@@ -505,6 +545,34 @@ internal actual object ClauseCodegen {
         jump(failing, Body.FAILURE)
     }
 
+    // The first instruction of those merged, at [at]: GET_LIST2, GET_STR2, PUT_STR2
+    private fun Body.getList2(
+        code: IntArray,
+        at: Int,
+    ) {
+        check("jGetList", code[at + 1])
+        sub(code[at + 2], code[at + 3], code[at + 4])
+        sub(code[at + 5], code[at + 6], code[at + 7])
+    }
+
+    private fun Body.getStr2(
+        code: IntArray,
+        at: Int,
+    ) {
+        check("jGetStructure", code[at + 1], code[at + 2])
+        sub(code[at + 3], code[at + 4], code[at + 5])
+        sub(code[at + 6], code[at + 7], code[at + 8])
+    }
+
+    private fun Body.putStr2(
+        code: IntArray,
+        at: Int,
+    ) {
+        helper("jBuildStructure", "V", code[at + 1], code[at + 2])
+        sub(code[at + 3], code[at + 4], code[at + 5])
+        sub(code[at + 6], code[at + 7], code[at + 8])
+    }
+
     private fun Body.instruction(
         code: IntArray,
         at: Int,
@@ -584,6 +652,118 @@ internal actual object ClauseCodegen {
             Op.IDENTICAL_C -> check("jIdenticalConstant", a, b, code[at + 3])
             Op.ARG -> continuing("jArg", next, at)
             Op.FUNCTOR -> continuing("jFunctor", next, at)
+            Op.PUT_Y_VAL2 -> {
+                helper("jPutYVal", "V", a, b)
+                helper("jPutYVal", "V", code[at + 3], code[at + 4])
+            }
+            Op.GET_Y_VAR2 -> {
+                helper("jGetYVar", "V", a, b)
+                helper("jGetYVar", "V", code[at + 3], code[at + 4])
+            }
+            Op.GET_CONST2, Op.GET_CONST2_PROCEED -> {
+                check("jGetConst", a, b)
+                check("jGetConst", code[at + 3], code[at + 4])
+                if (code[at] == Op.GET_CONST2_PROCEED) returnFrom("jContinuation")
+            }
+            Op.PUT_Y_VAL_DEALLOCATE_EXECUTE -> {
+                helper("jPutYVal", "V", a, b)
+                helper("jDeallocate", "V")
+                returnFrom("jExecute", code[at + 3], code[at + 4])
+            }
+            Op.PUT_Y_VAL_CALL -> {
+                helper("jPutYVal", "V", a, b)
+                continuing("jCall", next, code[at + 3], code[at + 4])
+            }
+            Op.PUT_Y_VAR_CALL -> {
+                helper("jPutYVar", "V", a, b, code[at + 3])
+                continuing("jCall", next, code[at + 4], code[at + 5])
+            }
+            Op.GET_LIST2_EXECUTE, Op.GET_LIST_VX_EXECUTE -> {
+                getList2(code, at)
+                returnFrom("jExecute", code[at + 8], code[at + 9])
+            }
+            Op.GET_LIST2_GET_X_VAL, Op.GET_LIST2_GET_X_VAL_PROCEED -> {
+                getList2(code, at)
+                check("jGetXVal", code[at + 8], code[at + 9])
+                if (code[at] == Op.GET_LIST2_GET_X_VAL_PROCEED) returnFrom("jContinuation")
+            }
+            Op.GET_LIST2_GET_LIST2 -> {
+                getList2(code, at)
+                getList2(code, at + 7)
+            }
+            Op.GET_X_VAL_PROCEED -> {
+                check("jGetXVal", a, b)
+                returnFrom("jContinuation")
+            }
+            Op.GET_CONST_PROCEED -> {
+                check("jGetConst", a, b)
+                returnFrom("jContinuation")
+            }
+            Op.CUT_CALL -> {
+                helper("jCut", "V")
+                continuing("jCall", next, a, b)
+            }
+            Op.PUT_STR2 -> putStr2(code, at)
+            Op.PUT_LIST2 -> {
+                helper("jBuildList", "V", a)
+                sub(b, code[at + 3], code[at + 4])
+                sub(code[at + 5], code[at + 6], code[at + 7])
+            }
+            Op.GET_STR_VV -> getStr2(code, at)
+            Op.RESTORE_SCOPE_RETURN -> {
+                helper("jRestoreScope", "V")
+                helper("jDeallocate", "V")
+                returnFrom("jContinuation")
+            }
+            Op.GET_STRN -> {
+                check("jGetStructure", a, b)
+                var position = at + 4
+                repeat(code[at + 3]) {
+                    sub(code[position], code[position + 1], code[position + 2])
+                    position += 3
+                }
+            }
+            Op.GET_CONST_CUT_PROCEED -> {
+                check("jGetConst", a, b)
+                helper("jCutNeck", "V")
+                returnFrom("jContinuation")
+            }
+            Op.GET_STR2_GET_STR2 -> {
+                getStr2(code, at)
+                getStr2(code, at + 9)
+            }
+            Op.PUT_STR2_PUT_STR2 -> {
+                putStr2(code, at)
+                putStr2(code, at + 9)
+            }
+            Op.PUT_Y_VAL3_DEALLOCATE_EXECUTE -> {
+                helper("jPutYVal", "V", a, b)
+                helper("jPutYVal", "V", code[at + 3], code[at + 4])
+                helper("jPutYVal", "V", code[at + 6], code[at + 7])
+                helper("jDeallocate", "V")
+                returnFrom("jExecute", code[at + 8], code[at + 9])
+            }
+            Op.PUT_Y_VAL2_CALL -> {
+                helper("jPutYVal", "V", a, b)
+                helper("jPutYVal", "V", code[at + 3], code[at + 4])
+                continuing("jCall", next, code[at + 5], code[at + 6])
+            }
+            Op.PUT_Y_VAL2_DEALLOCATE_EXECUTE -> {
+                helper("jPutYVal", "V", a, b)
+                helper("jPutYVal", "V", code[at + 3], code[at + 4])
+                helper("jDeallocate", "V")
+                returnFrom("jExecute", code[at + 5], code[at + 6])
+            }
+            Op.ALLOCATE_GET_Y_VAR2 -> {
+                helper("jAllocate", "V", a)
+                helper("jGetYVar", "V", code[at + 3], code[at + 4])
+                helper("jGetYVar", "V", code[at + 5], code[at + 6])
+            }
+            Op.GET_X_VAR_TYPE_X -> {
+                helper("jMove", "V", a, b)
+                check("jTypeX", code[at + 3], code[at + 4])
+            }
+            Op.COMPARE_VV, Op.COMPARE_VC, Op.ARG_TO_SLOT, Op.IS_VC, Op.ARG_CALL -> Unit
             else -> throw IllegalStateException("not generated: ${code[at]}")
         }
     }

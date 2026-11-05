@@ -9,12 +9,10 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
 import it.unibo.tuprolog.core.TermComparator
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
+import org.gciatto.kt.math.BigInteger
 
 /**
  * A primitive of the standard library run on the words of the machine: [FAILED][Machine.FAILED],
@@ -186,10 +184,25 @@ internal object StdlibNatives {
             else -> 4
         }
 
+    private fun integerOrder(
+        m: Machine,
+        x: Int,
+        y: Int,
+    ): Int {
+        val huge = (tag(x) == BIG && payload(x) < 0) || (tag(y) == BIG && payload(y) < 0)
+        if (!huge) return longOf(m, x).compareTo(longOf(m, y))
+        return bigOf(m, x).compareTo(bigOf(m, y))
+    }
+
+    private fun bigOf(
+        m: Machine,
+        w: Int,
+    ): BigInteger = if (tag(w) == INT) BigInteger.of(payload(w).toLong()) else m.program.bigInteger(payload(w))
+
     private fun longOf(
         m: Machine,
         w: Int,
-    ): Long = if (tag(w) == INT) payload(w).toLong() else m.program.bigs[payload(w)]
+    ): Long = if (tag(w) == INT) payload(w).toLong() else m.program.bigInteger(payload(w)).toLong()
 
     /**
      * The terms in the standard order of tuProlog (see [TermComparator.DefaultComparator]): negative, zero, positive,
@@ -213,7 +226,7 @@ internal object StdlibNatives {
             if (rx != ry) return rx - ry
             when (rx) {
                 1 -> return TermComparator.RealComparator.compare(program.floats[payload(x)], program.floats[payload(y)])
-                2 -> return longOf(m, x).compareTo(longOf(m, y))
+                2 -> return integerOrder(m, x, y)
                 3 -> return m.atomOrder(payload(x), payload(y))
                 else -> {
                     val a = payload(x)
@@ -250,8 +263,20 @@ internal object StdlibNatives {
         val t = tag(term)
         if (t == REF) {
             val name = m.deref(m.regs[1])
-            if (tag(name) != ATOM || tag(arity) != INT || payload(arity) <= 0) return NOT_NATIVE
-            if (name == m.program.dotWord) return NOT_NATIVE
+            if (tag(arity) != INT || payload(arity) < 0) return NOT_NATIVE
+            if (payload(arity) == 0) {
+                return when (tag(name)) {
+                    ATOM, INT, FLT, BIG -> answer(m.unify(term, name))
+                    else -> NOT_NATIVE
+                }
+            }
+            if (tag(name) != ATOM) return NOT_NATIVE
+            if (name == m.program.dotWord) {
+                if (payload(arity) != 2) return NOT_NATIVE
+                val cell = m.alloc(0)
+                m.pushVoids(2)
+                return answer(m.unify(term, word(LIST, cell)))
+            }
             val n = payload(arity)
             val h = m.alloc(1)
             m.heap[h] = word(FUN, m.program.functor(payload(name), n))

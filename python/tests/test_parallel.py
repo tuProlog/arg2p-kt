@@ -98,7 +98,7 @@ def test_the_flags_of_a_cluster_change():
     cluster.load(THEORY)
     flags = Flags.defaults().argument_labelling_mode(Semantics.COMPLETE).query_mode(False)
     cluster.flags = flags
-    assert "queryMode" not in str(cluster.flags.jvm().toString())
+    assert "queryMode(off)." in str(cluster.flags.jvm().toString())
     expected = Arg2p.of(THEORY, flags).solve("buildLabelSets(In, Out, Und)").next()
     assert str(expected) == str(cluster.solver.solve("buildLabelSets(In, Out, Und)").next())
 

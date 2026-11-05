@@ -21,6 +21,29 @@ interface NativePrimitive : Primitive {
 }
 
 /**
+ * A primitive on a goal the machine holds with its arguments in the registers, no term of it built ([module]: the word of
+ * the atom it comes with)
+ */
+interface RegisterGoalPrimitive {
+    fun callOnRegisters(
+        call: RegisterGoalCall,
+        module: Int,
+    ): Int
+}
+
+/** What a [RegisterGoalPrimitive] finds in the machine */
+interface RegisterGoalCall : NativeCall {
+    /** The goal as a term on the heap, if it is needed */
+    fun goalOnRegisters(): Int
+
+    /** The goal entered against [libraries], as [NativeCall.inline] */
+    fun inlineOnRegisters(
+        libraries: it.unibo.tuprolog.solve.library.Runtime,
+        theoryVisible: Boolean,
+    ): Int
+}
+
+/**
  * The base of a primitive written once, against the [NativeCall]: the machine runs [call] on its words, any other
  * solver runs it over the terms of the request ([solve], which a primitive with a better term-level resolution
  * may override). The helpers of `NativeCalls.kt` read the arguments, reply and give answers.

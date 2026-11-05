@@ -8,10 +8,10 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.Words.INT
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.LIST
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.REF
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.STR
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ref
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.tag
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words.word
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
+import it.unibo.tuprolog.argumentation.core.engine.vm.ref
+import it.unibo.tuprolog.argumentation.core.engine.vm.tag
+import it.unibo.tuprolog.argumentation.core.engine.vm.word
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
@@ -36,7 +36,7 @@ class Record internal constructor(
     internal val words: IntArray,
     /** The root word, relative to [words] */
     internal val root: Int,
-    source: Term?,
+    private val source: Term?,
     /** The functor of the root in place of the one in [words] (see [named]), 0 for that one */
     internal val functor: Int = 0,
 ) {
@@ -44,12 +44,16 @@ class Record internal constructor(
     internal var identifier: Int = -1
 
     /** The term, decoded once */
-    val term: Term by lazy(LazyThreadSafetyMode.NONE) { source ?: decode(root, HashMap()) }
+    val term: Term get() = decoded ?: (source ?: decode(root, HashMap())).also { decoded = it }
+    private var decoded: Term? = null
 
     /** The clause: `Head :- Body` read as a rule, anything else as a fact */
-    val clause: Clause by lazy(LazyThreadSafetyMode.NONE) {
+    val clause: Clause get() = clauseRead ?: readClause().also { clauseRead = it }
+    private var clauseRead: Clause? = null
+
+    private fun readClause(): Clause {
         val t = term
-        if (t is Struct && t.functor == ":-" && t.arity == 2) Rule.of(t[0].castToStruct(), t[1]) else Fact.of(t.castToStruct())
+        return if (t is Struct && t.functor == ":-" && t.arity == 2) Rule.of(t[0].castToStruct(), t[1]) else Fact.of(t.castToStruct())
     }
 
     /** Whether the record is `Head :- Body` */
@@ -73,10 +77,13 @@ class Record internal constructor(
      * The record as a key: the same for two terms up to the names of their variables, however they are laid out (in the
      * words of one program)
      */
-    internal val key: RecordKey by lazy(LazyThreadSafetyMode.NONE) {
+    internal val key: RecordKey get() = keyRead ?: readKey().also { keyRead = it }
+    private var keyRead: RecordKey? = null
+
+    private fun readKey(): RecordKey {
         val flat = Flattened(program!!, words)
         flat.add(root)
-        RecordKey(flat.items.copyOf(flat.size))
+        return RecordKey(flat.items.copyOf(flat.size))
     }
 
     private fun decode(
@@ -88,7 +95,7 @@ class Record internal constructor(
             REF -> variables.getOrPut(payload(w)) { Var.of("V") }
             ATOM -> Atom.of(program.atoms[payload(w)])
             INT -> Integer.of(payload(w))
-            BIG -> Integer.of(program.bigs[payload(w)])
+            BIG -> Integer.of(program.bigInteger(payload(w)))
             FLT -> program.floats[payload(w)]
             STR -> {
                 val a = payload(w)
@@ -157,7 +164,7 @@ class Record internal constructor(
                             a
                         },
                     )
-                is Integer -> program.intWord(term.value.toLong())
+                is Integer -> program.integerWord(term.value)
                 is Real -> program.floatWord(term)
                 is Atom -> program.atomWord(term.value)
                 is Cons -> {

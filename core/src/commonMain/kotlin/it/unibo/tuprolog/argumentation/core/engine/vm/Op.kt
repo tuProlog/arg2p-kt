@@ -82,8 +82,70 @@ internal object Op {
     const val ARG = 56
     const val FUNCTOR = 57
 
+    // Before the call of arg/3 with its arguments in the registers: done here, skipping the call, with an index and a compound
+    const val ARG_CALL = 59
+
     // The cut of a clause with no frame: no goal was called before it, the barrier is still where the call left it
     const val CUT_NECK = 58
+
+    // Pairs merged, the operands of the first and then of the second, by those executed most (see Compiler.merging)
+    const val PUT_Y_VAL2 = 60
+    const val PUT_Y_VAL_DEALLOCATE_EXECUTE = 61
+    const val GET_Y_VAR2 = 62
+    const val PUT_Y_VAR_CALL = 63
+    const val GET_LIST2_EXECUTE = 64
+    const val GET_LIST2_GET_LIST2 = 65
+    const val GET_X_VAL_PROCEED = 66
+    const val GET_CONST_PROCEED = 67
+
+    const val GET_CONST2 = 72
+    const val GET_CONST2_PROCEED = 73
+    const val GET_LIST2_GET_X_VAL = 74
+    const val GET_LIST2_GET_X_VAL_PROCEED = 75
+    const val PUT_Y_VAL_CALL = 76
+
+    // A structure of two arguments, or a list cell, built whole: the functor, the register, the two as sub-instructions
+    const val PUT_STR2 = 77
+    const val PUT_LIST2 = 78
+
+    // The end of a call in another scope: RESTORE_SCOPE and RETURN
+    const val RESTORE_SCOPE_RETURN = 68
+
+    // Arithmetic on small integers in one instruction, ARITH_CMP or ARITH_IS following it for anything else: a comparison
+    // (the kind, two operands or an operand and a value, the words of what follows), X is Y + c (the operand, c, the words
+    // of what follows, whose first operands are the target)
+    const val COMPARE_VV = 69
+    const val COMPARE_VC = 70
+    const val IS_VC = 71
+
+    // Module::Goal with the arguments of Goal in the registers: the functor of ::/2 or :::/2, the word of the module, the
+    // functor of Goal, its arity; the second as a last call (1 to deallocate first)
+    const val MODULE_CALL = 79
+    const val MODULE_EXECUTE = 80
+
+    // A structure of any arity: the functor, the register, the arity, as many sub-instructions (see GET_STR2)
+    const val GET_STRN = 81
+
+    // arg/3 with a first occurrence for a slot as its value: done here, the slot set, skipping the words given (the arguments
+    // put and the call, for what is left to the builtin), when it has an index and a compound (the two as operands)
+    const val ARG_TO_SLOT = 82
+
+    // GET_LIST2 with a value and a new temporary, then the last call of EXECUTE, as an append has it (the same operands)
+    const val GET_LIST_VX_EXECUTE = 84
+
+    // GET_STR2 with two new temporaries (the same operands)
+    const val GET_STR_VV = 85
+
+    // More pairs and runs merged. An opcode absorbed in the middle stays in the code, skipped over
+    const val GET_CONST_CUT_PROCEED = 86
+    const val CUT_CALL = 87
+    const val GET_STR2_GET_STR2 = 88
+    const val PUT_STR2_PUT_STR2 = 89
+    const val PUT_Y_VAL3_DEALLOCATE_EXECUTE = 90
+    const val PUT_Y_VAL2_CALL = 91
+    const val PUT_Y_VAL2_DEALLOCATE_EXECUTE = 92
+    const val ALLOCATE_GET_Y_VAR2 = 93
+    const val GET_X_VAR_TYPE_X = 94
 
     // From here on, an instruction stands for an entry of a clause compiled (see Program.compileHot)
     const val COMPILED = 1 shl 16

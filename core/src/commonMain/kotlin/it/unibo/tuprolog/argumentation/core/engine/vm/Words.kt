@@ -6,7 +6,6 @@ package it.unibo.tuprolog.argumentation.core.engine.vm
  * variable is a cell that refers to itself while unbound. Ints are plain in Kotlin/JS too: a 32-bit word keeps the
  * machine the same on every target.
  */
-@Suppress("NOTHING_TO_INLINE")
 internal object Words {
     const val TAG_BITS = 3
     const val TAG_MASK = (1 shl TAG_BITS) - 1
@@ -38,18 +37,23 @@ internal object Words {
     const val INT_MIN = -(1 shl 28)
     const val INT_MAX = (1 shl 28) - 1
 
-    inline fun tag(word: Int): Int = word and TAG_MASK
-
-    inline fun payload(word: Int): Int = word shr TAG_BITS
-
-    inline fun word(
-        tag: Int,
-        payload: Int,
-    ): Int = (payload shl TAG_BITS) or tag
-
-    inline fun ref(address: Int): Int = word(REF, address)
-
-    inline fun int(value: Int): Int = word(INT, value)
-
     fun fitsInt(value: Long): Boolean = value in INT_MIN..INT_MAX
 }
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun tag(word: Int): Int = word and Words.TAG_MASK
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun payload(word: Int): Int = word shr Words.TAG_BITS
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun word(
+    tag: Int,
+    payload: Int,
+): Int = (payload shl Words.TAG_BITS) or tag
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun ref(address: Int): Int = word(Words.REF, address)
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun smallInt(value: Int): Int = word(Words.INT, value)

@@ -33,6 +33,8 @@ object RuleAnnotations {
         theory: Theory,
         text: String,
     ): Theory {
+        // (the identifiers are in comments: with none, the text need not be read again)
+        if ('%' !in text) return theory
         val identifiers = identifiers(text)
         val clauses = theory.clauses.toList()
         // the clauses are those of the full stops: if they are not (a theory not parsed from text), nothing is tagged

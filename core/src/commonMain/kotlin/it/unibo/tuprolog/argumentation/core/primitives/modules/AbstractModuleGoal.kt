@@ -3,6 +3,8 @@ package it.unibo.tuprolog.argumentation.core.primitives.modules
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalCall
+import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalPrimitive
 import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
@@ -27,7 +29,8 @@ import it.unibo.tuprolog.solve.primitive.Solve
 internal abstract class AbstractModuleGoal(
     private val loader: DynamicLoader,
 ) : PrimitiveWithSignature,
-    NativePrimitive {
+    NativePrimitive,
+    RegisterGoalPrimitive {
     /** What the call does before its goal is solved, in [module]; [request] made only if it is needed */
     protected abstract fun enter(
         module: Module,
@@ -50,6 +53,19 @@ internal abstract class AbstractModuleGoal(
         val module = loader.modules.of(moduleName, request)
         enter(module, request)
         return call.inline(goal, module.libraries, theoryVisible = false)
+    }
+
+    // The machine with the arguments of the goal in the registers, as a known module and goal are compiled: no term of them
+    override fun callOnRegisters(
+        call: RegisterGoalCall,
+        module: Int,
+    ): Int {
+        val moduleName = call.atomName(module)
+        if (moduleName == USER) return call.inlineOnRegisters(call.rootLibraries, theoryVisible = true)
+        val request = { Solve.Request(signature, listOf(call.term(module), call.term(call.goalOnRegisters())), call.context) }
+        val entered = loader.modules.of(moduleName, request)
+        enter(entered, request)
+        return call.inlineOnRegisters(entered.libraries, theoryVisible = false)
     }
 
     // The module and the goal of the call, checked
