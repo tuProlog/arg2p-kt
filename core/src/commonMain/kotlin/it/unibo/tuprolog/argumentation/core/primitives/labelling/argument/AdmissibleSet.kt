@@ -29,6 +29,21 @@ internal fun AttackGraph.defended(
 }
 
 /**
+ * admissibleWithin(+Scc): every attacker of an IN argument of the component Scc is attacked by an IN argument other
+ * than itself. In a search one component at a time this is admissibleSet: the IN arguments of earlier components were
+ * checked when their component was, their attackers are in their own or earlier components, labelled for good, and
+ * forcing arguments IN later only adds defenders.
+ */
+internal object AdmissibleWithin : AbstractNativePrimitive(Signature("admissibleWithin", 1)) {
+    override fun call(call: NativeCall): Int {
+        val inIds = call.labelledIds("in")
+        val graph = call.attackGraph()
+        for (id in call.idsArg(0, signature)) if (id in inIds && !graph.defended(id, inIds)) return call.reply(false)
+        return call.reply(true)
+    }
+}
+
+/**
  * admissibleSet: every attacker of an IN argument is attacked by an IN argument other than itself.
  * admissibleSet(+Ids): every attacker of an IN argument, or of an argument in Ids, is attacked by one of them other
  * than itself (the arguments in Ids taken as IN).

@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.GroundedFixpoint
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.PropagateFrom
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object GroundedModule : PrologModule("prolog.argumentation.graph.labelling.grounded", "grounded") {
     override val primitives: Map<Signature, Primitive>
-        get() = mapOf(GroundedFixpoint.signature to GroundedFixpoint)
+        get() = listOf(GroundedFixpoint, PropagateFrom).associateBy { it.signature }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -25,5 +26,9 @@ object GroundedModule : PrologModule("prolog.argumentation.graph.labelling.groun
         %  The grounded labelling, in the active context.
         argumentLabelling :-
             groundedFixpoint.
+
+        %! propagateFrom(+Id)
+        %  In a context labelled with a grounded fixpoint, the UND argument Id labelled IN and the fixpoint extended
+        %  from it alone: the labels argumentLabelling would give after unlabelling UND and labelling Id IN.
         """.trimIndent()
 }
