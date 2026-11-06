@@ -234,6 +234,45 @@ class SemanticsReferenceTest {
             ),
         )
 
+    // The search of the SCC-recursive semantics splits a component by what is decided, and each piece again on arrival:
+    // e1 (against e2) makes c0 OUT, which splits {c0, p, q, a1, a2, k, b1, b2} into {p, q} and the rest; q then makes k
+    // OUT, which splits the rest into {b1, b2} and {a1, a2} (every argument losing an attacker keeps an UND one)
+    @Test
+    fun componentsSplitTwice() {
+        val e1 = 0
+        val e2 = 1
+        val c0 = 2
+        val p = 3
+        val q = 4
+        val a1 = 5
+        val a2 = 6
+        val k = 7
+        val b1 = 8
+        val b2 = 9
+        check(
+            listOf(
+                10 to
+                    setOf(
+                        e1 to e2,
+                        e2 to e1,
+                        e1 to c0,
+                        c0 to p,
+                        p to q,
+                        q to p,
+                        q to k,
+                        a1 to a2,
+                        a2 to a1,
+                        a1 to k,
+                        k to b1,
+                        b1 to b2,
+                        b2 to b1,
+                        b2 to a1,
+                        b1 to c0,
+                    ),
+            ),
+        )
+    }
+
     @Test
     fun randomFrameworks() {
         val random = Random(42)
@@ -245,6 +284,31 @@ class SemanticsReferenceTest {
                         .flatMap { a -> (0 until n).map { b -> a to b } }
                         .filter { (a, b) -> random.nextDouble() < (if (a == b) 0.1 else 0.3) }
                         .toSet()
+            },
+        )
+    }
+
+    // Frameworks shaped as in componentsSplitTwice, each pair of arguments attacking each other (e, p/q, a, b) attacking
+    // and attacked through one of the two at random, and a few attacks at random: random ones of this size seldom split
+    // a component, and their pieces almost never
+    @Test
+    fun splittingFrameworks() {
+        val random = Random(11)
+        val e = listOf(0, 1)
+        val c0 = 2
+        val pq = listOf(3, 4)
+        val a = listOf(5, 6)
+        val k = 7
+        val b = listOf(8, 9)
+        check(
+            (1..20).map {
+                fun one(pair: List<Int>) = pair[random.nextInt(2)]
+                val attacks = mutableSetOf<Pair<Int, Int>>()
+                for (pair in listOf(e, pq, a, b)) attacks += setOf(pair[0] to pair[1], pair[1] to pair[0])
+                attacks += setOf(one(e) to c0, c0 to one(pq), one(pq) to k, one(a) to k, k to one(b), one(b) to one(a))
+                attacks += one(b) to c0
+                for (x in 0 until 10) for (y in 0 until 10) if (random.nextDouble() < 0.03) attacks += x to y
+                10 to attacks.toSet()
             },
         )
     }
