@@ -60,8 +60,10 @@ import it.unibo.tuprolog.core.List as LogicList
  * goal and back when the goal is done (a frame of its own holds the scope to restore). A lookup
  * ([NativeCall.sourced]) resolves its goal with clauses read when it is made.
  *
- * An exception is a ball thrown through the code ([Raised]): the choice points are unwound to the nearest catch/3
- * ([CATCH]) whose catcher unifies with it, and its recovery runs in its place; a ball no catch takes halts the run.
+ * An exception is a ball thrown through the code ([Raised]): the choice points are unwound to the nearest active catch/3
+ * ([CATCH]) whose catcher unifies with it, and its recovery runs in its place; a ball no catch takes halts the run. A
+ * catch is active while its goal runs: once the goal exits it goes, or, if the goal left choice points, it stays inactive
+ * until backtracking enters the goal again ([CATCH_EXIT]).
  *
  * The heap is garbage collected ([collect]) when a call finds it above a threshold: the cells reachable from the
  * arguments of the call, from the frames reachable from the current one and from those the choice points saved,
@@ -266,6 +268,10 @@ internal class Machine(
     private var evalFailed = false
 
     private val wComma = program.functorWord(",", 2)
+    private val wCatchExit = program.functorWord("\$catch_exit", 1)
+
+    // The number of the last catch/3 run, telling its choice point apart (see catchExit)
+    private var catches = 0
     private val wTrue = program.atomWord("true")
     private val fIfThen = program.functorWord("->", 2)
     private val fList = program.functor(".", 2)
@@ -338,6 +344,7 @@ internal class Machine(
         builtin("\\+", 1) { m -> m.jump(negationBlock) }
         builtin("findall", 3) { m -> m.findall(m.regs[0], m.regs[1], m.regs[2]) }
         builtin("catch", 3) { m -> m.catch() }
+        builtin("\$catch_exit", 1) { m -> m.catchExit() }
         builtin("throw", 1) { m ->
             val ball = m.deref(m.regs[0])
             if (tag(ball) == REF) throw Raised(error(Atom.of("instantiation_error"), "throw/1"))
@@ -870,6 +877,11 @@ internal class Machine(
                     return true
                 }
                 CATCH -> popChoicePoint()
+                CATCH_EXIT -> {
+                    // back into the goal of the catch: active again
+                    cps[nextClause * CP_SIZE + 7] = 0
+                    popChoicePoint()
+                }
                 PRIMITIVE -> {
                     val call = calls[nextClause] as PrimitiveCall
                     call.pending?.let {
@@ -3299,11 +3311,41 @@ internal class Machine(
         where: String,
     ): Term = Struct.of("error", type, Atom.of(where))
 
-    // catch(Goal, Catcher, Recovery): a choice point the unwinding of a ball stops at, then the goal
+    // catch(Goal, Catcher, Recovery): a choice point the unwinding of a ball stops at, then the goal followed by
+    // '$catch_exit'(N), which ends the catch when the goal exits (its slot 12 is N, its slot 7 whether it is inactive)
     private fun catch(): Int {
-        pushChoicePoint(CATCH, 0, 3, 0, continuation)
+        val number = ++catches
+        pushChoicePoint(CATCH, 0, 3, 0, continuation, number)
         cutBarrier = cpTop
-        return callTerm(regs[0])
+        val goal = deref(regs[0])
+        // (an unbound goal is an instantiation error, raised by callTerm, with the catch active)
+        if (tag(goal) == REF) return callTerm(goal)
+        val h = top
+        if (h + 5 > heap.size) grow(h + 5)
+        top = h + 5
+        heap[h] = wCatchExit
+        heap[h + 1] = program.intWord(number.toLong())
+        heap[h + 2] = wComma
+        heap[h + 3] = goal
+        heap[h + 4] = word(STR, h)
+        return callTerm(word(STR, h + 2))
+    }
+
+    // The goal of the catch numbered regs[0] exited: if it left no choice point the catch goes; otherwise it stays,
+    // inactive, under a CATCH_EXIT choice point that makes it active again when backtracking goes back into the goal
+    private fun catchExit(): Int {
+        settle()
+        val number = intValue(deref(regs[0])).toInt()
+        var cp = cpTop - 1
+        while (cp >= 0 && !(cps[cp * CP_SIZE + 6] == CATCH && cps[cp * CP_SIZE + 12] == number)) cp--
+        if (cp < 0) return CONTINUE
+        if (cp == cpTop - 1) {
+            popChoicePoint()
+        } else {
+            cps[cp * CP_SIZE + 7] = 1
+            pushChoicePoint(CATCH_EXIT, cp, 0, 0, continuation)
+        }
+        return CONTINUE
     }
 
     // Unwinds the choice points above [cpBase] to the nearest catch/3 whose catcher unifies with the ball of
@@ -3316,7 +3358,7 @@ internal class Machine(
         if (delayedNext >= 0) dropDelayed()
         while (cpTop > cpBase) {
             val base = (cpTop - 1) * CP_SIZE
-            if (cps[base + 6] != CATCH) {
+            if (cps[base + 6] != CATCH || cps[base + 7] != 0) {
                 popChoicePoint()
                 continue
             }
@@ -5046,7 +5088,8 @@ internal class Machine(
                 BARRIER -> "barrier"
                 RESUME -> "resume"
                 PRIMITIVE -> "primitive"
-                CATCH -> "catch"
+                CATCH -> if (cps[cp * CP_SIZE + 7] == 0) "catch" else "catch (inactive)"
+                CATCH_EXIT -> "catch exit"
                 SOURCED -> "sourced"
                 NATIVE -> "native"
                 else -> "clauses of ${program.nameOfFunctor(functor)}/${program.functorArities[functor]} from ${cps[cp * CP_SIZE + 7]}"
@@ -5138,6 +5181,9 @@ internal class Machine(
         const val CATCH = -5
         const val SOURCED = -6
         const val NATIVE = -7
+
+        // Above the choice points a catch/3 goal left when it exited: backtracking to it makes the catch active again
+        const val CATCH_EXIT = -8
 
         // Where the clauses of a choice point come from: the libraries and the theory, or the theory alone
         private const val MERGED = 0
