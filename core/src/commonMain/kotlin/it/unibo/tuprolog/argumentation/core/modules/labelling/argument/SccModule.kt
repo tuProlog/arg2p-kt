@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Forcing
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedSccs
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -13,7 +14,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(UndecidedCandidates, Selection, Forcing).associate { it.signature to it }
+        get() = listOf(UndecidedCandidates, UndecidedSccs, Selection, Forcing).associate { it.signature to it }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -45,6 +46,20 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         labelComponents(_, _, [], Branch) :-
             context_checkout(Branch).
         labelComponents(Accept, Select, [Scc|Sccs], Branch) :-
+            undecidedSccs(Scc, Branch, Pieces),
+            labelPieces(Pieces, Accept, Select, Sccs, Branch).
+
+        % What the earlier components decided splits a component: what is left UND of it is searched one strongly
+        % connected component at a time, each split again on arrival by what the ones before it decided
+        labelPieces([], Accept, Select, Sccs, Branch) :-
+            labelComponents(Accept, Select, Sccs, Branch).
+        labelPieces([Scc], Accept, Select, Sccs, Branch) :-
+            labelComponent(Accept, Select, Scc, Sccs, Branch).
+        labelPieces([Piece, Other | Pieces], Accept, Select, Sccs, Branch) :-
+            append([Piece, Other | Pieces], Sccs, Next),
+            labelComponents(Accept, Select, Next, Branch).
+
+        labelComponent(Accept, Select, Scc, Sccs, Branch) :-
             context_last(Mark),
             findall(State-Ok, localLabelling(Accept, Scc, Branch, State, Ok), Explored),
             selection(Select, Scc, Explored, Selected),
