@@ -71,6 +71,21 @@ internal fun NativeCall.labelArguments(
     }
 }
 
+/** The arguments at the given [positions] of [arguments] no longer labelled with [label], the others keeping their order */
+internal fun NativeCall.unlabelArguments(
+    arguments: GraphArguments,
+    label: String,
+    positions: IntArray,
+) {
+    if (positions.isEmpty()) return
+    val context = contextLibrary
+    val store = context.store()!!
+    val ids = IdSet(positions.size)
+    for (position in positions) ids.add(arguments.ids[position])
+    store.retractNamed(label, positions.map { context.record(arguments.ids[it])!! })
+    store.retractIds(idFact(label), ids)
+}
+
 /** The argument [i], a list of identifiers (a type error otherwise, from the primitive of [signature]) */
 internal fun NativeCall.idsArg(
     i: Int,

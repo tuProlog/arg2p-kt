@@ -3652,6 +3652,83 @@ internal class Machine(
         return meet(atom, low + 1)
     }
 
+    // The atoms a sort meets for the first time: above a few, ranked all at once (rankBatch), one sort of their names and
+    // one merge with the atoms ranked so far, rather than each by a binary search that renumbers the atoms met before it
+    private var unranked = IntArray(64)
+    private var unrankedTop = 0
+
+    // The atoms of [w0] with no rank, collected (their rank -1 until rankBatch)
+    private fun collectUnranked(w0: Int) {
+        var w = deref(w0)
+        while (true) {
+            when (tag(w)) {
+                ATOM -> {
+                    val atom = payload(w)
+                    if (atom >= atomRanks.size) atomRanks = atomRanks.copyOf(maxOf(atom + 1, atomRanks.size * 2))
+                    if (atomRanks[atom] == 0) {
+                        atomRanks[atom] = -1
+                        if (unrankedTop == unranked.size) unranked = unranked.copyOf(unrankedTop * 2)
+                        unranked[unrankedTop++] = atom
+                    }
+                    return
+                }
+                STR -> {
+                    val a = payload(w)
+                    val n = program.arity(heap[a])
+                    for (i in 1 until n) collectUnranked(heap[a + i])
+                    w = deref(heap[a + n])
+                }
+                LIST -> {
+                    val a = payload(w)
+                    collectUnranked(heap[a])
+                    w = deref(heap[a + 1])
+                }
+                else -> return
+            }
+        }
+    }
+
+    // The atoms collectUnranked collected, ranked: the same ranks rankOf gives them one by one, up to a renumbering of all
+    // the ranks that keeps their order (the ranks are only compared). Below a few, none is ranked here
+    private fun rankBatch() {
+        val count = unrankedTop
+        unrankedTop = 0
+        if (count == 0) return
+        if (count < RANKED_ONE_BY_ONE) {
+            // (left to rankOf, which ranks only the atoms a comparison reaches)
+            for (i in 0 until count) atomRanks[unranked[i]] = 0
+            return
+        }
+        val names = program.atoms
+        val fresh = unranked.copyOf(count).sortedWith { x, y -> compareAtomNames(names[x], names[y]) }
+        val merged = IntArray(ranks + count)
+        val oldToNew = IntArray(ranks + 1)
+        val freshRanks = IntArray(count)
+        var m = 0
+        var i = 0
+        var j = 0
+        while (i < ranks || j < count) {
+            val order =
+                when {
+                    i == ranks -> 1
+                    j == count -> -1
+                    else -> compareAtomNames(names[rankedAtoms[i]], names[fresh[j]])
+                }
+            if (order <= 0) {
+                merged[m++] = rankedAtoms[i]
+                oldToNew[++i] = m
+            } else {
+                // (a name equal to the last one ranked takes its rank)
+                if (m == 0 || compareAtomNames(names[merged[m - 1]], names[fresh[j]]) != 0) merged[m++] = fresh[j]
+                freshRanks[j++] = m
+            }
+        }
+        for (k in 0 until met) atomRanks[metAtoms[k]] = oldToNew[atomRanks[metAtoms[k]]]
+        rankedAtoms = merged
+        ranks = m
+        for (k in 0 until count) meet(fresh[k], freshRanks[k])
+    }
+
     /** The standard order of the atoms [a] and [b] */
     fun atomOrder(
         a: Int,
@@ -3688,6 +3765,8 @@ internal class Machine(
             return sorted
         }
         for (item in items) if (!StdlibNatives.ground(this, item)) return null
+        for (item in items) collectUnranked(item)
+        rankBatch()
         val sorted = items.copyOf()
         if (!inOrderAlready(sorted)) sortStably(sorted)
         return sorted
@@ -5191,6 +5270,9 @@ internal class Machine(
 
         // (as [MERGED], the arguments of the goal beyond the first all unbound)
         private const val MERGED_FREE = 2
+
+        // Fewer atoms new to a sort than this are left to be ranked one by one as compared (see rankBatch)
+        private const val RANKED_ONE_BY_ONE = 32
 
         // The outcomes of a call
         const val FAILED = 0
