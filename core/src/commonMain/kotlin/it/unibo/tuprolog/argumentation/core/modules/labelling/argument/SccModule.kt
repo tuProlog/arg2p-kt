@@ -50,14 +50,13 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             labelPieces(Pieces, Accept, Select, Sccs, Branch).
 
         % What the earlier components decided splits a component: what is left UND of it is searched one strongly
-        % connected component at a time, each split again on arrival by what the ones before it decided
+        % connected component at a time, the first now (all UND, nothing to split), the others put before the components
+        % still to label, each split again when its turn comes by what the ones before it decided
         labelPieces([], Accept, Select, Sccs, Branch) :-
             labelComponents(Accept, Select, Sccs, Branch).
-        labelPieces([Scc], Accept, Select, Sccs, Branch) :-
-            labelComponent(Accept, Select, Scc, Sccs, Branch).
-        labelPieces([Piece, Other | Pieces], Accept, Select, Sccs, Branch) :-
-            append([Piece, Other | Pieces], Sccs, Next),
-            labelComponents(Accept, Select, Next, Branch).
+        labelPieces([Piece | Pieces], Accept, Select, Sccs, Branch) :-
+            append(Pieces, Sccs, Next),
+            labelComponent(Accept, Select, Piece, Next, Branch).
 
         labelComponent(Accept, Select, Scc, Sccs, Branch) :-
             context_last(Mark),
