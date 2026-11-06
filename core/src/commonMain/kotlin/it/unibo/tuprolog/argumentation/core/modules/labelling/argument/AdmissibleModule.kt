@@ -50,12 +50,9 @@ object AdmissibleModule : PrologModule("prolog.argumentation.graph.labelling.adm
         locality(directional).
 
         %! argumentLabelling
-        %  Each admissible labelling in turn, left as the active context.
+        %  Each admissible labelling in turn, left as the active context: the search of the SCC-recursive semantics,
+        %  its labellings not closed (what the IN arguments defend need not be IN), every admissible one kept.
         argumentLabelling :-
-            context_active(Branch),
-            conflictfree::candidates(Args, Forced),
-            conflictfree::conflictFreeSubset(Args, Forced, Set),
-            admissibleSet(Set),
-            conflictfree::labelSet(Branch, Set).
+            scc::label(admissible, all, none).
         """.trimIndent()
 }

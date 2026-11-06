@@ -2,6 +2,7 @@ package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Forcing
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.LabelIn
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedSccs
@@ -14,7 +15,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(UndecidedCandidates, UndecidedSccs, Selection, Forcing).associate { it.signature to it }
+        get() = listOf(UndecidedCandidates, UndecidedSccs, Selection, Forcing, LabelIn).associate { it.signature to it }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -32,13 +33,22 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         %            maximal    - the accepted ones with a maximal set of IN arguments in the component
         %  Each solution leaves its labelling as the active context, released when the next one is computed.
         label(Accept, Select) :-
+            label(Accept, Select, grounded).
+
+        %! label(+Accept, +Select, +Closure)
+        %  The same, the labellings closed by Closure:
+        %    grounded - an argument forced IN with what it makes IN by grounded propagation, from the grounded
+        %               labelling (complete labellings: what the IN arguments defend is IN)
+        %    none     - an argument forced IN with only what it attacks OUT, from the labelling with nothing more IN
+        %               (admissible labellings)
+        label(Accept, Select, Closure) :-
             cache_retract(scc_seen(_, _)),
             context_active(Start),
-            grounded:::argumentLabelling,
+            root(Closure, Start),
             utils::sccs(Sccs),
             context_active(Root),
             (
-                solve(Accept, Select, top, Sccs, [], Root, State),
+                solve(Accept, Select, Closure, top, Sccs, [], Root, State),
                 context_checkout(State)
             ;
                 context_checkout(Start),
@@ -46,33 +56,45 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
                 fail
             ).
 
-        % solve(+Accept, +Select, +Mode, +Sccs, +Excluded, +Branch, -State): State labels the components Sccs from Branch,
-        % none of Excluded IN. Mode is top for the graph, within for what is left of a component above an admissible
-        % labelling of it (its states are released by the search of that component, not one by one)
-        solve(_, _, _, [], _, Branch, Branch).
-        solve(Accept, Select, Mode, [Scc | Sccs], Excluded, Branch, State) :-
+        root(grounded, _) :-
+            grounded:::argumentLabelling.
+        root(none, Start) :-
+            conflictfree::labelSet(Start, []).
+
+        % step(+Closure, +Id): Id forced IN, and what follows from it by Closure
+        step(grounded, Id) :-
+            % (the state is a grounded fixpoint: the cascade of Id alone, see grounded::propagateFrom)
+            grounded::propagateFrom(Id).
+        step(none, Id) :-
+            labelIn(Id).
+
+        % solve(+Accept, +Select, +Closure, +Mode, +Sccs, +Excluded, +Branch, -State): State labels the components Sccs
+        % from Branch, none of Excluded IN. Mode is top for the graph, within for what is left of a component above an
+        % admissible labelling of it (its states are released by the search of that component, not one by one)
+        solve(_, _, _, _, [], _, Branch, Branch).
+        solve(Accept, Select, Closure, Mode, [Scc | Sccs], Excluded, Branch, State) :-
             undecidedSccs(Scc, Branch, Pieces),
-            solvePieces(Pieces, Accept, Select, Mode, Sccs, Excluded, Branch, State).
+            solvePieces(Pieces, Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State).
 
         % What is decided splits a component: what is left UND of it is labelled one strongly connected component at a
         % time, the first now (all UND, nothing to split), the others put before the components still to label, each
         % split again when its turn comes by what the ones before it decided
-        solvePieces([], Accept, Select, Mode, Sccs, Excluded, Branch, State) :-
-            solve(Accept, Select, Mode, Sccs, Excluded, Branch, State).
-        solvePieces([Piece | Pieces], Accept, Select, Mode, Sccs, Excluded, Branch, State) :-
+        solvePieces([], Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State) :-
+            solve(Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State).
+        solvePieces([Piece | Pieces], Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State) :-
             append(Pieces, Sccs, Next),
-            solveComponent(Accept, Select, Mode, Piece, Next, Excluded, Branch, State).
+            solveComponent(Accept, Select, Closure, Mode, Piece, Next, Excluded, Branch, State).
 
-        solveComponent(Accept, Select, Mode, Scc, Sccs, Excluded, Branch, State) :-
+        solveComponent(Accept, Select, Closure, Mode, Scc, Sccs, Excluded, Branch, State) :-
             context_last(Mark),
-            findall(Option-Ok, option(Accept, Select, Scc, Excluded, Branch, Option, Ok), Options),
+            findall(Option-Ok, option(Accept, Select, Closure, Scc, Excluded, Branch, Option, Ok), Options),
             selection(Select, Scc, Options, Selected),
             context_checkout(Branch),
             % every branch the search of the component created and did not select
             context_drop_after(Mark, Selected),
             member(Next, Selected),
             (
-                solve(Accept, Select, Mode, Sccs, Excluded, Next, State)
+                solve(Accept, Select, Closure, Mode, Sccs, Excluded, Next, State)
             ;
                 % a labelling is released once all its continuations are done (Branch by the previous component)
                 Mode == top,
@@ -82,16 +104,16 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
                 fail
             ).
 
-        % option(+Accept, +Select, +Scc, +Excluded, +Branch, -State, -Ok): a local labelling of Scc from Branch, and
-        % whether Accept holds for it: Branch itself, or one above an admissible labelling of Scc first reached from
+        % option(+Accept, +Select, +Closure, +Scc, +Excluded, +Branch, -State, -Ok): a local labelling of Scc from Branch,
+        % and whether Accept holds for it: Branch itself, or one above an admissible labelling of Scc first reached from
         % Branch. The labellings above an admissible one are it and those of what is left of Scc, so the search does not
         % go on from it: what is left is split and labelled as the graph is
-        option(Accept, _, Scc, _, Branch, Branch, Ok) :-
+        option(Accept, _, _, Scc, _, Branch, Branch, Ok) :-
             context_checkout(Branch),
             ok(Accept, Scc, Ok).
-        option(Accept, Select, Scc, Excluded, Branch, State, Ok) :-
-            admissibleAbove(Scc, Excluded, Branch, Branch, Admissible, Mine),
-            solve(Accept, Select, within, [Scc], Mine, Admissible, State),
+        option(Accept, Select, Closure, Scc, Excluded, Branch, State, Ok) :-
+            admissibleAbove(Closure, Scc, Excluded, Branch, Branch, Admissible, Mine),
+            solve(Accept, Select, Closure, within, [Scc], Mine, Admissible, State),
             context_checkout(State),
             ok(Accept, Scc, Ok).
 
@@ -105,12 +127,12 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             admissible::admissibleWithin(Scc),
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
-        % admissibleAbove(+Scc, +Excluded, +Start, +Branch, -Admissible, -Mine): Admissible is admissible on Scc, reached
-        % from Branch by forcing IN undecided arguments of Scc with no admissible labelling on the way since Start; Mine is
-        % Excluded and the candidates tried before on the way. Excluded are the candidates tried before in the branches
+        % admissibleAbove(+Closure, +Scc, +Excluded, +Start, +Branch, -Admissible, -Mine): Admissible is admissible on
+        % Scc, reached from Branch by forcing IN undecided arguments of Scc with no admissible labelling on the way since
+        % Start; Mine is Excluded and the candidates tried before on the way. Excluded are the candidates tried before in the branches
         % above, whose own branches found every admissible labelling above them that has them IN: none is IN below.
         % scc_seen(Start, In) marks a labelling of the search from Start as reached
-        admissibleAbove(Scc, Excluded, Start, Branch, Admissible, Mine) :-
+        admissibleAbove(Closure, Scc, Excluded, Start, Branch, Admissible, Mine) :-
             undecidedCandidates(Scc, Branch, Excluded, Candidates),
             Candidates = [_ | _],
             findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
@@ -119,9 +141,8 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             \+ cache_check(scc_seen(Start, Seed)),
             cache_assert(scc_seen(Start, Seed)),
             context_branch(Branch, NewBranch),
-            % (Branch is a grounded fixpoint: the cascade of IdX alone, see grounded::propagateFrom)
-            grounded::propagateFrom(IdX),
-            force(Scc, Tried),
+            step(Closure, IdX),
+            force(Closure, Scc, Tried),
             graphStore::labelledIds(in, Reached),
             utils::sortDescending(Reached, Labelled),
             unexplored(Start, Seed, Labelled),
@@ -131,7 +152,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
                 Admissible = NewBranch,
                 Mine = Tried
             ;
-                admissibleAbove(Scc, Tried, Start, NewBranch, Admissible, Mine)
+                admissibleAbove(Closure, Scc, Tried, Start, NewBranch, Admissible, Mine)
             ).
 
         % candidate(+Candidates, +Excluded, -Id, -Mine): each candidate in turn, with those before it excluded
@@ -139,19 +160,19 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         candidate([Tried | Candidates], Excluded, Id, Mine) :-
             candidate(Candidates, [Tried | Excluded], Id, Mine).
 
-        % force(+Scc, +Excluded): the defenders the IN arguments of Scc leave a single choice for forced IN, one at a
-        % time, each followed by its propagation; fails when one is left with none (no admissible labelling is above the
+        % force(+Closure, +Scc, +Excluded): the defenders the IN arguments of Scc leave a single choice for forced IN, one
+        % at a time, each followed by its step; fails when one is left with none (no admissible labelling is above the
         % state), or when an excluded argument is IN (what is above the state was found already)
         % (a component of one argument has nothing to force: its only candidate is an argument attacking itself)
-        force([_], _) :- !.
-        force(Scc, Excluded) :-
+        force(_, [_], _) :- !.
+        force(Closure, Scc, Excluded) :-
             forcing(Scc, Excluded, Next),
-            forced(Next, Scc, Excluded).
+            forced(Next, Closure, Scc, Excluded).
 
-        forced(none, _, _).
-        forced(defender(D), Scc, Excluded) :-
-            grounded::propagateFrom(D),
-            force(Scc, Excluded).
+        forced(none, _, _, _).
+        forced(defender(D), Closure, Scc, Excluded) :-
+            step(Closure, D),
+            force(Closure, Scc, Excluded).
 
         % A labelling only depends on the set of arguments forced IN and on what is excluded, and a state explored with
         % some excluded misses only labellings found from where they were tried: the labelling reached by forcing In is
