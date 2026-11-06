@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Forcing
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
 import it.unibo.tuprolog.solve.Signature
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(UndecidedCandidates, Selection).associate { it.signature to it }
+        get() = listOf(UndecidedCandidates, Selection, Forcing).associate { it.signature to it }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -69,10 +70,11 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             context_checkout(State),
             (accepted(Accept, Scc) -> Ok = true ; Ok = false).
 
-        accepted(admissible, _) :-
-            admissible::admissibleSet.
+        % (the IN arguments of the earlier components were checked with theirs: admissible::admissibleWithin)
+        accepted(admissible, Scc) :-
+            admissible::admissibleWithin(Scc).
         accepted(decided, Scc) :-
-            admissible::admissibleSet,
+            admissible::admissibleWithin(Scc),
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
         reachable(_, Branch, Branch).
@@ -84,15 +86,27 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             utils::sortDescending([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),
             cache_assert(scc_seen(Scc, Seed)),
-            graphStore::argumentByIdIn(Branch, IdX, X),
             context_branch(Branch, NewBranch),
-            graphStore::unlabelArguments(und),
-            graphStore::labelArgument(in, X, IdX),
-            grounded::argumentLabelling,
+            % (Branch is a grounded fixpoint: the cascade of IdX alone, see grounded::propagateFrom)
+            grounded::propagateFrom(IdX),
+            force(Scc),
             graphStore::labelledIds(in, Reached),
             utils::sortDescending(Reached, Labelled),
             unexplored(Scc, Seed, Labelled),
             reachable(Scc, NewBranch, State).
+
+        % force(+Scc): the defenders the IN arguments of Scc leave a single choice for forced IN, one at a time, each
+        % followed by its propagation; fails when one is left with none (no admissible labelling is above the state)
+        % (a component of one argument has nothing to force: its only candidate is an argument attacking itself)
+        force([_]) :- !.
+        force(Scc) :-
+            forcing(Scc, Next),
+            forced(Next, Scc).
+
+        forced(none, _).
+        forced(defender(D), Scc) :-
+            grounded::propagateFrom(D),
+            force(Scc).
 
         % Grounded propagation is monotone, so a labelling only depends on the set of arguments forced IN:
         % scc_seen(Scc, In) marks the labelling reached by forcing In within Scc as explored, whatever the order
