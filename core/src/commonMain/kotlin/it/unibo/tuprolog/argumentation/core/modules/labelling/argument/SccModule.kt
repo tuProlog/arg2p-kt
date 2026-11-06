@@ -81,7 +81,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         % forcing IN undecided arguments of Scc, Ok tells whether Accept holds for it
 
         localLabelling(Accept, Scc, Branch, State, Ok) :-
-            reachable(Scc, Branch, State),
+            reachable(Scc, [], Branch, State),
             context_checkout(State),
             (accepted(Accept, Scc) -> Ok = true ; Ok = false).
 
@@ -92,39 +92,48 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             admissible::admissibleWithin(Scc),
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
-        reachable(_, Branch, Branch).
-        reachable(Scc, Branch, State) :-
-            undecidedCandidates(Scc, Branch, Candidates),
+        % reachable(+Scc, +Excluded, +Branch, -State): Excluded are the candidates tried before in the branches above,
+        % whose own branches found every admissible labelling above them that has them IN: none is IN below
+        reachable(_, _, Branch, Branch).
+        reachable(Scc, Excluded, Branch, State) :-
+            undecidedCandidates(Scc, Branch, Excluded, Candidates),
             Candidates = [_ | _],
             findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
-            member(IdX, Candidates),
+            candidate(Candidates, Excluded, IdX, Mine),
             utils::sortDescending([IdX|Ins], Seed),
             \+ cache_check(scc_seen(Scc, Seed)),
             cache_assert(scc_seen(Scc, Seed)),
             context_branch(Branch, NewBranch),
             % (Branch is a grounded fixpoint: the cascade of IdX alone, see grounded::propagateFrom)
             grounded::propagateFrom(IdX),
-            force(Scc),
+            force(Scc, Mine),
             graphStore::labelledIds(in, Reached),
             utils::sortDescending(Reached, Labelled),
             unexplored(Scc, Seed, Labelled),
-            reachable(Scc, NewBranch, State).
+            reachable(Scc, Mine, NewBranch, State).
 
-        % force(+Scc): the defenders the IN arguments of Scc leave a single choice for forced IN, one at a time, each
-        % followed by its propagation; fails when one is left with none (no admissible labelling is above the state)
+        % candidate(+Candidates, +Excluded, -Id, -Mine): each candidate in turn, with those before it excluded
+        candidate([Id | _], Excluded, Id, Excluded).
+        candidate([Tried | Candidates], Excluded, Id, Mine) :-
+            candidate(Candidates, [Tried | Excluded], Id, Mine).
+
+        % force(+Scc, +Excluded): the defenders the IN arguments of Scc leave a single choice for forced IN, one at a
+        % time, each followed by its propagation; fails when one is left with none (no admissible labelling is above the
+        % state), or when an excluded argument is IN (what is above the state was found already)
         % (a component of one argument has nothing to force: its only candidate is an argument attacking itself)
-        force([_]) :- !.
-        force(Scc) :-
-            forcing(Scc, Next),
-            forced(Next, Scc).
+        force([_], _) :- !.
+        force(Scc, Excluded) :-
+            forcing(Scc, Excluded, Next),
+            forced(Next, Scc, Excluded).
 
-        forced(none, _).
-        forced(defender(D), Scc) :-
+        forced(none, _, _).
+        forced(defender(D), Scc, Excluded) :-
             grounded::propagateFrom(D),
-            force(Scc).
+            force(Scc, Excluded).
 
-        % Grounded propagation is monotone, so a labelling only depends on the set of arguments forced IN:
-        % scc_seen(Scc, In) marks the labelling reached by forcing In within Scc as explored, whatever the order
+        % A labelling only depends on the set of arguments forced IN and on what is excluded, and a state explored with
+        % some excluded misses only labellings found from where they were tried: scc_seen(Scc, In) marks the labelling
+        % reached by forcing In within Scc as explored, whatever the order
 
         unexplored(_, Seed, Seed) :- !.
         unexplored(Scc, _, Labelled) :-
