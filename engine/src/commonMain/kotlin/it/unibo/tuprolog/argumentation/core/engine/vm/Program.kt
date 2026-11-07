@@ -29,14 +29,24 @@ import kotlin.jvm.JvmField
  */
 internal class Program(
     codeSize: Int = 1 shl 14,
+    /** The symbols of the program: a table of its own, or one the programs of a session share (see [Symbols]) */
+    val symbols: Symbols = Symbols.of(null),
 ) {
-    val atoms = ArrayList<String>()
-    private val atomIds = HashMap<String, Int>()
+    val atoms: Symbols.Table<String> get() = symbols.atoms
 
     /** The functors: name atom and arity, by id */
-    val functorNames = ArrayList<Int>()
-    var functorArities = IntArray(1 shl 10)
-        private set
+    val functorNames: Symbols.Table<Int> get() = symbols.functorNames
+    val functorArities: IntArray get() = symbols.functorArities
+
+    // The arities as the symbols last had them, read by each unification of a compound: the array is the symbols' own (they
+    // only add to it, or move to a larger one, read again when an id is past its end)
+    @JvmField
+    var arities: IntArray = symbols.functorArities
+    val floats: Symbols.Table<Real> get() = symbols.floats
+    val bigs: Symbols.Table<Long> get() = symbols.bigs
+
+    /** The integers beyond 64 bits: a large integer word with a negative payload, -1 - index, stands for one */
+    val huges: Symbols.Table<BigInteger> get() = symbols.huges
 
     // The functor an atom was last used in and its arity plus one, by atom
     private var lastFunctorOf = IntArray(1 shl 10)
@@ -46,33 +56,9 @@ internal class Program(
     private val recentNames = arrayOfNulls<String>(RECENT)
     private val recentArities = IntArray(RECENT)
     private val recentFunctors = IntArray(RECENT)
-    private val functorIds = HashMap<Int, Int>()
 
-    // The symbols of the base program when this one was made, shared by the programs of the solvers as they are never changed:
-    // putting them in a map for each solver hashed all the names of all the modules
-    private var baseAtomIds: Map<String, Int>? = null
-    private var baseFunctorIds: Map<Int, Int>? = null
-    private var sharedAtoms: Map<String, Int>? = null
-    private var sharedFunctors: Map<Int, Int>? = null
-
-    private fun atomsToShare(): Map<String, Int> =
-        sharedAtoms?.takeIf { it.size == atomIds.size } ?: HashMap(atomIds).also { sharedAtoms = it }
-
-    private fun functorsToShare(): Map<Int, Int> =
-        sharedFunctors?.takeIf { it.size == functorIds.size } ?: HashMap(functorIds).also { sharedFunctors = it }
-
-    private val wideFunctorIds = HashMap<Long, Int>()
-
-    // (the floats as tuProlog reads them: a float read from "61.167" and the double 61.167 are two values, and the
-    // first must come out as it went in)
-    val floats = ArrayList<Real>()
-    private val floatIds = HashMap<Real, Int>()
-    val bigs = ArrayList<Long>()
-
-    /** The integers beyond 64 bits: a large integer word with a negative payload, -1 - index, stands for one */
-    val huges = ArrayList<BigInteger>()
-    private val hugeIds = HashMap<BigInteger, Int>()
-    private val bigIds = HashMap<Long, Int>()
+    // The functors the tables of the predicates were grown for (see grown)
+    private var grownFor = 0
 
     /** The code of the clauses: instructions and their operands */
     @JvmField
@@ -99,28 +85,8 @@ internal class Program(
         private set
 
     /** A program starting as a copy of [base]: its symbols and its code (the modules compiled once, for every solver) */
-    constructor(base: Program) : this(codeSize = 0) {
-        // (the tables as the base has them: those the primary constructor made are its first entries too)
-        atoms.clear()
-        atoms.addAll(base.atoms)
-        atomIds.clear()
-        baseAtomIds = base.atomsToShare()
-        functorNames.clear()
-        functorNames.addAll(base.functorNames)
-        functorArities = base.functorArities.copyOf()
-        functorIds.clear()
-        baseFunctorIds = base.functorsToShare()
-        wideFunctorIds.putAll(base.wideFunctorIds)
-        floats.clear()
-        floats.addAll(base.floats)
-        floatIds.clear()
-        floatIds.putAll(base.floatIds)
-        bigs.clear()
-        bigs.addAll(base.bigs)
-        huges.addAll(base.huges)
-        hugeIds.putAll(base.hugeIds)
-        bigIds.clear()
-        bigIds.putAll(base.bigIds)
+    constructor(base: Program) : this(codeSize = 0, symbols = Symbols.of(base.symbols)) {
+        // (the symbols as the base has them: those the primary constructor asked for are among them)
         code = base.code.copyOf(maxOf(base.codeTop + (1 shl 12), 1 shl 14))
         codeTop = base.codeTop
         maxRegister = base.maxRegister
@@ -438,7 +404,7 @@ internal class Program(
         }
 
         /** The native standing in for the primitive of [functor], looked up by [primitive] */
-        fun native(functor: Int): StdlibNative? = natives[functor]
+        fun native(functor: Int): StdlibNative? = if (functor < natives.size) natives[functor] else null
 
         internal fun grow(functors: Int) {
             if (functors > predicates.size) predicates = predicates.copyOf(maxOf(predicates.size * 2, functors))
@@ -498,11 +464,7 @@ internal class Program(
     val dotWord: Int = atomWord(".")
     val ruleFunctor: Int = functorWord(":-", 2)
 
-    fun atom(name: String): Int =
-        baseAtomIds?.get(name) ?: atomIds.getOrPut(name) {
-            atoms.add(name)
-            atoms.size - 1
-        }
+    fun atom(name: String): Int = symbols.atom(name)
 
     fun atomWord(name: String): Int = word(ATOM, atom(name))
 
@@ -558,23 +520,18 @@ internal class Program(
         nameAtom: Int,
         arity: Int,
     ): Int {
-        // (an Int for most, with no Long: a BigInt on JS, asked for by each functor not seen last)
-        val makeNew = {
-            functorNames.add(nameAtom)
-            val id = functorNames.size - 1
-            if (id == functorArities.size) functorArities = functorArities.copyOf(id * 2)
-            functorArities[id] = arity
-            val functors = functorNames.size
-            theory.grow(functors)
-            for (scope in scopes) scope.grow(functors)
-            id
-        }
-        return if (nameAtom < 1 shl 21 && arity < 1 shl 10) {
-            val key = (nameAtom shl 10) or arity
-            baseFunctorIds?.get(key) ?: functorIds.getOrPut(key, makeNew)
-        } else {
-            wideFunctorIds.getOrPut((nameAtom.toLong() shl 32) or arity.toLong(), makeNew)
-        }
+        val functor = symbols.functor(nameAtom, arity)
+        grown()
+        return functor
+    }
+
+    // The tables of the predicates as large as the functors there are (another program of a session may have added some)
+    private fun grown() {
+        val functors = functorNames.size
+        if (functors <= grownFor) return
+        grownFor = functors
+        theory.grow(functors)
+        for (scope in scopes) scope.grow(functors)
     }
 
     fun functorWord(
@@ -582,29 +539,19 @@ internal class Program(
         arity: Int,
     ): Int = word(FUN, functor(name, arity))
 
-    fun arity(functorWord: Int): Int = functorArities[payload(functorWord)]
+    fun arity(functorWord: Int): Int {
+        val id = payload(functorWord)
+        val known = arities
+        return if (id < known.size) known[id] else symbols.functorArities.also { arities = it }[id]
+    }
 
     fun functorName(functorWord: Int): String = atoms[functorNames[payload(functorWord)]]
 
     fun nameOfFunctor(functor: Int): String = atoms[functorNames[functor]]
 
-    fun floatWord(value: Real): Int =
-        word(
-            FLT,
-            floatIds.getOrPut(value) {
-                floats.add(value)
-                floats.size - 1
-            },
-        )
+    fun floatWord(value: Real): Int = word(FLT, symbols.float(value))
 
-    fun bigWord(value: Long): Int =
-        word(
-            BIG,
-            bigIds.getOrPut(value) {
-                bigs.add(value)
-                bigs.size - 1
-            },
-        )
+    fun bigWord(value: Long): Int = word(BIG, symbols.big(value))
 
     /** The word of an integer: a small one as it is, a large one by the table */
     fun intWord(value: Long): Int = if (Words.fitsInt(value)) word(INT, value.toInt()) else bigWord(value)
@@ -646,12 +593,7 @@ internal class Program(
         if (value.bitLength <= 28) return word(INT, value.toInt())
         val small = value.toLong()
         if (BigInteger.of(small) == value) return intWord(small)
-        val index =
-            hugeIds.getOrPut(value) {
-                huges.add(value)
-                huges.size - 1
-            }
-        return word(BIG, -1 - index)
+        return word(BIG, -1 - symbols.huge(value))
     }
 
     /** The value of a large integer word of [payload] */
