@@ -84,8 +84,18 @@ internal class Program(
     var theoryVersion = 0L
         private set
 
-    /** A program starting as a copy of [base]: its symbols and its code (the modules compiled once, for every solver) */
-    constructor(base: Program) : this(codeSize = 0, symbols = Symbols.of(base.symbols)) {
+    /** The session of the program, if any: the solvers of a session share their symbols (see [SolverSession]) */
+    var session: SolverSession? = null
+
+    /**
+     * A program starting as a copy of [base]: its code (the modules compiled once, for every solver) and its symbols, in
+     * a table of its own or in [symbols] (the table a session shares, and a program derived from the base of a session
+     * shares too)
+     */
+    constructor(
+        base: Program,
+        symbols: Symbols = base.symbols.forDerived(),
+    ) : this(codeSize = 0, symbols = symbols) {
         // (the symbols as the base has them: those the primary constructor asked for are among them)
         code = base.code.copyOf(maxOf(base.codeTop + (1 shl 12), 1 shl 14))
         codeTop = base.codeTop
@@ -679,11 +689,18 @@ internal class Program(
         if (library.clauses.none()) return null
         val base = base
         if (library is SharedLibrary && base != null) {
-            val shared = locked(SharedPrograms) { base.sharedCodes.getOrPut(library.codeKey) { base.compiled(library, frozen = true) } }
+            val shared = locked(SharedPrograms) { base.sharedCode(library) }
             if (shared.codeEnd <= baseCodeTop) return shared
         }
         return localCodes.getOrPut(IdentityKey(library)) { compiled(library, frozen = false) }
     }
+
+    // The code of a module in a base program (under the lock of the base programs): that its own base compiled before
+    // this program was made, if it has a base (the base of a session), or compiled here
+    private fun sharedCode(library: SharedLibrary): LibraryCode =
+        sharedCodes.getOrPut(library.codeKey) {
+            base?.sharedCodes?.get(library.codeKey)?.takeIf { it.codeEnd <= baseCodeTop } ?: compiled(library, frozen = true)
+        }
 
     // The clauses of [library] compiled into this program, by predicate (frozen: for other programs to read at once)
     private fun compiled(
@@ -745,8 +762,11 @@ internal class Program(
 internal object SharedPrograms {
     private val base = Program()
 
-    /** A program for a solver */
-    fun derived(): Program = locked(this) { Program(base) }
+    /** A program for a solver, of [session] if any (from the base of the session) */
+    fun derived(session: SolverSession? = null): Program = locked(this) { Program(session?.base ?: base).also { it.session = session } }
+
+    /** The base program of a new session: the symbols of the base and its code as they are now, its symbols shared */
+    fun sessionBase(): Program = locked(this) { Program(base, Symbols.shared(base.symbols)) }
 
     /** The words of code of the base program */
     val codeSize: Int get() = locked(this) { base.codeTop }

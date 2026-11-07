@@ -66,8 +66,20 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
     private var program: Program? = null
     private var outdated = true
 
+    /** The program of the last resolution, if any */
+    val currentProgram: Program? get() = program
+
     /** Whether the theory of the user is visible to the resolutions (not within a module call) */
     var theoryVisible = true
+
+    // The session of the solver, if any: its programs share their symbols with those of the other solvers of the session
+    private var session: SolverSession? = null
+
+    /** The solver in [session] from its next resolution (its program made again, in the session) */
+    fun join(session: SolverSession) {
+        this.session = session
+        outdated = true
+    }
 
     /** Runs the resolutions over [program] (that of the solver creating this one), the theory visible or not */
     fun share(
@@ -75,6 +87,7 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
         theoryVisible: Boolean,
     ) {
         this.program = program as Program
+        this.session = program.session
         this.outdated = false
         this.theoryVisible = theoryVisible
     }
@@ -110,7 +123,7 @@ internal open class VmSolver : AbstractSolver<PrologExecutionContext> {
     private fun program(): Program {
         val current = program
         if (current != null && !outdated) return current
-        val built = SharedPrograms.derived()
+        val built = SharedPrograms.derived(session)
         built.add(staticKb)
         for (clause in dynamicKb.clauses) built.theory.add(clause, dynamic = true)
         program = built

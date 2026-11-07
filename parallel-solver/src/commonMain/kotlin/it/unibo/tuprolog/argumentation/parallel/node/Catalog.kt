@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
@@ -158,6 +159,10 @@ internal class Catalog(
     private var argumentsReported = 0
 
     private var solver = newSolver()
+
+    // The session of the solvers of the graphs of the theory, the catalog's and its workers' in this process: one for each
+    // theory, its symbols dropped with it
+    private var solvers: SolverSession? = null
 
     // The arguments whose claim unifies with a statement, read as they are (those for it are kept, see
     // sameUpToVariables), and the size of the graph labelled
@@ -346,6 +351,7 @@ internal class Catalog(
         // (the graph of the last theory dropped first: the solver of a theory changed binds its context to the new program,
         // and would encode every record of it again only for the reset below to forget them)
         solver.solveOnce("context_reset")
+        solvers = SolverSession().also { SolverSession.join(solver, it) }
         solver.resetStaticKb()
         solver.loadStaticKb(RuleAnnotations.parse(partitioning.catalog, solver.operators, solver.unificator))
         solver.solveOnce("context_reset, parser:::convertAllRules")
@@ -391,7 +397,7 @@ internal class Catalog(
         val partitioning = partitioning()
         locality = if (whole) null else partial
         val count = if (central) 0 else partitioning.partitions.size
-        network.building(count)
+        network.building(count, solvers)
         repeat(count) { network.send(Address.worker(it), Load(partitioning.theoryOf(it), flags.toString())) }
         forget()
         workers = count

@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
+import it.unibo.tuprolog.argumentation.core.engine.vm.Symbols
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.ATOM
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.BIG
 import it.unibo.tuprolog.argumentation.core.engine.vm.Words.FLT
@@ -22,65 +23,30 @@ import org.gciatto.kt.math.BigInteger
 import it.unibo.tuprolog.core.List as LogicList
 
 /**
- * Records of one program written for any other: their words as they are, but for the symbols (atoms, functors, floats,
- * large integers), numbered within the batch and named in its tables. The program that writes them reads its own tables
- * alone, and the one that reads them ([records]) looks each symbol of the batch up once: no term is made on either
- * side, and two nodes on two threads never read each other's tables. The words of a record are relative to its own
- * start, so they are copied as they are.
+ * Records of one program written for any other. The records of programs sharing a table of symbols (the solvers of a
+ * session, see SolverSession) are kept as they are, and another program of the session reads their words in place.
+ * For any other program, their words are written as they are but for the symbols (atoms, functors, floats, large
+ * integers), numbered within the batch and named in its tables ([Tables], written when first asked for): the program
+ * that reads them looks each symbol of the batch up once, and no term is made on either side. The words of a record are
+ * relative to its own start, so they are copied as they are.
  */
-class PortableRecords internal constructor(
-    // the words of all the records, one after the other, and where each starts (size + 1 entries)
-    internal val words: IntArray,
-    internal val starts: IntArray,
-    // the root word of each record, relative to its start, and the functor it is named under (see Record.named): a
-    // functor of the batch plus one, 0 for its own
-    internal val roots: IntArray,
-    internal val renamed: IntArray,
-    internal val atoms: Array<String>,
-    // the functors of the batch: the atom of the batch naming each, and its arity
-    internal val functorNames: IntArray,
-    internal val functorArities: IntArray,
-    internal val floats: Array<Real>,
-    internal val integers: Array<BigInteger>,
+class PortableRecords private constructor(
+    // the records, if their programs share one table of symbols, [symbols]: read in place by the programs sharing it
+    private val shared: List<Record>?,
+    private val symbols: Symbols?,
+    written: Tables?,
 ) {
+    private val tables: Tables by lazy {
+        written ?: Writer().also { writer -> shared!!.forEach { writer.add(it) } }.batch()
+    }
+
     /** How many records the batch holds */
-    val size: Int get() = roots.size
+    val size: Int get() = shared?.size ?: tables.size
 
-    /** The term of the record [i], read off the tables of the batch alone (no program: from any thread) */
+    /** The term of the record [i], read off the tables of the batch, or of the symbols shared, alone (from any thread) */
     fun term(i: Int): Term {
-        val start = starts[i]
-        val variables = HashMap<Int, Var>()
-
-        fun decode(w: Int): Term =
-            when (tag(w)) {
-                REF -> {
-                    val a = payload(w)
-                    val bound = words[start + a]
-                    if (bound != w) decode(bound) else variables.getOrPut(a) { Var.of("V") }
-                }
-                ATOM -> Atom.of(atoms[payload(w)])
-                INT -> Integer.of(payload(w))
-                BIG -> Integer.of(integers[payload(w)])
-                FLT -> floats[payload(w)]
-                STR -> {
-                    val a = payload(w)
-                    val f = if (renamed[i] != 0 && w == roots[i]) renamed[i] - 1 else payload(words[start + a])
-                    Struct.of(atoms[functorNames[f]], List(functorArities[f]) { decode(words[start + a + 1 + it]) })
-                }
-                LIST -> {
-                    val heads = ArrayList<Term>()
-                    var a = payload(w)
-                    while (true) {
-                        heads.add(decode(words[start + a]))
-                        val t = words[start + a + 1]
-                        if (tag(t) == LIST) a = payload(t) else return LogicList.from(heads, decode(t))
-                    }
-                    @Suppress("UNREACHABLE_CODE")
-                    throw IllegalStateException()
-                }
-                else -> throw IllegalStateException("A functor as a term")
-            }
-        return decode(roots[i])
+        val record = shared?.get(i) ?: return tables.term(i)
+        return SharedDecoder(symbols!!, record).term()
     }
 
     /** The records in the words of [program], each symbol of the batch looked up there once */
@@ -91,35 +57,153 @@ class PortableRecords internal constructor(
         program: Program,
         indices: IntArray,
     ): List<Record> {
-        val atomWords = IntArray(atoms.size) { program.atomWord(atoms[it]) }
-        val functorWords =
-            IntArray(functorNames.size) { word(FUN, program.functor(payload(atomWords[functorNames[it]]), functorArities[it])) }
-        val floatWords = IntArray(floats.size) { program.floatWord(floats[it]) }
-        val integerWords = IntArray(integers.size) { program.integerWord(integers[it]) }
-
-        fun read(w: Int): Int =
-            when (tag(w)) {
-                ATOM -> atomWords[payload(w)]
-                FUN -> functorWords[payload(w)]
-                FLT -> floatWords[payload(w)]
-                BIG -> integerWords[payload(w)]
-                else -> w
+        if (shared != null && program.symbols === symbols) {
+            return List(indices.size) { at ->
+                val record = shared[indices[at]]
+                Record(program, record.words, record.root, null, record.functor)
             }
-        return List(indices.size) { at ->
-            val i = indices[at]
-            val start = starts[i]
-            val own = IntArray(starts[i + 1] - start) { read(words[start + it]) }
-            // (a term with no cells, an atom or a number, is its root alone)
-            Record(program, own, read(roots[i]), null, if (renamed[i] == 0) 0 else functorWords[renamed[i] - 1])
         }
+        return tables.records(program, indices)
     }
 
     companion object {
         /** [records], each in the words of a program (the same or not), written for any other */
         internal fun of(records: List<Record>): PortableRecords {
+            val symbols = records.firstOrNull()?.program?.symbols
+            if (symbols != null && symbols.isShared && records.all { it.program?.symbols === symbols }) {
+                return PortableRecords(records, symbols, null)
+            }
             val writer = Writer()
             records.forEach { writer.add(it) }
-            return writer.batch()
+            return PortableRecords(null, null, writer.batch())
+        }
+    }
+
+    // A record of a program of a session decoded from the symbols of the session alone, not from the program (another
+    // thread runs it)
+    private class SharedDecoder(
+        private val symbols: Symbols,
+        private val record: Record,
+    ) {
+        private val words = record.words
+        private val variables = HashMap<Int, Var>()
+
+        fun term(): Term = decode(record.root)
+
+        private fun decode(w: Int): Term =
+            when (tag(w)) {
+                REF -> {
+                    val a = payload(w)
+                    val bound = words[a]
+                    if (bound != w) decode(bound) else variables.getOrPut(a) { Var.of("V") }
+                }
+                ATOM -> Atom.of(symbols.atoms[payload(w)])
+                INT -> Integer.of(payload(w))
+                BIG -> {
+                    val p = payload(w)
+                    Integer.of(if (p < 0) symbols.huges[-1 - p] else BigInteger.of(symbols.bigs[p]))
+                }
+                FLT -> symbols.floats[payload(w)]
+                STR -> {
+                    val a = payload(w)
+                    val f = payload(if (record.functor != 0 && w == record.root) record.functor else words[a])
+                    Struct.of(symbols.atoms[symbols.functorNames[f]], List(symbols.functorArities[f]) { decode(words[a + 1 + it]) })
+                }
+                LIST -> {
+                    val heads = ArrayList<Term>()
+                    var a = payload(w)
+                    while (true) {
+                        heads.add(decode(words[a]))
+                        val t = words[a + 1]
+                        if (tag(t) == LIST) a = payload(t) else return LogicList.from(heads, decode(t))
+                    }
+                    @Suppress("UNREACHABLE_CODE")
+                    throw IllegalStateException()
+                }
+                else -> throw IllegalStateException("A functor as a term")
+            }
+    }
+
+    // The records written for any program: the words of all the records, their symbols numbered within the batch
+    private class Tables(
+        // the words of all the records, one after the other, and where each starts (size + 1 entries)
+        internal val words: IntArray,
+        internal val starts: IntArray,
+        // the root word of each record, relative to its start, and the functor it is named under (see Record.named): a
+        // functor of the batch plus one, 0 for its own
+        internal val roots: IntArray,
+        internal val renamed: IntArray,
+        internal val atoms: Array<String>,
+        // the functors of the batch: the atom of the batch naming each, and its arity
+        internal val functorNames: IntArray,
+        internal val functorArities: IntArray,
+        internal val floats: Array<Real>,
+        internal val integers: Array<BigInteger>,
+    ) {
+        val size: Int get() = roots.size
+
+        /** The term of the record [i], read off the tables of the batch alone (no program: from any thread) */
+        fun term(i: Int): Term {
+            val start = starts[i]
+            val variables = HashMap<Int, Var>()
+
+            fun decode(w: Int): Term =
+                when (tag(w)) {
+                    REF -> {
+                        val a = payload(w)
+                        val bound = words[start + a]
+                        if (bound != w) decode(bound) else variables.getOrPut(a) { Var.of("V") }
+                    }
+                    ATOM -> Atom.of(atoms[payload(w)])
+                    INT -> Integer.of(payload(w))
+                    BIG -> Integer.of(integers[payload(w)])
+                    FLT -> floats[payload(w)]
+                    STR -> {
+                        val a = payload(w)
+                        val f = if (renamed[i] != 0 && w == roots[i]) renamed[i] - 1 else payload(words[start + a])
+                        Struct.of(atoms[functorNames[f]], List(functorArities[f]) { decode(words[start + a + 1 + it]) })
+                    }
+                    LIST -> {
+                        val heads = ArrayList<Term>()
+                        var a = payload(w)
+                        while (true) {
+                            heads.add(decode(words[start + a]))
+                            val t = words[start + a + 1]
+                            if (tag(t) == LIST) a = payload(t) else return LogicList.from(heads, decode(t))
+                        }
+                        @Suppress("UNREACHABLE_CODE")
+                        throw IllegalStateException()
+                    }
+                    else -> throw IllegalStateException("A functor as a term")
+                }
+            return decode(roots[i])
+        }
+
+        fun records(
+            program: Program,
+            indices: IntArray,
+        ): List<Record> {
+            val atomWords = IntArray(atoms.size) { program.atomWord(atoms[it]) }
+            val functorWords =
+                IntArray(functorNames.size) { word(FUN, program.functor(payload(atomWords[functorNames[it]]), functorArities[it])) }
+            val floatWords = IntArray(floats.size) { program.floatWord(floats[it]) }
+            val integerWords = IntArray(integers.size) { program.integerWord(integers[it]) }
+
+            fun read(w: Int): Int =
+                when (tag(w)) {
+                    ATOM -> atomWords[payload(w)]
+                    FUN -> functorWords[payload(w)]
+                    FLT -> floatWords[payload(w)]
+                    BIG -> integerWords[payload(w)]
+                    else -> w
+                }
+            return List(indices.size) { at ->
+                val i = indices[at]
+                val start = starts[i]
+                val own = IntArray(starts[i + 1] - start) { read(words[start + it]) }
+                // (a term with no cells, an atom or a number, is its root alone)
+                Record(program, own, read(roots[i]), null, if (renamed[i] == 0) 0 else functorWords[renamed[i] - 1])
+            }
         }
     }
 
@@ -185,9 +269,9 @@ class PortableRecords internal constructor(
                 else -> w
             }
 
-        fun batch(): PortableRecords {
+        fun batch(): Tables {
             starts += words.size
-            return PortableRecords(
+            return Tables(
                 words.toIntArray(),
                 starts.toIntArray(),
                 roots.toIntArray(),

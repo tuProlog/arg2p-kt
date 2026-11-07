@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.federation
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.message.Add
 import it.unibo.tuprolog.argumentation.parallel.message.Address
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
@@ -86,7 +87,12 @@ class Site(
         val workers: Map<String, String>,
         val direct: Set<String>,
         val via: String,
-    )
+        given: SolverSession? = null,
+    ) {
+        // the session of the solvers of the graph run here: the catalog's, for a graph of this site, or one of their own
+        // for the workers of the graph of another site
+        val solvers by lazy { given ?: SolverSession() }
+    }
 
     // The state shared by the threads of the site, as immutable values replaced under the lock: the peers by site, the
     // links of each, the links to the delegates, the sessions known and the workers run here (by session and address)
@@ -560,10 +566,11 @@ class Site(
         session: String,
         workers: Map<String, String>,
         via: String,
+        solvers: SolverSession? = null,
     ) {
         forget(ownerOf(session))
         val direct = (workers.values.toSet() + ownerOf(session)).filter { it in peers }.toSet()
-        placements = placements + (session to Session(workers, direct, via))
+        placements = placements + (session to Session(workers, direct, via, solvers))
     }
 
     // The sessions of [site] and their workers forgotten
@@ -717,13 +724,16 @@ class Site(
                 return if (workers == null || null in lent) null else maxOf(1, workers + lent.sumOf { it ?: 0 })
             }
 
-        override fun building(workers: Int) {
+        override fun building(
+            workers: Int,
+            solvers: SolverSession?,
+        ) {
             val (lenders, frame) =
                 locked(lock) {
                     val next = "$id#${++sessions}"
                     val lenders = peers.filterValues { it.lends }
                     val placed = share(List(workers) { Address.worker(it) }, lenders)
-                    place(next, placed, id)
+                    place(next, placed, id, solvers)
                     session = next
                     lenders.values to FrameCodec.encode(Frame.Placement(next, placed))
                 }
@@ -745,6 +755,8 @@ class Site(
             to: String,
             message: KbMessage,
         ) = route(session, to, message)
+
+        override val solvers: SolverSession? get() = placements[session]?.solvers
     }
 
     companion object {

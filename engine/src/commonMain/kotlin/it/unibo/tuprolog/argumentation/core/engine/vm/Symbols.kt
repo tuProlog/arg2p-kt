@@ -45,11 +45,24 @@ internal class Symbols private constructor(
     private var sharedAtoms: Map<String, Int>? = null
     private var sharedFunctors: Map<Int, Int>? = null
 
-    private fun atomsToShare(): Map<String, Int> =
-        sharedAtoms?.takeIf { it.size == atomIds.size } ?: HashMap(atomIds).also { sharedAtoms = it }
+    // (those of its own base and its own: the base of a session is a table made from another)
+    private fun atomsToShare(): Map<String, Int> {
+        val base = baseAtomIds ?: emptyMap()
+        return sharedAtoms?.takeIf { it.size == base.size + atomIds.size }
+            ?: HashMap(base).also {
+                it.putAll(atomIds)
+                sharedAtoms = it
+            }
+    }
 
-    private fun functorsToShare(): Map<Int, Int> =
-        sharedFunctors?.takeIf { it.size == functorIds.size } ?: HashMap(functorIds).also { sharedFunctors = it }
+    private fun functorsToShare(): Map<Int, Int> {
+        val base = baseFunctorIds ?: emptyMap()
+        return sharedFunctors?.takeIf { it.size == base.size + functorIds.size }
+            ?: HashMap(base).also {
+                it.putAll(functorIds)
+                sharedFunctors = it
+            }
+    }
 
     /** The id of the atom [name], added if new */
     fun atom(name: String): Int =
@@ -86,6 +99,12 @@ internal class Symbols private constructor(
 
     fun huge(value: BigInteger): Int = changing { hugeIds.getOrPut(value) { huges.add(value) } }
 
+    /** Whether the programs of a session share the table */
+    val isShared: Boolean get() = concurrent
+
+    /** The table of a program derived from one with this table: this one if shared, a copy otherwise */
+    fun forDerived(): Symbols = if (concurrent) this else of(this)
+
     private inline fun <T> changing(crossinline change: () -> T): T = if (concurrent) locked(this) { change() } else change()
 
     companion object {
@@ -96,7 +115,10 @@ internal class Symbols private constructor(
         fun shared(base: Symbols): Symbols = Symbols(concurrent = true).also { it.copyOf(base) }
     }
 
-    private fun copyOf(base: Symbols) {
+    // (under the lock of [base] if shared: the other programs of its session may be adding to it)
+    private fun copyOf(base: Symbols) = base.changing { copyOfNow(base) }
+
+    private fun copyOfNow(base: Symbols) {
         atoms.addAll(base.atoms)
         baseAtomIds = base.atomsToShare()
         functorNames.addAll(base.functorNames)

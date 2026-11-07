@@ -8,6 +8,7 @@ import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.engine.PortableRecords
 import it.unibo.tuprolog.argumentation.core.engine.replyWord
+import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
@@ -317,6 +318,7 @@ internal class Worker(
         flags: String,
     ) {
         solver = Arg2pSolverFactory.solverOf(Arg2pSolver.default(listOf(Flags.parse(flags).library()), listOf(WorkerGoals())), "")
+        network.solvers?.let { SolverSession.join(solver, it) }
         solver.loadStaticKb(RuleAnnotations.parse(theory, solver.operators, solver.unificator))
         solver.solveOnce("context_reset, parser:::convertAllRules")
         constrained = solver.holds("parser::constrained")

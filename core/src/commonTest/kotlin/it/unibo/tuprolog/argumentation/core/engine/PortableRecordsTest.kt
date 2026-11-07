@@ -1,11 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
+import it.unibo.tuprolog.argumentation.core.engine.vm.Symbols
 import it.unibo.tuprolog.argumentation.core.engine.vm.payload
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 
 /** Records written by one program and read by another: the same terms, up to the names of their variables */
 class PortableRecordsTest {
@@ -56,5 +58,25 @@ class PortableRecordsTest {
         val record = Record.of(Term.parse("arg(7)"), writer).named(writer.functorWord("inId", 1))
         val read = PortableRecords.of(listOf(record)).records(reader).single()
         assertEquals("inId(7)", read.term.toString())
+    }
+
+    // Programs sharing their symbols (a session): the words read in place, the terms the same
+    @Test
+    fun theRecordsOfASessionAreReadInPlace() {
+        val symbols = Symbols.shared(Symbols.of(null))
+        val writer = Program(symbols = symbols)
+        val reader = Program(symbols = symbols)
+        val records = terms.map { Record.of(it, writer) } + Record.of(Term.parse("arg(7)"), writer).named(writer.functorWord("inId", 1))
+        val batch = PortableRecords.of(records)
+        val read = batch.records(reader)
+        records.zip(read).forEachIndexed { i, (record, inReader) ->
+            assertSame(record.words, inReader.words)
+            assertEquals(record.key, inReader.key)
+            if (i < terms.size) assertEquals(Record.of(batch.term(i), reader).key, inReader.key)
+        }
+        assertEquals("inId(7)", batch.term(records.size - 1).toString())
+        // and by a program outside the session, through the tables of the batch
+        val other = Program().also { p -> listOf("zeta", "only").forEach { p.atom(it) } }
+        terms.zip(batch.records(other)).forEach { (term, record) -> assertEquals(Record.of(term, other).key, record.key, "$term") }
     }
 }
