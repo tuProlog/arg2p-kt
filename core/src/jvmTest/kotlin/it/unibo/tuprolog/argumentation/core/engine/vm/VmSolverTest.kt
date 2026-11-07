@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
@@ -39,6 +40,19 @@ class VmSolverTest {
             "findall(X-Y, app(X, Y, [1, 2]), L)",
             listOf("L = ['-'([], [1, 2]), '-'([1], [2]), '-'([1, 2], [])]"),
         )
+    }
+
+    // A goal raising after it changed the dynamic theory leaves the solver's theory as it changed it, as a goal failing does
+    @Test
+    fun aHaltKeepsTheTheoryInStep() {
+        val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins()
+        val halted = solver.solve(Struct.parse("assertz(f(1)), throw(oops)", solver.operators)).toList()
+        assertEquals(1, halted.size)
+        assertEquals(true, halted.single().isHalt)
+        assertEquals(listOf("f(1)"), solver.dynamicKb.clauses.map { it.head.toString() }, "the solver's view of the theory")
+        assertEquals(listOf("X = 1"), answers(solver, "f(X)"))
+        assertEquals(listOf(""), answers(solver, "retract(f(1))"))
+        assertEquals(emptyList(), answers(solver, "f(X)"))
     }
 
     @Test

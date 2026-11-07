@@ -27,6 +27,9 @@ internal class Modules(
         name: Atom,
     ): Module = loaded.getOrPut(name.value) { load(request.context, name) }
 
+    /** The module named [name] if it is loaded already */
+    fun loaded(name: String): Module? = loaded[name]
+
     /** The module named [name], [context] asked for only if it is to be loaded */
     fun of(
         name: String,

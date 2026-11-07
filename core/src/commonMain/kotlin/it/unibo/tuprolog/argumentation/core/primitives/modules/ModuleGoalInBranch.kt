@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.modules
 
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
 import it.unibo.tuprolog.dsl.logicProgramming
@@ -14,6 +15,18 @@ internal class ModuleGoalInBranch(
 
     // A new branch of the active one, through the context library if it is reachable, otherwise solving the goals
     // of the context in a solver of the module
+    override fun enter(
+        module: Module,
+        call: NativeCall,
+    ) {
+        val library = module.context
+        if (library != null) {
+            library.branch(library.active)
+            return
+        }
+        enter(module) { call.context }
+    }
+
     override fun enter(
         module: Module,
         context: () -> ExecutionContext,

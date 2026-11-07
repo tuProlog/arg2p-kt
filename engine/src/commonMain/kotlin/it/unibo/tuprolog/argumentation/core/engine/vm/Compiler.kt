@@ -61,7 +61,9 @@ internal class Compiler(
     }
 
     private class VarInfo {
-        val chunks = HashSet<Int>()
+        // The first chunk it occurs in, and whether it occurs in another
+        var firstChunk = -1
+        var inMoreChunks = false
         var occurrences = 0
         var permanent = false
         var register = -1
@@ -412,7 +414,7 @@ internal class Compiler(
         analyze(body, first = true, region = false)
         var permanents = 0
         for (info in vars.values) {
-            info.permanent = info.chunks.size > 1
+            info.permanent = info.inMoreChunks
             if (info.permanent) info.register = permanents++
         }
         needsEnv = permanents > 0 || leafGoals > 1 || hasControl || cutAfterGoal
@@ -1009,7 +1011,11 @@ internal class Compiler(
         when (term) {
             is Var -> {
                 val info = vars.getOrPut(term) { VarInfo() }
-                info.chunks.add(chunk)
+                if (info.firstChunk == -1) {
+                    info.firstChunk = chunk
+                } else if (info.firstChunk != chunk) {
+                    info.inMoreChunks = true
+                }
                 info.occurrences++
                 if (!info.everMet) {
                     info.everMet = true

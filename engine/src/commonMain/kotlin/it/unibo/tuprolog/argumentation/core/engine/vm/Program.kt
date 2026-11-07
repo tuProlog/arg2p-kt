@@ -27,7 +27,9 @@ import kotlin.jvm.JvmField
  * predicates: those of the theory of the user ([theory]) and, for each set of libraries a resolution runs with, those
  * of the clauses of the libraries and the primitives they provide (a [Scope]).
  */
-internal class Program() {
+internal class Program(
+    codeSize: Int = 1 shl 14,
+) {
     val atoms = ArrayList<String>()
     private val atomIds = HashMap<String, Int>()
 
@@ -74,7 +76,7 @@ internal class Program() {
 
     /** The code of the clauses: instructions and their operands */
     @JvmField
-    var code = IntArray(1 shl 14)
+    var code = IntArray(codeSize)
     var codeTop = 0
 
     /** The highest register any clause uses */
@@ -97,7 +99,7 @@ internal class Program() {
         private set
 
     /** A program starting as a copy of [base]: its symbols and its code (the modules compiled once, for every solver) */
-    constructor(base: Program) : this() {
+    constructor(base: Program) : this(codeSize = 0) {
         // (the tables as the base has them: those the primary constructor made are its first entries too)
         atoms.clear()
         atoms.addAll(base.atoms)

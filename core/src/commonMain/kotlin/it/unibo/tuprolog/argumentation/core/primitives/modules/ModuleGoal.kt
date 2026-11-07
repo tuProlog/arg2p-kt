@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.modules
 
+import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -14,5 +15,10 @@ internal class ModuleGoal(
     override fun enter(
         module: Module,
         context: () -> ExecutionContext,
+    ) = Unit
+
+    override fun enter(
+        module: Module,
+        call: NativeCall,
     ) = Unit
 }

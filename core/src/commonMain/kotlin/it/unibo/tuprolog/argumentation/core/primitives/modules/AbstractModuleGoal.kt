@@ -37,6 +37,18 @@ internal abstract class AbstractModuleGoal(
         context: () -> ExecutionContext,
     )
 
+    /** The same, on the machine: [call] gives the context if it is needed (a module call allocates nothing otherwise) */
+    protected open fun enter(
+        module: Module,
+        call: NativeCall,
+    ) = enter(module) { call.context }
+
+    // The module named [name], loaded the first time with the context of [call]
+    private fun moduleOf(
+        name: String,
+        call: NativeCall,
+    ): Module = loader.modules.loaded(name) ?: loader.modules.of(name) { call.context }
+
     // The machine: the module's libraries entered on the goal as a word, no term built
     override fun call(call: NativeCall): Int {
         val name = call.arg(0)
@@ -49,8 +61,8 @@ internal abstract class AbstractModuleGoal(
         }
         val moduleName = call.atomName(name)
         if (moduleName == USER) return call.inline(goal, call.rootLibraries, theoryVisible = true)
-        val module = loader.modules.of(moduleName) { call.context }
-        enter(module) { call.context }
+        val module = moduleOf(moduleName, call)
+        enter(module, call)
         return call.inline(goal, module.libraries, theoryVisible = false)
     }
 
@@ -61,8 +73,8 @@ internal abstract class AbstractModuleGoal(
     ): Int {
         val moduleName = call.atomName(module)
         if (moduleName == USER) return call.inlineOnRegisters(call.rootLibraries, theoryVisible = true)
-        val entered = loader.modules.of(moduleName) { call.context }
-        enter(entered) { call.context }
+        val entered = moduleOf(moduleName, call)
+        enter(entered, call)
         return call.inlineOnRegisters(entered.libraries, theoryVisible = false)
     }
 
