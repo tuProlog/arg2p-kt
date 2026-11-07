@@ -54,6 +54,13 @@ fun NativeCall.graphSegmentSince(mark: GraphMark): Pair<GraphSegment, GraphMark>
     return GraphSegment(arguments, infos, supports, attacks) to GraphMark(argumentCount, infoCount, supportCount, attackCount)
 }
 
+/** Where the next segment of the store of the active branch starts: after all it holds */
+@InternalArg2pApi
+fun NativeCall.graphMarkNow(): GraphMark {
+    val store = contextLibrary.store()!!
+    return GraphMark(store.count("arg", 1), store.count("argInfo", 2), store.count("supportId", 2), store.count("attackId", 4))
+}
+
 /**
  * [segment], of another node of the session, merged into the store of the active branch: the arguments not saved here
  * yet (their records `argument(A)`, as the identifiers of the session hold them, and `arg/1`, `argInfo/2`), the

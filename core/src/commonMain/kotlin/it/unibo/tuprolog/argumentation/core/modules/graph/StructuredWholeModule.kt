@@ -46,12 +46,14 @@ object StructuredWholeModule : PrologModule("prolog.argumentation.structured.who
             graphStore::statementLabelling(StatIn, StatOut, StatUnd).
 
         %! buildGraph
-        %  The graph of the theory, by the builder of its profile (graphBuilder), once the theory is checked against it.
+        %  The graph of the theory, by the builder of its profile (graphBuilder), once the theory is checked against it:
+        %  with the solvers of a session building it together, the graph of all of them (see graphStore::graph_settle).
         buildGraph :-
             checkProfile,
             builder(X),
             dispatched(X, buildArgumentationGraph/0),
-            X:::buildArgumentationGraph.
+            X:::buildArgumentationGraph,
+            graphStore::graph_settle.
 
         %! dispatched(+Module, +Predicate)
         %  Module defines Predicate (Name/Arity), one the pipeline calls on the modules the flags select: an existence

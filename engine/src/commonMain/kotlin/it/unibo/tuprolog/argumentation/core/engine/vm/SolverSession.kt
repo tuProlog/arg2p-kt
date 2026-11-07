@@ -23,6 +23,9 @@ class SolverSession {
      */
     internal val identifiers = RecordIdentifiers(concurrent = true)
 
+    /** What the layers above the engine share among the solvers of the session: the graph they build together, if any */
+    var shared: Any? = null
+
     companion object {
         /** [solver] in [session], from its next resolution, if it is a solver of the Arg2P engine (others go on alone) */
         fun join(

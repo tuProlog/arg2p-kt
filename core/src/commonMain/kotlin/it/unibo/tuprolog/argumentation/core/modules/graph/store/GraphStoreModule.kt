@@ -4,6 +4,9 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttack
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackById
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackIn
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphOwn
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSettle
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphShare
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -28,7 +31,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "graphStore") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(ExpandedAttack, ExpandedAttackById, ExpandedAttackIn).associateBy { it.signature }
+        get() = listOf(ExpandedAttack, ExpandedAttackById, ExpandedAttackIn, GraphShare, GraphSettle, GraphOwn).associateBy { it.signature }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -112,7 +115,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_matching(conclusion, Conclusion, argument(Argument)).
 
         %! argumentById(?Id, ?Argument)
-        %  Argument is saved with the identifier Id.
+        %  Argument is saved with the identifier Id. Going through the arguments (Id unbound) while the graph is built by
+        %  the solvers of a session together (see SharedGraph), those this solver saved.
+        argumentById(Id, Argument) :-
+            var(Id),
+            graph_own(Ids), !,
+            member(Id, Ids),
+            context_term(Id, argument(Argument)).
         argumentById(Id, Argument) :-
             context_check(arg(Id)),
             context_term(Id, argument(Argument)).
@@ -174,9 +183,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(argInfo(Id, InfoId)),
             context_term(InfoId, info(Info)).
 
-        %! newConclusion(?Tag, ?Conclusion)
+        %! newConclusion(+Tag, ?Conclusion)
         %  An argument for Conclusion was saved under Tag.
+        %  With the solvers of a session building the graph together (see SharedGraph): what this one saved passed on, and
+        %  what the others did taken, as new under Tag; with nothing new, until another does or none can.
         newConclusion(Tag, Conclusion) :-
+            (context_check(newConc(Tag, _)) -> graph_share(Tag, false) ; graph_share(Tag, true)),
             context_check(newConc(Tag, Conclusion)).
 
         %! forgetNewConclusions(?Tag)
