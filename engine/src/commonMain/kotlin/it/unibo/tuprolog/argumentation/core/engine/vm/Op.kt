@@ -147,9 +147,6 @@ internal object Op {
     const val ALLOCATE_GET_Y_VAR2 = 93
     const val GET_X_VAR_TYPE_X = 94
 
-    // From here on, an instruction stands for an entry of a clause compiled (see Program.compileHot)
-    const val COMPILED = 1 shl 16
-
     // The target of ARITH_IS: a register or a slot holding a value to unify, one to set (a first occurrence), a
     // constant
     const val T_X = 1

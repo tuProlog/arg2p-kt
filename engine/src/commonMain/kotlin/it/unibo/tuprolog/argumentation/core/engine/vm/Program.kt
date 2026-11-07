@@ -80,52 +80,6 @@ internal class Program() {
     /** The highest register any clause uses */
     var maxRegister = 0
 
-    /** The clauses compiled and the entry of each, by the instructions standing for them (see [Op.COMPILED]) */
-    var compiledUnits = arrayOfNulls<CompiledCode>(64)
-    var compiledEntries = IntArray(64)
-    private var compiledCount = 0
-
-    /** The clauses of [predicate] compiled, those that can be and are not yet; those of a base program for every program derived from it */
-    fun compileHot(predicate: Predicate) {
-        val base = base
-        for (clause in predicate.clauses) {
-            if (code[clause.start] >= Op.COMPILED || clause.notGenerated) continue
-            val generated =
-                if (base != null && clause.start < baseCodeTop) {
-                    locked(SharedPrograms) { base.generatedFor(clause) }
-                } else {
-                    generatedFor(clause)
-                }
-            if (generated != null) install(generated)
-        }
-    }
-
-    private fun generatedFor(clause: ClauseCode): GeneratedClause? {
-        clause.generated?.let { return it }
-        val generated = ClauseCodegen.generate(code, clause.start)
-        if (generated == null) {
-            clause.notGenerated = true
-            return null
-        }
-        clause.generated = generated
-        install(generated)
-        return generated
-    }
-
-    private fun install(generated: GeneratedClause) {
-        for ((entry, address) in generated.entries.withIndex()) {
-            if (code[address] >= Op.COMPILED) continue
-            if (compiledCount == compiledUnits.size) {
-                compiledUnits = compiledUnits.copyOf(compiledCount * 2)
-                compiledEntries = compiledEntries.copyOf(compiledCount * 2)
-            }
-            compiledUnits[compiledCount] = generated.unit
-            compiledEntries[compiledCount] = entry
-            code[address] = Op.COMPILED + compiledCount
-            compiledCount++
-        }
-    }
-
     // The program this one was derived from, if any (see SharedPrograms): its symbols and its code up to
     // [baseCodeTop] are this program's too, so the scopes it compiled by then serve here as they are
     private var base: Program? = null
@@ -167,9 +121,6 @@ internal class Program() {
         bigIds.putAll(base.bigIds)
         code = base.code.copyOf(maxOf(base.codeTop + (1 shl 12), 1 shl 14))
         codeTop = base.codeTop
-        compiledUnits = base.compiledUnits.copyOf()
-        compiledEntries = base.compiledEntries.copyOf()
-        compiledCount = base.compiledCount
         maxRegister = base.maxRegister
         this.base = base
         baseCodeTop = base.codeTop
@@ -208,12 +159,6 @@ internal class Program() {
          */
         val commitMask: Int = -1,
     ) {
-        /** The clause compiled, once it was, for all the programs sharing it */
-        var generated: GeneratedClause? = null
-
-        /** Whether compiling it was tried and cannot be done */
-        var notGenerated = false
-
         val key: Int get() = if (keys.isEmpty()) 0 else keys[0]
 
         /** Whether an argument beyond the first is keyed */
@@ -273,9 +218,6 @@ internal class Program() {
 
         /** How many clauses there are */
         val size: Int get() = table.size
-
-        /** How many times it was called: from a number of them on, it is compiled */
-        var heat = 0
 
         fun add(
             clause: ClauseCode,
@@ -848,12 +790,6 @@ internal class Program() {
 
         /** The arguments of the first argument of a clause that are keyed */
         const val INNER_KEYS = 4
-
-        /** Whether clauses called enough are compiled by the platform: off, for now, whatever the platform */
-        const val GENERATE_CODE = true
-
-        /** The calls of a predicate, a power of 2, that have its clauses compiled: fewer and a short solve pays for code still cold */
-        const val HOT_CALLS = 1 shl 14
     }
 }
 
