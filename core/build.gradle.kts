@@ -35,6 +35,13 @@ kotlin {
                 implementation(libs.tuprolog.solve.prolog)
             }
         }
+
+        jvmTest {
+            dependencies {
+                // the launcher the Prolog coverage runs the tests with (at run time, the one kotlin-test brings)
+                compileOnly(libs.junit.platform.launcher)
+            }
+        }
     }
 }
 

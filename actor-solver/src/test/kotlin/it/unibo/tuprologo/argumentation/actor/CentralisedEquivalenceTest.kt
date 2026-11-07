@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 // The labels of the arguments for a statement are the same in the actor solver, its rules split among workers, and in

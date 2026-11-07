@@ -2926,7 +2926,11 @@ internal class Machine(
         val ball = raised.ball
         return if (ball is Struct && ball.functor == "error" && ball.arity in 1..2 && ball[0] is Struct) {
             try {
-                LogicError.of(context = context, type = ball[0] as Struct, extraData = if (ball.arity > 1) ball[1] else null)
+                // (the message: the error, and a text as its context, its explanation, whatever tuProlog makes of them)
+                val type = ball[0] as Struct
+                val extra = if (ball.arity > 1) ball[1] else null
+                val message = (extra as? Atom)?.let { "$type: ${it.value}" }
+                LogicError.of(message = message, context = context, type = type, extraData = extra)
             } catch (_: IllegalArgumentException) {
                 MessageError.of(ball, context)
             }

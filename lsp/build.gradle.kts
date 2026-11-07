@@ -38,5 +38,5 @@ dependencies {
     implementation(project(":"))
     implementation(libs.lsp4j)
 
-    testImplementation(kotlin("test-junit"))
+    testImplementation(kotlin("test-junit5"))
 }

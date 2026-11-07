@@ -5,7 +5,10 @@ import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
 import it.unibo.tuprolog.core.Clause
-import org.junit.runner.JUnitCore
+import org.junit.platform.engine.discovery.DiscoverySelectors
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder
+import org.junit.platform.launcher.core.LauncherFactory
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener
 import java.io.File
 import java.util.Collections
 import java.util.IdentityHashMap
@@ -31,13 +34,18 @@ class PrologCoverage {
     fun coverage() {
         val owners = moduleClauses()
         val used = Collections.newSetFromMap(Collections.synchronizedMap(IdentityHashMap<Clause, Boolean>()))
-        val result =
+        val summary =
             ClauseObservers.register { used.add(it) }.use {
-                JUnitCore.runClasses(*testClasses().toTypedArray())
+                val request =
+                    LauncherDiscoveryRequestBuilder
+                        .request()
+                        .selectors(testClasses().map { DiscoverySelectors.selectClass(it) })
+                        .build()
+                SummaryGeneratingListener().also { LauncherFactory.create().execute(request, it) }.summary
             }
         val output = File(System.getProperty("coverage.output") ?: "build/reports/prolog-coverage/coverage.md")
         output.parentFile.mkdirs()
-        output.writeText(report(owners, used, result.runCount, result.failureCount))
+        output.writeText(report(owners, used, summary.testsStartedCount.toInt(), summary.totalFailureCount.toInt()))
         // the total for a badge, as shields.io reads it (https://shields.io/badges/endpoint-badge)
         File(output.parentFile, "badge.json").writeText(badge(owners.count { it.clause in used }, owners.size))
         println("PROLOG COVERAGE|${output.absolutePath}")
