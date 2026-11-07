@@ -158,6 +158,34 @@ internal class ClauseStore private constructor(
         from: Int,
     ): Pair<IntArray, Int> = data.idsFrom(encoding().functorWord(name, 1), from)
 
+    /** The facts of `name/arity` from the [from]-th asserted on, in the order they were asserted, and how many there are */
+    fun recordsFrom(
+        name: String,
+        arity: Int,
+        from: Int,
+    ): Pair<List<Record>, Int> {
+        val stored = data.stored(encoding().functorWord(name, arity))
+        return List(maxOf(0, stored.size - from)) { stored[from + it].record } to stored.size
+    }
+
+    /** How many clauses of `name/arity` are stored */
+    fun count(
+        name: String,
+        arity: Int,
+    ): Int = data.count(encoding().functorWord(name, arity))
+
+    /** Whether the fact [record] is stored, up to the names of its variables */
+    fun holds(record: Record): Boolean {
+        val encoded = Record.encoded(record, encoding())
+        val key = encoded.key
+        val candidates = candidates(encoded.words, encoded.root)
+        for (i in 0 until candidates.size) {
+            val stored = candidates.items[i]!!.record
+            if (!stored.isRule && stored.key == key) return true
+        }
+        return false
+    }
+
     /** The fact `name(id)` added */
     fun assertId(
         name: String,
@@ -556,6 +584,8 @@ internal class ClauseStore private constructor(
             }
             return found.toIntArray() to all.size
         }
+
+        fun count(key: Int): Int = predicates[key]?.all?.size ?: 0
 
         /** The records of the predicate [key], oldest first */
         fun stored(key: Int): List<Stored> {

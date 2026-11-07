@@ -137,7 +137,7 @@ fun NativeCall.saveArgumentRecords(
 }
 
 // The word of the conclusion of `argument([Rules, TopRule, [Claim], Body, Info])`: the third element of its list
-private fun conclusionWord(argument: Record): Int {
+internal fun conclusionWord(argument: Record): Int {
     var cell = payload(argument.words[payload(argument.root) + 1])
     repeat(2) { cell = payload(argument.words[cell + 1]) }
     return argument.words[cell]
