@@ -7,7 +7,9 @@ import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.graph.saveArgumentRecords
 import it.unibo.tuprolog.argumentation.core.primitives.graph.saveBuiltArguments
+import it.unibo.tuprolog.argumentation.parallel.message.SharedArgument
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -20,7 +22,7 @@ internal interface BuiltGraph {
      * labels of the arguments for Statement depend on), as terms: null if the workers did not build them, which the catalog has
      * them do
      */
-    fun arguments(need: Term): Collection<Term>?
+    fun arguments(need: Term): Collection<SharedArgument>?
 
     /** The identifiers of the arguments in the solver, as saved, in the order of [arguments] */
     fun identified(ids: IntArray)
@@ -103,7 +105,7 @@ private class RuleGraph(
     inner class Arguments : AbstractNativePrimitive(Signature("builtArguments", 2)) {
         override fun call(call: NativeCall): Int {
             val arguments = graph.arguments(call.term(call.arg(0))) ?: return NativeCall.FAIL
-            return call.replyWord(1, call.word(PlList.of(arguments)))
+            return call.replyWord(1, call.word(PlList.of(arguments.map { it.argument })))
         }
     }
 
@@ -111,7 +113,7 @@ private class RuleGraph(
     inner class SaveBuilt : AbstractNativePrimitive(Signature("saveBuilt", 1)) {
         override fun call(call: NativeCall): Int {
             val arguments = graph.arguments(call.term(call.arg(0))) ?: return NativeCall.FAIL
-            graph.identified(call.saveBuiltArguments("a", arguments))
+            graph.identified(call.saveShared(arguments.toList()))
             return NativeCall.CONTINUE
         }
     }
@@ -152,6 +154,28 @@ private class RuleGraph(
             )
         }
     }
+}
+
+// [arguments] saved, in their order: each run of them from the same batch of records straight from the records, those
+// given as terms (a message read as text) from the terms
+private fun NativeCall.saveShared(arguments: List<SharedArgument>): IntArray {
+    val ids = IntArray(arguments.size)
+    var start = 0
+    while (start < arguments.size) {
+        val batch = arguments[start].batch
+        var end = start + 1
+        while (end < arguments.size && arguments[end].batch === batch) end++
+        val run = arguments.subList(start, end)
+        val saved =
+            if (batch == null) {
+                saveBuiltArguments("a", run.map { it.argument })
+            } else {
+                saveArgumentRecords("a", batch, IntArray(run.size) { run[it].index })
+            }
+        saved.copyInto(ids, start)
+        start = end
+    }
+    return ids
 }
 
 // Query mode: the arguments the workers built exploring the query, as the module queryExploration explores it on its

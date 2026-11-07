@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.core.engine.PortableRecords
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.emptyCompactGraph
 import it.unibo.tuprolog.core.Term
@@ -30,12 +31,56 @@ data class Response(
  * as it uses them ([bound], with constraints: their instances, which the catalog adds when it changes the graph), from
  * a worker to the catalog only
  */
-internal data class SharedArgument(
+internal class SharedArgument private constructor(
     val id: String,
-    val argument: Term,
-    val supports: List<String> = emptyList(),
-    val bound: List<Term> = emptyList(),
-)
+    private val given: Term?,
+    /**
+     * The records the argument is read from, on a machine: a node's batch of them, the argument the records `3 * index`
+     * to `3 * index + 2` of it (see `ExportedArguments`), null for an argument given as a term (as a message read as text)
+     */
+    val batch: PortableRecords?,
+    val index: Int,
+    val supports: List<String>,
+    val bound: List<Term>,
+) {
+    constructor(
+        id: String,
+        argument: Term,
+        supports: List<String> = emptyList(),
+        bound: List<Term> = emptyList(),
+    ) : this(id, argument, null, -1, supports, bound)
+
+    /** The argument as a term, read off its batch the first time something asks for it (text, an attack still on terms) */
+    val argument: Term by lazy { given ?: batch!!.term(3 * index).castToStruct()[0] }
+
+    /** The statement it concludes: read off the record of its conclusion alone, when it has one */
+    val claim: Term? get() =
+        batch
+            ?.term(3 * index + 2)
+            ?.castToList()
+            ?.toList()
+            ?.single()
+
+    /** The same argument, with no supports nor bound ones (as sent to another worker) */
+    fun alone(): SharedArgument = SharedArgument(id, given, batch, index, emptyList(), emptyList())
+
+    override fun equals(other: Any?): Boolean =
+        other is SharedArgument && id == other.id && argument == other.argument && supports == other.supports && bound == other.bound
+
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun toString(): String = "SharedArgument($id, $argument, $supports, $bound)"
+
+    companion object {
+        /** The argument [index] of [batch], known as [id] */
+        fun of(
+            id: String,
+            batch: PortableRecords,
+            index: Int,
+            supports: List<String> = emptyList(),
+        ): SharedArgument = SharedArgument(id, null, batch, index, supports, emptyList())
+    }
+}
 
 /** The premises of the rules of [worker], and their conclusions */
 internal data class Interest(

@@ -6,10 +6,14 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.PortableRecords
 import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.graph.ExportedArguments
+import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentsSavedAfter
+import it.unibo.tuprolog.argumentation.core.primitives.graph.saveArgumentRecords
 import it.unibo.tuprolog.argumentation.core.runtime.subsumes
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.argumentation.parallel.message.Ack
@@ -78,6 +82,10 @@ internal class Worker(
     private val own = mutableListOf<Int>()
     private val ownByClaim = ClaimIndex<Int>(statementOf = ::claim)
     private val terms = mutableMapOf<Int, Term>()
+    private val handles = mutableMapOf<Int, SharedArgument>()
+    private var exported: ExportedArguments? = null
+    private var importing: Pair<PortableRecords, IntArray>? = null
+    private var imported = IntArray(0)
     private val claims = mutableMapOf<Int, Term>()
     private val globalIds = mutableMapOf<Int, String>()
 
@@ -108,6 +116,8 @@ internal class Worker(
     private val kept = goal("workerGoals::keptArguments(Kept)")
     private val keptCandidates = goal("workerGoals::keptCandidates(Kept)")
     private val fire = goal("workerGoals::fire")
+    private val export = goal("workerGoals::exportSince(L)")
+    private val import = goal("workerGoals::importArguments")
 
     // the arguments built since L, with the identifiers of their supports, and the supports bound as they use them
     // (with constraints, the instances of saved arguments, not saved themselves: see the module constraints)
@@ -129,9 +139,26 @@ internal class Worker(
         override fun call(call: NativeCall): Int = call.replyWord(1, call.word(passed.getValue(call.atomName(call.arg(0)))))
     }
 
+    // exportSince(+Last): the arguments saved above Last, as records (see argumentsSavedAfter)
+    private inner class Export : AbstractNativePrimitive(Signature("exportSince", 1)) {
+        override fun call(call: NativeCall): Int {
+            exported = call.argumentsSavedAfter(call.intValue(call.arg(0)).toInt())
+            return NativeCall.CONTINUE
+        }
+    }
+
+    // importArguments: the arguments of the batch being imported saved, their conclusions new under f (see saveArgumentRecords)
+    private inner class Import : AbstractNativePrimitive(Signature("importArguments", 0)) {
+        override fun call(call: NativeCall): Int {
+            val (batch, at) = importing!!
+            imported = call.saveArgumentRecords("f", batch, at)
+            return NativeCall.CONTINUE
+        }
+    }
+
     private inner class WorkerGoals : PrologModule("prolog.argumentation.parallel.worker", "workerGoals") {
         override val primitives: Map<Signature, Primitive>
-            get() = listOf(Passed()).associateBy { it.signature }
+            get() = listOf(Passed(), Export(), Import()).associateBy { it.signature }
 
         override val prologRawTheory: String =
             // language=Prolog
@@ -165,7 +192,7 @@ internal class Worker(
                 ), Kept).
 
             fire :-
-                passed(claims, Claims),
+                findall(C, graphStore::newConclusion(f, [C]), Claims),
                 graphStore::forgetNewConclusions(a),
                 graphStore::forgetNewConclusions(b),
                 graphStore::forgetNewConclusions(f),
@@ -235,7 +262,7 @@ internal class Worker(
                             if (built.isNotEmpty()) {
                                 send(
                                     Address.worker(message.from),
-                                    Notify(index, built.map { SharedArgument(globalIds.getValue(it), terms.getValue(it)) }),
+                                    Notify(index, built.map { shared(it) }),
                                 )
                             }
                         }
@@ -254,7 +281,6 @@ internal class Worker(
                     engaged(Address.worker(message.from)) {
                         val claims = keep(message.arguments)
                         if (locality == null) {
-                            passed["claims"] = PlList.of(claims)
                             checked(solver.solve(fire.with()).first())
                             share()
                         } else {
@@ -358,13 +384,27 @@ internal class Worker(
     }
 
     // The arguments of the others kept in the graph, their conclusions given
-    private fun keep(arguments: List<SharedArgument>): List<Term> =
-        savedArguments(arguments, kept).map { (argument, id, claim) ->
-            received += id
-            terms[id] = argument.argument
-            globalIds[id] = argument.id
-            claim
+    private fun keep(arguments: List<SharedArgument>): List<Term> {
+        val batch = arguments.firstOrNull()?.batch
+        if (constrained || batch == null || arguments.any { it.batch !== batch }) {
+            return savedArguments(arguments, kept).map { (argument, id, claim) ->
+                received += id
+                terms[id] = argument.argument
+                globalIds[id] = argument.id
+                claim
+            }
         }
+        importing = batch to IntArray(arguments.size) { arguments[it].index }
+        checked(solver.solve(import.with()).first())
+        importing = null
+        return arguments.mapIndexed { i, argument ->
+            val id = imported[i]
+            received += id
+            handles[id] = argument
+            globalIds[id] = argument.id
+            argument.claim!!.also { claims[id] = it }
+        }
+    }
 
     // [arguments] saved in the graph, in one goal: each with its identifier and its conclusion
     private fun savedArguments(
@@ -387,6 +427,7 @@ internal class Worker(
     // The arguments of its rules built since the last time, published with their supports, and sent to the workers
     // whose rules use their conclusions
     private fun share() {
+        if (!constrained) return shareRecords()
         val new = (if (constrained) builtBound else built).solutions(solver, "L" to Integer.of(lastId)).sortedBy { it.integer("Id") }
         lastId = maxOf(lastId, new.maxOfOrNull { it.integer("Id") } ?: lastId)
         val mine =
@@ -421,6 +462,38 @@ internal class Worker(
         }
     }
 
+    // share() on records: the arguments built since the last time read off the store as they are, no term made of them
+    private fun shareRecords() {
+        export.solutions(solver, "L" to Integer.of(lastId)).toList()
+        val batch = exported!!
+        exported = null
+        if (batch.ids.isNotEmpty()) lastId = maxOf(lastId, batch.ids.last())
+        val mine = ArrayList<Pair<Int, SharedArgument>>()
+        for (i in batch.ids.indices) {
+            val id = batch.ids[i]
+            if (id in received) continue
+            own += id
+            globalIds[id] = "$index:$id"
+            val argument = SharedArgument.of("$index:$id", batch.records, i, batch.supporters[i].map { globalIds.getValue(it) })
+            handles[id] = argument
+            ownByClaim.add(id)
+            mine += id to argument
+        }
+        if (mine.isEmpty()) return
+        send(Address.CATALOG, Publish(index, mine.map { it.second }))
+        val mineByClaim = ClaimIndex(mine, { (id, _) -> claim(id) })
+        interests.forEach { (worker, patterns) ->
+            val wanted = mineByClaim.matchingAny(patterns)
+            if (wanted.isNotEmpty()) send(Address.worker(worker), Notify(index, wanted.map { (_, it) -> it.alone() }))
+        }
+    }
+
+    // The argument of identifier [id] as it is known: from its batch, or as a term
+    private fun shared(id: Int): SharedArgument = handles[id]?.alone() ?: SharedArgument(globalIds.getValue(id), terms.getValue(id))
+
+    // The argument of identifier [id] as a term: read off its batch the first time
+    private fun term(id: Int): Term = terms[id] ?: handles.getValue(id).argument
+
     // The statements whose arguments may attack the arguments of its rules, found once
     private fun wanted(): List<Term> =
         conflicts
@@ -443,7 +516,7 @@ internal class Worker(
             val matching = ownByClaim.matchingAny(patterns)
             network.send(
                 Address.worker(worker),
-                Candidates(index, matching.map { SharedArgument(globalIds.getValue(it), stub(terms.getValue(it))) }),
+                Candidates(index, matching.map { SharedArgument(globalIds.getValue(it), stub(term(it))) }),
             )
         }
         sendAttacks()
@@ -481,6 +554,7 @@ internal class Worker(
     // of the catalog and the workers still at work
     private fun release() {
         terms.clear()
+        handles.clear()
         claims.clear()
         globalIds.clear()
         candidates.clear()
@@ -493,7 +567,7 @@ internal class Worker(
     }
 
     // The statement the argument of identifier [id] concludes, read once
-    private fun claim(id: Int): Term = claims.getOrPut(id) { claimOf(terms.getValue(id)) }
+    private fun claim(id: Int): Term = claims.getOrPut(id) { handles[id]?.claim ?: claimOf(term(id)) }
 
     // An argument as much of it as an attack needs: itself without its rules
     private fun stub(argument: Term) =

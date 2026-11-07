@@ -70,6 +70,9 @@ internal class Context : ArgLibrary {
     /** The identifier of [term], given one if it has none */
     internal fun identifier(term: Term): Int = branches.identifier(term)
 
+    /** The identifier of [record] (see [identifier]) */
+    internal fun identifier(record: Record): Int = branches.identifier(record)
+
     /** The identifier of [term] if it has one already, without giving it one */
     fun knownIdentifier(term: Term): Int? = branches.knownIdentifier(term)
 

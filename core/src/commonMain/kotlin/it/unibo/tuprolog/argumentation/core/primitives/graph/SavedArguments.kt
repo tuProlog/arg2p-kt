@@ -2,7 +2,14 @@ package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.core.engine.PortableRecords
+import it.unibo.tuprolog.argumentation.core.engine.Record
+import it.unibo.tuprolog.argumentation.core.engine.vm.Words
+import it.unibo.tuprolog.argumentation.core.engine.vm.payload
+import it.unibo.tuprolog.argumentation.core.engine.vm.tag
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
+import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
@@ -38,4 +45,105 @@ fun NativeCall.saveBuiltArguments(
         }
     }
     return ids
+}
+
+/**
+ * The arguments saved in the active branch above the identifier [last], as the nodes of the parallel solver pass them on:
+ * the identifier of each ([ids], growing), three records for each in [records] (the argument `argument(A)`, its info
+ * `info(I)`, its conclusion `[C]`, as the store keeps them: nothing decoded) and the identifiers of the saved arguments
+ * supporting it, newest first (as `graphStore::savedAfter/4` gives them).
+ */
+@InternalArg2pApi
+class ExportedArguments(
+    val ids: IntArray,
+    val records: PortableRecords,
+    val supporters: Array<IntArray>,
+)
+
+@InternalArg2pApi
+fun NativeCall.argumentsSavedAfter(last: Int): ExportedArguments {
+    val context = contextLibrary
+    val store = context.store()!!
+    val saved = store.ids("arg")
+    val ids =
+        saved
+            .toIntArray()
+            .filter { it > last }
+            .sorted()
+            .toIntArray()
+    val infos = context.infoOfArguments()
+    // the supporters of each, newest first, those saved
+    val pairs = context.supportPairs()
+    val supporters = HashMap<Int, MutableList<Int>>()
+    for (i in 0 until pairs.size / 2) {
+        val (supporter, supported) = pairs[2 * i] to pairs[2 * i + 1]
+        if (supported > last && supporter in saved) supporters.getOrPut(supported) { mutableListOf() } += supporter
+    }
+    val records = ArrayList<Record>(ids.size * 3)
+    for (id in ids) {
+        val argument = context.record(id)!!
+        records += argument
+        records += context.record(infos.getValue(id))!!
+        records += argument.sub(conclusionWord(argument))
+    }
+    return ExportedArguments(ids, PortableRecords.of(records), Array(ids.size) { supporters[ids[it]]?.toIntArray() ?: IntArray(0) })
+}
+
+/**
+ * The arguments of [records] at [arguments] (the indices of the arguments, three records each as [argumentsSavedAfter]
+ * gives them; all of them by default), saved in the store of the active branch as `graphStore::saveArguments(Tag,
+ * Arguments)` saves them (their conclusions noted as new under [tag]), those not saved already: the identifier of each,
+ * in the order of [arguments]. No term is made of them.
+ */
+@InternalArg2pApi
+fun NativeCall.saveArgumentRecords(
+    tag: String,
+    records: PortableRecords,
+    arguments: IntArray = IntArray(records.size / 3) { it },
+): IntArray {
+    val context = contextLibrary
+    val store = context.store()!!
+    val program = store.encoding ?: return saveBuiltArguments(tag, arguments.map { records.term(3 * it).castToStruct()[0] })
+    val read = records.records(program, IntArray(arguments.size * 3) { 3 * arguments[it / 3] + it % 3 })
+    val saved = store.ids("arg").copy()
+    val argInfo = program.functorWord("argInfo", 2)
+    val newConc = program.functorWord("newConc", 2)
+    val noted = Record.of(Atom.of(tag), program)
+    val ids = IntArray(read.size / 3)
+    for (i in ids.indices) {
+        val id = context.identifier(read[3 * i])
+        ids[i] = id
+        if (saved.add(id)) {
+            store.assertA(context.record(id)!!)
+            store.assertId("arg", id)
+            val infoId = context.identifier(read[3 * i + 1])
+            store.assertA(
+                Record.compound(program, argInfo, listOf(Record.of(Integer.of(id), program), Record.of(Integer.of(infoId), program))),
+            )
+            store.assertA(Record.compound(program, newConc, listOf(noted, read[3 * i + 2])))
+        }
+    }
+    return ids
+}
+
+// The word of the conclusion of `argument([Rules, TopRule, [Claim], Body, Info])`: the third element of its list
+private fun conclusionWord(argument: Record): Int {
+    var cell = payload(argument.words[payload(argument.root) + 1])
+    repeat(2) { cell = payload(argument.words[cell + 1]) }
+    return argument.words[cell]
+}
+
+// The info of each saved argument, by identifier: argInfo(Id, InfoId)
+private fun Context.infoOfArguments(): Map<Int, Int> =
+    derived("argInfo/2", "infoOf") { stored ->
+        stored.associate { idAt(it, 0) to idAt(it, 1) }
+    }
+
+private fun idAt(
+    stored: ClauseStore.Stored,
+    i: Int,
+): Int {
+    val record = stored.record
+    val word = record.words[payload(record.head) + 1 + i]
+    return if (tag(word) == Words.INT) payload(word) else record.program!!.bigInteger(payload(word)).toInt()
 }

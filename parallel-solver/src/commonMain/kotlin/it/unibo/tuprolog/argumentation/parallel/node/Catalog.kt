@@ -39,6 +39,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.RequireEvaluation
 import it.unibo.tuprolog.argumentation.parallel.message.RequireSolution
 import it.unibo.tuprolog.argumentation.parallel.message.Reset
 import it.unibo.tuprolog.argumentation.parallel.message.Response
+import it.unibo.tuprolog.argumentation.parallel.message.SharedArgument
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.message.Subscribe
@@ -118,7 +119,7 @@ internal class Catalog(
     private val interests = mutableListOf<Interest>()
 
     // The arguments published, by their global identifiers, and their supports
-    private val arguments = mutableMapOf<String, Term>()
+    private val arguments = mutableMapOf<String, SharedArgument>()
 
     // The arguments of the graph built, those the workers published, for the tests
     internal val argumentsBuilt: Int get() = arguments.size
@@ -241,7 +242,7 @@ internal class Catalog(
                     // back in the order of the worker
                     argument.supports.asReversed().forEach { supports += it to argument.id }
                     argument.bound.forEach { boundSupports += it to argument.id }
-                    arguments[argument.id] = argument.argument
+                    arguments[argument.id] = argument
                 }
                 network.send(Address.worker(message.worker), Ack(-1))
             }
@@ -490,7 +491,7 @@ internal class Catalog(
         // The identifiers of the arguments in the solver, by their global ones
         private var identifiers = emptyMap<String, Int>()
 
-        override fun arguments(need: Term): Collection<Term>? {
+        override fun arguments(need: Term): Collection<SharedArgument>? {
             val wanted = if (need is Struct && need.functor == "explore") Need.Explored(need[0]) else Need.Whole
             if (!met(wanted)) {
                 this@Catalog.need = wanted
@@ -507,7 +508,7 @@ internal class Catalog(
             supports.map { (support, argument) -> identifiers.getValue(support) to identifiers.getValue(argument) }
 
         override fun boundSupports(): Term =
-            PlList.of(boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument)) })
+            PlList.of(boundSupports.map { (support, argument) -> Struct.of("support", support, arguments.getValue(argument).argument) })
 
         override fun attacks(): List<Triple<String, Int, Int>> =
             directAttacks.distinct().map { (type, attacker, target) ->

@@ -127,7 +127,89 @@ class Record internal constructor(
         }
     }
 
+    /** The term of the word [w] of the record, as a record of its own: its cells copied, nothing decoded */
+    internal fun sub(w: Int): Record {
+        var out = IntArray(16)
+        var top = 0
+        val moved = HashMap<Int, Int>()
+
+        fun alloc(cells: Int): Int {
+            if (top + cells > out.size) out = out.copyOf(maxOf(out.size * 2, top + cells))
+            return top.also { top += cells }
+        }
+
+        fun copy(word: Int): Int =
+            when (tag(word)) {
+                REF -> {
+                    val a = payload(word)
+                    if (words[a] != word) {
+                        copy(words[a])
+                    } else {
+                        ref(moved.getOrPut(a) { alloc(1).also { out[it] = ref(it) } })
+                    }
+                }
+                STR -> {
+                    val a = payload(word)
+                    moved[a]?.let { return word(STR, it) }
+                    val f = if (functor != 0 && word == root) functor else words[a]
+                    val n = program!!.arity(f)
+                    val at = alloc(n + 1)
+                    moved[a] = at
+                    out[at] = f
+                    for (i in 1..n) {
+                        val argument = copy(words[a + i])
+                        out[at + i] = argument
+                    }
+                    word(STR, at)
+                }
+                LIST -> {
+                    val a = payload(word)
+                    moved[a]?.let { return word(LIST, it) }
+                    val at = alloc(2)
+                    moved[a] = at
+                    val head = copy(words[a])
+                    out[at] = head
+                    val tail = copy(words[a + 1])
+                    out[at + 1] = tail
+                    word(LIST, at)
+                }
+                else -> word
+            }
+        val subRoot = copy(w)
+        return Record(program, out.copyOf(top), subRoot, null)
+    }
+
     companion object {
+        /** `f(Parts...)` in the words of [program], [functor] the word of f: the words of each part copied after its cell */
+        internal fun compound(
+            program: Program,
+            functor: Int,
+            parts: List<Record>,
+        ): Record {
+            val n = parts.size
+            val out = IntArray(1 + n + parts.sumOf { it.words.size })
+            out[0] = functor
+            var offset = 1 + n
+
+            fun moved(
+                word: Int,
+                by: Int,
+            ): Int =
+                when (tag(word)) {
+                    REF, STR, LIST -> word(tag(word), payload(word) + by)
+                    else -> word
+                }
+            parts.forEachIndexed { i, part ->
+                require(
+                    part.program === program && part.functor == 0,
+                ) { "A part in the words of another program, or renamed: ${part.term}" }
+                out[1 + i] = moved(part.root, offset)
+                for (k in part.words.indices) out[offset + k] = moved(part.words[k], offset)
+                offset += part.words.size
+            }
+            return Record(program, out, word(STR, 0), null)
+        }
+
         /** [term] as a record holding the term, encoded by the store that keeps it */
         fun of(term: Term): Record = Record(null, IntArray(0), 0, term)
 
