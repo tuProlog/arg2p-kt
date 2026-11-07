@@ -342,6 +342,9 @@ internal class Catalog(
                 // goal builds its graph (the other goals are solved as the standard solver solves them)
                 Partitioning("", emptyList(), converted = false, catalog = theory.toString())
             }
+        // (the graph of the last theory dropped first: the solver of a theory changed binds its context to the new program,
+        // and would encode every record of it again only for the reset below to forget them)
+        solver.solveOnce("context_reset")
         solver.resetStaticKb()
         solver.loadStaticKb(RuleAnnotations.parse(partitioning.catalog, solver.operators, solver.unificator))
         solver.solveOnce("context_reset, parser:::convertAllRules")
