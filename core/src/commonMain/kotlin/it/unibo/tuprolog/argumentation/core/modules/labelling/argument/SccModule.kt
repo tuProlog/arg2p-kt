@@ -1,8 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Forcing
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.LabelIn
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
 import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
+import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedSccs
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -12,7 +15,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(UndecidedCandidates, Selection).associate { it.signature to it }
+        get() = listOf(UndecidedCandidates, UndecidedSccs, Selection, Forcing, LabelIn).associate { it.signature to it }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -20,86 +23,164 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         %! label(+Accept, +Select)
         %  Labellings built one strongly connected component at a time, in topological order.
         %  The labels of a component only depend on the components before it, and are final once it is left.
-        %  Within a component the search forces IN its undecided arguments (grounded propagation labels the rest),
-        %  then keeps the local labellings that pass Accept and Select:
+        %  Within a component the search forces IN its undecided arguments (grounded propagation labels the rest) up to
+        %  the first admissible labellings, and labels what is left of the component above each of them as it labels the
+        %  graph, one strongly connected component of it at a time; it keeps the local labellings that pass Accept and
+        %  Select:
         %    Accept  admissible - the IN arguments are defended
         %            decided    - admissible, and no argument of the component left UND
         %    Select  all        - every accepted local labelling
         %            maximal    - the accepted ones with a maximal set of IN arguments in the component
         %  Each solution leaves its labelling as the active context, released when the next one is computed.
         label(Accept, Select) :-
+            label(Accept, Select, grounded).
+
+        %! label(+Accept, +Select, +Closure)
+        %  The same, the labellings closed by Closure:
+        %    grounded - an argument forced IN with what it makes IN by grounded propagation, from the grounded
+        %               labelling (complete labellings: what the IN arguments defend is IN)
+        %    none     - an argument forced IN with only what it attacks OUT, from the labelling with nothing more IN
+        %               (admissible labellings)
+        label(Accept, Select, Closure) :-
             cache_retract(scc_seen(_, _)),
             context_active(Start),
-            grounded:::argumentLabelling,
+            root(Closure, Start),
             utils::sccs(Sccs),
             context_active(Root),
             (
-                labelComponents(Accept, Select, Sccs, Root)
+                solve(Accept, Select, Closure, top, Sccs, [], Root, State),
+                context_checkout(State)
             ;
                 context_checkout(Start),
                 context_drop(Root),
                 fail
             ).
 
-        labelComponents(_, _, [], Branch) :-
-            context_checkout(Branch).
-        labelComponents(Accept, Select, [Scc|Sccs], Branch) :-
+        root(grounded, _) :-
+            grounded:::argumentLabelling.
+        root(none, Start) :-
+            conflictfree::labelSet(Start, []).
+
+        % step(+Closure, +Id): Id forced IN, and what follows from it by Closure
+        step(grounded, Id) :-
+            % (the state is a grounded fixpoint: the cascade of Id alone, see grounded::propagateFrom)
+            grounded::propagateFrom(Id).
+        step(none, Id) :-
+            labelIn(Id).
+
+        % solve(+Accept, +Select, +Closure, +Mode, +Sccs, +Excluded, +Branch, -State): State labels the components Sccs
+        % from Branch, none of Excluded IN. Mode is top for the graph, within for what is left of a component above an
+        % admissible labelling of it (its states are released by the search of that component, not one by one)
+        solve(_, _, _, _, [], _, Branch, Branch).
+        solve(Accept, Select, Closure, Mode, [Scc | Sccs], Excluded, Branch, State) :-
+            undecidedSccs(Scc, Branch, Pieces),
+            solvePieces(Pieces, Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State).
+
+        % What is decided splits a component: what is left UND of it is labelled one strongly connected component at a
+        % time, the first now (all UND, nothing to split), the others put before the components still to label, each
+        % split again when its turn comes by what the ones before it decided
+        solvePieces([], Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State) :-
+            solve(Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State).
+        solvePieces([Piece | Pieces], Accept, Select, Closure, Mode, Sccs, Excluded, Branch, State) :-
+            append(Pieces, Sccs, Next),
+            solveComponent(Accept, Select, Closure, Mode, Piece, Next, Excluded, Branch, State).
+
+        solveComponent(Accept, Select, Closure, Mode, Scc, Sccs, Excluded, Branch, State) :-
             context_last(Mark),
-            findall(State-Ok, localLabelling(Accept, Scc, Branch, State, Ok), Explored),
-            selection(Select, Scc, Explored, Selected),
+            findall(Option-Ok, option(Accept, Select, Closure, Scc, Excluded, Branch, Option, Ok), Options),
+            selection(Select, Scc, Options, Selected),
             context_checkout(Branch),
-            % every branch the local search created and did not select
+            % every branch the search of the component created and did not select
             context_drop_after(Mark, Selected),
             member(Next, Selected),
             (
-                labelComponents(Accept, Select, Sccs, Next)
+                solve(Accept, Select, Closure, Mode, Sccs, Excluded, Next, State)
             ;
                 % a labelling is released once all its continuations are done (Branch by the previous component)
+                Mode == top,
                 Next \== Branch,
                 context_checkout(Branch),
                 context_drop(Next),
                 fail
             ).
 
-        % localLabelling(+Accept, +Scc, +Branch, -State, -Ok): State is Branch or a labelling reached from it by
-        % forcing IN undecided arguments of Scc, Ok tells whether Accept holds for it
-
-        localLabelling(Accept, Scc, Branch, State, Ok) :-
-            reachable(Scc, Branch, State),
+        % option(+Accept, +Select, +Closure, +Scc, +Excluded, +Branch, -State, -Ok): a local labelling of Scc from Branch,
+        % and whether Accept holds for it: Branch itself, or one above an admissible labelling of Scc first reached from
+        % Branch. The labellings above an admissible one are it and those of what is left of Scc, so the search does not
+        % go on from it: what is left is split and labelled as the graph is
+        option(Accept, _, _, Scc, _, Branch, Branch, Ok) :-
+            context_checkout(Branch),
+            ok(Accept, Scc, Ok).
+        option(Accept, Select, Closure, Scc, Excluded, Branch, State, Ok) :-
+            admissibleAbove(Closure, Scc, Excluded, Branch, Branch, Admissible, Mine),
+            solve(Accept, Select, Closure, within, [Scc], Mine, Admissible, State),
             context_checkout(State),
+            ok(Accept, Scc, Ok).
+
+        ok(Accept, Scc, Ok) :-
             (accepted(Accept, Scc) -> Ok = true ; Ok = false).
 
-        accepted(admissible, _) :-
-            admissible::admissibleSet.
+        % (the IN arguments of the earlier components were checked with theirs: admissible::admissibleWithin)
+        accepted(admissible, Scc) :-
+            admissible::admissibleWithin(Scc).
         accepted(decided, Scc) :-
-            admissible::admissibleSet,
+            admissible::admissibleWithin(Scc),
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
-        reachable(_, Branch, Branch).
-        reachable(Scc, Branch, State) :-
-            undecidedCandidates(Scc, Branch, Candidates),
+        % admissibleAbove(+Closure, +Scc, +Excluded, +Start, +Branch, -Admissible, -Mine): Admissible is admissible on
+        % Scc, reached from Branch by forcing IN undecided arguments of Scc with no admissible labelling on the way since
+        % Start; Mine is Excluded and the candidates tried before on the way. Excluded are the candidates tried before in the branches
+        % above, whose own branches found every admissible labelling above them that has them IN: none is IN below.
+        % scc_seen(Start, In) marks a labelling of the search from Start as reached
+        admissibleAbove(Closure, Scc, Excluded, Start, Branch, Admissible, Mine) :-
+            undecidedCandidates(Scc, Branch, Excluded, Candidates),
             Candidates = [_ | _],
             findall(I, graphStore::argumentLabelByIdIn(Branch, in, I), Ins),
-            member(IdX, Candidates),
-            utils::sortDescending([IdX|Ins], Seed),
-            \+ cache_check(scc_seen(Scc, Seed)),
-            cache_assert(scc_seen(Scc, Seed)),
-            graphStore::argumentByIdIn(Branch, IdX, X),
+            candidate(Candidates, Excluded, IdX, Tried),
+            utils::sortDescending([IdX | Ins], Seed),
+            \+ cache_check(scc_seen(Start, Seed)),
+            cache_assert(scc_seen(Start, Seed)),
             context_branch(Branch, NewBranch),
-            graphStore::unlabelArguments(und),
-            graphStore::labelArgument(in, X, IdX),
-            grounded::argumentLabelling,
+            step(Closure, IdX),
+            force(Closure, Scc, Tried),
             graphStore::labelledIds(in, Reached),
             utils::sortDescending(Reached, Labelled),
-            unexplored(Scc, Seed, Labelled),
-            reachable(Scc, NewBranch, State).
+            unexplored(Start, Seed, Labelled),
+            (
+                admissible::admissibleWithin(Scc)
+            ->
+                Admissible = NewBranch,
+                Mine = Tried
+            ;
+                admissibleAbove(Closure, Scc, Tried, Start, NewBranch, Admissible, Mine)
+            ).
 
-        % Grounded propagation is monotone, so a labelling only depends on the set of arguments forced IN:
-        % scc_seen(Scc, In) marks the labelling reached by forcing In within Scc as explored, whatever the order
+        % candidate(+Candidates, +Excluded, -Id, -Mine): each candidate in turn, with those before it excluded
+        candidate([Id | _], Excluded, Id, Excluded).
+        candidate([Tried | Candidates], Excluded, Id, Mine) :-
+            candidate(Candidates, [Tried | Excluded], Id, Mine).
+
+        % force(+Closure, +Scc, +Excluded): the defenders the IN arguments of Scc leave a single choice for forced IN, one
+        % at a time, each followed by its step; fails when one is left with none (no admissible labelling is above the
+        % state), or when an excluded argument is IN (what is above the state was found already)
+        % (a component of one argument has nothing to force: its only candidate is an argument attacking itself)
+        force(_, [_], _) :- !.
+        force(Closure, Scc, Excluded) :-
+            forcing(Scc, Excluded, Next),
+            forced(Next, Closure, Scc, Excluded).
+
+        forced(none, _, _, _).
+        forced(defender(D), Closure, Scc, Excluded) :-
+            step(Closure, D),
+            force(Closure, Scc, Excluded).
+
+        % A labelling only depends on the set of arguments forced IN and on what is excluded, and a state explored with
+        % some excluded misses only labellings found from where they were tried: the labelling reached by forcing In is
+        % marked as reached, whatever the order
 
         unexplored(_, Seed, Seed) :- !.
-        unexplored(Scc, _, Labelled) :-
-            \+ cache_check(scc_seen(Scc, Labelled)),
-            cache_assert(scc_seen(Scc, Labelled)).
+        unexplored(Start, _, Labelled) :-
+            \+ cache_check(scc_seen(Start, Labelled)),
+            cache_assert(scc_seen(Start, Labelled)).
         """.trimIndent()
 }

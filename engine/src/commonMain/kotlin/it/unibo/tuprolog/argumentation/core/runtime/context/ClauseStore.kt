@@ -166,6 +166,31 @@ internal class ClauseStore private constructor(
         assertA(Record.encoded(fact, program).named(program.functorWord(name, 1)))
     }
 
+    /** The facts `name(A)` [assertNamed] added for [facts], removed (the others keep their order) */
+    fun retractNamed(
+        name: String,
+        facts: List<Record>,
+    ) {
+        if (facts.isEmpty()) return
+        val program = encoding()
+        val wanted = facts.mapTo(HashSet(facts.size * 2)) { Record.encoded(it, program).key }
+        removeAll(data.stored(program.functorWord(name, 1)).filter { it.record.key in wanted })
+    }
+
+    /** The facts `name(id)` [assertId] added for [ids], removed (the others keep their order) */
+    fun retractIds(
+        name: String,
+        ids: IdSet,
+    ) {
+        if (ids.size == 0) return
+        removeAll(
+            data.stored(encoding().functorWord(name, 1)).filter { stored ->
+                val word = stored.record.words[payload(stored.record.head) + 1]
+                tag(word) == INT && payload(word) in ids
+            },
+        )
+    }
+
     // ---- the term API
 
     /** The stored clauses whose head may unify with the given one, newest first, as stored */
@@ -506,6 +531,12 @@ internal class ClauseStore private constructor(
         fun ids(key: Int): IdSet {
             val predicate = predicates[key] ?: return IdSet.NONE
             return predicate.ids ?: predicate.readIds().also { predicate.ids = it }
+        }
+
+        /** The records of the predicate [key], oldest first */
+        fun stored(key: Int): List<Stored> {
+            val all = predicates[key]?.all ?: return emptyList()
+            return (0 until all.size).map { all.items[it]!! }
         }
 
         fun candidates(
