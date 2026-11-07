@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.vm
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.core.engine.RecordIdentifiers
 import it.unibo.tuprolog.solve.Solver
 
 /**
@@ -14,6 +15,13 @@ import it.unibo.tuprolog.solve.Solver
 @InternalArg2pApi
 class SolverSession {
     internal val base: Program = SharedPrograms.sessionBase().also { it.session = this }
+
+    /**
+     * The identifiers of the records of the contexts of the session (see `context_id/2`): the same argument the same
+     * identifier on every node, one record however many build it. A node resetting its context keeps them: they go with
+     * the session.
+     */
+    internal val identifiers = RecordIdentifiers(concurrent = true)
 
     companion object {
         /** [solver] in [session], from its next resolution, if it is a solver of the Arg2P engine (others go on alone) */

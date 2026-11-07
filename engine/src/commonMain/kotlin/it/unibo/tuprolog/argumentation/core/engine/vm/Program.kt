@@ -88,6 +88,12 @@ internal class Program(
     var session: SolverSession? = null
 
     /**
+     * Whether the words of [other] are words of this program as they are: those of the program itself, or of a program
+     * sharing its symbols (another of its session)
+     */
+    fun readsWordsOf(other: Program?): Boolean = other === this || (other != null && other.symbols === symbols && symbols.isShared)
+
+    /**
      * A program starting as a copy of [base]: its code (the modules compiled once, for every solver) and its symbols, in
      * a table of its own or in [symbols] (the table a session shares, and a program derived from the base of a session
      * shares too)

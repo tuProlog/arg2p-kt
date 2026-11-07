@@ -10,6 +10,7 @@ import it.unibo.tuprolog.argumentation.core.engine.vm.tag
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
+import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
@@ -48,36 +49,45 @@ fun NativeCall.saveBuiltArguments(
 }
 
 /**
- * The arguments saved in the active branch above the identifier [last], as the nodes of the parallel solver pass them on:
- * the identifier of each ([ids], growing), three records for each in [records] (the argument `argument(A)`, its info
- * `info(I)`, its conclusion `[C]`, as the store keeps them: nothing decoded) and the identifiers of the saved arguments
- * supporting it, newest first (as `graphStore::savedAfter/4` gives them).
+ * The arguments saved in the active branch after the first [from] of them (see [argumentsSavedSince]), as the nodes of
+ * the parallel solver pass them on: the identifier of each ([ids], in the order they were saved, the supporters of an
+ * argument before it), three records for each in [records] (the argument `argument(A)`, its info `info(I)`, its
+ * conclusion `[C]`, as the store keeps them: nothing decoded), the identifiers of the saved arguments supporting it,
+ * newest first (as `graphStore::savedAfter/4` gives them), and how many arguments are saved ([saved], the [from] of the
+ * next call).
  */
 @InternalArg2pApi
 class ExportedArguments(
     val ids: IntArray,
     val records: PortableRecords,
     val supporters: Array<IntArray>,
+    val saved: Int,
 )
 
+/** The identifiers of the arguments saved in the active branch after the first [from] of them, and how many are saved */
 @InternalArg2pApi
-fun NativeCall.argumentsSavedAfter(last: Int): ExportedArguments {
+fun NativeCall.argumentIdsSavedSince(from: Int): Pair<IntArray, Int> = contextLibrary.store()!!.idsFrom("arg", from)
+
+/**
+ * The arguments saved in the active branch after the first [from] of them, by the order they were saved: an argument is
+ * never taken out of a graph, so those saved since a count taken before. Not by their identifiers, which the contexts of
+ * a session share: an argument built after another node gave it an identifier has an older one.
+ */
+
+@InternalArg2pApi
+fun NativeCall.argumentsSavedSince(from: Int): ExportedArguments {
     val context = contextLibrary
     val store = context.store()!!
     val saved = store.ids("arg")
-    val ids =
-        saved
-            .toIntArray()
-            .filter { it > last }
-            .sorted()
-            .toIntArray()
+    val (ids, count) = store.idsFrom("arg", from)
+    val new = IdSet(ids.size).addAll(ids)
     val infos = context.infoOfArguments()
     // the supporters of each, newest first, those saved
     val pairs = context.supportPairs()
     val supporters = HashMap<Int, MutableList<Int>>()
     for (i in 0 until pairs.size / 2) {
         val (supporter, supported) = pairs[2 * i] to pairs[2 * i + 1]
-        if (supported > last && supporter in saved) supporters.getOrPut(supported) { mutableListOf() } += supporter
+        if (supported in new && supporter in saved) supporters.getOrPut(supported) { mutableListOf() } += supporter
     }
     val records = ArrayList<Record>(ids.size * 3)
     for (id in ids) {
@@ -86,7 +96,7 @@ fun NativeCall.argumentsSavedAfter(last: Int): ExportedArguments {
         records += context.record(infos.getValue(id))!!
         records += argument.sub(conclusionWord(argument))
     }
-    return ExportedArguments(ids, PortableRecords.of(records), Array(ids.size) { supporters[ids[it]]?.toIntArray() ?: IntArray(0) })
+    return ExportedArguments(ids, PortableRecords.of(records), Array(ids.size) { supporters[ids[it]]?.toIntArray() ?: IntArray(0) }, count)
 }
 
 /**

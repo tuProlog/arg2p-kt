@@ -201,7 +201,7 @@ class Record internal constructor(
                 }
             parts.forEachIndexed { i, part ->
                 require(
-                    part.program === program && part.functor == 0,
+                    program.readsWordsOf(part.program) && part.functor == 0,
                 ) { "A part in the words of another program, or renamed: ${part.term}" }
                 out[1 + i] = moved(part.root, offset)
                 for (k in part.words.indices) out[offset + k] = moved(part.words[k], offset)
@@ -227,7 +227,14 @@ class Record internal constructor(
         internal fun encoded(
             record: Record,
             program: Program,
-        ): Record = if (record.program === program) record else of(record.term, program)
+        ): Record =
+            when {
+                record.program === program -> record
+                // (the words of another program of the session: the same record, in this program, its identifier kept)
+                program.readsWordsOf(record.program) ->
+                    Record(program, record.words, record.root, null, record.functor).also { it.identifier = record.identifier }
+                else -> of(record.term, program)
+            }
     }
 
     private class Encoder(
@@ -306,7 +313,11 @@ internal class RecordKey(
     init {
         var h = 1
         for (i in 0 until size) h = 31 * h + flat[i]
-        hash = h
+        // (mixed: terms differing by one symbol in several places differ by a multiple of a power of two, the same low
+        // bits a hash table picks its bucket by, and the table of a session holds the records of every node)
+        h = (h xor (h ushr 16)) * -2048144789
+        h = (h xor (h ushr 13)) * -1028477387
+        hash = h xor (h ushr 16)
     }
 
     override fun hashCode(): Int = hash

@@ -3449,7 +3449,7 @@ internal class Machine(
     }
 
     override fun recall(record: Record): Int {
-        if (record.program !== program) return fromTerm(record.term, HashMap())
+        if (!program.readsWordsOf(record.program)) return fromTerm(record.term, HashMap())
         val words = record.words
         val n = words.size
         val base = alloc(n)

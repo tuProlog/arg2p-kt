@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
 import it.unibo.tuprolog.argumentation.core.engine.Record
+import it.unibo.tuprolog.argumentation.core.engine.RecordIdentifiers
 import it.unibo.tuprolog.argumentation.core.engine.RecordKey
 import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.core.Term
@@ -8,6 +9,11 @@ import it.unibo.tuprolog.core.Term
 /**
  * The branches of a context: each a store of clauses (see [ClauseStore]), one of them active, a new one forked from
  * another; and the identifiers of the terms (context_id/2), shared by all the branches. Branch 0 is the root.
+ *
+ * The identifiers are a table of the context's own, or that of the session of its program (see SolverSession), shared
+ * with the contexts of the other solvers of the session: the context takes it when bound to a program of the session
+ * with no identifier given yet, or when reset (an identifier given before would be another one in it), and keeps it when
+ * reset.
  */
 internal class ContextBranches {
     private var next: Int = 1
@@ -21,8 +27,9 @@ internal class ContextBranches {
     // replaced by it: what a branch holds is never lost
     private var template: ClauseStore? = null
     private var templateVersion: Long? = null
-    private var templateIdentifiers: Map<RecordKey, Int> = emptyMap()
-    private var templateRecords: List<Record> = emptyList()
+
+    // (the identifiers as they were, with a table of the context's own: the table of a session only grows)
+    private var templateIdentifiers: RecordIdentifiers? = null
     private var convertingEmpty = false
 
     /** The stores on the words of [program]: those there, and those made from now on */
@@ -31,10 +38,17 @@ internal class ContextBranches {
         template = null
         encoding = program
         stores.values.forEach { it.bind(program) }
-        // the identifiers as they are, for the words of the program
-        val known = records.toList()
-        records.clear()
-        identifiers.clear()
+        val shared = program.session?.identifiers
+        if (identifiers === shared) return
+        // the table of the program's session, or one of its own, when no identifier was given, or those given are the
+        // session's and no store holds them (the context was reset)
+        if (identifiers.size == 0 || (identifiers.concurrent && stores.values.all { it.isEmpty() })) {
+            identifiers = shared ?: RecordIdentifiers(false)
+            return
+        }
+        // the identifiers as they are, for the words of the program, in a table of the context's own
+        val known = identifiers.all()
+        identifiers = RecordIdentifiers(false)
         known.forEach { identifier(it) }
     }
 
@@ -43,8 +57,7 @@ internal class ContextBranches {
         if (!convertingEmpty || version == null) return
         template = selected.fork()
         templateVersion = version
-        templateIdentifiers = HashMap(identifiers)
-        templateRecords = ArrayList(records)
+        templateIdentifiers = if (identifiers.concurrent) null else identifiers.copy()
     }
 
     /**
@@ -56,15 +69,11 @@ internal class ContextBranches {
         val template = template ?: return false
         if (!convertingEmpty || version == null || version != templateVersion) return false
         stores[active] = template.fork()
-        identifiers.clear()
-        identifiers.putAll(templateIdentifiers)
-        records.clear()
-        records.addAll(templateRecords)
+        templateIdentifiers?.let { identifiers = it.copy() }
         return true
     }
 
-    private val identifiers = HashMap<RecordKey, Int>()
-    private val records = ArrayList<Record>()
+    private var identifiers = RecordIdentifiers(false)
 
     /** The active branch */
     var active: Int = 0
@@ -85,14 +94,16 @@ internal class ContextBranches {
     /** The store of [branch]; null if there is no such branch (never created, or dropped) */
     fun storeOf(branch: Int): ClauseStore? = stores[branch]
 
-    /** Back to a single empty branch, the root, and no identifiers */
+    /** Back to a single empty branch, the root, and no identifiers (but those of the session, kept) */
     fun reset() {
         active = 0
         next = 1
         stores.clear()
         stores[0] = ClauseStore(encoding, ContextSchema.indexed)
-        identifiers.clear()
-        records.clear()
+        val table = encoding?.session?.identifiers ?: RecordIdentifiers(false)
+        // (a template saved with a table of the context's own holds identifiers of that table)
+        if (table.concurrent != identifiers.concurrent) template = null
+        identifiers = table
     }
 
     /** [branch] made active; false if there is no such branch */
@@ -131,14 +142,7 @@ internal class ContextBranches {
      * The identifier of [record], shared by all the copies of the term which only differ in variable names (variables
      * get renamed whenever a term is read back from the context)
      */
-    fun identifier(record: Record): Int {
-        val encoded = encoded(record)
-        return identifiers.getOrPut(encoded.key) {
-            encoded.identifier = records.size
-            records += encoded
-            records.size - 1
-        }
-    }
+    fun identifier(record: Record): Int = identifiers.identifier(encoded(record))
 
     fun identifier(term: Term): Int = identifier(Record.of(term))
 
@@ -146,14 +150,14 @@ internal class ContextBranches {
     internal fun knownIdentifier(
         key: RecordKey,
         program: Program?,
-    ): Int? = if (program != null && program === encoding) identifiers[key] else null
+    ): Int? = if (encoding?.readsWordsOf(program) == true) identifiers.known(key) else null
 
     /** The identifier of [term] if it has one already (see [identifier]) */
-    fun knownIdentifier(term: Term): Int? = identifiers[encoded(Record.of(term)).key]
+    fun knownIdentifier(term: Term): Int? = identifiers.known(encoded(Record.of(term)).key)
 
-    /** The record with identifier [identifier], as first given an identifier; null if none has it */
-    fun record(identifier: Int): Record? = records.getOrNull(identifier)
+    /** The record with identifier [identifier], as first given an identifier (in the words here); null if none has it */
+    fun record(identifier: Int): Record? = identifiers.record(identifier)?.let { encoded(it) }
 
     /** The term with identifier [identifier], as first given an identifier; null if none has it */
-    fun term(identifier: Int): Term? = records.getOrNull(identifier)?.term
+    fun term(identifier: Int): Term? = record(identifier)?.term
 }

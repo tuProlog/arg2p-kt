@@ -63,11 +63,12 @@ internal class ClauseStore private constructor(
     /** Whether no clause is stored */
     fun isEmpty(): Boolean = data.isEmpty()
 
-    /** The records re-encoded in the words of [program] (the machine's) */
+    /** The records re-encoded in the words of [program] (the machine's): kept as they are if they are its words already */
     fun bind(program: Program) {
         if (encoding === program) return
+        val compatible = program.readsWordsOf(encoding)
         encoding = program
-        if (data.isEmpty()) return
+        if (data.isEmpty() || compatible) return
         val stored = data.all()
         data = Data(declared)
         shared = false
@@ -147,6 +148,15 @@ internal class ClauseStore private constructor(
 
     /** The integers of the facts `name(Integer)`, newest first, each once (the set is not to be changed) */
     fun ids(name: String): IdSet = data.ids(encoding().functorWord(name, 1))
+
+    /**
+     * The integers of the facts `name(Id)` from the [from]-th asserted on (0 for all), in the order they were asserted,
+     * and how many there are: the facts asserted since a count taken before, if none was retracted
+     */
+    fun idsFrom(
+        name: String,
+        from: Int,
+    ): Pair<IntArray, Int> = data.idsFrom(encoding().functorWord(name, 1), from)
 
     /** The fact `name(id)` added */
     fun assertId(
@@ -531,6 +541,20 @@ internal class ClauseStore private constructor(
         fun ids(key: Int): IdSet {
             val predicate = predicates[key] ?: return IdSet.NONE
             return predicate.ids ?: predicate.readIds().also { predicate.ids = it }
+        }
+
+        fun idsFrom(
+            key: Int,
+            from: Int,
+        ): Pair<IntArray, Int> {
+            val all = predicates[key]?.all ?: return IntArray(0) to 0
+            val found = ArrayList<Int>()
+            for (i in from until all.size) {
+                val record = all.items[i]!!.record
+                val word = record.words[payload(record.head) + 1]
+                if (tag(word) == INT) found += payload(word)
+            }
+            return found.toIntArray() to all.size
         }
 
         /** The records of the predicate [key], oldest first */

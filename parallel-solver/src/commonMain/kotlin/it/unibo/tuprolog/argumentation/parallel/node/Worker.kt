@@ -13,7 +13,8 @@ import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExportedArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentsSavedAfter
+import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentIdsSavedSince
+import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentsSavedSince
 import it.unibo.tuprolog.argumentation.core.primitives.graph.saveArgumentRecords
 import it.unibo.tuprolog.argumentation.core.runtime.subsumes
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
@@ -76,9 +77,10 @@ internal class Worker(
     private val concluding = mutableMapOf<Int, ClaimIndex<Term>>()
     private val handled = mutableSetOf<String>()
 
-    // The arguments in the graph so far (the identifiers grow), those received, those of its rules; the arguments it
-    // knows as terms and by their global identifiers, by their identifiers in the graph
-    private var lastId = -1
+    // How many arguments its graph held when it last shared them (their identifiers do not tell: see argumentsSavedSince),
+    // those received, those of its rules; the arguments it knows as terms and by their global identifiers, by their
+    // identifiers in the graph
+    private var savedCount = 0
     private val received = mutableSetOf<Int>()
     private val own = mutableListOf<Int>()
     private val ownByClaim = ClaimIndex<Int>(statementOf = ::claim)
@@ -118,14 +120,15 @@ internal class Worker(
     private val keptCandidates = goal("workerGoals::keptCandidates(Kept)")
     private val fire = goal("workerGoals::fire")
     private val export = goal("workerGoals::exportSince(L)")
+    private val newIds = goal("workerGoals::newIds(L, Ids, Saved)")
     private val import = goal("workerGoals::importArguments")
 
-    // the arguments built since L, with the identifiers of their supports, and the supports bound as they use them
+    // the arguments of identifiers Ids, with the identifiers of their supports, and the supports bound as they use them
     // (with constraints, the instances of saved arguments, not saved themselves: see the module constraints)
-    private val built = goal("graphStore::savedAfter(L, Id, A, Ss)")
+    private val built = goal("graphStore::savedIn(Ids, Id, A, Ss)")
     private val builtBound =
         goal(
-            "graphStore::savedAfter(L, Id, A, Ss), " +
+            "graphStore::savedIn(Ids, Id, A, Ss), " +
                 "findall(S, (graphStore::support(S, A), graphStore::argumentId(S, SId), \\+ graphStore::savedId(SId)), Bs)",
         )
     private var constrained = false
@@ -140,11 +143,21 @@ internal class Worker(
         override fun call(call: NativeCall): Int = call.replyWord(1, call.word(passed.getValue(call.atomName(call.arg(0)))))
     }
 
-    // exportSince(+Last): the arguments saved above Last, as records (see argumentsSavedAfter)
+    // exportSince(+From): the arguments saved after the first From, as records (see argumentsSavedSince)
     private inner class Export : AbstractNativePrimitive(Signature("exportSince", 1)) {
         override fun call(call: NativeCall): Int {
-            exported = call.argumentsSavedAfter(call.intValue(call.arg(0)).toInt())
+            exported = call.argumentsSavedSince(call.intValue(call.arg(0)).toInt())
             return NativeCall.CONTINUE
+        }
+    }
+
+    // newIds(+From, -Ids, -Saved): the identifiers of the arguments saved after the first From, in the order they were,
+    // and how many are saved
+    private inner class NewIds : AbstractNativePrimitive(Signature("newIds", 3)) {
+        override fun call(call: NativeCall): Int {
+            val (ids, saved) = call.argumentIdsSavedSince(call.intValue(call.arg(0)).toInt())
+            if (!call.unify(call.arg(1), call.list(IntArray(ids.size) { call.int(ids[it]) }))) return NativeCall.FAIL
+            return call.replyWord(2, call.int(saved))
         }
     }
 
@@ -159,7 +172,7 @@ internal class Worker(
 
     private inner class WorkerGoals : PrologModule("prolog.argumentation.parallel.worker", "workerGoals") {
         override val primitives: Map<Signature, Primitive>
-            get() = listOf(Passed(), Export(), Import()).associateBy { it.signature }
+            get() = listOf(Passed(), Export(), Import(), NewIds()).associateBy { it.signature }
 
         override val prologRawTheory: String =
             // language=Prolog
@@ -430,8 +443,9 @@ internal class Worker(
     // whose rules use their conclusions
     private fun share() {
         if (!constrained) return shareRecords()
-        val new = (if (constrained) builtBound else built).solutions(solver, "L" to Integer.of(lastId)).sortedBy { it.integer("Id") }
-        lastId = maxOf(lastId, new.maxOfOrNull { it.integer("Id") } ?: lastId)
+        val since = newIds.solutions(solver, "L" to Integer.of(savedCount)).single()
+        savedCount = since.integer("Saved")
+        val new = (if (constrained) builtBound else built).solutions(solver, "Ids" to since.getValue("Ids"))
         val mine =
             new.filter { it.integer("Id") !in received }.map {
                 val id = it.integer("Id")
@@ -466,10 +480,10 @@ internal class Worker(
 
     // share() on records: the arguments built since the last time read off the store as they are, no term made of them
     private fun shareRecords() {
-        export.solutions(solver, "L" to Integer.of(lastId)).toList()
+        export.solutions(solver, "L" to Integer.of(savedCount)).toList()
         val batch = exported!!
         exported = null
-        if (batch.ids.isNotEmpty()) lastId = maxOf(lastId, batch.ids.last())
+        savedCount = batch.saved
         val mine = ArrayList<Pair<Int, SharedArgument>>()
         for (i in batch.ids.indices) {
             val id = batch.ids[i]

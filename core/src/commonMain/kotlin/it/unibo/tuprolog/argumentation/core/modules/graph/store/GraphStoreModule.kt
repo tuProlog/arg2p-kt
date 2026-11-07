@@ -75,6 +75,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             argumentById(Id, Argument),
             findall(S, (context_check(supportId(S, Id)), context_check(arg(S))), Supporters).
 
+        %! savedIn(+Ids, -Id, -Argument, -Supporters)
+        %  Argument is saved with identifier Id, one of Ids, supported by the saved arguments of identifiers Supporters.
+        savedIn(Ids, Id, Argument, Supporters) :-
+            member(Id, Ids),
+            argumentById(Id, Argument),
+            findall(S, (context_check(supportId(S, Id)), context_check(arg(S))), Supporters).
+
         %! saveArguments(+Tag, +Arguments)
         %  Each of Arguments saved under Tag, for its conclusion (see saveArgument/3).
         saveArguments(Tag, Arguments) :-
