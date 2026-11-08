@@ -22,7 +22,7 @@ object DefeasibleLanguageModule : PrologModule("prolog.argumentation.language.de
         %! check
         %  The theory has defeasible rules alone.
         check :-
-            (parser::checkStrict(_) ; parser::premise(_, _)), !,
+            (theory::checkStrict(_) ; theory::premise(_, _)), !,
             throw(error(domain_error(defeasible_theory, strict), 'aspic_defeasible: the theory has strict rules, axioms or premises')).
         check.
         """.trimIndent()

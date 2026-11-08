@@ -11,8 +11,8 @@ class ParserModuleTest {
     @Test
     fun theRulesUsingAPremiseAreFoundAsByScanningThem() {
         val module = module()
-        val scanned = module.values("parser::rule(_, Premises, [S]), member(a, Premises)", "S")
-        assertEquals(scanned, module.values("parser::ruleUsing(a, S)", "S"))
+        val scanned = module.values("theory::rule(_, Premises, [S]), member(a, Premises)", "S")
+        assertEquals(scanned, module.values("theory::ruleUsing(a, S)", "S"))
         assertEquals(setOf("c", "d"), scanned.toSet())
     }
 
@@ -35,9 +35,9 @@ class ParserModuleTest {
     @Test
     fun contraryPremisesAndVariablesAreFound() {
         val module = module()
-        assertEquals(listOf("c"), module.values("parser::ruleUsing(~(b), S)", "S"))
+        assertEquals(listOf("c"), module.values("theory::ruleUsing(~(b), S)", "S"))
         // the conclusion takes the bindings of the premise
-        assertEquals(listOf("q(k)"), module.values("parser::ruleUsing(p(k), S)", "S"))
+        assertEquals(listOf("q(k)"), module.values("theory::ruleUsing(p(k), S)", "S"))
     }
 
     // The stated preferences are closed transitively, a cycle making no rule preferred to itself

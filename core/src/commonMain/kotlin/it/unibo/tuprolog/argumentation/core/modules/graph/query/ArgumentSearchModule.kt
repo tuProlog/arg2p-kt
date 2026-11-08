@@ -25,33 +25,33 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         % and an argument concludes what its premises and rule derive, which may not be open (a statement with free
         % variables, but with the graph extension constraints) whatever Conclusion binds.
 
-        % From a premise: one with variables (parser::boundByQuery/1) concludes an open statement, with instances alone
+        % From a premise: one with variables (theory::boundByQuery/1) concludes an open statement, with instances alone
         findArgument(Conclusion, Found) :-
-            parser::premise(Id, Conclusion),
-            (parser::boundByQuery(Id) -> parser::instances ; true),
+            theory::premise(Id, Conclusion),
+            (theory::boundByQuery(Id) -> theory::instances ; true),
             argument::premiseInfo(Id, Info),
             Found = found([], none, [Id], Info, []).
 
         % From a rule: an argument uses a rule at most once (argument::rulesAndInfo/5 fails otherwise), and the rule
         % derives Conclusion from the arguments supporting its premises (see derivable/3)
         findArgument([Claim], Found) :-
-            parser::rule(Id, Premises, [Claim]),
+            theory::rule(Id, Premises, [Claim]),
             findPremises(Premises, premises(Parts, Supports)),
             derivable(Id, Claim, Supports),
-            parser::strictness(Id, Strict),
+            theory::strictness(Id, Strict),
             argument::rulesAndInfo(Id, Strict, Parts, Rules, Info),
-            (parser::constrained -> constraint::extend(Premises, Supports, Body) ; Body = Premises),
+            (theory::constrained -> constraint::extend(Premises, Supports, Body) ; Body = Premises),
             Found = found(Body, Id, Rules, Info, Supports).
 
         % derivable(+Id, +Claim, +Supports): the rule Id derives Claim from Supports alone. The search steered by the query
-        % finds that for most rules; a rule a query could bind otherwise (parser::boundByQuery/1) is taken again as
+        % finds that for most rules; a rule a query could bind otherwise (theory::boundByQuery/1) is taken again as
         % written (a rule whose identifier unifies with Id, concluding a statement with the functor of Claim) and its
         % conclusion derived from the claims of Supports
-        derivable(Id, _, _) :- \+ parser::boundByQuery(Id), !.
+        derivable(Id, _, _) :- \+ theory::boundByQuery(Id), !.
         derivable(Id, Claim, Supports) :-
             functor(Claim, Name, Arity),
             functor(General, Name, Arity),
-            parser::rule(Written, Premises, [General]),
+            theory::rule(Written, Premises, [General]),
             \+ \+ Written = Id,
             derived(rule(Written, Premises, General), Supports, rule(Id, Claim)).
 
@@ -65,11 +65,11 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
 
         fromSupports([], []).
         fromSupports([Premise|Premises], Supports) :-
-            parser::prolog([Premise], Check), !,
-            parser::holds(Check),
+            theory::prolog([Premise], Check), !,
+            theory::holds(Check),
             fromSupports(Premises, Supports).
         fromSupports([Premise|Premises], Supports) :-
-            \+ parser::argued(Premise), !,
+            \+ theory::argued(Premise), !,
             fromSupports(Premises, Supports).
         fromSupports([Premise|Premises], [Support|Supports]) :-
             argument::claim(Support, Premise),
@@ -113,10 +113,10 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         readyCheck([Slot|_], Supported, Slot) :-
             Slot = slot(Premise, Result),
             var(Result),
-            parser::prolog([Premise], _),
+            theory::prolog([Premise], _),
             (Supported == true ; ground(Premise)), !.
         readyCheck([slot(Premise, Result)|Slots], Supported, Slot) :-
-            (var(Result), parser::argued(Premise) -> Next = false ; Next = Supported),
+            (var(Result), theory::argued(Premise) -> Next = false ; Next = Supported),
             readyCheck(Slots, Next, Slot).
 
         % The pending ordinary premise concluded by the fewest rules: each count stops at the best one so far
@@ -124,9 +124,9 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         mostSelective([Slot|Slots], Best, Selected) :-
             Slot = slot(Premise, Result),
             var(Result),
-            parser::argued(Premise), !,
+            theory::argued(Premise), !,
             countLimit(Best, Limit),
-            parser::candidates(Premise, Limit, Count),
+            theory::candidates(Premise, Limit, Count),
             selective(Slot, Count, Best, Next),
             mostSelective(Slots, Next, Selected).
         mostSelective([_|Slots], Best, Selected) :-
@@ -140,14 +140,14 @@ object ArgumentSearchModule : PrologModule("prolog.argumentation.structured.sear
         selective(_, _, Best, Best).
 
         supportPremise(slot(Premise, Result)) :-
-            parser::prolog([Premise], Term), !,
-            parser::holds(Term),
+            theory::prolog([Premise], Term), !,
+            theory::holds(Term),
             Result = check.
         supportPremise(slot(Premise, Result)) :-
-            parser::contrary([Premise], _), !,
+            theory::contrary([Premise], _), !,
             Result = contrary.
         supportPremise(slot(Premise, Result)) :-
-            parser::constraint([Premise], _), !,
+            theory::constraint([Premise], _), !,
             Result = constraint.
         supportPremise(slot(Premise, Result)) :-
             argument::claim(Sub, _),

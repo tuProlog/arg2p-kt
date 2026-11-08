@@ -32,14 +32,14 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             buildPrefAttacks(Model).
 
         %! assertAllSup
-        %  The preferences concluded by the arguments, as the preferences (see parser::statePreferences/1), in place of
+        %  The preferences concluded by the arguments, as the preferences (see theory::statePreferences/1), in place of
         %  those the theory states: only the concluded ones count.
         assertAllSup :-
             findall(sup(RuleOne, RuleTwo), (
                 graphStore::argumentFor([sup(RuleOne, RuleTwo)], Argument)
             ), Concluded),
             utils::deduplicate(Concluded, Preferences),
-            parser::statePreferences(Preferences).
+            theory::statePreferences(Preferences).
 
         %! filterSupRelatedAttacks(+Attacks, -Invalid)
         %  Invalid are the attacks among Attacks that the preferences invalidate. Those invalid whatever the
@@ -143,7 +143,7 @@ object DefeasiblePrefModule : PrologModule("prolog.argumentation.graph.preferenc
             (Rule = X ; Rule = Y),
             ruleConclusion(Rule, S).
 
-        ruleConclusion(Rule, S) :- parser::ruleConclusion(Rule, S).
-        ruleConclusion(Rule, S) :- parser::premise(Rule, [S]).
+        ruleConclusion(Rule, S) :- theory::ruleConclusion(Rule, S).
+        ruleConclusion(Rule, S) :- theory::premise(Rule, [S]).
         """.trimIndent()
 }

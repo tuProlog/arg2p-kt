@@ -123,7 +123,7 @@ object PipelineModule : PrologModule("prolog.argumentation.pipeline", "pipeline"
         %  Step applies: conflictArguments when its conflicts are arguments (see conflict::argued/0), the others when they
         %  are graph extensions; any other
         %  graph extension is (see others/1).
-        active(constraints) :- !, parser::instances.
+        active(constraints) :- !, theory::instances.
         active(conflictArguments) :- !, conflict::argued.
         active(Step) :- setting(graphExtension, Step).
 

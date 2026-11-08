@@ -29,6 +29,7 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConflictModul
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConstraintModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.TemporalModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.TheoryModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.TranspositionModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.AbaLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.AbstractFrameworkLanguageModule
@@ -68,10 +69,11 @@ object ModuleRegistry {
     /** The terms arg2p works on: the entities of argumentation graphs and of the rules */
     val data: List<Loadable> = listOf(ArgumentModule, LabelModule, RuleModule)
 
-    /** The rules of a theory, as the graph builders read them */
+    /** The rules of a theory: their conversion, and how the graph builders read them */
     val language: List<Loadable> =
         listOf(
             ParserModule,
+            TheoryModule,
             TranspositionModule,
             TemporalModule,
             ConflictModule,

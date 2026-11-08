@@ -74,7 +74,7 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
             attackedStatement(Conflicting, Statement).
         possiblyAttacked(Argument, Statement) :-
             argument::claim(Argument, Claim),
-            parser::ruleUsing(~(Claim), Statement),
+            theory::ruleUsing(~(Claim), Statement),
             attackRelation::static.
 
         conflicting(Conclusion, Statement) :- conflict::guarded(Conclusion, [Statement], _).
@@ -83,6 +83,6 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
 
         % A conflict is with a statement, or with a rule (an undercut)
         attackedStatement(Statement, Statement).
-        attackedStatement(Rule, Statement) :- parser::ruleConclusion(Rule, Statement).
+        attackedStatement(Rule, Statement) :- theory::ruleConclusion(Rule, Statement).
         """.trimIndent()
 }

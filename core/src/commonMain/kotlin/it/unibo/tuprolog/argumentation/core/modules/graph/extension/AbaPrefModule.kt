@@ -35,9 +35,9 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         contraposed(X, On) :-
             argument::claim(On, Beta),
             support(X, Support),
-            findall(A, (member(A, Support), parser::preference(Beta, A)), Weaker),
+            findall(A, (member(A, Support), theory::preference(Beta, A)), Weaker),
             member(Alpha, Weaker),
-            \+ (member(Other, Weaker), Other \== Alpha, parser::preference(Alpha, Other)),
+            \+ (member(Other, Weaker), Other \== Alpha, theory::preference(Alpha, Other)),
             graphStore::directAttack(undermine, D, Premise),
             argument::claim(Premise, Alpha),
             support(D, Deduction),
@@ -71,7 +71,7 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
             argument::claim(On, Assumption),
             support(Attacker, Support),
             member(Weaker, Support),
-            parser::preference(Assumption, Weaker), !.
+            theory::preference(Assumption, Weaker), !.
 
         %! support(+Argument, -Assumptions)
         %  The assumptions Argument rests on: those of its premises asm(Assumption).
@@ -93,7 +93,7 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         queryDependencies(Argument, Statement) :-
             support(Argument, Support),
             member(Weaker, Support),
-            parser::preference(Beta, Weaker),
+            theory::preference(Beta, Weaker),
             (Statement = Beta ; contrary(Beta, Statement)).
 
         %! queryDependants(+Argument, -Statement)
@@ -101,8 +101,8 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         %  it: those for the statements their rules conclude depend on it.
         queryDependants(Argument, Statement) :-
             argument::rules(Argument, [asm(Beta)]),
-            parser::preference(Beta, Weaker),
-            (Statement = Weaker ; parser::ruleUsing(Weaker, Statement)).
+            theory::preference(Beta, Weaker),
+            (Statement = Weaker ; theory::ruleUsing(Weaker, Statement)).
 
         % Contrary is a contrary of the assumption Beta: the arguments for it attack the argument for Beta
         contrary(Beta, Contrary) :-

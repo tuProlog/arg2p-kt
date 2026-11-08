@@ -160,11 +160,11 @@ object TheoryPartitioner {
     )
 
     private fun rules(solver: Solver): List<Rule> {
-        val strictness = "parser::strictness(Id, S)"
+        val strictness = "theory::strictness(Id, S)"
         // (the positions of the premises argued: findall would copy them, their variables no longer the conclusion's)
-        val argued = "findall(I, (append(Before, [A|_], P), parser::argued(A), length(Before, I)), Argued)"
+        val argued = "findall(I, (append(Before, [A|_], P), theory::argued(A), length(Before, I)), Argued)"
         val rules =
-            solver.solutions("parser::rule(Id, P, [C]), $argued, $strictness").map {
+            solver.solutions("theory::rule(Id, P, [C]), $argued, $strictness").map {
                 val premises = it.getValue("P").castToList().toList()
                 val body = if (premises.isEmpty()) EmptyList() else Tuple.wrapIfNeeded(*premises.toTypedArray())
                 val arrow = if (it.getValue("S") == Atom.of("strict")) "->" else "=>"
@@ -179,7 +179,7 @@ object TheoryPartitioner {
                 Rule(it.getValue("Id"), positions.map { position -> premises[position] }, it.getValue("C"), rule.toString())
             }
         val premises =
-            solver.solutions("parser::premise(Id, [C]), $strictness").map {
+            solver.solutions("theory::premise(Id, [C]), $strictness").map {
                 val arrow = if (it.getValue("S") == Atom.of("strict")) ":->" else ":=>"
                 Rule(it.getValue("Id"), emptyList(), it.getValue("C"), Struct.of(arrow, it.getValue("Id"), it.getValue("C")).toString())
             }

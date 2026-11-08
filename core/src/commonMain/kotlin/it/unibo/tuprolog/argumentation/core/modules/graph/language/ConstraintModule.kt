@@ -27,7 +27,7 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
         %  An argument may conclude Conclusion: ground, or open (with free variables, constrained or not) with the graph
         %  extension constraints (or temporal), for the values its variables may take.
         concludable(Conclusion) :- ground(Conclusion), !.
-        concludable(_) :- parser::instances.
+        concludable(_) :- theory::instances.
 
         %! premise(?Premise, ?Constraint)
         %  Premise, of a rule, is the constraint Constraint: { Constraint }.
@@ -87,7 +87,7 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
             consistent(Normals).
 
         conjuncts([], []).
-        conjuncts([C|Cs], All) :- parser::tupleToList(C, All, Rest), conjuncts(Cs, Rest).
+        conjuncts([C|Cs], All) :- theory::tupleToList(C, All, Rest), conjuncts(Cs, Rest).
 
         holding([]).
         holding([C|Cs]) :- (ground(C) -> holds(C) ; true), holding(Cs).

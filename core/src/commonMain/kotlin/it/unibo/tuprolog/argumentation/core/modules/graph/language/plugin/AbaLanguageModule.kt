@@ -26,17 +26,17 @@ object AbaLanguageModule : PrologModule("prolog.argumentation.language.aba", "ab
         %  The theory is flat ABA: no defeasible rule, no ordinary premise (its premises are its assumptions, its facts
         %  strict), and no rule concluding an assumption.
         check :-
-            parser::rule(Id, _, _),
-            \+ parser::checkStrict(Id), !,
+            theory::rule(Id, _, _),
+            \+ theory::checkStrict(Id), !,
             throw(error(domain_error(aba_theory, defeasible), 'aba: the theory has defeasible rules')).
         check :-
-            parser::premise(Id, _),
+            theory::premise(Id, _),
             Id \= asm(_),
-            \+ parser::checkStrict(Id), !,
+            \+ theory::checkStrict(Id), !,
             throw(error(domain_error(aba_theory, premise), 'aba: the theory has ordinary premises (f :=> a.): the premises of ABA are its assumptions (assumption/1), its facts strict (f :-> a.)')).
         check :-
-            parser::rule(_, _, [A]),
-            parser::premise(asm(A), [A]), !,
+            theory::rule(_, _, [A]),
+            theory::premise(asm(A), [A]), !,
             throw(error(domain_error(flat_aba_theory, A), 'aba: a rule concludes an assumption (the theory is not flat)')).
         check.
         """.trimIndent()

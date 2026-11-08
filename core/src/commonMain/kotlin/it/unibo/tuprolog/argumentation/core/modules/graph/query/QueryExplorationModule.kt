@@ -57,7 +57,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         % rules use them; Seen are those found so far (with groundVars/2)
         builtOn([], _, []).
         builtOn([Statement|Statements], Seen, Affected) :-
-            findall(S, (parser::ruleUsing(Statement, C), exploredAs(C, S)), Found),
+            findall(S, (theory::ruleUsing(Statement, C), exploredAs(C, S)), Found),
             unseen(Found, Seen, New, Seen1),
             utils::appendLists([Statements, New], Next),
             builtOn(Next, Seen1, Rest),
@@ -153,7 +153,7 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         dependant(Argument, S) :- attackCandidates::possiblyAttacked(Argument, S).
         dependant(Argument, S) :-
             argument::claim(Argument, Claim),
-            parser::ruleUsing(Claim, S).
+            theory::ruleUsing(Claim, S).
 
         %! extend(+Locality)
         %  The exploration extended by the steps changing the graph (see pipeline::querySteps/1), as they extend

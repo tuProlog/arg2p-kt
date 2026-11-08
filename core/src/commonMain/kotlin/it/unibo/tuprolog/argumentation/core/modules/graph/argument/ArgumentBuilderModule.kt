@@ -22,14 +22,14 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             buildArgumentsFromRules(N, b, Mode).
 
         % mode(-Mode): base, for a theory whose arguments all conclude ground statements with no constraint to keep, or
-        % constrained (parser::constrained/0): asked once, the arguments of a theory in the base mode built as if
+        % constrained (theory::constrained/0): asked once, the arguments of a theory in the base mode built as if
         % constraints were not there
-        mode(constrained) :- parser::constrained, !.
+        mode(constrained) :- theory::constrained, !.
         mode(base).
 
         buildArgumentsFromPremises(Mode) :-
             findall(_, (
-                parser::premise(PremiseID, Premise),
+                theory::premise(PremiseID, Premise),
                 concludable(Mode, Premise),
                 argument::premiseInfo(PremiseID, Info),
                 argument::new([PremiseID], none, Premise, [], Info, Argument),
@@ -44,20 +44,20 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             ), _).
 
         % A rule with no premise to support with an argument: only contraries, Prolog checks and constraints (as
-        % parser::argued/1 tells them, checked here)
+        % theory::argued/1 tells them, checked here)
         emptyRule([RuleID, Body, RuleHead]) :-
-            parser::rule(RuleID, Body, RuleHead),
+            theory::rule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_), X \= '{}'(_)).
 
         % A round fires every rule whose body uses a conclusion derived in the previous round (N), reached through the
-        % index of the parser rather than going through all the rules, in their order, tagging the new conclusions with
+        % index of the rules (module theory) rather than going through all the rules, in their order, tagging the new conclusions with
         % Tn: the rounds go on while they derive something
         buildArgumentsFromRules(N, Tn, Mode) :-
-            findall(Place, (member(Conclusion, N), parser::ruleUsingAt(Conclusion, Place)), Reached),
+            findall(Place, (member(Conclusion, N), theory::ruleUsingAt(Conclusion, Place)), Reached),
             utils::deduplicate(Reached, Places),
             findall(_, (
                 member(Place, Places),
-                parser::ruleAt(Place, [Id, Body, Conc]),
+                theory::ruleAt(Place, [Id, Body, Conc]),
                 buildArgumentsFromRule(Tn, [Id, Body, Conc], Mode)
             ), _),
             (graphStore::newConclusion(Tn, _) -> nextRound(Tn, Mode) ; true).
@@ -94,14 +94,14 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         ruleBodyIsSupported([], Rule, Acc, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             ground(RuleHead),
-            parser::strictness(RuleID, Strict),
+            theory::strictness(RuleID, Strict),
             argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             argument::new(Rules, RuleID, RuleHead, RuleBody, Info, Argument),
             \+ graphStore::argumentFor(RuleHead, Argument).
         ruleBodyIsSupported([~(_)|Others], Rule, Acc, Argument) :-
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([prolog(Check)|Others], Rule, Acc, Argument) :-
-            parser::holds(Check),
+            theory::holds(Check),
             ruleBodyIsSupported(Others, Rule, Acc, Argument).
         ruleBodyIsSupported([Statement|Others], Rule, Parts, Argument) :-
             graphStore::argumentFor([Statement], Support),
@@ -118,7 +118,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         constrainedBodyIsSupported([], Rule, Acc, Supports, Argument) :-
             Rule = rule(RuleID, RuleHead, RuleBody),
             concludable(constrained, RuleHead),
-            parser::strictness(RuleID, Strict),
+            theory::strictness(RuleID, Strict),
             argument::rulesAndInfo(RuleID, Strict, Acc, Rules, Info),
             constraint::extend(RuleBody, Supports, Body),
             argument::new(Rules, RuleID, RuleHead, Body, Info, Argument),
@@ -126,7 +126,7 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
         constrainedBodyIsSupported([~(_)|Others], Rule, Acc, Supports, Argument) :-
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
         constrainedBodyIsSupported([prolog(Check)|Others], Rule, Acc, Supports, Argument) :-
-            parser::holds(Check),
+            theory::holds(Check),
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).
         constrainedBodyIsSupported(['{}'(_)|Others], Rule, Acc, Supports, Argument) :-
             constrainedBodyIsSupported(Others, Rule, Acc, Supports, Argument).

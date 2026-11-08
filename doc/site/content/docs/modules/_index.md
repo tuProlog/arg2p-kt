@@ -97,6 +97,7 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 | `statementAcceptance` | The acceptance of a statement, used by `answerQuery`: on the graph `queryMode` selects, as `answerMode` states. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
+| `theory` | What the modules read of a theory once translated: its rules and premises, preferences and burdens. |
 | `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |

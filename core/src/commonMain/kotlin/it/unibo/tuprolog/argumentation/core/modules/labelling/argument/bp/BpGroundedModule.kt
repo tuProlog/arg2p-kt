@@ -140,11 +140,11 @@ object BpGroundedModule : PrologModule("prolog.argumentation.graph.labelling.bpg
         %==============================================================================
 
         %! reifyBurdenOfProofs
-        %  The burdens of persuasion of the theory (see parser::burden/1) on the conclusions of the saved arguments, as
+        %  The burdens of persuasion of the theory (see theory::burden/1) on the conclusions of the saved arguments, as
         %  reifiedBp/1 in the context.
         reifyBurdenOfProofs :-
             findall(_, (
-                parser::burden(AbstractBp),
+                theory::burden(AbstractBp),
                 fillTemplate(AbstractBp, R),
                 context_absent(reifiedBp(R)),
                 context_assert(reifiedBp(R))

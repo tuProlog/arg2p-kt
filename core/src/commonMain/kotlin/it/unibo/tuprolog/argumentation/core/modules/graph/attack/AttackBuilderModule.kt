@@ -20,7 +20,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         buildAttacks :-
             conflict::argued, !.
         buildAttacks :-
-            (parser::constrained -> Constrained = yes ; Constrained = no),
+            (theory::constrained -> Constrained = yes ; Constrained = no),
             findall(_, buildDirectAttack(Constrained), _).
 
         % (Constrained: the theory may have constraints, which the two arguments must satisfy together with the
@@ -49,7 +49,7 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         buildAttacksAmong([]) :- !.
         buildAttacksAmong(Ids) :-
             findall(_, (member(Id, Ids), context_assert(addedArgument(Id))), _),
-            (parser::constrained -> Constrained = yes ; Constrained = no),
+            (theory::constrained -> Constrained = yes ; Constrained = no),
             findall(_, buildAddedAttack(Constrained), _),
             context_retract(addedArgument(_)).
 

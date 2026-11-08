@@ -227,7 +227,7 @@ class PrologReference(
         listOf(
             Area("Entry points", "The predicates a theory is queried with, and what they rely on.", ModuleRegistry.support),
             Area("Data", "The terms arg2p works on: the entities of argumentation graphs and of the rules.", ModuleRegistry.data),
-            Area("Language", "The rules of a theory, as the graph builders read them.", ModuleRegistry.language),
+            Area("Language", "The rules of a theory: their conversion, and how the graph builders read them.", ModuleRegistry.language),
             Area(
                 "Graph",
                 "Building the argumentation graph: its arguments and attacks, where they are kept, and how arguments compare.",

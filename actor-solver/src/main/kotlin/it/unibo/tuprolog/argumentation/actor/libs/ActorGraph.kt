@@ -50,7 +50,7 @@ internal object ActorGraph : PrologModule("prolog.argumentation.actor.graph", "a
             queryExploration::extend(directional),
             graphStore::argumentFor([Statement], Attacker),
             attackRelation::attacks(Type, Attacker, On),
-            (parser::constrained -> constraint::compatible(Attacker, On) ; true).
+            (theory::constrained -> constraint::compatible(Attacker, On) ; true).
 
         % The sub-arguments of an argument built by this solver
         subArguments(Argument, SubArguments) :-

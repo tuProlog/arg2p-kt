@@ -112,7 +112,7 @@ object StatementAcceptanceModule : PrologModule("prolog.argumentation.statement.
         %  A statement labelled Label answering Goal: one unifying with it, or one of its instances, as an
         %  argument holding for more values than Goal asks about says nothing of them alone (its instance for Goal does).
         answer(Label, Goal) :-
-            parser::instances, !,
+            theory::instances, !,
             graphStore::statementLabel(Label, [Statement]),
             constraint::subsumes(Goal, Statement),
             Goal = Statement.

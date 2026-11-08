@@ -35,7 +35,7 @@ object AspicLanguageModule : PrologModule("prolog.argumentation.language.aspic",
             \+ conflict::declared([Statement], [Contrary]).
 
         % Statement is an axiom, or the conclusion of a strict rule
-        strictly(Statement) :- parser::premise(Id, [Statement]), parser::checkStrict(Id).
-        strictly(Statement) :- parser::rule(Id, _, [Statement]), parser::checkStrict(Id).
+        strictly(Statement) :- theory::premise(Id, [Statement]), theory::checkStrict(Id).
+        strictly(Statement) :- theory::rule(Id, _, [Statement]), theory::checkStrict(Id).
         """.trimIndent()
 }

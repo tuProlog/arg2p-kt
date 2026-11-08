@@ -30,14 +30,14 @@ object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "
             unguarded(Statement, Other).
         between(Statement, Other) :-
             guarded(Statement, Other, Guard),
-            parser::holds(Guard).
+            theory::holds(Guard).
 
         %! stated(+Conflict, ?Statement, ?Other)
         %  Conflict, a conflict(A, B) or conflict(A, B, Guard) term, makes Statement ([A]) conflict with Other ([B]),
         %  its guard holding.
         stated(conflict(A, B), [A], [B]).
         stated(conflict(A, B, Guard), [A], [B]) :-
-            parser::holds(Guard).
+            theory::holds(Guard).
 
         %! declared(?Statement, ?Other)
         %  The theory declares Statement in conflict with Other (conflict/2, or conflict/3 whatever its guard), and the

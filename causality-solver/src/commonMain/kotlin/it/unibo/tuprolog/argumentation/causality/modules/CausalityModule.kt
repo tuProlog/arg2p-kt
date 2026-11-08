@@ -74,7 +74,7 @@ class CausalityModule : PrologModule("prolog.argumentation.causality.solver", "c
         %! unusedPremises(+Rules, -Premises)
         %  Premises are those of the rules of the theory not among Rules.
         unusedPremises(R, UP) :-
-            findall(P, (parser::rule(Id, P, _), \+ member(Id, R), ground(Id)), RR),
+            findall(P, (theory::rule(Id, P, _), \+ member(Id, R), ground(Id)), RR),
             utils::appendLists(RR, UP).
         """.trimIndent()
 }

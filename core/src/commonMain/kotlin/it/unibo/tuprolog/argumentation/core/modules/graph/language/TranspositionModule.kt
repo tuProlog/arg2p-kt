@@ -38,7 +38,7 @@ object TranspositionModule : PrologModule("prolog.argumentation.language.transpo
         transposition([Id, Prec, Effect], [Id, Prec, Effect]).
         transposition([Id, Prec, Effect], [NewId, NewPrec ,XNegated]) :-
             compound(Prec),
-            parser::tupleToList(Prec, LPrec),!,
+            theory::tupleToList(Prec, LPrec),!,
             transpositionSequential(LPrec, LPrec, Effect, Id, [], NewPrec, XNegated, NewId).
         transposition([Id, Prec, Effect], [NewId, EffectNegated ,XNegated]) :-
             \+ compound(Prec),

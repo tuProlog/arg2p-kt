@@ -1,10 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
+import it.unibo.tuprolog.argumentation.core.ModuleTesting
 import it.unibo.tuprolog.argumentation.core.TestingUtils.solverWithTheory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /** The rules whose arguments a query could bind otherwise than the whole graph derives them */
 class BoundByQueryTest {
@@ -42,7 +45,21 @@ class BoundByQueryTest {
     fun contrariesAndConstraintsBindNothing() {
         assertEquals("[k]" to "yes", bound("[[k, [{Q > 1}], p(Q)]]"))
         assertEquals("[m]" to "no", bound("[[m, [~(n(W))], p(W)]]"))
-        assertEquals("[]" to "yes", bound("[[k, [q(Q, [1, Y | T], 2.5), {Q > 1}], p(Q, Y, T)]]"))
+        assertEquals("[]" to "yes", bound("[[k, (q(Q, [1, Y | T], 2.5), {Q > 1}), p(Q, Y, T)]]"))
+    }
+
+    // The premises as the conversion reads them: [] none, [X] the premise X, a list of more a single premise, one term
+    @Test
+    fun aListIsOnePremiseAsTheConversionReadsIt() {
+        val module = ModuleTesting.parsed("r : [prolog(q(X)), p(X)] => c(X).\ns : [] => d(Y).\nt : [e(Z)] => f(Z).")
+        assertTrue(module.holds("theory::rule(r, [[prolog(q(X)), p(X)]], _)"))
+        assertFalse(module.holds("theory::boundByQuery(r)"))
+        assertEquals("[]" to "no", bound("[[r, [prolog(q(X)), p(X)], c(X)]]"))
+        assertEquals("[]" to "no", bound("[[r, [{Q > 1}, p(Q)], c(Q)]]"))
+        assertTrue(module.holds("theory::rule(s, [], _)"))
+        assertTrue(module.holds("theory::boundByQuery(s)"))
+        assertTrue(module.holds("theory::rule(t, [e(_)], _)"))
+        assertFalse(module.holds("theory::boundByQuery(t)"))
     }
 
     @Test

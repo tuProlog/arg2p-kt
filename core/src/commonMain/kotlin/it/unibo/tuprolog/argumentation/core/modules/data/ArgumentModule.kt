@@ -82,7 +82,7 @@ object ArgumentModule : PrologModule("prolog.argumentation.data.argument", "argu
 
         %! premiseInfo(+Id, -Info)
         %  The info of an argument made of the premise Id alone: none of its premises defeasible if it is strict.
-        premiseInfo(Id, Info) :- parser::checkStrict(Id), !, infoParts(Info, [], [], []).
+        premiseInfo(Id, Info) :- theory::checkStrict(Id), !, infoParts(Info, [], [], []).
         premiseInfo(Id, Info) :- infoParts(Info, [], [], [Id]).
 
         %! rulesAndInfo(+RuleId, +Strict, +Supports, -Rules, -Info)
