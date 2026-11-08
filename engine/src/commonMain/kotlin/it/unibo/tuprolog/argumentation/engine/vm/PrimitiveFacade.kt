@@ -124,7 +124,7 @@ internal class PrimitiveFacade(
     }
 
     private fun applySideEffects(sideEffects: List<SideEffect>) {
-        var environment = m.environment!!
+        var environment = m.environment
         for (effect in sideEffects) {
             when (effect) {
                 is SideEffect.AddDynamicClauses -> {

@@ -51,7 +51,7 @@ internal class MutableVmSolver :
     override fun loadLibrary(library: Library) {
         updateContext {
             val newRuntime = libraries + library
-            withEnvironment(
+            update(
                 libraries = newRuntime,
                 operators = operators + getAllOperators(newRuntime).toOperatorSet(),
             )
@@ -62,7 +62,7 @@ internal class MutableVmSolver :
         updateContext {
             // arg2p: the library removed (tuProlog's solver added it again)
             val newRuntime = libraries - library.alias
-            withEnvironment(
+            update(
                 libraries = newRuntime,
                 operators = getAllOperators(newRuntime, staticKb, dynamicKb).toOperatorSet(),
             )
@@ -71,7 +71,7 @@ internal class MutableVmSolver :
 
     override fun setRuntime(libraries: Runtime) {
         updateContext {
-            withEnvironment(
+            update(
                 libraries = libraries,
                 operators = getAllOperators(libraries, staticKb, dynamicKb).toOperatorSet(),
             )
@@ -91,7 +91,7 @@ internal class MutableVmSolver :
 
     override fun resetStaticKb() {
         updateContext {
-            withEnvironment(
+            update(
                 staticKb = Theory.empty(unificator),
                 operators = getAllOperators(libraries, dynamicKb).toOperatorSet(),
             )
@@ -111,7 +111,7 @@ internal class MutableVmSolver :
 
     override fun resetDynamicKb() {
         updateContext {
-            withEnvironment(
+            update(
                 dynamicKb = MutableTheory.empty(unificator),
                 operators = getAllOperators(libraries, staticKb).toOperatorSet(),
             )
@@ -120,7 +120,7 @@ internal class MutableVmSolver :
 
     override fun assertA(clause: Clause) {
         updateContext {
-            withEnvironment(
+            update(
                 dynamicKb = dynamicKb.assertA(clause),
                 operators = operators + listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -129,13 +129,13 @@ internal class MutableVmSolver :
 
     override fun assertA(fact: Struct) {
         updateContext {
-            withEnvironment(dynamicKb = dynamicKb.assertA(fact))
+            update(dynamicKb = dynamicKb.assertA(fact))
         }
     }
 
     override fun assertZ(clause: Clause) {
         updateContext {
-            withEnvironment(
+            update(
                 dynamicKb = dynamicKb.assertZ(clause),
                 operators = operators + listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -144,14 +144,14 @@ internal class MutableVmSolver :
 
     override fun assertZ(fact: Struct) {
         updateContext {
-            withEnvironment(dynamicKb = dynamicKb.assertZ(fact))
+            update(dynamicKb = dynamicKb.assertZ(fact))
         }
     }
 
     override fun retract(clause: Clause): RetractResult<Theory> {
         val result = dynamicKb.retract(clause)
         updateContext {
-            withEnvironment(
+            update(
                 dynamicKb = result.theory.toMutableTheory(),
                 operators = operators - listOf(clause).getAllOperators().toOperatorSet(),
             )
@@ -162,7 +162,7 @@ internal class MutableVmSolver :
     override fun retract(fact: Struct): RetractResult<Theory> {
         val result = dynamicKb.retract(fact)
         updateContext {
-            withEnvironment(dynamicKb = result.theory.toMutableTheory())
+            update(dynamicKb = result.theory.toMutableTheory())
         }
         return result
     }
@@ -170,7 +170,7 @@ internal class MutableVmSolver :
     override fun retractAll(clause: Clause): RetractResult<Theory> {
         val result = dynamicKb.retractAll(clause)
         updateContext {
-            withEnvironment(
+            update(
                 dynamicKb = result.theory.toMutableTheory(),
                 operators = operators - result.theory.getAllOperators().toOperatorSet(),
             )
@@ -181,7 +181,7 @@ internal class MutableVmSolver :
     override fun retractAll(fact: Struct): RetractResult<Theory> {
         val result = dynamicKb.retractAll(fact)
         updateContext {
-            withEnvironment(dynamicKb = result.theory.toMutableTheory())
+            update(dynamicKb = result.theory.toMutableTheory())
         }
         return result
     }
@@ -191,43 +191,43 @@ internal class MutableVmSolver :
         value: Term,
     ) {
         updateContext {
-            withEnvironment(flags = flags.set(name, value))
+            update(flags = flags.set(name, value))
         }
     }
 
     override fun setFlag(flag: Pair<String, Term>) {
         updateContext {
-            withEnvironment(flags = flags + flag)
+            update(flags = flags + flag)
         }
     }
 
     override fun setFlag(flag: NotableFlag) {
         updateContext {
-            withEnvironment(flags = flags + flag)
+            update(flags = flags + flag)
         }
     }
 
     override fun setStandardInput(stdIn: InputChannel<String>) {
         updateContext {
-            withEnvironment(inputChannels = inputChannels + (InputStore.STDIN to stdIn))
+            update(inputChannels = inputChannels + (InputStore.STDIN to stdIn))
         }
     }
 
     override fun setStandardError(stdErr: OutputChannel<String>) {
         updateContext {
-            withEnvironment(outputChannels = outputChannels + (OutputStore.STDERR to stdErr))
+            update(outputChannels = outputChannels + (OutputStore.STDERR to stdErr))
         }
     }
 
     override fun setStandardOutput(stdOut: OutputChannel<String>) {
         updateContext {
-            withEnvironment(outputChannels = outputChannels + (OutputStore.STDOUT to stdOut))
+            update(outputChannels = outputChannels + (OutputStore.STDOUT to stdOut))
         }
     }
 
     override fun setWarnings(warnings: OutputChannel<Warning>) {
         updateContext {
-            withEnvironment(outputChannels = OutputStore.of(outputChannels, warnings))
+            update(outputChannels = OutputStore.of(outputChannels, warnings))
         }
     }
 

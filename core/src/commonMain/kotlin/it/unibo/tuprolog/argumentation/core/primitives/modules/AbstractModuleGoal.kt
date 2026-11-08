@@ -8,8 +8,8 @@ import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.NativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.engine.vm.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.engine.vm.RegisterGoalPrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.rootLibraries
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -95,10 +95,7 @@ internal abstract class AbstractModuleGoal(
         val (name, goal) = call(request)
         val solver =
             if (name.value == USER) {
-                request.context.createMutableSolver(
-                    libraries =
-                        (request.context as? PrologExecutionContext)?.root?.libraries ?: request.context.libraries,
-                )
+                request.context.createMutableSolver(libraries = request.context.rootLibraries)
             } else {
                 val module = loader.modules.of(request, name)
                 enter(module) { request.context }

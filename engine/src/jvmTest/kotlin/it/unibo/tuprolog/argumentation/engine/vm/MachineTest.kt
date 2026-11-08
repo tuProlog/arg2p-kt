@@ -55,9 +55,7 @@ class MachineTest {
     private fun machine(gcMinimum: Int = Machine.GC_MIN): Machine {
         val program = Program()
         program.add(Theory.parse(theory))
-        val machine = Machine(program, gcMinimum)
-        machine.useEnvironment(ExecutionEnvironment(libraries = Runtime.of(DefaultBuiltins, delegations), startTime = 0))
-        return machine
+        return Machine(program, ExecutionEnvironment(libraries = Runtime.of(DefaultBuiltins, delegations), startTime = 0), gcMinimum)
     }
 
     // A library of a "module" (secret/1 lives there alone) and of a delegated call: in_module(G) runs G with the

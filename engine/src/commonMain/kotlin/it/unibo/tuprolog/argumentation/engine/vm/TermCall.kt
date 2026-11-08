@@ -139,7 +139,7 @@ internal class TermCall(
     override val libraries: Runtime get() = request.context.libraries
 
     override val rootLibraries: Runtime
-        get() = (request.context as? PrologExecutionContext)?.root?.libraries ?: request.context.libraries
+        get() = request.context.rootLibraries
 
     override fun inline(
         goal: Int,

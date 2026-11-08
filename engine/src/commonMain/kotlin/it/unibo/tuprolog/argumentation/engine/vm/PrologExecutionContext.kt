@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
+import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -24,7 +25,7 @@ import it.unibo.tuprolog.unify.Unificator
  * limit) and the [procedure] being called. The machine (`engine.vm`) keeps the bindings of a resolution in its own
  * heap: the goal a primitive is given has them applied, so the substitution a primitive reads is empty.
  */
-data class PrologExecutionContext(
+internal data class PrologExecutionContext(
     val environment: ExecutionEnvironment,
     override val procedure: Struct? = null,
 ) : ExecutionContext {
@@ -81,7 +82,7 @@ data class PrologExecutionContext(
         outputChannels: OutputStore,
     ): Solver =
         VmSolver(unificator, libraries, flags, staticKb, dynamicKb, inputChannels, outputChannels, trustKb = true).also {
-            environment.vm?.let { program -> it.share(program, environment.theoryVisible) }
+            environment.program?.let { program -> it.share(program, environment.theoryVisible) }
         }
 
     override fun createMutableSolver(
@@ -94,7 +95,7 @@ data class PrologExecutionContext(
         outputChannels: OutputStore,
     ): MutableSolver =
         MutableVmSolver(unificator, libraries, flags, staticKb, dynamicKb, inputChannels, outputChannels, trustKb = true).also {
-            environment.vm?.let { program -> it.share(program, environment.theoryVisible) }
+            environment.program?.let { program -> it.share(program, environment.theoryVisible) }
         }
 
     override fun update(
@@ -123,33 +124,6 @@ data class PrologExecutionContext(
                 ),
         )
 
-    /** This context with the given values in its [environment] */
-    fun withEnvironment(
-        unificator: Unificator = this.unificator,
-        libraries: Runtime = this.libraries,
-        flags: FlagStore = this.flags,
-        staticKb: Theory = this.staticKb,
-        dynamicKb: MutableTheory = this.dynamicKb,
-        operators: OperatorSet = this.operators,
-        inputChannels: InputStore = this.inputChannels,
-        outputChannels: OutputStore = this.outputChannels,
-        customData: CustomDataStore = this.customData,
-    ): PrologExecutionContext =
-        copy(
-            environment =
-                environment.copy(
-                    unificator = unificator,
-                    libraries = libraries,
-                    flags = flags,
-                    staticKb = staticKb,
-                    dynamicKb = dynamicKb,
-                    operators = operators,
-                    inputChannels = inputChannels,
-                    outputChannels = outputChannels,
-                    customData = customData,
-                ),
-        )
-
     override fun apply(sideEffect: SideEffect): PrologExecutionContext = super.apply(sideEffect) as PrologExecutionContext
 
     override fun apply(sideEffects: Iterable<SideEffect>): PrologExecutionContext = super.apply(sideEffects) as PrologExecutionContext
@@ -158,3 +132,8 @@ data class PrologExecutionContext(
 
     override fun toString(): String = "PrologExecutionContext(procedure=$procedure, startTime=$startTime, maxDuration=$maxDuration)"
 }
+
+/** The libraries of the root of the resolution of this context (those of the user: a module call sees its own) */
+@InternalArg2pApi
+val ExecutionContext.rootLibraries: Runtime
+    get() = (this as? PrologExecutionContext)?.root?.libraries ?: libraries

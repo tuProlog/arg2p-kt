@@ -63,6 +63,8 @@ import kotlin.jvm.JvmField
  */
 internal class Machine(
     val program: Program,
+    /** The environment the primitives of the libraries are called in, as their side effects left it */
+    var environment: ExecutionEnvironment,
     // The heap cells above which a call collects (the threshold then follows the cells kept)
     @JvmField
     val gcMinimum: Int = GC_MIN,
@@ -119,7 +121,7 @@ internal class Machine(
     var cutBarrier = 0
 
     /** The libraries the resolution runs with, and whether the theory of the user is visible */
-    var scope: Scope = program.theory
+    var scope: Scope = program.scopeOf(environment.libraries)
     var theoryVisible = true
 
     @JvmField
@@ -139,7 +141,7 @@ internal class Machine(
 
     /** The registers: the arguments of the goal being called, then the temporary variables of the clause */
     @JvmField
-    var regs = IntArray(64)
+    var regs = IntArray(maxOf(64, program.maxRegister + 1))
 
     private var pdl = IntArray(1 shl 10)
 
@@ -162,9 +164,6 @@ internal class Machine(
 
     // The builtins by functor (for each program: a machine is made for each solve)
     private val builtinTable = program.builtins { builtinsOf(program) }
-
-    /** The facade: the environment the primitives of the libraries are called in, as their side effects left it */
-    var environment: ExecutionEnvironment? = null
 
     // The time the run must end by, and the calls made since it was last checked
     private var deadline = Long.MAX_VALUE
@@ -278,13 +277,6 @@ internal class Machine(
         if (program.maxRegister + 1 > regs.size) regs = regs.copyOf(program.maxRegister + 1)
     }
 
-    /** The primitives and the clauses of the libraries of [environment] answer the goals the theory and the builtins do not */
-    fun useEnvironment(environment: ExecutionEnvironment) {
-        this.environment = environment
-        scope = program.scopeOf(environment.libraries)
-        fitRegisters()
-    }
-
     private fun jump(address: Int): Int {
         pc = address
         return JUMPED
@@ -296,7 +288,7 @@ internal class Machine(
     private val environmentsSeen = HashMap<Int, ExecutionEnvironment>()
 
     fun environmentSeen(): ExecutionEnvironment {
-        val base = environment!!
+        val base = environment
         val libraries = scope.libraries
         if ((libraries == null || libraries === base.libraries) && base.theoryVisible == theoryVisible) return base
         val key = scope.id * 2 + (if (theoryVisible) 1 else 0)
@@ -1241,7 +1233,6 @@ internal class Machine(
         if (top > gcThreshold) collect(arity)
         if (callsSinceCheck >= CHECK_EVERY) {
             callsSinceCheck = 0
-            val environment = environment ?: ExecutionEnvironment(startTime = 0)
             if (currentTimeInstant() > deadline) {
                 val context: ExecutionContext = PrologExecutionContext(environment)
                 throw Halt(TimeOutException(exceededDuration = environment.maxDuration, context = context))
@@ -2724,7 +2715,7 @@ internal class Machine(
     /** The resolution exception of a ball no catch took */
     fun haltOf(raised: Raised): ResolutionException {
         raised.exception?.let { return it }
-        val context: ExecutionContext = PrologExecutionContext(environment ?: ExecutionEnvironment(startTime = 0))
+        val context: ExecutionContext = PrologExecutionContext(environment)
         val ball = raised.ball
         return if (ball is Struct && ball.functor == "error" && ball.arity in 1..2 && ball[0] is Struct) {
             try {
@@ -3142,11 +3133,11 @@ internal class Machine(
 
     override val context: ExecutionContext get() = PrologExecutionContext(environmentSeen())
 
-    override val libraries: Runtime get() = scope.libraries ?: environment!!.libraries
+    override val libraries: Runtime get() = scope.libraries ?: environment.libraries
 
     override fun libraryValue(compute: (Runtime) -> Any?): Any? {
         val scope = scope
-        val libraries = scope.libraries ?: return compute(environment!!.libraries)
+        val libraries = scope.libraries ?: return compute(environment.libraries)
         if (scope.libraryValueOf !== compute) {
             scope.libraryValue = compute(libraries)
             scope.libraryValueOf = compute
@@ -3156,7 +3147,7 @@ internal class Machine(
 
     override val theoryVersion: Long? get() = program.theoryVersion
 
-    override val rootLibraries: Runtime get() = environment!!.libraries
+    override val rootLibraries: Runtime get() = environment.libraries
 
     override fun storeGoal(
         goal: Int,
@@ -3233,7 +3224,7 @@ internal class Machine(
     fun raised(exception: Exception): Raised {
         val resolution =
             exception as? ResolutionException
-                ?: SystemError.forUncaughtException(PrologExecutionContext(environment ?: ExecutionEnvironment(startTime = 0)), exception)
+                ?: SystemError.forUncaughtException(PrologExecutionContext(environment), exception)
         return Raised(ballOf(resolution), resolution)
     }
 
@@ -3346,7 +3337,7 @@ internal class Machine(
         calls.clear()
         theoryVisible = initialTheoryVisible
         callsSinceCheck = 0
-        scope = environment?.let { program.scopeOf(it.libraries) } ?: program.theory
+        scope = program.scopeOf(environment.libraries)
     }
 
     /**

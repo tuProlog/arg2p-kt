@@ -25,7 +25,7 @@ import it.unibo.tuprolog.unify.Unificator
  *
  * @throws IllegalArgumentException if [startTime] or [maxDuration] are negative.
  */
-data class ExecutionEnvironment(
+internal data class ExecutionEnvironment(
     val unificator: Unificator = Unificator.default,
     val libraries: Runtime = Runtime.empty(),
     val flags: FlagStore = FlagStore.empty(),
@@ -38,8 +38,8 @@ data class ExecutionEnvironment(
     val query: Struct = Truth.TRUE,
     val startTime: TimeInstant,
     val maxDuration: TimeDuration = TimeDuration.MAX_VALUE,
-    /** The program of the machine the resolution runs on (see `engine.vm.VmSolver`): the solvers created for its sub-goals share it */
-    val vm: Any? = null,
+    /** The program of the machine the resolution runs on (see [VmSolver]): the solvers created for its sub-goals share it */
+    val program: Program? = null,
     /** Whether the theory of the user is visible to the resolution (not within a module call) */
     val theoryVisible: Boolean = true,
     /** The environment of the root of the resolution, where this one is that of a module call (null: this is the root) */
