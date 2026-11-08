@@ -42,5 +42,5 @@ akka-actor-testkit-typed = { module = "com.typesafe.akka:akka-actor-testkit-type
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebSocket" }
 lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 
-jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.4"
+jackson = "com.fasterxml.jackson.module:jackson-module-kotlin:2.23.0"
 logback-classic = "ch.qos.logback:logback-classic:1.6.6"

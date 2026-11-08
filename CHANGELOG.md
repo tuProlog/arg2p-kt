@@ -1,3 +1,24 @@
+## [0.25.2](https://github.com/tuProlog/arg2p-kt/compare/0.25.1...0.25.2) (2026-11-08)
+
+### Dependency updates
+
+* **deps:** update doc/site/themes/hugo-book digest to c3319fd ([#610](https://github.com/tuProlog/arg2p-kt/issues/610)) ([56a0867](https://github.com/tuProlog/arg2p-kt/commit/56a08676c362988e9945420d702bfa0a6ee79168))
+* **deps:** update gradle to v9.9.0 ([#603](https://github.com/tuProlog/arg2p-kt/issues/603)) ([d0755ae](https://github.com/tuProlog/arg2p-kt/commit/d0755aecc105e05651e407947ee96ecfa17f15cb))
+* **deps:** update ktmpp to v6.1.2 ([#597](https://github.com/tuProlog/arg2p-kt/issues/597)) ([242f5c7](https://github.com/tuProlog/arg2p-kt/commit/242f5c71f0d16c18f8dc48f380037c059bd5eef2))
+* **deps:** update ktmpp to v6.1.3 ([#606](https://github.com/tuProlog/arg2p-kt/issues/606)) ([008af6c](https://github.com/tuProlog/arg2p-kt/commit/008af6ce74877562f7e6c8a3c628d0372213d9d2))
+
+### Bug Fixes
+
+* **deps:** update dependency com.fasterxml.jackson.module:jackson-module-kotlin to v2.23.0 ([#612](https://github.com/tuProlog/arg2p-kt/issues/612)) ([0dd560c](https://github.com/tuProlog/arg2p-kt/commit/0dd560ccdbd0321e3d56253011e399f867d97eff))
+
+### Build and continuous integration
+
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.8 ([#602](https://github.com/tuProlog/arg2p-kt/issues/602)) ([c7cdc64](https://github.com/tuProlog/arg2p-kt/commit/c7cdc6490ddd4e8ac2a098b21c1406daea682f2d))
+
+### General maintenance
+
+* release 0.25.2 ([#608](https://github.com/tuProlog/arg2p-kt/issues/608)) ([10924f7](https://github.com/tuProlog/arg2p-kt/commit/10924f770fff360c354b4b6802d942461594a27f)), closes [#599](https://github.com/tuProlog/arg2p-kt/issues/599)
+
 ## [0.25.1](https://github.com/tuProlog/arg2p-kt/compare/0.25.0...0.25.1) (2026-11-05)
 
 ### Dependency updates
