@@ -107,17 +107,16 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %! argumentFor(?Conclusion, ?Argument)
         %  Argument is saved for Conclusion. Going through the arguments (Conclusion unbound): see argumentById/2.
         argumentFor(Conclusion, Argument) :-
-            var(Conclusion),
+            nonvar(Conclusion), !,
+            context_by(conclusion, Conclusion, argument(Argument)).
+        argumentFor(Conclusion, Argument) :-
             graph_own(Ids), !,
             member(Id, Ids),
             context_term(Id, argument(Argument)),
             argument::conclusion(Argument, Conclusion).
         argumentFor(Conclusion, Argument) :-
-            var(Conclusion), !,
             context_check(argument(Argument)),
             argument::conclusion(Argument, Conclusion).
-        argumentFor(Conclusion, Argument) :-
-            context_by(conclusion, Conclusion, argument(Argument)).
 
         %! argumentUnifiable(+Conclusion, -Argument)
         %  Argument is saved for a conclusion unifying with Conclusion, which it is not bound to.
@@ -275,7 +274,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
             context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
             context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            graph_attack_saved(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+            graph_attack_saved(Type, IdAttacker, IdAttacked, IdOn).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
         %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
@@ -322,7 +321,9 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  The attack, saved or extended, by the identifiers of its arguments. Going through the attacks (IdAttacked
         %  unbound): those on the arguments argumentById/2 goes through.
         attackById(Type, IdAttacker, IdAttacked, IdOn) :-
-            var(IdAttacked),
+            nonvar(IdAttacked), !,
+            expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
+        attackById(Type, IdAttacker, IdAttacked, IdOn) :-
             graph_own(Ids), !,
             member(IdAttacked, Ids),
             expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).

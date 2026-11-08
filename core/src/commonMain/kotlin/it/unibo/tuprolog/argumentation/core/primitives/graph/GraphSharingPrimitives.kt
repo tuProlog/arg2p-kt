@@ -6,6 +6,7 @@ import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.items
 import it.unibo.tuprolog.argumentation.engine.vm.replyWord
 import it.unibo.tuprolog.core.Atom
+import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.core.List as LogicList
 
@@ -58,10 +59,15 @@ internal object GraphRemoved : AbstractNativePrimitive(Signature("graph_removed"
     }
 }
 
-/** graphStore::graph_attack_saved(+Fact): the attack saved, an attackId/4 fact (see [GraphSharing.saved]); nothing outside a shared graph */
-internal object GraphAttackSaved : AbstractNativePrimitive(Signature("graph_attack_saved", 1)) {
+/**
+ * graphStore::graph_attack_saved(+Type, +IdAttacker, +IdAttacked, +IdOn): the attack saved (see [GraphSharing.saved]), its
+ * attackId/4 fact made only for a shared graph; nothing outside one
+ */
+internal object GraphAttackSaved : AbstractNativePrimitive(Signature("graph_attack_saved", 4)) {
     override fun call(call: NativeCall): Int {
-        call.graphSharing()?.saved(call, call.record(call.arg(0)))
+        val graph = call.graphSharing() ?: return NativeCall.CONTINUE
+        val fact = Struct.of("attackId", List(4) { call.term(call.arg(it)) })
+        graph.saved(call, call.record(call.word(fact)))
         return NativeCall.CONTINUE
     }
 }

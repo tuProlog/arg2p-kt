@@ -92,7 +92,7 @@ object StatementAcceptanceModule : PrologModule("prolog.argumentation.statement.
         acceptanceOn(whole_graph, _) :- !,
             structuredWhole:::computeGlobalAcceptance.
         acceptanceOn(Locality, Goal) :-
-            structuredPartial:::computeGoalAcceptance(Goal, Locality).
+            structuredPartial::computeGoalAcceptance(Goal, Locality).
 
         mineResults(Goal, YesResult, NoResult, UndResult) :-
             findall(Goal, answer(in, Goal), In),

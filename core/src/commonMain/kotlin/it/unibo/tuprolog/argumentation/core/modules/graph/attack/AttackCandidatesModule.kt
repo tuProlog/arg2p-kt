@@ -15,12 +15,12 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
         %  findPossibleAttackers/2 for the argument with identifier Id, looked for once: query mode looks for them to
         %  build the graph, and again to build the attacks. When the conflicts are argued (see conflict::argued/0) they are
         %  looked for each time, the arguments for conflicts being those saved by then.
-        possibleAttackers(_, Argument, Statement) :-
-            conflict::argued, !,
-            findPossibleAttackers(Argument, Statement).
         possibleAttackers(Id, _, Statement) :-
             context_check(possibleAttackersOf(Id, Statements)), !,
             member(Statement, Statements).
+        possibleAttackers(_, Argument, Statement) :-
+            conflict::argued, !,
+            findPossibleAttackers(Argument, Statement).
         possibleAttackers(Id, Argument, Statement) :-
             findall(S, findPossibleAttackers(Argument, S), Statements),
             context_assert(possibleAttackersOf(Id, Statements)),
