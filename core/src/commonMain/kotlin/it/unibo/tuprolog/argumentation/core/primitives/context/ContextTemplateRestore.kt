@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.primitives.context
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.solve.Signature
 
 /** context_template_restore: the active branch replaced by a copy of the template saved by context_template_save/0; fails when there is none (or the theory or the flags changed since) */

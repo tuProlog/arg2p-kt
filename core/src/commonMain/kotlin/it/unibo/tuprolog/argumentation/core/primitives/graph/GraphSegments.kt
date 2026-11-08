@@ -1,10 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.vm.payload
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.core.Atom
 
 /**
@@ -100,7 +99,7 @@ fun NativeCall.mergeGraphSegment(
     val program = store.encoding!!
     val saved = store.ids("arg").copy()
     val infoOf = HashMap<Int, Record>(segment.infos.size)
-    for (info in segment.infos) infoOf[payload(info.words[payload(info.root) + 1])] = info
+    for (info in segment.infos) infoOf[info.idAt(0)] = info
     val newConc = program.functorWord("newConc", 2)
     val tagged = tag?.let { Record.of(Atom.of(it), program) }
     val added = ArrayList<Int>()
@@ -125,8 +124,4 @@ fun NativeCall.mergeGraphSegment(
 }
 
 // The word of the conclusion of `argument([Rules, TopRule, [Claim], Body, Info])`: the third element of its list
-internal fun conclusionWord(argument: Record): Int {
-    var cell = payload(argument.words[payload(argument.root) + 1])
-    repeat(2) { cell = payload(argument.words[cell + 1]) }
-    return argument.words[cell]
-}
+internal fun conclusionWord(argument: Record): Int = argument.itemAt(argument.argumentWord(0), 2)

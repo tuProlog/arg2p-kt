@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.solve.Signature
 

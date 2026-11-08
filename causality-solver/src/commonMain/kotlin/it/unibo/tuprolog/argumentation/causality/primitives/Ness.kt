@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.causality.primitives
 
 import it.unibo.tuprolog.argumentation.causality.runtime.CausalityAnalysis
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext

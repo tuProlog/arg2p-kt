@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.primitives.context
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.attempts
-import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.attempts
 import it.unibo.tuprolog.solve.Signature
 
 // The term [w] with [key] at the place: through the cells it has, the others made with fresh variables around
@@ -48,7 +48,7 @@ internal class ContextBy(
         ) {
             return NativeCall.FAIL
         }
-        return if (call is Machine) {
+        return if (call is MachineCall) {
             call.lookup(branches.selected, branchLookup(branches.active), 2)
         } else {
             call.inline(call.struct("context_check", intArrayOf(fact)), call.libraries, theoryVisible = false)
@@ -69,15 +69,7 @@ internal class ContextMatching(
         if (call.kind(fact) != NativeCall.STRUCT) return NativeCall.FAIL
         val pattern = call.struct(call.functorName(fact), IntArray(call.arityOf(fact)) { call.variable() })
         if (!call.unifyAt(place, call.argOf(pattern, place.argument), call.arg(1))) return NativeCall.FAIL
-        val store = branches.selected
-        val matching =
-            if (call is Machine) {
-                call.storeMatching(pattern, store)
-            } else {
-                store.candidates(call.record(pattern)).filter { stored ->
-                    !stored.record.isRule && call.unifiable(pattern, call.recall(stored.record))
-                }
-            }
+        val matching = call.factsMatching(pattern, branches.selected)
         return call.attempts(
             matching
                 .asSequence()
@@ -94,15 +86,7 @@ internal class ContextStoredId(
     override fun call(call: NativeCall): Int {
         val pattern = call.arg(0)
         if (call.kind(pattern) == NativeCall.VAR) return NativeCall.FAIL
-        val store = branches.selected
-        val matching =
-            if (call is Machine) {
-                call.storeMatching(pattern, store)
-            } else {
-                store.candidates(call.record(pattern)).filter { stored ->
-                    !stored.record.isRule && call.unifiable(pattern, call.recall(stored.record))
-                }
-            }
+        val matching = call.factsMatching(pattern, branches.selected)
         return call.attempts(
             matching
                 .asSequence()

@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.listArg
-import it.unibo.tuprolog.argumentation.core.engine.reply
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.listArg
+import it.unibo.tuprolog.argumentation.engine.vm.reply
 import it.unibo.tuprolog.solve.Signature
 
 /**

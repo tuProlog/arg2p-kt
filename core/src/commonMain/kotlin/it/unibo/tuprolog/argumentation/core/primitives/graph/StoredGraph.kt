@@ -1,11 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.listArg
-import it.unibo.tuprolog.argumentation.core.engine.vm.payload
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
-import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.listArg
+import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
 
@@ -18,10 +17,7 @@ internal class GraphArguments(
 ) {
     /** The identifiers of the arguments */
     val ids: IntArray =
-        IntArray(stored.size) { i ->
-            val record = stored[i].record
-            payload(record.words[payload(record.head) + 1])
-        }
+        IntArray(stored.size) { i -> stored[i].record.idAt(0) }
 
     private val positions =
         IntArray((ids.maxOrNull() ?: -1) + 1) { -1 }.also { positions ->

@@ -1,13 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphMark
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSegment
 import it.unibo.tuprolog.argumentation.core.primitives.graph.graphSegmentSince
 import it.unibo.tuprolog.argumentation.core.primitives.graph.mergeGraphSegment
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Signature

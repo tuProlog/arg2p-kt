@@ -3,8 +3,9 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.consumer.TheoryPartitioner
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
 import it.unibo.tuprolog.core.Struct
@@ -62,7 +63,7 @@ class SharedGraphBuildTest {
         val partitioning = TheoryPartitioner.partition(theory, parts, flags)
         assertTrue(partitioning.partitions.size > 1, "not split: $theory")
         val graph = SharedGraph(partitioning.partitions.size)
-        val session = SolverSession().also { it.shared = graph }
+        val session = SolverSession().also { it[GraphSharing.KEY] = graph }
         // the solver labelling the graph, a consumer with the rules of the first partition, as on a node
         val labeller = solverOf(partitioning.theoryOf(0))
         val workers = (1 until partitioning.partitions.size).map { solverOf(partitioning.theoryOf(it)) }
@@ -70,7 +71,7 @@ class SharedGraphBuildTest {
             if (!throughText) {
                 SolverSession.join(solver, session)
             } else {
-                SolverSession.join(solver, SolverSession().also { it.shared = graph })
+                SolverSession.join(solver, SolverSession().also { it[GraphSharing.KEY] = graph })
                 if (solver !== labeller) graph.throughText(solver, null)
             }
         }

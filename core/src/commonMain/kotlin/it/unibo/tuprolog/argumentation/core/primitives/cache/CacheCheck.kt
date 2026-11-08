@@ -1,13 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.primitives.cache
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.vm.Program
-import it.unibo.tuprolog.argumentation.core.engine.vm.ProgramStore
 import it.unibo.tuprolog.argumentation.core.primitives.context.lookup
 import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Program
+import it.unibo.tuprolog.argumentation.engine.vm.ProgramStore
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve

@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.primitives.context
 
-import it.unibo.tuprolog.argumentation.core.engine.GoalWrapper
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.items
-import it.unibo.tuprolog.argumentation.core.engine.vm.Machine
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.vm.items
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
@@ -83,7 +83,7 @@ private fun NativeCall.enter(
     store: ClauseStore,
     wrap: GoalWrapper,
     goal: Int,
-): Int = (this as Machine).storeGoal(goal, store, wrap)
+): Int = (this as MachineCall).storeGoal(goal, store, wrap)
 
 // The goals of a conjunction each wrapped
 private fun NativeCall.wrappedConjunction(
@@ -103,7 +103,7 @@ private fun NativeCall.clauseLookup(
     goal: Int,
 ): Int {
     val head = argOf(goal, 0)
-    return if (isCallable(head)) (this as Machine).storeClause(head, argOf(goal, 1), store) else NativeCall.FAIL
+    return if (isCallable(head)) (this as MachineCall).storeClause(head, argOf(goal, 1), store) else NativeCall.FAIL
 }
 
 /**
@@ -114,7 +114,7 @@ internal fun NativeCall.absentFrom(
     store: ClauseStore,
     goal: Int,
 ): Boolean? {
-    val machine = this as? Machine ?: return null
+    val machine = this as? MachineCall ?: return null
     val isClause = kind(goal) == NativeCall.STRUCT && functorName(goal) == "clause" && arityOf(goal) == 2
     return when {
         isClause -> {
@@ -130,13 +130,13 @@ internal fun NativeCall.absentFrom(
 
 /** The head of the record recalled as [w] */
 internal fun NativeCall.headOf(
-    record: it.unibo.tuprolog.argumentation.core.engine.Record,
+    record: it.unibo.tuprolog.argumentation.engine.vm.Record,
     w: Int,
 ): Int = if (record.isRule) argOf(w, 0) else w
 
 /** The body of the record recalled as [w]: `true` for a fact */
 internal fun NativeCall.bodyOf(
-    record: it.unibo.tuprolog.argumentation.core.engine.Record,
+    record: it.unibo.tuprolog.argumentation.engine.vm.Record,
     w: Int,
 ): Int = if (record.isRule) argOf(w, 1) else atom("true")
 
@@ -157,6 +157,19 @@ internal fun NativeCall.candidatesOf(
     if (kind(head) == NativeCall.VAR) return emptyList()
     return store.candidates(record(head))
 }
+
+/** The facts of [store] that unify with [pattern], newest first, which it does not bind */
+internal fun NativeCall.factsMatching(
+    pattern: Int,
+    store: ClauseStore,
+): List<ClauseStore.Stored> =
+    if (this is MachineCall) {
+        storeMatching(pattern, store)
+    } else {
+        store.candidates(record(pattern)).filter { stored ->
+            !stored.record.isRule && unifiable(pattern, recall(stored.record))
+        }
+    }
 
 /** The stored clauses unifying with the pattern [pattern] removed from [store], as retractall/1 */
 internal fun NativeCall.retractAll(

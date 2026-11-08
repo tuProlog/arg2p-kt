@@ -1,11 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.answers
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
-import it.unibo.tuprolog.argumentation.core.runtime.context.IdSet
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.answers
+import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.core.List as LogicList

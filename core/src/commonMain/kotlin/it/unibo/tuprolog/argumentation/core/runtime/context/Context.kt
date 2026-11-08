@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.vm.Program
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
@@ -27,6 +25,9 @@ import it.unibo.tuprolog.argumentation.core.primitives.context.ContextStoredId
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
 import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTerm
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.Program
+import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library

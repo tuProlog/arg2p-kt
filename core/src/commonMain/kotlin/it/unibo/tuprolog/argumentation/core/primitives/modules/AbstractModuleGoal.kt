@@ -1,15 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.primitives.modules
 
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.NativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.PrologExecutionContext
-import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalCall
-import it.unibo.tuprolog.argumentation.core.engine.RegisterGoalPrimitive
-import it.unibo.tuprolog.argumentation.core.primitives.PrimitiveWithSignature
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.runtime.modules.Module
-import it.unibo.tuprolog.argumentation.core.runtime.modules.haltsRaised
-import it.unibo.tuprolog.argumentation.core.runtime.modules.solveForCaller
+import it.unibo.tuprolog.argumentation.engine.term.haltsRaised
+import it.unibo.tuprolog.argumentation.engine.term.solveForCaller
+import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.NativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.engine.vm.PrologExecutionContext
+import it.unibo.tuprolog.argumentation.engine.vm.RegisterGoalPrimitive
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -68,7 +68,7 @@ internal abstract class AbstractModuleGoal(
 
     // The machine with the arguments of the goal in the registers, as a known module and goal are compiled: no term of them
     override fun callOnRegisters(
-        call: RegisterGoalCall,
+        call: MachineCall,
         module: Int,
     ): Int {
         val moduleName = call.atomName(module)

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
+import it.unibo.tuprolog.argumentation.engine.term.renamedCopy
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermComparator

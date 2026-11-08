@@ -1,13 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.primitives.utils
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyItems
 import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
 import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
 import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
 import it.unibo.tuprolog.argumentation.core.primitives.graph.stronglyConnectedComponents
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.replyItems
 import it.unibo.tuprolog.solve.Signature
 
 /**

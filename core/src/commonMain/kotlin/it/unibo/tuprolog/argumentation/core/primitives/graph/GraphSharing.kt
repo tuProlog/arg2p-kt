@@ -1,13 +1,14 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.items
-import it.unibo.tuprolog.argumentation.core.engine.replyWord
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.vm.SessionKey
+import it.unibo.tuprolog.argumentation.engine.vm.items
+import it.unibo.tuprolog.argumentation.engine.vm.replyWord
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
@@ -16,12 +17,17 @@ import it.unibo.tuprolog.core.List as LogicList
 
 /**
  * The graph a solver builds with others, through its graph store: the store calls it where what the others built
- * matters (see the module graphStore), and does nothing more than a store of its own where there is none. Set as
- * [it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession.shared] of the session of the solvers: the module parallel
- * provides it (segments, barriers, the transports between the solvers); core only calls it.
+ * matters (see the module graphStore), and does nothing more than a store of its own where there is none. Kept under
+ * [KEY] in the session of the solvers: the module parallel provides it (segments, barriers, the transports between the
+ * solvers); core only calls it.
  */
 @InternalArg2pApi
 interface GraphSharing {
+    companion object {
+        /** Where a session of solvers keeps its graph */
+        val KEY = SessionKey<GraphSharing>()
+    }
+
     /**
      * A graph begins to be built: the whole one ([statement] null), or in query mode the one of [statement]. The
      * solver a client asked chooses then the graph it builds with others (starting them if it is new); nothing for the
@@ -88,7 +94,7 @@ private fun NativeCall.graphSharing(): GraphSharing? =
         .store()
         ?.encoding
         ?.session
-        ?.shared as? GraphSharing
+        ?.get(GraphSharing.KEY)
 
 // ---- what an implementation of GraphSharing reads of the store of a solver
 

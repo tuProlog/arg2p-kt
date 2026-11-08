@@ -2,9 +2,6 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.engine.vm.CodeKey
-import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
-import it.unibo.tuprolog.argumentation.core.engine.vm.locked
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
@@ -17,6 +14,9 @@ import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
+import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
+import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse

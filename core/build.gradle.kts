@@ -8,17 +8,11 @@ plugins {
     )
 }
 
-// The machine (the project :engine, no package of its own yet) compiled into this library
-fun engineSources(sourceSet: String) = rootProject.file("engine/src/$sourceSet/kotlin")
-
 kotlin {
     sourceSets {
-        jvmMain { kotlin.srcDir(engineSources("jvmMain")) }
-        jsMain { kotlin.srcDir(engineSources("jsMain")) }
-
         commonMain {
-            kotlin.srcDir(engineSources("commonMain"))
             dependencies {
+                api(project(":engine"))
                 api(libs.tuprolog.dsl.solve)
                 api(libs.tuprolog.parser.theory)
                 // The lexer of 2P-Kt, keeping the comments of a theory (see RuleAnnotations)
@@ -40,18 +34,6 @@ kotlin {
             dependencies {
                 // the launcher the Prolog coverage runs the tests with (at run time, the one kotlin-test brings)
                 compileOnly(libs.junit.platform.launcher)
-            }
-        }
-    }
-}
-
-// The machine is no part of the reference of the library
-plugins.withId("org.jetbrains.dokka") {
-    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
-        dokkaSourceSets.configureEach {
-            perPackageOption {
-                matchingRegex.set(""".*\.core\.engine(\..*)?""")
-                suppress.set(true)
             }
         }
     }
@@ -116,7 +98,7 @@ tasks.register<Test>("jvmQuickTest") {
     group = "verification"
     description = "Runs the fast tests of the engine and of the labels"
     val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
-    dependsOn("jvmTestClasses")
+    dependsOn("jvmTestClasses", ":engine:jvmQuickTest")
     testClassesDirs = jvmTest.testClassesDirs
     classpath = jvmTest.classpath
     filter.excludeTestsMatching(benchmarkTests)
@@ -124,8 +106,6 @@ tasks.register<Test>("jvmQuickTest") {
     listOf(
         "*.AbaPrefModuleTest",
         "*.SharedProgramsTest",
-        "*.VmSpikeTest.inferenceRate",
-        "*.StdlibNativesTest",
         "*.StandardEngineTest",
         "*.SemanticsReferenceTest",
         "*.InlinedCallLibrariesTest",

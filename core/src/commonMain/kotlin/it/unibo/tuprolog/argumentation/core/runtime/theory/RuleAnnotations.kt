@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.runtime.theory
 
-import it.unibo.tuprolog.argumentation.core.engine.vm.locked
+import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.parser.PrologLexer

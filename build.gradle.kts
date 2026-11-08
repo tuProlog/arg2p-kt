@@ -305,7 +305,7 @@ afterEvaluate {
 // well), in one report (build/reports/kover), and its total for a badge (koverBadge); with the coverage of the Prolog
 // modules, as the documentation site publishes them (coverageReports)
 val coverage = findProperty("coverage") != null
-val covered = listOf(":core", ":causality-solver", ":parallel", ":federation")
+val covered = listOf(":engine", ":core", ":causality-solver", ":parallel", ":federation")
 
 if (coverage) {
     apply(plugin = "org.jetbrains.kotlinx.kover")

@@ -1,16 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.model.mining
 
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.RecordKey
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words
-import it.unibo.tuprolog.argumentation.core.engine.vm.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.tag
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.CompactLists
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.primitives.graph.expandedAttacks
 import it.unibo.tuprolog.argumentation.core.primitives.graph.supportPairs
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
+import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.vm.RecordKey
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
 
@@ -45,15 +42,14 @@ fun Solver.compactGraph(branch: Int): CompactGraph {
     val infoParts = IntArray(3)
     ids.forEachIndexed { at, id ->
         val record = context.record(id)!!
-        val words = record.words
         // argument([Rules, TopRule, [Claim], Body, [LastDefeasibleRules, DefeasibleRules, DefeasiblePremises]])
-        items(words, words[payload(record.head) + 1], parts)
-        items(words, parts[4], infoParts)
+        items(record, record.argumentWord(0), parts)
+        items(record, parts[4], infoParts)
         rules.add(record, parts[0], written)
         topRules[at] = written.of(record, parts[1])
         val conclusion = parts[2]
-        val claim = if (tag(conclusion) == Words.LIST) words[payload(conclusion)] else 0
-        val single = tag(conclusion) == Words.LIST && tag(words[payload(conclusion) + 1]) != Words.LIST
+        val claim = if (record.isCell(conclusion)) record.cellHead(conclusion) else 0
+        val single = record.isCell(conclusion) && !record.isCell(record.cellTail(conclusion))
         conclusions[at] = if (single) concluded.of(record, claim) else texts.of("null")
         orderedBy[at] = if (single) ordered.of(record, claim) else conclusions[at]
         groundings.add(record, parts[3], written)
@@ -101,16 +97,15 @@ fun Solver.compactGraph(branch: Int): CompactGraph {
 
 // The first items of the list [list0] in [into]
 private fun items(
-    words: IntArray,
+    record: Record,
     list0: Int,
     into: IntArray,
 ) {
     var list = list0
     var i = 0
-    while (i < into.size && tag(list) == Words.LIST) {
-        val cell = payload(list)
-        into[i++] = words[cell]
-        list = words[cell + 1]
+    while (i < into.size && record.isCell(list)) {
+        into[i++] = record.cellHead(list)
+        list = record.cellTail(list)
     }
 }
 
@@ -139,7 +134,7 @@ private class Interned(
         record: Record,
         word: Int,
     ): Int =
-        if (tag(word) == Words.ATOM || tag(word) == Words.INT) {
+        if (record.isSymbol(word)) {
             bySymbol.getOrPut(word) { text(record.termAt(word)) }
         } else {
             byKey.getOrPut(record.keyAt(word)) { text(record.termAt(word)) }
@@ -159,14 +154,12 @@ private class ListsBuilder(
         list0: Int,
         interned: Interned,
     ) {
-        val words = record.words
         var list = list0
         var n = offsets[argument]
-        while (tag(list) == Words.LIST) {
-            val cell = payload(list)
+        while (record.isCell(list)) {
             if (n == items.size) items = items.copyOf(n * 2)
-            items[n++] = interned.of(record, words[cell])
-            list = words[cell + 1]
+            items[n++] = interned.of(record, record.cellHead(list))
+            list = record.cellTail(list)
         }
         offsets[++argument] = n
     }

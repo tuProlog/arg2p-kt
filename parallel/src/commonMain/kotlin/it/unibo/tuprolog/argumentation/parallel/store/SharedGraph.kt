@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphMark
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
 import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentConclusion
@@ -18,6 +16,8 @@ import it.unibo.tuprolog.argumentation.core.primitives.graph.savedArgumentIds
 import it.unibo.tuprolog.argumentation.core.primitives.graph.segmentTerms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.storedFacts
 import it.unibo.tuprolog.argumentation.core.primitives.graph.termIn
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.parallel.host.locked
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -42,7 +42,7 @@ import it.unibo.tuprolog.core.List as LogicList
  * context was reset once the graph is built (a solver solving another goal on it) builds it again by reading what every
  * solver built, no other involved. A solver failing ([fail]) fails those waiting, and those that wait later.
  *
- * Set as [it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession.shared] of the session of the solvers in this
+ * Kept under [GraphSharing.KEY] in the session of the solvers in this
  * process, one for each graph: with a store of its own for [consumers] solvers ([SharedGraph]), each solver given a
  * connection to it when it first asks; or, for solvers of a graph of another process ([remote]), each given the connection
  * it reaches that graph by ([join]).

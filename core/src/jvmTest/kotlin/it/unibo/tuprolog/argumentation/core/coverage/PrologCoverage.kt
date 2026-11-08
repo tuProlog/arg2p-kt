@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.coverage
 
-import it.unibo.tuprolog.argumentation.core.engine.ClauseObservers
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseObservers
 import it.unibo.tuprolog.core.Clause
 import org.junit.platform.engine.discovery.DiscoverySelectors
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder

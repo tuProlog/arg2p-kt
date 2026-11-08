@@ -1,5 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+
 /**
  * What the context knows of the terms of the model (see the modules of the data), all here: the store itself only holds
  * clauses. An argument is `argument([Rules, TopRule, [Claim], Body, Info])`.

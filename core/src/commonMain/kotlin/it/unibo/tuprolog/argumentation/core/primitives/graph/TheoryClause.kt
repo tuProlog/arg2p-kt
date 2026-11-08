@@ -1,11 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.answersOf
-import it.unibo.tuprolog.argumentation.core.engine.termArg
-import it.unibo.tuprolog.argumentation.core.runtime.renamedCopy
 import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
+import it.unibo.tuprolog.argumentation.engine.term.renamedCopy
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.answersOf
+import it.unibo.tuprolog.argumentation.engine.vm.termArg
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Signature
 

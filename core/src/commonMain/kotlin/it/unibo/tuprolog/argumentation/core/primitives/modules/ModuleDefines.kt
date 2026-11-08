@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.primitives.modules
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.reply
-import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.reply
+import it.unibo.tuprolog.argumentation.engine.vm.termArg
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Indicator
 import it.unibo.tuprolog.core.Integer

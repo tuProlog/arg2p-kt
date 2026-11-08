@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph.language
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.replyTerms
-import it.unibo.tuprolog.argumentation.core.engine.termArg
 import it.unibo.tuprolog.argumentation.core.model.terms.RuleTerm
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.replyTerms
+import it.unibo.tuprolog.argumentation.engine.vm.termArg
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

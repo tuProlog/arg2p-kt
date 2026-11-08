@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.engine.vm
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.engine.vm.SharedPrograms
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
@@ -60,9 +61,9 @@ class SharedProgramsTest {
         assertEquals(shared, SharedPrograms.codeSize)
         // the instances of a module share its code
         val program = SharedPrograms.derived()
-        program.scopeOf(Runtime.of(Instanced().baseContent))
+        program.compile(Runtime.of(Instanced().baseContent))
         val after = SharedPrograms.codeSize
-        repeat(5) { SharedPrograms.derived().scopeOf(Runtime.of(Instanced().baseContent)) }
+        repeat(5) { SharedPrograms.derived().compile(Runtime.of(Instanced().baseContent)) }
         assertEquals(after, SharedPrograms.codeSize)
     }
 

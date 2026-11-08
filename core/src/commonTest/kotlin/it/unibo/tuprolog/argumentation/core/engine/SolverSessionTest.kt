@@ -1,9 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.engine
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.engine.vm.Program
-import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
-import it.unibo.tuprolog.argumentation.core.engine.vm.VmSolver
+import it.unibo.tuprolog.argumentation.engine.vm.Program
+import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.engine.vm.VmSolver
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -40,7 +41,7 @@ class SolverSessionTest {
         val term = Term.parse("r(beta, gamma(2.5), [alpha, delta], 123456789012345678901234567890)")
         val record = Record.of(term, second)
         assertEquals(Record.of(term, first).key, record.key)
-        assertEquals(term.toString(), Record(first, record.words, record.root, null).term.toString())
+        assertEquals(term.toString(), Record.encoded(record, first).term.toString())
     }
 
     // Solvers of Arg2P in a session, whose modules the base of the session compiles: the results of solvers alone

@@ -5,9 +5,6 @@ import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
@@ -16,6 +13,9 @@ import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
 import it.unibo.tuprolog.argumentation.core.primitives.graph.graphKey
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.goalOf
 import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.EvaluationStats
@@ -254,7 +254,7 @@ internal class ClientSolver(
         alone = split == null || !solver.holds("pipeline::builder(B), B == ruleGraph")
         if (alone && split != null) load(theory.toString())
         partial = if (alone) null else locality()
-        solvers!!.shared = if (alone) null else graphs
+        solvers!![GraphSharing.KEY] = if (alone) null else graphs
         changed = false
         current = null
     }

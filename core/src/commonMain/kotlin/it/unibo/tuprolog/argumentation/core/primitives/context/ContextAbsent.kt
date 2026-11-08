@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.primitives.context
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.reply
 import it.unibo.tuprolog.argumentation.core.runtime.context.ContextBranches
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.reply
 import it.unibo.tuprolog.solve.Signature
 
 /** context_absent(Goal): `\\+ context_check(Goal)` as a single step */

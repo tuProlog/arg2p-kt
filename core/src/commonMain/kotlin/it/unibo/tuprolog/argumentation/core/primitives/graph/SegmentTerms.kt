@@ -1,11 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
 import it.unibo.tuprolog.argumentation.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.Record
-import it.unibo.tuprolog.argumentation.core.engine.vm.payload
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -59,24 +58,19 @@ fun NativeCall.segmentTerms(segment: GraphSegment): SegmentTerms {
             refs.size - 1
         }
 
-    fun idAt(
-        fact: Record,
-        argument: Int,
-    ): Int = payload(fact.words[payload(fact.root) + 1 + argument])
-
     val infoOf = HashMap<Int, Int>()
-    for (info in segment.infos) infoOf[idAt(info, 0)] = idAt(info, 1)
+    for (info in segment.infos) infoOf[info.idAt(0)] = info.idAt(1)
     val arguments = IntArray(segment.arguments.size) { ref(segment.arguments[it]) }
     val infos = segment.arguments.map { id -> infoOf[id]?.let { (context.term(it) as Struct)[0] } ?: Atom.of("none") }
     val supports = IntArray(segment.supports.size * 2)
     segment.supports.forEachIndexed { i, fact ->
-        supports[2 * i] = ref(idAt(fact, 0))
-        supports[2 * i + 1] = ref(idAt(fact, 1))
+        supports[2 * i] = ref(fact.idAt(0))
+        supports[2 * i + 1] = ref(fact.idAt(1))
     }
 
     fun attack(fact: Record): AttackRef {
         val term = termIn(fact) as Struct
-        return AttackRef(term[0].toString(), ref(idAt(fact, 1)), ref(idAt(fact, 2)), ref(idAt(fact, 3)))
+        return AttackRef(term[0].toString(), ref(fact.idAt(1)), ref(fact.idAt(2)), ref(fact.idAt(3)))
     }
     val attacks = segment.attacks.map { attack(it) }
     val removed = segment.removed.map { attack(it) }

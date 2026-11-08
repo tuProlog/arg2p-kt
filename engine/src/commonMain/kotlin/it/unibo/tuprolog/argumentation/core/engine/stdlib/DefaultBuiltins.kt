@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.engine.stdlib
 
-import it.unibo.tuprolog.argumentation.core.engine.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
+import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
@@ -12,7 +12,7 @@ import it.unibo.tuprolog.solve.stdlib.CommonBuiltins
 /**
  * The builtins of the solvers of arg2p: those of tuProlog (CommonBuiltins), with length/2 and throw/1, which it lacks.
  * The control constructs, findall/3, catch/3 and throw/1 are instructions of the machine, and the primitives it runs on
- * its words are in [it.unibo.tuprolog.argumentation.core.engine.vm.StdlibNatives]: the entries of this library say that
+ * its words are in [it.unibo.tuprolog.argumentation.engine.vm.StdlibNatives]: the entries of this library say that
  * those predicates exist, and answer what the machine leaves to them.
  */
 object DefaultBuiltins : ExtensionLibrary(CommonBuiltins) {

@@ -1,12 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
-import it.unibo.tuprolog.argumentation.core.engine.NativeCall
-import it.unibo.tuprolog.argumentation.core.engine.vm.Words
-import it.unibo.tuprolog.argumentation.core.engine.vm.payload
-import it.unibo.tuprolog.argumentation.core.engine.vm.tag
-import it.unibo.tuprolog.argumentation.core.runtime.context.ClauseStore
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.core.Term
 
 /** An attack by the identifiers of its arguments: of [type], of [attacker] on [attacked], on its sub-argument [on] */
@@ -105,9 +102,9 @@ internal fun Context.expandedAttacks(branch: Int? = null): ExpandedAttacks {
 
 // The argument [i] of a stored fact, an identifier, read off its words
 private fun ClauseStore.Stored.idAt(i: Int): Int {
-    val word = record.words[payload(record.head) + 1 + i]
-    return if (tag(word) == Words.INT) {
-        payload(word)
+    val id = record.idAt(i)
+    return if (id >= 0) {
+        id
     } else {
         record.clause.head!![i]
             .castToInteger()
@@ -117,7 +114,4 @@ private fun ClauseStore.Stored.idAt(i: Int): Int {
 }
 
 // The argument [i] of a stored fact, a type of attack: the term the program keeps for an atom
-private fun ClauseStore.Stored.typeAt(i: Int): Term {
-    val word = record.words[payload(record.head) + 1 + i]
-    return if (tag(word) == Words.ATOM) record.program!!.atomTerm(payload(word)) else record.clause.head!![i]
-}
+private fun ClauseStore.Stored.typeAt(i: Int): Term = record.atomAt(i) ?: record.clause.head!![i]

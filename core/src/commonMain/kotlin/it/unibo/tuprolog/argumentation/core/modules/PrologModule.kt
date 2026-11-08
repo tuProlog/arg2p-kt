@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
-import it.unibo.tuprolog.argumentation.core.engine.vm.CodeKey
-import it.unibo.tuprolog.argumentation.core.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
+import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
