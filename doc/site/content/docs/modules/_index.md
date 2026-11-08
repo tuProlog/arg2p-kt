@@ -73,8 +73,9 @@ implementation exists.
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
-The `structuredWhole` module runs the sequence on the whole graph, and `structuredPartial` implements the goal-directed variant
-used when `queryMode` is enabled. That variant differs in the second stage alone: it builds the part of the graph the
+The `pipeline` module holds what every evaluation goes through. `structuredWhole` runs the sequence on the whole graph, and
+`structuredPartial` is the goal-directed variant `statementAcceptance` uses when `queryMode` is enabled. That variant differs
+in the second stage alone: it builds the part of the graph the
 query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
 for a connected semantics what they attack and support), then through what the steps changing the graph relate them
 to (`queryDependencies/2` and `queryDependants/2` of the modules defining them), the attacks between
@@ -90,8 +91,10 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 
 | Module | Purpose |
 | --- | --- |
-| `structuredWhole` | Orchestrates the evaluation of the whole graph. |
-| `structuredPartial` | Goal-directed evaluation used by `answerQuery`, through `queryExploration` and `argumentSearch`. |
+| `pipeline` | What every evaluation goes through: the profile checked, the steps changing the graph, the labellings. |
+| `structuredWhole` | The evaluation of the whole graph. |
+| `structuredPartial` | The evaluation of the part of the graph a goal depends on, through `queryExploration` and `argumentSearch`. |
+| `statementAcceptance` | The acceptance of a statement, used by `answerQuery`: on the graph `queryMode` selects, as `answerMode` states. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
 | `parser` | Translates the Arg2P language into the engine's internal rule format. |
 | `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |

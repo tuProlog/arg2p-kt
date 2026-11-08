@@ -22,10 +22,10 @@ object AbstractModule : PrologModule("prolog.argumentation.abstract", "abstract"
         %  stated and labelled, as the pipeline of a theory is (see structuredWhole::computeGlobalAcceptance/0).
         solve(Arguments, Attacks) :-
             context_reset,
-            structuredWhole::checkProfile,
+            pipeline::checkProfile,
             findall(att(X, Y), member((X, Y), Attacks), Atts),
             abstractGraph::save(Arguments, Atts),
-            structuredWhole::modifyGraph,
-            structuredWhole::buildArgumentLabelling.
+            pipeline::modifyGraph,
+            pipeline::buildArgumentLabelling.
         """.trimIndent()
 }

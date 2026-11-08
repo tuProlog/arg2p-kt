@@ -94,8 +94,13 @@ internal class ContextBranches {
     /** The store of [branch]; null if there is no such branch (never created, or dropped) */
     fun storeOf(branch: Int): ClauseStore? = stores[branch]
 
+    /** How many times the context was reset (see [reset]) */
+    var resets = 0
+        private set
+
     /** Back to a single empty branch, the root, and no identifiers (but those of the session, kept) */
     fun reset() {
+        resets++
         active = 0
         next = 1
         stores.clear()

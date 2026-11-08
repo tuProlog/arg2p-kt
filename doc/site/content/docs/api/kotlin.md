@@ -148,7 +148,7 @@ For a graph too large for the objects of `graphs()`, `compactGraphs()` and `comp
 in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
 `attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
 an argument as a graph does, `argument(p)` makes the object of one and `toGraph()` the objects of all. It holds no reference to the solver.
-`compactGraphAt(branch)` gives the graph of a branch, and the solver of a cluster has `compactGraphs()` and `compactGraph()` as well.
+`compactGraphAt(branch)` gives the graph of a branch, and the client solver has `compactGraphs()` and `compactGraph()` as well.
 
 ## Prolog goals and values
 
@@ -184,8 +184,8 @@ intervention meets the condition.
 
 ## The parallel solver
 
-The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) take the same `Flags`:
-`LocalCluster(parts, flags)` on every platform, `ThreadedCluster(threads, parts, flags)` on the JVM.
+The parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}) take the same `Flags`:
+`ThreadedSolver(threads, parts, flags)` on the JVM, and `Federation(parallel solver)` to build its graphs with other instances.
 
 ---
 

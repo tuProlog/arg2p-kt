@@ -34,7 +34,11 @@ object ConstraintsModule : PrologModule("prolog.argumentation.graph.constraints"
         %  The instances the saved arguments rest on: a support used for fewer values than it has is saved by the builder
         %  as bound by the premise it supports, the argument it is an instance of saved alone.
         supportInstances :-
-            findall(S, (graphStore::support(S, _), graphStore::argumentId(S, Id), \+ graphStore::savedId(Id)), Instances),
+            findall(S, (
+                graphStore::support(S, A),
+                graphStore::argumentId(S, Id),
+                \+ graphStore::savedId(Id)
+            ), Instances),
             findall(_, (member(Instance, Instances), realize(Instance)), _).
 
         %! buildAdditionalArguments

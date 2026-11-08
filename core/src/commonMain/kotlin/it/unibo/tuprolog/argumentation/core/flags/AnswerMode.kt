@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.flags
 
 /**
  * How a query is answered for a semantics with several labellings: the statements labelled in each labelling, one answer
- * for each (enumerate), or across them all (credulous, skeptical; see the module structuredPartial)
+ * for each (enumerate), or across them all (credulous, skeptical; see the module statementAcceptance)
  */
 object AnswerMode : ArgsFlag<String, Iterable<String>> {
     override fun predicate(): String = "answerMode"

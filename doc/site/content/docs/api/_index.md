@@ -22,4 +22,4 @@ Everything arg2p exposes, by the way it is used:
 
 The [Causality]({{% ref "/docs/modules/causality" %}}) and [Actor solver]({{% ref "/docs/modules/actor-solver" %}})
 pages describe the predicates of the two solvers built on arg2p, and the
-[Parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) page the classes of the parallel one.
+[Parallel solver]({{% ref "/docs/modules/parallel" %}}) page the classes of the parallel one.

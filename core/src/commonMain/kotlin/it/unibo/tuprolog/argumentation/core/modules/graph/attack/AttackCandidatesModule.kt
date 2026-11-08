@@ -13,21 +13,38 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
         """
         %! possibleAttackers(+Id, +Argument, -Statement)
         %  findPossibleAttackers/2 for the argument with identifier Id, looked for once: query mode looks for them to
-        %  build the graph, and again to build the attacks.
-        possibleAttackers(Id, _, Statement) :-
-            context_check(possibleAttackersOf(Id, Statements)), !,
-            member(Statement, Statements).
+        %  build the graph, and again to build the attacks. When the conflicts are argued (see conflict::argued/0), only
+        %  those that do not depend on the arguments for conflicts are kept: those that do are looked for each time, the
+        %  arguments for conflicts being those saved by then.
         possibleAttackers(Id, Argument, Statement) :-
-            findall(S, findPossibleAttackers(Argument, S), Statements),
+            context_check(possibleAttackersOf(Id, Statements)), !,
+            keptOrArgued(Statements, Argument, Statement).
+        possibleAttackers(Id, Argument, Statement) :-
+            findall(S, kept(Argument, S), Statements),
             context_assert(possibleAttackersOf(Id, Statements)),
-            member(Statement, Statements).
+            keptOrArgued(Statements, Argument, Statement).
 
         %! attackersOf(+Id, +Argument, -Statement)
         %  As possibleAttackers/3, what is found not kept: for who looks once, as the builder of a whole graph.
-        attackersOf(Id, _, Statement) :-
+        attackersOf(Id, Argument, Statement) :-
             context_check(possibleAttackersOf(Id, Statements)), !,
-            member(Statement, Statements).
+            keptOrArgued(Statements, Argument, Statement).
         attackersOf(_, Argument, Statement) :-
+            findPossibleAttackers(Argument, Statement).
+
+        % The possible attackers of Argument kept (Statements), and with the conflicts argued those found by the arguments
+        % for conflicts saved now
+        keptOrArgued(Statements, _, Statement) :-
+            member(Statement, Statements).
+        keptOrArgued(_, Argument, Statement) :-
+            conflict::argued,
+            arguedAttacker(Argument, Statement).
+
+        % The possible attackers to keep: all of them, or with the conflicts argued those not found by arguments for conflicts
+        kept(Argument, Statement) :-
+            conflict::argued, !,
+            staticAttacker(Argument, Statement).
+        kept(Argument, Statement) :-
             findPossibleAttackers(Argument, Statement).
 
         %! forgetPossibleAttackers
@@ -58,6 +75,29 @@ object AttackCandidatesModule : PrologModule("prolog.argumentation.attack.candid
         findPossibleAttackers(Argument, Statement) :-
             argument::topRule(Argument, Rule),
             conflict::unguarded(Statement, [Rule]).
+
+        % findPossibleAttackers/2 split by what the conflicts are: arguments (arguedAttacker/2, with the conflicts argued) or
+        % not (staticAttacker/2)
+        arguedAttacker(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::guarded(Statement, Conclusion, _).
+        arguedAttacker(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::unguarded(Statement, Conclusion).
+        arguedAttacker(Argument, Statement) :-
+            argument::topRule(Argument, Rule),
+            conflict::guarded(Statement, [Rule], _).
+        arguedAttacker(Argument, Statement) :-
+            argument::topRule(Argument, Rule),
+            conflict::unguarded(Statement, [Rule]).
+
+        staticAttacker(Argument, [Statement]) :-
+            argument::body(Argument, Body),
+            member(~(Statement), Body),
+            attackRelation::static.
+        staticAttacker(Argument, [undercut(Rule)]) :-
+            argument::topRule(Argument, Rule),
+            attackRelation::static.
 
         %! possiblyAttacked(+Argument, -Statement)
         %  Argument may attack the arguments for Statement (the converse of findPossibleAttackers/2): those in conflict

@@ -9,7 +9,9 @@ import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.argumentation.core.modules.extra.ModuleCallsModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractGraphModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.PipelineModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.RuleGraphModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.StatementAcceptanceModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.StructuredPartialModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.StructuredWholeModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.argument.ArgumentBuilderModule
@@ -108,7 +110,15 @@ object ModuleRegistry {
 
     /** Evaluating the graph: abstract frameworks, the whole graph of a theory, or the part a query depends on */
     val evaluation: List<Loadable> =
-        listOf(AbstractModule, StructuredWholeModule, StructuredPartialModule, QueryExplorationModule, ArgumentSearchModule)
+        listOf(
+            PipelineModule,
+            AbstractModule,
+            StructuredWholeModule,
+            StructuredPartialModule,
+            StatementAcceptanceModule,
+            QueryExplorationModule,
+            ArgumentSearchModule,
+        )
 
     /** The semantics labelling the arguments, and the statements from them */
     val labellings: List<Loadable> =

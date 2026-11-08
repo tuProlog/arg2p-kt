@@ -29,12 +29,13 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
         buildAdditionalArguments :-
             findall(_, buildCopy, _).
 
+        % (each saved argument, then the conflicts on its conclusion)
         buildCopy :-
+            graphStore::argumentFor(Conclusion, Argument),
+            \+ conflict::carried(Argument, _),
             conflictArgument(Conclusion, ConflictArgument),
             argument::claim(ConflictArgument, Conflict),
             graphStore::argumentId(ConflictArgument, ConflictId),
-            graphStore::argumentFor(Conclusion, Argument),
-            \+ conflict::carried(Argument, _),
             argument::rules(Argument, Rules),
             argument::withRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
             graphStore::saveArgument(Conclusion, Copy),

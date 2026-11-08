@@ -89,7 +89,7 @@ In the [causality module]({{% ref "/docs/modules/causality" %}}), `ness/3` and `
 
 ## A program using the distributed solver does not terminate
 
-The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) runs non-daemon threads for the cluster. Call `leave`
+The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) runs non-daemon threads for the parallel solver. Call `leave`
 when the work is done, or the JVM will stay alive.
 
 ---

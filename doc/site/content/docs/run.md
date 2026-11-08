@@ -51,7 +51,8 @@ the parallel solver, and is what most projects need. The individual modules can 
 | `arg2p`, `arg2p-jvm`, `arg2p-js` | Aggregate: the API of Arg2P, with the core engine, the causality and the parallel solver |
 | `core`, `core-jvm`, `core-js` | The argumentation engine alone |
 | `causality-solver`, `causality-solver-jvm`, `causality-solver-js` | [Causal reasoning]({{% ref "/docs/modules/causality" %}}) |
-| `parallel-solver`, `parallel-solver-jvm`, `parallel-solver-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel-solver" %}}) |
+| `parallel`, `parallel-jvm`, `parallel-js` | [Parallel graph construction]({{% ref "/docs/modules/parallel" %}}) |
+| `federation`, `federation-jvm`, `federation-js` | [The same, across instances]({{% ref "/docs/modules/parallel#federation" %}}) |
 | `actor-solver` | [Distributed evaluation]({{% ref "/docs/modules/actor-solver" %}}) (JVM only) |
 
 Artifacts without a suffix are the Kotlin Multiplatform ones; use `-jvm` or `-js` to depend on a single
@@ -105,28 +106,30 @@ playground beside a theory, on the JVM. It bundles the language server of Arg2P 
 ### Federation and parallel solving
 
 The switch **Parallel** of the solver solves the query on the
-[parallel solver]({{% ref "/docs/modules/parallel-solver#federation" %}}): any theory, flags and query (query mode
+[parallel solver]({{% ref "/docs/modules/parallel#federation" %}}): any theory, flags and query (query mode
 too), on the workers of the language server, and on those of the devices linked to it. With none linked, it solves on
 the workers of this device alone, concurrently. The solver keeps the switch of each theory with its query and flags; the
 graph of a solution is that of the last stage of its computation, the stages before it are not kept.
 
-The language servers of the same local network see each other: the view **Arg2P Federation** (in the explorer, or
-**Arg2P: Show the Federation**) shows the name of this device and its 4-digit code, and the devices nearby, each linked
-to once its code is typed (shown on that device); linked once, two devices link again by themselves while they run.
-It lists the devices linked with their workers, and **New code** refuses the code shown from then on.
+The view **Arg2P Federation** (in the explorer, or **Arg2P: Show the Federation**) shows the name of this device, its address
+and its 4-digit code; on another device, type them to link to this one. Linked once, two devices link again with no code
+while they run. It lists the devices linked with their workers, and **New code** refuses the code shown from then on.
 
 A phone joins too: the view shows the QR code of a page the language server serves on the local network
-(`http://<address>:<port>/`). Scanned with a phone on the same network, the page asks for the code of the device, and
-the phone lends the workers of its Web Workers while the page stays open. The page loads `@tuprolog/arg2p` of the same
-version as the extension from [jsDelivr](https://www.jsdelivr.com/package/npm/@tuprolog/arg2p).
+(`https://<address>:<port>/`). Scanned with a phone on the same network, the page asks for the code of the device, and
+the phone lends its Web Workers while the page stays open. HTTPS is what lets the Web Workers of the phone
+[wait for one another]({{% ref "/docs/modules/parallel#isolation" %}}): the certificate is the language server's own,
+made each time it starts its federation, so the browser warns of it, and it has to be accepted once per start. The page
+loads `@tuprolog/arg2p` of the same version as the extension from
+[jsDelivr](https://www.jsdelivr.com/package/npm/@tuprolog/arg2p).
 
 | Setting | |
 | --- | --- |
-| `arg2p.federation.enabled` | Whether the language server is seen by the devices nearby and lets phones join (`true` by default): disabled, it neither listens nor is heard, and **Parallel** solves on this device alone |
+| `arg2p.federation.enabled` | Whether other devices and phones can link to the language server (`true` by default): disabled, it does not listen, and **Parallel** solves on this device alone |
 | `arg2p.federation.name` | The name of this device, as the others see it (the name of the host by default) |
 
-The language server speaks of its federation with the requests `arg2p/federation` (its state), `arg2p/federation/pair`
-(`{ site, code }`), `arg2p/federation/newCode`, `arg2p/federation/rename` (`{ name }`) and `arg2p/federation/enable`
+The language server speaks of its federation with the requests `arg2p/federation` (its state), `arg2p/federation/connect`
+(`{ url, code }`), `arg2p/federation/newCode`, `arg2p/federation/rename` (`{ name }`) and `arg2p/federation/enable`
 (`{ enabled }`), each answered with the state, and the notification `arg2p/federationChanged`; the editor enables it
 with the options of `initialize` (`{ federation: { enabled, name } }`), and a query of the request `arg2p/engine` is
 solved on it with `parallel: true`.

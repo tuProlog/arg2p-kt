@@ -68,21 +68,21 @@ object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
         answerQuery(Goal, Yes, No, Und) :-
             context_reset,
             parser:::convertAllRules,
-            structuredPartial:::computeStatementAcceptance(Goal, Yes, No, Und).
+            statementAcceptance:::computeStatementAcceptance(Goal, Yes, No, Und).
 
         %! answerQuery(+Goal, -Result)
         %  The labels of the statements unifying with Goal, as in(S), out(S) and und(S) terms.
         answerQuery(Goal, Res) :-
             context_reset,
             parser:::convertAllRules,
-            structuredPartial:::computeStatementAcceptance(Goal, Res).
+            statementAcceptance:::computeStatementAcceptance(Goal, Res).
 
         %! answerQuery(+Goal)
         %  Goal is a statement labelled IN (as answerMode states, see answerQuery/4).
         answerQuery(Goal) :-
             context_reset,
             parser:::convertAllRules,
-            structuredPartial:::accepted(Goal).
+            statementAcceptance:::accepted(Goal).
 
         %! buildLabelSetsSilent
         %  The labelling of the theory, in the context.

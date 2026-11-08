@@ -20,7 +20,8 @@ object AbaPrefModule : PrologModule("prolog.argumentation.graph.preferences.aba"
         %  The attacks on assumptions by arguments resting on weaker ones reversed, the theory satisfying Weak
         %  Contraposition.
         modifyArgumentationGraph :-
-            findall(attack(undermine, X, On, On), graphStore::directAttack(undermine, X, On), Attacks),
+            graphStore::directAttacks(All),
+            findall(attack(undermine, X, On, On), member((undermine, X, On), All), Attacks),
             utils::forEach(attack(_, X, _, On), Attacks, abaPref::contraposed(X, On)),
             utils::forEach(attack(T, X, Y, On), Attacks, abaPref::reverse(T, X, Y, On)).
 

@@ -45,7 +45,7 @@ class CompactGraph internal constructor(
     val supporters: IntArray,
     val supported: IntArray,
     // The conclusions as tuProlog writes them ('-'(a)), by which the arguments are ordered to be named (see order)
-    private val orderedBy: IntArray,
+    internal val orderedBy: IntArray,
 ) {
     /** How many arguments */
     val size: Int get() = conclusions.size
@@ -161,5 +161,100 @@ fun emptyCompactGraph(): CompactGraph {
         nothing,
         nothing,
         nothing,
+    )
+}
+
+/**
+ * [graph] as text, for a graph going to another thread or process (a parallel solver answering on another
+ * thread, see the module parallel): each array its length then its items, read back by [compactGraphOf]
+ */
+@InternalArg2pApi
+fun compactGraphText(graph: CompactGraph): String {
+    val out = StringBuilder()
+
+    fun text(value: String) = out.append(value.length).append(':').append(value)
+
+    fun ints(values: IntArray) {
+        text(values.size.toString())
+        values.forEach { text(it.toString()) }
+    }
+
+    fun texts(values: Array<String>) {
+        text(values.size.toString())
+        values.forEach { text(it) }
+    }
+
+    fun lists(values: CompactLists) {
+        ints(values.offsets)
+        ints(values.items)
+    }
+    with(graph) {
+        texts(texts)
+        ints(conclusions)
+        ints(topRules)
+        lists(rules)
+        lists(groundings)
+        lists(defeasibleRules)
+        lists(defeasiblePremises)
+        lists(lastDefeasibleRules)
+        ints(IntArray(labels.size) { labels[it].toInt() })
+        ints(attackers)
+        ints(targets)
+        ints(on)
+        ints(attackTypeOf)
+        texts(attackTypes)
+        ints(supporters)
+        ints(supported)
+        ints(orderedBy)
+    }
+    return out.toString()
+}
+
+/** The graph [text] tells (see [compactGraphText]): an IllegalArgumentException if it is none */
+@InternalArg2pApi
+fun compactGraphOf(text: String): CompactGraph {
+    var position = 0
+
+    fun next(): String {
+        val colon = text.indexOf(':', position)
+        val length = if (colon < 0) null else text.substring(position, colon).toIntOrNull()
+        require(length != null && length >= 0 && colon + 1 + length <= text.length) { "Not a graph at $position" }
+        return text.substring(colon + 1, colon + 1 + length).also { position = colon + 1 + length }
+    }
+
+    fun count(): Int = next().toInt().also { require(it in 0..text.length) { "Not a graph at $position" } }
+
+    fun ints(): IntArray = IntArray(count()) { next().toInt() }
+
+    fun texts(): Array<String> = Array(count()) { next() }
+
+    fun lists(): CompactLists = CompactLists(ints(), ints())
+    val texts = texts()
+    val conclusions = ints()
+    val topRules = ints()
+    val rules = lists()
+    val groundings = lists()
+    val defeasibleRules = lists()
+    val defeasiblePremises = lists()
+    val lastDefeasibleRules = lists()
+    val labels = ints().let { codes -> ByteArray(codes.size) { codes[it].toByte() } }
+    return CompactGraph(
+        texts,
+        conclusions,
+        topRules,
+        rules,
+        groundings,
+        defeasibleRules,
+        defeasiblePremises,
+        lastDefeasibleRules,
+        labels,
+        ints(),
+        ints(),
+        ints(),
+        ints(),
+        texts(),
+        ints(),
+        ints(),
+        ints(),
     )
 }

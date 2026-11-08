@@ -38,15 +38,23 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
         %! buildAttacksOf(+Ids)
         %  The direct attacks on and by the saved arguments with identifiers Ids, added to a graph with its attacks
         %  (those between the others are saved already).
-        buildAttacksOf([]) :- !.
-        buildAttacksOf(Ids) :-
+        %  The solvers of a session changing a graph together each find them on their own arguments (see the module
+        %  graphStore), once every one added its arguments (graph_sync/1: those the others added, none alone): every
+        %  step calling it calls it once.
+        buildAttacksOf(Own) :-
+            graphStore::graph_sync(Others),
+            append(Own, Others, Ids),
+            buildAttacksAmong(Ids).
+
+        buildAttacksAmong([]) :- !.
+        buildAttacksAmong(Ids) :-
             findall(_, (member(Id, Ids), context_assert(addedArgument(Id))), _),
             (parser::constrained -> Constrained = yes ; Constrained = no),
             findall(_, buildAddedAttack(Constrained), _),
             context_retract(addedArgument(_)).
 
-        % (from every argument to its attackers, not from those added to what they attack: the catalog of the parallel solver has
-        % no rule, which that way goes through)
+        % (from every argument to its attackers, not from those added to what they attack: a solver of a shared graph has its
+        % own rules alone, which that way goes through)
         buildAddedAttack(Constrained) :-
             graphStore::argumentById(IdA, A),
             attackCandidates::possibleAttackers(IdA, A, Conflict),

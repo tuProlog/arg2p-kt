@@ -7,7 +7,7 @@ import { SolverPanel } from './panel.js';
 import { LanguageServer } from './server.js';
 
 // The extension of Arg2P: the language arg2p (*.arg2p), its errors as it is typed, the solver of a theory, and the
-// federation of the devices nearby solving in parallel, from the language server of arg2p, which runs on the JVM
+// federation of the devices linked solving in parallel, from the language server of arg2p, which runs on the JVM
 
 let server: LanguageServer | null = null;
 

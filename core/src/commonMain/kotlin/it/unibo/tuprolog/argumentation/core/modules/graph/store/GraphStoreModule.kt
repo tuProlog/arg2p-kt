@@ -4,9 +4,15 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttack
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackById
 import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackIn
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphAttackSaved
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphBegin
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphExplore
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphOwn
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphRemoved
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSettle
 import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphShare
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphStep
+import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSync
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -31,7 +37,23 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  */
 object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "graphStore") {
     override val primitives: Map<Signature, Primitive>
-        get() = listOf(ExpandedAttack, ExpandedAttackById, ExpandedAttackIn, GraphShare, GraphSettle, GraphOwn).associateBy { it.signature }
+        get() =
+            listOf(
+                ExpandedAttack,
+                ExpandedAttackById,
+                ExpandedAttackIn,
+                GraphShare,
+                GraphBegin,
+                GraphSettle,
+                GraphOwn,
+                GraphExplore,
+                GraphStep,
+                GraphRemoved,
+                GraphAttackSaved,
+                GraphSync,
+            ).associateBy {
+                it.signature
+            }
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -100,12 +122,25 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(argument(Argument)).
 
         %! arguments(-Arguments)
-        %  Arguments are the saved arguments.
+        %  Arguments are the saved arguments (see argumentById/2 for a graph built by several solvers).
+        arguments(Arguments) :-
+            graph_own(Ids), !,
+            findall(Argument, (member(Id, Ids), context_term(Id, argument(Argument))), Arguments).
         arguments(Arguments) :-
             findall(Argument, context_check(argument(Argument)), Arguments).
 
         %! argumentFor(?Conclusion, ?Argument)
-        %  Argument is saved for Conclusion.
+        %  Argument is saved for Conclusion. Going through the arguments (Conclusion unbound): see argumentById/2.
+        argumentFor(Conclusion, Argument) :-
+            var(Conclusion),
+            graph_own(Ids), !,
+            member(Id, Ids),
+            context_term(Id, argument(Argument)),
+            argument::conclusion(Argument, Conclusion).
+        argumentFor(Conclusion, Argument) :-
+            var(Conclusion), !,
+            context_check(argument(Argument)),
+            argument::conclusion(Argument, Conclusion).
         argumentFor(Conclusion, Argument) :-
             context_by(conclusion, Conclusion, argument(Argument)).
 
@@ -115,8 +150,10 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_matching(conclusion, Conclusion, argument(Argument)).
 
         %! argumentById(?Id, ?Argument)
-        %  Argument is saved with the identifier Id. Going through the arguments (Id unbound) while the graph is built by
-        %  the solvers of a session together (see SharedGraph), those this solver saved.
+        %  Argument is saved with the identifier Id. While the solvers of a session divide the work on a graph (building
+        %  it, a step dividing it: see GraphSharing), going through the arguments (nothing bound) gives those this solver
+        %  saved, as every enumeration of the store does (arguments/1, argumentFor/2, support/2, attackById/4,
+        %  directAttacks/1); a lookup (a key bound) goes through all of them.
         argumentById(Id, Argument) :-
             var(Id),
             graph_own(Ids), !,
@@ -185,7 +222,7 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         %! newConclusion(+Tag, ?Conclusion)
         %  An argument for Conclusion was saved under Tag.
-        %  With the solvers of a session building the graph together (see SharedGraph): what this one saved passed on, and
+        %  With the solvers of a session building the graph together (see GraphSharing): what this one saved passed on, and
         %  what the others did taken, as new under Tag; with nothing new, until another does or none can.
         newConclusion(Tag, Conclusion) :-
             (context_check(newConc(Tag, _)) -> graph_share(Tag, false) ; graph_share(Tag, true)),
@@ -244,6 +281,11 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_check(supportId(IdSupporter, IdSupported)),
             supportOf(IdSupporter, Supporter, IdSupported, Supported).
         support(Supporter, Supported) :-
+            graph_own(Ids), !,
+            member(IdSupported, Ids),
+            context_check(supportId(IdSupporter, IdSupported)),
+            supportOf(IdSupporter, Supporter, IdSupported, Supported).
+        support(Supporter, Supported) :-
             context_check(supportId(IdSupporter, IdSupported)),
             supportOf(IdSupporter, Supporter, IdSupported, Supported).
 
@@ -284,7 +326,8 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
         %  As saveAttack/4, with the identifiers of the arguments known.
         saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
             context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+            context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            graph_attack_saved(attackId(Type, IdAttacker, IdAttacked, IdOn)).
 
         %! removeAttack(+Type, +Attacker, +Attacked, +On)
         %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
@@ -293,14 +336,16 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_id(argument(Attacker), IdAttacker),
             context_id(argument(Attacked), IdAttacked),
             context_id(argument(On), IdOn),
-            context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+            context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+            graph_removed([attackId(Type, IdAttacker, IdAttacked, IdOn)]).
 
         %! removeAttackIds(+Attacks)
         %  Each of Attacks, a(Type, IdAttacker, IdAttacked), a direct attack, removed, all at once: one at a time, each would copy
         %  what holds the others.
         removeAttackIds(Attacks) :-
             findall(attackId(T, B, A, A), member(a(T, B, A), Attacks), Facts),
-            context_retract_all(Facts).
+            context_retract_all(Facts),
+            graph_removed(Facts).
 
         %! attackFound(?Type, ?Attacker, ?Attacked, ?On)
         %  The attack is saved, as it was found (attack/4 extends it): what context_check(attack(Type, Attacker, Attacked, On))
@@ -326,7 +371,13 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             findall((Type, Attacker, Attacked, On), attack(Type, Attacker, Attacked, On), Attacks).
 
         %! attackById(?Type, ?IdAttacker, ?IdAttacked, ?IdOn)
-        %  The attack, saved or extended, by the identifiers of its arguments.
+        %  The attack, saved or extended, by the identifiers of its arguments. Going through the attacks (IdAttacked
+        %  unbound): those on the arguments argumentById/2 goes through.
+        attackById(Type, IdAttacker, IdAttacked, IdOn) :-
+            var(IdAttacked),
+            graph_own(Ids), !,
+            member(IdAttacked, Ids),
+            expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
         attackById(Type, IdAttacker, IdAttacked, IdOn) :-
             expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
 
@@ -346,7 +397,16 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
             context_term(IdAttacked, argument(Attacked)).
 
         %! directAttacks(-Attacks)
-        %  Attacks are the (Type, Attacker, Attacked) attacks saved (see directAttack/3).
+        %  Attacks are the (Type, Attacker, Attacked) attacks saved (see directAttack/3): those on the arguments
+        %  argumentById/2 goes through (directAttack/3, a lookup, looks among all of them).
+        directAttacks(Attacks) :-
+            graph_own(Ids), !,
+            findall((Type, Attacker, Attacked), (
+                member(IdAttacked, Ids),
+                context_check(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
+                context_term(IdAttacker, argument(Attacker)),
+                context_term(IdAttacked, argument(Attacked))
+            ), Attacks).
         directAttacks(Attacks) :-
             findall((Type, Attacker, Attacked), directAttack(Type, Attacker, Attacked), Attacks).
 

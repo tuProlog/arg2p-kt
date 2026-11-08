@@ -9,11 +9,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The steps changing the graph are listed once, in their order (structuredWhole::steps/1): the graph extensions the
+ * The steps changing the graph are listed once, in their order (pipeline::steps/1): the graph extensions the
  * flag declares are those steps (but the copies of metaConflicts, which no flag names), and the registry loads them all
  */
 class PipelineStepsTest {
-    private val steps = ModuleTesting("").values("structuredWhole::steps(Steps), member(S, Steps)", "S")
+    private val steps = ModuleTesting("").values("pipeline::steps(Steps), member(S, Steps)", "S")
 
     @Test
     fun theGraphExtensionsAreTheStepsAFlagNames() {
@@ -25,7 +25,7 @@ class PipelineStepsTest {
 
     @Test
     fun thePreferenceModesAreSteps() {
-        val modes = ModuleTesting("").values("structuredWhole::preferenceMode(M)", "M")
+        val modes = ModuleTesting("").values("pipeline::preferenceMode(M)", "M")
         assertTrue(steps.containsAll(modes), "$modes among $steps")
     }
 

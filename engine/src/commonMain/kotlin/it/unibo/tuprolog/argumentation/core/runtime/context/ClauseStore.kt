@@ -174,6 +174,20 @@ internal class ClauseStore private constructor(
         arity: Int,
     ): Int = data.count(encoding().functorWord(name, arity))
 
+    /** The facts stored as [record], up to the names of their variables, retracted: whether there were any */
+    fun retractFact(record: Record): Boolean {
+        val encoded = Record.encoded(record, encoding())
+        val key = encoded.key
+        val candidates = candidates(encoded.words, encoded.root)
+        val found = ArrayList<Stored>()
+        for (i in 0 until candidates.size) {
+            val stored = candidates.items[i]!!
+            if (!stored.record.isRule && stored.record.key == key) found += stored
+        }
+        removeAll(found)
+        return found.isNotEmpty()
+    }
+
     /** Whether the fact [record] is stored, up to the names of its variables */
     fun holds(record: Record): Boolean {
         val encoded = Record.encoded(record, encoding())

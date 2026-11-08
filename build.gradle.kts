@@ -137,7 +137,7 @@ gitSemVer {
 multiProjectHelper {
     defaultProjectType = ProjectType.JS
 
-    ktProjects(rootProject.path, ":engine", ":core", ":causality-solver", ":parallel-solver")
+    ktProjects(rootProject.path, ":engine", ":core", ":causality-solver", ":parallel", ":federation")
     jvmProjects(":actor-solver", ":lsp")
     // jsProjects()
     otherProjects(":doc", ":python", ":vscode", ":plugins")
@@ -210,7 +210,7 @@ kotlin {
             dependencies {
                 api(project(":core"))
                 api(project(":causality-solver"))
-                api(project(":parallel-solver"))
+                api(project(":federation"))
             }
         }
     }
@@ -305,7 +305,7 @@ afterEvaluate {
 // well), in one report (build/reports/kover), and its total for a badge (koverBadge); with the coverage of the Prolog
 // modules, as the documentation site publishes them (coverageReports)
 val coverage = findProperty("coverage") != null
-val covered = listOf(":core", ":causality-solver", ":parallel-solver")
+val covered = listOf(":core", ":causality-solver", ":parallel", ":federation")
 
 if (coverage) {
     apply(plugin = "org.jetbrains.kotlinx.kover")
@@ -373,7 +373,8 @@ allprojects {
 dependencies {
     "dokka"(project(":core"))
     "dokka"(project(":causality-solver"))
-    "dokka"(project(":parallel-solver"))
+    "dokka"(project(":parallel"))
+    "dokka"(project(":federation"))
 }
 
 afterEvaluate {

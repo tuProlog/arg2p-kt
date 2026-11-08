@@ -96,9 +96,9 @@ object LabellingBenchmarkWorker {
             "convert" to "context_reset, parser:::convertAllRules(_)",
             "arguments" to "ruleGraph:::buildArguments",
             "attacks" to "ruleGraph:::buildAttacks",
-            "extensions" to "structuredWhole:::modifyGraph",
-            "labelling" to "structuredWhole:::buildArgumentLabelling",
-            "statements" to "structuredWhole:::buildStatementLabelling",
+            "extensions" to "pipeline:::modifyGraph",
+            "labelling" to "pipeline:::buildArgumentLabelling",
+            "statements" to "pipeline:::buildStatementLabelling",
         )
 
     private fun configuration(semantics: String) =

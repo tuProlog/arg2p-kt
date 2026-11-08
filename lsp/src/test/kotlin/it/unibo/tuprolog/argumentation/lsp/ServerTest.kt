@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -66,7 +65,7 @@ class ServerTest {
     private val toEditor = PipedOutputStream()
     private val editor = Editor()
     private val server =
-        launcherOf(Arg2pLanguageServer(Random.nextInt(50_000, 60_000)), PipedInputStream(toServer, BUFFER), toEditor).also {
+        launcherOf(Arg2pLanguageServer(), PipedInputStream(toServer, BUFFER), toEditor).also {
             it.startListening()
         }
     private val remote: Remote =
@@ -218,10 +217,13 @@ class ServerTest {
         assertEquals(enabled.code, remote.federation().done().code)
         assertEquals("lab", remote.rename(json("""{"name":"lab"}""")).done().name)
         assertTrue(Regex("""\d{4}""").matches(remote.newCode().done().code!!))
-        // a site not nearby refuses, as parameters that are not those of the request are invalid
-        assertEquals(ResponseErrorCode.RequestFailed.value, failure { remote.pair(json("""{"site":"site-none","code":"1234"}""")) })
-        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.pair(json("""{"site":"site-none"}""")) })
-        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.pair(null) })
+        // no site at an address fails, as parameters that are not those of the request are invalid
+        assertEquals(
+            ResponseErrorCode.RequestFailed.value,
+            failure { remote.connect(json("""{"url":"ws://127.0.0.1:1","code":"1234"}""")) },
+        )
+        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.connect(json("""{"code":"1234"}""")) })
+        assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.connect(null) })
         assertEquals(ResponseErrorCode.InvalidParams.value, failure { remote.enable(json("""{"enabled":"yes"}""")) })
         val disabled = remote.enable(json("""{"enabled":false}""")).done()
         assertEquals(false, disabled.enabled)

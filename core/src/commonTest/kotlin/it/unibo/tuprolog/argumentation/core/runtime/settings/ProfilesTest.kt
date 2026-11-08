@@ -110,7 +110,7 @@ class ProfilesTest {
             )
         assertEquals(
             listOf("constraints", "conflictArguments", "rebutRestriction", "standardPref", "bp"),
-            module.values("structuredWhole::step(S), structuredWhole::active(S)", "S"),
+            module.values("pipeline::step(S), pipeline::active(S)", "S"),
         )
     }
 

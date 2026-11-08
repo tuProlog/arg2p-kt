@@ -67,6 +67,9 @@ internal class Context : ArgLibrary {
     /** The store of the given branch, the active one if null; null for a branch that does not exist */
     fun store(branch: Int? = null): ClauseStore? = if (branch == null) branches.selected else branches.storeOf(branch)
 
+    /** How many times the context was reset: a graph built in it before is gone */
+    val resets: Int get() = branches.resets
+
     /** The identifier of [term], given one if it has none */
     internal fun identifier(term: Term): Int = branches.identifier(term)
 

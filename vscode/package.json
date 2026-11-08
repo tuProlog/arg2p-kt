@@ -145,13 +145,13 @@
           "type": "boolean",
           "default": true,
           "scope": "machine",
-          "markdownDescription": "Whether the language server federates with those of the devices nearby (the VS Code of the same local network) and lets phones join: each device shows its name and a 4-digit code, and links to another once its code is typed (see the view **Arg2P Federation**). Disabled, it neither listens nor is heard, and **Parallel** solves on the workers of this device alone."
+          "markdownDescription": "Whether the language server federates with those of other devices and lets phones join: each device shows its name, its address and a 4-digit code, and links to another once its address and code are typed. Disabled, it does not listen, and **Parallel** solves on this device alone. A machine setting: one per device."
         },
         "arg2p.federation.name": {
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "The name of this device, as the devices nearby see it. Empty: the name of the host."
+          "markdownDescription": "The name of this device, as the others see it. Empty: the name of the host."
         }
       }
     },
