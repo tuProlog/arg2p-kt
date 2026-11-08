@@ -7,7 +7,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * The terms of the rules and premises of a theory as the parser converts them (module `rule`): a clause
  * `rl(Conclusion) :- [Id, Premises, Conclusion]` for a rule, Premises a conjunction, and
  * `rl(Conclusion) :- [Id, Conclusion]` for a premise, kept in the context by their conclusion. Kotlin builds them
- * through [RuleTerm.rule] and [RuleTerm.premise].
+ * through [RuleTerm.of].
  */
 object RuleModule : PrologModule("prolog.argumentation.data.rule", "rule") {
     override val prologRawTheory: String =

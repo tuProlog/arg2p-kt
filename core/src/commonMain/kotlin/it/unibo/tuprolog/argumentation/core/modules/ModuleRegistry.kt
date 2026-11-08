@@ -1,14 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
 import it.unibo.tuprolog.argumentation.core.modules.data.ArgumentModule
-import it.unibo.tuprolog.argumentation.core.modules.data.AttackModule
 import it.unibo.tuprolog.argumentation.core.modules.data.LabelModule
 import it.unibo.tuprolog.argumentation.core.modules.data.RuleModule
-import it.unibo.tuprolog.argumentation.core.modules.data.SupportModule
 import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
 import it.unibo.tuprolog.argumentation.core.modules.extra.ModuleCallsModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractGraphModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractFrameworkGraphModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.AbstractFrameworkModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.PipelineModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.RuleGraphModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.StatementAcceptanceModule
@@ -18,6 +16,7 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.argument.ArgumentBuild
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackBuilderModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackCandidatesModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.attack.AttackRelationModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.attack.SuperiorityModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.AbaPrefModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.BpModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.ConflictArgumentsModule
@@ -26,18 +25,17 @@ import it.unibo.tuprolog.argumentation.core.modules.graph.extension.DefeasibleAl
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.DefeasiblePrefModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.RebutRestrictionModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.extension.StandardPrefModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.extension.SuperiorityModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.AbaLanguageModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.AbstractLanguageModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.AspicLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConflictModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ConstraintModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.DefeasibleLanguageModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.TemporalModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.language.TranspositionModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.partial.ArgumentSearchModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.partial.QueryExplorationModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.AbaLanguageModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.AbstractFrameworkLanguageModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.AspicLanguageModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.language.plugin.DefeasibleLanguageModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.query.ArgumentSearchModule
+import it.unibo.tuprolog.argumentation.core.modules.graph.query.QueryExplorationModule
 import it.unibo.tuprolog.argumentation.core.modules.graph.store.GraphStoreModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.AdmissibleModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.Cf2Module
@@ -46,6 +44,7 @@ import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.ConflictF
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.EagerModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.GroundedModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.IdealModule
+import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.LabellingModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.NaiveModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.PreferredModule
 import it.unibo.tuprolog.argumentation.core.modules.labelling.argument.SccModule
@@ -62,11 +61,12 @@ import it.unibo.tuprolog.argumentation.core.modules.labelling.statement.Statemen
 import it.unibo.tuprolog.argumentation.core.modules.labelling.statement.StatementPassThroughModule
 import it.unibo.tuprolog.argumentation.core.modules.utils.DebugModule
 import it.unibo.tuprolog.argumentation.core.modules.utils.UtilsModule
+import it.unibo.tuprolog.argumentation.core.runtime.modules.Loadable
 
 /** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
 object ModuleRegistry {
     /** The terms arg2p works on: the entities of argumentation graphs and of the rules */
-    val data: List<Loadable> = listOf(ArgumentModule, AttackModule, SupportModule, LabelModule, RuleModule)
+    val data: List<Loadable> = listOf(ArgumentModule, LabelModule, RuleModule)
 
     /** The rules of a theory, as the graph builders read them */
     val language: List<Loadable> =
@@ -79,26 +79,26 @@ object ModuleRegistry {
             AspicLanguageModule,
             AbaLanguageModule,
             DefeasibleLanguageModule,
-            AbstractLanguageModule,
+            AbstractFrameworkLanguageModule,
         )
 
-    /** Building the argumentation graph: its arguments and attacks, and where they are kept */
+    /** Building the argumentation graph: its arguments and attacks, where they are kept, and how arguments compare */
     val graph: List<Loadable> =
         listOf(
             RuleGraphModule,
-            AbstractGraphModule,
+            AbstractFrameworkGraphModule,
             ArgumentBuilderModule,
             AttackBuilderModule,
             AttackRelationModule,
             AttackCandidatesModule,
             GraphStoreModule,
+            SuperiorityModule,
         )
 
     /** Changing the argumentation graph: the graph extensions */
     val extensions: List<Loadable> =
         listOf(
             ConflictArgumentsModule,
-            SuperiorityModule,
             RebutRestrictionModule,
             BpModule,
             DefeasiblePrefModule,
@@ -112,7 +112,7 @@ object ModuleRegistry {
     val evaluation: List<Loadable> =
         listOf(
             PipelineModule,
-            AbstractModule,
+            AbstractFrameworkModule,
             StructuredWholeModule,
             StructuredPartialModule,
             StatementAcceptanceModule,
@@ -120,9 +120,10 @@ object ModuleRegistry {
             ArgumentSearchModule,
         )
 
-    /** The semantics labelling the arguments, and the statements from them */
+    /** The semantics labelling the arguments, what they share, and the statements from them */
     val labellings: List<Loadable> =
         listOf(
+            LabellingModule,
             GroundedModule,
             CompleteModule,
             PreferredModule,
@@ -154,7 +155,6 @@ object ModuleRegistry {
         (support + data + language + graph + extensions + evaluation + labellings).also { modules ->
             val repeated =
                 modules
-                    .filterIsInstance<Loadable>()
                     .groupBy { it.identifier() }
                     .filterValues { it.size > 1 }
                     .keys

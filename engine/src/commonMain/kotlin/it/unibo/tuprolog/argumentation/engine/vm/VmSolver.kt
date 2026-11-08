@@ -245,9 +245,7 @@ open class VmSolver(
         built.add(staticKb)
         for (clause in dynamicKb.clauses) built.theory.add(clause, dynamic = true)
         program = built
-        for (library in libraries.libraries) {
-            for (primitive in library.primitives.values) (primitive as? ProgramStore)?.bind(built)
-        }
+        for (library in libraries.libraries) (library as? ProgramStore)?.bind(built)
         outdated = false
         return built
     }

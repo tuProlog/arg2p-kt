@@ -52,7 +52,7 @@ internal object TheoryChainer : ArgLibrary, Loadable {
                     ),
             )
 
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = emptyList()
 
     override fun identifier(): String = "chainer"

@@ -25,9 +25,9 @@ object NaiveModule : PrologModule("prolog.argumentation.graph.labelling.naive", 
         %  Each naive labelling in turn, left as the active context.
         argumentLabelling :-
             context_active(Branch),
-            conflictfree::candidates(Args, Forced),
+            labelling::candidates(Args, Forced),
             graphStore::labelledIds(in, In),
             naiveSubset(Args, Forced, In, Set),
-            conflictfree::labelSet(Branch, Set).
+            labelling::labelSet(Branch, Set).
         """.trimIndent()
 }

@@ -5,7 +5,7 @@ package it.unibo.tuprolog.argumentation.core.model
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.StatementTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.js.JsExport
@@ -72,7 +72,7 @@ data class Argument(
 
     /** The argument as the context keeps it, argument(Argument) */
     @JsExport.Ignore
-    fun toTerm(): Term = Struct.of("argument", termRepresentation())
+    fun toTerm(): Term = ContextSchema.argument(termRepresentation())
 
     companion object {
         /** The argument of [term], the term of an argument (see [ArgumentTerm]) */

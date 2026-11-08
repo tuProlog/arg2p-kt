@@ -9,17 +9,15 @@ import it.unibo.tuprolog.argumentation.core.flags.OpenConclusions
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.BpsNew
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologStrictRules
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClause
 import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClauseNatural
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
-import it.unibo.tuprolog.core.operators.Operator
+import it.unibo.tuprolog.argumentation.core.primitives.graph.language.TheoryBurdens
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.core.operators.Specifier
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
@@ -33,7 +31,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             mapOf(
                 PrologStrictRules.signature to PrologStrictRules,
                 PrologAxioms.signature to PrologAxioms,
-                BpsNew.signature to BpsNew,
+                TheoryBurdens.signature to TheoryBurdens,
                 PrologPremises.signature to PrologPremises,
                 PrologDefeasibleRules.signature to PrologDefeasibleRules,
                 RuleToClause.signature to RuleToClause,
@@ -42,22 +40,13 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
 
     // The operators of the rules of a theory, for the theory of the parser and the solvers using it
     override val libraryOperators: OperatorSet
-        get() = operators()
+        get() = Notation.rules
 
     override val theoryOperators: OperatorSet
-        get() = super.theoryOperators.plus(operators())
+        get() = Notation.theories
 
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(AutoTransposition, PrologStrictCompatibility, MetaConflicts, MetaRules, GraphLanguage, Temporal, OpenConclusions)
-
-    fun operators() =
-        OperatorSet(
-            Operator("=>", Specifier.XFX, 1199),
-            Operator(":=>", Specifier.XFX, 1199),
-            Operator(":->", Specifier.XFX, 1199),
-            Operator(":", Specifier.XFX, 1001),
-//            Operator("->", Specifier.XFX, 1050)
-        ) + Profiles.operators()
 
     override val prologRawTheory: String =
         // language=Prolog
@@ -81,7 +70,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             axiomPremises(Axioms, AxiomsIds),
             utils::appendLists([DefeasibleRules, Premises, Axioms], Others),
             strictRules(Others, StrictRules, RulesIds),
-            bpsNew(SpecialRules),
+            theoryBurdens(SpecialRules),
             utils::appendLists([AxiomsIds, RulesIds], StrictIds),
             utils::appendLists([DefeasibleRules, StrictRules, Premises, Axioms], Rules),
             naturalRules(Rules, Clauses, StrictIds, MappedIds),
@@ -170,10 +159,10 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             mapIds(T, TT, Ids, RR).
 
         defeasibleRules(DefeasibleRules) :-
-            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions => Effect), DefeasibleRulesOld),
-            prologDefeasibleRules(DefeasibleRulesNew),
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions => Effect), DefeasibleRulesStated),
+            prologDefeasibleRules(DefeasibleRulesOfClauses),
             temporalRules(TemporalRules),
-            utils::appendLists([DefeasibleRulesOld, DefeasibleRulesNew, TemporalRules], DefeasibleRules).
+            utils::appendLists([DefeasibleRulesStated, DefeasibleRulesOfClauses, TemporalRules], DefeasibleRules).
 
         % The axioms of the module temporal, with temporal
         temporalRules(Rules) :- setting(temporal), !, temporal::rules(Rules).
@@ -182,44 +171,44 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         % The strict rules with their transpositions, whose names are none of those of the rules and premises of the
         % theory (Others are the other rules and premises)
         strictRules(Others, CtrRules, Ids) :-
-            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesOld),
-            prologStrictRules(StrictRulesNew),
-            append(StrictRulesOld, StrictRulesNew, StrictRules),
+            findall([RuleName, Preconditions, Effect], user::(RuleName : Preconditions -> Effect), StrictRulesStated),
+            prologStrictRules(StrictRulesOfClauses),
+            append(StrictRulesStated, StrictRulesOfClauses, StrictRules),
             ruleIds(StrictRules, StrictIds),
             ruleIds(Others, OtherIds),
             append(StrictIds, OtherIds, Taken),
             transposition::transpose(StrictRules, StrictRules, Taken, CtrRules),
-            extractId(CtrRules, Ids).
+            strictFacts(CtrRules, Ids).
 
         ordinaryPremises(Premises) :-
-            findall([RuleName, Effect], user::(RuleName :=> Effect), PremisesOld),
-            prologPremises(PremisesNew),
-            languagePremises(PremisesLanguages),
-            utils::appendLists([PremisesOld, PremisesNew, PremisesLanguages], Premises).
+            findall([RuleName, Effect], user::(RuleName :=> Effect), PremisesStated),
+            prologPremises(PremisesOfClauses),
+            languagePremises(PremisesOfLanguages),
+            utils::appendLists([PremisesStated, PremisesOfClauses, PremisesOfLanguages], Premises).
 
         %! languagePremises(-Premises)
         %  The ordinary premises the languages of the theory state (graphLanguage), as [Id, Statement].
         languagePremises(Premises) :-
-            findall(P, (setting(graphLanguage, L), L:::premises(P)), Lists),
+            findall(P, (setting(graphLanguage, L), L::premises(P)), Lists),
             utils::appendLists(Lists, Premises).
 
         %! languageConflicts(-Conflicts)
         %  The conflicts the languages of the theory state (graphLanguage), as conflict(Statement, Other).
         languageConflicts(Conflicts) :-
-            findall(C, (setting(graphLanguage, L), L:::conflicts(C)), Lists),
+            findall(C, (setting(graphLanguage, L), L::conflicts(C)), Lists),
             utils::appendLists(Lists, Conflicts).
 
         %! checkLanguages
         %  The theory is written in each of its languages (graphLanguage): each checks it, raising an error if not.
         checkLanguages :-
             findall(L, setting(graphLanguage, L), Languages),
-            utils::forEach(L, Languages, L:::check).
+            utils::forEach(L, Languages, L::check).
 
         axiomPremises(Axioms, Ids) :-
-            findall([RuleName, Effect], user::(RuleName :-> Effect), AxiomsOld),
-            prologAxioms(AxiomsNew),
-            append(AxiomsOld, AxiomsNew, Axioms),
-            extractId(Axioms, Ids).
+            findall([RuleName, Effect], user::(RuleName :-> Effect), AxiomsStated),
+            prologAxioms(AxiomsOfClauses),
+            append(AxiomsStated, AxiomsOfClauses, Axioms),
+            strictFacts(Axioms, Ids).
 
 
 
@@ -256,7 +245,7 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
             rule::rule(Id, Premises, Conclusion, Head, Body),
             context_check(clause(Head, Body)),
             tupleToList(Premises, P),
-            ff(P, PP).
+            premisesListed(P, PP).
         premise(Id, [Conclusion]) :-
             rule::premise(Id, Conclusion, Head, Body),
             context_check(clause(Head, Body)).
@@ -300,9 +289,10 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         tupleToList((A, B), L, R) :- !, tupleToList(A, L, M), tupleToList(B, M, R).
         tupleToList(A, [A|R], R).
 
-        ff([[]], []) :- !.
-        ff([[X]], [X]) :- !.
-        ff(X, X).
+        % The items of the premises of a rule as the list of its premises: none for [], X alone for [X], written as a list
+        premisesListed([[]], []) :- !.
+        premisesListed([[X]], [X]) :- !.
+        premisesListed(X, X).
 
         %! rule(?Id, ?Premises, ?Conclusion)
         %  The rule Id concludes Conclusion ([Statement]) from Premises (a list); with metaRules, applicable(Id) is its
@@ -340,13 +330,13 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         %! ruleConclusion(?Id, ?Conclusion)
         %  The rule with identifier Id concludes Conclusion: looked up by its identifier, not among all the rules.
         ruleConclusion(Id, Conclusion) :-
-            ruleIds,
+            conclusionsIndexed,
             context_check(ruleIdOf(Id, Conclusion)).
 
-        ruleIds :- context_check(ruleIds), !.
-        ruleIds :-
+        conclusionsIndexed :- context_check(conclusionsIndexed), !.
+        conclusionsIndexed :-
             findall(_, (rule(Id, _, [Conclusion]), context_assert(ruleIdOf(Id, Conclusion))), _),
-            context_assert(ruleIds).
+            context_assert(conclusionsIndexed).
 
         % The rules themselves, only for who reads them by their places
         rulesPlaced :- context_check(rulesPlaced), !.
@@ -368,9 +358,9 @@ object ParserModule : PrologModule("prolog.argumentation.parser", "parser") {
         ruleIds([[Id|_]|Rules], [Id|Ids]) :- !, ruleIds(Rules, Ids).
         ruleIds([_|Rules], Ids) :- ruleIds(Rules, Ids).
 
-        % extractId(+Rules, -Ids): strict(Id) for the identifier of each of Rules
-        extractId([], []).
-        extractId([[Id|_]|Rules], [strict(Id)|Ids]) :- extractId(Rules, Ids).
+        % strictFacts(+Rules, -Facts): strict(Id) for the identifier of each of Rules
+        strictFacts([], []).
+        strictFacts([[Id|_]|Rules], [strict(Id)|Facts]) :- strictFacts(Rules, Facts).
 
         % boundByQuery(+Rules, -Ids, -Constraints): of Rules, as read from the theory ([Id, Premises, Conclusion], the
         % premises a conjunction, a list or [], and [Id, Conclusion] for a premise of the theory), Ids are those whose

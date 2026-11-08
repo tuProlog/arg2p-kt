@@ -1,9 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.sortedOnce
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
@@ -40,13 +41,8 @@ internal object GroundedFixpoint : AbstractNativePrimitive(Signature("groundedFi
             places: IntArray,
             name: String,
         ): IntArray {
-            places.sort()
-            var n = 0
-            for (i in places.indices) {
-                if ((i == 0 || places[i] != places[i - 1])) places[n++] = places[i]
-            }
-            val sorted = places.copyOf(n)
-            if (n > 0) call.labelArguments(arguments, name, sorted)
+            val sorted = places.sortedOnce()
+            if (sorted.isNotEmpty()) call.labelArguments(arguments, name, sorted)
             return sorted
         }
 

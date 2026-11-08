@@ -16,9 +16,9 @@ import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode as Stat
 // The values of the enumerations of the API are those the flags of arg2p accept, each of them
 class FlagValuesTest {
     private fun assertSameValues(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         values: List<String>,
-    ) = assertEquals((flag.values() as Iterable<*>).map { it.toString() }.toSet(), values.toSet(), flag.predicate())
+    ) = assertEquals(flag.values().toSet(), values.toSet(), flag.predicate())
 
     @Test
     fun theValuesOfEachFlag() {

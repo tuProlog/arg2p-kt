@@ -18,7 +18,6 @@ class LabelModuleTest {
         assertEquals("undId(1)", module.value("label::identifier(und, 1, X)", "X"))
         assertEquals("statIn([a])", module.value("label::statement(in, [a], X)", "X"))
         assertEquals(Term.parse("out(a)"), LabelTerm.argument("out", Atom.of("a")))
-        assertEquals(Term.parse("undId(a)"), LabelTerm.identifier("und", Atom.of("a")))
-        assertEquals(Term.parse("statIn(a)"), LabelTerm.statement("in", Atom.of("a")))
+        assertEquals("undId", LabelTerm.identifierFunctor("und"))
     }
 }

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSegment
-import it.unibo.tuprolog.argumentation.core.primitives.graph.SegmentTerms
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphSegment
+import it.unibo.tuprolog.argumentation.core.runtime.graph.SegmentTerms
 import it.unibo.tuprolog.argumentation.parallel.host.locked
 
 /**

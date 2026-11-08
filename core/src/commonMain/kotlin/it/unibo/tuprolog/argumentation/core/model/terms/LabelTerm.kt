@@ -1,10 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
-import it.unibo.tuprolog.argumentation.core.modules.data.LabelModule
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 
-/** The term of the module LabelModule as Kotlin reads and builds it (see [LabelModule]) */
+/** The term of the module `label` as Kotlin reads and builds it */
 object LabelTerm {
     /** The labels: in, out and und */
     val labels: kotlin.collections.List<String> = listOf("in", "out", "und")
@@ -15,15 +14,12 @@ object LabelTerm {
         argument: Term,
     ): Struct = Struct.of(label, argument)
 
-    /** The fact labelling the argument with identifier [id] with [label] */
-    fun identifier(
-        label: String,
-        id: Term,
-    ): Struct = Struct.of("${label}Id", id)
-
-    /** The fact labelling [statement] with [label] */
-    fun statement(
-        label: String,
-        statement: Term,
-    ): Struct = Struct.of("stat" + label.replaceFirstChar { it.uppercase() }, statement)
+    /** The functor of the facts labelling the arguments with [label] by their identifiers: inId, outId, undId */
+    fun identifierFunctor(label: String): String =
+        when (label) {
+            "in" -> "inId"
+            "out" -> "outId"
+            "und" -> "undId"
+            else -> "${label}Id"
+        }
 }

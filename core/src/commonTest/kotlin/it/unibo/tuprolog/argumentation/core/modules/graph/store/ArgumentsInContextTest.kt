@@ -159,7 +159,7 @@ class ArgumentsInContextTest {
         assertTrue(
             holds(
                 "A = $argument, graphStore::saveArgument([p(a)], A), graphStore::argumentId(A, I), " +
-                    "graphStore::argumentInfo(I, K, [[], [], []]), context_term(K, info([[], [], []]))",
+                    "graphStore::argumentInfoId(I, K), graphStore::infoById(K, [[], [], []]), context_term(K, info([[], [], []]))",
             ),
         )
     }
@@ -223,7 +223,7 @@ class ArgumentsInContextTest {
                 graphStore::argument(A),
                 graphStore::argumentFor([p(a)], _),
                 \+ graphStore::saveArgument([p(a)], A),
-                graphStore::argumentByIdIn(Branch, I, B), B == A,
+                graphStore::savedIdIn(Branch, I), context_term(I, argument(B)), B == A,
                 graphStore::includeArgument(I),
                 graphStore::argumentById(I, _)
                 """.trimIndent(),

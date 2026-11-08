@@ -1,10 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.argumentation.core.primitives.graph.unlabelArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.sortedOnce
+import it.unibo.tuprolog.argumentation.core.runtime.graph.unlabelArguments
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.intArg
@@ -34,13 +35,7 @@ internal object PropagateFrom : AbstractNativePrimitive(Signature("propagateFrom
         fun und(place: Int) = arguments.ids[place] in undecided && arguments.ids[place] !in changed
 
         // (sorted and each once, as groundedFixpoint labels a round)
-        fun round(places: List<Int>): IntArray {
-            val sorted = places.toIntArray()
-            sorted.sort()
-            var n = 0
-            for (i in sorted.indices) if (i == 0 || sorted[i] != sorted[i - 1]) sorted[n++] = sorted[i]
-            return sorted.copyOf(n)
-        }
+        fun round(places: List<Int>): IntArray = places.toIntArray().sortedOnce()
 
         val labelled = ArrayList<IntArray>()
         var newIn = intArrayOf(start)

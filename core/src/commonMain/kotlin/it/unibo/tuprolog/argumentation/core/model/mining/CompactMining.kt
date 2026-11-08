@@ -2,10 +2,12 @@ package it.unibo.tuprolog.argumentation.core.model.mining
 
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.CompactLists
+import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.primitives.graph.expandedAttacks
-import it.unibo.tuprolog.argumentation.core.primitives.graph.supportPairs
 import it.unibo.tuprolog.argumentation.core.runtime.context.Context
+import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
+import it.unibo.tuprolog.argumentation.core.runtime.graph.expandedAttacks
+import it.unibo.tuprolog.argumentation.core.runtime.graph.supportPairs
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.engine.vm.RecordKey
 import it.unibo.tuprolog.core.Term
@@ -21,7 +23,7 @@ fun Solver.compactGraph(): CompactGraph = compactGraph(activeBranch())
 fun Solver.compactGraph(branch: Int): CompactGraph {
     val context = Context.of(libraries) ?: throw IllegalStateException("A solver with no context of arg2p")
     val store = context.store(branch) ?: throw IllegalArgumentException("No context branch $branch")
-    val ids = store.ids("arg").toIntArray()
+    val ids = store.ids(ContextSchema.SAVED).toIntArray()
     val positions = IntArray((ids.maxOrNull() ?: -1) + 1) { -1 }
     ids.forEachIndexed { position, id -> positions[id] = position }
     val position = { id: Int -> if (id < positions.size) positions[id] else -1 }
@@ -38,29 +40,33 @@ fun Solver.compactGraph(branch: Int): CompactGraph {
     val defeasibleRules = ListsBuilder(ids.size)
     val defeasiblePremises = ListsBuilder(ids.size)
     val lastDefeasibleRules = ListsBuilder(ids.size)
-    val parts = IntArray(5)
-    val infoParts = IntArray(3)
+    val parts = IntArray(ContextSchema.ARGUMENT_PARTS)
+    val infoParts = IntArray(ContextSchema.INFO_PARTS)
     ids.forEachIndexed { at, id ->
         val record = context.record(id)!!
         // argument([Rules, TopRule, [Claim], Body, [LastDefeasibleRules, DefeasibleRules, DefeasiblePremises]])
         items(record, record.argumentWord(0), parts)
-        items(record, parts[4], infoParts)
-        rules.add(record, parts[0], written)
-        topRules[at] = written.of(record, parts[1])
-        val conclusion = parts[2]
+        items(record, parts[ContextSchema.INFO_PART], infoParts)
+        rules.add(record, parts[ContextSchema.RULES_PART], written)
+        topRules[at] = written.of(record, parts[ContextSchema.TOP_RULE_PART])
+        val conclusion = parts[ContextSchema.CONCLUSION_PART]
         val claim = if (record.isCell(conclusion)) record.cellHead(conclusion) else 0
         val single = record.isCell(conclusion) && !record.isCell(record.cellTail(conclusion))
         conclusions[at] = if (single) concluded.of(record, claim) else texts.of("null")
         orderedBy[at] = if (single) ordered.of(record, claim) else conclusions[at]
-        groundings.add(record, parts[3], written)
-        defeasibleRules.add(record, infoParts[1], written)
-        defeasiblePremises.add(record, infoParts[2], written)
-        lastDefeasibleRules.add(record, infoParts[0], written)
+        groundings.add(record, parts[ContextSchema.BODY_PART], written)
+        defeasibleRules.add(record, infoParts[ContextSchema.DEFEASIBLE_RULES_PART], written)
+        defeasiblePremises.add(record, infoParts[ContextSchema.DEFEASIBLE_PREMISES_PART], written)
+        lastDefeasibleRules.add(record, infoParts[ContextSchema.LAST_DEFEASIBLE_RULES_PART], written)
     }
 
     val labels = ByteArray(ids.size)
-    listOf("inId" to 1, "outId" to 2, "undId" to 3).forEach { (fact, code) ->
-        store.ids(fact).toIntArray().forEach { id -> position(id).takeIf { it >= 0 }?.let { labels[it] = code.toByte() } }
+    LabelTerm.labels.forEach { label ->
+        // (the code of a label, its position in the names of the labels)
+        val code = CompactGraph.labelCode(label)
+        store.ids(LabelTerm.identifierFunctor(label)).toIntArray().forEach { id ->
+            position(id).takeIf { it >= 0 }?.let { labels[it] = code }
+        }
     }
 
     val attacks =

@@ -1,10 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.primitives.graph
 
+import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.argumentation.core.runtime.context.contextLibrary
+import it.unibo.tuprolog.argumentation.core.runtime.graph.AttackIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.ExpandedAttacks
+import it.unibo.tuprolog.argumentation.core.runtime.graph.expandedAttacks
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.answersMatching
-import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 
@@ -98,7 +101,7 @@ private fun NativeCall.attacksByTerms(
     // with variables may be (the variables of a conclusion bound by an attack)
     val (idAttacker, idAttacked) =
         listOf(attacker, attacked).map { argument ->
-            argument?.takeIf { it.isGround }?.let { context.knownIdentifier(Struct.of("argument", it)) }
+            argument?.takeIf { it.isGround }?.let { context.knownIdentifier(ContextSchema.argument(it)) }
         }
     val argument = { id: Int -> context.term(id)?.castToStruct()?.get(0) }
     val attacks = expandedAttacks(branch).candidates(idAttacker, idAttacked)

@@ -16,6 +16,22 @@ class ParserModuleTest {
         assertEquals(setOf("c", "d"), scanned.toSet())
     }
 
+    // A stage of a resolution is a call made with :::, and asking the languages of a theory is none
+    @Test
+    fun theLanguagesAreAskedInTheStageOfTheConversion() {
+        val module = ModuleTesting("r1 : [] => a.")
+        assertEquals("1", module.value("context_reset, parser:::convertAllRules, context_active(B)", "B"))
+        assertEquals("1", module.value("parser::checkLanguages, context_active(B)", "B"))
+    }
+
+    // The theory converted once, a solve after the first has the stages of the first
+    @Test
+    fun theStagesOfASolveAreTheSameAfterTheFirst() {
+        val module = ModuleTesting("r1 : [] => a.\nr2 : [] => -a.")
+        val first = module.value("buildLabelSetsSilent, context_active(B)", "B")
+        assertEquals(first, module.value("buildLabelSetsSilent, context_active(B)", "B"))
+    }
+
     @Test
     fun contraryPremisesAndVariablesAreFound() {
         val module = module()

@@ -1,8 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.federation.Federation
-import it.unibo.tuprolog.argumentation.federation.MemoryLinks
 import it.unibo.tuprolog.argumentation.parallel.EquivalenceScenarios
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse

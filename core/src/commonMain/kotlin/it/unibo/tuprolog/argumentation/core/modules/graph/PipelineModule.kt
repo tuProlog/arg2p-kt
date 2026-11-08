@@ -16,7 +16,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * abstract states it.
  */
 object PipelineModule : PrologModule("prolog.argumentation.pipeline", "pipeline") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(GraphExtension, ArgumentLabellingMode, StatementLabellingMode, GraphBuildMode, GraphBuilder)
 
     override val prologRawTheory: String =

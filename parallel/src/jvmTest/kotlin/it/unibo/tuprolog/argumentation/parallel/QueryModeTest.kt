@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.Semantics
-import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

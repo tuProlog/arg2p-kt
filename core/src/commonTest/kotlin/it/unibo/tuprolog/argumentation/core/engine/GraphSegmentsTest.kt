@@ -3,10 +3,10 @@ package it.unibo.tuprolog.argumentation.core.engine
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphMark
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSegment
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphSegmentSince
-import it.unibo.tuprolog.argumentation.core.primitives.graph.mergeGraphSegment
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphMark
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphSegment
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphSegmentSince
+import it.unibo.tuprolog.argumentation.core.runtime.graph.mergeGraphSegment
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
@@ -52,7 +52,7 @@ class GraphSegmentsTest {
         override val baseContent: Library
             get() = Library.of(alias, primitives = listOf(out, into).associateBy { it.signature })
 
-        override val baseFlags: Iterable<ArgsFlag<*, *>>
+        override val baseFlags: Iterable<ArgsFlag>
             get() = emptyList()
     }
 
@@ -82,7 +82,7 @@ class GraphSegmentsTest {
         assertTrue(b.holds("graphStore::argument(A), argument::conclusion(A, [b])"))
         assertTrue(
             b.holds(
-                "findall(C, graphStore::newConclusion(f, [C]), Cs), argumentBuilder::buildArgumentsFromRules(Cs, a), " +
+                "findall(C, graphStore::newConclusion(f, [C]), Cs), argumentBuilder::buildArgumentsFromRules(Cs, a, base), " +
                     "graphStore::argument(A), argument::conclusion(A, [c])",
             ),
         )

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.runtime.modules.Loadable
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -20,8 +20,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 abstract class PrologModule(
     final override val alias: String,
     private val moduleIdentifier: String,
-) : ArgLibrary,
-    Loadable {
+) : Loadable {
     /** The Prolog theory of the module, as text */
     abstract val prologRawTheory: String
 
@@ -43,16 +42,8 @@ abstract class PrologModule(
         )
     }
 
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
     override val theoryOperators: OperatorSet
-        get() = MODULE_OPERATORS
+        get() = Notation.modules
 
     final override fun identifier(): String = moduleIdentifier
-
-    private companion object {
-        // The operators of the theories of the modules: those of module calls (::, :::) and the default ones
-        val MODULE_OPERATORS: OperatorSet by lazy { DynamicLoader.operators().plus(OperatorSet.DEFAULT) }
-    }
 }

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.entry
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
 
 /**
@@ -12,10 +12,10 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 object Arg2pModule : PrologModule("prolog.argumentation.interface", "arg2p") {
     // The operators of the rules of a theory, for the theory of the interface and the solvers using it
     override val libraryOperators: OperatorSet
-        get() = ParserModule.operators()
+        get() = Notation.rules
 
     override val theoryOperators: OperatorSet
-        get() = super.theoryOperators.plus(ParserModule.operators())
+        get() = Notation.theories
 
     override val prologRawTheory: String =
         // language=Prolog

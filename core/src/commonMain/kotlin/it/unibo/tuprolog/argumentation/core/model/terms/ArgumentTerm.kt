@@ -1,10 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
-import it.unibo.tuprolog.argumentation.core.modules.data.ArgumentModule
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.List as LogicList
 
-/** The term of the module ArgumentModule as Kotlin reads and builds it (see [ArgumentModule]) */
+/** The term of the module `argument` as Kotlin reads and builds it */
 object ArgumentTerm {
     /** The parts of the term of an argument, by name */
     class Parts(

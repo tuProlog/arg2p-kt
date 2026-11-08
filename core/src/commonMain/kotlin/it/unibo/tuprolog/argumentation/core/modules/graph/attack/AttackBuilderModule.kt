@@ -66,21 +66,6 @@ object AttackBuilderModule : PrologModule("prolog.argumentation.graph.attacks", 
             fail.
         buildAddedAttack(_).
 
-        %! attacksOn(+Ids, -Attacks)
-        %  The direct attacks on the saved arguments with identifiers Ids, by any saved argument, not saved: each
-        %  a(Type, IdAttacker, IdAttacked). What the workers of the parallel solver find.
-        attacksOn(Ids, Attacks) :-
-            (parser::constrained -> Constrained = yes ; Constrained = no),
-            findall(a(T, IdB, IdA), attackOn(Constrained, Ids, T, IdB, IdA), Attacks).
-
-        attackOn(Constrained, Ids, T, IdB, IdA) :-
-            member(IdA, Ids),
-            graphStore::argumentById(IdA, A),
-            attackCandidates::possibleAttackers(IdA, A, Conflict),
-            findAttacker(Conflict, B),
-            directAttack(Constrained, T, B, A),
-            graphStore::argumentId(B, IdB).
-
         % (Constrained: whether the theory may have constraints, found once for all the attacks of a graph.) Attacks are
         % checked on copies, so that the arguments are saved exactly as they are stored: binding their variables would
         % change their identifiers (see context_id)

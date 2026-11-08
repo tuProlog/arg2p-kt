@@ -1,14 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.runtime.modules
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleDefines
-import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoal
-import it.unibo.tuprolog.argumentation.core.primitives.modules.ModuleGoalInBranch
-import it.unibo.tuprolog.core.operators.Operator
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.core.operators.Specifier
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.library.Library
@@ -50,19 +43,9 @@ internal class DynamicLoader(
                 Library.of(
                     alias = this.alias,
                     primitives = it.associateBy { prim -> prim.signature },
-                    operators = operators(),
+                    operators = Notation.moduleCalls,
                 )
             }
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
 
-    override val theoryOperators = operators()
-
-    companion object {
-        fun operators() =
-            OperatorSet(
-                Operator("::", Specifier.XFX, 700),
-                Operator(":::", Specifier.XFX, 700),
-            )
-    }
+    override val theoryOperators = Notation.moduleCalls
 }

@@ -3,7 +3,7 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphSharing
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.consumer.TheoryPartitioner

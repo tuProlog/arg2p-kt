@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
-import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread

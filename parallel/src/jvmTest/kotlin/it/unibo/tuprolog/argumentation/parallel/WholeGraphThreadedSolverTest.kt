@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import kotlin.test.AfterTest
 

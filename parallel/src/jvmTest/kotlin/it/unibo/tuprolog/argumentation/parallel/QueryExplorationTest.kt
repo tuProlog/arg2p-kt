@@ -6,7 +6,6 @@ import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
-import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
-import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.idList
+import it.unibo.tuprolog.argumentation.core.runtime.graph.idsArg
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.atomArg

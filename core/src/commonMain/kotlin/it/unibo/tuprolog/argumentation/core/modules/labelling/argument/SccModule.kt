@@ -10,7 +10,7 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * Support module of the SCC-recursive semantics (complete, preferred, stable): their labellings are built one
+ * Support module of the SCC-recursive semantics (admissible, complete, preferred, stable): their labellings are built one
  * strongly connected component at a time, the semantics only choosing which local labellings to keep.
  */
 object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc") {
@@ -59,7 +59,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         root(grounded, _) :-
             grounded:::argumentLabelling.
         root(none, Start) :-
-            conflictfree::labelSet(Start, []).
+            labelling::labelSet(Start, []).
 
         % step(+Closure, +Id): Id forced IN, and what follows from it by Closure
         step(grounded, Id) :-
@@ -120,11 +120,11 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
         ok(Accept, Scc, Ok) :-
             (accepted(Accept, Scc) -> Ok = true ; Ok = false).
 
-        % (the IN arguments of the earlier components were checked with theirs: admissible::admissibleWithin)
+        % (the IN arguments of the earlier components were checked with theirs: labelling::admissibleWithin)
         accepted(admissible, Scc) :-
-            admissible::admissibleWithin(Scc).
+            labelling::admissibleWithin(Scc).
         accepted(decided, Scc) :-
-            admissible::admissibleWithin(Scc),
+            labelling::admissibleWithin(Scc),
             \+ (member(A, Scc), graphStore::argumentLabelById(und, A)).
 
         % admissibleAbove(+Closure, +Scc, +Excluded, +Start, +Branch, -Admissible, -Mine): Admissible is admissible on
@@ -147,7 +147,7 @@ object SccModule : PrologModule("prolog.argumentation.graph.labelling.scc", "scc
             utils::sortDescending(Reached, Labelled),
             unexplored(Start, Seed, Labelled),
             (
-                admissible::admissibleWithin(Scc)
+                labelling::admissibleWithin(Scc)
             ->
                 Admissible = NewBranch,
                 Mine = Tried

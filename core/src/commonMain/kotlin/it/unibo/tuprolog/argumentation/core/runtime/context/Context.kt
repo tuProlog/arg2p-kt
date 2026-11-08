@@ -1,35 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.runtime.context
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAbsent
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextActive
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAll
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssert
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextAssertId
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBranch
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextBy
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheck
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckIn
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCheckout
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextCount
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDrop
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextDropAfter
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextId
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextLast
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextMatching
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextReset
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetract
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextRetractAll
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextStoredId
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateRestore
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTemplateSave
-import it.unibo.tuprolog.argumentation.core.primitives.context.ContextTerm
+import it.unibo.tuprolog.argumentation.core.runtime.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.runtime.modules.OwnedLibrary
 import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
 import it.unibo.tuprolog.argumentation.engine.vm.Program
+import it.unibo.tuprolog.argumentation.engine.vm.ProgramStore
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 
@@ -38,7 +15,9 @@ import it.unibo.tuprolog.solve.library.Runtime
  * backtracking, which the context_* primitives change and read (see the files of the primitives of the context, on
  * branches, assertions and lookups).
  */
-internal class Context : ArgLibrary {
+internal class Context :
+    ArgLibrary,
+    ProgramStore {
     private val branches = ContextBranches()
 
     // Operations of the context for the native primitives of the other libraries, which reach it through [of]
@@ -87,7 +66,7 @@ internal class Context : ArgLibrary {
     fun term(identifier: Int): Term? = branches.term(identifier)
 
     /** The stores on the words of [program] (the machine's) */
-    internal fun bind(program: Program) = branches.bind(program)
+    override fun bind(program: Program) = branches.bind(program)
 
     override val alias = ALIAS
 
@@ -109,7 +88,6 @@ internal class Context : ArgLibrary {
                 ContextRetractAll(branches),
                 ContextCheck(branches),
                 ContextCheckIn(branches),
-                ContextAll(this),
                 ContextId(branches),
                 ContextTerm(branches),
                 ContextBy(branches),
@@ -118,27 +96,24 @@ internal class Context : ArgLibrary {
                 ContextAbsent(branches),
                 ContextCount(branches),
             ).let { primitives ->
-                Library.of(
-                    alias = this.alias,
-                    primitives = primitives.associateBy { it.signature },
+                OwnedLibrary(
+                    this,
+                    Library.of(
+                        alias = this.alias,
+                        primitives = primitives.associateBy { it.signature },
+                    ),
                 )
             }
 
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
-
     companion object {
-        /** The context library among the given libraries, if any (through context_all/2) */
+        /** The context library among the given libraries, if any */
         fun of(libraries: Runtime): Context? {
-            // (by its library: the primitives of a runtime are a map of all of them, made for each runtime asked)
             for (library in libraries.libraries) {
-                if (library.alias == ALIAS) return (library.primitives[CONTEXT_ALL] as? ContextAll)?.owner
+                if (library.alias == ALIAS) return (library as? OwnedLibrary)?.owner as? Context
             }
             return null
         }
 
         private const val ALIAS = "prolog.argumentation.context"
-
-        private val CONTEXT_ALL = Signature("context_all", 2)
     }
 }

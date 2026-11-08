@@ -1,21 +1,22 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphMark
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
-import it.unibo.tuprolog.argumentation.core.primitives.graph.argumentConclusion
-import it.unibo.tuprolog.argumentation.core.primitives.graph.contentKey
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphKey
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphMarkNow
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphResets
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphSegmentSince
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphSession
-import it.unibo.tuprolog.argumentation.core.primitives.graph.holdsFact
-import it.unibo.tuprolog.argumentation.core.primitives.graph.mergeGraphSegment
-import it.unibo.tuprolog.argumentation.core.primitives.graph.mergeSegmentTerms
-import it.unibo.tuprolog.argumentation.core.primitives.graph.savedArgumentIds
-import it.unibo.tuprolog.argumentation.core.primitives.graph.segmentTerms
-import it.unibo.tuprolog.argumentation.core.primitives.graph.storedFacts
-import it.unibo.tuprolog.argumentation.core.primitives.graph.termIn
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphMark
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphSharing
+import it.unibo.tuprolog.argumentation.core.runtime.graph.argumentConclusion
+import it.unibo.tuprolog.argumentation.core.runtime.graph.contentKey
+import it.unibo.tuprolog.argumentation.core.runtime.graph.exploredFact
+import it.unibo.tuprolog.argumentation.core.runtime.graph.exploredFacts
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphKey
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphMarkNow
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphResets
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphSegmentSince
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphSession
+import it.unibo.tuprolog.argumentation.core.runtime.graph.holdsFact
+import it.unibo.tuprolog.argumentation.core.runtime.graph.mergeGraphSegment
+import it.unibo.tuprolog.argumentation.core.runtime.graph.mergeSegmentTerms
+import it.unibo.tuprolog.argumentation.core.runtime.graph.savedArgumentIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.segmentTerms
+import it.unibo.tuprolog.argumentation.core.runtime.graph.termIn
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.parallel.host.locked
@@ -271,7 +272,7 @@ class SharedGraph private constructor(
             consumer.removed = ArrayList()
             return
         }
-        val explored = if (!exploring) emptyList() else call.storedFacts("explored", 1).filter { consumer.passedOn.add(it.contentKey) }
+        val explored = if (!exploring) emptyList() else call.exploredFacts().filter { consumer.passedOn.add(it.contentKey) }
         val attacks = consumer.saved
         consumer.saved = ArrayList()
         val removed = consumer.removed
@@ -363,7 +364,7 @@ class SharedGraph private constructor(
                 }
             } else {
                 for (statement in entry.terms!!.explored) {
-                    if (!call.holdsFact(Record.of(Struct.of("explored", statement)))) statements += statement
+                    if (!call.holdsFact(exploredFact(statement))) statements += statement
                 }
             }
             val ids =

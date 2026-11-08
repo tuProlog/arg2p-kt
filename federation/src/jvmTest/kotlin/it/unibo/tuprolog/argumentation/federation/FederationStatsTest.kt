@@ -1,7 +1,5 @@
 package it.unibo.tuprolog.argumentation.federation
 
-import it.unibo.tuprolog.argumentation.federation.Federation
-import it.unibo.tuprolog.argumentation.federation.MemoryLinks
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import kotlin.test.Test
 import kotlin.test.assertEquals

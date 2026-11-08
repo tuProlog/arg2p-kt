@@ -51,14 +51,14 @@ class CompactGraph internal constructor(
     val size: Int get() = conclusions.size
 
     /** What [labels] tell */
-    val labelNames: Array<String> get() = arrayOf(NO_LABEL, IN, OUT, UND)
+    val labelNames: Array<String> get() = LABEL_NAMES.copyOf()
 
     /** The label of the argument at [position]: in, out, und, or na for an argument the labelling does not label */
     fun label(position: Int): String = labelNames[labels[position].toInt()]
 
     /** The arguments labelled [label] (in, out, und) */
     fun labelled(label: String): IntArray {
-        val code = labelNames.indexOf(label).toByte()
+        val code = labelCode(label)
         val found = IntArray(labels.count { it == code })
         var n = 0
         for (position in labels.indices) if (labels[position] == code) found[n++] = position
@@ -135,6 +135,10 @@ class CompactGraph internal constructor(
         const val OUT = "out"
         const val UND = "und"
         const val NO_RULE = "none"
+        private val LABEL_NAMES = arrayOf(NO_LABEL, IN, OUT, UND)
+
+        /** The code of [label] in [labels], its position in [labelNames] */
+        fun labelCode(label: String): Byte = LABEL_NAMES.indexOf(label).toByte()
     }
 }
 

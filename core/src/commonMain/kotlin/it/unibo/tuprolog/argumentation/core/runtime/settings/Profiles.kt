@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.core.runtime.settings
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
 import it.unibo.tuprolog.argumentation.core.flags.ConflictModel
+import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder
 import it.unibo.tuprolog.argumentation.core.flags.GraphExtension
 import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage
@@ -15,37 +16,31 @@ import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Truth
-import it.unibo.tuprolog.core.operators.Operator
-import it.unibo.tuprolog.core.operators.OperatorSet
-import it.unibo.tuprolog.core.operators.Specifier
 
 /**
- * A framework a theory is read in, the value of graphBuildMode: a shortcut for the values of the flags it presets,
- * with the [operators] of its notation. The flags the theory or the solver state override it (see Settings),
+ * A framework a theory is read in, the value of graphBuildMode: a shortcut for the values of the flags it presets. The
+ * flags the theory or the solver state override it (see Settings),
  * the flags the profile does not preset keep those of the solver.
  */
 internal class Profile(
     /** The value of graphBuildMode naming the profile */
     val name: String,
-    presets: List<Pair<ArgsFlag<*, *>, List<Term>>>,
-    /** The operators of the notation of the profile, beyond those of arg2p */
-    val operators: OperatorSet = OperatorSet.EMPTY,
+    presets: List<Pair<ArgsFlag, List<Term>>>,
 ) {
     /** The values of the flags the profile presets, by flag (none for a switch off) */
     val presets: Map<String, List<Term>> = presets.associate { (flag, values) -> flag.predicate() to values }
 }
 
 /**
- * The profiles of arg2p (see [Profile]), ASPIC+ the default. The operators of all the profiles are those of every
- * theory, none conflicting with another: each profile reads the clauses written with them its own way.
+ * The profiles of arg2p (see [Profile]), ASPIC+ the default.
  */
 internal object Profiles {
-    private fun on(flag: ArgsFlag<*, *>) = flag to listOf<Term>(Truth.TRUE)
+    private fun on(flag: ArgsFlag) = flag to listOf<Term>(Truth.TRUE)
 
-    private fun off(flag: ArgsFlag<*, *>) = flag to emptyList<Term>()
+    private fun off(flag: ArgsFlag) = flag to emptyList<Term>()
 
     private fun values(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         vararg values: String,
     ) = flag to values.map { Atom.of(it) }
 
@@ -151,18 +146,14 @@ internal object Profiles {
                 off(MetaRules),
                 off(MetaConflicts),
             ),
-            OperatorSet(Operator("<->", Specifier.XFX, 1050)),
         )
 
     /** Every profile */
     val all: List<Profile> = listOf(FREE, ASPIC_PLUS, ASPIC, ASPIC_DEFEASIBLE, META, ABA, ABA_PLUS, ABSTRACT)
 
     /** The profile of a theory naming none */
-    val default: Profile = ASPIC_PLUS
+    val default: Profile = all.first { it.name == GraphBuildMode.default() }
 
     /** The profile named [name], if any */
     fun named(name: String?): Profile? = all.firstOrNull { it.name == name }
-
-    /** The operators of the notations of all the profiles */
-    fun operators(): OperatorSet = all.fold(OperatorSet.EMPTY) { operators, profile -> operators + profile.operators }
 }

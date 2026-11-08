@@ -11,7 +11,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * structuredPartial).
  */
 object StatementAcceptanceModule : PrologModule("prolog.argumentation.statement.acceptance", "statementAcceptance") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(QueryMode, AnswerMode)
 
     override val prologRawTheory: String =

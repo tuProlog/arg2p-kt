@@ -2,9 +2,7 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
-import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
@@ -14,7 +12,6 @@ import it.unibo.tuprolog.argumentation.core.model.mining.compactGraph
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
-import it.unibo.tuprolog.argumentation.graphsOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct

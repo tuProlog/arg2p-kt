@@ -12,7 +12,7 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution
@@ -162,17 +162,16 @@ internal class ActorSolver(
                 Library.of(
                     alias = this.alias,
                     primitives = primitives.associateBy { it.signature },
-                    operators = ParserModule.operators(),
+                    operators = Notation.rules,
                 )
             }
 
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = emptyList()
 
     override fun identifier(): String = "parallel"
 
     override var theoryOperators =
-        ParserModule
-            .operators()
+        Notation.rules
             .plus(OperatorSet.DEFAULT)
 }

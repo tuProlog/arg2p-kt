@@ -1,10 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelArguments
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
-import it.unibo.tuprolog.argumentation.core.primitives.graph.unlabelArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelArguments
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.sortedOnce
+import it.unibo.tuprolog.argumentation.core.runtime.graph.unlabelArguments
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.intArg
@@ -28,11 +29,7 @@ internal object LabelIn : AbstractNativePrimitive(Signature("labelIn", 1)) {
             val at = arguments.position(target)
             if (at != -1 && at != start && target in undecided) targets += at
         }
-        val out = targets.toIntArray()
-        out.sort()
-        var n = 0
-        for (i in out.indices) if (i == 0 || out[i] != out[i - 1]) out[n++] = out[i]
-        val newOut = out.copyOf(n)
+        val newOut = targets.toIntArray().sortedOnce()
         call.labelArguments(arguments, "in", intArrayOf(start))
         if (newOut.isNotEmpty()) call.labelArguments(arguments, "out", newOut)
         call.unlabelArguments(arguments, "und", intArrayOf(start) + newOut)

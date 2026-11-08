@@ -44,7 +44,7 @@ class EngineErrorsTest {
         override val baseContent: Library
             get() = Library.of(alias, primitives = mapOf(Signature("failing", 0) to failing, Signature("flaky", 1) to flaky))
 
-        override val baseFlags: Iterable<ArgsFlag<*, *>>
+        override val baseFlags: Iterable<ArgsFlag>
             get() = emptyList()
     }
 

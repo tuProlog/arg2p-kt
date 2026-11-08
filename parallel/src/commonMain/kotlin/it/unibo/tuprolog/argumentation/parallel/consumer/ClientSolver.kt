@@ -10,8 +10,8 @@ import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
 import it.unibo.tuprolog.argumentation.core.model.mining.arguments
 import it.unibo.tuprolog.argumentation.core.model.mining.compactGraph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSharing
-import it.unibo.tuprolog.argumentation.core.primitives.graph.graphKey
+import it.unibo.tuprolog.argumentation.core.runtime.graph.GraphSharing
+import it.unibo.tuprolog.argumentation.core.runtime.graph.graphKey
 import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.Record

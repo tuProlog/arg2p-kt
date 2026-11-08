@@ -19,6 +19,6 @@ object EagerModule : PrologModule("prolog.argumentation.graph.labelling.eager", 
         %  The eager labelling has IN the maximal admissible subset of the intersection of the semi-stable extensions
         argumentLabelling :-
             context_active(Branch),
-            admissible::maximalAdmissibleCommonOf(semistable, Branch).
+            labelling::maximalAdmissibleCommonOf(semistable, Branch).
         """.trimIndent()
 }

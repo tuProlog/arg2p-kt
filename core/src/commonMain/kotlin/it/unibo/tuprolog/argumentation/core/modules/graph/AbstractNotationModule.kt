@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.modules.graph
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 import it.unibo.tuprolog.argumentation.core.primitives.graph.TheoryClause
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -16,7 +16,7 @@ internal abstract class AbstractNotationModule(
     identifier: String,
 ) : PrologModule(alias, identifier) {
     override val theoryOperators: OperatorSet
-        get() = super.theoryOperators + Profiles.ABSTRACT.operators
+        get() = super.theoryOperators + Notation.abstractFramework
 
     override val primitives: Map<Signature, Primitive>
         get() = mapOf(TheoryClause.signature to TheoryClause)

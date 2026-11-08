@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.causality.primitives.Ness
 import it.unibo.tuprolog.argumentation.causality.primitives.NessIntervention
 import it.unibo.tuprolog.argumentation.causality.runtime.CausalityAnalysis
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.modules.graph.language.ParserModule
+import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
@@ -32,7 +32,7 @@ class CausalityModule : PrologModule("prolog.argumentation.causality.solver", "c
             ).associateBy { it.signature }
 
     override val theoryOperators: OperatorSet
-        get() = super.theoryOperators.plus(ParserModule.operators())
+        get() = Notation.theories
 
     override val prologRawTheory: String =
         // language=Prolog

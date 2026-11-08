@@ -31,21 +31,21 @@ object StandardPrefModule : PrologModule("prolog.argumentation.graph.preferences
         standardPreferences(_, IdA, IdC) :-
             graphStore::argumentInfoId(IdA, InfoIdA),
             graphStore::argumentInfoId(IdC, InfoIdC),
-            superiorInfo(InfoIdC, InfoIdA), !,
+            superiorById(InfoIdC, InfoIdA), !,
             fail.
         standardPreferences(_, _, _).
 
         % Superiority only depends on the info of the arguments, shared by many of them: it is buffered by their
         % identifiers, so that each pair is read and compared once
-        superiorInfo(InfoIdC, InfoIdA) :-
+        superiorById(InfoIdC, InfoIdA) :-
             context_check(infoSuperior(InfoIdC, InfoIdA, Result)), !,
             Result == yes.
-        superiorInfo(InfoIdC, InfoIdA) :-
+        superiorById(InfoIdC, InfoIdA) :-
             graphStore::infoById(InfoIdC, InfoC),
             graphStore::infoById(InfoIdA, InfoA),
             superiority::compareInfo(InfoC, InfoA, _), !,
             context_assert(infoSuperior(InfoIdC, InfoIdA, yes)).
-        superiorInfo(InfoIdC, InfoIdA) :-
+        superiorById(InfoIdC, InfoIdA) :-
             context_assert(infoSuperior(InfoIdC, InfoIdA, no)),
             fail.
         """.trimIndent()

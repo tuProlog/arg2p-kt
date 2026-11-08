@@ -5,12 +5,14 @@ package it.unibo.tuprolog.argumentation.core.flags
  * [it.unibo.tuprolog.argumentation.core.runtime.settings.Settings]): a theory states its values as facts of its
  * [predicate]
  */
-interface ArgsFlag<T, G> {
+interface ArgsFlag {
     fun predicate(): String
 
-    fun default(): T
+    /** The default of the flag: for a switch whether it is on, otherwise its value or values */
+    fun default(): Any
 
-    fun values(): G
+    /** The values the flag takes, those it declares (see [isOpen]): none for a switch */
+    fun values(): Iterable<String> = emptyList()
 
     /** Whether the flag is a switch, on when stated by its predicate alone (`queryMode.`), rather than taking values */
     val isSwitch: Boolean

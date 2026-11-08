@@ -20,6 +20,6 @@ object SemistableModule : PrologModule("prolog.argumentation.graph.labelling.sem
         %  (an admissible set with a maximal range is a maximal admissible set)
         argumentLabelling :-
             context_active(Branch),
-            admissible::minimalUndOf(preferred, Branch).
+            labelling::minimalUndOf(preferred, Branch).
         """.trimIndent()
 }

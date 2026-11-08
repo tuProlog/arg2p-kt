@@ -52,17 +52,17 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
             (Own == [], Inherited == [] ->
                 Extended = Body
             ;
-                join(Own, Inherited, All),
+                append(Own, Inherited, All),
                 satisfiable(All),
                 open(Inherited, Open),
-                join(Body, Open, Extended)
+                append(Body, Open, Extended)
             ).
 
         inherited([], []).
         inherited([Support|Supports], Constraints) :-
             store(Support, Own),
             inherited(Supports, Others),
-            join(Own, Others, Constraints).
+            append(Own, Others, Constraints).
 
         % The constraints still open, as premises { C }
         open([], []).
@@ -74,7 +74,7 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
         compatible(A, B) :-
             store(A, SA),
             store(B, SB),
-            join(SA, SB, All),
+            append(SA, SB, All),
             satisfiable(All).
 
         %! satisfiable(+Constraints)
@@ -87,11 +87,7 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
             consistent(Normals).
 
         conjuncts([], []).
-        conjuncts([C|Cs], All) :- conjunct(C, All, Rest), conjuncts(Cs, Rest).
-
-        conjunct(C, [C|Rest], Rest) :- var(C), !.
-        conjunct((A, B), All, Rest) :- !, conjunct(A, All, Middle), conjunct(B, Middle, Rest).
-        conjunct(C, [C|Rest], Rest).
+        conjuncts([C|Cs], All) :- parser::tupleToList(C, All, Rest), conjuncts(Cs, Rest).
 
         holding([]).
         holding([C|Cs]) :- (ground(C) -> holds(C) ; true), holding(Cs).
@@ -190,7 +186,5 @@ object ConstraintModule : PrologModule("prolog.argumentation.language.constraint
         nonEmpty(lo(A, _), hi(B, _), _) :- A < B, !.
         nonEmpty(lo(A, closed), hi(B, closed), Group) :- A =:= B, allows(Group, A).
 
-        join([], L, L).
-        join([X|Xs], L, [X|Ys]) :- join(Xs, L, Ys).
         """.trimIndent()
 }

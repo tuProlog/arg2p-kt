@@ -4,9 +4,8 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingSwitch
-import it.unibo.tuprolog.argumentation.core.primitives.settings.SettingValue
+import it.unibo.tuprolog.argumentation.core.runtime.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.runtime.modules.OwnedLibrary
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Fact
@@ -18,7 +17,6 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.DomainError
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.library.Library
-import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
 
 /**
@@ -37,7 +35,7 @@ class Settings(
     private val solver: Arg2pSolver,
 ) : ArgLibrary {
     /** The flags the libraries of the solver declare, by name */
-    val flags: Map<String, ArgsFlag<*, *>> by lazy {
+    val flags: Map<String, ArgsFlag> by lazy {
         (solver.baseLibraries() + solver.staticLibraries() + solver.dynamicLibraries())
             .flatMap { it.baseFlags }
             .associateBy { it.predicate() }
@@ -49,13 +47,13 @@ class Settings(
 
     /** Whether the switch [flag] is on in [context] */
     fun isOn(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         context: ExecutionContext,
     ): Boolean = valuesOf(flag, context).isNotEmpty()
 
     /** The values of [flag] in [context] (for a switch, `true` if it is on) */
     fun valuesOf(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         context: ExecutionContext,
     ): List<Term> = viewFor(context)[flag.predicate()].orEmpty()
 
@@ -130,11 +128,11 @@ class Settings(
 
     // The values of a closed flag are among those it declares (see ArgsFlag.isOpen)
     private fun checked(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         values: List<Term>,
     ) {
         if (flag.isOpen || flag.isSwitch) return
-        val declared = (flag.values() as Iterable<*>).map { it.toString() }
+        val declared = flag.values()
         val unknown = values.filter { it.toString() !in declared }
         if (unknown.isNotEmpty()) {
             throw IllegalArgumentException("${flag.predicate()}: no value ${unknown.joinToString()} (${declared.joinToString()})")
@@ -153,7 +151,7 @@ class Settings(
     }
 
     private fun stated(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         facts: Map<String, List<Struct>>,
     ): List<Term> {
         val heads = facts[flag.predicate()].orEmpty()
@@ -164,7 +162,7 @@ class Settings(
 
     // The values of a flag, those standing for others replaced by them (see ArgsFlag.aliases), each once
     private fun expanded(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         values: List<Term>,
     ): List<Term> =
         if (flag.aliases.isEmpty()) {
@@ -174,18 +172,12 @@ class Settings(
         }
 
     // The default values of a flag
-    private fun defaultOf(flag: ArgsFlag<*, *>): List<Term> =
+    private fun defaultOf(flag: ArgsFlag): List<Term> =
         when (val default = flag.default()) {
             is Boolean -> if (default) listOf(Truth.TRUE) else emptyList()
             is Iterable<*> -> default.map { Atom.of(it.toString()) }
             else -> listOf(Atom.of(default.toString()))
         }
-
-    /** The flag named by the first argument of [request], declared of the kind its check expects (a switch or not) */
-    internal fun declared(
-        request: Solve.Request<ExecutionContext>,
-        switch: Boolean,
-    ): ArgsFlag<*, *> = declared(request.arguments[0], request.context, request.signature, switch)
 
     /** The flag named [name] (the first argument of a call of [signature]), declared of the kind its check expects */
     internal fun declared(
@@ -193,7 +185,7 @@ class Settings(
         context: ExecutionContext,
         signature: Signature,
         switch: Boolean,
-    ): ArgsFlag<*, *> {
+    ): ArgsFlag {
         if (name !is Atom) throw TypeError.forArgument(context, signature, TypeError.Expected.ATOM, name, 0)
         return flags[name.value]?.takeIf { it.isSwitch == switch }
             ?: throw DomainError.forArgument(context, signature, DomainError.Expected.FLAG, name, 0)
@@ -204,14 +196,14 @@ class Settings(
     override val baseContent: Library
         get() =
             listOf(SettingSwitch(this), SettingValue(this)).let { primitives ->
-                Library.of(
-                    alias = this.alias,
-                    primitives = primitives.associateBy { it.signature },
+                OwnedLibrary(
+                    this,
+                    Library.of(
+                        alias = this.alias,
+                        primitives = primitives.associateBy { it.signature },
+                    ),
                 )
             }
-
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
-        get() = emptyList()
 
     companion object {
         private const val ALIAS = "prolog.argumentation.settings"
@@ -222,12 +214,6 @@ class Settings(
 
         /** The settings of the solver of [context], if they are reachable */
         fun of(context: ExecutionContext): Settings? =
-            (
-                context.libraries.libraries
-                    .firstOrNull {
-                        it.alias == ALIAS
-                    }?.primitives
-                    ?.get(SettingSwitch.SIGNATURE) as? SettingSwitch
-            )?.owner
+            (context.libraries.libraries.firstOrNull { it.alias == ALIAS } as? OwnedLibrary)?.owner as? Settings
     }
 }

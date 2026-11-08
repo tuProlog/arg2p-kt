@@ -19,6 +19,6 @@ object StageModule : PrologModule("prolog.argumentation.graph.labelling.stage", 
         %  Stage labellings are the naive ones with a minimal set of UND arguments
         argumentLabelling :-
             context_active(Branch),
-            admissible::minimalUndOf(naive, Branch).
+            labelling::minimalUndOf(naive, Branch).
         """.trimIndent()
 }

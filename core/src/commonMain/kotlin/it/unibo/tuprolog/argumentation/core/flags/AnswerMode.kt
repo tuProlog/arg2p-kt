@@ -1,13 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.flags
 
+import it.unibo.tuprolog.argumentation.AnswerMode as AnswerModeValue
+
 /**
  * How a query is answered for a semantics with several labellings: the statements labelled in each labelling, one answer
  * for each (enumerate), or across them all (credulous, skeptical; see the module statementAcceptance)
  */
-object AnswerMode : ArgsFlag<String, Iterable<String>> {
+object AnswerMode : ArgsFlag {
     override fun predicate(): String = "answerMode"
 
-    override fun default(): String = "enumerate"
+    override fun default(): String = AnswerModeValue.ENUMERATE.value
 
-    override fun values(): Iterable<String> = listOf("enumerate", "credulous", "skeptical")
+    override fun values(): Iterable<String> = AnswerModeValue.entries.map { it.value }
 }

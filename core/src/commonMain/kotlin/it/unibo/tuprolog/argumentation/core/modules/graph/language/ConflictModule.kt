@@ -18,7 +18,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
  * Prolog goal (or a term true or false) checked when the conflict is used.
  */
 object ConflictModule : PrologModule("prolog.argumentation.language.conflict", "conflict") {
-    override val baseFlags: Iterable<ArgsFlag<*, *>>
+    override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(ConflictModel)
 
     override val prologRawTheory: String =

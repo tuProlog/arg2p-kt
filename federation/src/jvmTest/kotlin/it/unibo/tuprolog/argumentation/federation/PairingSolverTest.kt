@@ -1,8 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
-import it.unibo.tuprolog.argumentation.federation.Federation
-import it.unibo.tuprolog.argumentation.federation.StaticContent
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import java.net.URI

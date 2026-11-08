@@ -13,7 +13,7 @@ import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.runtime.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.engine.words.locked
@@ -115,9 +115,6 @@ class Flags private constructor(
 
             override val baseContent: Library
                 get() = libraryOf(this@Flags.toString())
-
-            override val baseFlags: Iterable<ArgsFlag<*, *>>
-                get() = emptyList()
         }
 
     /** The facts stating the flags, as a theory */
@@ -137,17 +134,17 @@ class Flags private constructor(
         }
 
     private fun value(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         value: String,
     ) = values(flag, listOf(value))
 
     private fun values(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         values: List<String>,
     ) = apply { facts[flag.predicate()] = values.map { "${flag.predicate()}(${Value.Atom(it)})" } }
 
     private fun switch(
-        flag: ArgsFlag<*, *>,
+        flag: ArgsFlag,
         on: Boolean,
     ) = apply { facts[flag.predicate()] = listOf(if (on) flag.predicate() else "${flag.predicate()}(off)") }
 

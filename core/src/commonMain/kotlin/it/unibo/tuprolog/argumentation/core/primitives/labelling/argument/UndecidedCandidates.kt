@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.graph.idList
-import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.idList
+import it.unibo.tuprolog.argumentation.core.runtime.graph.idsArg
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.intArg
@@ -48,19 +48,12 @@ internal object UndecidedCandidates : AbstractNativePrimitive(Signature("undecid
         val outIds = call.labelledIds("out", branch)
         val graph = call.attackGraph()
 
-        fun possible(d: Int): Boolean {
-            if (d !in members || d !in undecided || d in excluded) return false
-            for (target in graph.attacked(d)) if (target == d || target in inIds) return false
-            for (attacker in graph.attackers(d)) if (attacker !in members && attacker in undecided) return false
-            return true
-        }
-
         var best: IntArray? = null
         for (u in scc) {
             if (u !in inIds) continue
             for (a in graph.attackers(u)) {
                 if (a in outIds) continue
-                val left = graph.attackers(a).filter { it != a && possible(it) }.distinct()
+                val left = graph.attackers(a).filter { it != a && graph.canBeForced(it, members, undecided, excluded, inIds) }.distinct()
                 if (best == null || left.size < best.size) {
                     best = left.toIntArray()
                     if (best.size <= 1) return best

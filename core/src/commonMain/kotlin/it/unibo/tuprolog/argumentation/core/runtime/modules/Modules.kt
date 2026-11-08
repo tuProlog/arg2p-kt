@@ -39,9 +39,6 @@ internal class Modules(
     private var sharedOf: Runtime? = null
     private var sharedRuntime: Runtime? = null
 
-    /** Forgets the modules loaded so far */
-    fun clear() = loaded.clear()
-
     private fun load(
         context: ExecutionContext,
         name: Atom,

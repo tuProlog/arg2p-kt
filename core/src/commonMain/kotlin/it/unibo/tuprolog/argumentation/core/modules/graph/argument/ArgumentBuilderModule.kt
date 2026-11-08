@@ -49,13 +49,6 @@ object ArgumentBuilderModule : PrologModule("prolog.argumentation.graph.argument
             parser::rule(RuleID, Body, RuleHead),
             \+ (member(X, Body), X \= ~(_), X \= prolog(_), X \= '{}'(_)).
 
-        %! buildArgumentsFromRules(+N, +Tn)
-        %  The rounds of the rules using the conclusions N (see buildArgumentsFromRules/3), for the solvers building the
-        %  arguments of a part of the rules (the workers of the parallel solver).
-        buildArgumentsFromRules(N, Tn) :-
-            mode(Mode),
-            buildArgumentsFromRules(N, Tn, Mode).
-
         % A round fires every rule whose body uses a conclusion derived in the previous round (N), reached through the
         % index of the parser rather than going through all the rules, in their order, tagging the new conclusions with
         % Tn: the rounds go on while they derive something

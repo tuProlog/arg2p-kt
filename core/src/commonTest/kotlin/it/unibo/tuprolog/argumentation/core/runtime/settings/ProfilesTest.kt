@@ -48,6 +48,7 @@ class ProfilesTest {
     @Test
     fun aspicPlusIsTheDefault() {
         assertEquals(Profiles.ASPIC_PLUS.name, GraphBuildMode.default())
+        assertEquals(Profiles.all.map { it.name }, GraphBuildMode.values())
         val module = ModuleTesting("")
         assertTrue(module.holds("setting(autoTransposition)"))
         assertEquals(listOf("standardPref", "rebutRestriction"), module.values("setting(graphExtension, X)", "X"))

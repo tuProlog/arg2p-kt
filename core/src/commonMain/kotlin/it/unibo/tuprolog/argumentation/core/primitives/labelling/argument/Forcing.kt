@@ -1,13 +1,28 @@
 package it.unibo.tuprolog.argumentation.core.primitives.labelling.argument
 
-import it.unibo.tuprolog.argumentation.core.primitives.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.primitives.graph.idsArg
-import it.unibo.tuprolog.argumentation.core.primitives.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.runtime.graph.AttackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.runtime.graph.idsArg
+import it.unibo.tuprolog.argumentation.core.runtime.graph.labelledIds
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.replyWord
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.solve.Signature
+
+/** Whether the UND argument [d] of the component [members] can still be forced IN: not excluded, not attacking an IN argument nor itself, attacked by no UND argument of another component */
+internal fun AttackGraph.canBeForced(
+    d: Int,
+    members: IdSet,
+    undecided: IdSet,
+    excluded: IdSet,
+    inIds: IdSet,
+): Boolean {
+    if (d !in members || d !in undecided || d in excluded) return false
+    for (target in attacked(d)) if (target == d || target in inIds) return false
+    for (attacker in attackers(d)) if (attacker !in members && attacker in undecided) return false
+    return true
+}
 
 /**
  * forcing(+Scc, +Excluded, -Next): in a state of the search of the component Scc (a grounded fixpoint), what the defence of
@@ -30,14 +45,6 @@ internal object Forcing : AbstractNativePrimitive(Signature("forcing", 3)) {
         val undIds = call.labelledIds("und")
         val graph = call.attackGraph()
 
-        // whether an UND argument of Scc can still be forced IN
-        fun possible(d: Int): Boolean {
-            if (d !in members || d !in undIds || d in excludedIds) return false
-            for (target in graph.attacked(d)) if (target == d || target in inIds) return false
-            for (attacker in graph.attackers(d)) if (attacker !in members && attacker in undIds) return false
-            return true
-        }
-
         var forced = -1
         for (u in scc) {
             if (u !in inIds) continue
@@ -46,7 +53,7 @@ internal object Forcing : AbstractNativePrimitive(Signature("forcing", 3)) {
                 var defender = -1
                 var count = 0
                 for (d in graph.attackers(a)) {
-                    if (d == a || !possible(d)) continue
+                    if (d == a || !graph.canBeForced(d, members, undIds, excludedIds, inIds)) continue
                     if (count == 0 || d != defender) count++
                     defender = d
                     if (count > 1) break

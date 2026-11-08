@@ -18,6 +18,6 @@ object IdealModule : PrologModule("prolog.argumentation.graph.labelling.ideal", 
         %  The ideal labelling has IN the maximal admissible subset of the intersection of the preferred extensions
         argumentLabelling :-
             context_active(Branch),
-            admissible::maximalAdmissibleCommonOf(preferred, Branch).
+            labelling::maximalAdmissibleCommonOf(preferred, Branch).
         """.trimIndent()
 }

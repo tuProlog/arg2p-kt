@@ -19,7 +19,7 @@ class PipelineStepsTest {
     fun theGraphExtensionsAreTheStepsAFlagNames() {
         assertEquals(
             (steps - "conflictArguments" - "constraints").toSet(),
-            (GraphExtension.values() as Iterable<*>).map { it.toString() }.toSet(),
+            GraphExtension.values().toSet(),
         )
     }
 

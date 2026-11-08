@@ -109,7 +109,8 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 
 One per value of `argumentLabellingMode` (`grounded`, `complete`, `preferred`, `stable`, `bp_grounded`, …) and
 one per value of `statementLabellingMode`. They all expose the same entry point, `argumentLabelling/0` or
-`statementLabelling/0` respectively, which is what makes them interchangeable:
+`statementLabelling/0` respectively, which is what makes them interchangeable (`labelling` and `scc` hold what the
+semantics share, and are no semantics themselves):
 
 ```prolog
 ?- grounded::argumentLabelling.

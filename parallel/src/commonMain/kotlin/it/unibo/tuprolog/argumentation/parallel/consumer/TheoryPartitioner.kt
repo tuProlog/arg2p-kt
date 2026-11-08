@@ -160,7 +160,7 @@ object TheoryPartitioner {
     )
 
     private fun rules(solver: Solver): List<Rule> {
-        val strictness = "(parser::checkStrict(Id) -> S = strict ; S = defeasible)"
+        val strictness = "parser::strictness(Id, S)"
         // (the positions of the premises argued: findall would copy them, their variables no longer the conclusion's)
         val argued = "findall(I, (append(Before, [A|_], P), parser::argued(A), length(Before, I)), Argued)"
         val rules =

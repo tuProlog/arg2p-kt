@@ -15,21 +15,19 @@ object RebutRestrictionModule : PrologModule("prolog.argumentation.graph.rebutre
         modifyArgumentationGraph :-
             findall(a(T, IdA, IdC), (
                 graphStore::attackById(T, IdA, IdC, IdC),
-                graphStore::argumentById(IdA, A),
                 graphStore::argumentById(IdC, C),
-                \+ rebutRestriction(T, A, C, C)
+                \+ rebutRestriction(T, C)
             ), Restricted),
             graphStore::removeAttackIds(Restricted).
 
         % The attack types the restriction does not apply to. Everything else is restricted: rebuts, and the attacks
         % of a graph extension of the user.
-        rebutRestriction(undermine, _, _, _).
-        rebutRestriction(contrary_rebut, _, _, _).
-        rebutRestriction(contrary_undermine, _, _, _).
-        rebutRestriction(undercut, _, _, _).
+        rebutRestriction(undermine, _).
+        rebutRestriction(contrary_rebut, _).
+        rebutRestriction(contrary_undermine, _).
+        rebutRestriction(undercut, _).
         % the top rule of the argument is its last defeasible rule (see attackRelation::defeasibleTopRule/2)
-        rebutRestriction(_, _, _, C) :-
-            attackRelation::defeasibleTopRule(C, Rule),
-            Rule \== none.
+        rebutRestriction(_, C) :-
+            attackRelation::defeasibleTopRule(C, _).
         """.trimIndent()
 }

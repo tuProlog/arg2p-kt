@@ -1,15 +1,15 @@
 package it.unibo.tuprolog.argumentation.core.flags
 
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles
+import it.unibo.tuprolog.argumentation.Profile
 
 /**
- * The framework a theory is read in, its profile (see [Profiles]): a shortcut for the values of the flags the profile
+ * The framework a theory is read in, its profile (see the object Profiles): a shortcut for the values of the flags the profile
  * presets. ASPIC+ by default; in the profile free no flag is preset.
  */
-object GraphBuildMode : ArgsFlag<String, Iterable<String>> {
+object GraphBuildMode : ArgsFlag {
     override fun predicate(): String = "graphBuildMode"
 
-    override fun default(): String = Profiles.default.name
+    override fun default(): String = Profile.ASPIC_PLUS.value
 
-    override fun values(): Iterable<String> = Profiles.all.map { it.name }
+    override fun values(): Iterable<String> = Profile.entries.map { it.value }
 }
