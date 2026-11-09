@@ -117,19 +117,8 @@ object QueryExplorationModule : PrologModule("prolog.argumentation.structured.ex
         exploreStatement(_, _).
 
         % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
-        % it): those of its possible attackers, and, for an argument for a conflict when the conflicts are argued (see
-        % conflict::argued/0), the two sides it puts in conflict: the one exploring it explores them, whoever the
-        % arguments they may attack belong to. The steps changing the graph relate it to others in turn (see extend/1).
+        % it): those of its possible attackers. The steps changing the graph relate it to others in turn (see extend/1).
         dependency(Id, Argument, S) :- attackCandidates::possibleAttackers(Id, Argument, [S]).
-        dependency(_, Argument, S) :-
-            conflict::argued,
-            argument::claim(Argument, Claim),
-            conflictSide(Claim, S).
-
-        conflictSide(conflict(A, _), A).
-        conflictSide(conflict(_, B), B).
-        conflictSide(conflict(A, _, _), A).
-        conflictSide(conflict(_, B, _), B).
 
         %! expand(+Locality)
         %  For the connected locality, the arguments whose labels may depend on the ones built (see dependant/2), with

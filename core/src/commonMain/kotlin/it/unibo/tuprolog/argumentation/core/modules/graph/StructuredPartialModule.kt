@@ -51,7 +51,7 @@ object StructuredPartialModule : PrologModule("prolog.argumentation.structured.p
         % build, until none has more (see graphStore::graph_explore/2); nothing for a solver alone. The statements they
         % explored are explored here too, with the rules here, and those whose rules use the conclusions of the arguments
         % they built again (see queryExploration::resume/1): what an argument makes worth exploring is explored by its
-        % builder (see queryExploration::dependency/3)
+        % builder (see queryExploration::dependency/3 and queryExploration::extend/1)
         sharedExploration(Locality) :-
             graphStore::graph_explore(Statements, Claims), !,
             queryExploration::exploreAll(Statements),

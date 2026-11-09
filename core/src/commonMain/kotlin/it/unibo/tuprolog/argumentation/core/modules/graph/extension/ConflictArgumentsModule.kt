@@ -58,7 +58,8 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
 
         %! queryDependencies(+Argument, -Statement)
         %  The conflicts are themselves conclusions: Argument depends on the arguments for Statement, which make others
-        %  conflict with it.
+        %  conflict with it, and, for an argument for a conflict, on those for the two sides it puts in conflict, whatever
+        %  the locality: the copies of those arguments are what it makes attack.
         queryDependencies(Argument, Statement) :-
             argument::conclusion(Argument, Conclusion),
             conflict::statement(_, Conclusion, Statement).
@@ -66,16 +67,15 @@ object ConflictArgumentsModule : PrologModule("prolog.argumentation.graph.confli
             argument::topRule(Argument, Rule),
             Rule \== none,
             conflict::statement(_, [Rule], Statement).
-
-        %! queryDependants(+Argument, -Statement)
-        %  The arguments for Statement depend on Argument: those its conclusion makes conflict with others, and, for an
-        %  argument for a conflict, those it makes conflict.
-        queryDependants(Argument, Statement) :-
-            argument::conclusion(Argument, Conclusion),
-            conflict::statement(Conclusion, _, Statement).
-        queryDependants(Argument, Statement) :-
+        queryDependencies(Argument, Statement) :-
             argument::claim(Argument, Conflict),
             conflict::statement([A], [B], Conflict),
             (Statement = A ; Statement = B).
+
+        %! queryDependants(+Argument, -Statement)
+        %  The arguments for Statement depend on Argument: those its conclusion makes conflict with others.
+        queryDependants(Argument, Statement) :-
+            argument::conclusion(Argument, Conclusion),
+            conflict::statement(Conclusion, _, Statement).
         """.trimIndent()
 }

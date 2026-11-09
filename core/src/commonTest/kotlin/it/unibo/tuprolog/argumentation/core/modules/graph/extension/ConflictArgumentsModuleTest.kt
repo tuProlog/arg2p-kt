@@ -44,4 +44,22 @@ class ConflictArgumentsModuleTest {
             ),
         )
     }
+
+    // The exploration of the base graph knows nothing of argued conflicts: this step declares what they relate
+    private fun theStepExploresTheSidesOf(conflict: String) {
+        val module = ModuleTesting.parsed("metaConflicts.\nqueryMode.\nr0 : [] => $conflict.\nf1 :=> a.\nf2 :=> b.")
+        module.run("queryExploration::explore($conflict)")
+        assertTrue(module.holds("graphStore::argumentFor([$conflict], _)"))
+        assertFalse(module.holds("graphStore::argumentFor([a], _)"))
+        assertFalse(module.holds("graphStore::argumentFor([b], _)"))
+        module.run("queryExploration::extend(directional)")
+        assertTrue(module.holds("graphStore::argumentFor([a], _)"))
+        assertTrue(module.holds("graphStore::argumentFor([b], _)"))
+    }
+
+    @Test
+    fun theSidesOfAConflictAreExploredByTheStep() = theStepExploresTheSidesOf("conflict(a, b)")
+
+    @Test
+    fun theSidesOfAGuardedConflictAreExploredByTheStep() = theStepExploresTheSidesOf("conflict(a, b, 1 < 2)")
 }
