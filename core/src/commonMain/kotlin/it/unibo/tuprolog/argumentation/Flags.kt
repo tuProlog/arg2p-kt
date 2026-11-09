@@ -2,18 +2,18 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
-import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
-import it.unibo.tuprolog.argumentation.core.flags.AutoTransposition
-import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
-import it.unibo.tuprolog.argumentation.core.flags.MetaConflicts
-import it.unibo.tuprolog.argumentation.core.flags.MetaRules
-import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
-import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
-import it.unibo.tuprolog.argumentation.core.flags.QueryMode
-import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.ArgsFlag
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.statementAcceptance.flags.QueryMode
+import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.flags.GraphBuildMode
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.conflict.flags.MetaConflicts
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.flags.MetaRules
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.flags.PrologStrictCompatibility
+import it.unibo.tuprolog.argumentation.core.libraries.language.transposition.flags.AutoTransposition
+import it.unibo.tuprolog.argumentation.core.libraries.support.moduleCalls.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.engine.words.locked
@@ -24,13 +24,13 @@ import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic
 import kotlin.jvm.JvmStatic
-import it.unibo.tuprolog.argumentation.core.flags.AnswerMode as AnswerModeFlag
-import it.unibo.tuprolog.argumentation.core.flags.ConflictModel as ConflictModelFlag
-import it.unibo.tuprolog.argumentation.core.flags.GraphBuilder as GraphBuilderFlag
-import it.unibo.tuprolog.argumentation.core.flags.GraphExtension as GraphExtensionFlag
-import it.unibo.tuprolog.argumentation.core.flags.GraphLanguage as GraphLanguageFlag
-import it.unibo.tuprolog.argumentation.core.flags.OrderingComparator as OrderingComparatorFlag
-import it.unibo.tuprolog.argumentation.core.flags.OrderingPrinciple as OrderingPrincipleFlag
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.GraphBuilder as GraphBuilderFlag
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.GraphExtension as GraphExtensionFlag
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.statementAcceptance.flags.AnswerMode as AnswerModeFlag
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.conflict.flags.ConflictModel as ConflictModelFlag
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.superiority.flags.OrderingComparator as OrderingComparatorFlag
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.superiority.flags.OrderingPrinciple as OrderingPrincipleFlag
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.flags.GraphLanguage as GraphLanguageFlag
 
 /**
  * The flags of a solver (see the flags reference of arg2p), as the facts stating them: those set here (a switch

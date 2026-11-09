@@ -2,21 +2,20 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
+import it.unibo.tuprolog.argumentation.causality.CausalityLibrary
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.LABELLINGS
-import it.unibo.tuprolog.argumentation.core.checked
-import it.unibo.tuprolog.argumentation.core.goalOf
-import it.unibo.tuprolog.argumentation.core.graphsOf
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.graphsOf
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.goalOf
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.termOf
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.compactGraph
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
-import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
-import it.unibo.tuprolog.argumentation.core.model.mining.compactGraph
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.notation.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.termOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -61,7 +60,7 @@ class Arg2p private constructor(
     /**
      * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling with
      * answerMode(enumerate) (the default; one with a semantics of one labelling, as grounded), the one across them all
-     * with answerMode(credulous) or answerMode(skeptical), none for no labelling (see `answerQuery/4`)
+     * with answerMode(credulous) or answerMode(skeptical), none for no labelling (see `solve/4`)
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */
@@ -212,7 +211,7 @@ class Arg2p private constructor(
         /** The solver: an [Arg2pException] telling where the theory does not parse otherwise */
         fun build(): Arg2p {
             // the causality module of its own for each solver: it keeps the graphs it computes
-            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityModule()))
+            val arg2p = Arg2pSolver.default(listOf(flags.library()), listOf(CausalityLibrary()))
             return Arg2p(
                 SyntaxProblem.parsing("Theory") {
                     Arg2pSolverFactory.solverOf(

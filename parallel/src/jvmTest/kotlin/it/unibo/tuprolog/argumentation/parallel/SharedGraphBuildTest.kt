@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.graph.GraphSharing
-import it.unibo.tuprolog.argumentation.core.notation.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.consumer.TheoryPartitioner
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
  */
 class SharedGraphBuildTest {
     private var flags = Flags.defaults().queryMode(false)
-    private val labelling = "context_reset, parser:::convertAllRules, structuredWhole::computeStatementLabels(In, Out, Und)"
+    private val labelling = "context_reset, structuredWhole::computeStatementLabels(In, Out, Und)"
 
     private fun solverOf(theory: String): MutableSolver =
         Arg2pSolverFactory.solverOf(Arg2pSolver.default(listOf(flags.library())), "").also {
@@ -82,7 +82,7 @@ class SharedGraphBuildTest {
                     try {
                         labels(
                             worker,
-                            "context_reset, parser:::convertAllRules, structuredWhole::buildGraph, pipeline::modifyGraph, In = [], Out = [], Und = []",
+                            "context_reset, structuredWhole::buildGraph, phases::modifyGraph, In = [], Out = [], Und = []",
                         )
                     } catch (failure: Throwable) {
                         synchronized(failures) { failures += failure }

@@ -40,7 +40,7 @@ class VmSolverArgumentationTest {
             r3 : a => b.
             sup(r1, r2).
             """.trimIndent()
-        same(theory, "buildLabelSets(In, Out, Und)", listOf("In = [[b], [a]], Out = [['-'(a)]], Und = []"))
-        same(theory, "answerQuery(b, In, Out, Und)", listOf("In = [b], Out = [], Und = []"))
+        same(theory, "solve(In, Out, Und)", listOf("In = [[b], [a]], Out = [['-'(a)]], Und = []"))
+        same(theory, "solve(b, In, Out, Und)", listOf("In = [b], Out = [], Und = []"))
     }
 }

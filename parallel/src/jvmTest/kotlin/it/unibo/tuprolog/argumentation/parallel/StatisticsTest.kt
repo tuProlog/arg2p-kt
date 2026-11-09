@@ -32,7 +32,7 @@ class StatisticsTest {
         parallel.solve("d")
         assertEquals(0, parallel.evaluation!!.added)
         // the whole graph, for a goal asking for it
-        parallel.goals.solve("buildLabelSets(In, Out, Und)").next()
+        parallel.goals.solve("solve(In, Out, Und)").next()
         assertEquals("whole_graph", parallel.evaluation!!.locality)
         assertEquals(5, parallel.evaluation!!.added)
         // a goal using no graph leaves them as they are
@@ -48,7 +48,7 @@ class StatisticsTest {
         parallel.load(theory)
         parallel.solve("b")
         parallel.load("graphBuildMode(abstract).\na <-> b.\nb -> c.\n")
-        parallel.goals.solve("buildLabelSets(In, Out, Und)").next()
+        parallel.goals.solve("solve(In, Out, Und)").next()
         val evaluation = parallel.evaluation!!
         assertEquals("alone", evaluation.locality)
         assertEquals(3, evaluation.arguments)

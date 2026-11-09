@@ -62,7 +62,7 @@ def test_a_semantics_with_several_labellings_gives_a_graph_for_each():
 
 def test_the_graph_of_the_last_resolution():
     arg2p = Arg2p.of(CONFLICT)
-    assert arg2p.solve("buildLabelSets").next().is_yes
+    assert arg2p.solve("solve").next().is_yes
     assert arg2p.graph() == arg2p.graph_at(arg2p.active_branch)
     assert len(arg2p.graph().arguments) == 2
     assert arg2p.context_facts(arg2p.active_branch, "statIn(S)").next().is_yes
@@ -122,7 +122,7 @@ def test_texts_that_do_not_parse_tell_where():
     assert problem.length == 1
     assert Arg2p.check_theory("a :=> b.\nc :=> d(.") == problem
     assert Arg2p.check_theory("graphBuildMode(abstract).\na <-> b.") is None
-    assert Arg2p.check_query("buildLabelSets(In, Out, Und)") is None
+    assert Arg2p.check_query("solve(In, Out, Und)") is None
     assert Arg2p.check_query("flies(").line == 1
 
 
@@ -310,7 +310,7 @@ def _recording(html):
 
 
 def test_the_recorded_page_of_a_run():
-    html = page(TWEETY, "buildLabelSets(In, Out, Und)", Flags.parse("argumentLabellingMode(grounded)."))
+    html = page(TWEETY, "solve(In, Out, Und)", Flags.parse("argumentLabellingMode(grounded)."))
     recording = _recording(html)
     assert recording["theory"] == TWEETY
     assert recording["solve"][-1]["type"] == "started"
@@ -318,7 +318,7 @@ def test_the_recorded_page_of_a_run():
     labels = {it["conclusion"]: it["label"] for it in solution["graph"]["arguments"]}
     assert labels["-flies(tweety)"] == "in" and labels["flies(tweety)"] == "out"
     assert recording["settings"]["argumentLabellingMode"] == ["grounded"]
-    assert "<title>Arg2P · buildLabelSets(In, Out, Und)</title>" in html
+    assert "<title>Arg2P · solve(In, Out, Und)</title>" in html
     # a theory that does not parse is recorded as such
     assert _recording(page("f1 :=> bird(tweety"))["solve"][-1]["type"] == "failed"
 

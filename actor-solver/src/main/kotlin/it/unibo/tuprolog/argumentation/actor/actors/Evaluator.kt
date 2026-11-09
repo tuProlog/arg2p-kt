@@ -9,7 +9,7 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.actor.libs.ActorGraph
+import it.unibo.tuprolog.argumentation.actor.libraries.actorGraph.ActorGraph
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.AttackerResponse
 import it.unibo.tuprolog.argumentation.actor.message.Eval
@@ -42,7 +42,7 @@ internal class Evaluator private constructor(
         newReceiveBuilder()
             .onMessage(Add::class.java) { command ->
                 solver.assertA(Struct.parse(command.elem, solver.operators))
-                arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+                arg2pScope { solver.solve(atomOf("context_reset")).first() }
                 this
             }.onMessage(Eval::class.java) { command ->
                 val result =

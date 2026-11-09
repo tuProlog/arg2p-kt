@@ -58,10 +58,10 @@ class CentralisedEquivalenceTest {
                         val solution =
                             solver
                                 .solve(
-                                    "buildLabelSetsSilent" and
+                                    "solve" and
                                         "findall"(
                                             "x",
-                                            ("graphStore" call "argumentLabel"(label, A)) and ("argument" call "claim"(A, claim)),
+                                            ("store" call "argumentLabel"(label, A)) and ("store" call "claim"(A, claim)),
                                             L,
                                         ) and "length"(L, N),
                                 ).first()

@@ -99,8 +99,7 @@ class BurdenOfPersuasionLabellingTest {
     fun labelGroundedArguments() {
         groundedGraph().also { graph ->
             arg2pScope {
-                TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf("-a")))).first()
+                TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
                     it.solve("grounded" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -113,8 +112,7 @@ class BurdenOfPersuasionLabellingTest {
     fun labelBpGroundedArguments() {
         groundedBpGraph().also { graph ->
             arg2pScope {
-                TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
+                TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -127,8 +125,7 @@ class BurdenOfPersuasionLabellingTest {
     fun labelBpGroundedPartialArguments() {
         groundedBpPartialGraph().also { graph ->
             arg2pScope {
-                TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
+                TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded_partial" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -141,8 +138,7 @@ class BurdenOfPersuasionLabellingTest {
     fun labelBpGroundedCompleteArguments() {
         groundedBpCompleteGraph().also { graph ->
             arg2pScope {
-                TestingUtils.solver().also {
-                    it.solve("context_assert"("abstractBp"(listOf("-"("a"))))).first()
+                TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
                     it.solve("bp_grounded_complete" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
@@ -154,7 +150,7 @@ class BurdenOfPersuasionLabellingTest {
     // (b.ii.1): with no burden on a, its argument is OUT as an argument for -a superior to it is IN
     @Test
     fun labelBpGroundedPartialOutBySuperiorComplement() {
-        TestingUtils.buildLabelSets(
+        TestingUtils.theoryLabels(
             """
             r1 : [] => a.
             r2 : [] => -a.

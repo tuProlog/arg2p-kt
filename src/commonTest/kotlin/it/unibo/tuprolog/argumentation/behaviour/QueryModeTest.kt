@@ -49,7 +49,7 @@ class QueryModeTest {
         theory: String,
         queries: List<String>,
     ): Map<String, Set<Answer>> {
-        val labellings = solve(theory, "buildLabelSets(In, Out, Und)")
+        val labellings = solve(theory, "solve(In, Out, Und)")
         return queries.associateWith { query ->
             val goal = Value.parse(query)
 
@@ -67,7 +67,7 @@ class QueryModeTest {
         theory: String,
         query: String,
     ): Set<Answer> =
-        solve("$theory\nqueryMode.", "answerQuery($query, In, Out, Und)")
+        solve("$theory\nqueryMode.", "solve($query, In, Out, Und)")
             .map { answer -> Answer(answer.labelled("In"), answer.labelled("Out"), answer.labelled("Und")) }
             .toSet()
 

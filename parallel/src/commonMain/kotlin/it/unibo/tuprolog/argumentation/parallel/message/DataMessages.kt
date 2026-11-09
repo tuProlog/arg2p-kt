@@ -63,7 +63,7 @@ internal data class RequireEvaluation(
 ) : KbMessage
 
 /**
- * To a client: the statements answering the statement it asked about, by label, as answerQuery/4 labels them, each with
+ * To a client: the statements answering the statement it asked about, by label, as solve/4 labels them, each with
  * the arguments for it, or the [error] that kept it from an answer
  */
 @JsExport
@@ -96,7 +96,7 @@ internal data class RequireSolution(
     val replyTo: String,
 ) : KbMessage
 
-/** To the solver: the statements for [query], as Prolog text, by label (see answerQuery/4), to send to the client [replyTo] */
+/** To the solver: the statements for [query], as Prolog text, by label (see solve/4), to send to the client [replyTo] */
 internal data class RequireAnswer(
     val query: String,
     val replyTo: String,

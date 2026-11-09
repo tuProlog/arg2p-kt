@@ -21,7 +21,7 @@ class UnboundVariablesAttacksTest {
         query: String? = null,
     ): Map<String, Set<String>> =
         solver(groundedTheory + theory + (if (query != null) "\nqueryMode." else "")).let { solver ->
-            solver.solve(if (query != null) "answerQuery($query)" else "buildLabelSets").next()
+            solver.solve(if (query != null) "solve($query)" else "solve").next()
             solver
                 .graph()
                 .labellings

@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.actor
 
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
-import it.unibo.tuprolog.argumentation.actor.libs.ActorSolver
+import it.unibo.tuprolog.argumentation.actor.libraries.actorSolver.ActorSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import kotlin.jvm.JvmOverloads
 import kotlin.time.Duration

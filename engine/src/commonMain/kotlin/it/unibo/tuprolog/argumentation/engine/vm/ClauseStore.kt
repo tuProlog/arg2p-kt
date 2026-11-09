@@ -66,6 +66,12 @@ class ClauseStore private constructor(
     /** Whether no clause is stored */
     fun isEmpty(): Boolean = data.isEmpty()
 
+    /** No clause any more */
+    fun clear() {
+        data = Data(declared)
+        shared = false
+    }
+
     /** The records re-encoded in the words of [program] (the machine's): kept as they are if they are its words already */
     fun bind(program: Program) {
         if (encoding === program) return

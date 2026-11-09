@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.parallel.consumer
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.graph.GraphSharing
-import it.unibo.tuprolog.argumentation.core.notation.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.host.HostCodec

@@ -21,8 +21,16 @@ class GrowOnlyTable<T> {
         return size++
     }
 
+    /** The items of [other] added, in their order: the table grown once (a table is copied for each solver), with room left */
     fun addAll(other: GrowOnlyTable<T>) {
-        for (i in 0 until other.size) add(other[i])
+        val needed = size + other.size
+        if (needed > items.size) {
+            var capacity = items.size
+            while (capacity < needed + (needed shr 2)) capacity *= 2
+            items = items.copyOf(capacity)
+        }
+        other.items.copyInto(items, size, 0, other.size)
+        size = needed
     }
 }
 

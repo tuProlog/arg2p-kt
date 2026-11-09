@@ -23,7 +23,7 @@ class ArgumentationGraphTest {
                 r2 : [] => -a.
                 r3 : [] => -c.
             """,
-        ).also { arg2pScope { it.solve("context_reset" and ("parser" call "convertAllRules")).first() } }
+        ).also { arg2pScope { it.solve("context_reset" and ("parser" call "rulesRead")).first() } }
 
     private fun prepareGraph(): Graph {
         val arg1 =

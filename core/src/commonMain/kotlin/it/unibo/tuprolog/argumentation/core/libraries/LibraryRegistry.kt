@@ -1,0 +1,170 @@
+package it.unibo.tuprolog.argumentation.core.libraries
+
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.Arg2pInterfaceLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.abstract.AbstractFrameworkLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.PhasesLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.statementAcceptance.StatementAcceptanceLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.structuredPartial.StructuredPartialLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.structuredWhole.StructuredWholeLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.abstractGraph.AbstractFrameworkGraphLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.argument.argumentBuilder.ArgumentBuilderLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.argument.argumentSearch.ArgumentSearchLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackBuilder.AttackBuilderLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackCandidates.AttackCandidatesLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackRelation.AttackRelationLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.conflict.ConflictLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.bp.BpLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.conflictArguments.ConflictArgumentsLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.ConstraintsLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.abaPref.AbaPrefLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.defeasibleAllPref.DefeasibleAllPrefLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.defeasiblePref.DefeasiblePrefLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.standardPref.StandardPrefLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.superiority.SuperiorityLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.rebutRestriction.RebutRestrictionLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.queryExploration.QueryExplorationLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.ruleGraph.RuleGraphLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.admissible.AdmissibleLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.bp.bpGrounded.BpGroundedLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.bp.bpGroundedComplete.BpGroundedCompleteLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.bp.bpGroundedPartial.BpGroundedPartialLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.cf2.Cf2Library
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.complete.CompleteLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.conflictFree.ConflictFreeLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.eager.EagerLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.grounded.GroundedLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.ideal.IdealLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.labelSets.LabelSetsLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.naive.NaiveLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.preferred.PreferredLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.scc.SccLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.semistable.SemistableLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stable.StableLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stage.StageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stage2.Stage2Library
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stronglyAdmissible.StronglyAdmissibleLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.statement.statement.StatementLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.statement.statementBinary.StatementBinaryLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.statement.statementPassThrough.StatementPassThroughLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.abaLanguage.AbaLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.abstractLanguage.AbstractFrameworkLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.aspicLanguage.AspicLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.defeasibleLanguage.DefeasibleLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.naturalTerms.NaturalTermsLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.ParserLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.PlainPrologLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.temporal.TemporalLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.transposition.TranspositionLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.store.StoreLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.support.graphPrinter.GraphPrinterLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.support.moduleCalls.ModuleCallsLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.support.utils.UtilsLibrary
+
+/** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
+object LibraryRegistry {
+    /**
+     * What is read of a theory: its rules, as its languages write them, and how the graph builders read them. In the order the libraries reading
+     * a theory contribute (see parser::extension/1): what is written first, transposition building on the strict rules
+     */
+    val language: List<Loadable> =
+        listOf(
+            ParserLibrary,
+            PlainPrologLibrary,
+            NaturalTermsLibrary,
+            TranspositionLibrary,
+            TemporalLibrary,
+            AspicLanguageLibrary,
+            AbaLanguageLibrary,
+            DefeasibleLanguageLibrary,
+            AbstractFrameworkLanguageLibrary,
+        )
+
+    /** Where the argumentation graph and its labels are kept, read and changed by all the others, and the terms of the graph */
+    val store: List<Loadable> = listOf(StoreLibrary)
+
+    /**
+     * Building the argumentation graph: from the rules of a theory (its arguments, forward or from a query, the conflicts
+     * between statements and the attacks), or from the arguments and attacks it states
+     */
+    val graph: List<Loadable> =
+        listOf(
+            RuleGraphLibrary,
+            QueryExplorationLibrary,
+            ArgumentBuilderLibrary,
+            ArgumentSearchLibrary,
+            ConflictLibrary,
+            AttackBuilderLibrary,
+            AttackRelationLibrary,
+            AttackCandidatesLibrary,
+            AbstractFrameworkGraphLibrary,
+        )
+
+    /** Changing the argumentation graph: the graph extensions, the preferences among them */
+    val extensions: List<Loadable> =
+        listOf(
+            ConflictArgumentsLibrary,
+            RebutRestrictionLibrary,
+            BpLibrary,
+            ConstraintsLibrary,
+            SuperiorityLibrary,
+            StandardPrefLibrary,
+            DefeasiblePrefLibrary,
+            DefeasibleAllPrefLibrary,
+            AbaPrefLibrary,
+        )
+
+    /**
+     * Evaluating a theory: the phases each evaluation goes through, on the whole graph, on the part a query depends on,
+     * or on an abstract framework given as lists, and the acceptance of a statement
+     */
+    val evaluation: List<Loadable> =
+        listOf(
+            PhasesLibrary,
+            StructuredWholeLibrary,
+            StructuredPartialLibrary,
+            StatementAcceptanceLibrary,
+            AbstractFrameworkLibrary,
+        )
+
+    /** The semantics labelling the arguments, what they share, and the statements from them */
+    val labellings: List<Loadable> =
+        listOf(
+            LabelSetsLibrary,
+            GroundedLibrary,
+            CompleteLibrary,
+            PreferredLibrary,
+            SemistableLibrary,
+            StableLibrary,
+            IdealLibrary,
+            EagerLibrary,
+            NaiveLibrary,
+            StageLibrary,
+            Cf2Library,
+            Stage2Library,
+            ConflictFreeLibrary,
+            AdmissibleLibrary,
+            StronglyAdmissibleLibrary,
+            SccLibrary,
+            BpGroundedLibrary,
+            BpGroundedPartialLibrary,
+            BpGroundedCompleteLibrary,
+            StatementLibrary,
+            StatementPassThroughLibrary,
+            StatementBinaryLibrary,
+        )
+
+    /** The entry points, and what they rely on */
+    val support: List<Loadable> = listOf(Arg2pInterfaceLibrary, UtilsLibrary, GraphPrinterLibrary, ModuleCallsLibrary)
+
+    /** All the modules, each with an identifier of its own: a module is loaded by its identifier */
+    val all: List<Loadable> by lazy {
+        (support + store + language + graph + extensions + evaluation + labellings).also { modules ->
+            val repeated =
+                modules
+                    .groupBy { it.identifier() }
+                    .filterValues { it.size > 1 }
+                    .keys
+            require(repeated.isEmpty()) { "Modules with the same identifier: $repeated" }
+        }
+    }
+}

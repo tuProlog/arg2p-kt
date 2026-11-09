@@ -2,7 +2,7 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlin.js.JsStatic

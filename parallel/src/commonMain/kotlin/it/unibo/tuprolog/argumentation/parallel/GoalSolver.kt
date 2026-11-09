@@ -5,8 +5,8 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Solutions
-import it.unibo.tuprolog.argumentation.core.LABELLINGS
-import it.unibo.tuprolog.argumentation.core.graphsOf
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.graphsOf
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
@@ -17,7 +17,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
  * A parallel solver as a solver of arg2p, as `Arg2p` is one, on the theory and the flags of the parallel solver: any goal solved as the
- * standard solver solves it (buildLabelSets/3, answerQuery/4, the Prolog predicates of the theory, ...), one solution
+ * standard solver solves it (solve/3, solve/4, the Prolog predicates of the theory, ...), one solution
  * at a time, with the graph of each, and the answers of queries. The graph a goal needs is built by the solver of the
  * parallel solver with consumers on its threads and on the sites it is federated with (the whole graph, or, in query mode, the
  * part the statement it evaluates depends on, built for each), and labelled by the client solver; the stages
@@ -46,7 +46,7 @@ class GoalSolver internal constructor(
 
     /**
      * The statements for [query], Prolog text, labelled in, out and und, as Arg2p.answer gives them: one answer for each
-     * labelling, or the one across them all (see answerQuery/4 and the flag answerMode)
+     * labelling, or the one across them all (see solve/4 and the flag answerMode)
      *
      * @throws Arg2pException if the evaluation halts (a theory its profile refuses, a query that cannot be parsed)
      */

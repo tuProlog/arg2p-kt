@@ -2,7 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.model.terms.AttackTerm
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.AttackTerm
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term

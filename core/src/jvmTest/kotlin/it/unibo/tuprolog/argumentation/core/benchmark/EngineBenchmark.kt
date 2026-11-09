@@ -59,13 +59,13 @@ class EngineBenchmark {
             "resolution-attackers" to
                 Workload(
                     "r0 : p0(X) => p1(X).\nf1 :=> p0(c1).$config",
-                    "context_reset, parser:::convertAllRules(_)",
+                    "context_reset, parser::rulesRead",
                     "findall(C, (between(1, 2000, _), attackCandidates::findPossibleAttackers($argument, C)), _)",
                 ),
-            "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "buildLabelSets(_, _, _)"),
-            "graph-conflicts" to Workload(theories.getValue("conflicts")(100) + config, null, "buildLabelSets(_, _, _)"),
-            "graph-strict" to Workload(theories.getValue("strict")(100) + config, null, "buildLabelSets(_, _, _)"),
-            "query-chain" to Workload(theories.getValue("chain")(40) + config + "\nqueryMode.", null, "answerQuery(p8(X), _, _, _)"),
+            "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "solve(_, _, _)"),
+            "graph-conflicts" to Workload(theories.getValue("conflicts")(100) + config, null, "solve(_, _, _)"),
+            "graph-strict" to Workload(theories.getValue("strict")(100) + config, null, "solve(_, _, _)"),
+            "query-chain" to Workload(theories.getValue("chain")(40) + config + "\nqueryMode.", null, "solve(p8(X), _, _, _)"),
             "preferred-pairs" to abstractFramework("preferred", families.getValue("pairs")(16), 16),
             "complete-pairChain" to abstractFramework("complete", families.getValue("pairChain")(12), 12),
         )

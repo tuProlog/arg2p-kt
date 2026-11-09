@@ -71,8 +71,8 @@ def test_a_solver_is_a_solver_of_arg2p():
     with ThreadedSolver(threads=2) as parallel:
         parallel.load(THEORY)
         solver = parallel.goals
-        expected = arg2p.solve("buildLabelSets(In, Out, Und)").next()
-        solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+        expected = arg2p.solve("solve(In, Out, Und)").next()
+        solution = solver.solve("solve(In, Out, Und)").next()
         assert [expected.text(it) for it in ("In", "Out", "Und")] == [solution.text(it) for it in ("In", "Out", "Und")]
         assert sorted(it.label for it in arg2p.graph().labellings) == sorted(it.label for it in solver.graph().labellings)
         assert solver.answer("b") == arg2p.answer("b")
@@ -95,8 +95,8 @@ def test_the_flags_of_a_solver_change():
     flags = Flags.defaults().argument_labelling_mode(Semantics.COMPLETE).query_mode(False)
     parallel.flags = flags
     assert "queryMode(off)." in str(parallel.flags.jvm().toString())
-    expected = Arg2p.of(THEORY, flags).solve("buildLabelSets(In, Out, Und)").next()
-    assert str(expected) == str(parallel.goals.solve("buildLabelSets(In, Out, Und)").next())
+    expected = Arg2p.of(THEORY, flags).solve("solve(In, Out, Und)").next()
+    assert str(expected) == str(parallel.goals.solve("solve(In, Out, Und)").next())
 
 
 def test_a_goal_is_stopped():

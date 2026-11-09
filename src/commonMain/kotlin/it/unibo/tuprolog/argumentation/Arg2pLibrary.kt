@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
+import it.unibo.tuprolog.argumentation.causality.CausalityLibrary
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import kotlin.js.JsExport
 
@@ -11,7 +11,7 @@ object Arg2pLibrary {
      * The libraries of a solver of arg2p, with no flags (the theory states them, or a library of Flags.library() added): the causality predicates are loaded by `causality::`
      */
     @JsExport.Ignore
-    fun get() = Arg2pSolver.default(dynamicLibs = listOf(CausalityModule()))
+    fun get() = Arg2pSolver.default(dynamicLibs = listOf(CausalityLibrary()))
 
     /** The version of arg2p, the released one for a release */
     fun version(): String = ARG2P_VERSION

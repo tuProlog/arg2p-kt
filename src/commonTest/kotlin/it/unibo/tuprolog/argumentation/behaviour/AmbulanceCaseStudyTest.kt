@@ -110,8 +110,8 @@ class AmbulanceCaseStudyTest {
         argsOut: String,
         argsUnd: String,
     ) {
-        Behaviour.answerQuery(baseTheory, query, argsIn, argsOut, argsUnd)
-        Behaviour.answerQuery(structuredTheory, query, argsIn, argsOut, argsUnd)
+        Behaviour.queryLabels(baseTheory, query, argsIn, argsOut, argsUnd)
+        Behaviour.queryLabels(structuredTheory, query, argsIn, argsOut, argsUnd)
     }
 
     @Test

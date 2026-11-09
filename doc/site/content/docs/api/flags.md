@@ -214,22 +214,22 @@ error. See [References]({{% ref "/docs/references#preferences" %}}).
 
 ### `queryMode`
 
-Enables the goal-directed (structured) evaluation used by [`answerQuery/4`]({{% ref "/docs/api/engine" %}}).
+Enables the goal-directed (structured) evaluation used by [`solve/4`]({{% ref "/docs/api/engine" %}}).
 Instead of building the whole graph, the engine builds only the sub-graph relevant to the query, which is
 considerably faster on large theories. It is **enabled** in `Flags.defaults()`.
 
 ### `answerMode(Mode)`
 
-How a query (`answerQuery/4`, `answer` in the APIs) is answered under a semantics with several
+How a query (`solve/4`, `answer` in the APIs) is answered under a semantics with several
 labellings (`preferred`, `stable`, ...); with one labelling the three modes agree.
 
 | Value | Answer |
 | --- | --- |
-| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `answerQuery/4` has a solution for each, `answer` lists them. |
+| `enumerate` | One answer for each labelling, the statements labelled in, out and und in it: `solve/4` has a solution for each, `answer` lists them. |
 | `credulous` | One answer: in the statements in in some labelling, out those out in every one, und the others. |
 | `skeptical` | One answer: in the statements in in every labelling, out those out in some, und the others. |
 
-`buildLabelSets` and `arg2p::solve(In, Out, Und)`, which label the whole theory, keep one solution for each
+`solve` and `arg2p::solve(In, Out, Und)`, which label the whole theory, keep one solution for each
 labelling.
 
 ### `autoTransposition`

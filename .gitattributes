@@ -1,0 +1,2 @@
+# The theories of the modules are Prolog, not Perl
+*.pl linguist-language=Prolog

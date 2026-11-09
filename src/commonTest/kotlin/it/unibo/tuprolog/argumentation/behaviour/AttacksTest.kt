@@ -21,9 +21,9 @@ class AttacksTest {
         attacks: Map<String, Int>,
     ) {
         solver(theory).also { solver ->
-            solver.solve("buildLabelSets").toList()
+            solver.solve("solve").toList()
             attacks.forEach { (type, count) ->
-                assertEquals(count, solver.solve("graphStore::attack($type, Y, Z, U)").toList().count { it.isYes }, type)
+                assertEquals(count, solver.solve("store::attack($type, Y, Z, U)").toList().count { it.isYes }, type)
             }
         }
     }

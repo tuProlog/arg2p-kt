@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.checked
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.EmptyList
@@ -79,12 +79,12 @@ object TheoryPartitioner {
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
-        if (clauses.any { it.isFact && it.head == Atom.of("naturalTerms") }) {
+        if (solver.holds("setting(naturalTerms)")) {
             return Partitioning("", listOf(theory), converted = false)
         }
-        solver.solveOnce("context_reset, parser:::convertAllRules")
+        solver.solveOnce("context_reset")
         // a theory its profile refuses is refused here, as by the standard solver
-        checked(solver.solveOnce("pipeline::checkProfile"))
+        checked(solver.solveOnce("phases::checkProfile"))
         val rules = rules(solver)
         val supporters = supporters(rules, solver.holds("setting(metaRules)"))
         val split = if (parts != null && parts > 1) keyed(rules, supporters, parts) else null
@@ -160,11 +160,11 @@ object TheoryPartitioner {
     )
 
     private fun rules(solver: Solver): List<Rule> {
-        val strictness = "theory::strictness(Id, S)"
+        val strictness = "parser::strictness(Id, S)"
         // (the positions of the premises argued: findall would copy them, their variables no longer the conclusion's)
-        val argued = "findall(I, (append(Before, [A|_], P), theory::argued(A), length(Before, I)), Argued)"
+        val argued = "findall(I, (append(Before, [A|_], P), parser::premiseKind(A, statement), length(Before, I)), Argued)"
         val rules =
-            solver.solutions("theory::rule(Id, P, [C]), $argued, $strictness").map {
+            solver.solutions("parser::rule(Id, P, [C]), $argued, $strictness").map {
                 val premises = it.getValue("P").castToList().toList()
                 val body = if (premises.isEmpty()) EmptyList() else Tuple.wrapIfNeeded(*premises.toTypedArray())
                 val arrow = if (it.getValue("S") == Atom.of("strict")) "->" else "=>"
@@ -179,7 +179,7 @@ object TheoryPartitioner {
                 Rule(it.getValue("Id"), positions.map { position -> premises[position] }, it.getValue("C"), rule.toString())
             }
         val premises =
-            solver.solutions("theory::premise(Id, [C]), $strictness").map {
+            solver.solutions("parser::premise(Id, [C]), $strictness").map {
                 val arrow = if (it.getValue("S") == Atom.of("strict")) ":->" else ":=>"
                 Rule(it.getValue("Id"), emptyList(), it.getValue("C"), Struct.of(arrow, it.getValue("Id"), it.getValue("C")).toString())
             }

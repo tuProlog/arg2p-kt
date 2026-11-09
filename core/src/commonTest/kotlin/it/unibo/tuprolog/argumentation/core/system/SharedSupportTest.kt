@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
@@ -33,7 +33,7 @@ class SharedSupportTest {
     @Test
     fun theWholeGraphHasTheArgument() {
         for (theory in theories) {
-            val (statements, graph) = inStatements(theory, "buildLabelSets(In, Out, Und)", Flags.defaults().queryMode(false))
+            val (statements, graph) = inStatements(theory, "solve(In, Out, Und)", Flags.defaults().queryMode(false))
             assertTrue("q(a, a)" in statements, statements)
             val built = graph.arguments.single { it.conclusion == "q(a, a)" }
             assertEquals(1, graph.supports.count { it.supported == built }, "one support")
@@ -44,7 +44,7 @@ class SharedSupportTest {
     @Test
     fun queryModeHasTheSameArgument() {
         for (theory in theories) {
-            val (statements, graph) = inStatements(theory, "answerQuery(q(a, a), In, Out, Und)", Flags.defaults())
+            val (statements, graph) = inStatements(theory, "solve(q(a, a), In, Out, Und)", Flags.defaults())
             assertTrue("q(a, a)" in statements, statements)
             assertEquals(1, graph.arguments.count { it.conclusion == "q(a, a)" })
         }

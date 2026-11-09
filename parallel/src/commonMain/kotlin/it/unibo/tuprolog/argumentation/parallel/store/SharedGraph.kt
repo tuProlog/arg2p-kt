@@ -1,22 +1,22 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
-import it.unibo.tuprolog.argumentation.core.graph.GraphMark
-import it.unibo.tuprolog.argumentation.core.graph.GraphSharing
-import it.unibo.tuprolog.argumentation.core.graph.argumentConclusion
-import it.unibo.tuprolog.argumentation.core.graph.contentKey
-import it.unibo.tuprolog.argumentation.core.graph.exploredFact
-import it.unibo.tuprolog.argumentation.core.graph.exploredFacts
-import it.unibo.tuprolog.argumentation.core.graph.graphKey
-import it.unibo.tuprolog.argumentation.core.graph.graphMarkNow
-import it.unibo.tuprolog.argumentation.core.graph.graphResets
-import it.unibo.tuprolog.argumentation.core.graph.graphSegmentSince
-import it.unibo.tuprolog.argumentation.core.graph.graphSession
-import it.unibo.tuprolog.argumentation.core.graph.holdsFact
-import it.unibo.tuprolog.argumentation.core.graph.mergeGraphSegment
-import it.unibo.tuprolog.argumentation.core.graph.mergeSegmentTerms
-import it.unibo.tuprolog.argumentation.core.graph.savedArgumentIds
-import it.unibo.tuprolog.argumentation.core.graph.segmentTerms
-import it.unibo.tuprolog.argumentation.core.graph.termIn
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphMark
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.argumentConclusion
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.contentKey
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.exploredFact
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.exploredFacts
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphKey
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphMarkNow
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphResets
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphSegmentSince
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphSession
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.holdsFact
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.mergeGraphSegment
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.mergeSegmentTerms
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.savedArgumentIds
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.segmentTerms
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.termIn
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.parallel.host.locked
@@ -27,7 +27,7 @@ import it.unibo.tuprolog.core.List as LogicList
 
 /**
  * The graph the solvers of a session build together, each with its part of the rules, by the pipeline as it is
- * (structuredWhole::buildGraph, structuredPartial::queryGraph, pipeline::modifyGraph): none of them knows of
+ * (structuredWhole::buildGraph, structuredPartial::queryGraph, phases::modifyGraph): none of them knows of
  * the others. The graph store calls this where what the others built matters (see GraphSharing): what a solver saves is
  * its segment, published when its argument builder asks what is new; the segments of the others are merged into its
  * store then, their conclusions new for its rules (see [interested]); and when it has nothing new, it waits for another

@@ -148,14 +148,14 @@ class TheoryPartitionerTest {
                         theory = partitioning.theoryOf(index),
                         settings = Flags.parse("temporal.").library(),
                     ).also {
-                        it.solve(Struct.parse("context_reset, parser:::convertAllRules(_)", it.operators)).first()
+                        it.solve(Struct.parse("context_reset, parser::rulesRead", it.operators)).first()
                     }
             }
         val axioms = { solver: Solver ->
-            solver.solve(Struct.parse("theory::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
+            solver.solve(Struct.parse("parser::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
         }
         assertEquals(1, members.sumOf(axioms))
-        members.forEach { assertTrue(it.solve(Struct.parse("theory::instances", it.operators)).first().isYes) }
+        members.forEach { assertTrue(it.solve(Struct.parse("constraints::instances", it.operators)).first().isYes) }
         partitioning.partitions.indices.forEach { assertTrue(partitioning.theoryOf(it).contains("openConclusions")) }
     }
 }

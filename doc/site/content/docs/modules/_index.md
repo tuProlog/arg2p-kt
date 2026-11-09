@@ -20,6 +20,43 @@ described in Calegari, Contissa, Pisano, Sartor and Sartor, _Modular logic argum
 
 ---
 
+## How a module is laid out
+
+In the sources, every module is a directory named after it, with the same shape:
+
+```text
+core/libraries/labelling/argument/grounded/
+  GroundedLibrary.kt     its name and what it registers
+  prolog/theory.pl      its Prolog theory, if any
+  primitives/           the primitives written in Kotlin, if any
+  language/             what it reads of a theory, if any: language/theory.pl, its primitives and operators
+  flags/                the flags it declares, if any
+  helpers/              the Kotlin code those rely on, if any
+```
+
+The theories are plain Prolog files in the common sources. The build compiles them into constants
+(`embedPrologTheories`), as browsers have no files to read when the solver runs: every platform runs the same text.
+They use the operators of the modules (`::`, `:::`), which only the parser of Arg2P reads.
+
+The libraries under `core/libraries/framework` are those the others stand on, which every solver has from the start,
+each with a state of its own: the loader of the modules (`::`, `:::`), the context, the cache and the settings. The
+others are modules, loaded by their first call, grouped by what they do:
+
+```text
+core/libraries/
+  framework/   loader, context, cache, settings
+  support/     utils, moduleCalls (external modules), graphPrinter
+  store/       the graph and its labels, kept in the context, and the terms they are made of (arguments, labels, ...)
+  language/    parser and the languages of a theory (aspicLanguage, abaLanguage, plainProlog, temporal, transposition, ...)
+  graph/       structured/ (the graphs built from rules: ruleGraph, queryExploration, argument/, attack/, extension/),
+               abstractGraph
+  labelling/   the semantics, of the arguments and of the statements
+  evaluation/  phases, structuredWhole, structuredPartial, statementAcceptance, abstract
+  arg2p/       the entry points
+```
+
+---
+
 ## Calling a module
 
 Two operators dispatch a goal to a module:
@@ -73,7 +110,7 @@ implementation exists.
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
-The `pipeline` module holds what every evaluation goes through. `structuredWhole` runs the sequence on the whole graph, and
+The `phases` module holds what every evaluation goes through. `structuredWhole` runs the sequence on the whole graph, and
 `structuredPartial` is the goal-directed variant `statementAcceptance` uses when `queryMode` is enabled. That variant differs
 in the second stage alone: it builds the part of the graph the
 query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
@@ -91,19 +128,20 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 
 | Module | Purpose |
 | --- | --- |
-| `pipeline` | What every evaluation goes through: the profile checked, the steps changing the graph, the labellings. |
+| `phases` | What every evaluation goes through: the profile checked, the steps changing the graph, the labellings. |
 | `structuredWhole` | The evaluation of the whole graph. |
 | `structuredPartial` | The evaluation of the part of the graph a goal depends on, through `queryExploration` and `argumentSearch`. |
-| `statementAcceptance` | The acceptance of a statement, used by `answerQuery`: on the graph `queryMode` selects, as `answerMode` states. |
+| `statementAcceptance` | The acceptance of a statement, used by `solve`: on the graph `queryMode` selects, as `answerMode` states. |
 | `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
-| `parser` | Translates the Arg2P language into the engine's internal rule format. |
-| `theory` | What the modules read of a theory once translated: its rules and premises, preferences and burdens. |
+| `parser` | Reads the rules and premises of a theory, in the languages of its profile, the first time they are asked for. |
+| `store` | Keeps the argumentation graph and its labels in the context: the only module reading and writing them there. |
 | `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
+| `conflict` | Which statements conflict, as the conflict model and the theory state it. |
 | `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
 | `superiority` | Implements argument ordering and comparators. |
 | `utils` | List and sorting helpers. |
-| `debug` | Prints graphs and labellings (`buildLabelSets/0`). |
+| `graphPrinter` | Prints the graph and its labels (`buildLabelSets/0`). |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
 
 ### Labelling modules
@@ -138,11 +176,11 @@ Data produced by a stage is stored in the evaluation context and can be read bac
 
 This is the most direct way to see what a single stage produced. The context holds the attacks as they are found,
 each on the argument it targets: an attack on an argument also attacks every argument built on it, on the same
-sub-argument, and `graphStore::attack/4` reads them all, as the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}})
+sub-argument, and `store::attack/4` reads them all, as the Kotlin [`graph()`]({{% ref "/docs/api/kotlin" %}})
 helper does:
 
 ```prolog
-?- graphStore::attack(Type, Attacker, Attacked, On).
+?- store::attack(Type, Attacker, Attacked, On).
 ```
 
 Useful context predicates:
@@ -150,7 +188,7 @@ Useful context predicates:
 | Predicate | Content |
 | --- | --- |
 | `argument/1` | An argument built by the graph builder. |
-| `attack/4` | `attack(Type, Attacker, Attacked, On)`, as found (see `graphStore::attack/4` for all of them). |
+| `attack/4` | `attack(Type, Attacker, Attacked, On)`, as found (see `store::attack/4` for all of them). |
 | `support/2` | `support(Supporter, Supported)`. |
 | `in/1`, `out/1`, `und/1` | The argument labelling. |
 | `statIn/1`, `statOut/1`, `statUnd/1` | The statement labelling. |
@@ -230,7 +268,7 @@ Inside the call:
 
 ## Adding your own module
 
-A module is an `ArgLibrary` that is also `Loadable`, as every `PrologModule`: its `identifier()` is the name
+A module is an `ArgLibrary` that is also `Loadable`, as every `PrologLibrary`: its `identifier()` is the name
 used after `::`. Pass your libraries to the
 factory to have them loaded alongside the built-in ones:
 

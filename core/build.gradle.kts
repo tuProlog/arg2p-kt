@@ -104,7 +104,7 @@ tasks.register<Test>("jvmQuickTest") {
     filter.excludeTestsMatching(benchmarkTests)
     filter.excludeTestsMatching(coverageTests)
     listOf(
-        "*.AbaPrefModuleTest",
+        "*.AbaPrefLibraryTest",
         "*.SharedProgramsTest",
         "*.StandardEngineTest",
         "*.SemanticsReferenceTest",

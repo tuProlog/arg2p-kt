@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.core.Struct
@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 
 /**
  * The statements answering a statement are labelled the same in a distributed solver, its theory partitioned among
- * workers, and in the standard solver answering it with the same flags (answerQuery/4, on the part of the graph the
+ * workers, and in the standard solver answering it with the same flags (solve/4, on the part of the graph the
  * statement depends on in query mode): each subclass runs them on a way of running the nodes
  */
 abstract class EquivalenceScenarios {
@@ -43,7 +43,7 @@ abstract class EquivalenceScenarios {
         flags: Flags,
     ): Labels {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
-        val solution = solver.solve(Struct.parse("answerQuery(($statement), In, Out, Und)", solver.operators)).first()
+        val solution = solver.solve(Struct.parse("solve(($statement), In, Out, Und)", solver.operators)).first()
         // the statements as arg2p writes them, as the distributed solver gives its claims
         val labelled = { name: String ->
             solution.substitution

@@ -69,35 +69,35 @@ abstract class GoalSolverScenarios {
     fun tweety() =
         assertSameSolutions(
             tweety,
-            "buildLabelSets(In, Out, Und)",
-            "answerQuery(flies(tweety), In, Out, Und)",
-            "answerQuery(-flies(X), In, Out, Und)",
-            "buildLabelSets([In, Out, Und], Arguments)",
+            "solve(In, Out, Und)",
+            "solve(flies(tweety), In, Out, Und)",
+            "solve(-flies(X), In, Out, Und)",
+            "solve(In, Out, Und), store::argumentLabelling(ArgsIn, ArgsOut, ArgsUnd)",
         )
 
     @Test
     fun aPreferenceConflict() =
         assertSameSolutions(
             "r1 : [] => a.\nr2 : [] => -a.\nr3 : a => b.\nr4 : -a => c.\nsup(r1, r2).\n",
-            "buildLabelSets(In, Out, Und)",
-            "answerQuery(b, In, Out, Und)",
-            "answerQuery(c, In, Out, Und)",
+            "solve(In, Out, Und)",
+            "solve(b, In, Out, Und)",
+            "solve(c, In, Out, Und)",
         )
 
     @Test
     fun assumptionBasedArgumentation() =
         assertSameSolutions(
             "graphBuildMode(aba).\nassumption(a).\nassumption(b).\ncontrary(a, x).\ncontrary(b, y).\nr1 : b -> x.\nr2 : [] -> c.\nr3 : c, a -> d.\n",
-            "buildLabelSets(In, Out, Und)",
-            "answerQuery(d, In, Out, Und)",
+            "solve(In, Out, Und)",
+            "solve(d, In, Out, Und)",
         )
 
     @Test
     fun anAbstractFramework() =
         assertSameSolutions(
             "graphBuildMode(abstract).\na.\nd.\na -> b.\nb -> c.\n",
-            "buildLabelSets(In, Out, Und)",
-            "answerQuery(c, In, Out, Und)",
+            "solve(In, Out, Und)",
+            "solve(c, In, Out, Und)",
         )
 
     @Test
@@ -105,9 +105,9 @@ abstract class GoalSolverScenarios {
         assertSameSolutions(
             "old(X) :- X > 65.\nf1 :=> age(anna, 80).\nf2 :=> age(bob, 30).\nr1 : age(P, X), prolog(old(X)) => senior(P).\n" +
                 "r2 : age(P, X), prolog(Y is X * 2) => doubled(P, Y).\nr3 : senior(P) => -doubled(P, _).\n",
-            "buildLabelSets(In, Out, Und)",
-            "answerQuery(senior(P), In, Out, Und)",
-            "answerQuery(doubled(P, V), In, Out, Und)",
+            "solve(In, Out, Und)",
+            "solve(senior(P), In, Out, Und)",
+            "solve(doubled(P, V), In, Out, Und)",
             "old(80)",
             "old(30)",
             "member(X, [1, 2, 3])",
@@ -140,7 +140,7 @@ abstract class GoalSolverScenarios {
             Flags.defaults(),
         ).forEach { flags ->
             configure(flags)
-            listOf("answerQuery(b, In, Out, Und)", "buildLabelSets(In, Out, Und)").forEach { goal ->
+            listOf("solve(b, In, Out, Und)", "solve(In, Out, Und)").forEach { goal ->
                 val arg2p = Arg2p.of(theory, flags)
                 assertEquals(solved(arg2p.solve(goal), arg2p::graph), solved(parallel.solve(goal), parallel::graph), "$goal with $flags")
             }
@@ -159,7 +159,7 @@ abstract class GoalSolverScenarios {
         val theory = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => d.\nr5 :=> -d.\n"
         val parallel = parallel(theory, Flags.defaults())
         listOf("b" to setOf("a", "b"), "d" to setOf("c", "d", "-d")).forEach { (statement, built) ->
-            val goal = "answerQuery($statement, In, Out, Und)"
+            val goal = "solve($statement, In, Out, Und)"
             val arg2p = Arg2p.of(theory)
             val expected = solved(arg2p.solve(goal).next(), arg2p.graph())
             val actual = solved(parallel.solve(goal).next(), parallel.graph())
@@ -196,11 +196,11 @@ abstract class GoalSolverScenarios {
             .theory(tweety)
             .output { printed.append(it) }
             .build()
-            .solve("buildLabelSets")
+            .solve("solve")
             .next()
         val output = StringBuilder()
         val parallel = parallel(tweety, Flags.defaults()).also { solver -> solver.output = { output.append(it) } }
-        assertTrue(parallel.solve("buildLabelSets").next().isYes)
+        assertTrue(parallel.solve("solve").next().isYes)
         assertEquals(printed.toString(), output.toString())
     }
 
@@ -208,6 +208,6 @@ abstract class GoalSolverScenarios {
     fun aGoalThatCannotBeReadIsAnError() {
         val parallel = parallel(tweety, Flags.defaults())
         assertFailsWith<Arg2pException> { parallel.solve("p(") }
-        assertTrue(parallel.solve("answerQuery(flies(tweety), In, Out, Und)").next().isYes)
+        assertTrue(parallel.solve("solve(flies(tweety), In, Out, Und)").next().isYes)
     }
 }

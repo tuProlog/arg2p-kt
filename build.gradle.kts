@@ -69,6 +69,83 @@ fun nodeRequires(code: String): String {
     return if (replaced) nodeRequire + patched else code
 }
 
+/**
+ * The Prolog theory of each library, `prolog/theory.pl` and what it reads of a theory, `language/theory.pl`, beside its
+ * main file, as a constant of the sources: `THEORY` in the package `prolog` of the library. A browser has no file to read
+ * at run time, so every platform gets the text compiled in.
+ */
+abstract class EmbedPrologTheories : DefaultTask() {
+    @get:Internal
+    abstract val sources: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val theories: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun embed() {
+        val root = sources.get().asFile
+        val target = output.get().asFile
+        target.deleteRecursively()
+        theories.files.groupBy { it.parentFile.parentFile }.forEach { (library, files) ->
+            val directory = library.relativeTo(root).invariantSeparatorsPath + "/prolog"
+            val text =
+                files
+                    .sortedBy { it.parentFile.name != "prolog" }
+                    .joinToString("\n") { it.readText().replace("\r\n", "\n").removeSuffix("\n") }
+            // the most a constant of the JVM holds
+            check(text.toByteArray().size <= 65535) { "The theory of $library is too large for a constant" }
+            val literal =
+                text
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("$", "\\$")
+                    .replace("\n", "\\n")
+                    .replace("\t", "\\t")
+            target.resolve("$directory/Theory.kt").apply { parentFile.mkdirs() }.writeText(
+                "package ${directory.replace('/', '.')}\n\ninternal const val THEORY: String = \"$literal\"\n",
+            )
+        }
+    }
+}
+
+// The projects with Prolog modules: their theories compiled in with the rest of their sources
+fun Project.embedPrologTheories(sourceSet: String): Provider<EmbedPrologTheories> {
+    val sources = layout.projectDirectory.dir("src/$sourceSet/kotlin")
+    return tasks.register<EmbedPrologTheories>("embedPrologTheories") {
+        group = "build"
+        description = "Compiles the Prolog theories of the modules (prolog/theory.pl) into constants"
+        this.sources.set(sources)
+        theories.from(fileTree(sources) { include("**/prolog/theory.pl", "**/language/theory.pl") })
+        output.set(layout.buildDirectory.dir("generated/prologTheories/$sourceSet/kotlin"))
+    }
+}
+
+listOf(":core", ":causality-solver").forEach { path ->
+    project(path) {
+        plugins.withId("org.jetbrains.kotlin.multiplatform") {
+            val embed = embedPrologTheories("commonMain")
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+                sourceSets.named("commonMain") { kotlin.srcDir(embed) }
+            }
+            tasks.matching { it.name == "prepareKotlinIdeaImport" }.configureEach { dependsOn(embed) }
+        }
+    }
+}
+
+project(":actor-solver") {
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        val embed = embedPrologTheories("main")
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+            sourceSets.named("main") { kotlin.srcDir(embed) }
+        }
+        tasks.matching { it.name == "prepareKotlinIdeaImport" }.configureEach { dependsOn(embed) }
+    }
+}
+
 allprojects {
     repositories {
         google()

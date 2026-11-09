@@ -154,7 +154,7 @@ class ServerTest {
         assertEquals("warm", engine("""{"type":"warmUp"}""").single().get("type").asString)
         val started =
             engine(
-                """{"type":"solve","id":1,"theory":"f1 :=> a.\nf2 :=> -a.\n","query":"buildLabelSets(In, Out, Und)","flags":"queryMode."}""",
+                """{"type":"solve","id":1,"theory":"f1 :=> a.\nf2 :=> -a.\n","query":"solve(In, Out, Und)","flags":"queryMode."}""",
             )
         assertEquals("started", started.single().get("type").asString)
         val solution = engine("""{"type":"next","id":1}""").single().getAsJsonObject("solution")

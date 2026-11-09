@@ -19,7 +19,7 @@ class BinaryStatementLabellingTest {
     fun aStatementOfManyArgumentsIsLabelledOnce() {
         val solution =
             solver("r1 : [] => a.\nr2 : [] => a.\nr3 : [] => b.\nr4 : [] => -b.\n$config")
-                .solve("buildLabelSets(In, Out, Und)")
+                .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
         assertEquals(listOf("[[a]]", "[[-b], [b]]", "[]"), labels)
@@ -30,7 +30,7 @@ class BinaryStatementLabellingTest {
     fun aStatementWithAnArgumentInIsOnlyIn() {
         val solution =
             solver("r1 : [] => a.\nr2 : c => a.\nr3 : [] => c.\nr4 : [] => -c.\n$config")
-                .solve("buildLabelSets(In, Out, Und)")
+                .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
         assertEquals(listOf("[[a]]", "[[-c], [c]]", "[]"), labels)

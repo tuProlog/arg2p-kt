@@ -137,7 +137,7 @@ f2 :=> -d.
 ```
 
 ```prolog
-?- arg2p::answerQuery(d, In, Out, Und).
+?- arg2p::solve(d, In, Out, Und).
 ```
 
 Only the part of the graph relevant to `d` is built, which matters on large theories. When the three separate

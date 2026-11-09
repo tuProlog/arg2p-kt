@@ -173,7 +173,7 @@ class FederationTest {
     fun aParallelQueryHasTheSolutionsOfTheSolverOfThePage() {
         val engine = PageEngine(solving, parallel = federation())
         try {
-            listOf("buildLabelSets(In, Out, Und)", "answerQuery(flies(tweety), In, Out, Und)").forEach { query ->
+            listOf("solve(In, Out, Und)", "solve(flies(tweety), In, Out, Und)").forEach { query ->
                 assertEquals(solutions(engine, tweety, query, parallel = false), solutions(engine, tweety, query, parallel = true), query)
             }
             // a Prolog goal of the theory: the parallel solver tells the graph it last built with it
@@ -190,8 +190,8 @@ class FederationTest {
     fun theParallelQueriesOfPagesOnOtherTheoriesDoNotMix() {
         val engine = PageEngine(solving, parallel = federation())
         try {
-            ask(engine, solve(tweety, "buildLabelSets", parallel = true), "one")
-            ask(engine, solve(conflict, "buildLabelSets", parallel = true), "two")
+            ask(engine, solve(tweety, "solve", parallel = true), "one")
+            ask(engine, solve(conflict, "solve", parallel = true), "two")
             val conclusions = { solution: JsonObject ->
                 solution
                     .getAsJsonObject("graph")

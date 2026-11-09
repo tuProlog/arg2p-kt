@@ -2,7 +2,7 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -44,7 +44,7 @@ data class Answer(
 }
 
 /**
- * The answer of a query as the solvers of arg2p give it: the goal answerQuery(Query, In, Out, Und), and the [Answer]
+ * The answer of a query as the solvers of arg2p give it: the goal solve(Query, In, Out, Und), and the [Answer]
  * each of its yes solutions gives (one for each labelling, or the one across them all, see the flag answerMode)
  */
 @InternalArg2pApi
@@ -56,7 +56,7 @@ class AnswerQuery(
     private val all = Var.of("Answers")
 
     /** The goal answering the query */
-    val goal: Struct = Struct.of("answerQuery", listOf(query) + labels)
+    val goal: Struct = Struct.of("solve", listOf(query) + labels)
 
     /** The goal answering the query with all its answers at once, as the list [[In, Out, Und], ...] */
     val allGoal: Struct = Struct.of("findall", PlList.of(labels), goal, all)

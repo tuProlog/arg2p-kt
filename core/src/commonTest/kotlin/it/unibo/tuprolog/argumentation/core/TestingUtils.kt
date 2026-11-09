@@ -59,7 +59,7 @@ object TestingUtils {
         }
     }
 
-    fun buildLabelSets(
+    fun theoryLabels(
         theory: String,
         argsIn: String,
         argsOut: String,
@@ -68,7 +68,7 @@ object TestingUtils {
         logicProgramming {
             solverWithTheory(theory).also { solver ->
                 testGoalNoBacktracking(
-                    "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
+                    "solve"("StatIn", "StatOut", "StatUnd"),
                     solver,
                 ) {
                     it.yes(
@@ -85,12 +85,12 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            solver.solve("graphStore" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
+            solver.solve("store" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
         }
         graph.attacks.forEach {
             solver
                 .solve(
-                    "graphStore" call
+                    "store" call
                         "saveAttack"(
                             it.type ?: "none",
                             it.attacker.termRepresentation(),
@@ -100,7 +100,7 @@ object TestingUtils {
                 ).first()
         }
         graph.supports.forEach {
-            solver.solve("graphStore" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
+            solver.solve("store" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
         }
     }
 
@@ -122,7 +122,7 @@ object TestingUtils {
         }
         // the attacks as the graph store reads them, extended to the arguments built on the attacked ones
         graph.attacks.forEach {
-            testYesGoal("graphStore" call it.toTerm(), solver)
+            testYesGoal("store" call it.toTerm(), solver)
         }
         graph.supports.forEach {
             testYesGoal("context_check"(it.toTerm()), solver)

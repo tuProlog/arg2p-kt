@@ -6,7 +6,7 @@ import akka.cluster.sharding.typed.javadsl.EntityTypeKey
 import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.actors.HelpWorker
-import it.unibo.tuprolog.argumentation.actor.libs.TheoryChainer
+import it.unibo.tuprolog.argumentation.actor.libraries.theoryChainer.TheoryChainer
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
@@ -29,7 +29,7 @@ internal object SupportSplit : SplittingPrinciple {
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
             helperSolver
-                .solve("parser" call "convertAllRules"(X))
+                .solve("parser" call "ruleClauses"(X))
                 .filter { it.isYes }
                 .map { it.substitution[X]!! }
                 .first()
@@ -65,7 +65,7 @@ internal object SupportSplit : SplittingPrinciple {
                 worker.ref.tell(Add(it))
                 worker.theory.assertA(Struct.parse(it, worker.theory.operators))
             }
-            arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+            arg2pScope { solver.solve(atomOf("context_reset")).first() }
             worker
         }
 
@@ -86,7 +86,7 @@ internal object SupportSplit : SplittingPrinciple {
         context.log.info("Updating $rule")
         worker.theory.assertA(Struct.parse(rule, worker.theory.operators))
         worker.rules.add(rule)
-        arg2pScope { worker.theory.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+        arg2pScope { worker.theory.solve(atomOf("context_reset")).first() }
         worker.ref.tell(Add(rule))
     }
 

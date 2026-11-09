@@ -19,7 +19,7 @@ class BurdenOfProofTest {
     // The statement labellings of the theory (each as In/Out/Und)
     private fun labellings(theory: String): List<String> =
         solver("$theory\n$config")
-            .solve("buildLabelSets(In, Out, Und)")
+            .solve("solve(In, Out, Und)")
             .toList()
             .map { solution ->
                 check(!solution.isHalt) { "${solution.error}" }

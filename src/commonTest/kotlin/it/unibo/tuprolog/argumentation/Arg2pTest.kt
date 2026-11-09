@@ -40,8 +40,8 @@ class Arg2pTest {
         assertEquals(1, credulous.answer("X").size)
         val skeptical = Arg2p.of(theory, flags.answerMode(AnswerMode.SKEPTICAL))
         assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X").single()))
-        assertTrue(skeptical.solve("answerQuery(c)").hasNext())
-        assertFalse(skeptical.solve("answerQuery(d)").next().isYes)
+        assertTrue(skeptical.solve("solve(c)").hasNext())
+        assertFalse(skeptical.solve("solve(d)").next().isYes)
     }
 
     @Test
@@ -64,7 +64,7 @@ class Arg2pTest {
     @Test
     fun theGraphOfTheLastResolution() {
         val arg2p = Arg2p.of(conflict)
-        assertTrue(arg2p.solve("buildLabelSets").next().isYes)
+        assertTrue(arg2p.solve("solve").next().isYes)
         assertEquals(arg2p.graphAt(arg2p.activeBranch), arg2p.graph())
         assertEquals(2, arg2p.graph().arguments.size)
         assertTrue(arg2p.contextFacts(arg2p.activeBranch, "statIn(S)").next().isYes)
@@ -160,7 +160,7 @@ class Arg2pTest {
         assertEquals(7, assertFailsWith<Arg2pException> { Value.parse("flies(") }.syntax?.column)
         assertEquals(theory, Arg2p.checkTheory("a :=> b.\nc :=> d(."))
         assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X)."))
-        assertEquals(null, Arg2p.checkQuery("buildLabelSets(In, Out, Und)."))
+        assertEquals(null, Arg2p.checkQuery("solve(In, Out, Und)."))
         assertEquals(1, Arg2p.checkQuery("flies(")?.line)
     }
 

@@ -16,7 +16,7 @@ object Behaviour {
     fun solver(theory: String): Arg2p = Arg2p.of(theory, Flags.none())
 
     /** The statements for [query] in [theory] are [argsIn], [argsOut] and [argsUnd] (in the first answer), lists as Prolog text */
-    fun answerQuery(
+    fun queryLabels(
         theory: String,
         query: String,
         argsIn: String,
@@ -30,27 +30,27 @@ object Behaviour {
     }
 
     /**
-     * The first statement labelling of [theory] (buildLabelSets/3) is [argsIn], [argsOut] and [argsUnd], lists of the
+     * The first statement labelling of [theory] (solve/3) is [argsIn], [argsOut] and [argsUnd], lists of the
      * statements as Prolog text: the solver, at that labelling
      */
-    fun buildLabelSets(
+    fun theoryLabels(
         theory: String,
         argsIn: String,
         argsOut: String,
         argsUnd: String,
     ): Arg2p =
         solver(theory).also { solver ->
-            val solution = solver.solve("buildLabelSets(In, Out, Und)").next()
+            val solution = solver.solve("solve(In, Out, Und)").next()
             assertTrue(solution.isYes, solution.toString())
             assertVariant(Value.parse(argsIn), solution.value("In")!!, "in")
             assertVariant(Value.parse(argsOut), solution.value("Out")!!, "out")
             assertVariant(Value.parse(argsUnd), solution.value("Und")!!, "und")
         }
 
-    /** The statement labellings of [theory] (buildLabelSets/3), each as the values of In, Out and Und */
+    /** The statement labellings of [theory] (solve/3), each as the values of In, Out and Und */
     fun labellings(theory: String): List<List<Value>> =
         solver(theory)
-            .solve("buildLabelSets(In, Out, Und)")
+            .solve("solve(In, Out, Und)")
             .toList()
             .onEach { check(!it.isHalt) { it.error.toString() } }
             .filter { it.isYes }

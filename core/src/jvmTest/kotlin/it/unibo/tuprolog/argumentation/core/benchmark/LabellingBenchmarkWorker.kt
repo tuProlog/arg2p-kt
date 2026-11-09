@@ -93,12 +93,12 @@ object LabellingBenchmarkWorker {
     // the phases of the structured pipeline (as WarmJvmTest)
     private val PHASES =
         listOf(
-            "convert" to "context_reset, parser:::convertAllRules(_)",
+            "convert" to "context_reset, parser::rulesRead",
             "arguments" to "ruleGraph:::buildArguments",
             "attacks" to "ruleGraph:::buildAttacks",
-            "extensions" to "pipeline:::modifyGraph",
-            "labelling" to "pipeline:::buildArgumentLabelling",
-            "statements" to "pipeline:::buildStatementLabelling",
+            "extensions" to "phases:::modifyGraph",
+            "labelling" to "phases:::buildArgumentLabelling",
+            "statements" to "phases:::buildStatementLabelling",
         )
 
     private fun configuration(semantics: String) =
@@ -136,7 +136,7 @@ object LabellingBenchmarkWorker {
                                 solver
                                     .solve(
                                         Struct.parse(
-                                            "findall(A, context_check(argument(A)), As), findall(T, graphStore::attack(T, _, _, _), Ts)",
+                                            "findall(A, context_check(argument(A)), As), findall(T, store::attack(T, _, _, _), Ts)",
                                             solver.operators,
                                         ),
                                     ).first()

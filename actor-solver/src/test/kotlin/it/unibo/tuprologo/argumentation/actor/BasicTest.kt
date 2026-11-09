@@ -225,7 +225,7 @@ class BasicTest {
                     flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
                 ).also {
                     it.loadStaticKb(Theory.parse(rules, it.operators))
-                    val a = it.solve("answerQuery"("d99", X, Y, Z)).first()
+                    val a = it.solve("solve"("d99", X, Y, Z)).first()
                     assertEquals(a.isYes, true)
                 }
         }

@@ -4,8 +4,8 @@ import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.model.mining.activeBranch
-import it.unibo.tuprolog.argumentation.core.model.mining.arguments
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.arguments
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -24,7 +24,7 @@ class QueryExplorationTest {
         query: String,
     ): Set<String> {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
-        solver.solve(Struct.parse("answerQuery(($query), In, Out, Und)", solver.operators)).first()
+        solver.solve(Struct.parse("solve(($query), In, Out, Und)", solver.operators)).first()
         return solver.arguments(solver.activeBranch()).map { written(it.termRepresentation()) }.toSet()
     }
 

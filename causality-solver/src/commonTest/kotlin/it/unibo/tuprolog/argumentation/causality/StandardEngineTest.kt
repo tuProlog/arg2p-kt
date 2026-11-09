@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.causality
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.causality.modules.CausalityModule
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.solve.MutableSolver
@@ -18,7 +17,7 @@ class StandardEngineTest {
     private val theory = "tx2 : d => -r2.\nr1 :=> a.\nr2 : a => -b."
 
     private fun tuProlog(theory: String): MutableSolver {
-        val arg2p = Arg2pSolver.default(listOf(Flags.defaults().library(), CausalityModule()))
+        val arg2p = Arg2pSolver.default(listOf(Flags.defaults().library(), CausalityLibrary()))
         return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = arg2p.to2pLibraries(),
             // tuProlog's solver loses bindings a goal left to solve needs, unless every goal selected is tracked

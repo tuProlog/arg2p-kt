@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Var
 import kotlin.js.JsExport

@@ -63,8 +63,8 @@ class PageEngineTest {
 
     @Test
     fun aQueryGivesItsSolutionsOneAtATimeWithTheirGraphs() {
-        val started = solve("r1 :=> a.\\nr2 :=> -a.\\n", "buildLabelSets(In, Out, Und).", "argumentLabellingMode(complete).").of("started")
-        assertEquals("buildLabelSets(In, Out, Und)", started.get("query").asString)
+        val started = solve("r1 :=> a.\\nr2 :=> -a.\\n", "solve(In, Out, Und).", "argumentLabellingMode(complete).").of("started")
+        assertEquals("solve(In, Out, Und)", started.get("query").asString)
         val labellings = mutableListOf<String>()
         do {
             val answer = next().of("solution")
@@ -80,7 +80,7 @@ class PageEngineTest {
 
     @Test
     fun aGraphTellsTheStructureOfItsArgumentsAndItsProfile() {
-        solve(tweety, "buildLabelSets")
+        solve(tweety, "solve")
         val graph = next().of("solution").getAsJsonObject("solution").getAsJsonObject("graph")
         assertEquals("aspic_plus", graph.get("profile").asString)
         val arguments = graph.getAsJsonArray("arguments").map { it.asJsonObject }
@@ -225,7 +225,7 @@ class PageEngineTest {
         assertEquals(Resolution.STOPPED, stopped.get("message").asString)
         assertIdle()
         // the page is still there: it solves its next query
-        solve(tweety, "buildLabelSets", id = 2)
+        solve(tweety, "solve", id = 2)
         assertEquals(
             "yes",
             next(2)
@@ -238,7 +238,7 @@ class PageEngineTest {
 
     @Test
     fun theRequestsOfAPageAreSolvedInTheirOrder() {
-        val started = send("""{"type":"solve","id":1,"theory":"$tweety","query":"buildLabelSets","flags":""}""")
+        val started = send("""{"type":"solve","id":1,"theory":"$tweety","query":"solve","flags":""}""")
         val solution = send("""{"type":"next","id":1}""")
         assertEquals("started", answered(started).single().get("type").asString)
         assertEquals(

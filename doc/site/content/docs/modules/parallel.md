@@ -71,7 +71,7 @@ builds and labels the graph; the following ones read it. `solve` may be called f
 once. A statement that cannot be read is an error: `solve` raises an `Arg2pException` (`Arg2pError` in
 Python, the promise is rejected in JavaScript), and the parallel solver answers the following ones as before.
 
-`solve` gives the statements answering a statement, by label, as `answerQuery/4` labels them (under the flag
+`solve` gives the statements answering a statement, by label, as `solve/4` labels them (under the flag
 `answerMode` as well), each with the arguments for it (`queryChain`); an error a consumer meets building (a Prolog check
 of a rule that raises one) is the error of the evaluation, as the standard solver raises it; any other goal is for the
 parallel solver as a solver of arg2p (`goals`, see [below](#as-a-solver-of-arg2p)).
@@ -102,7 +102,7 @@ rejected with the reason.
 
 Every parallel solver is also a solver of arg2p with the interface of `Arg2p` (see the [API]({{% ref "/docs/api/kotlin" %}})),
 on its theory and its flags: `goals` solves any goal as the standard solver does (`arg2p::solve(In, Out, Und)`,
-`answerQuery/4`, the Prolog predicates of the theory, ...), one solution at a time, and gives the graph of each
+`solve/4`, the Prolog predicates of the theory, ...), one solution at a time, and gives the graph of each
 solution and the answers of queries, in the types of the API (`Solutions`, `Solution`, `Answer`, `Graph`).
 
 ```kotlin

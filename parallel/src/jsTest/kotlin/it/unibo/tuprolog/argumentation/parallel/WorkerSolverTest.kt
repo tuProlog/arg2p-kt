@@ -39,7 +39,7 @@ class WorkerSolverTest {
                 claims(parallel, "c1")
             }.step {
                 assertEquals(listOf(listOf("c1"), emptyList(), emptyList()), it)
-                parallel.goals.solve("buildLabelSets(In, Out, Und)")
+                parallel.goals.solve("solve(In, Out, Und)")
             }.step { it.nextSolution() }
             .step { solution ->
                 assertEquals(true, solution.isYes)

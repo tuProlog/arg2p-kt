@@ -30,8 +30,8 @@ class SolverStopTest {
     // the next goal, on another theory, answered as by the standard solver
     private fun answersAfter(parallel: ThreadedSolver) {
         parallel.load(conflict)
-        val expected = Arg2p.of(conflict).solve("buildLabelSets(In, Out, Und)").next()
-        val solution = parallel.goals.solve("buildLabelSets(In, Out, Und)").next()
+        val expected = Arg2p.of(conflict).solve("solve(In, Out, Und)").next()
+        val solution = parallel.goals.solve("solve(In, Out, Und)").next()
         assertEquals(expected.toString(), solution.toString())
         assertEquals(Arg2p.of(conflict).answer("-a"), parallel.goals.answer("-a"))
     }
@@ -40,7 +40,7 @@ class SolverStopTest {
     fun aGraphBeingBuilt() =
         ThreadedSolver(threads = 2).use { parallel ->
             parallel.load(slow)
-            stopped(parallel, "buildLabelSets(In, Out, Und)")
+            stopped(parallel, "solve(In, Out, Und)")
             answersAfter(parallel)
         }
 

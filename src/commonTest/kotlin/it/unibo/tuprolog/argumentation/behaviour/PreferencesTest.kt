@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.behaviour
 
 import it.unibo.tuprolog.argumentation.Arg2p
-import it.unibo.tuprolog.argumentation.behaviour.Behaviour.answerQuery
-import it.unibo.tuprolog.argumentation.behaviour.Behaviour.buildLabelSets
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.queryLabels
 import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.theoryLabels
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -41,7 +41,7 @@ class PreferencesTest {
 
     private fun attacksSize(solver: Arg2p): Int =
         solver
-            .solve("graphStore::attack(X, Y, Z, U)")
+            .solve("store::attack(X, Y, Z, U)")
             .toList()
             .count { it.isYes }
 
@@ -49,7 +49,7 @@ class PreferencesTest {
         theory: String,
         results: Map<String, String>,
         attacksNumber: Int,
-    ) = buildLabelSets(theory, results["in"]!!, results["out"]!!, results["und"]!!).let {
+    ) = theoryLabels(theory, results["in"]!!, results["out"]!!, results["und"]!!).let {
         assertEquals(attacksNumber, attacksSize(it))
     }
 
@@ -150,7 +150,7 @@ class PreferencesTest {
     }
 
     @Test
-    fun singlePreferenceWeakestNormal() = weakestNormal("buildLabelSets(I, O, U)")
+    fun singlePreferenceWeakestNormal() = weakestNormal("solve(I, O, U)")
 
     @Test
     fun multiplePreferencesAWeakestElitist() =
@@ -210,7 +210,7 @@ class PreferencesTest {
 
     @Test
     fun noPreferencesStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 orderingPrinciple(last).
@@ -225,7 +225,7 @@ class PreferencesTest {
 
     @Test
     fun singlePreferenceLastElitistStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -241,7 +241,7 @@ class PreferencesTest {
 
     @Test
     fun singlePreferenceLastDemocratStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -257,7 +257,7 @@ class PreferencesTest {
 
     @Test
     fun singlePreferenceLastNormalStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -273,7 +273,7 @@ class PreferencesTest {
 
     @Test
     fun singlePreferenceWeakestElitistStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -289,7 +289,7 @@ class PreferencesTest {
 
     @Test
     fun singlePreferenceWeakestDemocratStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -304,11 +304,11 @@ class PreferencesTest {
         )
 
     @Test
-    fun singlePreferenceWeakestNormalStructured() = weakestNormal("answerQuery(e, I, O, U)", "queryMode.")
+    fun singlePreferenceWeakestNormalStructured() = weakestNormal("solve(e, I, O, U)", "queryMode.")
 
     @Test
     fun multiplePreferencesAWeakestElitistStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -325,7 +325,7 @@ class PreferencesTest {
 
     @Test
     fun multiplePreferencesAWeakestDemocratStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r1).
@@ -342,7 +342,7 @@ class PreferencesTest {
 
     @Test
     fun multiplePreferencesBWeakestElitistStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r0).
@@ -359,7 +359,7 @@ class PreferencesTest {
 
     @Test
     fun multiplePreferencesBWeakestDemocratStructured() =
-        answerQuery(
+        queryLabels(
             baseTheory +
                 """
                 sup(r3, r0).

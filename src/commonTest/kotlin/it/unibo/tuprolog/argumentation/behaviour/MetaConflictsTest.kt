@@ -26,7 +26,7 @@ class MetaConflictsTest {
 
     // The statements IN, OUT and UND, each sorted
     private fun labels(rules: List<String>): List<String> {
-        val solution = solver((rules + config).joinToString("\n")).solve("buildLabelSets(In, Out, Und)").next()
+        val solution = solver((rules + config).joinToString("\n")).solve("solve(In, Out, Und)").next()
         return listOf("In", "Out", "Und").map { label ->
             (solution.value(label) as Value.List)
                 .items
