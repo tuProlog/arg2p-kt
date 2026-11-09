@@ -189,12 +189,12 @@ object GraphStoreModule : PrologModule("prolog.argumentation.graph.store", "grap
 
         %! saveSupport(+Supporter, +Supported)
         %  Supporter, a sub-argument of Supported, is saved as supporting it, unless it already is: by their identifiers,
-        %  as the support of an instance of Supported by one of Supporter (for fewer values) is another one.
+        %  as the support of an instance of Supported by one of Supporter (for fewer values) is another one. Saved already
+        %  it still succeeds: a rule may use the same argument for two of its premises.
         saveSupport(Supporter, Supported) :-
             context_id(argument(Supporter), IdSupporter),
             context_id(argument(Supported), IdSupported),
-            context_absent(supportId(IdSupporter, IdSupported)),
-            context_assert(supportId(IdSupporter, IdSupported)).
+            (context_absent(supportId(IdSupporter, IdSupported)) -> context_assert(supportId(IdSupporter, IdSupported)) ; true).
 
         %! copySupports(+Original, +IdCopy)
         %  The supports of Original also support the argument with identifier IdCopy.

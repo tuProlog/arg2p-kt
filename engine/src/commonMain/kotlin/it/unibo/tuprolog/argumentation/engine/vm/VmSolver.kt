@@ -85,11 +85,8 @@ open class VmSolver(
     /** The program of the last resolution, if any */
     val currentProgram: Program? get() = program
 
-    /**
-     * Whether the theory of the user is visible to the resolutions (not within a module call): not to the goals of the
-     * directives of the knowledge bases, run as the solver is made
-     */
-    var theoryVisible = false
+    /** Whether the theory of the user is visible to the resolutions (not within a module call) */
+    var theoryVisible = true
 
     // The session of the solver, if any: its programs share their symbols with those of the other solvers of the session
     private var session: SolverSession? = null
@@ -127,7 +124,6 @@ open class VmSolver(
         // (the first query compiles the knowledge bases as the directives left them)
         program = null
         outdated = true
-        theoryVisible = true
     }
 
     /** The solver in [session] from its next resolution (its program made again, in the session) */

@@ -102,11 +102,16 @@ class SharedGraphBench {
                 (1..runs.toInt()).map {
                     timed {
                         val session = SolverSession()
-                        session[GraphSharing.KEY] = SharedGraph(partitioning.partitions.size)
+                        val graph = SharedGraph(partitioning.partitions.size)
+                        session[GraphSharing.KEY] = graph
                         // the solver labelling the graph, a consumer with the rules of the first partition, as on a node
                         val labeller = solverOf(partitioning.theoryOf(0))
                         val workers = (1 until partitioning.partitions.size).map { solverOf(partitioning.theoryOf(it)) }
-                        (listOf(labeller) + workers).forEach { SolverSession.join(it, session) }
+                        (listOf(labeller) + workers).forEachIndexed { i, solver ->
+                            SolverSession.join(solver, session)
+                            // as the parallel solvers do: without them each solver derives again what the others built
+                            graph.interested(solver, partitioning.interests[i])
+                        }
                         val threads =
                             workers.map { worker ->
                                 thread {

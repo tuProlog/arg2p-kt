@@ -38,7 +38,9 @@ class GraphStoreModuleTest {
         module.run("graphStore::saveArgument(t, [a], $a)", "graphStore::saveArgument(t, [b], $b)", "graphStore::saveSupport($a, $b)")
         assertTrue(module.holds("context_check(support($a, $b))"))
         assertTrue(module.holds("context_id(argument($a), IdA), context_id(argument($b), IdB), context_check(supportId(IdA, IdB))"))
-        assertFalse(module.holds("graphStore::saveSupport($a, $b)"))
+        // saved already, it still succeeds, and the support stays one: a rule may use an argument for two premises
+        assertTrue(module.holds("graphStore::saveSupport($a, $b)"))
+        assertEquals("1", module.value("findall(I, context_check(supportId(_, I)), L), length(L, N)", "N"))
     }
 
     @Test
