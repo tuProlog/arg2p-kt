@@ -2,8 +2,7 @@ package it.unibo.tuprolog.argumentation.core.modules.extra
 
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.flags.ModulesPath
-import it.unibo.tuprolog.argumentation.core.primitives.extra.CallModule
-import it.unibo.tuprolog.argumentation.core.runtime.modules.Loadable
+import it.unibo.tuprolog.argumentation.core.modules.Loadable
 import it.unibo.tuprolog.solve.library.Library
 
 /**

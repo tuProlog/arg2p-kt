@@ -8,7 +8,7 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
 It knows nothing of arg2p, whose `core` depends on it. What the other modules share of it is marked `InternalArg2pApi`;
 the rest is internal. Its packages, each depending only on those before it: `engine.term` (what is asked of tuProlog
 terms), `engine.words` (the words and their symbol tables), `engine.vm` (the machine), and the two names it publishes,
-`core.engine.Arg2pPrologSolverFactory` and `core.engine.stdlib.DefaultBuiltins`.
+`it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory` and `engine.stdlib.DefaultBuiltins`.
 
 ## The machine (`vm`)
 

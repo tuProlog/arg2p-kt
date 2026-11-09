@@ -2,10 +2,10 @@
 
 package it.unibo.tuprolog.argumentation.core.model
 
+import it.unibo.tuprolog.argumentation.core.context.ContextSchema
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.StatementTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.js.JsExport

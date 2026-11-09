@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /** A library of stores, whose records are in the words of the program of the solver running it */
 @InternalArg2pApi

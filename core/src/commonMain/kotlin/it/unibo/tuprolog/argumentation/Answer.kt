@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation
 
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var

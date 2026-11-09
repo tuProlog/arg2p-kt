@@ -12,7 +12,7 @@ import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
 import it.unibo.tuprolog.argumentation.core.flags.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
+import it.unibo.tuprolog.argumentation.core.notation.Notation
 import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution

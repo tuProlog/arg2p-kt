@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.words
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /** A table that only grows: read by index, without a lock */
 @InternalArg2pApi

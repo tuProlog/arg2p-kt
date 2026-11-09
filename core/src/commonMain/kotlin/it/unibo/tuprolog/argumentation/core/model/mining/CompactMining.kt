@@ -1,13 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.model.mining
 
+import it.unibo.tuprolog.argumentation.core.context.Context
+import it.unibo.tuprolog.argumentation.core.context.ContextSchema
+import it.unibo.tuprolog.argumentation.core.graph.expandedAttacks
+import it.unibo.tuprolog.argumentation.core.graph.supportPairs
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.CompactLists
 import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.context.Context
-import it.unibo.tuprolog.argumentation.core.runtime.context.ContextSchema
-import it.unibo.tuprolog.argumentation.core.runtime.graph.expandedAttacks
-import it.unibo.tuprolog.argumentation.core.runtime.graph.supportPairs
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.engine.vm.RecordKey
 import it.unibo.tuprolog.core.Term

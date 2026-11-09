@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import kotlin.js.JsExport
 import kotlin.js.JsName
 

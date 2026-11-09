@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Answer
-import it.unibo.tuprolog.argumentation.LABELLINGS
 import it.unibo.tuprolog.argumentation.Solution
-import it.unibo.tuprolog.argumentation.checked
+import it.unibo.tuprolog.argumentation.core.LABELLINGS
+import it.unibo.tuprolog.argumentation.core.checked
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse

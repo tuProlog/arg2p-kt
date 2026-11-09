@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /**
  * What [block] does, a failure of it reported (see [report]) rather than raised: a frame, a beacon or a task whose

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.words.Symbols
 import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.solve.library.Library

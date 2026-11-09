@@ -1,6 +1,5 @@
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.theory.Theory

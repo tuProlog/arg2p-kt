@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules
 
-import it.unibo.tuprolog.argumentation.core.runtime.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
+import it.unibo.tuprolog.argumentation.core.notation.Notation
 import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.core.operators.OperatorSet

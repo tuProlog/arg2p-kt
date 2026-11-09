@@ -9,14 +9,7 @@ import it.unibo.tuprolog.argumentation.core.flags.OpenConclusions
 import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.Temporal
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologAxioms
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologDefeasibleRules
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologPremises
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.PrologStrictRules
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClause
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.RuleToClauseNatural
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.TheoryBurdens
-import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
+import it.unibo.tuprolog.argumentation.core.notation.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive

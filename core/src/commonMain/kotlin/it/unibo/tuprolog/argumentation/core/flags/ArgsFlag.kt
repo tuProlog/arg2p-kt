@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.flags
 
 /**
  * A flag of arg2p, declared by the library it configures and checked through setting/1,2 (see
- * [it.unibo.tuprolog.argumentation.core.runtime.settings.Settings]): a theory states its values as facts of its
+ * [it.unibo.tuprolog.argumentation.core.settings.Settings]): a theory states its values as facts of its
  * [predicate]
  */
 interface ArgsFlag {

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.words
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /** A set of identifiers (small integers, see context_id), kept in the order they were added */
 @InternalArg2pApi

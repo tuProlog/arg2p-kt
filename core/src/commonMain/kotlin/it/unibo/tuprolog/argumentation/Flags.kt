@@ -13,7 +13,7 @@ import it.unibo.tuprolog.argumentation.core.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.flags.QueryMode
 import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.modules.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
 import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.engine.words.locked

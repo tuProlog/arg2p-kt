@@ -2,6 +2,7 @@ package it.unibo.tuprologo.argumentation.actor
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.ClusterException
 import it.unibo.tuprolog.argumentation.actor.ClusterInitializer
@@ -12,7 +13,6 @@ import it.unibo.tuprolog.argumentation.actor.message.Reset
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.exception.error.SystemError

@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.checked
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.EmptyList

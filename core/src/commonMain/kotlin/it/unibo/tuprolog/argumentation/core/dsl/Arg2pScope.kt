@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.dsl
 
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.dsl.solve.LogicProgrammingScope
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.SolverFactory

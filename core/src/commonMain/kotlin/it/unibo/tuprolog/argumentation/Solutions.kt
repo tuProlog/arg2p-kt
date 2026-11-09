@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation
 
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import it.unibo.tuprolog.solve.Solution as LogicSolution

@@ -1,7 +1,7 @@
 // Forked from 2p-kt's solve 3.0.2 (Apache License 2.0)
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.operators.OperatorSet

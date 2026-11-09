@@ -1,18 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.store
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttack
-import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackById
-import it.unibo.tuprolog.argumentation.core.primitives.graph.ExpandedAttackIn
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphAttackSaved
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphBegin
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphExplore
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphOwn
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphRemoved
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSettle
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphShare
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphStep
-import it.unibo.tuprolog.argumentation.core.primitives.graph.GraphSync
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

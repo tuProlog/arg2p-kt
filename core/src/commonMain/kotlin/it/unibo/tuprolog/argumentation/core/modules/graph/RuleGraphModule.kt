@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.modules.PrologModule
 
 /**
  * The whole argumentation graph of the rules of a theory (module `ruleGraph`, the graphBuilder of the profiles but
- * abstract, see [it.unibo.tuprolog.argumentation.core.runtime.settings.Profiles]): every argument its rules make (see the module argumentBuilder) and the
+ * abstract, see [it.unibo.tuprolog.argumentation.core.settings.Profiles]): every argument its rules make (see the module argumentBuilder) and the
  * attacks between them (attackBuilder), saved in the context (see the module graphStore). The arguments derived from
  * them are added when the graph is changed (see pipeline::modifyGraph/0).
  */

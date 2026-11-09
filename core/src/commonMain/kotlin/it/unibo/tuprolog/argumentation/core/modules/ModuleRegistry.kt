@@ -62,7 +62,6 @@ import it.unibo.tuprolog.argumentation.core.modules.labelling.statement.Statemen
 import it.unibo.tuprolog.argumentation.core.modules.labelling.statement.StatementPassThroughModule
 import it.unibo.tuprolog.argumentation.core.modules.utils.DebugModule
 import it.unibo.tuprolog.argumentation.core.modules.utils.UtilsModule
-import it.unibo.tuprolog.argumentation.core.runtime.modules.Loadable
 
 /** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
 object ModuleRegistry {

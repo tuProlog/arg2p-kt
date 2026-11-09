@@ -7,6 +7,7 @@ import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.libs.ActorGraph
 import it.unibo.tuprolog.argumentation.actor.message.Add
@@ -21,7 +22,6 @@ import it.unibo.tuprolog.argumentation.actor.message.Stop
 import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

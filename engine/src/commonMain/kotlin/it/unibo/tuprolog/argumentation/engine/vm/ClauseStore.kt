@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.term.Arg2pUnificator
 import it.unibo.tuprolog.argumentation.engine.term.collectVariables
 import it.unibo.tuprolog.argumentation.engine.term.renamedCopy

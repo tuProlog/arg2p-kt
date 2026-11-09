@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.query
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.query.GroundVars
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
+import it.unibo.tuprolog.argumentation.core.graph.AttackRef
+import it.unibo.tuprolog.argumentation.core.graph.SegmentTerms
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.graph.AttackRef
-import it.unibo.tuprolog.argumentation.core.runtime.graph.SegmentTerms
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
 import it.unibo.tuprolog.argumentation.parallel.message.TextWriter
 import it.unibo.tuprolog.core.Term

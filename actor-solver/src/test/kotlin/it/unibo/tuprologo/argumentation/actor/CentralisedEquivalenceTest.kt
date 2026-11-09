@@ -1,11 +1,11 @@
 package it.unibo.tuprologo.argumentation.actor
 
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore

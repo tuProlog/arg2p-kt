@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.core.modules.data
 
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.data.RulesAndInfo
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

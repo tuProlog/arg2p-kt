@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import java.net.InetAddress
 import java.util.concurrent.CompletableFuture

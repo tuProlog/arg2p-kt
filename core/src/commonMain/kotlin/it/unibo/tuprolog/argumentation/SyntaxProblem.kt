@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.parsing.ParseException
 import kotlin.js.JsExport
 import kotlin.jvm.JvmStatic

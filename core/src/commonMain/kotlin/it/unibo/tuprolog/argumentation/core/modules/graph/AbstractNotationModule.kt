@@ -1,8 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.TheoryClause
-import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
+import it.unibo.tuprolog.argumentation.core.notation.Notation
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive

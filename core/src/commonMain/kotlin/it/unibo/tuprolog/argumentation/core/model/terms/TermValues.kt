@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.model.terms
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.Value
-import it.unibo.tuprolog.argumentation.core.runtime.theory.Notation
+import it.unibo.tuprolog.argumentation.core.notation.Notation
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.TermFormatter
 import it.unibo.tuprolog.core.operators.OperatorSet

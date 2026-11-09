@@ -197,7 +197,7 @@ Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -228,7 +228,7 @@ it cannot be parsed without them.
 ### Parsing a theory
 
 Arg2P adds operators (`=>`, `:=>`, `:->`, `:`) that a plain parser does not know, so theories must be parsed
-with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.runtime.theory`)
+with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.notation`)
 does it, and tags the clauses with the identifiers of their comments as well, which
 [plain Prolog theories]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) need:
 

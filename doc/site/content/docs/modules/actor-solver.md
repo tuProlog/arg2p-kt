@@ -27,8 +27,8 @@ when [building a solver by hand]({{% ref "/docs/api/kotlin" %}}):
 ```kotlin
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.notation.RuleAnnotations
 
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ParallelNode
 import it.unibo.tuprolog.argumentation.parallel.host.ConsumerHost
 import it.unibo.tuprolog.argumentation.parallel.host.HostCodec

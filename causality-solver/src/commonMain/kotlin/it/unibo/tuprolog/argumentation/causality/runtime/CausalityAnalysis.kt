@@ -11,8 +11,8 @@ import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument
 import it.unibo.tuprolog.argumentation.core.model.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
-import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.notation.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.settings.Settings
 import it.unibo.tuprolog.argumentation.engine.term.Arg2pUnificator
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause

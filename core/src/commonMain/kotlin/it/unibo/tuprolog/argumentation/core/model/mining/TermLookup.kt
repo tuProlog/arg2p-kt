@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.model.mining
 
-import it.unibo.tuprolog.argumentation.core.runtime.canonical
+import it.unibo.tuprolog.argumentation.core.model.terms.canonical
 import it.unibo.tuprolog.core.Term
 
 /**

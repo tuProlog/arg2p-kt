@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.ConsumerStart
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
 import it.unibo.tuprolog.argumentation.parallel.message.TextWriter

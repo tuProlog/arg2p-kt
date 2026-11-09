@@ -1,11 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.labelling.argument
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Forcing
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.LabelIn
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.Selection
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedCandidates
-import it.unibo.tuprolog.argumentation.core.primitives.labelling.argument.UndecidedSccs
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

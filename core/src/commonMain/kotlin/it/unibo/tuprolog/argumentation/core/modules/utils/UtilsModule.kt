@@ -1,15 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.utils
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Contains
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Deduplicate
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Intersection
-import it.unibo.tuprolog.argumentation.core.primitives.utils.MinimalBySet
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Sccs
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Sort
-import it.unibo.tuprolog.argumentation.core.primitives.utils.SortDistinct
-import it.unibo.tuprolog.argumentation.core.primitives.utils.Subtract
-import it.unibo.tuprolog.argumentation.core.primitives.utils.UniqueByFirst
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

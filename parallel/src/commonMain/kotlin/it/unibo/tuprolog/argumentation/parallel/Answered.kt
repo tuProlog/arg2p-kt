@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.terms.TermValues

@@ -1,7 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.modules.graph.language
 
 import it.unibo.tuprolog.argumentation.core.modules.PrologModule
-import it.unibo.tuprolog.argumentation.core.primitives.graph.language.Subsumes
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 

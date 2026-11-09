@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
-import it.unibo.tuprolog.argumentation.checked
+import it.unibo.tuprolog.argumentation.core.checked
 import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
-import it.unibo.tuprolog.argumentation.core.runtime.canonical
+import it.unibo.tuprolog.argumentation.core.model.terms.canonical
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution

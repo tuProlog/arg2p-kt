@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.runConsumerThread
 import it.unibo.tuprolog.argumentation.parallel.consumer.runSolverThread
 import it.unibo.tuprolog.argumentation.parallel.host.ConsumerThreads
