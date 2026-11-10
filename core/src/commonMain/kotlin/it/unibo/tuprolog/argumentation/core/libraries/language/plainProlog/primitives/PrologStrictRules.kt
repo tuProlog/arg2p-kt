@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.prim
 import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
 import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryClauses
 import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.helpers.ClauseConversion
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.core.toTerm
 import it.unibo.tuprolog.solve.Signature
 

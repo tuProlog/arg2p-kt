@@ -6,11 +6,11 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.factsMatching
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.lookup
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.matching
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.attempts
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.MachineCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.attempts
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.solve.Signature
 
 // The term [w] with [key] at the place: through the cells it has, the others made with fresh variables around

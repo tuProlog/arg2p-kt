@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextLayout
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.Record
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 

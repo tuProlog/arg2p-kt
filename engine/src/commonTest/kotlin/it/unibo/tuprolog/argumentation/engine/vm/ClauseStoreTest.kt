@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.parsing.parse

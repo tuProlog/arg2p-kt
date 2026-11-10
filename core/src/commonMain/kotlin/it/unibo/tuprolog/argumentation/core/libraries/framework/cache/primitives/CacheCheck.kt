@@ -2,10 +2,10 @@ package it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitive
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.Cache
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.lookup
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.GoalWrapper
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve

@@ -5,9 +5,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.La
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.arguments
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.listArg
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.listArg
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError

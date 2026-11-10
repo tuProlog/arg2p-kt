@@ -1,7 +1,12 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.CONTINUE
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.natives.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.CONTINUE
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.natives.items
+import it.unibo.tuprolog.argumentation.engine.natives.words
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.Record
 import it.unibo.tuprolog.argumentation.engine.words.Words.LIST
 import it.unibo.tuprolog.argumentation.engine.words.Words.REF
 import it.unibo.tuprolog.argumentation.engine.words.Words.STR
@@ -25,6 +30,9 @@ internal class StoredCall(
 internal class StoreLookup(
     private val m: Machine,
 ) {
+    // (the heap of the machine, held: one load less on each cell read)
+    private val heap = m.heap
+
     /** Enters the goal [goal] resolved with the clauses of [store] for it: their heads unified in place */
     fun storeGoal(
         goal: Int,
@@ -32,8 +40,8 @@ internal class StoreLookup(
         wrap: GoalWrapper?,
     ): Int {
         store.bind(m.program)
-        val g = m.deref(goal)
-        val candidates = store.candidates(m.heap, g)
+        val g = heap.deref(goal)
+        val candidates = store.candidates(heap.cells, g)
         if (candidates.size == 0) return FAIL
         return tryStored(StoredCall(candidates, wrap, false), candidates.size - 1, loadArguments(g), Machine.NONE)
     }
@@ -45,8 +53,8 @@ internal class StoreLookup(
         store: ClauseStore,
     ): Int {
         store.bind(m.program)
-        val g = m.deref(head)
-        val candidates = store.candidates(m.heap, g)
+        val g = heap.deref(head)
+        val candidates = store.candidates(heap.cells, g)
         if (candidates.size == 0) return FAIL
         val arity = loadArguments(g)
         if (arity + 1 > m.regs.size) m.regs = m.regs.copyOf((arity + 1) * 2)
@@ -64,15 +72,15 @@ internal class StoreLookup(
         store: ClauseStore,
     ): Boolean? {
         store.bind(m.program)
-        val g = m.deref(goal)
-        val candidates = store.candidates(m.heap, g)
+        val g = heap.deref(goal)
+        val candidates = store.candidates(heap.cells, g)
         val items = candidates.items
         val arity = loadArguments(g)
         for (i in candidates.size - 1 downTo 0) {
             val record = items[i]!!.record
             if (!headMayMatch(record, arity)) continue
             if (body == null && record.isRule) return null
-            if (recordUnifies(record, arity) { body == null || m.unify(body, copyRecord(record.words, record.body)) }) return true
+            if (recordUnifies(record, arity) { body == null || heap.unify(body, copyRecord(record.words, record.body)) }) return true
         }
         return false
     }
@@ -82,18 +90,11 @@ internal class StoreLookup(
         record: Record,
         arity: Int,
         then: () -> Boolean,
-    ): Boolean {
-        val savedTop = m.top
-        val savedBarrier = m.heapBarrier
-        val mark = m.trailTop
-        m.heapBarrier = Int.MAX_VALUE
-        enterRecord(record)
-        val holds = unifyHead(record, arity) && then()
-        m.undoTrail(mark)
-        m.heapBarrier = savedBarrier
-        m.top = savedTop
-        return holds
-    }
+    ): Boolean =
+        heap.tentatively {
+            enterRecord(record)
+            unifyHead(record, arity) && then()
+        }
 
     /** The facts of [store] that unify with [goal], newest first, nothing left bound and the registers as they were */
     fun storeMatching(
@@ -101,12 +102,12 @@ internal class StoreLookup(
         store: ClauseStore,
     ): List<ClauseStore.Stored> {
         store.bind(m.program)
-        val g = m.deref(goal)
-        val candidates = store.candidates(m.heap, g)
+        val g = heap.deref(goal)
+        val candidates = store.candidates(heap.cells, g)
         val items = candidates.items
         val arity =
             when (tag(g)) {
-                STR -> m.program.arity(m.heap[payload(g)])
+                STR -> m.program.arity(heap.cells[payload(g)])
                 LIST -> 2
                 else -> 0
             }
@@ -151,7 +152,7 @@ internal class StoreLookup(
         val record = items[i]!!.record
         enterRecord(record)
         if (!unifyHead(record, headArity)) return FAIL
-        if (call.asClause) return if (m.unify(m.regs[headArity], copyRecord(record.words, record.body))) CONTINUE else FAIL
+        if (call.asClause) return if (heap.unify(m.regs[headArity], copyRecord(record.words, record.body))) CONTINUE else FAIL
         if (!record.isRule) return CONTINUE
         val body = copyRecord(record.words, record.body)
         val wrap = call.wrap
@@ -210,7 +211,7 @@ internal class StoreLookup(
         while (true) {
             val t = tag(r)
             if (t == REF) return true
-            val d = m.deref(w)
+            val d = heap.deref(w)
             val td = tag(d)
             if (td == REF) return true
             if (t != td) return false
@@ -219,18 +220,18 @@ internal class StoreLookup(
                     val a = payload(r)
                     val b = payload(d)
                     val f = words[a]
-                    if (f != m.heap[b]) return false
+                    if (f != heap.cells[b]) return false
                     val n = m.program.arity(f)
-                    for (i in 1 until n) if (!mayMatch(words, words[a + i], m.heap[b + i])) return false
+                    for (i in 1 until n) if (!mayMatch(words, words[a + i], heap.cells[b + i])) return false
                     r = words[a + n]
-                    w = m.heap[b + n]
+                    w = heap.cells[b + n]
                 }
                 LIST -> {
                     val a = payload(r)
                     val b = payload(d)
-                    if (!mayMatch(words, words[a], m.heap[b])) return false
+                    if (!mayMatch(words, words[a], heap.cells[b])) return false
                     r = words[a + 1]
-                    w = m.heap[b + 1]
+                    w = heap.cells[b + 1]
                 }
                 else -> return r == d
             }
@@ -248,53 +249,53 @@ internal class StoreLookup(
             when (tag(r)) {
                 REF -> {
                     val a = payload(r)
-                    if (recordStamps[a] == recordStamp) return m.unify(recordVariables[a], w)
+                    if (recordStamps[a] == recordStamp) return heap.unify(recordVariables[a], w)
                     recordStamps[a] = recordStamp
                     recordVariables[a] = w
                     return true
                 }
                 STR -> {
-                    val d = m.deref(w)
+                    val d = heap.deref(w)
                     when (tag(d)) {
                         REF -> {
-                            m.bind(payload(d), copyRecord(words, r))
+                            heap.bind(payload(d), copyRecord(words, r))
                             return true
                         }
                         STR -> {
                             val a = payload(r)
                             val b = payload(d)
                             val f = words[a]
-                            if (f != m.heap[b]) return false
+                            if (f != heap.cells[b]) return false
                             val n = m.program.arity(f)
-                            for (i in 1 until n) if (!unifyRecord(words, words[a + i], m.heap[b + i])) return false
+                            for (i in 1 until n) if (!unifyRecord(words, words[a + i], heap.cells[b + i])) return false
                             r = words[a + n]
-                            w = m.heap[b + n]
+                            w = heap.cells[b + n]
                         }
                         else -> return false
                     }
                 }
                 LIST -> {
-                    val d = m.deref(w)
+                    val d = heap.deref(w)
                     when (tag(d)) {
                         REF -> {
-                            m.bind(payload(d), copyRecord(words, r))
+                            heap.bind(payload(d), copyRecord(words, r))
                             return true
                         }
                         LIST -> {
                             val a = payload(r)
                             val b = payload(d)
-                            if (!unifyRecord(words, words[a], m.heap[b])) return false
+                            if (!unifyRecord(words, words[a], heap.cells[b])) return false
                             r = words[a + 1]
-                            w = m.heap[b + 1]
+                            w = heap.cells[b + 1]
                         }
                         else -> return false
                     }
                 }
                 else -> {
-                    val d = m.deref(w)
+                    val d = heap.deref(w)
                     if (d == r) return true
                     if (tag(d) != REF) return false
-                    m.bind(payload(d), r)
+                    heap.bind(payload(d), r)
                     return true
                 }
             }
@@ -312,7 +313,7 @@ internal class StoreLookup(
                 if (recordStamps[a] == recordStamp) {
                     recordVariables[a]
                 } else {
-                    val v = ref(m.newVariable(0))
+                    val v = ref(heap.newVariable(0))
                     recordStamps[a] = recordStamp
                     recordVariables[a] = v
                     v
@@ -322,30 +323,30 @@ internal class StoreLookup(
                 val a = payload(r)
                 val f = words[a]
                 val n = m.program.arity(f)
-                val h = m.alloc(n + 1)
-                m.heap[h] = f
+                val h = heap.alloc(n + 1)
+                heap.cells[h] = f
                 for (i in 1..n) {
                     val argument = copyRecord(words, words[a + i])
-                    m.heap[h + i] = argument
+                    heap.cells[h + i] = argument
                 }
                 word(STR, h)
             }
             LIST -> {
-                val first = m.alloc(2)
+                val first = heap.alloc(2)
                 var cell = first
                 var a = payload(r)
                 while (true) {
                     val item = copyRecord(words, words[a])
-                    m.heap[cell] = item
+                    heap.cells[cell] = item
                     val tail = words[a + 1]
                     if (tag(tail) == LIST) {
-                        val next = m.alloc(2)
-                        m.heap[cell + 1] = word(LIST, next)
+                        val next = heap.alloc(2)
+                        heap.cells[cell + 1] = word(LIST, next)
                         cell = next
                         a = payload(tail)
                     } else {
                         val last = copyRecord(words, tail)
-                        m.heap[cell + 1] = last
+                        heap.cells[cell + 1] = last
                         break
                     }
                 }
@@ -359,15 +360,15 @@ internal class StoreLookup(
         when (tag(g)) {
             STR -> {
                 val a = payload(g)
-                val n = m.program.arity(m.heap[a])
+                val n = m.program.arity(heap.cells[a])
                 if (n > m.regs.size) m.regs = m.regs.copyOf(n * 2)
-                for (i in 0 until n) m.regs[i] = m.heap[a + 1 + i]
+                for (i in 0 until n) m.regs[i] = heap.cells[a + 1 + i]
                 n
             }
             LIST -> {
                 val a = payload(g)
-                m.regs[0] = m.heap[a]
-                m.regs[1] = m.heap[a + 1]
+                m.regs[0] = heap.cells[a]
+                m.regs[1] = heap.cells[a + 1]
                 2
             }
             else -> 0
@@ -378,18 +379,18 @@ internal class StoreLookup(
         w: Int,
         wrap: GoalWrapper,
     ): Int {
-        val d = m.deref(w)
-        if (tag(d) == STR && m.heap[payload(d)] == m.wComma) {
+        val d = heap.deref(w)
+        if (tag(d) == STR && heap.cells[payload(d)] == m.wComma) {
             val a = payload(d)
-            val left = wrapped(m.heap[a + 1], wrap)
-            val right = wrapped(m.heap[a + 2], wrap)
-            val h = m.alloc(3)
-            m.heap[h] = m.wComma
-            m.heap[h + 1] = left
-            m.heap[h + 2] = right
+            val left = wrapped(heap.cells[a + 1], wrap)
+            val right = wrapped(heap.cells[a + 2], wrap)
+            val h = heap.alloc(3)
+            heap.cells[h] = m.wComma
+            heap.cells[h + 1] = left
+            heap.cells[h + 2] = right
             return word(STR, h)
         }
         if (d == m.program.trueWord) return d
-        return wrap.wrap(m, d)
+        return wrap.wrap(m.face, d)
     }
 }

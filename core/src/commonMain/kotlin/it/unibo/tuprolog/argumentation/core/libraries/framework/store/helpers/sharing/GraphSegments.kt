@@ -6,8 +6,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mi
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.attacks
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.supports
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.Record
 import it.unibo.tuprolog.core.Atom
 
 /**

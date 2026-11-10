@@ -2,10 +2,10 @@ package it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extensio
 
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.helpers.LinearSystem
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.helpers.LinearTerms
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.reply
-import it.unibo.tuprolog.argumentation.engine.vm.termArg
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.reply
+import it.unibo.tuprolog.argumentation.engine.natives.termArg
 import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError

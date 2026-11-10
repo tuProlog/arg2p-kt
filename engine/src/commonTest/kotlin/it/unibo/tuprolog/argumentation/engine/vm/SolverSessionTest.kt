@@ -1,6 +1,10 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
 import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.engine.solver.VmSolver
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
+import it.unibo.tuprolog.argumentation.engine.vm.program.SolverSession
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse

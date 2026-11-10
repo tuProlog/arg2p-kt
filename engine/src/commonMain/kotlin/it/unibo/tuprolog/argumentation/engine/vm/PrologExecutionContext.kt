@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.engine.solver.MutableVmSolver
+import it.unibo.tuprolog.argumentation.engine.solver.VmSolver
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.operators.OperatorSet

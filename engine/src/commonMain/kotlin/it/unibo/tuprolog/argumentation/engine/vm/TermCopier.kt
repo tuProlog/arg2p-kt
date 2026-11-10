@@ -17,6 +17,9 @@ import it.unibo.tuprolog.argumentation.engine.words.word
 internal class TermCopier(
     private val m: Machine,
 ) {
+    // (the heap of the machine, held: one load less on each cell read)
+    private val heap = m.heap
+
     var bag = IntArray(256)
     var bagInfo = IntArray(256)
     var top = 0
@@ -49,7 +52,7 @@ internal class TermCopier(
         }
         val a = allocBag(1)
         bag[a] = ref(a)
-        bagInfo[a] = m.varInfo[address]
+        bagInfo[a] = heap.varInfo[address]
         if (many != null) {
             many[address] = a
         } else if (seenTop < seen.size) {
@@ -75,12 +78,12 @@ internal class TermCopier(
         named: Boolean = true,
     ): Int {
         val n = top - from
-        val base = m.alloc(n)
+        val base = heap.alloc(n)
         val shift = base - from
         for (i in 0 until n) {
             val w = bag[from + i]
-            m.heap[base + i] = shifted(w, shift)
-            m.varInfo[base + i] = if (named && tag(w) == REF && payload(w) == from + i) bagInfo[from + i] else 0
+            heap.cells[base + i] = shifted(w, shift)
+            heap.varInfo[base + i] = if (named && tag(w) == REF && payload(w) == from + i) bagInfo[from + i] else 0
         }
         return shift
     }
@@ -99,16 +102,16 @@ internal class TermCopier(
     }
 
     private fun copyTerm(w0: Int): Int {
-        val w = m.deref(w0)
+        val w = heap.deref(w0)
         return when (tag(w)) {
             REF -> ref(variable(payload(w)))
             STR -> {
                 val a = payload(w)
-                val n = m.program.arity(m.heap[a])
+                val n = m.program.arity(heap.cells[a])
                 val s = allocBag(n + 1)
-                bag[s] = m.heap[a]
+                bag[s] = heap.cells[a]
                 for (i in 1..n) {
-                    val arg = copyTerm(m.heap[a + i])
+                    val arg = copyTerm(heap.cells[a + i])
                     bag[s + i] = arg
                 }
                 word(STR, s)
@@ -118,9 +121,9 @@ internal class TermCopier(
                 var s = first
                 var a = payload(w)
                 while (true) {
-                    val head = copyTerm(m.heap[a])
+                    val head = copyTerm(heap.cells[a])
                     bag[s] = head
-                    val t = m.deref(m.heap[a + 1])
+                    val t = heap.deref(heap.cells[a + 1])
                     if (tag(t) == LIST) {
                         val s2 = allocBag(2)
                         bag[s + 1] = word(LIST, s2)

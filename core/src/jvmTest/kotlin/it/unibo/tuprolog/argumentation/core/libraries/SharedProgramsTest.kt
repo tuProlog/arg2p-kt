@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.libraries
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.engine.vm.SharedPrograms
+import it.unibo.tuprolog.argumentation.engine.vm.program.SharedPrograms
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver

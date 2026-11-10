@@ -8,8 +8,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.gr
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.supportPairs
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.CompactLists
-import it.unibo.tuprolog.argumentation.engine.vm.Record
-import it.unibo.tuprolog.argumentation.engine.vm.RecordKey
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.store.RecordKey
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver
 

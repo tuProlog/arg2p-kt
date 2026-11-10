@@ -14,8 +14,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.language.metaRules.flags.M
 import it.unibo.tuprolog.argumentation.core.libraries.language.moduleCalls.flags.ModulesPath
 import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.flags.PrologStrictCompatibility
 import it.unibo.tuprolog.argumentation.core.libraries.language.transposition.flags.AutoTransposition
-import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
-import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.program.CodeKey
+import it.unibo.tuprolog.argumentation.engine.vm.program.SharedLibrary
 import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.theory.Theory

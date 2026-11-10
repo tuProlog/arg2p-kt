@@ -5,9 +5,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.branchLookup
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.isView
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.lookupOrView
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.intArg
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.intArg
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve

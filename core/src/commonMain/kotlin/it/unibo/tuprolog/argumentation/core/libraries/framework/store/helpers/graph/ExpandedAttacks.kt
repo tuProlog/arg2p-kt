@@ -5,8 +5,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.attacks
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.core.Term
 
 /** An attack by the identifiers of its arguments: of [type], of [attacker] on [attacked], on its sub-argument [on] */

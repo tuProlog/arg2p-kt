@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers
 
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.Program
-import it.unibo.tuprolog.argumentation.engine.vm.Record
-import it.unibo.tuprolog.argumentation.engine.vm.RecordIdentifiers
-import it.unibo.tuprolog.argumentation.engine.vm.RecordKey
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.store.RecordIdentifiers
+import it.unibo.tuprolog.argumentation.engine.store.RecordKey
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.core.Term
 
 /**

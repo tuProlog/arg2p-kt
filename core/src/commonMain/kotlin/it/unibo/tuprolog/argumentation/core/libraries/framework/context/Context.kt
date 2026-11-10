@@ -24,10 +24,10 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitiv
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives.ContextStoredId
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives.ContextTerm
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.OwnedLibrary
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.Program
-import it.unibo.tuprolog.argumentation.engine.vm.ProgramStore
-import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.ProgramStore
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime

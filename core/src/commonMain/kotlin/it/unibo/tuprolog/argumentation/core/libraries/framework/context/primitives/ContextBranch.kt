@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.intArg
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.intArg
 import it.unibo.tuprolog.solve.Signature
 
 /** context_branch(+From, ?Branch): a new branch of From, made active, only made if its identifier unifies with Branch */

@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.utils.primitives
 
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.items
-import it.unibo.tuprolog.argumentation.engine.vm.replyItems
-import it.unibo.tuprolog.argumentation.engine.vm.replyWord
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.items
+import it.unibo.tuprolog.argumentation.engine.natives.replyItems
+import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.solve.Signature
 
 /**

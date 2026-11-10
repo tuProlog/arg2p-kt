@@ -1,6 +1,11 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeResume
 import it.unibo.tuprolog.argumentation.engine.stdlib.DefaultBuiltins
+import it.unibo.tuprolog.argumentation.engine.vm.ExecutionEnvironment
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -257,7 +262,7 @@ class MachineTest {
         // A deterministic run far beyond the collection threshold: bounded by the collector
         assertEquals(listOf(""), answers(m, "bench(20000)"))
         assertTrue(m.collections > 0, "no collection ran")
-        assertTrue(m.heap.size < (1 shl 22), "the heap grew to ${m.heap.size} cells")
+        assertTrue(m.heap.cells.size < (1 shl 22), "the heap grew to ${m.heap.cells.size} cells")
         // Collections during a findall, with choice points and the trail alive
         assertEquals(listOf(""), answers(m, "\\+ \\+ (coll(10000, L), length(L, 10000))"))
         // A long list surviving collections

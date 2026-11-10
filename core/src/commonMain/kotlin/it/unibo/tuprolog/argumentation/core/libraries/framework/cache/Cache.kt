@@ -6,10 +6,10 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives.CacheCount
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives.CacheRetract
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.OwnedLibrary
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Program
-import it.unibo.tuprolog.argumentation.engine.vm.ProgramStore
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.ProgramStore
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.solve.library.Library
 
 /** Facts shared across context branches (cache_assert/1, cache_retract/1, cache_check/1), kept in the same indexed store as the context */

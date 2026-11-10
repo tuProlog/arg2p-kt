@@ -4,9 +4,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.context.Context
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.contextLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Record
-import it.unibo.tuprolog.argumentation.engine.vm.SessionKey
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.vm.program.SessionKey
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Solver

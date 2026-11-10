@@ -1,6 +1,8 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
 import it.unibo.tuprolog.argumentation.engine.stdlib.DefaultBuiltins
+import it.unibo.tuprolog.argumentation.engine.vm.ExecutionEnvironment
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Signature

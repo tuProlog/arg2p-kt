@@ -15,9 +15,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sh
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.graphKey
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.compactGraph
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Record
-import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.Record
+import it.unibo.tuprolog.argumentation.engine.vm.program.SolverSession
 import it.unibo.tuprolog.argumentation.goalOf
 import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.EvaluationStats

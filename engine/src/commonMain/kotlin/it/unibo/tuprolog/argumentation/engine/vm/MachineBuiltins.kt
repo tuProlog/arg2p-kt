@@ -1,7 +1,9 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.CONTINUE
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.CONTINUE
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.vm.program.Op
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.argumentation.engine.words.Words.REF
 import it.unibo.tuprolog.argumentation.engine.words.Words.STR
 import it.unibo.tuprolog.argumentation.engine.words.payload
@@ -64,25 +66,27 @@ internal fun builtinsOf(program: Program): Array<Machine.Builtin?> {
         m.cutTo(m.cutBarrier)
         CONTINUE
     }
-    builtin("=", 2) { m -> if (m.unify(m.regs[0], m.regs[1])) CONTINUE else FAIL }
-    arithmetic("is") { m -> if (m.unify(m.regs[0], m.intWord(m.eval(m.regs[1])))) CONTINUE else FAIL }
+    builtin("=", 2) { m -> if (m.heap.unify(m.regs[0], m.regs[1])) CONTINUE else FAIL }
+    arithmetic("is") { m -> if (m.heap.unify(m.regs[0], m.heap.intWord(m.arithmetic.eval(m.regs[1])))) CONTINUE else FAIL }
     for ((name, kind) in Op.COMPARISONS) {
-        arithmetic(name) { m -> if (m.holds(kind, m.eval(m.regs[0]).compareTo(m.eval(m.regs[1])), 0)) CONTINUE else FAIL }
+        arithmetic(
+            name,
+        ) { m -> if (holds(kind, m.arithmetic.eval(m.regs[0]).compareTo(m.arithmetic.eval(m.regs[1])), 0)) CONTINUE else FAIL }
     }
-    builtin("var", 1) { m -> if (tag(m.deref(m.regs[0])) == REF) CONTINUE else FAIL }
-    builtin("nonvar", 1) { m -> if (tag(m.deref(m.regs[0])) != REF) CONTINUE else FAIL }
+    builtin("var", 1) { m -> if (tag(m.heap.deref(m.regs[0])) == REF) CONTINUE else FAIL }
+    builtin("nonvar", 1) { m -> if (tag(m.heap.deref(m.regs[0])) != REF) CONTINUE else FAIL }
     builtin("call", 1) { m ->
         m.cutBarrier = m.cpTop
         m.callTerm(m.regs[0])
     }
     builtin(",", 2) { m -> m.jump(blocks.conjunction) }
     builtin(";", 2) { m ->
-        val left = m.deref(m.regs[0])
-        if (tag(left) == STR && m.heap[payload(left)] == ifThen) {
+        val left = m.heap.deref(m.regs[0])
+        if (tag(left) == STR && m.heap.cells[payload(left)] == ifThen) {
             val a = payload(left)
             m.regs[2] = m.regs[1]
-            m.regs[0] = m.heap[a + 1]
-            m.regs[1] = m.heap[a + 2]
+            m.regs[0] = m.heap.cells[a + 1]
+            m.regs[1] = m.heap.cells[a + 2]
             m.jump(blocks.ifThenElse)
         } else {
             m.jump(blocks.disjunction)
@@ -93,13 +97,13 @@ internal fun builtinsOf(program: Program): Array<Machine.Builtin?> {
         m.jump(blocks.ifThenElse)
     }
     builtin("\\+", 1) { m -> m.jump(blocks.negation) }
-    builtin("findall", 3) { m -> m.findall(m.regs[0], m.regs[1], m.regs[2]) }
+    builtin("findall", 3) { m -> m.nested.findall(m.regs[0], m.regs[1], m.regs[2]) }
     builtin("catch", 3) { m -> m.catch() }
     builtin("\$catch_exit", 1) { m -> m.catchExit() }
     builtin("throw", 1) { m ->
-        val ball = m.deref(m.regs[0])
+        val ball = m.heap.deref(m.regs[0])
         if (tag(ball) == REF) throw Machine.Raised(m.error(Atom.of("instantiation_error"), "throw/1"))
-        throw Machine.Raised(m.toTerm(ball, HashMap()))
+        throw Machine.Raised(m.heap.toTerm(ball, HashMap()))
     }
     return table
 }

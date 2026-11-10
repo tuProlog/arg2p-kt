@@ -2,9 +2,9 @@ package it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.confli
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.idsArg
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.answers
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.answers
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.solve.Signature

@@ -13,7 +13,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libraries.Loadable
 import it.unibo.tuprolog.argumentation.core.libraries.language.ruleNotation.notation.RuleNotation
-import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.engine.natives.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term

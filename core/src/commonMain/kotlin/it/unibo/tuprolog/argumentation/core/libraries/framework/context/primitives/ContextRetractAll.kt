@@ -2,9 +2,9 @@ package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primiti
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.matching
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.items
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.items
 import it.unibo.tuprolog.solve.Signature
 
 /** context_retract_all(+Clauses): the clauses of the active branch unifying with one of Clauses removed, all at once */

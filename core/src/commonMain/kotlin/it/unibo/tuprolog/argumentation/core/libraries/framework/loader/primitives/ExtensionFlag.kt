@@ -1,9 +1,9 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.attempts
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.attempts
 import it.unibo.tuprolog.solve.Signature
 
 /**

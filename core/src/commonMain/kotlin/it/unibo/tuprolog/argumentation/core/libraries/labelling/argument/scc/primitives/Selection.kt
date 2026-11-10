@@ -3,11 +3,11 @@ package it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.scc.pr
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.idList
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.idsArg
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.labelledIds
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.atomArg
-import it.unibo.tuprolog.argumentation.engine.vm.listArg
-import it.unibo.tuprolog.argumentation.engine.vm.replyWord
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.atomArg
+import it.unibo.tuprolog.argumentation.engine.natives.listArg
+import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.solve.Signature
 

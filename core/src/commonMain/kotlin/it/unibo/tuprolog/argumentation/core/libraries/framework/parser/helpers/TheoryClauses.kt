@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers
 
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.reply
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.reply
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.dsl.LogicProgrammingScope

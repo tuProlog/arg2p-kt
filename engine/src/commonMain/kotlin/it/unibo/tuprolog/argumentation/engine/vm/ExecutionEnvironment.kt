@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Truth
 import it.unibo.tuprolog.core.operators.OperatorSet

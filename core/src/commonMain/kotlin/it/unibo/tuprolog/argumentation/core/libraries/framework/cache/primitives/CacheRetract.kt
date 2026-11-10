@@ -2,9 +2,9 @@ package it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitive
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.Cache
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.retractAll
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.solve.Signature
 
 /** cache_retract(+Clause): the clauses of the cache unifying with Clause removed */

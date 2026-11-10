@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers
 
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 
 /**
  * What the library keeping its facts in the context tells the context of them, for it to look them up as they are read:

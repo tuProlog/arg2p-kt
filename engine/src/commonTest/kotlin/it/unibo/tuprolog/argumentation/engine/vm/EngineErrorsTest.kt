@@ -85,4 +85,41 @@ class EngineErrorsTest {
     fun aPrimitiveRaisingAnExceptionOnBacktracking() {
         assertEquals("[1, caught]", solve("findall(X, catch(flaky(X), error(system_error, _), X = caught), L)"))
     }
+
+    // The bindings of X in every solution of [goal], the last "error" if a ball halted them
+    private fun allX(goal: String): List<String> {
+        val solver = solverWithTheory(libraries = Runtime.of(Faulty.baseContent))
+        return solver.solve(Struct.parse(goal, solver.operators)).toList().mapNotNull { solution ->
+            when {
+                solution.isYes ->
+                    solution.substitution.entries
+                        .single { it.key.name == "X" }
+                        .value
+                        .toString()
+                solution.isHalt -> "error"
+                else -> null
+            }
+        }
+    }
+
+    // (at the top level, the next answer computed by backtracking into the primitive, outside a nested run)
+    @Test
+    fun aPrimitiveRaisingOnBacktrackingAtTheTopLevel() {
+        assertEquals(listOf("1", "caught"), allX("catch(flaky(X), error(system_error, _), X = caught)"))
+    }
+
+    @Test
+    fun aRecoveryThrowingAnotherBallAtTheTopLevel() {
+        assertEquals(listOf("ok"), allX("catch(catch(throw(a), a, throw(b)), b, X = ok)"))
+    }
+
+    @Test
+    fun aRecoveryThrowingAnotherBallInANestedRun() {
+        assertEquals("[ok]", solve("findall(X, catch(catch(throw(a), a, throw(b)), b, X = ok), L)"))
+    }
+
+    @Test
+    fun aRecoveryFailingIntoAnAlternativeThatRaises() {
+        assertEquals(listOf("caught"), allX("catch((flaky(_), catch(throw(a), a, fail)), error(system_error, _), X = caught)"))
+    }
 }

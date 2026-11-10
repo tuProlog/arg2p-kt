@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.replyWord
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.MachineCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.solve.Signature
 
 /** context_id(+Term, ?Id): the integer identifier of Term (see [ContextBranches.identifier]) */

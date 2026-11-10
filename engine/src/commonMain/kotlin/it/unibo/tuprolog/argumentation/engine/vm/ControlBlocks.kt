@@ -1,5 +1,9 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
+import it.unibo.tuprolog.argumentation.engine.vm.compile.CodeEmitter
+import it.unibo.tuprolog.argumentation.engine.vm.program.Op
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
+
 /**
  * The code every machine of a program runs besides the clauses (see Machine): the end of a run, the control constructs called
  * as goals at run time (their goals in the registers), and the return from an inlined goal. Assembled once for each program:
@@ -18,6 +22,12 @@ internal class ControlBlocks private constructor(
     val negation: Int,
     /** The return of an inlined goal: the scope of the caller restored from the frame the inlining allocated, the frame deallocated */
     val restoreScope: Int,
+    /**
+     * The return of a builtin behind an inline instruction, when the theory of the user gives it clauses (alternatives of it
+     * that may run later, by backtracking): to the address after the instruction, in the first slot of the frame the call
+     * allocated, the frame deallocated (giving back the continuation and the cut barrier of the clause that ran it)
+     */
+    val returnBehind: Int,
 ) {
     companion object {
         /** The blocks of [program], assembled at the end of its code */
@@ -84,6 +94,7 @@ internal class ControlBlocks private constructor(
                         }, otherwise = { program.emit(Op.RETURN) })
                     },
                 restoreScope = block { program.emit(Op.RESTORE_SCOPE_RETURN) },
+                returnBehind = block { program.emit(Op.RETURN_BEHIND) },
             )
         }
     }

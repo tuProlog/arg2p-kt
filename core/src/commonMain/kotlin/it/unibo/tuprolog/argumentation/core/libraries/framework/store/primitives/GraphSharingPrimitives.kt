@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.store.primitives
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.graphSharing
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.items
-import it.unibo.tuprolog.argumentation.engine.vm.replyWord
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.items
+import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.Signature

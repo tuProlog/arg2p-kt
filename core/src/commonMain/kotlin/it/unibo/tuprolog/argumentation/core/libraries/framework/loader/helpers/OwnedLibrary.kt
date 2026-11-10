@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers
 
-import it.unibo.tuprolog.argumentation.engine.vm.Program
-import it.unibo.tuprolog.argumentation.engine.vm.ProgramStore
+import it.unibo.tuprolog.argumentation.engine.store.ProgramStore
+import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.solve.library.Library
 
 /**

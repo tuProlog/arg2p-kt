@@ -20,6 +20,9 @@ import org.gciatto.kt.math.BigInteger
 internal class TermOrder(
     private val m: Machine,
 ) {
+    // (the heap of the machine, held: one load less on each cell read)
+    private val heap = m.heap
+
     // The atoms ordered so far by the standard order: their ranks by atom (0 for one not met yet), the atoms of each
     // rank. Two atoms with the same rank are equal for the order. An atom met costs a binary search among them
     private var atomRanks = IntArray(64)
@@ -70,7 +73,7 @@ internal class TermOrder(
 
     // The atoms of [w0] with no rank, collected (their rank -1 until rankBatch)
     private fun collectUnranked(w0: Int) {
-        var w = m.deref(w0)
+        var w = heap.deref(w0)
         while (true) {
             when (tag(w)) {
                 ATOM -> {
@@ -85,14 +88,14 @@ internal class TermOrder(
                 }
                 STR -> {
                     val a = payload(w)
-                    val n = m.program.arity(m.heap[a])
-                    for (i in 1 until n) collectUnranked(m.heap[a + i])
-                    w = m.deref(m.heap[a + n])
+                    val n = m.program.arity(heap.cells[a])
+                    for (i in 1 until n) collectUnranked(heap.cells[a + i])
+                    w = heap.deref(heap.cells[a + n])
                 }
                 LIST -> {
                     val a = payload(w)
-                    collectUnranked(m.heap[a])
-                    w = m.deref(m.heap[a + 1])
+                    collectUnranked(heap.cells[a])
+                    w = heap.deref(heap.cells[a + 1])
                 }
                 else -> return
             }
@@ -154,7 +157,7 @@ internal class TermOrder(
     fun sorted(items: IntArray): IntArray? {
         var integers = true
         for (i in items.indices) {
-            val item = m.deref(items[i])
+            val item = heap.deref(items[i])
             if (tag(item) != INT) {
                 integers = false
                 break
@@ -162,7 +165,7 @@ internal class TermOrder(
         }
         if (integers) {
             // (the words of the small integers are ordered as they are)
-            val sorted = IntArray(items.size) { m.deref(items[it]) }
+            val sorted = IntArray(items.size) { heap.deref(items[it]) }
             sorted.sort()
             return sorted
         }
@@ -247,19 +250,19 @@ internal class TermOrder(
         return bigOf(x).compareTo(bigOf(y))
     }
 
-    private fun bigOf(w: Int): BigInteger = if (tag(w) == INT) BigInteger.of(payload(w).toLong()) else m.bigIntegerOfNumber(w)
+    private fun bigOf(w: Int): BigInteger = if (tag(w) == INT) BigInteger.of(payload(w).toLong()) else heap.bigIntegerOfNumber(w)
 
     // The float compound [w] (see Numbers) as a tuProlog float
     private fun realOf(w: Int): Real {
         val a = payload(w)
-        val n = m.program.arity(m.heap[a])
+        val n = m.program.arity(heap.cells[a])
         return m.program.realOf(
-            payload(m.deref(m.heap[a + 1])),
-            payload(m.deref(m.heap[a + 2])),
+            payload(heap.deref(heap.cells[a + 1])),
+            payload(heap.deref(heap.cells[a + 2])),
             IntArray(n - 2) {
                 payload(
-                    m.deref(
-                        m.heap[
+                    heap.deref(
+                        heap.cells[
                             a +
                                 3 +
                                 it,
@@ -278,13 +281,13 @@ internal class TermOrder(
         x0: Int,
         y0: Int,
     ): Int {
-        var x = m.deref(x0)
-        var y = m.deref(y0)
+        var x = heap.deref(x0)
+        var y = heap.deref(y0)
         val program = m.program
         while (true) {
             if (x == y) return 0
-            val tx = m.typeTag(x)
-            val ty = m.typeTag(y)
+            val tx = heap.typeTag(x)
+            val ty = heap.typeTag(y)
             if (tx == REF || ty == REF) return UNORDERED
             val rx = rank(tx)
             val ry = rank(ty)
@@ -296,8 +299,8 @@ internal class TermOrder(
                 else -> {
                     val a = payload(x)
                     val b = payload(y)
-                    val fx = if (tx == LIST) 0 else m.heap[a]
-                    val fy = if (ty == LIST) 0 else m.heap[b]
+                    val fx = if (tx == LIST) 0 else heap.cells[a]
+                    val fy = if (ty == LIST) 0 else heap.cells[b]
                     val nx = if (tx == LIST) 2 else program.arity(fx)
                     val ny = if (ty == LIST) 2 else program.arity(fy)
                     if (nx != ny) return nx - ny
@@ -310,11 +313,11 @@ internal class TermOrder(
                     val first = if (tx == LIST) 0 else 1
                     val second = if (ty == LIST) 0 else 1
                     for (i in 0 until nx - 1) {
-                        val argument = order(m.heap[a + first + i], m.heap[b + second + i])
+                        val argument = order(heap.cells[a + first + i], heap.cells[b + second + i])
                         if (argument != 0) return argument
                     }
-                    x = m.deref(m.heap[a + first + nx - 1])
-                    y = m.deref(m.heap[b + second + ny - 1])
+                    x = heap.deref(heap.cells[a + first + nx - 1])
+                    y = heap.deref(heap.cells[b + second + ny - 1])
                 }
             }
         }

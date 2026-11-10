@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.Context
-import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.MachineCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.ExistenceError

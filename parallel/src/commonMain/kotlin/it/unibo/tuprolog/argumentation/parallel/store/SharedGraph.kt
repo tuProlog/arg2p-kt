@@ -17,8 +17,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sh
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.savedArgumentIds
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.segmentTerms
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.termIn
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Record
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.Record
 import it.unibo.tuprolog.argumentation.parallel.host.locked
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term

@@ -5,9 +5,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.St
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.AttackIds
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.ExpandedAttacks
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.expandedAttacks
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.answersMatching
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.answersMatching
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
 

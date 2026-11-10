@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.settings.primitives
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.Settings
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.answers
-import it.unibo.tuprolog.argumentation.engine.vm.attempts
-import it.unibo.tuprolog.argumentation.engine.vm.reply
-import it.unibo.tuprolog.argumentation.engine.vm.termArg
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.answers
+import it.unibo.tuprolog.argumentation.engine.natives.attempts
+import it.unibo.tuprolog.argumentation.engine.natives.reply
+import it.unibo.tuprolog.argumentation.engine.natives.termArg
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature

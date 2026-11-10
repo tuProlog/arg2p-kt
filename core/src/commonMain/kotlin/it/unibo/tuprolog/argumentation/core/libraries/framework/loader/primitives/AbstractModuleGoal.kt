@@ -2,13 +2,13 @@ package it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitiv
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.LoadedLibrary
+import it.unibo.tuprolog.argumentation.engine.natives.MachineCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.PrimitiveWithSignature
+import it.unibo.tuprolog.argumentation.engine.natives.RegisterGoalPrimitive
 import it.unibo.tuprolog.argumentation.engine.term.haltsRaised
 import it.unibo.tuprolog.argumentation.engine.term.solveForCaller
-import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.PrimitiveWithSignature
-import it.unibo.tuprolog.argumentation.engine.vm.RegisterGoalPrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.rootLibraries
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct

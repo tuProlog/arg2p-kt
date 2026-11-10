@@ -2,8 +2,8 @@ package it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.strong
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.attackGraph
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.labelledIds
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.argumentation.engine.words.IdSet
 import it.unibo.tuprolog.solve.Signature
 

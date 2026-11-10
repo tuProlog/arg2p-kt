@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.core.libraries
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.notation.ModuleNotation
-import it.unibo.tuprolog.argumentation.engine.vm.CodeKey
-import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
+import it.unibo.tuprolog.argumentation.engine.vm.program.CodeKey
+import it.unibo.tuprolog.argumentation.engine.vm.program.SharedLibrary
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.library.Library

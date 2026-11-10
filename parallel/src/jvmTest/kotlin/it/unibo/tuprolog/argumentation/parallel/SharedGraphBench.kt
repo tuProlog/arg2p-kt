@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
-import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.engine.vm.program.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.consumer.TheoryPartitioner
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
 import it.unibo.tuprolog.core.Struct

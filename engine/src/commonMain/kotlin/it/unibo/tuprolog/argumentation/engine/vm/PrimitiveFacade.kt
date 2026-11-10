@@ -1,7 +1,8 @@
 package it.unibo.tuprolog.argumentation.engine.vm
 
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.CONTINUE
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.CONTINUE
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall.Companion.FAIL
+import it.unibo.tuprolog.argumentation.engine.vm.PrologExecutionContext
 import it.unibo.tuprolog.argumentation.engine.words.ref
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
@@ -32,6 +33,9 @@ internal class PrimitiveCall(
 internal class PrimitiveFacade(
     private val m: Machine,
 ) {
+    // (the heap of the machine, held: one load less on each cell read)
+    private val heap = m.heap
+
     /**
      * Calls [primitive] on the registers: the goal as terms, the first answer unified back, the others left as a choice
      * point resuming at the continuation (the next instruction of a call, see Op.CALL)
@@ -42,7 +46,7 @@ internal class PrimitiveFacade(
         arity: Int,
     ): Int {
         val names = HashMap<Int, Var>()
-        val arguments = List(arity) { m.toTerm(m.regs[it], names) }
+        val arguments = List(arity) { heap.toTerm(m.regs[it], names) }
         val name = m.program.nameOfFunctorId(functor)
         val goal = if (arity == 0) Atom.of(name) else Struct.of(name, arguments)
         val context: ExecutionContext = PrologExecutionContext(m.environmentSeen(), procedure = goal)
@@ -111,7 +115,7 @@ internal class PrimitiveFacade(
                 var ok = true
                 for ((variable, term) in solution.substitution) {
                     val cell = cells[variable] ?: continue
-                    if (!m.unify(ref(cell), m.fromTerm(term, cells))) {
+                    if (!heap.unify(ref(cell), heap.fromTerm(term, cells))) {
                         ok = false
                         break
                     }

@@ -2,9 +2,9 @@ package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primiti
 
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.absentFrom
-import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.reply
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.reply
 import it.unibo.tuprolog.solve.Signature
 
 /** context_absent(Goal): `\\+ context_check(Goal)` as a single step */

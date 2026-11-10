@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.engine.vm.program.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.host.HostCodec
 import it.unibo.tuprolog.argumentation.parallel.host.HostFrame
 import it.unibo.tuprolog.argumentation.parallel.host.Inbox

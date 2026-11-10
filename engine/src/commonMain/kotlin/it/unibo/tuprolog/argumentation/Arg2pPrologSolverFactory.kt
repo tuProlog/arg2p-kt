@@ -1,10 +1,10 @@
 // Forked from 2p-kt's solve-prolog 3.0.2 (Apache License 2.0)
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.engine.solver.MutableVmSolver
+import it.unibo.tuprolog.argumentation.engine.solver.VmSolver
 import it.unibo.tuprolog.argumentation.engine.stdlib.DefaultBuiltins
-import it.unibo.tuprolog.argumentation.engine.vm.MutableVmSolver
-import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
-import it.unibo.tuprolog.argumentation.engine.vm.VmSolver
+import it.unibo.tuprolog.argumentation.engine.vm.program.SharedLibrary
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.SolverFactory

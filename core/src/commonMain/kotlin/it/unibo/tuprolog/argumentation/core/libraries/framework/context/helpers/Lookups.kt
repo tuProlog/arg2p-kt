@@ -1,11 +1,11 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers
 
-import it.unibo.tuprolog.argumentation.engine.vm.ClauseStore
-import it.unibo.tuprolog.argumentation.engine.vm.GoalWrapper
-import it.unibo.tuprolog.argumentation.engine.vm.MachineCall
-import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
-import it.unibo.tuprolog.argumentation.engine.vm.Record
-import it.unibo.tuprolog.argumentation.engine.vm.items
+import it.unibo.tuprolog.argumentation.engine.natives.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.natives.MachineCall
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.items
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.argumentation.engine.store.Record
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.solve.Signature
@@ -132,7 +132,7 @@ internal fun NativeCall.absentFrom(
 
 /** The head of the record recalled as [w] */
 internal fun NativeCall.headOf(
-    record: it.unibo.tuprolog.argumentation.engine.vm.Record,
+    record: it.unibo.tuprolog.argumentation.engine.store.Record,
     w: Int,
 ): Int = if (record.isRule) argOf(w, 0) else w
 

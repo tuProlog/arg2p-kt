@@ -27,6 +27,13 @@ kotlin {
     }
 }
 
+// No null checks of the parameters, receivers and platform calls in the machine's code: Kotlin writes one at the entry of
+// every non-private function (6 bytes of bytecode each, 26 in Machine alone), and the JIT of the JVM decides what to inline
+// by bytecode size (35 bytes always, 325 when hot), so they keep small helpers as alloc from being inlined
+tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>("compileKotlinJvm") {
+    compilerOptions.freeCompilerArgs.addAll("-Xno-param-assertions", "-Xno-call-assertions", "-Xno-receiver-assertions")
+}
+
 // What a change to the machine must not break, in seconds (see jvmQuickTest in core)
 tasks.register<Test>("jvmQuickTest") {
     group = "verification"
