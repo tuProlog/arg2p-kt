@@ -1,18 +1,18 @@
 %! rules(-Rules)
 %  The defeasible rules, as arg2p writes them.
-rules(Rules) :- parser::rules(Rules).
+rules(Rules) :- ruleNotation::rules(Rules).
 
 %! strictRules(+Rules, +Taken, -Added)
 %  The strict rules, as arg2p writes them.
-strictRules(Rules, Taken, Added) :- parser::strictRules(Rules, Taken, Added).
+strictRules(Rules, Taken, Added) :- ruleNotation::strictRules(Rules, Taken, Added).
 
 %! premises(-Premises)
 %  The ordinary premises, as arg2p writes them.
-premises(Premises) :- parser::premises(Premises).
+premises(Premises) :- ruleNotation::premises(Premises).
 
 %! axioms(-Axioms)
 %  The axioms, as arg2p writes them.
-axioms(Axioms) :- parser::axioms(Axioms).
+axioms(Axioms) :- ruleNotation::axioms(Axioms).
 
 %! check
 %  The theory is well formed: no contrary of an axiom or of the conclusion of a strict rule.
@@ -28,5 +28,5 @@ contrary(Contrary, Statement) :-
     \+ conflict::declared([Statement], [Contrary]).
 
 % Statement is an axiom, or the conclusion of a strict rule
-strictly(Statement) :- parser::premise(Id, [Statement]), parser::checkStrict(Id).
-strictly(Statement) :- parser::rule(Id, _, [Statement]), parser::checkStrict(Id).
+strictly(Statement) :- store::premise(Id, [Statement]), store::checkStrict(Id).
+strictly(Statement) :- store::rule(Id, _, [Statement]), store::checkStrict(Id).

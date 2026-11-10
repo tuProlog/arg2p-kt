@@ -1,6 +1,7 @@
-%! opensConclusions
-%  The arguments of its axioms conclude open statements, holding for the times of a period (see constraints::instances/0).
-opensConclusions.
+%! requires(-Extension)
+%  The arguments of its axioms conclude open statements, holding for the times of a period: the arguments for sets of
+%  values of the graph extension constraints (see parser::extension/1).
+requires(constraints).
 
 %! rules(-Rules)
 %  The axioms, as the parser reads the defeasible rules of a theory ([Id, Premises, Conclusion]).

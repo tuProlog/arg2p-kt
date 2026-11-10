@@ -41,6 +41,12 @@ internal sealed interface Frame {
     data class Host(
         val frame: String,
     ) : Frame
+
+    /** The beat of a site on a link to a peer: the peer answers [Pong] at once (see Site.heartbeat) */
+    data object Ping : Frame
+
+    /** The answer to a [Ping] */
+    data object Pong : Frame
 }
 
 /** The frames as text: their fields as MessageCodec writes those of the messages */
@@ -62,6 +68,8 @@ internal object FrameCodec {
                     is Frame.Challenge -> text("Challenge").text(frame.nonce)
                     is Frame.Refused -> text("Refused").text(frame.reason)
                     is Frame.Host -> text("Host").text(frame.frame)
+                    Frame.Ping -> text("Ping")
+                    Frame.Pong -> text("Pong")
                 }
             }.toString()
 
@@ -83,6 +91,8 @@ internal object FrameCodec {
                 "Challenge" -> Frame.Challenge(text())
                 "Refused" -> Frame.Refused(text())
                 "Host" -> Frame.Host(text())
+                "Ping" -> Frame.Ping
+                "Pong" -> Frame.Pong
                 else -> throw IllegalArgumentException("Unknown frame $kind")
             }
         }

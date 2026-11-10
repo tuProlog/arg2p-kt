@@ -9,7 +9,7 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 
 /**
  * module_defines(+Module, +Name/Arity): whether Module, one of the solver, defines the predicate Name/Arity, as a
- * clause or a primitive of its own. The phases ask it of the modules the flags select before calling them: a hook a
+ * clause or a primitive of its own. The pipeline asks it of the modules the flags select before calling them: a hook a
  * module may leave out (queryDependencies/2) is told apart from one it must define (modifyArgumentationGraph/0), rather
  * than both failing alike as unknown predicates do. The module is not loaded for it.
  */

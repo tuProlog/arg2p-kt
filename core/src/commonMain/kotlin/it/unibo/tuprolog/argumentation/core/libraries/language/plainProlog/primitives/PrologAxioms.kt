@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.primitives
 
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TheoryClauses
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryClauses
 import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.helpers.ClauseConversion
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall

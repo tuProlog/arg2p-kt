@@ -1,10 +1,10 @@
 %! strictRules(+Rules, +Taken, -Added)
 %  The strict rules, as arg2p writes them.
-strictRules(Rules, Taken, Added) :- parser::strictRules(Rules, Taken, Added).
+strictRules(Rules, Taken, Added) :- ruleNotation::strictRules(Rules, Taken, Added).
 
 %! axioms(-Axioms)
 %  The axioms, as arg2p writes them.
-axioms(Axioms) :- parser::axioms(Axioms).
+axioms(Axioms) :- ruleNotation::axioms(Axioms).
 
 %! premises(-Premises)
 %  The assumptions, as ordinary premises [asm(Assumption), Assumption].
@@ -21,23 +21,24 @@ conflicts(Conflicts) :-
     findall(conflict([C], [A]), user::contrary(A, C), Conflicts).
 
 %! check
-%  The theory is flat ABA: no defeasible rule, no ordinary premise (its premises are its assumptions, its facts
-%  strict), and no rule concluding an assumption.
+%  The theory is flat ABA: no rule concluding an assumption. (A defeasible rule or an ordinary premise is no part of its
+%  notation, and does not read; the Prolog clauses read as rules, with plainProlog, are checked here.)
 check :-
-    (parser::rules([_|_]) ; parser::extension(plainProlog), plainProlog::rules([_|_])), !,
+    parser::extension(plainProlog),
+    plainProlog::rules([_|_]), !,
     throw(error(domain_error(aba_theory, defeasible), 'aba: the theory has defeasible rules')).
 check :-
     ordinaryPremise, !,
     throw(error(domain_error(aba_theory, premise), 'aba: the theory has ordinary premises (f :=> a.): the premises of ABA are its assumptions (assumption/1), its facts strict (f :-> a.)')).
 check :-
-    parser::rule(_, _, [A]),
+    store::rule(_, _, [A]),
     assumption(Id, A),
-    parser::premise(Id, [A]), !,
+    store::premise(Id, [A]), !,
     throw(error(domain_error(flat_aba_theory, A), 'aba: a rule concludes an assumption (the theory is not flat)')).
 % (no preferences between rules, nor the meta-argumentation of ASPIC+)
 check :-
     setting(graphExtension, M),
-    phases::preferenceMode(M),
+    module_defines(M, preferenceMode/0),
     M \== abaPref, !,
     throw(error(domain_error(aba_theory, M), 'graphExtension: an ABA theory has no preferences between rules (standardPref, defeasiblePref, defeasibleAllPref): abaPref for ABA+')).
 check :-
@@ -45,11 +46,7 @@ check :-
     throw(error(domain_error(aba_theory, Meta), 'aba: the meta-argumentation of ASPIC+ (metaConflicts, metaRules) does not apply to an ABA theory')).
 check.
 
-% A premise of the theory other than an assumption written out (asm(A) :=> A, as a partition of a theory writes it)
-ordinaryPremise :-
-    parser::premises(Premises),
-    member([Id, _], Premises),
-    \+ assumption(Id, _), !.
+% A Prolog clause of the theory read as an ordinary premise (with plainProlog)
 ordinaryPremise :-
     parser::extension(plainProlog),
     plainProlog::premises([_|_]).

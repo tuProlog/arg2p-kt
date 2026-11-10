@@ -225,13 +225,21 @@ class PrologReference(
 ) {
     private val areas =
         listOf(
-            Area("Entry points", "The predicates a theory is queried with, and what they rely on.", LibraryRegistry.support),
             Area(
-                "Store",
-                "Where the argumentation graph and its labels are kept, read and changed by all the others, and the terms of the graph.",
-                LibraryRegistry.store,
+                "Entry points",
+                "The predicates a theory is queried with, and the printing of the graph and its labels.",
+                LibraryRegistry.entry,
             ),
-            Area("Language", "What is read of a theory: its rules, as its languages write them.", LibraryRegistry.language),
+            Area(
+                "Framework",
+                "What every module stands on: the store of the argumentation graph and its labels, and the helpers on lists and terms.",
+                LibraryRegistry.framework,
+            ),
+            Area(
+                "Language",
+                "What is read of a theory: its rules, as its languages write them, the conflicts between its statements, and the modules it loads.",
+                LibraryRegistry.language,
+            ),
             Area(
                 "Graph",
                 "Building the argumentation graph: its arguments, the conflicts and the attacks, from the rules or as a theory states them.",
@@ -240,7 +248,7 @@ class PrologReference(
             Area("Graph extensions", "Changing the argumentation graph: preferences, restrictions, burdens.", LibraryRegistry.extensions),
             Area(
                 "Evaluation",
-                "Evaluating a theory: the phases each evaluation goes through, on the whole graph, the part a query depends on, or a framework given as lists.",
+                "Evaluating a theory: the pipeline each evaluation goes through, on the whole graph or the part a query depends on, and the acceptance of a statement.",
                 LibraryRegistry.evaluation,
             ),
             Area("Labelling", "The semantics labelling the arguments, and the statements from them.", LibraryRegistry.labellings),

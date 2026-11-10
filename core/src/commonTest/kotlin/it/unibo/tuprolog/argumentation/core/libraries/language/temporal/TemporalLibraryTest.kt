@@ -31,13 +31,25 @@ class TemporalLibraryTest {
         "f15 :=> happens(e1, 1).\nf16 :=> initiates(e1, f).\nf17 :=> happens(e2, 3).\nf18 :=> x.\n" +
             "r1 : x => initiates(e2, f).\n"
 
-    // The label of each statement: in, out, und, or none when no argument concludes it
+    // The label of each statement, the same in query mode and on the whole graph: in, out, und, or none when no
+    // argument concludes it
     private fun labels(
         theory: String,
         vararg statements: String,
+    ): List<String> {
+        val (query, whole) = listOf(true, false).map { labels(theory, it, *statements) }
+        assertEquals(whole, query, "query mode against the whole graph")
+        return query
+    }
+
+    private fun labels(
+        theory: String,
+        queryMode: Boolean,
+        vararg statements: String,
     ): List<String> =
         statements.map { statement ->
-            val solver = Arg2pSolverFactory.default(theory = "temporal.\n$theory", settings = Flags.defaults().library())
+            val solver =
+                Arg2pSolverFactory.default(theory = "temporal.\n$theory", settings = Flags.defaults().queryMode(queryMode).library())
             val solution = solver.solve(Struct.parse("solve($statement, I, O, U)", solver.operators)).first()
             val term = Struct.parse(statement, solver.operators)
             listOf("I" to "in", "O" to "out", "U" to "und")
@@ -56,6 +68,42 @@ class TemporalLibraryTest {
             listOf("none", "in", "out", "in"),
             labels(interrupted, "holdsAt(f, 1)", "holdsAt(f, 5)", "holdsAt(f, 7)", "holdsAt(f, 9)"),
         )
+    }
+
+    // the times no rule asks for are answered by the pieces of the period around the stated time: dense times too
+    @Test
+    fun anyTimeIsAnsweredByThePieceHoldingIt() {
+        assertEquals(
+            listOf("in", "in", "out", "in"),
+            labels(interrupted, "holdsAt(f, 100)", "holdsAt(f, 6.5)", "holdsAt(f, 7)", "holdsAt(f, 7.5)"),
+        )
+    }
+
+    // f over (1, 9], -f stated at 5: the period is interrupted at 5 alone; after 9 the period after the start is closed
+    // (out: the argument for every time after 1 stands for 10 as well, defeated)
+    @Test
+    fun aStatedTimeInterruptsABoundedPeriod() {
+        val bounded =
+            interrupted.replace("c1 :=> -holdsAt(f, 7).\n", "c1 :=> -holdsAt(f, 5).\n") +
+                "f19 :=> happens(e5, 9).\nf20 :=> terminates(e5, f).\n"
+        assertEquals(
+            listOf("in", "out", "in", "in", "out"),
+            labels(bounded, "holdsAt(f, 4)", "holdsAt(f, 5)", "holdsAt(f, 6)", "holdsAt(f, 9)", "holdsAt(f, 10)"),
+        )
+    }
+
+    // an open query lists the periods, each with the times it holds for
+    @Test
+    fun anOpenQueryListsThePeriods() {
+        val solver = Arg2pSolverFactory.default(theory = "temporal.\n$interrupted", settings = Flags.defaults().library())
+        val solution = solver.solve(Struct.parse("solve(holdsAt(f, T), I, O, U)", solver.operators)).first()
+        val accepted =
+            solution.substitution
+                .getByName("I")!!
+                .castToList()
+                .toList()
+        // the pieces before and after the interruption at 7
+        assertEquals(2, accepted.count { it.toString().contains("7") }, accepted.toString())
     }
 
     @Test

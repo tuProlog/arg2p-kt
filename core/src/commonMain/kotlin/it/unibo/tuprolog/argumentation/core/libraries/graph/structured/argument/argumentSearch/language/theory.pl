@@ -9,13 +9,13 @@ boundByQuery(Id) :-
 readBoundByQuery :- \+ \+ readBoundByQuery(_).
 
 readBoundByQuery(Rules) :-
-    parser::writtenRules(Rules),
+    store::writtenRules(Rules),
     boundByQuery(Rules, Ids),
     findall(_, (member(Id, Ids), cache_assert(boundByQueryRule(Id))), _).
 
 %! boundByQuery(+Rules, -Ids)
 %  Of Rules, as read from the theory ([Id, Premises, Conclusion], the
-%  premises as parser::rule/3 reads them, and [Id, Conclusion] for a premise of the theory), Ids are those whose
+%  premises as store::rule/3 reads them, and [Id, Conclusion] for a premise of the theory), Ids are those whose
 %  arguments a query could bind otherwise than the whole graph derives them: a variable of the conclusion that no
 %  ordinary premise has, or one that a Prolog check (prolog(Goal)) uses before the ordinary premises written before
 %  it bind it (X is Expr binds X). For the others the search steered by a query finds the arguments the whole graph
@@ -23,7 +23,7 @@ readBoundByQuery(Rules) :-
 boundByQuery([], []).
 boundByQuery([Rule|Rules], Ids) :-
     boundByQuery(Rules, OtherIds),
-    parser::ruleParts(Rule, Id, Premises, Conclusion), !,
+    store::ruleParts(Rule, Id, Premises, Conclusion), !,
     (\+ \+ bindsMore(Premises, Conclusion) -> Ids = [Id|OtherIds] ; Ids = OtherIds).
 boundByQuery([_|Rules], Ids) :-
     boundByQuery(Rules, Ids).
@@ -31,7 +31,7 @@ boundByQuery([_|Rules], Ids) :-
 % The variables are bound as they are met, what is ground is what the premises so far bind (asked within \+ \+)
 bindsMore([], Conclusion) :- \+ ground(Conclusion).
 bindsMore([Premise|Premises], Conclusion) :-
-    parser::premiseKind(Premise, Kind),
+    store::premiseKind(Premise, Kind),
     bindsMoreAs(Kind, Premise, Premises, Conclusion).
 
 bindsMoreAs(check(Goal), _, Premises, Conclusion) :- !,

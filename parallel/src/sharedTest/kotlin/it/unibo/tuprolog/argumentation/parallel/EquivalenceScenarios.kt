@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.GraphExtension
 import it.unibo.tuprolog.argumentation.Semantics
+import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.core.Struct
@@ -85,7 +85,7 @@ abstract class EquivalenceScenarios {
             assertEquals(centralised(theory, statement, flags), actual, "the statements answering $statement")
             if (!none) {
                 (response.inArgs + response.outArgs + response.undArgs).forEach {
-                    assertTrue(it.queryChain.isNotEmpty(), "the arguments for ${it.claim}")
+                    assertTrue(it.queryChain.isNotEmpty(), "the arguments for ${it.claim}, answering $statement: $response")
                 }
             }
         }

@@ -19,7 +19,7 @@ object TranspositionLibrary : PrologLibrary("transposition") {
     override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(AutoTransposition)
 
-    override val parsingFlag: ArgsFlag
+    override val extensionFlag: ArgsFlag
         get() = AutoTransposition
 
     override val prologRawTheory: String = THEORY

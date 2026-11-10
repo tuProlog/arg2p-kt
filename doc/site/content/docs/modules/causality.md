@@ -17,26 +17,19 @@ It is available as the Maven module `causality-solver`. It is also bundled in th
 
 ## From the API
 
-Every solver of the [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) tests causality on its theory, through its
-`causality`, one method for each predicate below, the statements given as Prolog text:
+Every solver of the [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) has the module: the [predicates](#predicates)
+below are goals like any other, in Kotlin, [JavaScript]({{% ref "/docs/api/javascript" %}}) and
+[Python]({{% ref "/docs/api/python" %}}):
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.Arg2p
 
-val causality = Arg2p.of("r_0 : exposure => disease.\nf_1 :=> exposure.").causality
-causality.ness("exposure", "disease")      // the intervention, [-exposure]: null if it is not a NESS cause
-causality.butFor("exposure", "disease")    // true
+val arg2p = Arg2p.of("r_0 : exposure => disease.\nf_1 :=> exposure.")
+arg2p.solve("causality::ness(X, exposure, disease)").next().text("X")   // [- exposure]: no solution if not a NESS cause
+arg2p.solve("causality::but_for(exposure, disease)").next().isYes       // true
 ```
 
-| Method | Predicate |
-| --- | --- |
-| `butFor(cause, effect)` | `but_for/2` |
-| `ness(cause, effect)`, `nessOriginal(cause, effect)` | `ness/3`, `ness_original/3`: the intervention, or null |
-| `nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` | `ness_intervention/2`, `ness_original_intervention/2` |
-
-The same methods are in [JavaScript]({{% ref "/docs/api/javascript" %}}) and, in snake case (`but_for`,
-`ness_original`, ...), in [Python]({{% ref "/docs/api/python" %}}). Each test starts from a reset context, as the
-others before it left nothing behind.
+A test answers as on a fresh solver, whatever the solver did before it.
 
 ---
 

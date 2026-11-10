@@ -25,7 +25,8 @@ computeStatementAcceptance(Goal, YesResult, NoResult, UndResult) :-
 accepted(Goal) :-
     setting(answerMode, enumerate), !,
     computeStatementAcceptance(Goal),
-    answer(in, Goal).
+    answer(in, Goal, Answer),
+    (Answer = [Goal, '{}'(_)] -> true ; Goal = Answer).
 accepted(Goal) :-
     computeStatementAcceptance(Goal, In, _, _),
     member(Goal, In).
@@ -60,42 +61,79 @@ sameStatement(S, T) :- ground(S), !, S == T.
 sameStatement(S, T) :- utils::subsumes(S, T), utils::subsumes(T, S).
 
 %! computeStatementAcceptance(+Goal)
-%  The labels of the statements for Goal, in the context: with queryMode only the part of the graph they depend
-%  on is built, if the semantics allows it (see structuredPartial::locality/1), otherwise the whole graph.
+%  The labels of the statements for Goal, in the context, on the part of the graph they depend on (see pipeline::evaluate/1).
 computeStatementAcceptance(Goal) :-
-    \+ setting(queryMode),
-    structuredWhole:::computeGlobalAcceptance.
-computeStatementAcceptance(Goal) :-
-    setting(queryMode),
-    structuredPartial::locality(Locality),
-    acceptanceOn(Locality, Goal).
-
-acceptanceOn(whole_graph, _) :- !,
-    structuredWhole:::computeGlobalAcceptance.
-acceptanceOn(Locality, Goal) :-
-    structuredPartial::computeGoalAcceptance(Goal, Locality).
+    pipeline:::evaluate(Goal).
 
 mineResults(Goal, YesResult, NoResult, UndResult) :-
-    findall(Goal, answer(in, Goal), In),
-    findall(Goal, answer(out, Goal), Out),
-    findall(Goal, answer(und, Goal), Und),
+    answers(Goal, Answers),
+    findall(A, member(in-A, Answers), In),
+    findall(A, member(out-A, Answers), Out),
+    findall(A, member(und-A, Answers), Und),
     utils::sortDescending(In, YesResult),
     utils::sortDescending(Out, NoResult),
     utils::sortDescending(Und, UndResult).
 
 mineResults(Goal, Result) :-
-    findall(in(Goal), answer(in, Goal), In),
-    findall(out(Goal), answer(out, Goal), Out),
-    findall(und(Goal), answer(und, Goal), Und),
+    answers(Goal, Answers),
+    findall(in(A), member(in-A, Answers), In),
+    findall(out(A), member(out-A, Answers), Out),
+    findall(und(A), member(und-A, Answers), Und),
     utils::appendLists([In, Out, Und], Result).
 
-%! answer(?Label, ?Goal)
-%  A statement labelled Label answering Goal: one unifying with it, or one of its instances, as an
-%  argument holding for more values than Goal asks about says nothing of them alone (its instance for Goal does).
-answer(Label, Goal) :-
-    constraints::instances, !,
-    store::statementLabel(Label, [Statement]),
-    utils::subsumes(Goal, Statement),
-    Goal = Statement.
-answer(Label, Goal) :-
-    store::statementLabel(Label, [Goal]).
+%! answers(+Goal, -Answers)
+%  The statements labelled answering Goal, as Label-Answer pairs (see answer/3).
+answers(Goal, Answers) :-
+    parser::hook(admitted/3, Extension), !,
+    findall(Label-Statement, store::statementLabel(Label, Statement), Labelled0),
+    findall(Label-Answer, (member(Label-Statement, Labelled0), Extension::admitted(Statement, Goal, Answer)), Labelled),
+    bestAnswers(Labelled, [], Answers).
+answers(Goal, Answers) :-
+    findall(Label-Goal, store::statementLabel(Label, [Goal]), Answers).
+
+%! answer(?Label, ?Goal, -Answer)
+%  Answer, labelled Label, answers Goal: a statement unifying with it. With an extension whose arguments hold for sets
+%  of values (defining admitted/3, see parser::hook/2), Goal is answered by the statements it admits: Answer is Goal,
+%  bound as they bind it, or [Goal, {C}] when constraints C are still open on it; several statements answering it
+%  alike (the same up to the names of their variables), it takes the first label of in, out and und any of them has,
+%  as a statement takes those of its arguments.
+answer(Label, Goal, Answer) :-
+    answers(Goal, Answers),
+    member(Label-Answer, Answers).
+
+%! answering(+Answer, -Argument)
+%  Argument stands for Answer, one of answer/3: its claim is Answer (the same up to the names of its variables); with
+%  an extension defining admitted/3, its statement admits the values of Answer.
+answering(Answer, Argument) :-
+    parser::hook(admitted/3, Extension), !,
+    (Answer = [Goal, '{}'(_)] -> true ; Goal = Answer),
+    store::argumentUnifiable([Goal], Argument),
+    store::statement(Argument, Statement),
+    \+ \+ (Extension::admitted(Statement, Goal, Admitted), sameStatement(Admitted, Answer)).
+answering(Answer, Argument) :-
+    store::argumentUnifiable([Answer], Argument),
+    store::claim(Argument, Claim),
+    sameStatement(Claim, Answer).
+
+% The answers with the best label among those answering alike (in, then out, then und)
+bestAnswers([], Answers, Answers).
+bestAnswers([Label-Answer|Labelled], Seen, Answers) :-
+    (alike(Answer, Seen, Known) ->
+        better(Label, Known, Seen, Next)
+    ;
+        Next = [Label-Answer|Seen]
+    ),
+    bestAnswers(Labelled, Next, Answers).
+
+alike(Answer, [Label-Known|_], Label-Known) :- sameStatement(Answer, Known), !.
+alike(Answer, [_|Seen], Known) :- alike(Answer, Seen, Known).
+
+better(Label, KnownLabel-Known, Seen, Next) :-
+    (precedes(Label, KnownLabel) -> replaced(Seen, KnownLabel-Known, Label-Known, Next) ; Next = Seen).
+
+precedes(in, out).
+precedes(in, und).
+precedes(out, und).
+
+replaced([X|Xs], Old, New, [New|Xs]) :- X == Old, !.
+replaced([X|Xs], Old, New, [X|Ys]) :- replaced(Xs, Old, New, Ys).

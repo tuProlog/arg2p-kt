@@ -1,4 +1,4 @@
-"""A solver of arg2p: its answers, graphs and solutions, and the causality tests on its theory."""
+"""A solver of arg2p: its answers, graphs and solutions."""
 
 from __future__ import annotations
 
@@ -214,45 +214,10 @@ class Solutions:
         return Solution(found)
 
 
-class Causality:
-    """
-    Whether a statement of the theory of a solver causes another, on the grounded labelling of the theory and of its
-    interventions: the NESS test, as published (Pisano, Prakken, Sartor, Liepina; ICAIL 2025) and revised, and the
-    but-for test. The statements are Prolog text; an intervention is a list of statements.
-    """
-
-    def __init__(self, causality: Any) -> None:
-        self._causality = causality
-
-    def ness(self, cause: str, effect: str) -> Optional[Value]:
-        """Whether [cause] is a NESS cause of [effect] (the revised condition): the intervention, None if it is not."""
-        return _optional(call(lambda: self._causality.ness(cause, effect)))
-
-    def ness_original(self, cause: str, effect: str) -> Optional[Value]:
-        """Whether [cause] is a NESS cause of [effect] as published: the intervention, None if it is not."""
-        return _optional(call(lambda: self._causality.nessOriginal(cause, effect)))
-
-    def ness_intervention(self, intervention: str, effect: str) -> bool:
-        """Whether [intervention], a list of statements, meets the revised NESS condition for [effect]."""
-        return bool(call(lambda: self._causality.nessIntervention(intervention, effect)))
-
-    def ness_original_intervention(self, intervention: str, effect: str) -> bool:
-        """Whether [intervention], a list of statements, meets the NESS condition for [effect] as published."""
-        return bool(call(lambda: self._causality.nessOriginalIntervention(intervention, effect)))
-
-    def but_for(self, cause: str, effect: str) -> bool:
-        """Whether [cause] is a but-for cause of [effect]."""
-        return bool(call(lambda: self._causality.butFor(cause, effect)))
-
-
-def _optional(value: Any) -> Optional[Value]:
-    return None if value is None else from_jvm(value)
-
-
 class Arg2p:
     """
     A solver of arg2p for a theory, as Prolog text, with its flags: it answers queries (answer), gives the graph of
-    each labelling (graphs), solves Prolog goals (solve) and tests causality (causality).
+    each labelling (graphs) and solves Prolog goals (solve), those of the causality module too.
 
         >>> Arg2p.of("r1 : [] => a.\\nr2 : [] => -a.\\nsup(r1, r2).").answer("a")[0].in_statements
         ['a']
@@ -263,7 +228,6 @@ class Arg2p:
 
     def __init__(self, arg2p: Any) -> None:
         self._arg2p = arg2p
-        self.causality = Causality(arg2p.getCausality())
 
     @staticmethod
     def of(theory: str = "", flags: Optional[Flags] = None) -> Arg2p:

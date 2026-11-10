@@ -3,35 +3,40 @@ package it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extensio
 import it.unibo.tuprolog.argumentation.core.libraries.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libraries.PrologLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.flags.OpenConclusions
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.primitives.LinearConstraint
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.primitives.LinearSatisfiable
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.prolog.THEORY
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * The constraints on the variables of the arguments, and the arguments holding for them (module `constraints`).
+ * The arguments holding for sets of values (module `constraints`, a graph extension, required as well by temporal).
  *
- * A premise `{ C }` of a rule is checked as `prolog(C)` once its variables are bound, and kept on the argument while they
- * are not. An argument keeps the constraints of its sub-arguments still open among its premises, and a premise or a
- * conflict binding its variables is admitted only while all of them may hold together. The constraints decided are those
- * on a single variable: comparisons with a number (`<`, `=<`, `>`, `>=`, `=:=`, `=\=`, the numbers dense), membership
- * (`member(X, [a, b])`), equality and exclusion of a term (`X = a`, `X \= a`), and their conjunctions. A constraint
- * relating two variables waits for one of them to be bound. See `language/theory.pl`.
+ * An argument may conclude an open statement (with variables): it holds for every value its constraints allow, the
+ * `{ C }` premises of its rules and those of its sub-arguments still open. `holdsAt(f, T)` with `{ T > 1 }` holds for
+ * every T after 1. The constraints decided are the linear comparisons over numbers (`<`, `=<`, `>`, `>=`, `=:=`, `=`
+ * between sums of numbers and variables, products and quotients by a number), the numbers dense, whatever their
+ * variables: the simplex on exact rationals decides whether they hold together. Any other constraint is a check, as
+ * `prolog(C)`, run where its rule is used.
  *
- * The arguments holding for sets of values (a graphExtension, on as well with a language whose arguments conclude open
- * statements, as temporal, see opensConclusions/0 in the language part): without
- * it no argument concludes an open statement (with free variables); with it one may, for the values its variables may
- * take (constrained by its `{ }` premises): `holdsAt(f, T)` with `{ T > 1 }` holds for every
- * T after 1. Its instance for some of them is an argument of its own, made of the same rules, its sub-arguments
- * instantiated alike where the values flow:
- * - an argument using it for some values (`alarm(5)` from `holdsAt(f, 5)`) rests on its instance for them, saved
- *   when the graph is changed (the builder saves the support as bound);
- * - a conflict binding its variables (`-holdsAt(f, 7)`) attacks it, and its instance for those values, which the graph
- *   shows.
- *
- * An argument attacked for some of its values is attacked for all of them (it states them all), and its instances for
- * the others are not: each instance stands or falls on its own values. Nothing is removed from the graph.
+ * Where an attack holds for some of the values of an argument only, the graph step splits the argument into pieces: the
+ * argument with the attacker's constraints added (attacked), and with them negated one at a time (free), each piece
+ * resting on the pieces of its sub-arguments holding for its values; the argument split stays, attacking and attacked, for all its values.
+ * Supports and queries read the pieces admitting their values, so that the whole graph and query mode answer alike. An
+ * attack whose region needs variables of the attacker that the attacked argument does not have holds for all values.
+ * Nothing is removed from the graph. The base modules call the extension through its hooks (see parser::hook/2), never
+ * by name. See `prolog/theory.pl` and `language/theory.pl`.
  */
 object ConstraintsLibrary : PrologLibrary("constraints") {
     override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(OpenConclusions)
 
+    // (the flag a solver sets for the rules of a theory written out, those of temporal among them: see parser::extension/1)
+    override val extensionFlag: ArgsFlag
+        get() = OpenConclusions
+
     override val prologRawTheory: String = THEORY
+
+    override val primitives: Map<Signature, Primitive>
+        get() = listOf(LinearConstraint, LinearSatisfiable).associateBy { it.signature }
 }

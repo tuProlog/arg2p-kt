@@ -102,11 +102,15 @@ class ClauseStore private constructor(
         val encoded = Record.encoded(record, encoding())
         val head = encoded.head
         // (a clause must have a callable head: reading it as a clause raises the error)
-        if (tag(head) == REF || !isCallable(head)) encoded.clause
+        if (tag(head) == REF || !isCallable(encoded, head)) encoded.clause
         writable().add(encoded)
     }
 
-    private fun isCallable(head: Int) = tag(head) == STR || tag(head) == LIST || tag(head) == ATOM
+    // (the compound of a number no word holds is a number, see Numbers)
+    private fun isCallable(
+        record: Record,
+        head: Int,
+    ) = (tag(head) == STR && record.program!!.numberTag(record.words[payload(head)]) == 0) || tag(head) == LIST || tag(head) == ATOM
 
     fun assertA(term: Term) = assertA(Record.of(term))
 
@@ -215,7 +219,7 @@ class ClauseStore private constructor(
         id: Int,
     ) {
         val program = encoding()
-        assertA(Record(program, intArrayOf(program.functorWord(name, 1), program.intWord(id.toLong())), word(STR, 0), null))
+        assertA(Record(program, intArrayOf(program.functorWord(name, 1), program.smallWord(id)), word(STR, 0), null))
     }
 
     /** The fact `name(A)` added, for [fact], the fact `other(A)`, its words shared: what A is, is not read */

@@ -22,8 +22,6 @@ import it.unibo.tuprolog.unify.Unificator
 data class Partitioning(
     val shared: String,
     val partitions: List<String>,
-    /** The rules of the partitions are those the theory converts to: the consumers convert them no further */
-    val converted: Boolean = true,
     /** The theory has the axioms of temporal, among the rules of the partitions: not added again */
     val temporal: Boolean = false,
     /**
@@ -34,13 +32,13 @@ data class Partitioning(
     val interests: List<Set<String>?> = partitions.map { null },
 ) {
     /**
-     * The theory of the consumer of the partition [index]: the conversions turned off if applied, whatever the profile
-     * of the theory presets
+     * The theory of the consumer of the partition [index]: the conversions turned off, its rules converted already,
+     * whatever the profile of the theory presets
      */
-    fun theoryOf(index: Int) = "$shared\n${if (converted) CONVERTED else ""}${if (temporal) TEMPORAL else ""}${partitions[index]}"
+    fun theoryOf(index: Int) = "$shared\n$CONVERTED${if (temporal) TEMPORAL else ""}${partitions[index]}"
 
     internal companion object {
-        const val CONVERTED = "autoTransposition(off).\nprologStrictCompatibility(off).\n"
+        const val CONVERTED = "autoTransposition(off).\nprologStrictCompatibility(off).\nmetaRules(off).\nnaturalTerms(off).\n"
 
         // The axioms of temporal, among the rules converted, not added again: the arguments may conclude open
         // statements all the same (openConclusions, an internal flag)
@@ -55,14 +53,15 @@ data class Partitioning(
  * together as far as the number of partitions allows, so that fewer arguments travel between consumers.
  *
  * The rules are those the theory converts to (see the module parser): with their identifiers, their transpositions
- * (autoTransposition), the Prolog clauses argued (prologStrictCompatibility) and the axioms of time (temporal), each
+ * (autoTransposition), the Prolog clauses argued (prologStrictCompatibility), the axioms of time (temporal), the premise
+ * applicable(Id) of each rule (metaRules) and the statements written as text turned into terms (naturalTerms), each
  * written back as a rule of arg2p.
  * Everything else in the theory is shared by every partition (flags, preferences, conflicts, burdens, the Prolog
  * predicates the rules check), but the flags of the conversion, already applied (the consumers are told to apply them
- * no further, whatever the profile). A theory with naturalTerms is left whole, in a single partition.
+ * no further, whatever the profile).
  */
 object TheoryPartitioner {
-    private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility", "temporal")
+    private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility", "temporal", "metaRules", "naturalTerms")
 
     /**
      * The partitions of [theory], converted with [flags] and the flags of the theory: the groups of rules that
@@ -79,14 +78,11 @@ object TheoryPartitioner {
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
-        if (solver.holds("setting(naturalTerms)")) {
-            return Partitioning("", listOf(theory), converted = false)
-        }
         solver.solveOnce("context_reset")
         // a theory its profile refuses is refused here, as by the standard solver
-        checked(solver.solveOnce("phases::checkProfile"))
+        checked(solver.solveOnce("pipeline::checkProfile"))
         val rules = rules(solver)
-        val supporters = supporters(rules, solver.holds("setting(metaRules)"))
+        val supporters = supporters(rules)
         val split = if (parts != null && parts > 1) keyed(rules, supporters, parts) else null
         val groups =
             split?.partitions
@@ -160,11 +156,11 @@ object TheoryPartitioner {
     )
 
     private fun rules(solver: Solver): List<Rule> {
-        val strictness = "parser::strictness(Id, S)"
+        val strictness = "store::strictness(Id, S)"
         // (the positions of the premises argued: findall would copy them, their variables no longer the conclusion's)
-        val argued = "findall(I, (append(Before, [A|_], P), parser::premiseKind(A, statement), length(Before, I)), Argued)"
+        val argued = "findall(I, (append(Before, [A|_], P), store::premiseKind(A, statement), length(Before, I)), Argued)"
         val rules =
-            solver.solutions("parser::rule(Id, P, [C]), $argued, $strictness").map {
+            solver.solutions("store::rule(Id, P, [C]), $argued, $strictness").map {
                 val premises = it.getValue("P").castToList().toList()
                 val body = if (premises.isEmpty()) EmptyList() else Tuple.wrapIfNeeded(*premises.toTypedArray())
                 val arrow = if (it.getValue("S") == Atom.of("strict")) "->" else "=>"
@@ -179,25 +175,21 @@ object TheoryPartitioner {
                 Rule(it.getValue("Id"), positions.map { position -> premises[position] }, it.getValue("C"), rule.toString())
             }
         val premises =
-            solver.solutions("parser::premise(Id, [C]), $strictness").map {
+            solver.solutions("store::premise(Id, [C]), $strictness").map {
                 val arrow = if (it.getValue("S") == Atom.of("strict")) ":->" else ":=>"
                 Rule(it.getValue("Id"), emptyList(), it.getValue("C"), Struct.of(arrow, it.getValue("Id"), it.getValue("C")).toString())
             }
         return rules + premises
     }
 
-    // The rules supporting each rule (indexes in rules): those whose conclusion unifies with one of its premises; with
-    // metaRules, a rule has applicable(Id) for premise as well
-    private fun supporters(
-        rules: List<Rule>,
-        metaRules: Boolean,
-    ): Array<Set<Int>> {
+    // The rules supporting each rule (indexes in rules): those whose conclusion unifies with one of its premises (with
+    // metaRules, applicable(Id) among them, as read)
+    private fun supporters(rules: List<Rule>): Array<Set<Int>> {
         val byKey = rules.indices.groupBy { key(rules[it].conclusion) }
         val unificator = Unificator.default
         return Array(rules.size) { index ->
             val rule = rules[index]
-            val premises = rule.premises + (if (metaRules) listOf(Struct.of("applicable", rule.id)) else emptyList())
-            premises
+            rule.premises
                 .flatMap { premise ->
                     val key = key(premise)
                     val candidates = if (key == null) rules.indices.toList() else byKey[key].orEmpty() + byKey[null].orEmpty()

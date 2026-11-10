@@ -37,8 +37,11 @@ class ClientSolverRequestsTest {
     // as the standard solver: ABA with a defeasible rule, ABA+ with no weak contraposition
     @Test
     fun aTheoryItsProfileRefusesIsAnError() {
+        val notFlat = ThreadedSolver(threads = 2, parts = 2).also { it.load("graphBuildMode(aba).\nassumption(a).\nr : x -> a.\nf :-> x.") }
+        assertTrue("not flat" in assertFailsWith<Arg2pException> { notFlat.solve("a") }.message.orEmpty())
+        // a theory written with a notation its languages do not have does not read: every evaluation fails
         val defeasible = ThreadedSolver(threads = 2, parts = 2).also { it.load("graphBuildMode(aba).\nassumption(a).\nr : a => b.") }
-        assertTrue("defeasible" in assertFailsWith<Arg2pException> { defeasible.solve("b") }.message.orEmpty())
+        assertFailsWith<Arg2pException> { defeasible.solve("b") }
         val noContraposition =
             ThreadedSolver(threads = 2, parts = 2).also {
                 it.load(
@@ -60,13 +63,17 @@ class ClientSolverRequestsTest {
     // A theory its profile refuses: the goals building its graph are refused, the other goals solved
     @Test
     fun aTheoryItsProfileRefusesSolvesTheOtherGoals() {
-        val parallel = ThreadedSolver(threads = 2, parts = 2).also { it.load("graphBuildMode(aba).\nassumption(a).\nr : a => b.") }
+        val parallel =
+            ThreadedSolver(
+                threads = 2,
+                parts = 2,
+            ).also { it.load("graphBuildMode(aba).\nassumption(a).\nr : x -> a.\nf :-> x.") }
         assertTrue(
             parallel.goals
                 .solve("member(X, [1, 2])")
                 .next()
                 .isYes,
         )
-        assertFailsWith<Arg2pException> { parallel.solve("b") }
+        assertFailsWith<Arg2pException> { parallel.solve("a") }
     }
 }

@@ -1,5 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.engine.vm.watchStops
+import it.unibo.tuprolog.argumentation.engine.vm.stopTakenUp as takeUpStop
+
 /**
  * The frame a thread waiting on its inbox sends its node once it read frames the node could not write for lack of room
  * (see [SharedOutbox])
@@ -10,10 +13,11 @@ internal const val DRAINED = "\u0000drained"
 private const val UNITS = 1 shl 20
 
 // The slots of the control of a channel: the units written, the units read (both counted from the start, wrapping
-// around), and whether the writer holds frames it could not write
+// around), whether the writer holds frames it could not write, and the stops the writer told the reader (see watchStops)
 private const val WRITTEN = 0
 private const val READ = 1
 private const val WAITING = 2
+private const val STOPS = 3
 
 /** A channel for the frames of a thread that waits: a SharedArrayBuffer, its control then its units of text */
 internal fun newChannel(): dynamic {
@@ -34,7 +38,8 @@ private fun index(
 
 /**
  * The inbox of a thread that waits on [channel] (a worker of JavaScript, which handles no message while it waits there):
- * each frame its length then its units, read as they come, [drained] told once the writer waits for room
+ * each frame its length then its units, read as they come, [drained] told once the writer waits for room. The resolutions
+ * of the thread halt at the stops the writer tells (see [SharedOutbox.interrupt]): a worker resolving reads no frame.
  */
 internal class SharedInbox(
     channel: dynamic,
@@ -43,6 +48,12 @@ internal class SharedInbox(
     private val control: dynamic = controlOf(channel)
     private val units: dynamic = unitsOf(channel)
     private val size: Int = units.length as Int
+
+    init {
+        watchStops(control, STOPS)
+    }
+
+    override fun stopTakenUp() = takeUpStop()
 
     override fun take(): String {
         val header = read(2)
@@ -95,6 +106,11 @@ internal class SharedOutbox(
     override fun put(frame: String) {
         frames.addLast(frame)
         flush()
+    }
+
+    // (read by the reader's resolution at its next check, see watchStops)
+    override fun interrupt() {
+        atomics.add(control, STOPS, 1)
     }
 
     /** The frames waiting written, as many as fit */

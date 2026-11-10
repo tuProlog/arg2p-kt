@@ -29,7 +29,7 @@ internal object SupportSplit : SplittingPrinciple {
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
             helperSolver
-                .solve("parser" call "ruleClauses"(X))
+                .solve("store" call "ruleClauses"(X))
                 .filter { it.isYes }
                 .map { it.substitution[X]!! }
                 .first()

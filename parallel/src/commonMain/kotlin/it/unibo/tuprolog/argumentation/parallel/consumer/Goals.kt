@@ -1,8 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
 import it.unibo.tuprolog.argumentation.checked
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.ArgumentTerm
-import it.unibo.tuprolog.argumentation.core.libraries.support.utils.helpers.canonical
+import it.unibo.tuprolog.argumentation.core.libraries.framework.utils.helpers.canonical
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
@@ -67,6 +66,3 @@ internal fun sameUpToVariables(
     a: Term,
     b: Term,
 ): Boolean = a.canonical() == b.canonical()
-
-/** The statement [argument], the term of an argument, concludes */
-internal fun claimOf(argument: Term): Term = ArgumentTerm.parts(argument)!!.claim!!

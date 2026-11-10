@@ -2,14 +2,14 @@ package it.unibo.tuprolog.argumentation.causality.helpers
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.Semantics
+import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.Settings
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.Argument
 import it.unibo.tuprolog.argumentation.core.model.Graph
 import it.unibo.tuprolog.argumentation.core.model.LabelledArgument

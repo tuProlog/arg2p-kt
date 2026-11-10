@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.parallel.ParallelNode
 import it.unibo.tuprolog.argumentation.parallel.consumer.ConsumerStart
 import it.unibo.tuprolog.argumentation.parallel.host.ConsumerThreads
 import it.unibo.tuprolog.argumentation.parallel.host.HostCodec
@@ -12,6 +13,8 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 
 class SiteTest {
     @Test
@@ -22,6 +25,41 @@ class SiteTest {
         MemoryLinks.connect(first, second, scheduler)
         assertEquals(setOf(second.id), first.peerSites)
         assertEquals(setOf(first.id), second.peerSites)
+    }
+
+    // A peer answers the beats of a site as long as it handles frames; one that hangs with its link open is let go once
+    // silent past the deadline, as if it left
+    @Test
+    fun aPeerSilentPastTheDeadlineIsLetGo() {
+        val scheduler = SequentialScheduler()
+        val clock = TestTimeSource()
+        val first = Site(ParallelNode(scheduler, null), deadline = 5.seconds, clock = clock)
+        val second = site(scheduler, null)
+        var hung = false
+        // second, unless hung: then it handles no frame, its link open
+        val hanging =
+            object : LinkListener by second {
+                override fun received(
+                    link: Link,
+                    frame: String,
+                ) {
+                    if (!hung) second.received(link, frame)
+                }
+            }
+        MemoryLinks.connect(first, hanging, scheduler)
+        assertEquals(setOf(second.id), first.peerSites)
+        clock += 4.seconds
+        first.heartbeat()
+        clock += 4.seconds
+        first.heartbeat()
+        assertEquals(setOf(second.id), first.peerSites, "a peer answering is kept")
+        hung = true
+        clock += 4.seconds
+        first.heartbeat()
+        assertEquals(setOf(second.id), first.peerSites, "silent for 4 seconds")
+        clock += 2.seconds
+        first.heartbeat()
+        assertTrue(first.peerSites.isEmpty(), "silent for 6 seconds")
     }
 
     @Test

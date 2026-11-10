@@ -8,7 +8,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.Cache
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.Context
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.DynamicLoader
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.Settings
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.StoreSchema
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Runtime
 

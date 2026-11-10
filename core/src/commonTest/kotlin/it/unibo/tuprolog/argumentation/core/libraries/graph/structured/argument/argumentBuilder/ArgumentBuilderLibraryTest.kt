@@ -8,7 +8,7 @@ class ArgumentBuilderLibraryTest {
     // Two chains of rules on a premise, one closing a cycle that makes no argument
     private val module =
         LibraryTesting("f1 :=> a.\nr1 : a => b.\nr2 : b => c.\nr3 : c, d => e.\nr4 : e => d.").also {
-            it.run("context_reset", "parser::rulesRead", "argumentBuilder::buildArguments")
+            it.run("context_reset", "store::rulesRead", "argumentBuilder::buildArguments")
         }
 
     @Test

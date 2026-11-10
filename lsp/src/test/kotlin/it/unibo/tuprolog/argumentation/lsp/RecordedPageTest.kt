@@ -47,7 +47,7 @@ class RecordedPageTest {
             solution.getAsJsonObject("graph").getAsJsonArray("arguments").associate {
                 it.asJsonObject.get("conclusion").asString to it.asJsonObject.get("label").asString
             }
-        assertEquals("in", labels.getValue("-flies(tweety)"))
+        assertEquals("in", labels.getValue("- flies(tweety)"))
         assertEquals("out", labels.getValue("flies(tweety)"))
         val settings = recording.getAsJsonObject("settings")
         assertEquals("grounded", settings.getAsJsonArray("argumentLabellingMode")[0].asString)

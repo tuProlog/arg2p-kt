@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.helpers
 
-import it.unibo.tuprolog.argumentation.core.libraries.support.utils.helpers.signatureOf
+import it.unibo.tuprolog.argumentation.core.libraries.framework.utils.helpers.signatureOf
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term

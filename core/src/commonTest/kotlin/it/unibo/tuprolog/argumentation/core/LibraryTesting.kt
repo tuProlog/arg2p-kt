@@ -15,7 +15,7 @@ class LibraryTesting(
 
     companion object {
         /** A module tested on [theory], its rules converted (as the pipeline starts) */
-        fun parsed(theory: String): LibraryTesting = LibraryTesting(theory).also { it.run("context_reset", "parser::rulesRead") }
+        fun parsed(theory: String): LibraryTesting = LibraryTesting(theory).also { it.run("context_reset", "store::rulesRead") }
     }
 
     /** The solutions of [goal] */

@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.AttackRef
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.SegmentTerms
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.AttackRef
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.SegmentTerms
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
 import it.unibo.tuprolog.argumentation.parallel.message.TextWriter
 import it.unibo.tuprolog.core.Term

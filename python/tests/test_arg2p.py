@@ -38,7 +38,7 @@ def test_a_query_is_answered():
     assert answer.in_statements == ["a"]
     assert answer.label("a") == "in"
     negated = Arg2p.of(CONFLICT).answer("-a")[0]
-    assert [str(it) for it in negated.out_statements] == ["-a"]
+    assert [str(it) for it in negated.out_statements] == ["- a"]
     assert negated.out_statements == [Struct("-", ("a",))]
     assert negated.label("-a") == "out"
     # a statement is compared as a term: '1' is not 1
@@ -47,9 +47,9 @@ def test_a_query_is_answered():
 
 def test_the_graph_of_each_labelling():
     (graph,) = Arg2p.of(CONFLICT).graphs()
-    assert [it.descriptor for it in graph.arguments] == ["A0 : r2 : -a", "A1 : r1 : a"]
+    assert [it.descriptor for it in graph.arguments] == ["A0 : r2 : - a", "A1 : r1 : a"]
     assert graph.conclusions("in") == ["a"]
-    assert graph.conclusions("out") == ["-a"]
+    assert graph.conclusions("out") == ["- a"]
     (attack,) = graph.attacks
     assert (attack.attacker.identifier, attack.target.identifier, attack.type) == ("A1", "A0", "rebut")
     assert graph.label(attack.attacker) == "in"
@@ -71,7 +71,7 @@ def test_the_graph_of_the_last_resolution():
 def test_the_solutions_of_a_goal_bind_its_variables():
     # the last solution is no: there are no others
     solutions = [it for it in Arg2p.of().solve("member(X, [a, f(-b), [1, 2.5], Y])") if it.is_yes]
-    assert [it.text("X") for it in solutions] == ["a", "f(-b)", "[1, 2.5]", "Y"]
+    assert [it.text("X") for it in solutions] == ["a", "f(- b)", "[1, 2.5]", "Y"]
     assert solutions[0].value("X") == "a"
     assert solutions[2].bindings == {"X": [1, 2.5]}
     assert solutions[3].value("X") == Var("Y")
@@ -180,16 +180,16 @@ def test_the_flags_of_the_solver_are_the_ones_it_uses():
     theory = "f1 :=> d.\nf2 :=> -d."
     assert Arg2p.of(theory).answer("d")[0].und_statements == ["d"]
     stable = Arg2p.of(theory, Flags.defaults().argument_labelling_mode(Semantics.STABLE)).graphs()
-    assert sorted(graph.conclusions("in") for graph in stable) == [["-d"], ["d"]]
+    assert sorted(graph.conclusions("in") for graph in stable) == [["- d"], ["d"]]
 
 
 def test_the_causality_of_the_theory():
-    causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-    assert [str(it) for it in causality.ness("a", "b")] == ["-a"]
-    assert causality.but_for("a", "b")
-    assert causality.ness_intervention("[-a]", "b")
-    assert causality.ness("b", "a") is None
-    assert not causality.but_for("b", "a")
+    arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+    assert next(arg2p.solve("causality::ness(X, a, b)")).text("X") == "[- a]"
+    assert next(arg2p.solve("causality::but_for(a, b)")).is_yes
+    assert next(arg2p.solve("causality::ness_intervention([-a], b)")).is_yes
+    assert next(arg2p.solve("causality::ness(X, b, a)")).is_no
+    assert next(arg2p.solve("causality::but_for(b, a)")).is_no
 
 
 def test_the_version():
@@ -316,7 +316,7 @@ def test_the_recorded_page_of_a_run():
     assert recording["solve"][-1]["type"] == "started"
     (solution,) = [it["solution"] for answers in recording["next"] for it in answers if it["type"] == "solution"]
     labels = {it["conclusion"]: it["label"] for it in solution["graph"]["arguments"]}
-    assert labels["-flies(tweety)"] == "in" and labels["flies(tweety)"] == "out"
+    assert labels["- flies(tweety)"] == "in" and labels["flies(tweety)"] == "out"
     assert recording["settings"]["argumentLabellingMode"] == ["grounded"]
     assert "<title>Arg2P · solve(In, Out, Und)</title>" in html
     # a theory that does not parse is recorded as such

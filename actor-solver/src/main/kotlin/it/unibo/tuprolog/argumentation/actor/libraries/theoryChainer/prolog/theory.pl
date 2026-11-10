@@ -2,20 +2,20 @@
 % premise of a rule
 chainable(X) :-
     member(Head :- Body, X),
-    parser::ruleClause(_, Premises, _, Head, Body),
-    parser::premiseList(Premises, List),
+    store::ruleClause(_, Premises, _, Head, Body),
+    store::premiseList(Premises, List),
     member(Premise, List),
-    parser::countConcluding(Premise, 1, Count),
+    store::countConcluding(Premise, 1, Count),
     Count > 0.
 chainable(X) :-
     member(Head :- Body, X),
-    parser::ruleClause(_, _, Conclusion, Head, Body),
+    store::ruleClause(_, _, Conclusion, Head, Body),
     usedByARule(Conclusion).
 chainable(X) :-
     member(Head :- Body, X),
-    parser::premiseClause(_, Conclusion, Head, Body),
+    store::premiseClause(_, Conclusion, Head, Body),
     usedByARule(Conclusion).
 
 usedByARule(Conclusion) :-
-    parser::ruleWritten(_, Premises, _),
+    store::rule(_, Premises, _),
     member(Conclusion, Premises).

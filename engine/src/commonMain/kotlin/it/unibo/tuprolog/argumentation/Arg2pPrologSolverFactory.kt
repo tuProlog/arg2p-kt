@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation
 
 import it.unibo.tuprolog.argumentation.engine.stdlib.DefaultBuiltins
 import it.unibo.tuprolog.argumentation.engine.vm.MutableVmSolver
+import it.unibo.tuprolog.argumentation.engine.vm.SharedLibrary
 import it.unibo.tuprolog.argumentation.engine.vm.VmSolver
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solver
@@ -26,8 +27,8 @@ import kotlin.js.JsExport
 @Suppress("NON_EXPORTABLE_TYPE")
 @JsExport
 object Arg2pPrologSolverFactory : SolverFactory {
-    override val defaultBuiltins: Library
-        get() = DefaultBuiltins
+    // (shared: the code of their clauses compiled once per process, as a module's)
+    override val defaultBuiltins: Library by lazy { SharedLibrary.of(DefaultBuiltins) }
 
     override fun solverOf(
         unificator: Unificator,

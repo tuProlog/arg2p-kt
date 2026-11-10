@@ -12,7 +12,7 @@ strictRules(Rules, Taken, Added) :-
 
 transposition([Id, Prec, Effect], [NewId, NewPrec ,XNegated]) :-
     compound(Prec),
-    parser::tupleToList(Prec, LPrec),!,
+    utils::tupleToList(Prec, LPrec),!,
     transpositionSequential(LPrec, LPrec, Effect, Id, [], NewPrec, XNegated, NewId).
 transposition([Id, Prec, Effect], [NewId, EffectNegated ,XNegated]) :-
     \+ compound(Prec),
@@ -78,7 +78,7 @@ negate(X, Arg) :- nonvar(X), X = p(PX), !,
 negate(X, -(X)).
 
 % The premises transposed: the statements (see rule::premiseKind/2), not the body true of a fact
-transposable(X) :- X \== true, parser::premiseKind(X, statement).
+transposable(X) :- X \== true, store::premiseKind(X, statement).
 
 listToTuple([H], (H)) :- !.
 listToTuple([H|T], (H,TT)) :- listToTuple(T,TT).

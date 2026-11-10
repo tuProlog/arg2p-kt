@@ -17,7 +17,7 @@ class PrologCompatibilityTest {
 
     private fun converted(): String {
         val solver = solverWithTheory(theory)
-        val solution = solver.solve(Struct.parse("context_reset, parser::readRules(R)", solver.operators)).first()
+        val solution = solver.solve(Struct.parse("context_reset, store::readRules(R)", solver.operators)).first()
         return solution.substitution.entries
             .first { it.key.name == "R" }
             .value

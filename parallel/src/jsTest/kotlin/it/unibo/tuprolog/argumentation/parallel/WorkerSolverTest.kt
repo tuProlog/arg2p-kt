@@ -4,6 +4,7 @@ import it.unibo.tuprolog.argumentation.Flags
 import kotlin.js.Promise
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 // A parallel solver of Node.js: its node, its solver and its consumers each on a thread of its own, the solver and the consumers
 // waiting on what the node writes them (see SharedInbox)
@@ -48,6 +49,39 @@ class WorkerSolverTest {
                     parallel.evaluation!!
                         .workers.size,
                 )
+                parallel.close()
+            }
+    }
+
+    // (resolved after [millis], on the timers of the thread of the test)
+    private fun after(millis: Int): Promise<Unit> = Promise { resolve, _ -> js("setTimeout")({ resolve(Unit) }, millis) }
+
+    // A stop reaches the worker of the solver while it resolves (it reads no message meanwhile): the goal under way ends
+    // at once, and the next is answered without waiting for it. slow needs a premise that runs for over ten seconds (on
+    // integers that fit a word: beyond, each value is kept by the program).
+    @Test
+    fun aStopEndsTheGoalUnderWayAndTheNextIsAnswered(): Promise<Unit> {
+        // (one part: the worker of the solver builds the graph itself)
+        val parallel = WorkerSolver(threads = 2, parts = 1)
+        parallel.load(
+            "spin(N) :- (N =< 0 -> true ; M is N - 1, spin(M)).\n" +
+                "f0 :=> go.\nr0 : go, prolog(spin(250000000)) => slow.\nu0 :=> c0.\nu1 : c0 => c1.\n",
+        )
+        val now = { js("Date.now()") as Double }
+        val slow = parallel.solve("slow").then({ "answered" }, { "stopped" })
+        var stoppedAt = 0.0
+        return after(300)
+            .step {
+                parallel.goals.stop()
+                stoppedAt = now()
+                slow
+            }.step {
+                assertEquals("stopped", it)
+                claims(parallel, "c1")
+            }.step {
+                assertEquals(listOf(listOf("c1"), emptyList(), emptyList()), it)
+                // (well before the loop would end)
+                assertTrue(now() - stoppedAt < 3000, "c1 answered ${now() - stoppedAt} ms after the stop")
                 parallel.close()
             }
     }

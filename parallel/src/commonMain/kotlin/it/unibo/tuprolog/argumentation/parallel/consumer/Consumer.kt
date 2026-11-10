@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.parallel.consumer
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.host.HostCodec
@@ -12,6 +12,7 @@ import it.unibo.tuprolog.argumentation.parallel.host.HostFrame
 import it.unibo.tuprolog.argumentation.parallel.host.Inbox
 import it.unibo.tuprolog.argumentation.parallel.host.Mailbox
 import it.unibo.tuprolog.argumentation.parallel.message.MessageCodec
+import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.store.MessageConnection
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
 import it.unibo.tuprolog.argumentation.parallel.store.StoreLine
@@ -122,6 +123,10 @@ fun runSolverThread(
     while (true) {
         val frame = mailbox.next()
         if (frame == HostFrame.Stop) return
-        if (frame is HostFrame.Client) solver.receive(MessageCodec.decode(frame.message))
+        if (frame !is HostFrame.Client) continue
+        val message = MessageCodec.decode(frame.message)
+        // (the stop of the clients follows the stop of this thread: see ParallelNode.stop)
+        if (message == Stop) inbox.stopTakenUp()
+        solver.receive(message)
     }
 }

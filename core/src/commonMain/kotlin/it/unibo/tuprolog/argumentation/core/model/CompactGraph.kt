@@ -1,6 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.model
 
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.minedCompactGraph
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
+import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsExport
 import kotlin.js.JsName
 
@@ -262,3 +266,9 @@ fun compactGraphOf(text: String): CompactGraph {
         ints(),
     )
 }
+
+/** The graph of the active context branch of [this] solver as arrays, its conclusions written with the operators of arg2p */
+fun Solver.compactGraph(): CompactGraph = compactGraph(activeBranch())
+
+/** The graph of the context branch [branch] of [this] solver as arrays, its conclusions written with the operators of arg2p */
+fun Solver.compactGraph(branch: Int): CompactGraph = minedCompactGraph(branch, TermValues::format)

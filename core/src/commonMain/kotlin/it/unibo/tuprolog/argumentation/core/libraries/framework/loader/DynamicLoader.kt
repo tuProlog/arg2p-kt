@@ -5,10 +5,10 @@ import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.LoadedLibraries
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.LoadedLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.notation.ModuleNotation
+import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives.ExtensionFlag
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives.ModuleDefines
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives.ModuleGoal
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives.ModuleGoalInBranch
-import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.primitives.ParsingLibrary
 import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -48,7 +48,7 @@ internal class DynamicLoader(
 
     override val baseContent: Library
         get() =
-            listOf(ModuleGoal(this), ModuleGoalInBranch(this), ModuleDefines(this), ParsingLibrary(solver)).let {
+            listOf(ModuleGoal(this), ModuleGoalInBranch(this), ModuleDefines(this), ExtensionFlag(solver)).let {
                 Library.of(
                     alias = this.alias,
                     primitives = it.associateBy { prim -> prim.signature },

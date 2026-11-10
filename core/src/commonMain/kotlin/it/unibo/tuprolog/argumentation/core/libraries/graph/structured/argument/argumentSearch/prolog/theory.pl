@@ -8,24 +8,37 @@ findSingleArgument(Conclusion, Argument, Supports) :-
 % and an argument concludes what its premises and rule derive, which may not be open (a statement with free
 % variables, but with the graph extension constraints) whatever Conclusion binds.
 
-% From a premise: one with variables (boundByQuery/1) concludes an open statement, with instances alone
+% From a premise: one with variables (boundByQuery/1) concludes an open statement, where an extension allows one (asked
+% of a statement left open: Conclusion is bound by the query)
 findArgument(Conclusion, Found) :-
-    parser::premise(Id, Conclusion),
-    (boundByQuery(Id) -> constraints::instances ; true),
-    parser::strictness(Id, Strict),
+    store::premise(Id, Conclusion),
+    (boundByQuery(Id) -> concludable(_) ; true),
+    store::strictness(Id, Strict),
     store::premiseInfo(Id, Strict, Info),
     Found = found([], none, [Id], Info, []).
 
 % From a rule: an argument uses a rule at most once (store::rulesAndInfo/5 fails otherwise), and the rule
 % derives Conclusion from the arguments supporting its premises (see derivable/3)
 findArgument([Claim], Found) :-
-    parser::rule(Id, Premises, [Claim]),
+    store::rule(Id, Premises, [Claim]),
     findPremises(Premises, premises(Parts, Supports)),
     derivable(Id, Claim, Supports),
-    parser::strictness(Id, Strict),
+    store::strictness(Id, Strict),
     store::rulesAndInfo(Id, Strict, Parts, Rules, Info),
-    (constraints::constrained -> constraints::extend(Premises, Supports, Body) ; Body = Premises),
+    argumentBody(Premises, Supports, Body),
     Found = found(Body, Id, Rules, Info, Supports).
+
+% The conclusions allowed, and the body of an argument from the premises of its rule and its supports: as the graph
+% builder has them (see argumentBuilder), the extension defining the hooks (see parser::hook/2) saying, where there is
+% one; otherwise the conclusion ground, the constraints checks holding
+concludable(Conclusion) :- ground(Conclusion), !.
+concludable(Conclusion) :- parser::hook(concludable/1, Extension), Extension::concludable(Conclusion).
+
+argumentBody(Premises, Supports, Body) :-
+    parser::hook(argumentBody/3, Extension), !,
+    Extension::argumentBody(Premises, Supports, Body).
+argumentBody(Premises, _, Premises) :-
+    (store::constrained -> store::constraintsHold(Premises) ; true).
 
 % derivable(+Id, +Claim, +Supports): the rule Id derives Claim from Supports alone. The search steered by the query
 % finds that for most rules; a rule a query could bind otherwise (boundByQuery/1) is taken again as
@@ -35,7 +48,7 @@ derivable(Id, _, _) :- \+ boundByQuery(Id), !.
 derivable(Id, Claim, Supports) :-
     functor(Claim, Name, Arity),
     functor(General, Name, Arity),
-    parser::rule(Written, Premises, [General]),
+    store::rule(Written, Premises, [General]),
     \+ \+ Written = Id,
     derived(rule(Written, Premises, General), Supports, rule(Id, Claim)).
 
@@ -43,13 +56,13 @@ derivable(Id, Claim, Supports) :-
 % Supports alone, its checks run in their order; the conclusion is concludable, and only then the one of Derived
 derived(rule(Id, Premises, Claim), Supports, rule(DerivedId, DerivedClaim)) :-
     fromSupports(Premises, Supports),
-    constraints::concludable([Claim]),
+    concludable([Claim]),
     Claim = DerivedClaim,
     Id = DerivedId.
 
 fromSupports([], []).
 fromSupports([Premise|Premises], Supports) :-
-    parser::premiseKind(Premise, Kind),
+    store::premiseKind(Premise, Kind),
     fromSupportsAs(Kind, Premise, Premises, Supports).
 
 fromSupportsAs(check(Check), _, Premises, Supports) :- !,
@@ -99,10 +112,10 @@ nextPremise(Slots, Slot) :-
 readyCheck([Slot|_], Supported, Slot) :-
     Slot = slot(Premise, Result),
     var(Result),
-    parser::premiseKind(Premise, check(_)),
+    store::premiseKind(Premise, check(_)),
     (Supported == true ; ground(Premise)), !.
 readyCheck([slot(Premise, Result)|Slots], Supported, Slot) :-
-    (var(Result), parser::premiseKind(Premise, statement) -> Next = false ; Next = Supported),
+    (var(Result), store::premiseKind(Premise, statement) -> Next = false ; Next = Supported),
     readyCheck(Slots, Next, Slot).
 
 % The pending ordinary premise concluded by the fewest rules: each count stops at the best one so far
@@ -110,9 +123,9 @@ mostSelective([], Best, Best).
 mostSelective([Slot|Slots], Best, Selected) :-
     Slot = slot(Premise, Result),
     var(Result),
-    parser::premiseKind(Premise, statement), !,
+    store::premiseKind(Premise, statement), !,
     countLimit(Best, Limit),
-    parser::countConcluding(Premise, Limit, Count),
+    store::countConcluding(Premise, Limit, Count),
     selective(Slot, Count, Best, Next),
     mostSelective(Slots, Next, Selected).
 mostSelective([_|Slots], Best, Selected) :-
@@ -126,7 +139,7 @@ selective(Slot, Count, best(_, Min), best(Slot, Count)) :- Count < Min, !.
 selective(_, _, Best, Best).
 
 supportPremise(slot(Premise, Result)) :-
-    parser::premiseKind(Premise, Kind),
+    store::premiseKind(Premise, Kind),
     supportedAs(Kind, Premise, Result).
 
 % The result of the slot of a premise of the kind Kind (see rule::premiseKind/2): a check holding, a contrary or a
@@ -140,7 +153,7 @@ supportedAs(constraint(_), _, Result) :- !,
     Result = constraint.
 supportedAs(statement, Premise, Result) :-
     store::claim(Sub, _),
-    queryExploration::buildSubGraph(Premise, Sub),
+    queryGraph::buildSubGraph(Premise, Sub),
     Result = argument(Sub).
 
 % collectPremises(+Slots, -Premises): premises(Parts, Supports), the results of the slots: the rules, last

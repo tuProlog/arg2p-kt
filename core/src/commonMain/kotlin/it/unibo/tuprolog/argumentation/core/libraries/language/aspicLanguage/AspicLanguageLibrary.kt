@@ -2,6 +2,8 @@ package it.unibo.tuprolog.argumentation.core.libraries.language.aspicLanguage
 
 import it.unibo.tuprolog.argumentation.core.libraries.PrologLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.aspicLanguage.prolog.THEORY
+import it.unibo.tuprolog.argumentation.core.libraries.language.ruleNotation.notation.RuleNotation
+import it.unibo.tuprolog.core.operators.OperatorSet
 
 /**
  * The language of ASPIC+ (module `aspicLanguage`, a graphLanguage of the profiles aspic_plus and aspic): the one of
@@ -11,5 +13,9 @@ import it.unibo.tuprolog.argumentation.core.libraries.language.aspicLanguage.pro
  * closes the strict rules over.
  */
 object AspicLanguageLibrary : PrologLibrary("aspicLanguage") {
+    // The notation its theories are written with: the whole notation of the rules: defeasible and strict rules, premises and axioms
+    override val notation: OperatorSet
+        get() = RuleNotation.rules
+
     override val prologRawTheory: String = THEORY
 }

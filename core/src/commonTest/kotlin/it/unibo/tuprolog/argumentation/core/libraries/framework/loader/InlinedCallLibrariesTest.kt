@@ -1,7 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.loader
 
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.theory.Theory

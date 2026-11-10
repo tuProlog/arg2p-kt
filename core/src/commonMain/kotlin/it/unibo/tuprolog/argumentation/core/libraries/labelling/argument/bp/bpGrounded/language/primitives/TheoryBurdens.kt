@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.bp.bpGrounded.language.primitives
 
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TheoryClauses
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryClauses
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.core.Struct

@@ -38,21 +38,25 @@ The theories are plain Prolog files in the common sources. The build compiles th
 (`embedPrologTheories`), as browsers have no files to read when the solver runs: every platform runs the same text.
 They use the operators of the modules (`::`, `:::`), which only the parser of Arg2P reads.
 
-The libraries under `core/libraries/framework` are those the others stand on, which every solver has from the start,
-each with a state of its own: the loader of the modules (`::`, `:::`), the context, the cache and the settings. The
-others are modules, loaded by their first call, grouped by what they do:
+The libraries under `core/libraries/framework` are those the others stand on. The loader of the modules (`::`, `:::`),
+the context, the cache and the settings are there from the start in every solver, each with a state of its own; the
+parser, the store and utils, beside them, are modules like the others, loaded by their first call. A theory goes in through
+the parser, which reads it as the extensions of its language give it (the notation of the rules, the languages of the
+profile, the graph extensions), and the store keeps what is read and serves it to the others (`store::rule/3`,
+`store::premise/2`, ...), as it keeps the graph. The modules are grouped by what
+they do, each using only its own area and those below it:
 
 ```text
 core/libraries/
-  framework/   loader, context, cache, settings
-  support/     utils, moduleCalls (external modules), graphPrinter
-  store/       the graph and its labels, kept in the context, and the terms they are made of (arguments, labels, ...)
-  language/    parser and the languages of a theory (aspicLanguage, abaLanguage, plainProlog, temporal, transposition, ...)
-  graph/       structured/ (the graphs built from rules: ruleGraph, queryExploration, argument/, attack/, extension/),
-               abstractGraph
+  framework/   loader, context, cache, settings; parser (how a theory goes in); store (the rules read, the graph and its
+               labels, kept in the cache and the context, and the terms they are made of), utils
+  language/    the languages of a theory (ruleNotation, aspicLanguage, abaLanguage, plainProlog, temporal, transposition,
+               metaRules, ...), conflict (which statements conflict), moduleCalls (external modules)
+  graph/       structured/ (the graphs built from rules: ruleGraph, queryGraph, argument/, attack/, extension/ with
+               the preference modes and superiority), abstractGraph
   labelling/   the semantics, of the arguments and of the statements
-  evaluation/  phases, structuredWhole, structuredPartial, statementAcceptance, abstract
-  arg2p/       the entry points
+  evaluation/  pipeline, statementAcceptance
+  arg2p/       the entry points, and the printing of the graph and its labels (buildLabelSets/0)
 ```
 
 ---
@@ -66,10 +70,10 @@ Module::Goal       % run Goal inside Module
 Module:::Goal      % same, but in a branched evaluation context
 ```
 
-For example, to run the abstract solver directly:
+For example, to read the rules of the theory as the store keeps them:
 
 ```prolog
-?- abstract::solve([a, b, c], [(a, b), (b, c)], I, O, U).
+?- store::rule(Id, Premises, Conclusion).
 ```
 
 ### `::` versus `:::`
@@ -104,19 +108,20 @@ implementation exists.
 
 | Stage | Module | Selected by |
 | --- | --- | --- |
-| Parse the theory into internal rules, in the languages of its profile | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage` | `graphLanguage` (set by `graphBuildMode`) |
+| Parse the theory into internal rules, in the languages of its profile, rewritten once by the extensions defining `rewrite/4` | `parser`, `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`, `naturalTerms`, `metaRules` | `graphLanguage` (set by `graphBuildMode`), `naturalTerms`, `metaRules` |
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
 | Change the graph, in a fixed order: add the arguments derived from the others (the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `conflictArguments`, one per extension | `graphExtension`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
 | Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
 
-The `phases` module holds what every evaluation goes through. `structuredWhole` runs the sequence on the whole graph, and
-`structuredPartial` is the goal-directed variant `statementAcceptance` uses when `queryMode` is enabled. That variant differs
-in the second stage alone: it builds the part of the graph the
-query depends on (`queryExploration`), first through the arguments alone (their premises and possible attackers, and
-for a connected semantics what they attack and support), then through what the steps changing the graph relate them
-to (`queryDependencies/2` and `queryDependants/2` of the modules defining them), the attacks between
-them after. The other stages are the same.
+The `pipeline` module runs the stages: `pipeline::evaluate/0` on the whole graph, `pipeline::evaluate/1` on the part of
+the graph a goal depends on when `queryMode` is enabled and the semantics allows it (`pipeline::locality/1`), which is
+what `statementAcceptance` uses. The two differ in the second stage alone, which the builder gives: the whole graph
+(`buildArgumentationGraph/0`), or the part the query depends on (`buildQueryGraph/3` of `ruleGraph`, through
+`queryGraph`), first through the arguments alone (their premises and possible attackers, and for a connected
+semantics what they attack and support), then through what the steps changing the graph relate them to
+(`queryDependencies/2` and `queryDependants/2` of the modules defining them), the attacks between them after. The other
+stages are the same, and so are the stages of the context the evaluation leaves (see `graphAt`).
 
 ---
 
@@ -128,21 +133,19 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 
 | Module | Purpose |
 | --- | --- |
-| `phases` | What every evaluation goes through: the profile checked, the steps changing the graph, the labellings. |
-| `structuredWhole` | The evaluation of the whole graph. |
-| `structuredPartial` | The evaluation of the part of the graph a goal depends on, through `queryExploration` and `argumentSearch`. |
+| `pipeline` | The evaluation: the profile checked, the graph built (whole, or the part a goal depends on), the steps changing it, the labellings. |
 | `statementAcceptance` | The acceptance of a statement, used by `solve`: on the graph `queryMode` selects, as `answerMode` states. |
-| `abstract` | The [abstract AF entry points]({{% ref "/docs/modules/abstract" %}}). |
-| `parser` | Reads the rules and premises of a theory, in the languages of its profile, the first time they are asked for. |
-| `store` | Keeps the argumentation graph and its labels in the context: the only module reading and writing them there. |
+| `parser` | Reads the rules and premises of a theory, as the extensions of its language give them, and finds the extension extending a module (`hook/2`). |
+| `store` | Keeps the rules read, the first time they are asked for, and the argumentation graph and its labels: the only module reading and writing them. |
+| `ruleNotation` | The notation of the rules: `r : a => b`, `r : a -> b`, `f :=> a`, `f :-> a`. |
 | `ruleGraph` | Builds the argumentation graph from the rules: its arguments (`argumentBuilder`) and the attacks between them (`attackBuilder`). Those derived from them are added when the graph is changed (`conflictArguments`). |
 | `abstractGraph` | Builds the graph from the arguments and attacks a theory of the profile `abstract` states. |
 | `conflict` | Which statements conflict, as the conflict model and the theory state it. |
-| `attackRelation`, `attackCandidates` | Define when an argument attacks another, and which arguments may. |
-| `superiority` | Implements argument ordering and comparators. |
+| `attackRelation`, `attackSearch` | Define when an argument attacks another, and which arguments may. |
+| `superiority` | The preferences between rules and between arguments the theory states, with their orderings: what the preference modes and the `bp` labellings compare. |
 | `utils` | List and sorting helpers. |
-| `graphPrinter` | Prints the graph and its labels (`buildLabelSets/0`). |
 | `module` | Loads external `.pl` files, see [external modules](#external-modules). |
+| `metaRules` | With the flag `metaRules`, gives each rule `r` the premise `applicable(r)`: the theory argues about which of its rules apply. |
 
 ### Labelling modules
 

@@ -2,10 +2,10 @@
 
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.ArgumentTerm
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.StatementTerm
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.StoreSchema
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StatementTerm
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.js.JsExport

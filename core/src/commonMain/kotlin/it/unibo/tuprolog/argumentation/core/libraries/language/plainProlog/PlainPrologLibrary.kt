@@ -14,7 +14,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
 /**
  * Theories in plain Prolog (module `plainProlog`, with the flag prologStrictCompatibility): the clauses of a theory
  * read as its rules, premises and axioms, those named in a comment defeasible (see
- * [it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations]).
+ * [it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations]).
  */
 object PlainPrologLibrary : PrologLibrary("plainProlog") {
     override val primitives: Map<Signature, Primitive>
@@ -29,7 +29,7 @@ object PlainPrologLibrary : PrologLibrary("plainProlog") {
     override val baseFlags: Iterable<ArgsFlag>
         get() = listOf(PrologStrictCompatibility)
 
-    override val parsingFlag: ArgsFlag
+    override val extensionFlag: ArgsFlag
         get() = PrologStrictCompatibility
 
     override val prologRawTheory: String = THEORY

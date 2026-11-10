@@ -301,6 +301,45 @@ internal class Machine(
 
     // ---- heap
 
+    /** The word of the integer [value]: a small one as it is, another a compound on the heap (see [Numbers]) */
+    fun intWord(value: Long): Int = Numbers.write(program, value, { alloc(it) }, { a, w -> heap[a] = w })
+
+    // The word of the sum of two small integers
+    private fun sumWord(
+        a: Int,
+        b: Int,
+    ): Int {
+        val sum = a.toLong() + b
+        return if (Words.fitsInt(sum)) word(INT, sum.toInt()) else intWord(sum)
+    }
+
+    /**
+     * The tag a type test reads of the dereferenced word [w]: its own, but [BIG] or [FLT] for the compound of a number no word
+     * holds (see [Numbers])
+     */
+    fun typeTag(w: Int): Int {
+        val t = tag(w)
+        if (t != STR) return t
+        val n = program.numberTag(heap[payload(w)])
+        return if (n == 0) STR else n
+    }
+
+    // The Long of the integer compound [w] (see Numbers): null if it is no integer, or takes more than 63 bits
+    private fun longOfNumber(w: Int): Long? {
+        val a = payload(w)
+        val f = heap[a]
+        if (program.numberTag(f) != BIG) return null
+        val n = program.arity(f)
+        return Numbers.longOf(payload(deref(heap[a + 1])), IntArray(n - 1) { payload(deref(heap[a + 2 + it])) })
+    }
+
+    // The integer of the integer compound [w] (see Numbers)
+    fun bigIntegerOfNumber(w: Int): org.gciatto.kt.math.BigInteger {
+        val a = payload(w)
+        val n = program.arity(heap[a])
+        return Numbers.bigOf(payload(deref(heap[a + 1])), IntArray(n - 1) { payload(deref(heap[a + 2 + it])) })
+    }
+
     fun alloc(cells: Int): Int {
         if (top + cells > heap.size) grow(top + cells)
         val start = top
@@ -1261,8 +1300,9 @@ internal class Machine(
         functor: Int,
         arity: Int,
     ): Int {
-        val primitive = scope.primitive(functor) ?: return FAIL
-        val native = scope.native(functor)
+        val looked = scope.lookedUp(functor) ?: return FAIL
+        val primitive = looked.primitive ?: return FAIL
+        val native = looked.native
         if (native != null) {
             val answer = native.run(this)
             if (answer != StdlibNatives.NOT_NATIVE) return answer
@@ -1275,7 +1315,8 @@ internal class Machine(
         val g = deref(w)
         val functor: Int
         val arity: Int
-        when (tag(g)) {
+        // (the compound of a number no word holds is a number, see Numbers)
+        when (typeTag(g)) {
             ATOM -> {
                 functor = program.atomFunctor(payload(g))
                 arity = 0
@@ -1527,7 +1568,7 @@ internal class Machine(
                     }
                     Op.GET_X_VAR_TYPE_X -> {
                         regs[code[at + 1]] = regs[code[at + 2]]
-                        if ((code[at + 3] ushr tag(dereferenced(regs[code[at + 4]]))) and 1 == 0) break@dispatch
+                        if ((code[at + 3] ushr typeTag(dereferenced(regs[code[at + 4]]))) and 1 == 0) break@dispatch
                         ip = at + 5
                     }
                     Op.GET_STR2 -> {
@@ -1745,7 +1786,7 @@ internal class Machine(
                     Op.IS_VC -> {
                         val a = dereferenced(operand(code[at + 1]))
                         if (tag(a) == INT) {
-                            val w = program.sumWord(payload(a), code[at + 2])
+                            val w = sumWord(payload(a), code[at + 2])
                             val operand = code[at + 6]
                             when (val kind = code[at + 5]) {
                                 Op.T_NEW_X -> regs[operand] = w
@@ -1794,11 +1835,11 @@ internal class Machine(
                         }
                     }
                     Op.TYPE_X -> {
-                        if ((code[at + 1] ushr tag(dereferenced(regs[code[at + 2]]))) and 1 == 0) break@dispatch
+                        if ((code[at + 1] ushr typeTag(dereferenced(regs[code[at + 2]]))) and 1 == 0) break@dispatch
                         ip = at + 3
                     }
                     Op.TYPE_Y -> {
-                        if ((code[at + 1] ushr tag(deref(local[frame + FRAME + code[at + 2]]))) and 1 == 0) break@dispatch
+                        if ((code[at + 1] ushr typeTag(deref(local[frame + FRAME + code[at + 2]]))) and 1 == 0) break@dispatch
                         ip = at + 3
                     }
                     Op.IDENTICAL -> {
@@ -1929,9 +1970,9 @@ internal class Machine(
         n: Int,
     ): Int {
         val small = evaluateSmall(code, from, n)
-        if (small != NOT_SMALL) return program.smallWord(small)
+        if (small != NOT_SMALL) return intWord(small.toLong())
         val value = evaluate(code, from, n)
-        return if (evalFailed) 0 else program.intWord(value)
+        return if (evalFailed) 0 else intWord(value)
     }
 
     // Whether the comparison ARITH_CMP at [at] holds: 1 or 0, -1 for what is left to the builtin
@@ -2043,12 +2084,13 @@ internal class Machine(
                     val v =
                         when (tag(w)) {
                             INT -> payload(w).toLong()
-                            BIG -> {
-                                if (payload(w) < 0) {
+                            STR -> {
+                                val long = longOfNumber(w)
+                                if (long == null) {
                                     evalFailed = true
                                     return 0
                                 }
-                                program.symbols.bigs[payload(w)]
+                                long
                             }
                             else -> {
                                 evalFailed = true
@@ -2333,7 +2375,7 @@ internal class Machine(
     ): Int {
         val term = dereferenced(term0)
         val w =
-            when (tag(term)) {
+            when (typeTag(term)) {
                 STR -> {
                     val a = payload(term)
                     if (i < 1 || i > program.arity(heap[a])) return FAIL
@@ -2365,7 +2407,7 @@ internal class Machine(
         }
         val name: Int
         val n: Int
-        when (t) {
+        when (if (t == STR) typeTag(term) else t) {
             STR -> {
                 val f = heap[payload(term)]
                 name = word(ATOM, program.symbols.functorNames[payload(f)])
@@ -2651,11 +2693,12 @@ internal class Machine(
         val goal = deref(regs[0])
         // (an unbound goal is an instantiation error, raised by callTerm, with the catch active)
         if (tag(goal) == REF) return callTerm(goal)
+        val numberWord = intWord(number.toLong())
         val h = top
         if (h + 5 > heap.size) grow(h + 5)
         top = h + 5
         heap[h] = wCatchExit
-        heap[h + 1] = program.intWord(number.toLong())
+        heap[h + 1] = numberWord
         heap[h + 2] = wComma
         heap[h + 3] = goal
         heap[h + 4] = word(STR, h)
@@ -2751,8 +2794,8 @@ internal class Machine(
         val w = deref(w0)
         return when (tag(w)) {
             INT -> payload(w).toLong()
-            BIG -> if (payload(w) < 0) throw NotNative() else program.symbols.bigs[payload(w)]
             STR -> {
+                longOfNumber(w)?.let { return it }
                 val a = payload(w)
                 when (payload(heap[a])) {
                     fPlus -> {
@@ -2956,7 +2999,7 @@ internal class Machine(
 
     override val recordProgram: Program get() = program
 
-    override fun int(value: Int): Int = program.smallWord(value)
+    override fun int(value: Int): Int = intWord(value.toLong())
 
     // The key at hand, of no use past the lookup
     private val keys = TermFlattener(program, 256)
@@ -3046,15 +3089,19 @@ internal class Machine(
         when (tag(w)) {
             REF -> NativeCall.VAR
             ATOM -> NativeCall.ATOM
-            INT, BIG -> NativeCall.INT
-            FLT -> NativeCall.FLOAT
-            STR -> NativeCall.STRUCT
+            INT -> NativeCall.INT
+            STR ->
+                when (program.numberTag(heap[payload(w)])) {
+                    BIG -> NativeCall.INT
+                    FLT -> NativeCall.FLOAT
+                    else -> NativeCall.STRUCT
+                }
             else -> NativeCall.LIST
         }
 
     override fun atomName(w: Int): String = program.symbols.atoms[payload(w)]
 
-    override fun intValue(w: Int): Long = if (tag(w) == INT) payload(w).toLong() else program.bigInteger(payload(w)).toLong()
+    override fun intValue(w: Int): Long = if (tag(w) == INT) payload(w).toLong() else bigIntegerOfNumber(w).toLong()
 
     override fun functorName(w: Int): String = if (tag(w) == LIST) "." else program.nameOfFunctorWord(heap[payload(w)])
 
@@ -3067,7 +3114,7 @@ internal class Machine(
 
     override fun atom(name: String): Int = program.atomWord(name)
 
-    override fun int(value: Long): Int = program.intWord(value)
+    override fun int(value: Long): Int = intWord(value)
 
     override fun struct(
         name: String,
@@ -3443,7 +3490,7 @@ internal class Machine(
                 CONTINUE
             }
             builtin("=", 2) { m -> if (m.unify(m.regs[0], m.regs[1])) CONTINUE else FAIL }
-            arithmetic("is") { m -> if (m.unify(m.regs[0], m.program.intWord(m.eval(m.regs[1])))) CONTINUE else FAIL }
+            arithmetic("is") { m -> if (m.unify(m.regs[0], m.intWord(m.eval(m.regs[1])))) CONTINUE else FAIL }
             for ((name, kind) in Op.COMPARISONS) {
                 arithmetic(name) { m -> if (m.holds(kind, m.eval(m.regs[0]).compareTo(m.eval(m.regs[1])), 0)) CONTINUE else FAIL }
             }

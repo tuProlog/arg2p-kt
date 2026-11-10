@@ -1,9 +1,9 @@
 %! buildArgumentationGraph
-%  The arguments and the attacks of the theory, saved in the context: an argument attacking or attacked is an
-%  argument as well.
+%  The arguments and the attacks of the theory, as the abstract language reads them, saved in the context: an argument
+%  attacking or attacked is an argument as well.
 buildArgumentationGraph :-
-    statedArguments(Stated),
-    statedAttacks(Attacks),
+    abstractLanguage::arguments(Stated),
+    abstractLanguage::attacks(Attacks),
     findall(A, (member(A, Stated) ; member(att(A, _), Attacks) ; member(att(_, A), Attacks)), All),
     utils::sortDistinct(All, Arguments),
     save(Arguments, Attacks).

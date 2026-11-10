@@ -2,7 +2,6 @@ package it.unibo.tuprolog.argumentation.engine.vm
 
 import it.unibo.tuprolog.argumentation.engine.term.collectVariables
 import it.unibo.tuprolog.argumentation.engine.words.Words
-import it.unibo.tuprolog.argumentation.engine.words.tag
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Cons
@@ -110,8 +109,9 @@ internal class Compiler(
         clause: Clause,
         dynamic: Boolean,
     ): ClauseCode {
-        val head = clause.head!!
-        val start = compile(head, clause.body)
+        // (the numbers no word holds compiled as the compounds they are, see Numbers; the clause kept as written)
+        val head = Numbers.encoded(clause.head!!) as Struct
+        val start = compile(head, Numbers.encoded(clause.body))
         val keys = IntArray(head.arity) { keyOf(head[it]) }
         return ClauseCode(
             keys,
@@ -125,7 +125,8 @@ internal class Compiler(
     }
 
     /** Compiles [query] as the body of a clause whose head holds its variables, in order */
-    fun compileQuery(query: Struct): Query {
+    fun compileQuery(written: Struct): Query {
+        val query = Numbers.encoded(written) as Struct
         val variables = LinkedHashSet<Var>().also { query.collectVariables(it) }.toList()
         val head = if (variables.isEmpty()) Atom.of("\$query") else Struct.of("\$query", variables)
         val start = compile(head, query)
@@ -661,7 +662,7 @@ internal class Compiler(
             else -> false
         }
 
-    private fun smallInteger(term: Integer): Boolean = program.integerWord(term.value).let { tag(it) == Words.INT }
+    private fun smallInteger(term: Integer): Boolean = !Numbers.needsBlock(term)
 
     private fun operation(term: Struct): Int =
         when (term.arity) {

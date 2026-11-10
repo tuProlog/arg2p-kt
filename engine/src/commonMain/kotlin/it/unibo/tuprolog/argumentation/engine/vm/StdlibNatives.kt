@@ -37,7 +37,7 @@ internal object StdlibNatives {
 
     private fun answer(holds: Boolean): Int = if (holds) CONTINUE else FAIL
 
-    private fun typeTest(mask: Int) = StdlibNative { m -> answer((mask ushr tag(m.deref(m.regs[0]))) and 1 != 0) }
+    private fun typeTest(mask: Int) = StdlibNative { m -> answer((mask ushr m.typeTag(m.deref(m.regs[0]))) and 1 != 0) }
 
     private fun ordering(holds: (Int) -> Boolean) =
         StdlibNative { m ->
@@ -84,7 +84,7 @@ internal object StdlibNatives {
         val arity = m.deref(m.regs[2])
         if (tag(term) == REF && tag(arity) == INT && payload(arity) == 0) {
             val name = m.deref(m.regs[1])
-            return when (tag(name)) {
+            return when (m.typeTag(name)) {
                 ATOM, INT, FLT, BIG -> answer(m.unify(term, name))
                 else -> NOT_NATIVE
             }
@@ -101,7 +101,7 @@ internal object StdlibNatives {
         val term = m.deref(m.regs[0])
         val list = m.deref(m.regs[1])
         val listTag = tag(list)
-        return when (tag(term)) {
+        return when (m.typeTag(term)) {
             REF -> compose(m, term, list)
             STR, LIST, ATOM -> {
                 if (listTag != REF && listTag != LIST && list != m.program.emptyList) {
@@ -198,7 +198,7 @@ internal object StdlibNatives {
         return answer(
             m.unify(
                 size,
-                m.program.intWord(
+                m.intWord(
                     m.program.symbols.atoms[payload(atom)]
                         .length
                         .toLong(),

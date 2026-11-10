@@ -155,15 +155,12 @@ optimize the code of the solvers: the first solves take many times the later one
 
 ## Causality
 
-Every solver tests causality on its theory ([causality]({{% ref "/docs/modules/causality" %}})): `ness(cause, effect)`
-and `nessOriginal(cause, effect)` give the intervention showing a cause NESS (null if it is not one),
-`nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` and `butFor(cause,
-effect)` whether they hold.
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
 
 ```js
-const causality = Arg2p.of('r1 :=> a.\nr2 : a => b.').causality
-String(causality.ness('a', 'b'))   // [-a]
-causality.butFor('a', 'b')         // true
+const arg2p = Arg2p.of('r1 :=> a.\nr2 : a => b.')
+arg2p.solve('causality::ness(X, a, b)').next().text('X')   // [- a]: no solution if a is not a NESS cause of b
+arg2p.solve('causality::but_for(a, b)').next().isYes        // true
 ```
 
 ---
@@ -171,7 +168,7 @@ causality.butFor('a', 'b')         // true
 ## The parallel solver
 
 The parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}) are solvers of arg2p as well: the
-`solver` of a `WorkerSolver` (Node.js) or a `WebWorkerSolver` (browsers) solves any goal with the threads of the
+`goals` of a `WorkerSolver` (Node.js) or a `WebWorkerSolver` (browsers) solves any goal with the threads of the
 parallel solver and of its federation, its solutions, answers and graphs promised in the types above. Nothing of the parallel solver runs on
 the calling thread. In a browser its threads share memory only on a page
 [isolated across origins]({{% ref "/docs/modules/parallel#isolation" %}}): on any other page it solves on one thread alone.
@@ -211,7 +208,7 @@ before them a single object, `JsBridge`. Their replacements:
 | `graph.arguments[i].id`, `.label` | `graph.labellings[i].argument.identifier`, `graph.labellings[i].label` |
 | `attack.from`, `attack.to`, `attack.on` (identifiers) | `attack.attacker`, `attack.target`, `attack.on` (arguments) |
 | `JsArg2p.activeBranch(solver)`, `JsArg2p.contextFacts(solver, b, g)` | `solver.activeBranch`, `solver.contextFacts(b, g)` |
-| `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.causality.ness('a', 'b')` |
+| `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.solve('causality::ness(X, a, b)')` |
 | `JsTerms.parse(text)`, `JsTerms.format(term)` | `Value.parse(text)`, `String(value)` |
 | `require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation...` | `import { ... } from '@tuprolog/arg2p'` |
 | `JsBridge.solve(query, theory, flags, output)` | `Arg2p.builder()...build().solve(query)` |

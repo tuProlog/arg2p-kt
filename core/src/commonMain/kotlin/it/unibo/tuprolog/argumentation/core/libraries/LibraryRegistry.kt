@@ -1,18 +1,17 @@
 package it.unibo.tuprolog.argumentation.core.libraries
 
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.Arg2pInterfaceLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.abstract.AbstractFrameworkLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.PhasesLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.PipelineLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.evaluation.statementAcceptance.StatementAcceptanceLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.structuredPartial.StructuredPartialLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.structuredWhole.StructuredWholeLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.ParserLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.StoreLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.framework.utils.UtilsLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.abstractGraph.AbstractFrameworkGraphLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.argument.argumentBuilder.ArgumentBuilderLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.argument.argumentSearch.ArgumentSearchLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackBuilder.AttackBuilderLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackCandidates.AttackCandidatesLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackRelation.AttackRelationLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.conflict.ConflictLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.attack.attackSearch.AttackSearchLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.bp.BpLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.conflictArguments.ConflictArgumentsLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.constraints.ConstraintsLibrary
@@ -22,7 +21,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.standardPref.StandardPrefLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.superiority.SuperiorityLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.rebutRestriction.RebutRestrictionLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.queryExploration.QueryExplorationLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.queryGraph.QueryGraphLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.ruleGraph.RuleGraphLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.admissible.AdmissibleLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.bp.bpGrounded.BpGroundedLibrary
@@ -49,16 +48,15 @@ import it.unibo.tuprolog.argumentation.core.libraries.labelling.statement.statem
 import it.unibo.tuprolog.argumentation.core.libraries.language.abaLanguage.AbaLanguageLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.abstractLanguage.AbstractFrameworkLanguageLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.aspicLanguage.AspicLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.conflict.ConflictLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.defeasibleLanguage.DefeasibleLanguageLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.metaRules.MetaRulesLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.moduleCalls.ModuleCallsLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.naturalTerms.NaturalTermsLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.ParserLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.plainProlog.PlainPrologLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.language.ruleNotation.RuleNotationLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.temporal.TemporalLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.language.transposition.TranspositionLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.store.StoreLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.support.graphPrinter.GraphPrinterLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.support.moduleCalls.ModuleCallsLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.support.utils.UtilsLibrary
 
 /** The modules of arg2p, by area: a solver loads each by its first call (Module::Goal) */
 object LibraryRegistry {
@@ -68,62 +66,68 @@ object LibraryRegistry {
      */
     val language: List<Loadable> =
         listOf(
-            ParserLibrary,
+            RuleNotationLibrary,
             PlainPrologLibrary,
             NaturalTermsLibrary,
             TranspositionLibrary,
             TemporalLibrary,
+            MetaRulesLibrary,
             AspicLanguageLibrary,
             AbaLanguageLibrary,
             DefeasibleLanguageLibrary,
             AbstractFrameworkLanguageLibrary,
+            ConflictLibrary,
+            ModuleCallsLibrary,
         )
 
-    /** Where the argumentation graph and its labels are kept, read and changed by all the others, and the terms of the graph */
-    val store: List<Loadable> = listOf(StoreLibrary)
+    /**
+     * What every module stands on: the parser, through which a theory goes in (as the extensions of its language read it),
+     * the store, keeping what it reads and the argumentation graph and its labels, read and changed by all the others, with
+     * the terms of the graph, and the helpers on lists and terms
+     */
+    val framework: List<Loadable> = listOf(UtilsLibrary, ParserLibrary, StoreLibrary)
 
     /**
      * Building the argumentation graph: from the rules of a theory (its arguments, forward or from a query, the conflicts
-     * between statements and the attacks), or from the arguments and attacks it states
+     * between statements, the attacks, the preferences among arguments), or from the arguments and attacks it states
      */
     val graph: List<Loadable> =
         listOf(
             RuleGraphLibrary,
-            QueryExplorationLibrary,
+            QueryGraphLibrary,
             ArgumentBuilderLibrary,
             ArgumentSearchLibrary,
-            ConflictLibrary,
             AttackBuilderLibrary,
             AttackRelationLibrary,
-            AttackCandidatesLibrary,
+            AttackSearchLibrary,
             AbstractFrameworkGraphLibrary,
         )
 
-    /** Changing the argumentation graph: the graph extensions, the preferences among them */
+    /**
+     * Changing the argumentation graph: the graph extensions, the preference modes among them, and the superiority of
+     * arguments they weigh (which the labellings with burdens of persuasion weigh as well)
+     */
     val extensions: List<Loadable> =
         listOf(
             ConflictArgumentsLibrary,
             RebutRestrictionLibrary,
             BpLibrary,
             ConstraintsLibrary,
-            SuperiorityLibrary,
             StandardPrefLibrary,
             DefeasiblePrefLibrary,
             DefeasibleAllPrefLibrary,
             AbaPrefLibrary,
+            SuperiorityLibrary,
         )
 
     /**
-     * Evaluating a theory: the phases each evaluation goes through, on the whole graph, on the part a query depends on,
-     * or on an abstract framework given as lists, and the acceptance of a statement
+     * Evaluating a theory: the pipeline each evaluation goes through, on the whole graph or the part a query depends on,
+     * and the acceptance of a statement
      */
     val evaluation: List<Loadable> =
         listOf(
-            PhasesLibrary,
-            StructuredWholeLibrary,
-            StructuredPartialLibrary,
+            PipelineLibrary,
             StatementAcceptanceLibrary,
-            AbstractFrameworkLibrary,
         )
 
     /** The semantics labelling the arguments, what they share, and the statements from them */
@@ -153,12 +157,12 @@ object LibraryRegistry {
             StatementBinaryLibrary,
         )
 
-    /** The entry points, and what they rely on */
-    val support: List<Loadable> = listOf(Arg2pInterfaceLibrary, UtilsLibrary, GraphPrinterLibrary, ModuleCallsLibrary)
+    /** The entry points (and the printing of the graph and its labels, for buildLabelSets/0) */
+    val entry: List<Loadable> = listOf(Arg2pInterfaceLibrary)
 
     /** All the modules, each with an identifier of its own: a module is loaded by its identifier */
     val all: List<Loadable> by lazy {
-        (support + store + language + graph + extensions + evaluation + labellings).also { modules ->
+        (entry + framework + language + graph + extensions + evaluation + labellings).also { modules ->
             val repeated =
                 modules
                     .groupBy { it.identifier() }

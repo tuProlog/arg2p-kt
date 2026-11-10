@@ -385,9 +385,16 @@ class ParallelNode(
      * Nothing is done if none is under way.
      */
     fun stop() {
-        val stopped = locked(lock) { clients.values.toList().also { clients.clear() } }
+        val (stopped, building, consumers) =
+            locked(lock) { Triple(clients.values.toList().also { clients.clear() }, session, placed[session].orEmpty()) }
         if (stopped.isEmpty()) return
         solverQueue.interrupt()
+        solverThread?.interrupt()
+        // (the consumers of the graph given up abandoned, on any host, which interrupts those it can; and they all stop at
+        // their next read of the graph, waiting on it or not)
+        val reason = "the graph was given up: stopped"
+        consumers.forEach { (consumer, host) -> host.abandon(HostFrame.Abandon(building, consumer, reason)) }
+        stores[building]?.fail(reason)
         deliver(Stop)
         stopped.forEach { (reply, answer) -> reply(answer) }
     }
@@ -415,7 +422,8 @@ class ParallelNode(
         reply: (KbMessage) -> Unit,
     ) {
         val client = locked(lock) { "client_${clientIds++}".also { clients[it] = reply to stopped } }
-        deliver(request(client))
+        // (left if the client was stopped before the solver comes to it: answered already)
+        deliver(request(client)) { locked(lock) { client in clients } }
     }
 
     // What a client solving a goal in [run] is given if stopped

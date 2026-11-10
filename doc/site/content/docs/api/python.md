@@ -41,7 +41,7 @@ sup(r1, r2).
 
 (answer,) = arg2p.answer("a")          # an answer for each labelling: one under grounded
 answer.in_statements                   # ['a']
-arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], written -a
+arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], written - a
 ```
 
 `answer` gives an answer for each labelling, or the one across them all with the flag `answerMode(credulous)` or
@@ -122,10 +122,12 @@ Python values: atoms as strings, numbers as numbers, lists as lists, compound te
 
 ### Causality
 
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
+
 ```python
-causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-causality.ness("a", "b")      # the intervention, [Struct(functor='-', args=('a',))]: None if a is not a cause
-causality.but_for("a", "b")   # True
+arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+next(arg2p.solve("causality::ness(X, a, b)")).text("X")   # '[- a]': no solution if a is not a NESS cause of b
+next(arg2p.solve("causality::but_for(a, b)")).is_yes        # True
 ```
 
 ---

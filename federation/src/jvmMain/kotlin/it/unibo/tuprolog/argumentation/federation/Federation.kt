@@ -5,6 +5,8 @@ import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import java.net.InetAddress
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
@@ -24,10 +26,16 @@ class Federation
         @property:InternalArg2pApi
         val site: Site = Site(parallel.node, lends).apply { name = HOST_NAME }
 
-        // made when the parallel solver first listens or connects
+        // made when the parallel solver first listens or connects, with the beats of the site (see Site.heartbeat)
         private var links: WebSocketLinks? = null
+        private var beats: ScheduledFuture<*>? = null
 
-        private fun links() = links ?: WebSocketLinks(site).also { links = it }
+        private fun links() =
+            links ?: WebSocketLinks(site).also {
+                links = it
+                val every = Site.BEAT.inWholeMilliseconds
+                beats = BEATS.scheduleAtFixedRate({ runCatching { site.heartbeat() } }, every, every, TimeUnit.MILLISECONDS)
+            }
 
         init {
             parallel.node.onClose(::close)
@@ -132,11 +140,17 @@ class Federation
 
         /** Closes the links to the other sites: the parallel solver goes on, alone */
         override fun close() {
+            beats?.cancel(false)
+            beats = null
             links?.close()
             links = null
         }
 
         companion object {
+            // The thread beating the sites of the process
+            private val BEATS =
+                Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "arg2p-federation-beats").apply { isDaemon = true } }
+
             // How long a link waits for the other site, in milliseconds
             private const val WAITING = 10_000L
 

@@ -1,10 +1,10 @@
 %! preferenceMode
-%  This graph extension weighs the attacks by the preferences (see phases::preferenceMode/1).
+%  This graph extension weighs the attacks by the preferences (see pipeline::preferenceMode/1).
 preferenceMode.
 
 %! stepScope(-Scope)
 %  own: the step goes through the attacks or the arguments it changes each alone, which the solvers of a session
-%  building the graph together divide (see phases::stepScope/2).
+%  building the graph together divide (see pipeline::stepScope/2).
 stepScope(own).
 
 %! modifyArgumentationGraph

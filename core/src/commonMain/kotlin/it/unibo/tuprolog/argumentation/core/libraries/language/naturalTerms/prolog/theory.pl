@@ -1,20 +1,14 @@
-%! clauses(+Rules, -Clauses, +StrictIds, -MappedIds)
-%  The clauses of Rules, their statements written as text turned into terms; MappedIds are the strict/1 facts of
-%  StrictIds for the rules as they are named then.
-clauses(Rules, Clauses, StrictIds, MappedIds) :-
-    ruleToClauseNatural(Rules, Clauses),
-    mapIds(Rules, Clauses, StrictIds, MappedIds).
-
-recoverId(Head :- Body, Id) :- parser::ruleClause(Id, _, _, Head, Body).
-recoverId(Head :- Body, Id) :- parser::premiseClause(Id, _, Head, Body).
-recoverId([Y, _, _], Y).
-recoverId([Y, _], Y).
+%! rewrite(+Rules, +Ids, -Rewritten, -RewrittenIds)
+%  The rules read (see parser::rewritten/4), their statements written as text turned into terms (see rulesInTerms/2);
+%  RewrittenIds are the strict/1 facts of Ids for the rules as they are named then.
+rewrite(Rules, Ids, Rewritten, RewrittenIds) :-
+    rulesInTerms(Rules, Rewritten),
+    mapIds(Rules, Rewritten, Ids, RewrittenIds).
 
 mapIds([], [], _, []).
-mapIds([W|T], [Z|TT], Ids, [strict(Y)|RR]) :-
-    once(recoverId(W, X)),
-    member(strict(X), Ids), !,
-    once(recoverId(Z, Y)),
-    mapIds(T, TT, Ids, RR).
-mapIds([_|T], [_|TT], Ids, RR) :-
-    mapIds(T, TT, Ids, RR).
+mapIds([[Id|_]|Rules], [[Named|_]|Rewritten], Ids, [strict(Named)|Mapped]) :-
+    member(strict(Strict), Ids),
+    Strict == Id, !,
+    mapIds(Rules, Rewritten, Ids, Mapped).
+mapIds([_|Rules], [_|Rewritten], Ids, Mapped) :-
+    mapIds(Rules, Rewritten, Ids, Mapped).

@@ -30,7 +30,7 @@ class ConflictArgumentsLibraryTest {
         val module = LibraryTesting("metaConflicts.\nr1 : [] => a.\nr2 : [] => b.\nr3 : [] => conflict(a, b).\nr4 : [] => conflict(a, c).")
         module.run(
             "context_reset",
-            "parser::rulesRead",
+            "store::rulesRead",
             "ruleGraph:::buildArguments",
             "conflictArguments::buildCopies",
         )
@@ -48,11 +48,11 @@ class ConflictArgumentsLibraryTest {
     // The exploration of the base graph knows nothing of argued conflicts: this step declares what they relate
     private fun theStepExploresTheSidesOf(conflict: String) {
         val module = LibraryTesting.parsed("metaConflicts.\nqueryMode.\nr0 : [] => $conflict.\nf1 :=> a.\nf2 :=> b.")
-        module.run("queryExploration::explore($conflict)")
+        module.run("queryGraph::explore($conflict)")
         assertTrue(module.holds("store::argumentFor([$conflict], _)"))
         assertFalse(module.holds("store::argumentFor([a], _)"))
         assertFalse(module.holds("store::argumentFor([b], _)"))
-        module.run("queryExploration::extend(directional)")
+        module.run("pipeline::steps(Steps), queryGraph::extend(Steps, directional)")
         assertTrue(module.holds("store::argumentFor([a], _)"))
         assertTrue(module.holds("store::argumentFor([b], _)"))
     }

@@ -91,7 +91,7 @@ class SharedProgramsTest {
             solver
                 .solve(
                     Struct.parse(
-                        "context_reset, context_assert(mine(1)), parser::rulesRead, context_check(mine(X)), parser::rule(_, _, _)",
+                        "context_reset, context_assert(mine(1)), store::rulesRead, context_check(mine(X)), store::rule(_, _, _)",
                         solver.operators,
                     ),
                 ).first()

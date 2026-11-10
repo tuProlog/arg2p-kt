@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.argument.
 /**
  * The arguments for a statement, built on demand (module `argumentSearch`, for query mode): from a premise, or from a
  * rule whose premises are supported in turn by the arguments for them (explored through the module
- * queryExploration, which saves them).
+ * queryGraph, which saves them).
  *
  * An argument is the same term as the graph builder makes (see the module argumentBuilder): its rules and info from
  * those of its sub-arguments (store::rulesAndInfo/5), its body the premises of its rule as written. Its parts are

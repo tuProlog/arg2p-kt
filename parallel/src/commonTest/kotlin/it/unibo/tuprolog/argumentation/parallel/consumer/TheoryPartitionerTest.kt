@@ -131,6 +131,28 @@ class TheoryPartitionerTest {
     fun metaRulesSupportTheirRules() =
         assertEquals(listOf(listOf("f1", "r1", "r2")), groups("metaRules.\nr1 : a => b.\nf1 :=> a.\nr2 : [] => applicable(r1)."))
 
+    // metaRules is applied once, as the rules are read: a partition has applicable(Id) written, and is not given it again
+    @Test
+    fun aPartitionHasApplicableOnce() {
+        val partitioning = TheoryPartitioner.partition("metaRules.\nr1 : a => b.\nf1 :=> a.\nr2 : [] => applicable(r1).")
+        val solver = Arg2pSolverFactory.default(theory = partitioning.theoryOf(0))
+        val premises = solver.solveOnce(Struct.parse("store::rule(r1, P, _)", solver.operators)).substitution.getByName("P")
+        assertEquals(Struct.parse("[applicable(r1), a]"), premises)
+    }
+
+    // A theory with naturalTerms is partitioned as the others, its statements written as terms
+    @Test
+    fun aTheoryInNaturalLanguageIsPartitioned() {
+        val partitioning =
+            TheoryPartitioner.partition(
+                "naturalTerms.\nr1 : 'X is a bird' => 'X flies'.\nf1 :=> 'tweety is a bird'.\nf2 :=> 'polly is a fish'.",
+                parts = 2,
+            )
+        val text = partitioning.partitions.joinToString("\n")
+        assertTrue("is_a_bird(tweety)" in text && "'tweety is a bird'" !in text, text)
+        assertTrue("naturalTerms(off)" in partitioning.theoryOf(0))
+    }
+
     @Test
     fun aTheoryWithNoRuleHasNoPartition() = assertEquals(emptyList(), TheoryPartitioner.partition("sup(r1, r2).").partitions)
 
@@ -148,11 +170,11 @@ class TheoryPartitionerTest {
                         theory = partitioning.theoryOf(index),
                         settings = Flags.parse("temporal.").library(),
                     ).also {
-                        it.solve(Struct.parse("context_reset, parser::rulesRead", it.operators)).first()
+                        it.solve(Struct.parse("context_reset, store::rulesRead", it.operators)).first()
                     }
             }
         val axioms = { solver: Solver ->
-            solver.solve(Struct.parse("parser::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
+            solver.solve(Struct.parse("store::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
         }
         assertEquals(1, members.sumOf(axioms))
         members.forEach { assertTrue(it.solve(Struct.parse("constraints::instances", it.operators)).first().isYes) }

@@ -1,6 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries
 
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.structuredPartial.StructuredPartialLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.ruleGraph.RuleGraphLibrary
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -41,7 +41,7 @@ class LibraryRegistryTest {
 
     @Test
     fun theCallsAreFound() {
-        assertTrue(Triple(StructuredPartialLibrary.alias, "queryExploration", Signature("explore", 2)) in calls)
+        assertTrue(Triple(RuleGraphLibrary.alias, "queryGraph", Signature("explore", 3)) in calls)
     }
 
     @Test

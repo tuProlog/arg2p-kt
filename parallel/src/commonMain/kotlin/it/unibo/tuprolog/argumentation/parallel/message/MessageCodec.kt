@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.Value
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
 import it.unibo.tuprolog.argumentation.core.model.compactGraphOf
 import it.unibo.tuprolog.argumentation.core.model.compactGraphText
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi

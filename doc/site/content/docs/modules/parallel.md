@@ -215,7 +215,15 @@ browser linked to it.
 A parallel solver of JavaScript lends all its threads but the one of its solver; its own graphs still run while it lends,
 each consumer on a thread of its own, more being made if they are all busy. If an instance leaves while a graph is being
 built, the goal is solved again with the consumers left (up to three times); once built, the graph lives with the instance
-that asked for it, and needs the others only when its theory changes. Only instances of the same version of arg2p federate.
+that asked for it, and needs the others only when its theory changes. An instance that hangs with its link open counts as
+left once it has not answered for 5 seconds (the instances check each other every second). Only instances of the same
+version of arg2p federate.
+
+`goals.stop()` ends the goal being solved at once: its next solution is a halt, and the next goal does not wait for it. The
+work under way for it stops too: the solver is interrupted where it resolves (in JavaScript the workers read the stop on the
+memory they share), and so are its consumers running in JavaScript, here or on the instances of the federation; those on
+the JVM stop at their next read of the graph, which is given up. A browser page not [isolated across origins](#isolation)
+solves on one thread, which reads the stop only once the goal is solved.
 
 `stats` tells what the federation is, cheap to read at any time (`FederationStats`): its `site`, and the `sites` it knows, itself
 first (`SiteStats`: `id`, `name`, and `workers` it offers, null for no limit). The site that ran each consumer of an evaluation
@@ -382,7 +390,7 @@ The state of a graph never waits: only the consumers wait, each on what it asked
 With `queryMode` (on in `Flags.defaults()`), the consumers build only the arguments the labels of the statements
 evaluated depend on, as the semantics declares: exactly those the
 [query mode]({{% ref "/docs/api/flags#querymode" %}}) of the standard solver builds, explored the same way, by the
-same modules (`queryExploration`), each consumer on its own rules:
+same modules (`queryGraph`), each consumer on its own rules:
 
 - every consumer is asked to explore a statement evaluated, those with no rule for it having nothing to do;
 - a consumer explores it on its rules: the arguments for it, those for their premises, and the statements their labels

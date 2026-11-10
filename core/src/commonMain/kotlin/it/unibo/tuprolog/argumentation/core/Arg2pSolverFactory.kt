@@ -4,13 +4,12 @@ import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.Loadable
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryNotation
 import it.unibo.tuprolog.argumentation.engine.term.Arg2pUnificator
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Runtime
-import it.unibo.tuprolog.theory.parsing.parse
 
 object Arg2pSolverFactory {
     fun default(
@@ -21,8 +20,8 @@ object Arg2pSolverFactory {
     ) = solverOf(Arg2pSolver.default(staticLibs + listOf(settings), dynamicLibs), theory)
 
     /**
-     * A solver of the libraries of [arg2p], and the [extra] ones, for [theory] (its clauses tagged with the
-     * identifiers of their comments, see RuleAnnotations): unknown predicates fail (the hooks a theory may define,
+     * A solver of the libraries of [arg2p], and the [extra] ones, for [theory], read with the notation of its languages (see
+     * TheoryNotation; its clauses tagged with the identifiers of their comments, see RuleAnnotations): unknown predicates fail (the hooks a theory may define,
      * as conflict/2 and sup/2, are called whether it does or not), what it prints goes to [output] (the standard
      * output by default)
      */
@@ -35,7 +34,12 @@ object Arg2pSolverFactory {
         unificator = Arg2pUnificator,
         otherLibraries = arg2p.to2pLibraries() + extra,
         flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
-        staticKb = RuleAnnotations.parse(theory, arg2p.operators(), Arg2pUnificator),
+        staticKb =
+            TheoryNotation.read(
+                theory,
+                listOf(arg2p.staticLibraries().flatMap { it.baseContent.clauses }),
+                arg2p.dynamicLibraries(),
+            ),
         stdOut = output,
     )
 }

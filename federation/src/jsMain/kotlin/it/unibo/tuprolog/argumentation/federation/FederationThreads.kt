@@ -158,6 +158,9 @@ internal class FederationService(
         made.name = message.name
         site = made
         links = WebSocketLinks(made)
+        // (the beats of the site, on the thread of the node, which never waits: see Site.heartbeat)
+        val beats = js("setInterval")({ made.heartbeat() }, Site.BEAT.inWholeMilliseconds.toInt())
+        node.onClose { js("clearInterval")(beats) }
         made.onPeersChanged = {
             state()
             tell(FederationConsole.PeersChanged)

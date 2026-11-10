@@ -2,20 +2,21 @@
 
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.causality.CausalityLibrary
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
+import it.unibo.tuprolog.argumentation.core.libraries.LibraryRegistry
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.graphsOf
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.goalOf
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.termOf
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.activeBranch
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.compactGraph
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryNotation
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.core.model.compactGraph
+import it.unibo.tuprolog.argumentation.goalOf
+import it.unibo.tuprolog.argumentation.termOf
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Integer
 import it.unibo.tuprolog.core.Struct
@@ -34,7 +35,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
 
 /**
  * A solver of arg2p for a theory, as Prolog text, with its [Flags]: it answers queries ([answer]), gives the graph of
- * each labelling ([graphs]), solves Prolog goals ([solve]) and tests causality ([causality]).
+ * each labelling ([graphs]) and solves Prolog goals ([solve]), those of the causality module (`causality::ness(X, a, b)`) too.
  *
  * ```kotlin
  * val arg2p = Arg2p.of("r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).")
@@ -51,9 +52,6 @@ class Arg2p private constructor(
     // the libraries of the solver, which declare its flags
     private val arg2p: Arg2pSolver,
 ) {
-    /** The causality tests on the theory: NESS and but-for (see [Causality]) */
-    val causality: Causality = Causality(this)
-
     /** The theory, as Prolog text */
     val theory: String get() = solver.staticKb.toString(asPrologText = true)
 
@@ -182,14 +180,22 @@ class Arg2p private constructor(
     /** Replaces the theory with [theory], Prolog text (an [Arg2pException] telling where it does not parse) */
     fun load(theory: String) = solver.loadStaticKb(parsed(theory))
 
-    // The clauses of [theory], read with the operators of the solver
+    // The clauses of [theory], read with the notation of its languages (see TheoryNotation): those its flags state, or else
+    // those of the theory read so far, or else those of the flags of the solver
     private fun parsed(theory: String): Theory =
-        SyntaxProblem.parsing("Theory") { RuleAnnotations.parse(theory, solver.operators, solver.unificator) }
+        SyntaxProblem.parsing("Theory") {
+            TheoryNotation.read(
+                theory,
+                listOf(solver.staticKb.clauses, arg2p.staticLibraries().flatMap { it.baseContent.clauses }),
+                arg2p.dynamicLibraries(),
+                solver.unificator,
+            )
+        }
 
     // The first solution of [goal]: null if it fails, an Arg2pException if it halts
-    internal fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
+    private fun first(goal: Struct): LogicSolution? = checked(solver.solve(goal).first()).takeIf { it.isYes }
 
-    internal fun term(text: String): Term = termOf(text, solver.operators)
+    private fun term(text: String): Term = termOf(text, solver.operators)
 
     private fun struct(goal: String): Struct = goalOf(goal, solver.operators)
 
@@ -287,10 +293,14 @@ class Arg2p private constructor(
             }
         }
 
-        /** Where [theory], Prolog text (a theory, or flags), does not parse; null if it does. Nothing is solved. */
+        /**
+         * Where [theory], Prolog text (a theory, or flags), does not parse, read with the notation of its languages (see
+         * TheoryNotation); null if it does. Nothing is solved.
+         */
         @JvmStatic
         @JsStatic
-        fun checkTheory(theory: String): SyntaxProblem? = SyntaxProblem.check { RuleAnnotations.parse(theory, TermValues.operators) }
+        fun checkTheory(theory: String): SyntaxProblem? =
+            SyntaxProblem.check { TheoryNotation.read(theory, emptyList(), LibraryRegistry.all) }
 
         /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
         @JvmStatic
@@ -300,6 +310,6 @@ class Arg2p private constructor(
         /** The version of arg2p, the released one for a release */
         @JvmStatic
         @JsStatic
-        fun version(): String = Arg2pLibrary.version()
+        fun version(): String = ARG2P_VERSION
     }
 }

@@ -65,4 +65,13 @@ class SharedLibrary(
     private val hash by lazy { library.hashCode() }
 
     override fun hashCode(): Int = hash
+
+    companion object {
+        /**
+         * [library] shared, its code told apart by its alias and the text of its clauses: for a library made once and
+         * given to every solver (the builtins), or any whose clauses never change. Its key is made here: wrap it once.
+         */
+        fun of(library: Library): SharedLibrary =
+            library as? SharedLibrary ?: SharedLibrary(library, CodeKey.of(library.alias, library.clauses.joinToString("\n")))
+    }
 }

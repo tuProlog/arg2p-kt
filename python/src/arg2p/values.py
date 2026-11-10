@@ -19,7 +19,7 @@ class Var:
 
 @dataclass(frozen=True)
 class Struct:
-    """A compound term: its functor and arguments, and its text, as arg2p writes it (-a, o(-b))."""
+    """A compound term: its functor and arguments, and its text, as arg2p writes it (- a, o(- b))."""
 
     functor: str
     args: tuple[Any, ...]

@@ -1,11 +1,13 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.settings
 
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.Profile
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.argumentation.core.LibraryTesting
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.flags.GraphBuildMode
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.helpers.Profiles
 import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solution
 import kotlin.test.Test
@@ -27,6 +29,12 @@ class ProfilesTest {
     }
 
     // The first solution of solve for Goal, in query mode
+    // [theory] does not read: written with a notation its languages do not have (see TheoryNotation)
+    private fun assertDoesNotRead(theory: String) {
+        val failure = runCatching { Arg2pSolverFactory.default(theory = theory, settings = Flags.defaults().library()) }.exceptionOrNull()
+        assertTrue(failure is ParseException, "$theory: $failure")
+    }
+
     private fun answer(
         theory: String,
         goal: String,
@@ -48,7 +56,7 @@ class ProfilesTest {
 
     @Test
     fun aspicPlusIsTheDefault() {
-        assertEquals(Profiles.ASPIC_PLUS.name, GraphBuildMode.default())
+        assertEquals(Profile.ASPIC_PLUS.value, GraphBuildMode.default())
         assertEquals(Profiles.all.map { it.name }, GraphBuildMode.values())
         val module = LibraryTesting("")
         assertTrue(module.holds("setting(autoTransposition)"))
@@ -112,18 +120,18 @@ class ProfilesTest {
             )
         assertEquals(
             listOf("constraints", "conflictArguments", "rebutRestriction", "standardPref", "bp"),
-            module.values("phases::step(S), phases::active(S)", "S"),
+            module.values("pipeline::steps(Steps), member(S, Steps)", "S"),
         )
     }
 
     @Test
-    fun theDefeasiblePartOfAspicRefusesStrictRules() {
+    fun theDefeasiblePartOfAspicReadsDefeasibleRulesAlone() {
         assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "graphBuildMode(aspic_defeasible).\n"))
-        val refused = labelling(preferred + "s1 : [] -> b.\ngraphBuildMode(aspic_defeasible).\n")
-        assertTrue(refused.isHalt, refused.toString())
-        // nor premises: a fact is a rule with no premise
-        val premise = labelling(preferred + "f1 :=> b.\ngraphBuildMode(aspic_defeasible).\n")
-        assertTrue(premise.isHalt, premise.toString())
+        // a strict rule is not read (written with the operators of Prolog, it is data for the clauses)
+        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "s1 : [] -> b.\ngraphBuildMode(aspic_defeasible).\n"))
+        // premises and axioms are no part of its notation: they do not read (a fact is a rule with no premise)
+        assertDoesNotRead(preferred + "f1 :=> b.\ngraphBuildMode(aspic_defeasible).\n")
+        assertDoesNotRead(preferred + "f1 :-> b.\ngraphBuildMode(aspic_defeasible).\n")
         val module = LibraryTesting("graphBuildMode(aspic_defeasible).\n")
         assertEquals(listOf("last"), module.values("setting(orderingPrinciple, X)", "X"))
         assertEquals(listOf("normal"), module.values("setting(orderingComparator, X)", "X"))
@@ -215,59 +223,41 @@ class ProfilesTest {
 
     @Test
     fun anAbaTheoryIsFlatWithStrictRulesOnly() {
-        val defeasible = labelling("$aba\nr3 : b => z.\n")
-        assertTrue(defeasible.isHalt, defeasible.toString())
+        // a defeasible rule is no part of its notation: it does not read
+        assertDoesNotRead("$aba\nr3 : b => z.\n")
         val notFlat = labelling("$aba\nr3 : x -> a.\n")
         assertTrue(notFlat.isHalt, notFlat.toString())
     }
 
     @Test
     fun anAbaTheoryHasNoOrdinaryPremise() {
-        // its premises are its assumptions: an ordinary premise is refused, an axiom (a strict fact) is not
-        val premise = labelling("graphBuildMode(aba).\nf1 :=> d.\nf2 :=> -d.\n")
-        assertTrue(premise.isHalt, premise.toString())
-        assertTrue(premise.exception.toString().contains("ordinary premises"), premise.exception.toString())
+        // its premises are its assumptions: an ordinary premise does not read, an axiom (a strict fact) does
+        assertDoesNotRead("graphBuildMode(aba).\nf1 :=> d.\nf2 :=> -d.\n")
         assertEquals("[[[d]], [], []]", labels("graphBuildMode(aba).\nf1 :-> d.\n"))
     }
 
     @Test
-    fun anAbstractTheoryHasNoRule() {
-        // rules, premises and axioms of the structured notations are refused, not dropped nor read as attacks
-        for (theory in listOf("f1 :=> d.\n", "r1 : [] => d.\n", "r1 : [] -> d.\nr2 : [] -> -d.\n", "f1 :-> d.\n", "assumption(a).\n")) {
-            val refused = labelling("graphBuildMode(abstract).\n$theory")
-            assertTrue(refused.isHalt, "$theory: $refused")
-        }
-        // the notation of the profile, its Prolog clauses and its arguments of any shape are not
+    fun anAbstractTheoryHasArgumentsOfAnyShape() {
+        // the notation of the profile, its Prolog clauses and its arguments of any shape
         assertEquals("[[[f(x)]], [[g(y)]], []]", labels("graphBuildMode(abstract).\nf(x) -> g(y).\n"))
         assertEquals("[[[b], [a]], [], []]", labels("graphBuildMode(abstract).\nthing(a).\nthing(b).\narg(X) :- thing(X).\n"))
     }
 
     @Test
-    fun anAbstractTheoryIsCheckedAndLabelledInQueryMode() {
-        // query mode builds the graph through no builder of the profile: its language checks the theory
-        for (theory in listOf("queryMode.\nf1 :=> d.\n", "f1 :=> d.\n")) {
-            val refused = answer("graphBuildMode(abstract).\n$theory", "d")
-            assertTrue(refused.isHalt, "$theory: $refused")
-            assertTrue(refused.exception.toString().contains("abstract"), refused.exception.toString())
-        }
-        // and labelled as in the whole graph
+    fun anAbstractTheoryIsLabelledInQueryMode() {
+        // as in the whole graph
         val theory = "graphBuildMode(abstract).\nqueryMode.\na -> b.\nb -> c.\n"
         assertEquals("[[c], [], []]", answer(theory, "c").substitution.getByName("L").toString())
         assertEquals("[[], [b], []]", answer(theory, "b").substitution.getByName("L").toString())
     }
 
     @Test
-    fun anAbstractTheoryHasNoPreferenceConflictNorBurden() {
-        // arg2p reads them in every theory, and an abstract framework would drop them
-        for (theory in listOf("sup(a, b).\n", "conflict([a], [b]).\n", "conflict([a], [b], true).\n", "bp(a).\n")) {
-            val refused = labelling("graphBuildMode(abstract).\na.\nb.\n$theory")
-            assertTrue(refused.isHalt, "$theory: $refused")
-        }
-        // other facts are data for the clauses: they state no argument (an atom or arg/1 does)
+    fun anAbstractTheoryHasDataBesideItsFramework() {
+        // facts other than arguments are data for the clauses: they state no argument (an atom or arg/1 does)
         assertEquals("[[[a]], [[b]], []]", labels("graphBuildMode(abstract).\no(a).\nwins(a, b).\nX -> Y :- wins(X, Y).\n"))
-        // arg/1 and att/2 take arguments of any shape; in the notation, a list reads as the premises of a rule
+        // arg/1, att/2 and the notation take arguments of any shape
         assertEquals("[[[[a]]], [[b]], []]", labels("graphBuildMode(abstract).\natt([a], b).\n"))
-        assertTrue(labelling("graphBuildMode(abstract).\n[a] -> b.\n").isHalt)
+        assertEquals("[[[[a]]], [[b]], []]", labels("graphBuildMode(abstract).\n[a] -> b.\n"))
         // an argument may have the name of a burden or of a preference
         assertEquals("[[[bp]], [[sup]], []]", labels("graphBuildMode(abstract).\nbp -> sup.\n"))
     }

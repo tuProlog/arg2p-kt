@@ -3,8 +3,8 @@ package it.unibo.tuprolog.argumentation.parallel
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
 import it.unibo.tuprolog.argumentation.parallel.consumer.TheoryPartitioner
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
@@ -20,7 +20,7 @@ import kotlin.test.Test
  */
 class SharedGraphBench {
     private val flags = Flags.defaults().queryMode(false)
-    private val labelling = "context_reset, structuredWhole::computeStatementLabels(In, Out, Und)"
+    private val labelling = "context_reset, pipeline::statementLabels(In, Out, Und)"
 
     private fun indep(n: Int): String =
         (0 until n).joinToString("\n") { b ->
@@ -117,7 +117,7 @@ class SharedGraphBench {
                                 thread {
                                     worker.solveOnce(
                                         Struct.parse(
-                                            "context_reset, structuredWhole::buildGraph, phases::modifyGraph",
+                                            "context_reset, pipeline::graph(whole, whole_graph), pipeline::modifyGraph",
                                             worker.operators,
                                         ),
                                     )

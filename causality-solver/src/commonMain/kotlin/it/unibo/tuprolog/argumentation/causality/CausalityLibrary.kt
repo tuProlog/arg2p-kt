@@ -6,7 +6,7 @@ import it.unibo.tuprolog.argumentation.causality.primitives.Ness
 import it.unibo.tuprolog.argumentation.causality.primitives.NessIntervention
 import it.unibo.tuprolog.argumentation.causality.prolog.THEORY
 import it.unibo.tuprolog.argumentation.core.libraries.PrologLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.language.RuleNotation
+import it.unibo.tuprolog.argumentation.core.libraries.language.ruleNotation.notation.RuleNotation
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive

@@ -7,7 +7,7 @@ run through JPype, on the Java runtime the package bundles.
     ['a']
 """
 
-from .arg2p import Answer, Arg2p, Arg2pError, Builder, Causality, Solution, Solutions, SyntaxProblem
+from .arg2p import Answer, Arg2p, Arg2pError, Builder, Solution, Solutions, SyntaxProblem
 from .flags import (
     AnswerMode,
     ConflictModel,
@@ -49,7 +49,6 @@ __all__ = [
     "Argument",
     "Attack",
     "Builder",
-    "Causality",
     "CompactGraph",
     "GoalSolver",
     "ConflictModel",

@@ -7,6 +7,10 @@ import it.unibo.tuprolog.argumentation.parallel.host.HostCodec
 import it.unibo.tuprolog.argumentation.parallel.host.HostFrame
 import it.unibo.tuprolog.argumentation.parallel.host.locked
 import kotlin.concurrent.Volatile
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /**
  * A node of a parallel solver in a federation: its peers, other sites on the links its transports give it (see [Link]), on this
@@ -19,11 +23,16 @@ import kotlin.concurrent.Volatile
  * one proving no such secret is refused, and after a few wrong codes from an address its codes are refused for a
  * while. Neither secret goes over a link (see [Pairing]), and a site linking to another with one checks that the
  * other knows it as well. Nothing but the greetings is read on a link before its site is admitted.
+ *
+ * A peer that hangs with its link open (it handles no frame) is let go once silent for longer than [deadline], as if it
+ * left (see [heartbeat]): the graph it was building fails, and the next goal needing it builds it with the others.
  */
 @InternalArg2pApi
 class Site(
     val node: ParallelNode,
     private val lends: Boolean = true,
+    private val deadline: Duration = DEADLINE,
+    private val clock: TimeSource = TimeSource.Monotonic,
 ) : LinkListener {
     // A peer: its name, its first link, what it offers, and, if it lends, the host the node places consumers on
     private data class Peer(
@@ -67,6 +76,20 @@ class Site(
     }
 
     private val openings = mutableMapOf<Link, Opening>()
+
+    // When this site last heard the site at the other end of each link admitted
+    private val heard = HashMap<Link, TimeMark>()
+
+    /**
+     * The beat of the site, for its transports to call every [BEAT]: each link admitted on which this site heard nothing for
+     * longer than [deadline] closed, as if its peer left; a [Frame.Ping] on the others, which the peer answers at once. A peer
+     * is heard as long as it handles frames, whatever its timers do (those of a page in the background are slowed).
+     */
+    fun heartbeat() {
+        val (silent, alive) = locked(lock) { links.keys.partition { link -> heard[link]?.let { it.elapsedNow() > deadline } ?: false } }
+        silent.forEach { it.close() }
+        alive.forEach { it.send(PING) }
+    }
 
     /** The sites this one is federated with */
     val peerSites: Set<String> get() = peers.keys
@@ -248,10 +271,12 @@ class Site(
     ) {
         val decoded = runCatching { FrameCodec.decode(frame) }.getOrElse { return link.close() }
         if (link !in links) return greeting(link, decoded)
+        locked(lock) { if (link in links) heard[link] = clock.markNow() }
         when (decoded) {
             is Frame.Hello -> greetedAgain(link, decoded)
-            is Frame.Challenge, is Frame.Refused -> Unit
+            is Frame.Challenge, is Frame.Refused, Frame.Pong -> Unit
             is Frame.Host -> hostFrame(link, decoded.frame)
+            Frame.Ping -> link.send(PONG)
         }
     }
 
@@ -293,6 +318,7 @@ class Site(
                 val site = links[link]
                 links = links - link
                 openings -= link
+                heard -= link
                 val replacement = links.entries.firstOrNull { it.value == site }?.key
                 when {
                     site == null || peers[site]?.link != link -> null to null
@@ -363,6 +389,7 @@ class Site(
         val joined =
             locked(lock) {
                 links = links + (link to hello.site)
+                heard[link] = clock.markNow()
                 (hello.site !in peers).also { joining ->
                     if (joining) {
                         val host = if (hello.lends) PeerHost(hello.site) else null
@@ -406,5 +433,14 @@ class Site(
     companion object {
         /** The version a site tells its peers: sites of different versions do not federate */
         const val VERSION: String = "arg2p-federation/1 $ARG2P_VERSION"
+
+        /** How often the transports of a site call [heartbeat] */
+        val BEAT: Duration = 1.seconds
+
+        /** How long a peer may stay silent on its link by default (five beats): let go then, as if it left */
+        val DEADLINE: Duration = 5.seconds
+
+        private val PING = FrameCodec.encode(Frame.Ping)
+        private val PONG = FrameCodec.encode(Frame.Pong)
     }
 }

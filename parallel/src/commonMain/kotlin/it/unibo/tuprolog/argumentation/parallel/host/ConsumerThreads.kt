@@ -12,12 +12,25 @@ import it.unibo.tuprolog.argumentation.parallel.store.Waiting
 fun interface Inbox {
     /** The next frame, waited for */
     fun take(): String
+
+    /**
+     * The frame of a stop read (the Stop of the clients for the solver, an Abandon for a consumer): what the thread is told
+     * after it runs, unless another stop comes (see [HostedThread.interrupt])
+     */
+    fun stopTakenUp() = Unit
 }
 
 /** A thread that may wait, as what never does sees it: [put] writes a frame to its inbox */
 @InternalArg2pApi
 fun interface HostedThread {
     fun put(frame: String)
+
+    /**
+     * The resolution the thread runs halted at its next step, and those of what it was told before, until it reads the frame
+     * of the stop, put next ([Inbox.stopTakenUp]): where the platform lets another thread tell it (a worker of JavaScript, a
+     * count on shared memory, see SharedInbox); nothing otherwise
+     */
+    fun interrupt() = Unit
 }
 
 /** An inbox and its writer in this process, on a lock: the threads of the JVM */
@@ -51,7 +64,7 @@ internal class Mailbox(
     private val kept = ArrayDeque<HostFrame>()
 
     /** The next frame not waited for */
-    fun next(): HostFrame = kept.removeFirstOrNull() ?: HostCodec.decode(inbox.take())
+    fun next(): HostFrame = kept.removeFirstOrNull() ?: taken()
 
     /** The frame [wanted] is, waited for */
     fun await(wanted: (HostFrame) -> Boolean): HostFrame {
@@ -60,12 +73,15 @@ internal class Mailbox(
             return it
         }
         while (true) {
-            val frame = HostCodec.decode(inbox.take())
+            val frame = taken()
             if (wanted(frame)) return frame
             // (what is told to a consumer no longer waiting is left)
             if (frame !is HostFrame.Answer && frame !is HostFrame.Abandon) kept.addLast(frame)
         }
     }
+
+    // The next frame of the inbox: an Abandon follows the stop of the consumer's thread (see ConsumerThreads.abandon)
+    private fun taken(): HostFrame = HostCodec.decode(inbox.take()).also { if (it is HostFrame.Abandon) inbox.stopTakenUp() }
 }
 
 /**
@@ -121,9 +137,12 @@ class ConsumerThreads(
         running.thread.put(HostCodec.encode(answer))
     }
 
+    // (the resolution of the consumer interrupted where the platform lets it be: one that never reads its store again would
+    // not read that it was abandoned)
     override fun abandon(abandon: HostFrame.Abandon) {
         val running = locked(lock) { running[abandon.session to abandon.consumer] } ?: return
         running.thread.put(HostCodec.encode(abandon))
+        running.thread.interrupt()
     }
 
     /** [frame], from the thread [from]: what its consumer asks of its store, or that it ended */
@@ -147,6 +166,7 @@ class ConsumerThreads(
         val (consumers, all) = locked(lock) { running.toMap() to threads.toList() }
         consumers.forEach { (key, consumer) ->
             consumer.thread.put(HostCodec.encode(HostFrame.Abandon(key.first, key.second, "The solver is closed")))
+            consumer.thread.interrupt()
         }
         all.forEach { it.put(HostCodec.encode(HostFrame.Stop)) }
     }

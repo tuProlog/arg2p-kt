@@ -22,7 +22,7 @@ class BinaryStatementLabellingTest {
                 .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
-        assertEquals(listOf("[[a]]", "[[-b], [b]]", "[]"), labels)
+        assertEquals(listOf("[[a]]", "[[- b], [b]]", "[]"), labels)
     }
 
     // a has an argument IN (r1) and one UND (r2, on c, rebutted by -c): it is IN only
@@ -33,6 +33,6 @@ class BinaryStatementLabellingTest {
                 .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
-        assertEquals(listOf("[[a]]", "[[-c], [c]]", "[]"), labels)
+        assertEquals(listOf("[[a]]", "[[- c], [c]]", "[]"), labels)
     }
 }

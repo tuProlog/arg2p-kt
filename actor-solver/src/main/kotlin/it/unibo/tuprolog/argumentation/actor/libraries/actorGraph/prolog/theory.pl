@@ -2,8 +2,9 @@
 %  Argument is each argument for Query, saved with those its label may depend on, and SubArguments are its
 %  sub-arguments: the solvers that do not know its rules look for their attackers as well.
 buildArgument(Query, Argument, SubArguments) :-
-    queryExploration::explore(Query),
-    queryExploration::extend(directional),
+    queryGraph::explore(Query),
+    pipeline::steps(Steps),
+    queryGraph::extend(Steps, directional),
     store::argumentFor([Query], Argument),
     subArguments(Argument, SubArguments).
 
@@ -29,14 +30,15 @@ attacker(Target, Arguments, Attacker) :-
 % Attacker attacks On directly, with an attack of Type: among the arguments for the statements that may attack
 % it, built as needed
 attackerOf(On, Attacker, Type) :-
-    findall(S, attackCandidates::findPossibleAttackers(On, [S]), Statements),
+    findall(S, attackSearch::findPossibleAttackers(On, [S]), Statements),
     utils::deduplicate(Statements, Candidates),
     member(Statement, Candidates),
-    queryExploration::explore(Statement),
-    queryExploration::extend(directional),
+    queryGraph::explore(Statement),
+    pipeline::steps(Steps),
+    queryGraph::extend(Steps, directional),
     store::argumentFor([Statement], Attacker),
     attackRelation::attacks(Type, Attacker, On),
-    (constraints::constrained -> constraints::compatible(Attacker, On) ; true).
+    (parser::hook(compatible/2, Extension) -> Extension::compatible(Attacker, On) ; true).
 
 % The sub-arguments of an argument built by this solver
 subArguments(Argument, SubArguments) :-

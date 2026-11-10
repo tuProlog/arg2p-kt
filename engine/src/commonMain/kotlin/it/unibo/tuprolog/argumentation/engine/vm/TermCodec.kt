@@ -16,6 +16,7 @@ import it.unibo.tuprolog.argumentation.engine.words.word
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Cons
 import it.unibo.tuprolog.core.Integer
+import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
@@ -76,6 +77,16 @@ internal abstract class TermWriter(
                 }
                 word(STR, s)
             }
+            is Integer ->
+                if (Numbers.needsBlock(
+                        term,
+                    )
+                ) {
+                    Numbers.write(program, term.value, { alloc(it) }, { a, w -> put(a, w) })
+                } else {
+                    program.constantWord(term)
+                }
+            is Real -> Numbers.write(program, term, { alloc(it) }, { a, w -> put(a, w) })
             else -> program.constantWord(term)
         }
 }
@@ -115,13 +126,28 @@ internal abstract class TermReader(
             REF -> names.getOrPut(payload(w)) { variable(payload(w)) }
             ATOM -> program.atomTerm(payload(w))
             INT -> program.integerTerm(payload(w))
-            BIG -> Integer.of(program.bigInteger(payload(w)))
-            FLT -> program.symbols.floats[payload(w)]
             STR -> {
                 val a = payload(w)
                 val f = functorOf(w, a)
                 val n = program.arity(f)
-                Struct.of(program.nameOfFunctorWord(f), List(n) { read(cell(a + 1 + it), names) })
+                when (program.numberTag(f)) {
+                    BIG -> Integer.of(Numbers.bigOf(payload(deref(cell(a + 1))), IntArray(n - 1) { payload(deref(cell(a + 2 + it))) }))
+                    FLT ->
+                        program.realOf(
+                            payload(deref(cell(a + 1))),
+                            payload(deref(cell(a + 2))),
+                            IntArray(n - 2) {
+                                payload(
+                                    deref(
+                                        cell(
+                                            a + 3 + it,
+                                        ),
+                                    ),
+                                )
+                            },
+                        )
+                    else -> Struct.of(program.nameOfFunctorWord(f), List(n) { read(cell(a + 1 + it), names) })
+                }
             }
             LIST -> {
                 val heads = ArrayList<Term>()

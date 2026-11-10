@@ -1,30 +1,14 @@
-%! check
-%  The theory is an abstract framework: it has none of the rules, premises or axioms of the structured
-%  notations (r : B => H, f :=> a, f :-> a, the assumptions and contraries of ABA), which an abstract framework
-%  does not have: read as data, they would be dropped, or (r : [] -> a) taken for attacks. Nor has it the
-%  preferences, conflicts and burdens of arg2p (sup/2, conflict/2,3, bp/N), which no argument would use.
-check :-
-    theoryClause(Head, _),
-    structuredNotation(Head), !,
-    throw(error(domain_error(abstract_theory, rules), 'abstract: the theory has rules, premises or axioms (r : B => H, f :=> a): an abstract framework has arguments (a.) and attacks (a -> b.) alone')).
-check :-
-    theoryClause(Head, _),
-    structuredFact(Head), !,
-    throw(error(domain_error(abstract_theory, facts), 'abstract: the theory has preferences, conflicts or burdens (sup/2, conflict/2, bp/N): an abstract framework has arguments (a.) and attacks (a -> b.) alone')).
-check.
+%! arguments(-Arguments)
+%  The arguments the theory states or derives, in either notation (`a.`, arg(a)).
+arguments(Arguments) :-
+    findall(A, user::arg(A), Stated),
+    findall(A, (parser::theoryClause(A, true), atom(A)), Atoms),
+    append(Stated, Atoms, Arguments).
 
-structuredNotation(Head) :-
-    callable(Head),
-    functor(Head, Functor, _),
-    member(Functor, [':', ':=>', ':->', '=>', assumption, contrary]), !.
-structuredNotation((A -> B)) :- (structuredTerm(A) ; structuredTerm(B)), !.
-structuredNotation((A <-> B)) :- (structuredTerm(A) ; structuredTerm(B)).
-
-% A label (r : B), a list of premises, or a conjunction of them: not an argument, but part of a rule
-structuredTerm(Term) :- nonvar(Term), (functor(Term, ':', 2) ; functor(Term, ',', 2) ; Term == [] ; Term = [_ | _]), !.
-
-% A preference, a conflict or a burden, as arg2p reads them in every theory
-structuredFact(Head) :-
-    callable(Head),
-    functor(Head, Functor, Arity),
-    (Functor == sup, Arity == 2 ; Functor == conflict, (Arity == 2 ; Arity == 3) ; Functor == bp, Arity > 0), !.
+%! attacks(-Attacks)
+%  The attacks the theory states or derives, in either notation (`a -> b.`, `a <-> b.`, att(a, b)), as att(A, B) terms.
+attacks(Attacks) :-
+    findall(att(A, B), user::att(A, B), Stated),
+    findall(att(A, B), (parser::theoryClause((A -> B), Body), user::call(Body)), Forward),
+    findall(att(A, B), (parser::theoryClause((X <-> Y), Body), user::call(Body), (A = X, B = Y ; A = Y, B = X)), Mutual),
+    utils::appendLists([Stated, Forward, Mutual], Attacks).

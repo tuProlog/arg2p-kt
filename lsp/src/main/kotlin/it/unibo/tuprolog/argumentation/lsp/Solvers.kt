@@ -3,9 +3,9 @@ package it.unibo.tuprolog.argumentation.lsp
 import it.unibo.tuprolog.argumentation.Arg2p
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.ArgumentLabellingMode
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.phases.flags.StatementLabellingMode
-import it.unibo.tuprolog.argumentation.core.libraries.evaluation.statementAcceptance.flags.QueryMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.QueryMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.StatementLabellingMode
 import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.flags.GraphBuildMode
 
 /**

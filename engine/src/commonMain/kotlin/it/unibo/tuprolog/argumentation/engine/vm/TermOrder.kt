@@ -9,6 +9,7 @@ import it.unibo.tuprolog.argumentation.engine.words.Words.REF
 import it.unibo.tuprolog.argumentation.engine.words.Words.STR
 import it.unibo.tuprolog.argumentation.engine.words.payload
 import it.unibo.tuprolog.argumentation.engine.words.tag
+import it.unibo.tuprolog.core.Real
 import it.unibo.tuprolog.core.TermComparator
 import org.gciatto.kt.math.BigInteger
 
@@ -237,18 +238,37 @@ internal class TermOrder(
             else -> 4
         }
 
+    // (an integer is a small one, or the compound of one no word holds, see Numbers)
     private fun integerOrder(
         x: Int,
         y: Int,
     ): Int {
-        val huge = (tag(x) == BIG && payload(x) < 0) || (tag(y) == BIG && payload(y) < 0)
-        if (!huge) return longOf(x).compareTo(longOf(y))
+        if (tag(x) == INT && tag(y) == INT) return payload(x).compareTo(payload(y))
         return bigOf(x).compareTo(bigOf(y))
     }
 
-    private fun bigOf(w: Int): BigInteger = if (tag(w) == INT) BigInteger.of(payload(w).toLong()) else m.program.bigInteger(payload(w))
+    private fun bigOf(w: Int): BigInteger = if (tag(w) == INT) BigInteger.of(payload(w).toLong()) else m.bigIntegerOfNumber(w)
 
-    private fun longOf(w: Int): Long = if (tag(w) == INT) payload(w).toLong() else m.program.bigInteger(payload(w)).toLong()
+    // The float compound [w] (see Numbers) as a tuProlog float
+    private fun realOf(w: Int): Real {
+        val a = payload(w)
+        val n = m.program.arity(m.heap[a])
+        return m.program.realOf(
+            payload(m.deref(m.heap[a + 1])),
+            payload(m.deref(m.heap[a + 2])),
+            IntArray(n - 2) {
+                payload(
+                    m.deref(
+                        m.heap[
+                            a +
+                                3 +
+                                it,
+                        ],
+                    ),
+                )
+            },
+        )
+    }
 
     /**
      * The terms in the standard order of tuProlog (see [TermComparator.DefaultComparator]): negative, zero, positive,
@@ -263,14 +283,14 @@ internal class TermOrder(
         val program = m.program
         while (true) {
             if (x == y) return 0
-            val tx = tag(x)
-            val ty = tag(y)
+            val tx = m.typeTag(x)
+            val ty = m.typeTag(y)
             if (tx == REF || ty == REF) return UNORDERED
             val rx = rank(tx)
             val ry = rank(ty)
             if (rx != ry) return rx - ry
             when (rx) {
-                1 -> return TermComparator.RealComparator.compare(program.symbols.floats[payload(x)], program.symbols.floats[payload(y)])
+                1 -> return TermComparator.RealComparator.compare(realOf(x), realOf(y))
                 2 -> return integerOrder(x, y)
                 3 -> return atomOrder(payload(x), payload(y))
                 else -> {

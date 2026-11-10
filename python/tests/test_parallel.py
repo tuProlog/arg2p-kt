@@ -43,7 +43,7 @@ def test_solvers_federated_over_websockets():
             time.sleep(0.02)
         evaluating.load(THEORY)
         assert claims(evaluating.solve("b"))["in_args"] == ["b"]
-        assert claims(evaluating.solve("-b"))["out_args"] == ["-b"]
+        assert claims(evaluating.solve("-b"))["out_args"] == ["- b"]
 
 
 def test_a_theory_changes():

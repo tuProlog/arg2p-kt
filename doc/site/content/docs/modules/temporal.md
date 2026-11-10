@@ -11,7 +11,7 @@ sitemap:
 
 With the flag `temporal`, a theory states what happens and what it starts or ends, and Arg2P concludes when each
 fact holds: the event calculus of Kowalski and Sergot (1986), as defeasible rules concluding what holds for the
-times of a period (see [Constraints]({{% ref "/docs/modules/constraints" %}}), on with the flag).
+times of a period (see [Constraints]({{% ref "/docs/modules/constraints" %}}): the axioms turn the extension on).
 
 ```prolog
 temporal.
@@ -45,8 +45,9 @@ of a period containing it.
 Everything is defeasible: an event, a start or an end can be attacked like any premise or rule, and the periods
 follow. An end that is defeated ends nothing, and the period goes on to the next end.
 
-A statement of the theory on a fact at a time attacks the periods containing it, and their instances for that time
-alone:
+A statement of the theory on a fact at a time attacks the periods containing it, and splits them into pieces at that
+time (see [Constraints]({{% ref "/docs/modules/constraints" %}})): the piece at that time is attacked, those before
+and after are not.
 
 ```prolog
 c1 :=> -holdsAt(f, 7).

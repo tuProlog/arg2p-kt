@@ -21,7 +21,6 @@ import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.library.Library
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.theory.Theory
-import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmField
 
 /**
@@ -68,6 +67,10 @@ class Program(
 
     // The code of the libraries: of a base program by the source of the module, of any other by the library
     private val sharedCodes = HashMap<CodeKey, LibraryCode>()
+
+    // The tables of the predicates of the scopes of the programs of this base, by the code of their libraries (the codes
+    // compare as the same objects): made once, read only (under the lock of the base programs)
+    private val sharedTables = HashMap<List<LibraryCode>, Array<Predicate?>>()
 
     // The scope last asked for by its libraries
     private var latestScope: Scope? = null
@@ -138,6 +141,43 @@ class Program(
     val dotWord: Int = atomWord(".")
     val ruleFunctor: Int = functorWord(":-", 2)
 
+    // The names of the compounds standing for the numbers no word holds (see Numbers), by atom id
+    private val intNameId: Int = payload(atomWord(Numbers.INT_NAME))
+    private val floatNameId: Int = payload(atomWord(Numbers.FLOAT_NAME))
+
+    // The floats read last (see Numbers): a float read again, as a constant is, makes no new term. A few, each replacing the
+    // one before it in its slot: a loop over floats keeps none
+    private class ReadFloat(
+        val key: Long,
+        val real: Real,
+    )
+
+    // (made at the first float read: most theories have none)
+    private var readFloats: Array<ReadFloat?>? = null
+
+    /** The float of a scale, a sign and chunks (see [Numbers]) */
+    fun realOf(
+        scale: Int,
+        sign: Int,
+        chunks: IntArray,
+    ): Real {
+        if (chunks.size > 2 || scale < 0 || scale > 0x7FFF) return Numbers.realOf(scale, sign, chunks)
+        val unscaled = if (chunks.size == 2) (chunks[0].toLong() shl Numbers.CHUNK_BITS) or chunks[1].toLong() else chunks[0].toLong()
+        val key = (unscaled shl 16) or (scale.toLong() shl 1) or (if (sign < 0) 1L else 0L)
+        val slot = ((key * -0x61c8864680b583ebL) ushr (64 - READ_FLOATS_BITS)).toInt()
+        val read = readFloats ?: arrayOfNulls<ReadFloat>(READ_FLOATS).also { readFloats = it }
+        read[slot]?.let { if (it.key == key) return it.real }
+        return Numbers.realOf(scale, sign, chunks).also { read[slot] = ReadFloat(key, it) }
+    }
+
+    /** [BIG] for the functor word of an integer no word holds, [FLT] for that of a float (see [Numbers]), 0 for any other */
+    fun numberTag(functorWord: Int): Int =
+        when (symbols.functorNames[payload(functorWord)]) {
+            intNameId -> BIG
+            floatNameId -> FLT
+            else -> 0
+        }
+
     fun atom(name: String): Int = symbols.atom(name)
 
     fun atomWord(name: String): Int = word(ATOM, atom(name))
@@ -205,7 +245,6 @@ class Program(
         if (functors <= grownFor) return
         grownFor = functors
         theory.grow(functors)
-        for (scope in scopes) scope.grow(functors)
     }
 
     fun functorWord(
@@ -223,21 +262,13 @@ class Program(
 
     fun nameOfFunctorId(functor: Int): String = symbols.atoms[symbols.functorNames[functor]]
 
-    fun floatWord(value: Real): Int = word(FLT, symbols.float(value))
-
-    fun bigWord(value: Long): Int = word(BIG, symbols.big(value))
-
-    /** The word of a constant: a number or an atom */
+    /** The word of a constant: an atom or a small integer (the other numbers are compounds, see [Numbers]) */
     fun constantWord(term: Term): Int =
-        when (term) {
-            is Integer -> integerWord(term.value)
-            is Real -> floatWord(term)
-            is Atom -> atomWord(term.value)
-            else -> throw IllegalArgumentException("not a term of the machine: $term")
+        when {
+            term is Atom -> atomWord(term.value)
+            term is Integer && !Numbers.needsBlock(term) -> word(INT, term.value.toInt())
+            else -> throw IllegalArgumentException("not a constant of the machine: $term")
         }
-
-    /** The word of an integer: a small one as it is, a large one by the table */
-    fun intWord(value: Long): Int = if (Words.fitsInt(value)) word(INT, value.toInt()) else bigWord(value)
 
     // The terms of the atoms, and of the small integers from 0: read for each answer and each argument of a primitive, and immutable
     private var atomTerms = arrayOfNulls<Atom>(256)
@@ -255,32 +286,11 @@ class Program(
         return integerTerms[value] ?: Integer.of(value).also { integerTerms[value] = it }
     }
 
-    /** The word of the integer [value], with no Long unless it takes one (a Long is a BigInt on JS) */
-    fun smallWord(value: Int): Int = if (value >= Words.INT_MIN && value <= Words.INT_MAX) word(INT, value) else bigWord(value.toLong())
-
-    /** The word of the sum of two Ints, with no Long unless it takes one */
-    fun sumWord(
-        a: Int,
-        b: Int,
-    ): Int {
-        val sum = a + b
-        return if (sum >= Words.INT_MIN && sum <= Words.INT_MAX && (a xor sum) and (b xor sum) >= 0) {
-            word(INT, sum)
-        } else {
-            bigWord(a.toLong() + b)
-        }
+    /** The word of the small integer [value] (see [Words.fitsInt]); the others are compounds on the heap (see [Numbers]) */
+    fun smallWord(value: Int): Int {
+        require(value >= Words.INT_MIN && value <= Words.INT_MAX) { "not a small integer: $value" }
+        return word(INT, value)
     }
-
-    /** The word of the integer [value], of any size */
-    fun integerWord(value: BigInteger): Int {
-        if (value.bitLength <= 28) return word(INT, value.toInt())
-        val small = value.toLong()
-        if (BigInteger.of(small) == value) return intWord(small)
-        return word(BIG, -1 - symbols.huge(value))
-    }
-
-    /** The value of a large integer word of [payload] */
-    fun bigInteger(payload: Int): BigInteger = if (payload < 0) symbols.huges[-1 - payload] else BigInteger.of(symbols.bigs[payload])
 
     // ---- code
 
@@ -352,10 +362,24 @@ class Program(
             i--
         }
         val scope = Scope(this, libraries, scopes.size + 1)
-        scope.grow(symbols.functorNames.size)
         scopes.add(scope)
-        for (library in libraries.libraries) codeOf(library)?.let { scope.merge(it) }
+        scope.predicates = tableOf(libraries)
         return scope
+    }
+
+    // The predicates of [libraries] by functor (see Scope.tableOf): when the code of each is the base's, the table the base
+    // keeps for that code, the same in every program of the base; this program's own otherwise
+    private fun tableOf(libraries: Runtime): Array<Predicate?> {
+        val codes = ArrayList<LibraryCode>()
+        var ofBase = true
+        for (library in libraries.libraries) {
+            val code = codeOf(library) ?: continue
+            codes.add(code)
+            if (!code.frozen) ofBase = false
+        }
+        val base = base
+        if (!ofBase || base == null) return Scope.tableOf(codes, frozen = false)
+        return locked(SharedPrograms) { base.sharedTables.getOrPut(codes) { Scope.tableOf(codes, frozen = true) } }
     }
 
     private fun codeOf(library: Library): LibraryCode? {
@@ -390,7 +414,7 @@ class Program(
         }
         compiler.definedAlongside(emptyList())
         if (frozen) predicates.values.forEach { it.freeze() }
-        return LibraryCode(predicates.values.toList(), codeTop)
+        return LibraryCode(predicates.values.toList(), codeTop, frozen)
     }
 
     private class IdentityKey(
@@ -415,6 +439,8 @@ class Program(
 
     companion object {
         private const val RECENT = 64
+        private const val READ_FLOATS_BITS = 10
+        private const val READ_FLOATS = 1 shl READ_FLOATS_BITS
 
         /** No keys at all */
         val NO_KEYS = IntArray(0)

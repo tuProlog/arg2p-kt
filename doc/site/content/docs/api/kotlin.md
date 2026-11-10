@@ -169,16 +169,13 @@ for (solution in Arg2p.of().solve("member(X, [a, f(-b)])")) {
 
 ## Causality
 
-`causality` tests causality on the theory of a solver (see [causality]({{% ref "/docs/modules/causality" %}})):
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
 
 ```kotlin
-val causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-causality.ness("a", "b")      // [-a], the intervention: null if a is not a NESS cause of b
-causality.butFor("a", "b")    // true
+val arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+arg2p.solve("causality::ness(X, a, b)").next().text("X")   // [- a], the intervention: no solution if a is not a NESS cause of b
+arg2p.solve("causality::but_for(a, b)").next().isYes        // true
 ```
-
-`nessOriginal` is the NESS test as published, `nessIntervention` and `nessOriginalIntervention` whether a given
-intervention meets the condition.
 
 ---
 
@@ -212,9 +209,9 @@ The flags library (see [below](#adding-the-flags-library)) sets the flags of the
 makes the hooks a theory may leave undefined (`conflict/2`, `sup/2`, ...) fail quietly, rather than with a warning
 each time they are called.
 
-The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality solver, has the same libraries with the
-[causality]({{% ref "/docs/modules/causality" %}}) module as well: `Arg2pLibrary.get()` (package
-`it.unibo.tuprolog.argumentation`), and `Arg2pLibrary.version()` is the version of Arg2P.
+The [causality]({{% ref "/docs/modules/causality" %}}) module is one more library:
+`Arg2pSolver.default(dynamicLibs = listOf(CausalityLibrary()))` (package `it.unibo.tuprolog.argumentation.causality`, in
+the `causality-solver` artifact, which the aggregate artifact `arg2p` bundles). `Arg2p.version()` is the version of Arg2P.
 
 You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
@@ -228,7 +225,7 @@ it cannot be parsed without them.
 ### Parsing a theory
 
 Arg2P adds operators (`=>`, `:=>`, `:->`, `:`) that a plain parser does not know, so theories must be parsed
-with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers`)
+with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers`)
 does it, and tags the clauses with the identifiers of their comments as well, which
 [plain Prolog theories]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) need:
 
@@ -263,7 +260,7 @@ After running a query on your own solver, the computed graph can be read back as
 `graph()` extension:
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 
 solver.solve(Struct.parse("arg2p::solve", solver.operators)).first()
 val graph = solver.graph()

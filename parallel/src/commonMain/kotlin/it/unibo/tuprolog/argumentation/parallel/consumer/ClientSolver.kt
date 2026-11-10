@@ -3,21 +3,22 @@ package it.unibo.tuprolog.argumentation.parallel.consumer
 import it.unibo.tuprolog.argumentation.AnswerQuery
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
+import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.RuleAnnotations
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.TermValues
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.goalOf
-import it.unibo.tuprolog.argumentation.core.libraries.language.parser.helpers.termOf
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.activeBranch
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.arguments
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.compactGraph
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.GraphSharing
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.sharing.graphKey
+import it.unibo.tuprolog.argumentation.core.libraries.LibraryRegistry
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.TheoryNotation
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.arguments
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.graphKey
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
+import it.unibo.tuprolog.argumentation.core.model.compactGraph
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.vm.Record
 import it.unibo.tuprolog.argumentation.engine.vm.SolverSession
+import it.unibo.tuprolog.argumentation.goalOf
 import it.unibo.tuprolog.argumentation.haltMessage
 import it.unibo.tuprolog.argumentation.parallel.EvaluationStats
 import it.unibo.tuprolog.argumentation.parallel.WorkerStats
@@ -38,6 +39,7 @@ import it.unibo.tuprolog.argumentation.parallel.message.Response
 import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
 import it.unibo.tuprolog.argumentation.parallel.message.Stop
 import it.unibo.tuprolog.argumentation.parallel.store.SharedGraph
+import it.unibo.tuprolog.argumentation.termOf
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.operators.OperatorSet
@@ -45,6 +47,7 @@ import it.unibo.tuprolog.core.parsing.ParseException
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.channel.OutputChannel
+import it.unibo.tuprolog.theory.Theory
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import it.unibo.tuprolog.core.List as PlList
@@ -98,9 +101,9 @@ internal class ClientSolver(
     // The arguments of the graph labelled, those derived from the others included, as terms, for the tests
     internal val graphArguments: List<Term> get() = solver.arguments(solver.activeBranch()).map { it.termRepresentation() }
 
-    // The arguments whose claim unifies with a statement, read as they are (those for it are kept, see
-    // sameUpToVariables), and the size of the graph labelled
-    private val argumentsFor = Goal("store::argumentUnifiable([S], A)", solver.operators)
+    // The arguments standing for a statement answered (see statementAcceptance::answering/2), and the size of the graph
+    // labelled
+    private val argumentsFor = Goal("statementAcceptance::answering(S, A)", solver.operators)
     private val size =
         Goal(
             "store::argumentIds(Ids), length(Ids, Arguments), findall(T, store::attackById(T, _, _, _), Ts), " +
@@ -249,19 +252,26 @@ internal class ClientSolver(
         solver.solveOnce("context_reset")
         solvers = SolverSession().also { SolverSession.join(solver, it) }
         val split = partitioning?.takeIf { it.partitions.size > 1 }
-        load(split?.theoryOf(0) ?: theory.toString())
+        if (split == null) loadTheory() else load(split.theoryOf(0))
         // a graph not built from rules (an abstract framework, see graphBuilder) is built here alone, of the whole theory
-        alone = split == null || !solver.holds("phases::builder(B), B == ruleGraph")
-        if (alone && split != null) load(theory.toString())
+        alone = split == null || !solver.holds("pipeline::builder(B), B == ruleGraph")
+        if (alone && split != null) loadTheory()
         partial = if (alone) null else locality()
         solvers!![GraphSharing.KEY] = if (alone) null else graphs
         changed = false
         current = null
     }
 
-    private fun load(text: String) {
+    // The theory of the clients, read with the notation of its languages (see TheoryNotation)
+    private fun loadTheory() =
+        load(TheoryNotation.read(theory.toString(), listOf(flags.library().baseContent.clauses), LibraryRegistry.all, solver.unificator))
+
+    // The part [text] of the theory, written by the partitioner of the theory read (see TheoryPartitioner): with all the operators
+    private fun load(text: String) = load(RuleAnnotations.parse(text, solver.operators, solver.unificator))
+
+    private fun load(clauses: Theory) {
         solver.resetStaticKb()
-        solver.loadStaticKb(RuleAnnotations.parse(text, solver.operators, solver.unificator))
+        solver.loadStaticKb(clauses)
         solver.solveOnce("context_reset")
     }
 
@@ -276,12 +286,12 @@ internal class ClientSolver(
     }
 
     // The part of the graph the labels of the arguments for a statement depend on, as the semantics declares it (see
-    // the module structuredPartial): directional or connected in query mode, on a graph built from the rules; null for
+    // pipeline::locality/1): directional or connected in query mode, on a graph built from the rules; null for
     // the whole graph
     private fun locality(): String? =
         solver
             .solveOnce(
-                "setting(queryMode), structuredPartial::locality(L), L \\== whole_graph",
+                "pipeline::locality(L), L \\== whole_graph",
             ).takeIf { it.isYes }
             ?.substitution
             ?.getByName("L")
@@ -413,10 +423,9 @@ internal class ClientSolver(
             return graph
         }
 
-        private fun wholeGoal() = "structuredWhole::buildGraph, phases::modifyGraph"
+        private fun wholeGoal() = "pipeline::graph(whole, whole_graph), pipeline::modifyGraph"
 
-        private fun queryGoal(statement: Term) =
-            "structuredPartial::locality(L), structuredPartial::queryGraph($statement, L), phases::modifyGraph"
+        private fun queryGoal(statement: Term) = "pipeline::locality(L), pipeline::graph($statement, L), pipeline::modifyGraph"
 
         override fun share(
             call: NativeCall,
@@ -540,7 +549,6 @@ internal class ClientSolver(
                             argumentsFor
                                 .solutions(solver, "S" to labelledStatement)
                                 .map { it.getValue("A") }
-                                .filter { sameUpToVariables(claimOf(it), labelledStatement) }
                         Response(TermValues.format(labelledStatement), arguments.map { it.toString() }.distinct())
                     }
                 }

@@ -7,8 +7,12 @@ import it.unibo.tuprolog.solve.library.Library
 interface Loadable : ArgLibrary {
     fun identifier(): String
 
-    /** The flag making the library read part of a theory (see parser::extension/1), if it is the flag that does */
-    val parsingFlag: ArgsFlag?
+    /**
+     * The flag making the library an extension of the theory when on (see parser::extension/1): one that reads part of
+     * it (temporal, metaRules, ...), or a step changing the graph (conflictArguments with metaConflicts); null if no flag
+     * does
+     */
+    val extensionFlag: ArgsFlag?
         get() = null
 
     /** The operators the theories this module reads are written with (`r : a => b` for the parser), none by default */

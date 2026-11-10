@@ -7,16 +7,16 @@
 buildAttacks :-
     conflict::argued, !.
 buildAttacks :-
-    (constraints::constrained -> Constrained = yes ; Constrained = no),
-    findall(_, buildDirectAttack(Constrained), _).
+    compatibility(Compatible),
+    findall(_, buildDirectAttack(Compatible), _).
 
-% (Constrained: the theory may have constraints, which the two arguments must satisfy together with the
-% bindings of their conflict, see constraints::compatible/2)
-buildDirectAttack(Constrained) :-
+% (Compatible: the extension deciding whether two arguments may attack each other with the bindings of their conflict,
+% see compatibility/1)
+buildDirectAttack(Compatible) :-
     store::argumentById(IdA, A),
-    attackCandidates::attackersOf(IdA, A, Conflict),
+    attackSearch::attackersOf(IdA, A, Conflict),
     findAttacker(Conflict, B),
-    attackAs(Constrained, T, B, A),
+    attackAs(Compatible, T, B, A),
     store::argumentId(B, IdB),
     store::saveAttackById(T, IdB, B, IdA, A, IdA, A),
     fail.
@@ -36,31 +36,36 @@ buildAttacksOf(Own) :-
 buildAttacksAmong([]) :- !.
 buildAttacksAmong(Ids) :-
     findall(_, (member(Id, Ids), context_assert(addedArgument(Id))), _),
-    (constraints::constrained -> Constrained = yes ; Constrained = no),
-    findall(_, buildAddedAttack(Constrained), _),
+    compatibility(Compatible),
+    findall(_, buildAddedAttack(Compatible), _),
     context_retract(addedArgument(_)).
 
 % (from every argument to its attackers, not from those added to what they attack: a solver of a shared graph has its
 % own rules alone, which that way goes through)
-buildAddedAttack(Constrained) :-
+buildAddedAttack(Compatible) :-
     store::argumentById(IdA, A),
-    attackCandidates::possibleAttackers(IdA, A, Conflict),
+    attackSearch::possibleAttackers(IdA, A, Conflict),
     findAttacker(Conflict, B),
     store::argumentId(B, IdB),
     (context_check(addedArgument(IdA)) -> true ; context_check(addedArgument(IdB))),
-    attackAs(Constrained, T, B, A),
+    attackAs(Compatible, T, B, A),
     store::saveAttackById(T, IdB, B, IdA, A, IdA, A),
     fail.
 buildAddedAttack(_).
 
-% (Constrained: whether the theory may have constraints, found once for all the attacks of a graph.) Attacks are
-% checked on copies, so that the arguments are saved exactly as they are stored: binding their variables would
-% change their identifiers (see context_id)
-attackAs(Constrained, T, B, A) :-
+% (Compatible: found once for all the attacks of a graph, see compatibility/1.) Attacks are checked on copies, so that
+% the arguments are saved exactly as they are stored: binding their variables would change their identifiers (see
+% context_id)
+attackAs(Compatible, T, B, A) :-
     conflict::attacker(B),
     copy_term(B-A, CB-CA),
     attackRelation::attacks(T, CB, CA),
-    (Constrained == yes -> constraints::compatible(CB, CA) ; true).
+    (Compatible == none -> true ; Compatible::compatible(CB, CA)).
+
+% compatibility(-Extension): the extension defining compatible/2 (see parser::hook/2), whether the constraints of two
+% arguments hold together with the bindings of their conflict; none if no extension does
+compatibility(Extension) :- parser::hook(compatible/2, Extension), !.
+compatibility(none).
 
 % Finds the stored arguments whose conclusion unifies with the given one, without instantiating them
 findAttacker([Head], B) :- !,

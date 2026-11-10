@@ -200,9 +200,9 @@ class FederationTest {
                     .toSet()
             }
             val flies = solution(ask(engine, """{"type":"next","id":1}""", "one"))
-            assertEquals(setOf("bird(tweety)", "flies(tweety)", "-flies(tweety)"), conclusions(flies))
+            assertEquals(setOf("bird(tweety)", "flies(tweety)", "- flies(tweety)"), conclusions(flies))
             val a = solution(ask(engine, """{"type":"next","id":1}""", "two"))
-            assertEquals(setOf("a", "-a"), conclusions(a))
+            assertEquals(setOf("a", "- a"), conclusions(a))
             // the graph of the solution, again, as the only stage the parallel solver keeps
             val graph = ask(engine, """{"type":"graphAt","id":1,"branch":0,"reqId":2}""", "two").single().getAsJsonObject("graph")
             assertEquals(a.getAsJsonObject("graph"), graph)

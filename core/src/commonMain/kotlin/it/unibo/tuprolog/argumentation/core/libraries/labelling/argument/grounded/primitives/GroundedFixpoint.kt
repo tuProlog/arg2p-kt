@@ -1,10 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.grounded.primitives
 
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.graph.attackGraph
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.graph.graphArguments
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.graph.labelArguments
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.graph.labelledIds
-import it.unibo.tuprolog.argumentation.core.libraries.support.utils.helpers.sortedOnce
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.attackGraph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.graphArguments
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.labelArguments
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.graph.labelledIds
+import it.unibo.tuprolog.argumentation.core.libraries.framework.utils.helpers.sortedOnce
 import it.unibo.tuprolog.argumentation.engine.vm.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.vm.NativeCall
 import it.unibo.tuprolog.argumentation.engine.words.IdSet

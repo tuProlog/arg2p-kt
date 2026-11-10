@@ -252,7 +252,7 @@ multiProjectHelper {
     applyProjectTemplates()
 }
 
-// The version of arg2p (Arg2pLibrary.version()): the project version, the released one when CI builds a release
+// The version of arg2p (Arg2p.version()): the project version, the released one when CI builds a release
 val generateVersion =
     tasks.register("generateVersion") {
         val version = project.version.toString()

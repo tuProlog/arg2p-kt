@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.core.system
 
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
-import it.unibo.tuprolog.argumentation.core.libraries.store.helpers.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test

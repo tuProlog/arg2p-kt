@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The API of arg2p: solvers, their answers, graphs and solutions, values, flags and causality */
@@ -34,12 +33,15 @@ class Arg2pTest {
                 .answer("X")
                 .map(labels)
                 .toSet()
-        assertEquals(setOf(listOf(setOf("c", "d"), setOf("-d"), emptySet()), listOf(setOf("c", "-d"), setOf("d"), emptySet())), enumerated)
+        assertEquals(
+            setOf(listOf(setOf("c", "d"), setOf("- d"), emptySet()), listOf(setOf("c", "- d"), setOf("d"), emptySet())),
+            enumerated,
+        )
         val credulous = Arg2p.of(theory, flags.answerMode(AnswerMode.CREDULOUS))
-        assertEquals(listOf(setOf("c", "d", "-d"), emptySet(), emptySet()), labels(credulous.answer("X").single()))
+        assertEquals(listOf(setOf("c", "d", "- d"), emptySet(), emptySet()), labels(credulous.answer("X").single()))
         assertEquals(1, credulous.answer("X").size)
         val skeptical = Arg2p.of(theory, flags.answerMode(AnswerMode.SKEPTICAL))
-        assertEquals(listOf(setOf("c"), setOf("d", "-d"), emptySet()), labels(skeptical.answer("X").single()))
+        assertEquals(listOf(setOf("c"), setOf("d", "- d"), emptySet()), labels(skeptical.answer("X").single()))
         assertTrue(skeptical.solve("solve(c)").hasNext())
         assertFalse(skeptical.solve("solve(d)").next().isYes)
     }
@@ -47,9 +49,9 @@ class Arg2pTest {
     @Test
     fun theGraphOfEachLabelling() {
         val (graph) = Arg2p.of(conflict).graphs()
-        assertEquals(listOf("A0 : r2 : -a", "A1 : r1 : a"), graph.arguments.map { it.descriptor })
+        assertEquals(listOf("A0 : r2 : - a", "A1 : r1 : a"), graph.arguments.map { it.descriptor })
         assertEquals(listOf("a"), graph.conclusions("in"))
-        assertEquals(listOf("-a"), graph.conclusions("out"))
+        assertEquals(listOf("- a"), graph.conclusions("out"))
         val attack = graph.attacks.single()
         assertEquals(listOf("A1", "A0", "rebut"), listOf(attack.attacker.identifier, attack.target.identifier, attack.type))
         assertEquals("in", graph.label(attack.attacker))
@@ -79,7 +81,7 @@ class Arg2pTest {
                 .solve("member(X, [a, f(-b), [1, 2.5], Y])")
                 .toList()
                 .filter { it.isYes }
-        assertEquals(listOf("a", "f(-b)", "[1, 2.5]", "Y"), solutions.map { it.text("X") })
+        assertEquals(listOf("a", "f(- b)", "[1, 2.5]", "Y"), solutions.map { it.text("X") })
         assertEquals(listOf("atom", "struct", "list", "variable"), solutions.map { it.value("X")!!.kind })
         assertEquals(Value.List(listOf(Value.Integer(1), Value.Real(2.5))), solutions[2].bindings["X"])
         assertEquals(
@@ -159,7 +161,9 @@ class Arg2pTest {
         assertEquals(1, assertFailsWith<Arg2pException> { Flags.parse("queryMode(") }.syntax?.line)
         assertEquals(7, assertFailsWith<Arg2pException> { Value.parse("flies(") }.syntax?.column)
         assertEquals(theory, Arg2p.checkTheory("a :=> b.\nc :=> d(."))
-        assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X)."))
+        // a theory is read with the notation of its languages: an abstract framework has no rules
+        assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nX -> Y :- beats(X, Y)."))
+        assertEquals(3, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X).")?.line)
         assertEquals(null, Arg2p.checkQuery("solve(In, Out, Und)."))
         assertEquals(1, Arg2p.checkQuery("flies(")?.line)
     }
@@ -190,8 +194,8 @@ class Arg2pTest {
 
     @Test
     fun valuesAreWrittenAsArg2pWritesThem() {
-        assertEquals("-a", Value.parse("-a").toString())
-        assertEquals("[-a, o(-b)]", Value.parse("[-a, o(-b)]").toString())
+        assertEquals("- a", Value.parse("-a").toString())
+        assertEquals("[- a, o(- b)]", Value.parse("[-a, o(-b)]").toString())
         assertEquals(Value.Struct("f", listOf(Value.Atom("a"), Value.Variable("X"))), Value.parse("f(a, X)"))
         assertEquals("'hello world'", Value.Atom("hello world").toString())
     }
@@ -226,17 +230,44 @@ class Arg2pTest {
         val grounded = Arg2p.of(theory).answer("d").single()
         assertEquals(listOf(Value.Atom("d")), grounded.undStatements)
         val stable = Arg2p.of(theory, Flags.defaults().argumentLabellingMode(Semantics.STABLE)).graphs()
-        assertEquals(setOf(listOf("d"), listOf("-d")), stable.map { it.conclusions("in") }.toSet())
+        assertEquals(setOf(listOf("d"), listOf("- d")), stable.map { it.conclusions("in") }.toSet())
     }
 
     @Test
     fun theCausalityOfTheTheory() {
-        val causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-        assertEquals(Value.parse("[-a]"), causality.ness("a", "b"))
-        assertTrue(causality.butFor("a", "b"))
-        assertTrue(causality.nessIntervention("[-a]", "b"))
-        assertNull(causality.ness("b", "a"))
-        assertFalse(causality.butFor("b", "a"))
+        val arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+        assertEquals(Value.parse("[-a]"), arg2p.solve("causality::ness(X, a, b)").next().value("X"))
+        assertTrue(arg2p.solve("causality::but_for(a, b)").next().isYes)
+        assertTrue(arg2p.solve("causality::ness_intervention([-a], b)").next().isYes)
+        assertTrue(arg2p.solve("causality::ness(X, b, a)").next().isNo)
+        assertTrue(arg2p.solve("causality::but_for(b, a)").next().isNo)
+    }
+
+    // A causality goal answers as on a fresh solver, whatever the solver did before: other solves, another theory, more
+    // clauses (the store follows the version of the theory, no context reset asked)
+    @Test
+    fun theCausalityOfATheoryIsThatOfAFreshSolver() {
+        val goals =
+            listOf(
+                "causality::ness(X, a, b)",
+                "causality::ness_original(X, e, b)",
+                "causality::ness_intervention([-a], b)",
+                "causality::but_for(a, b)",
+                "findall(Id-P, store::rule(Id, P, _), X)",
+            )
+
+        fun results(arg2p: Arg2p) = goals.map { goal -> arg2p.solve(goal).toList().map { "${it.result} ${it.text("X")}" } }
+        val first = "f1 :=> a.\nf2 :=> c.\nr1 : a => b.\nr2 : c, e => b.\nf3 :=> e.\nr5 : m => n."
+        val second = "f1 :=> a.\nr1 : a => b.\nr3 : g => -b.\nf4 :=> h.\nr4 : h, k => -a.\nr6 : p, q => z."
+        val arg2p = Arg2p.of(first)
+        assertEquals(results(Arg2p.of(first)), results(arg2p))
+        arg2p.answer("b")
+        arg2p.graphs()
+        assertEquals(results(Arg2p.of(first)), results(arg2p))
+        arg2p.load(second)
+        assertEquals(results(Arg2p.of(second)), results(arg2p))
+        arg2p.add("f9 :=> k.")
+        assertEquals(results(Arg2p.of("$second\nf9 :=> k.")), results(arg2p))
     }
 
     @Test

@@ -158,7 +158,7 @@ abstract class GoalSolverScenarios {
     fun theGraphIsBuiltForEachGoal() {
         val theory = "r1 :=> a.\nr2 : a => b.\nr3 :=> c.\nr4 : c => d.\nr5 :=> -d.\n"
         val parallel = parallel(theory, Flags.defaults())
-        listOf("b" to setOf("a", "b"), "d" to setOf("c", "d", "-d")).forEach { (statement, built) ->
+        listOf("b" to setOf("a", "b"), "d" to setOf("c", "d", "- d")).forEach { (statement, built) ->
             val goal = "solve($statement, In, Out, Und)"
             val arg2p = Arg2p.of(theory)
             val expected = solved(arg2p.solve(goal).next(), arg2p.graph())
