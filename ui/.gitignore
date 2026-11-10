@@ -1,0 +1,3 @@
+# What the build makes (see build.gradle.kts)
+node_modules/
+dist/

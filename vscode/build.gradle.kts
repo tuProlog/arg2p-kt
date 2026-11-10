@@ -1,5 +1,6 @@
 // The extension of VS Code (see README.md): the language arg2p, and the solver of a theory, from the language server of
-// arg2p (:lsp), which it carries as a jar, with a Java runtime of its own in a package for a platform.
+// arg2p (:lsp), which it carries as a jar, with a Java runtime of its own in a package for a platform; its solver page the
+// components of this repository (:ui).
 
 val os = System.getProperty("os.name").lowercase()
 
@@ -25,7 +26,8 @@ val vscodeRuntime by tasks.registering(Sync::class) {
 
 val vscodeInstall by tasks.registering(Exec::class) {
     group = "vscode"
-    description = "Installs the dependencies of the extension"
+    description = "Installs the dependencies of the extension, the components of the solver page built (ui/, which it links)"
+    dependsOn(":ui:uiBuild")
     workingDir = projectDir
     inputs.files("package.json", "package-lock.json")
     // the lockfile npm writes into node_modules as it installs: the whole of node_modules is too large to check

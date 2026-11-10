@@ -1,4 +1,5 @@
-// The manifests of the plugin arg2p for AI assistants and of its MCP server, written from one: the plugin as
+// The manifests of the plugin arg2p for AI assistants and of its MCP server, and the version of the components of the user
+// interface (ui/package.json), written from one: the plugin as
 // agent-plugins.org has it (plugins/arg2p/plugin.json), whose name, description, author, homepage, repository, license,
 // keywords and version the others state again, each as its client reads it, at the path it reads it from. The MCP server
 // of a plugin is the one of that version of the Python package (uvx arg2p@<version> mcp), as plugins/arg2p/mcp.json
@@ -73,6 +74,8 @@ const manifests = {
         repository: { ...data.repository, url: plugin.repository },
         packages: data.packages.map(it => ({ ...it, version: plugin.version })),
     }),
+    // The components of the user interface (@tuprolog/arg2p-ui), released with arg2p at its version
+    'ui/package.json': (plugin, data) => ({ ...data, version: plugin.version }),
 };
 
 /** The files stating the version of a release: the plugin and the manifests written from it */

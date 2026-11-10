@@ -18,10 +18,12 @@ tasks.shadowJar {
     }
 }
 
-// The version of what the page of the solver loads (see McpApp): the components of @tuprolog/arg2p-ui, of the catalog
+// The version of what the page of the solver loads (see McpApp): the components of @tuprolog/arg2p-ui (:ui), released with arg2p at
+// its version; a development version, which npm has not, loads the last one released (arg2pUi in the catalog)
 val pageVersions =
     tasks.register("pageVersions") {
-        val ui = libs.versions.arg2pUi.get()
+        val version = rootProject.version.toString()
+        val ui = if ('-' in version) libs.versions.arg2pUi.get() else version
         val versions = layout.buildDirectory.file("generated/page/it/unibo/tuprolog/argumentation/lsp/page.properties")
         inputs.property("ui", ui)
         outputs.file(versions)

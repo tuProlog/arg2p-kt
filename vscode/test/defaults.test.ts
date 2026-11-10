@@ -30,7 +30,7 @@ describe('The defaults of the extension', function () {
         ok(readFileSync(join(__dirname, '..', 'README.md'), 'utf8').includes(`(${JAVA} or later)`));
     });
 
-    it('should build with the components of the solver page the language server loads', function () {
-        equal(manifest.devDependencies['@tuprolog/arg2p-ui'], catalog('arg2pUi'));
+    it('should build with the components of the solver page of this repository (ui/)', function () {
+        equal(manifest.devDependencies['@tuprolog/arg2p-ui'], 'file:../ui');
     });
 });

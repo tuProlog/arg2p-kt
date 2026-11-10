@@ -217,7 +217,7 @@ multiProjectHelper {
     ktProjects(rootProject.path, ":engine", ":core", ":causality-solver", ":parallel", ":federation")
     jvmProjects(":actor-solver", ":lsp")
     // jsProjects()
-    otherProjects(":doc", ":python", ":vscode", ":plugins")
+    otherProjects(":doc", ":python", ":vscode", ":ui", ":plugins")
 
     val baseProjectTemplate =
         buildSet {
