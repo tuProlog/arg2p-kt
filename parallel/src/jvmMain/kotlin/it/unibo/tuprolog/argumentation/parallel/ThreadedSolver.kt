@@ -8,17 +8,17 @@ import it.unibo.tuprolog.argumentation.parallel.consumer.runSolverThread
 import it.unibo.tuprolog.argumentation.parallel.host.ConsumerThreads
 import it.unibo.tuprolog.argumentation.parallel.host.PoolScheduler
 import it.unibo.tuprolog.argumentation.parallel.host.TaskQueue
-import it.unibo.tuprolog.argumentation.parallel.host.WaitingInbox
+import it.unibo.tuprolog.argumentation.parallel.host.ThreadInbox
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * A distributed solver on the threads of this JVM: the solver of its theory on one of [threads] threads, the other consumers
+ * A distributed solver on the threads of this JVM: the solver of its theory on one of `threads` threads, the other consumers
  * of the graphs it builds on threads of their own (see [it.unibo.tuprolog.argumentation.parallel.store.SharedGraph]), at most
- * [threads] for a graph. The theory is split into at most [parts] partitions if given, as many as the consumers it can run
- * otherwise; the graph is labelled as the standard solver does with [flags]. With [textual], the messages of the clients to
+ * `threads` for a graph. The theory is split into at most `parts` partitions if given, as many as the consumers it can run
+ * otherwise; the graph is labelled as the standard solver does with `flags`. With `textual`, the messages of the clients to
  * the solver are written as text and read again (see [it.unibo.tuprolog.argumentation.parallel.message.MessageCodec]).
  */
 class ThreadedSolver private constructor(
@@ -120,15 +120,15 @@ class ThreadedSolver private constructor(
         private fun consumerThread(
             node: () -> ParallelNode,
             queue: TaskQueue?,
-        ): WaitingInbox {
-            val inbox = WaitingInbox()
+        ): ThreadInbox {
+            val inbox = ThreadInbox()
             val deliver = toNode(inbox, node, queue)
-            Thread({ runConsumerThread(inbox, deliver) }, "arg2p-consumer").apply { isDaemon = true }.start()
+            Thread({ runConsumerThread(inbox, deliver) }, "arg2p-consumer").apply { isDaemon = true }.also { inbox.thread = it }.start()
             return inbox
         }
 
         private fun toNode(
-            inbox: WaitingInbox,
+            inbox: ThreadInbox,
             node: () -> ParallelNode,
             queue: TaskQueue?,
         ): (String) -> Unit =
@@ -151,7 +151,7 @@ class ThreadedSolver private constructor(
         ): ThreadedSolver {
             val scheduler = PoolScheduler(threads)
             val queue = scheduler.queue()
-            val solver = WaitingInbox()
+            val solver = ThreadInbox()
             val offered = maxOf(1, threads - 1)
             val id = ParallelNode.newId()
             lateinit var node: ParallelNode
@@ -160,7 +160,10 @@ class ThreadedSolver private constructor(
             val consumers = ConsumerThreads(id, offered, List(offered) { make() }, make)
             node = ParallelNode(scheduler, offered, parts, flags, id = id, solverThread = solver, threads = consumers)
             val deliver = toNode(solver, { node }, queue)
-            Thread({ runSolverThread(solver, deliver, parts, flags) }, "arg2p-solver").apply { isDaemon = true }.start()
+            Thread(
+                { runSolverThread(solver, deliver, parts, flags) },
+                "arg2p-solver",
+            ).apply { isDaemon = true }.also { solver.thread = it }.start()
             return ThreadedSolver(scheduler, node)
         }
 

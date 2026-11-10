@@ -108,23 +108,13 @@ class Program(
 
     internal val compiler = Compiler(this)
 
-    // What every machine of this program runs: its builtins by functor, and the addresses of its blocks of control (once for
-    // each program: a machine for each solve would leave them behind in its code), in this order: the end of a run, then the
-    // conjunction, the disjunction, the if-then-else, the negation, the return from an inlined goal (see Machine)
+    // What every machine of this program runs: its builtins by functor, and its blocks of control (see ControlBlocks)
     private var builtins: Array<Machine.Builtin?>? = null
-    private var controlBlocks: IntArray? = null
+    private var controlBlocks: ControlBlocks? = null
 
     internal fun builtins(make: () -> Array<Machine.Builtin?>): Array<Machine.Builtin?> = builtins ?: make().also { builtins = it }
 
-    fun controlBlocks(): IntArray =
-        controlBlocks ?: intArrayOf(
-            compiler.stopBlock(),
-            compiler.conjunctionBlock(),
-            compiler.disjunctionBlock(),
-            compiler.ifThenElseBlock(),
-            compiler.negationBlock(),
-            compiler.restoreScopeBlock(),
-        ).also { controlBlocks = it }
+    internal fun controlBlocks(): ControlBlocks = controlBlocks ?: ControlBlocks.of(this).also { controlBlocks = it }
 
     /** The predicates of the theory of the user (its static and dynamic clauses) */
     internal val theory = Scope(this, null, 0)

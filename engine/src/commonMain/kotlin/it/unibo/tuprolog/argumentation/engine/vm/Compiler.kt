@@ -29,38 +29,6 @@ internal class Compiler(
         val variables: List<Var>,
     )
 
-    private sealed class Body {
-        class Goal(
-            val term: Struct,
-        ) : Body()
-
-        class Conj(
-            val items: List<Body>,
-        ) : Body()
-
-        class Disj(
-            val term: Struct,
-            val left: Body,
-            val right: Body,
-        ) : Body()
-
-        class IfThenElse(
-            val term: Struct,
-            val condition: Body,
-            val then: Body,
-            val otherwise: Body,
-        ) : Body()
-
-        class Naf(
-            val term: Struct,
-            val goal: Body,
-        ) : Body()
-
-        object Cut : Body()
-
-        object True : Body()
-    }
-
     private class VarInfo {
         // The first chunk it occurs in, and whether it occurs in another
         var firstChunk = -1
@@ -77,6 +45,10 @@ internal class Compiler(
     }
 
     private val emitter = CodeEmitter(program)
+    private val heads = ClauseHeads(program)
+
+    private fun constant(term: Term): Int = program.constantWord(term)
+
     private val vars = LinkedHashMap<Var, VarInfo>()
     private var chunk = 0
     private var leafGoals = 0
@@ -112,15 +84,15 @@ internal class Compiler(
         // (the numbers no word holds compiled as the compounds they are, see Numbers; the clause kept as written)
         val head = Numbers.encoded(clause.head!!) as Struct
         val start = compile(head, Numbers.encoded(clause.body))
-        val keys = IntArray(head.arity) { keyOf(head[it]) }
+        val keys = IntArray(head.arity) { heads.keyOf(head[it]) }
         return ClauseCode(
             keys,
             start,
             clause,
             dynamic,
-            innerKeysOf(head),
-            guardedFrom(start, head.arity),
-            commitMaskOf(head, clause.body),
+            heads.innerKeysOf(head),
+            heads.guardedFrom(start, head.arity),
+            heads.commitMaskOf(head, clause.body),
         )
     }
 
@@ -132,80 +104,6 @@ internal class Compiler(
         val start = compile(head, query)
         return Query(start, variables)
     }
-
-    // See ClauseCode.commitMask. A term against an unbound argument is written, which cannot fail; a variable met again
-    // alone, or in the first argument, is a unification that can
-    private fun commitMaskOf(
-        head: Struct,
-        body: Term,
-    ): Int {
-        val leadingCut = isCut(body) || (body is Struct && body.arity == 2 && body.functor == "," && isCut(body[0]))
-        if (!leadingCut || head.arity > 31) return -1
-        val met = LinkedHashSet<Var>()
-        var mask = 0
-        for (i in 0 until head.arity) {
-            val argument = head[i]
-            when {
-                argument is Var -> if (!met.add(argument)) return -1
-                i == 0 -> {
-                    if (argument is Struct && argument !is Atom) {
-                        val inner = if (argument is Cons) listOf(argument.head, argument.tail) else List(argument.arity) { argument[it] }
-                        for (term in inner) if (term !is Var || !met.add(term)) return -1
-                    }
-                }
-                else -> {
-                    mask = mask or (1 shl i)
-                    argument.collectVariables(met)
-                }
-            }
-        }
-        return mask
-    }
-
-    private fun isCut(term: Term): Boolean = term is Atom && term.value == "!"
-
-    private fun innerKeysOf(head: Struct): IntArray {
-        val first = (if (head.arity > 0) head[0] else null) as? Struct ?: return Program.NO_KEYS
-        if (first.arity == 0) return Program.NO_KEYS
-        val keys = IntArray(minOf(first.arity, Program.INNER_KEYS)) { keyOf(first[it]) }
-        return if (keys.all { it == 0 }) Program.NO_KEYS else keys
-    }
-
-    // Whether the code from [start] is tests alone up to a neck cut: on arguments that are where the call left them (a
-    // variable moved to a temporary leaves them so)
-    private fun guardedFrom(
-        start: Int,
-        arity: Int,
-    ): Boolean {
-        val code = program.code
-        var at = start
-        while (true) {
-            when (code[at]) {
-                Op.CUT_NECK -> return at > start
-                Op.GET_CONST_CUT_PROCEED -> return true
-                Op.COMPARE_VV, Op.COMPARE_VC -> at += 5 + code[at + 4]
-                Op.GET_CONST, Op.GET_X_VAL -> at += 3
-                Op.GET_X_VAR -> if (code[at + 1] >= arity) at += 3 else return false
-                Op.GET_X_VAR_TYPE_X -> if (code[at + 1] >= arity) at += 5 else return false
-                Op.GET_CONST2 -> at += 5
-                Op.ARITH_CMP -> at += code[at + 2].let { n -> 4 + n + code[at + 3 + n] }
-                Op.TYPE_X -> at += 3
-                Op.IDENTICAL, Op.IDENTICAL_C -> at += 4
-                else -> return false
-            }
-        }
-    }
-
-    private fun keyOf(term: Term): Int =
-        when (term) {
-            is Var -> 0
-            is Atom -> constant(term)
-            is Cons -> Words.LIST_KEY
-            is Struct -> program.functorWord(term.functor, term.arity)
-            else -> constant(term)
-        }
-
-    private fun constant(term: Term): Int = program.constantWord(term)
 
     private fun compile(
         head: Struct,
@@ -224,7 +122,7 @@ internal class Compiler(
         cutAfterGoal = false
         levels = 0
         maxArity = head.arity
-        val body = parse(bodyTerm)
+        val body = ClauseBody.parse(bodyTerm)
         // Analysis: the chunks each variable occurs in
         for (i in 0 until head.arity) occurrences(head[i], 0, region = false)
         analyze(body, first = true, region = false)
@@ -380,45 +278,13 @@ internal class Compiler(
         return if (definedByTheory(goal) || program.functor(goal.functor, goal.arity) in defined) null else called
     }
 
-    private fun parse(term: Term): Body =
-        when {
-            term.isTrue -> Body.True
-            term is Var -> Body.Goal(Struct.of("call", term))
-            term is Atom && term.value == "!" -> Body.Cut
-            term is Struct && term.arity == 2 && term.functor == "," -> {
-                val items = ArrayList<Body>()
-                var current: Term = term
-                while (current is Struct && current.arity == 2 && current.functor == ",") {
-                    items.add(parse(current[0]))
-                    current = current[1]
-                }
-                items.add(parse(current))
-                Body.Conj(items)
-            }
-            term is Struct && term.arity == 2 && term.functor == ";" -> {
-                val left = term[0]
-                if (left is Struct && left.arity == 2 && left.functor == "->") {
-                    Body.IfThenElse(term, parse(left[0]), parse(left[1]), parse(term[1]))
-                } else {
-                    Body.Disj(term, parse(left), parse(term[1]))
-                }
-            }
-            term is Struct && term.arity == 2 && term.functor == "->" -> {
-                Body.IfThenElse(term, parse(term[0]), parse(term[1]), parse(Atom.of("fail")))
-            }
-            term is Struct && term.arity == 1 && term.functor == "\\+" -> Body.Naf(term, parse(term[0]))
-            term is Struct -> Body.Goal(term)
-            // (a number as a goal: call/1 raises the type error when the clause runs)
-            else -> Body.Goal(Struct.of("call", term))
-        }
-
     private fun analyze(
-        body: Body,
+        body: ClauseBody,
         first: Boolean,
         region: Boolean,
     ) {
         when (body) {
-            is Body.Goal -> {
+            is ClauseBody.Goal -> {
                 val goal = body.term
                 val inline = inlineArithmetic(goal) || inlineBuiltin(goal)
                 val c =
@@ -440,52 +306,39 @@ internal class Compiler(
                 inlineOpen = inline
                 for (i in 0 until goal.arity) occurrences(goal[i], c, region)
             }
-            is Body.Conj -> {
+            is ClauseBody.Conj -> {
                 // (a cut neither moves nor reads a register: the goal after a leading one is still in the chunk of the head)
                 var leading = first
                 for (item in body.items) {
                     analyze(item, leading, region)
-                    if (item !is Body.Cut) leading = false
+                    if (item !is ClauseBody.Cut) leading = false
                 }
             }
-            is Body.Disj ->
-                if (definedByTheory(body.term)) {
-                    analyze(Body.Goal(body.term), first, region)
-                } else {
-                    hasControl = true
-                    inlineOpen = false
-                    analyze(body.left, first = false, region = true)
-                    inlineOpen = false
-                    analyze(body.right, first = false, region = true)
-                    inlineOpen = false
-                }
-            is Body.IfThenElse ->
-                if (definedByTheory(body.term)) {
-                    analyze(Body.Goal(body.term), first, region)
-                } else {
-                    hasControl = true
-                    levels++
-                    inlineOpen = false
-                    analyze(body.condition, first = false, region = true)
-                    inlineOpen = false
-                    analyze(body.then, first = false, region = true)
-                    inlineOpen = false
-                    analyze(body.otherwise, first = false, region = true)
-                    inlineOpen = false
-                }
-            is Body.Naf ->
-                if (definedByTheory(body.term)) {
-                    analyze(Body.Goal(body.term), first, region)
-                } else {
-                    hasControl = true
-                    levels++
-                    inlineOpen = false
-                    analyze(body.goal, first = false, region = true)
-                    inlineOpen = false
-                }
-            Body.Cut -> if (leafGoals > 0) cutAfterGoal = true
-            Body.True -> Unit
+            is ClauseBody.Disj -> analyzeControl(body.term, first, region, level = false, body.left, body.right)
+            is ClauseBody.IfThenElse -> analyzeControl(body.term, first, region, level = true, body.condition, body.then, body.otherwise)
+            is ClauseBody.Naf -> analyzeControl(body.term, first, region, level = true, body.goal)
+            ClauseBody.Cut -> if (leafGoals > 0) cutAfterGoal = true
+            ClauseBody.True -> Unit
         }
+    }
+
+    // A control construct compiled inline, its [parts] each a region of its own (and a level, a frame slot, if [level]: a cut
+    // inside it is local to it); a goal like any other when the clauses define it
+    private fun analyzeControl(
+        term: Struct,
+        first: Boolean,
+        region: Boolean,
+        level: Boolean,
+        vararg parts: ClauseBody,
+    ) {
+        if (definedByTheory(term)) return analyze(ClauseBody.Goal(term), first, region)
+        hasControl = true
+        if (level) levels++
+        for (part in parts) {
+            inlineOpen = false
+            analyze(part, first = false, region = true)
+        }
+        inlineOpen = false
     }
 
     // ---- arithmetic compiled inline
@@ -842,11 +695,11 @@ internal class Compiler(
 
     /** Emits [body]; true if it ended by executing a goal in place (the clause then needs no return) */
     private fun emit(
-        body: Body,
+        body: ClauseBody,
         last: Boolean,
     ): Boolean {
         when (body) {
-            is Body.Goal -> {
+            is ClauseBody.Goal -> {
                 val goal = body.term
                 if (inlineArithmetic(goal)) {
                     emitArithmetic(goal)
@@ -882,15 +735,15 @@ internal class Compiler(
                 emitter.emitCall(last, functor, goal.arity)
                 return last
             }
-            is Body.Conj -> {
+            is ClauseBody.Conj -> {
                 val items = body.items
                 for ((i, item) in items.withIndex()) {
                     if (emit(item, last && i == items.size - 1)) return true
                 }
                 return false
             }
-            is Body.Disj -> {
-                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
+            is ClauseBody.Disj -> {
+                if (definedByTheory(body.term)) return emit(ClauseBody.Goal(body.term), last)
                 program.emit(Op.TRY_ELSE)
                 val elseLabel = program.emit(0)
                 val endLabel = emitBranchEnd(emit(body.left, last), last)
@@ -898,8 +751,8 @@ internal class Compiler(
                 program.emit(Op.TRUST_ME)
                 return emitLastBranch(emit(body.right, last), last, endLabel)
             }
-            is Body.IfThenElse -> {
-                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
+            is ClauseBody.IfThenElse -> {
+                if (definedByTheory(body.term)) return emit(ClauseBody.Goal(body.term), last)
                 val level = nextLevel++
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
@@ -913,8 +766,8 @@ internal class Compiler(
                 program.emit(Op.TRUST_ME)
                 return emitLastBranch(emit(body.otherwise, last), last, endLabel)
             }
-            is Body.Naf -> {
-                if (definedByTheory(body.term)) return emit(Body.Goal(body.term), last)
+            is ClauseBody.Naf -> {
+                if (definedByTheory(body.term)) return emit(ClauseBody.Goal(body.term), last)
                 val level = nextLevel++
                 program.emit(Op.GET_LEVEL, level)
                 program.emit(Op.TRY_ELSE)
@@ -928,7 +781,7 @@ internal class Compiler(
                 program.emit(Op.TRUST_ME)
                 return false
             }
-            Body.Cut -> {
+            ClauseBody.Cut -> {
                 // (a cut inside a negation or a condition is local to it: the choice point of the construct stays)
                 when {
                     cutLevels.isNotEmpty() -> program.emit(Op.CUT_LOCAL, cutLevels[cutLevels.size - 1])
@@ -936,7 +789,7 @@ internal class Compiler(
                 }
                 return false
             }
-            Body.True -> return false
+            ClauseBody.True -> return false
         }
     }
 
@@ -1276,95 +1129,5 @@ internal class Compiler(
             }
             else -> program.emit(Op.U_CONST, constant(argument), 0)
         }
-    }
-
-    // ---- the blocks of the control constructs called as goals at run time (see Machine)
-
-    /** The code of `','(A, B)` with the goals in registers 0 and 1 */
-    fun conjunctionBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.ALLOCATE, 2)
-        program.emit(Op.GET_Y_VAR, 0, 0)
-        program.emit(Op.GET_Y_VAR, 1, 1)
-        program.emit(Op.CALL_TERM, 0, Op.TRANSPARENT)
-        program.emit(Op.PUT_Y_VAL, 1, 0)
-        program.emit(Op.DEALLOCATE)
-        program.emit(Op.EXECUTE_TERM, 0, Op.TRANSPARENT)
-        return start
-    }
-
-    /** The code of `';'(A, B)` (not an if-then-else) with the goals in registers 0 and 1 */
-    fun disjunctionBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.ALLOCATE, 2)
-        program.emit(Op.GET_Y_VAR, 0, 0)
-        program.emit(Op.GET_Y_VAR, 1, 1)
-        program.emit(Op.TRY_ELSE)
-        val elseLabel = program.emit(0)
-        program.emit(Op.CALL_TERM, 0, Op.TRANSPARENT)
-        program.emit(Op.RETURN)
-        emitter.placeLabel(elseLabel)
-        program.emit(Op.TRUST_ME)
-        program.emit(Op.PUT_Y_VAL, 1, 0)
-        program.emit(Op.DEALLOCATE)
-        program.emit(Op.EXECUTE_TERM, 0, Op.TRANSPARENT)
-        return start
-    }
-
-    /** The code of `(C -> T ; E)` with the goals in registers 0, 1 and 2 */
-    fun ifThenElseBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.ALLOCATE, 4)
-        program.emit(Op.GET_Y_VAR, 0, 0)
-        program.emit(Op.GET_Y_VAR, 1, 1)
-        program.emit(Op.GET_Y_VAR, 2, 2)
-        program.emit(Op.GET_LEVEL, 3)
-        program.emit(Op.TRY_ELSE)
-        val elseLabel = program.emit(0)
-        program.emit(Op.CALL_TERM, 0, Op.OPAQUE)
-        program.emit(Op.CUT_Y, 3)
-        program.emit(Op.PUT_Y_VAL, 1, 0)
-        program.emit(Op.DEALLOCATE)
-        program.emit(Op.EXECUTE_TERM, 0, Op.TRANSPARENT)
-        emitter.placeLabel(elseLabel)
-        program.emit(Op.TRUST_ME)
-        program.emit(Op.PUT_Y_VAL, 2, 0)
-        program.emit(Op.DEALLOCATE)
-        program.emit(Op.EXECUTE_TERM, 0, Op.TRANSPARENT)
-        return start
-    }
-
-    /** The code of `\+ G` with the goal in register 0 */
-    fun negationBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.ALLOCATE, 2)
-        program.emit(Op.GET_Y_VAR, 0, 0)
-        program.emit(Op.GET_LEVEL, 1)
-        program.emit(Op.TRY_ELSE)
-        val elseLabel = program.emit(0)
-        program.emit(Op.CALL_TERM, 0, Op.OPAQUE)
-        program.emit(Op.CUT_Y, 1)
-        program.emit(Op.FAIL)
-        emitter.placeLabel(elseLabel)
-        program.emit(Op.TRUST_ME)
-        program.emit(Op.RETURN)
-        return start
-    }
-
-    /**
-     * The code an inlined goal returns to: the scope of the caller restored from the frame the inlining allocated
-     * (see Machine.inline), the frame deallocated
-     */
-    fun restoreScopeBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.RESTORE_SCOPE_RETURN)
-        return start
-    }
-
-    /** The address of a `STOP` instruction: the continuation of a run that ends with a solution */
-    fun stopBlock(): Int {
-        val start = program.codeTop
-        program.emit(Op.STOP)
-        return start
     }
 }

@@ -1,10 +1,9 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
-import it.unibo.tuprolog.argumentation.parallel.store.Waiting
 
 /**
- * The frames a thread that may wait reads, one at a time, as text. On the JVM a queue on a lock ([WaitingInbox]); in
+ * The frames a thread that may wait reads, one at a time, as text. On the JVM a queue on a lock (ThreadInbox); in
  * JavaScript a SharedArrayBuffer read with Atomics.wait (a thread waiting there handles no message): how a thread waits is
  * all that changes from a platform to another.
  */
@@ -31,27 +30,6 @@ fun interface HostedThread {
      * count on shared memory, see SharedInbox); nothing otherwise
      */
     fun interrupt() = Unit
-}
-
-/** An inbox and its writer in this process, on a lock: the threads of the JVM */
-@InternalArg2pApi
-class WaitingInbox :
-    Inbox,
-    HostedThread {
-    private val waiting = Waiting()
-    private val frames = ArrayDeque<String>()
-
-    override fun put(frame: String) =
-        waiting.locked {
-            frames.addLast(frame)
-            waiting.wakeAll()
-        }
-
-    override fun take(): String =
-        waiting.locked {
-            while (frames.isEmpty()) waiting.await()
-            frames.removeFirst()
-        }
 }
 
 /**

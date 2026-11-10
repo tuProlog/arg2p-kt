@@ -22,7 +22,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
 /** [response], unless it is an error, raised */
 internal fun answered(response: EvaluationResponse): EvaluationResponse = response.error?.let { throw Arg2pException(it) } ?: response
 
-/** How a parallel solver waits for the replies of its node: [ask] asks the node, the reply returned once it gives it */
+/** How a parallel solver waits for the replies of its node: `ask` asks the node, the reply returned once it gives it */
 internal interface Replies {
     fun <T> replied(ask: ((T) -> Unit) -> Unit): T
 }

@@ -24,12 +24,15 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.LogicError
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.TimeOutException
 import it.unibo.tuprolog.solve.exception.error.MessageError
 import it.unibo.tuprolog.solve.exception.error.SystemError
+import it.unibo.tuprolog.solve.exception.warning.MissingPredicate
+import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Primitive
 import kotlin.jvm.JvmField
@@ -253,31 +256,29 @@ internal class Machine(
 
     // The number of the last catch/3 run, telling its choice point apart (see catchExit)
     private var catches = 0
-    private val wIfThen = program.functorWord("->", 2)
     private val fList = program.functor(".", 2)
-    private val failGoal = program.atomWord("fail")
 
     // The code of the control constructs called as goals at run time, of the end of a run, of the return from an
     // inlined goal
     private val controlBlocks = program.controlBlocks()
-    private val stopAddress = controlBlocks[0]
-    private val conjunctionBlock = controlBlocks[1]
-    private val disjunctionBlock = controlBlocks[2]
-    private val ifThenElseBlock = controlBlocks[3]
-    private val negationBlock = controlBlocks[4]
-    private val restoreScopeBlock = controlBlocks[5]
+    private val stopAddress = controlBlocks.stop
+    private val conjunctionBlock = controlBlocks.conjunction
+    private val disjunctionBlock = controlBlocks.disjunction
+    private val ifThenElseBlock = controlBlocks.ifThenElse
+    private val negationBlock = controlBlocks.negation
+    private val restoreScopeBlock = controlBlocks.restoreScope
     private val fArg = program.functor("arg", 3)
     private val fFunctor = program.functor("functor", 3)
 
     // An expression the machine does not evaluate itself (see builtinsOf)
-    private class NotNative : RuntimeException()
+    internal class NotNative : RuntimeException()
 
     // The registers as many as a clause of the program uses
     fun fitRegisters() {
         if (program.maxRegister + 1 > regs.size) regs = regs.copyOf(program.maxRegister + 1)
     }
 
-    private fun jump(address: Int): Int {
+    internal fun jump(address: Int): Int {
         pc = address
         return JUMPED
     }
@@ -1300,14 +1301,32 @@ internal class Machine(
         functor: Int,
         arity: Int,
     ): Int {
-        val looked = scope.lookedUp(functor) ?: return FAIL
-        val primitive = looked.primitive ?: return FAIL
+        val looked = scope.lookedUp(functor) ?: return unknownProcedure(functor, arity)
+        val primitive = looked.primitive ?: return unknownProcedure(functor, arity)
         val native = looked.native
         if (native != null) {
             val answer = native.run(this)
             if (answer != StdlibNatives.NOT_NATIVE) return answer
         }
         return callPrimitive(primitive, functor, arity)
+    }
+
+    // A procedure that neither the clauses nor the libraries define, as the flag unknown says (ISO): an existence error, a
+    // warning and a failure, or a failure (the solvers of arg2p fail, as a theory may leave its hooks undefined)
+    private fun unknownProcedure(
+        functor: Int,
+        arity: Int,
+    ): Int {
+        val name = program.nameOfFunctorId(functor)
+        return when (environment.flags[Unknown] ?: Unknown.defaultValue) {
+            Unknown.FAIL -> FAIL
+            Unknown.WARNING -> {
+                val context = context
+                context.warnings.write(MissingPredicate(context, Signature(name, arity)))
+                FAIL
+            }
+            else -> throw Raised(error(Struct.of("existence_error", Atom.of("procedure"), Indicator.of(name, arity)), "$name/$arity"))
+        }
     }
 
     /** Calls the goal [w], a term on the heap, its arguments loaded in the registers */
@@ -1949,7 +1968,7 @@ internal class Machine(
         return (a == -1L && b == Long.MIN_VALUE) || (a != 0L && r / a != b)
     }
 
-    private fun holds(
+    internal fun holds(
         kind: Int,
         a: Int,
         b: Int,
@@ -2679,14 +2698,14 @@ internal class Machine(
     // ---- exceptions
 
     /** The ball `error(Type, Context)` of a standard error raised by the builtin [where] */
-    private fun error(
+    internal fun error(
         type: Term,
         where: String,
     ): Term = Struct.of("error", type, Atom.of(where))
 
     // catch(Goal, Catcher, Recovery): a choice point the unwinding of a ball stops at, then the goal followed by
     // '$catch_exit'(N), which ends the catch when the goal exits
-    private fun catch(): Int {
+    internal fun catch(): Int {
         val number = ++catches
         pushChoicePoint(CATCH, 0, 3, 0, continuation, number)
         cutBarrier = cpTop
@@ -2707,7 +2726,7 @@ internal class Machine(
 
     // The goal of the catch numbered regs[0] exited: if it left no choice point the catch goes; otherwise it stays,
     // inactive, under a CATCH_EXIT choice point that makes it active again when backtracking goes back into the goal
-    private fun catchExit(): Int {
+    internal fun catchExit(): Int {
         settle()
         val number = intValue(deref(regs[0])).toInt()
         var cp = cpTop - 1
@@ -2842,7 +2861,7 @@ internal class Machine(
 
     // ---- findall
 
-    private fun findall(
+    internal fun findall(
         template: Int,
         goal: Int,
         result: Int,
@@ -3046,7 +3065,7 @@ internal class Machine(
         }
 
     // Calls [primitive] on the registers: on its words if native, otherwise through the facade
-    private fun callPrimitive(
+    internal fun callPrimitive(
         primitive: Primitive,
         functor: Int,
         arity: Int,
@@ -3441,94 +3460,6 @@ internal class Machine(
         }
 
     companion object {
-        // The builtins of [program], by functor
-        private fun builtinsOf(program: Program): Array<Builtin?> {
-            var table = arrayOfNulls<Builtin>(1 shl 8)
-
-            fun put(
-                functor: Int,
-                implementation: Builtin,
-            ) {
-                if (functor >= table.size) table = table.copyOf(functor + (1 shl 8))
-                table[functor] = implementation
-            }
-
-            fun builtin(
-                name: String,
-                arity: Int,
-                implementation: Builtin,
-            ) = put(program.functor(name, arity), implementation)
-
-            // An arithmetic builtin: [native] on the integers and the operators the machine evaluates itself, the primitive
-            // of the libraries (tuProlog's evaluation, floats and every function) on anything else
-            fun arithmetic(
-                name: String,
-                native: Builtin,
-            ) {
-                val functor = program.functor(name, 2)
-                put(
-                    functor,
-                    Builtin { m ->
-                        try {
-                            native.call(m)
-                        } catch (_: NotNative) {
-                            val primitive =
-                                m.scope.primitive(functor)
-                                    ?: throw Raised(
-                                        m.error(Struct.of("existence_error", Atom.of("procedure"), Indicator.of(name, 2)), "$name/2"),
-                                    )
-                            m.callPrimitive(primitive, functor, 2)
-                        }
-                    },
-                )
-            }
-            builtin("true", 0) { CONTINUE }
-            builtin("fail", 0) { FAIL }
-            builtin("false", 0) { FAIL }
-            builtin("!", 0) { m ->
-                m.cutTo(m.cutBarrier)
-                CONTINUE
-            }
-            builtin("=", 2) { m -> if (m.unify(m.regs[0], m.regs[1])) CONTINUE else FAIL }
-            arithmetic("is") { m -> if (m.unify(m.regs[0], m.intWord(m.eval(m.regs[1])))) CONTINUE else FAIL }
-            for ((name, kind) in Op.COMPARISONS) {
-                arithmetic(name) { m -> if (m.holds(kind, m.eval(m.regs[0]).compareTo(m.eval(m.regs[1])), 0)) CONTINUE else FAIL }
-            }
-            builtin("var", 1) { m -> if (tag(m.deref(m.regs[0])) == REF) CONTINUE else FAIL }
-            builtin("nonvar", 1) { m -> if (tag(m.deref(m.regs[0])) != REF) CONTINUE else FAIL }
-            builtin("call", 1) { m ->
-                m.cutBarrier = m.cpTop
-                m.callTerm(m.regs[0])
-            }
-            builtin(",", 2) { m -> m.jump(m.conjunctionBlock) }
-            builtin(";", 2) { m ->
-                val left = m.deref(m.regs[0])
-                if (tag(left) == STR && m.heap[payload(left)] == m.wIfThen) {
-                    val a = payload(left)
-                    m.regs[2] = m.regs[1]
-                    m.regs[0] = m.heap[a + 1]
-                    m.regs[1] = m.heap[a + 2]
-                    m.jump(m.ifThenElseBlock)
-                } else {
-                    m.jump(m.disjunctionBlock)
-                }
-            }
-            builtin("->", 2) { m ->
-                m.regs[2] = m.failGoal
-                m.jump(m.ifThenElseBlock)
-            }
-            builtin("\\+", 1) { m -> m.jump(m.negationBlock) }
-            builtin("findall", 3) { m -> m.findall(m.regs[0], m.regs[1], m.regs[2]) }
-            builtin("catch", 3) { m -> m.catch() }
-            builtin("\$catch_exit", 1) { m -> m.catchExit() }
-            builtin("throw", 1) { m ->
-                val ball = m.deref(m.regs[0])
-                if (tag(ball) == REF) throw Raised(m.error(Atom.of("instantiation_error"), "throw/1"))
-                throw Raised(m.toTerm(ball, HashMap()))
-            }
-            return table
-        }
-
         const val NONE = -1
 
         // A frame: the previous frame at its address, then the continuation, the cut barrier and the number of slots; the

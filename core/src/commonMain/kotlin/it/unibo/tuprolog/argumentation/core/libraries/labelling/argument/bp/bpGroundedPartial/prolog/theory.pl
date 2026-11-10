@@ -2,7 +2,9 @@
 % BP PARTIAL LABELLING [ICLP]
 %==============================================================================
 
-% TODO: handle branching and cuts (complements also)
+% One labelling: the demonstrations below leave choice points, which the cut of argumentLabelling/0 drops once every
+% argument is labelled, each once; an argument is weighed against every argument for a complement of its conclusion
+% (complementArgument/2), whatever the conflicts of the theory (see BpGroundedPartialTest)
 
 %! locality(-Locality)
 %  Query mode: not known to be directional (the burdens of proof order the arguments along the attacks), the

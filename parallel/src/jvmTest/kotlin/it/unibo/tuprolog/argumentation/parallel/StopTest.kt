@@ -20,6 +20,38 @@ class StopTest {
     @Test
     fun aStopEndsTheGoalUnderWayAndTheNextIsAnswered() = listOf(0L, 100L, 500L, 1500L).forEach { stopsAfter(it) }
 
+    // The consumers building the graph on threads of their own (two parts), in the layout of the JVM and in the one of
+    // JavaScript (detached): a stop interrupts the premise a consumer runs, its thread waits again at once rather than
+    // running the loop to its end
+    @Test
+    fun aStopInterruptsTheConsumers() {
+        listOf(
+            { ThreadedSolver(threads = 2, parts = 2) },
+            { ThreadedSolver.detached(threads = 3, parts = 2) },
+        ).forEach { make ->
+            val before = threadsOfArg2p().map { it.id }.toSet()
+            val callers = Executors.newSingleThreadExecutor()
+            make().use { parallel ->
+                try {
+                    parallel.load(theory + "f1 :=> go1.\nr1 : go1, prolog(spin(250000000)) => slow1.\n")
+                    val slow = callers.submit<Any> { parallel.solve("slow") }
+                    Thread.sleep(1500)
+                    parallel.goals.stop()
+                    runCatching { slow.get(10, TimeUnit.SECONDS) }
+                    // (the threads of this solver, those running a resolution: none, well before the loops would end)
+                    val running = { threadsOfArg2p().filter { it.id !in before && it.state == Thread.State.RUNNABLE } }
+                    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+                    while (running().isNotEmpty() && System.nanoTime() < deadline) Thread.sleep(50)
+                    assertEquals(emptyList(), running().map { it.name })
+                } finally {
+                    callers.shutdownNow()
+                }
+            }
+        }
+    }
+
+    private fun threadsOfArg2p() = Thread.getAllStackTraces().keys.filter { it.name.startsWith("arg2p-") }
+
     private fun stopsAfter(millis: Long) {
         val callers = Executors.newSingleThreadExecutor()
         // (one part: the solver builds the graph itself, on the task the stop interrupts)

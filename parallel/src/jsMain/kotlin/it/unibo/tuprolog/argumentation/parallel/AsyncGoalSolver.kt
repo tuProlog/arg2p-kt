@@ -13,7 +13,7 @@ import kotlin.js.JsExport
 import kotlin.js.Promise
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
-/** How a parallel solver of JavaScript waits for the replies of its node: [ask] asks the node, the promise fulfilled by the reply */
+/** How a parallel solver of JavaScript waits for the replies of its node: `ask` asks the node, the promise fulfilled by the reply */
 internal interface AsyncReplies {
     fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T>
 }

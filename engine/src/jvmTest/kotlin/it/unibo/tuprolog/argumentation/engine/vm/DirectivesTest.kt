@@ -56,16 +56,18 @@ class DirectivesTest {
         assertEquals(emptyList(), warnings)
     }
 
+    // (nothing/0 is unknown as well: a warning too, as the flag unknown says by default)
     @Test
     fun aFailingInitializationGoalWarns() {
         assertEquals(listOf("0"), seen(":- initialization(nothing).\nseen(0).\n"))
-        assertEquals(1, warnings.size)
+        assertEquals(listOf("MissingPredicate", "InitializationIssue"), warnings.map { it::class.simpleName })
     }
 
     // Only initialization/1 and solve/1 run a goal, on the solver of tuProlog too
     @Test
     fun aPlainDirectiveDoesNotRun() {
         assertEquals(emptyList(), seen("p(1).\n:- p(X), assertz(seen(X)).\n"))
-        assertEquals(emptyList(), warnings)
+        // (seen/1 is then unknown)
+        assertEquals(listOf("MissingPredicate"), warnings.map { it::class.simpleName })
     }
 }

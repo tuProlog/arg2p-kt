@@ -220,10 +220,10 @@ left once it has not answered for 5 seconds (the instances check each other ever
 version of arg2p federate.
 
 `goals.stop()` ends the goal being solved at once: its next solution is a halt, and the next goal does not wait for it. The
-work under way for it stops too: the solver is interrupted where it resolves (in JavaScript the workers read the stop on the
-memory they share), and so are its consumers running in JavaScript, here or on the instances of the federation; those on
-the JVM stop at their next read of the graph, which is given up. A browser page not [isolated across origins](#isolation)
-solves on one thread, which reads the stop only once the goal is solved.
+work under way for it stops too: the solver is interrupted where it resolves, and so are its consumers, here or on the
+instances of the federation (on the JVM their threads are interrupted, in JavaScript the workers read the stop on the memory
+they share). A browser page not [isolated across origins](#isolation) solves on one thread with no memory shared, which
+reads the stop only once the goal is solved.
 
 `stats` tells what the federation is, cheap to read at any time (`FederationStats`): its `site`, and the `sites` it knows, itself
 first (`SiteStats`: `id`, `name`, and `workers` it offers, null for no limit). The site that ran each consumer of an evaluation
