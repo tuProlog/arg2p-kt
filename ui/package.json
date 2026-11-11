@@ -1,6 +1,6 @@
 {
   "name": "@tuprolog/arg2p-ui",
-  "version": "0.25.1",
+  "version": "0.25.2",
   "description": "The user interface of Arg2P as web components (graphs, solutions, ...), on any engine: the solver of the browser, or one of the JVM",
   "type": "module",
   "main": "./dist/index.js",
