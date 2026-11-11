@@ -1,3 +1,9 @@
+## [0.26.1](https://github.com/tuProlog/arg2p-kt/compare/0.26.0...0.26.1) (2026-11-11)
+
+### Bug Fixes
+
+* **release:** @tuprolog/arg2p-ui published with the rest of the release ([cfc3507](https://github.com/tuProlog/arg2p-kt/commit/cfc3507dd2e7d4c2b0ef73bc048ddc54d2d8744b))
+
 ## [0.26.0](https://github.com/tuProlog/arg2p-kt/compare/0.25.2...0.26.0) (2026-11-11)
 
 ### Features
