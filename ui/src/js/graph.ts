@@ -2,7 +2,7 @@ import type { CompactGraph, Graph } from '@tuprolog/arg2p';
 import type { GraphData } from '../engine.js';
 
 // The graphs of @tuprolog/arg2p as the components read them: of a solver of the page (see host), or of the goals of a
-// parallel solver (ThreadSolver.goals). The solver itself is not loaded with it.
+// parallel solver (AsyncParallelSolver.goals). The solver itself is not loaded with it.
 
 /** A graph of the API as plain data, read in [profile] */
 export function graphData(graph: Graph, profile = ''): GraphData {

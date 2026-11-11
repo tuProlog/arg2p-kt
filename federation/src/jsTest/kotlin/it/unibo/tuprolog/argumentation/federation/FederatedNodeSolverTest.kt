@@ -1,12 +1,12 @@
 package it.unibo.tuprolog.argumentation.federation
 
-import it.unibo.tuprolog.argumentation.parallel.WorkerSolver
+import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import kotlin.js.Promise
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 // Parallel solvers of Node.js federated: the one evaluating places consumers on the threads of the other
-class FederatedWorkerSolverTest {
+class FederatedNodeSolverTest {
     // a chain whose last conclusion is rebutted by an argument resting on another chain, and a chain apart
     private val theory =
         (1..6).joinToString("\n") { "r$it : a${it - 1} => a$it." } +
@@ -15,7 +15,7 @@ class FederatedWorkerSolverTest {
             "\ng0 :=> b0.\nt : b6 => -a6.\nsup(t, r6).\nu0 :=> c0.\nu1 : c0 => c1.\n"
 
     private fun claims(
-        parallel: WorkerSolver,
+        parallel: ThreadedSolver,
         statement: String,
     ): Promise<List<List<String>>> =
         parallel.solve(statement).then { response ->
@@ -27,8 +27,8 @@ class FederatedWorkerSolverTest {
 
     // The consumers of the graph of "a6" on both parallel solvers
     private fun builtByBoth(
-        evaluating: WorkerSolver,
-        lending: WorkerSolver,
+        evaluating: ThreadedSolver,
+        lending: ThreadedSolver,
     ): Promise<Unit> =
         claims(evaluating, "a6")
             .step {
@@ -45,8 +45,8 @@ class FederatedWorkerSolverTest {
     @Test
     fun twoSolversOverWebSockets(): Promise<Unit> {
         // (each a node, a solver and one consumer: the third part on the lending one)
-        val lending = WorkerSolver(threads = 2)
-        val evaluating = WorkerSolver(threads = 2, parts = 3)
+        val lending = ThreadedSolver(threads = 2)
+        val evaluating = ThreadedSolver(threads = 2, parts = 3)
         evaluating.load(theory)
         return Federation(lending)
             .listen(0)
@@ -57,8 +57,8 @@ class FederatedWorkerSolverTest {
     // A wrong code rejected, the right one admitted
     @Test
     fun aSolverRequiringACode(): Promise<Unit> {
-        val lending = WorkerSolver(threads = 2)
-        val evaluating = WorkerSolver(threads = 2, parts = 3)
+        val lending = ThreadedSolver(threads = 2)
+        val evaluating = ThreadedSolver(threads = 2, parts = 3)
         evaluating.load(theory)
         val listening = Federation(lending).also { it.requiresCode = true }
         val connecting = Federation(evaluating)
@@ -77,8 +77,8 @@ class FederatedWorkerSolverTest {
     // Over a medium of the page: what a new medium has to provide is a link
     @Test
     fun twoSolversOverAMediumOfThePage(): Promise<Unit> {
-        val lending = WorkerSolver(threads = 2)
-        val evaluating = WorkerSolver(threads = 2, parts = 3)
+        val lending = ThreadedSolver(threads = 2)
+        val evaluating = ThreadedSolver(threads = 2, parts = 3)
         evaluating.load(theory)
         val (one, other) = listOf(evaluating, lending).map { Federation(it) }
         lateinit var ends: Pair<ExternalLink, ExternalLink>

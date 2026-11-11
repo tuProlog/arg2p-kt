@@ -202,8 +202,8 @@ cannot load as a worker from another origin, and the worker imports @tuprolog/ar
 bundle gives the solver an engine of its own: a `JsEngine` on a `Channel` of the page (a bridge to a server, say), or an
 engine that replays answers recorded beforehand.
 
-`@tuprolog/arg2p-ui/data` exports too, for the drawings, `layeredLayout`, `levelsOf`, `supportsOf`, `nameOf`,
-`isAbstract` and `redrawn`: they are internal, no part of the API, and may change in any version.
+`@tuprolog/arg2p-ui/data` exports `sourceStatement(statement)` too: the statement of the theory an argument's statement
+comes from (`arg2p-argument-select` gives the one of the argument), for a page linking the graph to the text.
 
 ### What else the root exports
 

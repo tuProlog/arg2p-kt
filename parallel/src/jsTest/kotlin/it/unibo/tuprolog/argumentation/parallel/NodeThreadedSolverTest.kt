@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 // A parallel solver of Node.js: its node, its solver and its consumers each on a thread of its own, the solver and the consumers
 // waiting on what the node writes them (see SharedInbox)
-class WorkerSolverTest {
+class NodeThreadedSolverTest {
     // a chain whose last conclusion is rebutted by an argument resting on another chain, and a chain apart
     private val theory =
         (1..6).joinToString("\n") { "r$it : a${it - 1} => a$it." } +
@@ -17,7 +17,7 @@ class WorkerSolverTest {
             "\ng0 :=> b0.\nt : b6 => -a6.\nsup(t, r6).\nu0 :=> c0.\nu1 : c0 => c1.\n"
 
     private fun claims(
-        parallel: WorkerSolver,
+        parallel: ThreadedSolver,
         statement: String,
     ): Promise<List<List<String>>> =
         parallel.solve(statement).then { response ->
@@ -29,7 +29,7 @@ class WorkerSolverTest {
 
     private fun both(flags: Flags): Promise<Unit> {
         // (the fewest threads for three parts: the node, its solver, two consumers)
-        val parallel = WorkerSolver(threads = 3, parts = 3, flags = flags)
+        val parallel = ThreadedSolver(threads = 3, parts = 3, flags = flags)
         parallel.load(theory)
         return claims(parallel, "a6")
             .step {
@@ -62,7 +62,7 @@ class WorkerSolverTest {
     @Test
     fun aStopEndsTheGoalUnderWayAndTheNextIsAnswered(): Promise<Unit> {
         // (one part: the worker of the solver builds the graph itself)
-        val parallel = WorkerSolver(threads = 2, parts = 1)
+        val parallel = ThreadedSolver(threads = 2, parts = 1)
         parallel.load(
             "spin(N) :- (N =< 0 -> true ; M is N - 1, spin(M)).\n" +
                 "f0 :=> go.\nr0 : go, prolog(spin(250000000)) => slow.\nu0 :=> c0.\nu1 : c0 => c1.\n",

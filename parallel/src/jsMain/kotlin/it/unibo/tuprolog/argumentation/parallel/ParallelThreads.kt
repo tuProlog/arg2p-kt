@@ -240,7 +240,7 @@ private fun dataOf(
 }
 
 /**
- * The loop of a thread of a parallel solver of Node.js (see [WorkerSolver]): its node, its solver, or a thread of its consumers.
+ * The loop of a thread of a parallel solver of Node.js (see [ThreadedSolver]): its node, its solver, or a thread of its consumers.
  * [service] makes what stands on the node, if anything may (see [NodeService]).
  */
 @JsExport

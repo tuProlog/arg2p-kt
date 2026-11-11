@@ -23,4 +23,4 @@ class WebWorkerSolver(
     worker: String,
     parts: Int? = null,
     flags: Flags = Flags.defaults(),
-) : ThreadSolver(NodeProxy.spawn(threads, parts, flags, worker))
+) : AsyncParallelSolver(NodeProxy.spawn(threads, parts, flags, worker))

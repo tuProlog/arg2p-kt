@@ -4,7 +4,7 @@ package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
-import it.unibo.tuprolog.argumentation.parallel.ThreadSolver
+import it.unibo.tuprolog.argumentation.parallel.AsyncParallelSolver
 import it.unibo.tuprolog.argumentation.parallel.host.nodeModule
 import it.unibo.tuprolog.argumentation.parallel.onNode
 import kotlin.js.JsExport
@@ -21,7 +21,7 @@ import kotlin.js.Promise
 @JsExport
 @ExperimentalArg2pApi
 class Federation(
-    private val parallel: ThreadSolver,
+    private val parallel: AsyncParallelSolver,
     lends: Boolean = true,
 ) {
     private var calls = 0

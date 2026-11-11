@@ -17,7 +17,7 @@ import kotlin.js.Promise
  */
 @JsExport
 @ExperimentalArg2pApi
-abstract class ThreadSolver internal constructor(
+abstract class AsyncParallelSolver internal constructor(
     /** The node of the parallel solver, for what stands on it (see the module federation) */
     @JsExport.Ignore val node: NodeProxy,
 ) : ParallelSolver(node.access) {
@@ -53,12 +53,12 @@ abstract class ThreadSolver internal constructor(
  */
 @JsExport
 @ExperimentalArg2pApi
-class WorkerSolver(
+class ThreadedSolver(
     threads: Int,
     parts: Int? = null,
     flags: Flags = Flags.defaults(),
     module: String? = null,
-) : ThreadSolver(NodeProxy.spawn(threads, parts, flags, module ?: thisModule()))
+) : AsyncParallelSolver(NodeProxy.spawn(threads, parts, flags, module ?: thisModule()))
 
 /** The replies of a node: those pending rejected when the parallel solver closes, and those asked for after */
 internal class ClosableReplies : AsyncReplies {

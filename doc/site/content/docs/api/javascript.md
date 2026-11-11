@@ -168,7 +168,7 @@ arg2p.solve('causality::butFor(a, b)').next().isYes        // true
 ## The parallel solver
 
 The parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}) are solvers of arg2p as well: the
-`goals` of a `WorkerSolver` (Node.js) or a `WebWorkerSolver` (browsers) solves any goal with the threads of the
+`goals` of a `ThreadedSolver` (Node.js) or a `WebWorkerSolver` (browsers) solves any goal with the threads of the
 parallel solver and of its federation, its solutions, answers and graphs promised in the types above. Nothing of the parallel solver runs on
 the calling thread. In a browser its threads share memory only on a page
 [isolated across origins]({{% ref "/docs/modules/parallel#isolation" %}}): on any other page it solves on one thread alone.

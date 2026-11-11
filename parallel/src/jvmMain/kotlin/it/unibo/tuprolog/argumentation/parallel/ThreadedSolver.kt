@@ -141,7 +141,7 @@ class ThreadedSolver private constructor(
             }
 
         /**
-         * A parallel solver laid out as one of JavaScript is (see WorkerSolver): its node on its threads, never waiting, its solver
+         * A parallel solver laid out as one of JavaScript is (see ThreadedSolver): its node on its threads, never waiting, its solver
          * and the consumers it runs each on a thread of its own that may wait, the two talking through frames as text alone
          * (see [it.unibo.tuprolog.argumentation.parallel.host.HostFrame]), [threads] consumers in all
          */

@@ -44,7 +44,7 @@ The solvers are the same on every runtime; only where they run, and how what the
 | Class | Runtime | Where it runs |
 | --- | --- | --- |
 | `ThreadedSolver` | JVM | On threads of the JVM, as many as the processors by default. |
-| `WorkerSolver` | Node.js | On `worker_threads`, each loading this module. |
+| `ThreadedSolver` | Node.js | On `worker_threads`, each loading this module. |
 | `WebWorkerSolver` | Browsers | On Web Workers, each running a script that loads this module. Needs a page [isolated across origins](#isolation) to run more than one solver. |
 
 All of them take the number of `threads` (the most consumers a graph has on that parallel solver), the number of partitions of the
@@ -85,9 +85,9 @@ parallel solver as a solver of arg2p (`goals`, see [below](#as-a-solver-of-arg2p
 ## On Node.js
 
 ```javascript
-import { WorkerSolver } from '@tuprolog/arg2p'
+import { ThreadedSolver } from '@tuprolog/arg2p'
 
-const parallel = new WorkerSolver(4)
+const parallel = new ThreadedSolver(4)
 parallel.load(theory)
 const answer = await parallel.solve('conclusion')
 console.log(answer.inArgs.map(r => r.claim))
@@ -203,7 +203,7 @@ other.solve("conclusion") // built by consumers on both
 ```
 
 ```javascript
-const parallel = new WorkerSolver(4)
+const parallel = new ThreadedSolver(4)
 await new Federation(parallel).connect('ws://hub-host:9431')
 ```
 

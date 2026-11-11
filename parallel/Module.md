@@ -19,6 +19,6 @@ threads of the solver (`ConsumerThreads`) or anything else. A `ParallelNode`, th
 stores, and places the consumers of each graph on its hosts in proportion to what each offers. How a thread waits is all that
 changes from a platform to another (`Inbox`: a queue on the JVM, a SharedArrayBuffer in JavaScript).
 
-The solvers are `ThreadedSolver` on the JVM, `WorkerSolver` on Node.js and `WebWorkerSolver` in browsers; each is also a
+The solvers are `ThreadedSolver` on the JVM, `ThreadedSolver` on Node.js and `WebWorkerSolver` in browsers; each is also a
 solver of arg2p, with the interface of `Arg2p` (`GoalSolver`, `AsyncGoalSolver` in JavaScript). All of this happens in one process; to build
 its graphs with other instances, see the module federation.

@@ -21,11 +21,5 @@ export {
 export { statedFlags, statedProfile, profileOf, withValues, withNone, withSwitch, without } from './flags/text.js';
 export type { Positions } from './graph/positions.js';
 
-// How the graph and the drawing draw (the layout of the rows of a graph, the names of its arguments, a theory rewritten
-// by drawing): kept for the pages that took them, they are internal, no part of the API, and may change in any version
-export { layeredLayout, type Link, type Point, type Size, type LayoutOptions } from './graph/layout.js';
-export { levelsOf, supportsOf } from './graph/levels.js';
-export { isAbstract, nameOf } from './graph/drawing.js';
-// What links an argument to the statement of the theory it comes from (a page links statements to what they are about)
-export { statementOf, sourceStatement, isLinked, passagesOf } from './graph/drawing.js';
-export { redrawn } from './formats/declarations.js';
+// What links an argument to the statement of the theory it comes from: the passage a page shows for a statement
+export { sourceStatement } from './graph/drawing.js';
