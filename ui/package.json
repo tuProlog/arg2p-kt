@@ -93,7 +93,7 @@
     "@tuprolog/arg2p": "file:../build/packages/js",
     "happy-dom": "21.0.4",
     "typescript": "7.0.2",
-    "vite": "8.3.6",
+    "vite": "8.3.8",
     "vitest": "5.1.0"
   }
 }
