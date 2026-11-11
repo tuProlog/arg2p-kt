@@ -1,3 +1,44 @@
+## [0.26.0](https://github.com/tuProlog/arg2p-kt/compare/0.25.2...0.26.0) (2026-11-11)
+
+### Features
+
+* names in camelCase, the experimental parts marked, tuProlog 4 ([6647c73](https://github.com/tuProlog/arg2p-kt/commit/6647c732c233bf2e8ce090f26c2767b9f39b7f6e)), closes [#629](https://github.com/tuProlog/arg2p-kt/issues/629)
+
+### Dependency updates
+
+* **deps:** update dependency vite to v8.3.8 ([#631](https://github.com/tuProlog/arg2p-kt/issues/631)) ([f60011d](https://github.com/tuProlog/arg2p-kt/commit/f60011ddecfb28d13df50d31bf90bc87b32f44b9))
+* **deps:** update doc/site/themes/hugo-book digest to 20a73cd ([#614](https://github.com/tuProlog/arg2p-kt/issues/614)) ([e1c8c4b](https://github.com/tuProlog/arg2p-kt/commit/e1c8c4bb156be51ee49a125568bbc10d76a7c6ca))
+* **deps:** update doc/site/themes/hugo-book digest to 4a3c39a ([#616](https://github.com/tuProlog/arg2p-kt/issues/616)) ([be85063](https://github.com/tuProlog/arg2p-kt/commit/be8506338eb6555b4bd1a1cea70e73c9a9a1865c))
+* **deps:** update doc/site/themes/hugo-book digest to 7875ae6 ([#620](https://github.com/tuProlog/arg2p-kt/issues/620)) ([d55a37d](https://github.com/tuProlog/arg2p-kt/commit/d55a37d889d7ed809741d7b524abcea5458a9aba))
+* **deps:** update doc/site/themes/hugo-book digest to 952d8fa ([#618](https://github.com/tuProlog/arg2p-kt/issues/618)) ([c78af9e](https://github.com/tuProlog/arg2p-kt/commit/c78af9e8d4f9528fcb1d4f6dc0cd717f7e4e02c7))
+* **deps:** update gradle to v9.9.1 ([#624](https://github.com/tuProlog/arg2p-kt/issues/624)) ([6599f4f](https://github.com/tuProlog/arg2p-kt/commit/6599f4f6b66b3db7aa3831e5e17f57a8c63eea65))
+* **deps:** update ktmpp to v6.1.4 ([#625](https://github.com/tuProlog/arg2p-kt/issues/625)) ([1fea65a](https://github.com/tuProlog/arg2p-kt/commit/1fea65a1f5c6b25e6f28f7b9943e6cb325ea7c8a))
+
+### Bug Fixes
+
+* **engine:** catch/3 no longer catches what is raised after its goal exited ([#599](https://github.com/tuProlog/arg2p-kt/issues/599)) ([5bdd959](https://github.com/tuProlog/arg2p-kt/commit/5bdd959b6844b10d30c94c57efbf7941b424c2cd))
+
+### Performance improvements
+
+* **core:** admissible labellings by the search of the SCC-recursive semantics ([6d25d84](https://github.com/tuProlog/arg2p-kt/commit/6d25d84bfcc0f28ea2a568a3d4a1d219739bcbb5))
+* **core:** exclude the candidates tried before from the branches after them ([fc0e13c](https://github.com/tuProlog/arg2p-kt/commit/fc0e13c02d61da8c7fe0a842f34c0e47efae301a))
+* **core:** split each component by what is decided, and branch on the defenders of an undefended attacker ([fd6a82f](https://github.com/tuProlog/arg2p-kt/commit/fd6a82f2a3d9ec2fd0a1de1c034de657bf16665d))
+* **core:** the search of the SCC-recursive semantics, by the cascade of each step and with forced defenders ([55dab38](https://github.com/tuProlog/arg2p-kt/commit/55dab38ec07f09a36d380afbfea43227dce9b1c5))
+* **core:** within a component, label what is left above each first admissible labelling as the graph ([d473809](https://github.com/tuProlog/arg2p-kt/commit/d473809a658a241ee7880139ae27b25478005322))
+* **engine:** rank the atoms new to a sort in one batch when there are many ([4ff3db1](https://github.com/tuProlog/arg2p-kt/commit/4ff3db19d392e52b4a6540a75f755e58185f1234))
+
+### Tests
+
+* **core:** components split twice by the search, checked against the reference semantics ([b6a8e0f](https://github.com/tuProlog/arg2p-kt/commit/b6a8e0fb72b87ffeba8791aeba7eeac42764ced3))
+
+### Build and continuous integration
+
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.9 ([#622](https://github.com/tuProlog/arg2p-kt/issues/622)) ([b45dc92](https://github.com/tuProlog/arg2p-kt/commit/b45dc92d9ff5970bdce6141845f2b7bb0b33e794))
+
+### Refactoring
+
+* the engine without generated code, the modules restructured ([#629](https://github.com/tuProlog/arg2p-kt/issues/629)) ([761c23d](https://github.com/tuProlog/arg2p-kt/commit/761c23d6baa1de8fdf2e29d09ef08c9e840276b6)), closes [#627](https://github.com/tuProlog/arg2p-kt/issues/627)
+
 ## [0.25.2](https://github.com/tuProlog/arg2p-kt/compare/0.25.1...0.25.2) (2026-11-08)
 
 ### Dependency updates
