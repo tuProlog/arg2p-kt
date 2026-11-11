@@ -1,0 +1,58 @@
+package it.unibo.tuprolog.argumentation.core.libraries
+
+import it.unibo.tuprolog.argumentation.EarlierSpellings
+import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.notation.ModuleNotation
+import it.unibo.tuprolog.argumentation.engine.vm.program.CodeKey
+import it.unibo.tuprolog.argumentation.engine.vm.program.SharedLibrary
+import it.unibo.tuprolog.core.operators.OperatorSet
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.library.Library
+import it.unibo.tuprolog.solve.primitive.Primitive
+import it.unibo.tuprolog.theory.Theory
+import it.unibo.tuprolog.theory.parsing.parse
+
+/**
+ * A module of arg2p, loaded by its first call (Module::Goal): a Prolog theory ([prologRawTheory], parsed once with
+ * the [theoryOperators] of the modules), with the native [primitives] it relies on and the [baseFlags] it declares,
+ * under the [moduleIdentifier] the calls name it by (its [alias] made of it). Its library is built once and shared by every
+ * solver: the native primitives of a module keep no state.
+ */
+abstract class PrologLibrary(
+    private val moduleIdentifier: String,
+) : Loadable {
+    final override val alias: String = "prolog.argumentation.$moduleIdentifier"
+
+    /** The Prolog theory of the module, as text */
+    abstract val prologRawTheory: String
+
+    /** The theory of the module, parsed once with the operators of the modules */
+    val prologTheory: Theory by lazy { Theory.parse(prologRawTheory, theoryOperators) }
+
+    /** The native primitives of the module */
+    protected open val primitives: Map<Signature, Primitive>
+        get() = emptyMap()
+
+    /** The operators the library of the module gives the solvers using it */
+    protected open val libraryOperators: OperatorSet
+        get() = OperatorSet()
+
+    override val baseContent: Library by lazy {
+        SharedLibrary(
+            Library.of(
+                alias = alias,
+                clauses = prologTheory,
+                primitives = EarlierSpellings.withEarlierNames(primitives),
+                operators = libraryOperators,
+            ),
+            CodeKey.of(alias, prologRawTheory),
+        )
+    }
+
+    // (once: the library is)
+    override val definitions: Set<String> by lazy { definitionsOf(baseContent) }
+
+    override val theoryOperators: OperatorSet
+        get() = ModuleNotation.theories
+
+    final override fun identifier(): String = moduleIdentifier
+}

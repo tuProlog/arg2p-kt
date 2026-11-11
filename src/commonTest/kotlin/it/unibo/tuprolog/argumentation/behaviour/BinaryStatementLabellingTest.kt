@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 class BinaryStatementLabellingTest {
     private val config =
         """
-        statementLabellingMode(statement_binary).
+        statementLabellingMode(statementBinary).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).
@@ -19,10 +19,10 @@ class BinaryStatementLabellingTest {
     fun aStatementOfManyArgumentsIsLabelledOnce() {
         val solution =
             solver("r1 : [] => a.\nr2 : [] => a.\nr3 : [] => b.\nr4 : [] => -b.\n$config")
-                .solve("buildLabelSets(In, Out, Und)")
+                .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
-        assertEquals(listOf("[[a]]", "[[-b], [b]]", "[]"), labels)
+        assertEquals(listOf("[[a]]", "[[- b], [b]]", "[]"), labels)
     }
 
     // a has an argument IN (r1) and one UND (r2, on c, rebutted by -c): it is IN only
@@ -30,9 +30,9 @@ class BinaryStatementLabellingTest {
     fun aStatementWithAnArgumentInIsOnlyIn() {
         val solution =
             solver("r1 : [] => a.\nr2 : c => a.\nr3 : [] => c.\nr4 : [] => -c.\n$config")
-                .solve("buildLabelSets(In, Out, Und)")
+                .solve("solve(In, Out, Und)")
                 .next()
         val labels = listOf("In", "Out", "Und").map { solution.text(it) }
-        assertEquals(listOf("[[a]]", "[[-c], [c]]", "[]"), labels)
+        assertEquals(listOf("[[a]]", "[[- c], [c]]", "[]"), labels)
     }
 }

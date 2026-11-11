@@ -7,8 +7,9 @@ import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.actor.libs.ActorGraph
+import it.unibo.tuprolog.argumentation.actor.libraries.actorGraph.ActorGraph
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.AttackerResponse
 import it.unibo.tuprolog.argumentation.actor.message.Eval
@@ -21,7 +22,6 @@ import it.unibo.tuprolog.argumentation.actor.message.Stop
 import it.unibo.tuprolog.argumentation.actor.message.WorkerResponses
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
@@ -42,7 +42,7 @@ internal class Evaluator private constructor(
         newReceiveBuilder()
             .onMessage(Add::class.java) { command ->
                 solver.assertA(Struct.parse(command.elem, solver.operators))
-                arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+                arg2pScope { solver.solve(atomOf("contextReset")).first() }
                 this
             }.onMessage(Eval::class.java) { command ->
                 val result =
@@ -161,14 +161,18 @@ internal class Evaluator private constructor(
         )
     }
 
+    // (the query answered goes: a response that comes later for it finds none, as it would find it completed)
     private fun reply(
         active: ActiveQuery,
         label: Label,
         queryChain: List<String>,
-    ) = if (active.type == 0) {
-        active.replyTo.tell(EvalResponse(active.parentId, active.query, label, queryChain))
-    } else {
-        active.replyTo.tell(AttackerResponse(active.parentId, active.argument, queryChain, label))
+    ) {
+        activeQueries.remove(active)
+        if (active.type == 0) {
+            active.replyTo.tell(EvalResponse(active.parentId, active.query, label, queryChain))
+        } else {
+            active.replyTo.tell(AttackerResponse(active.parentId, active.argument, queryChain, label))
+        }
     }
 
     private fun Term.strings() = castToList().toList().map { it.toString() }

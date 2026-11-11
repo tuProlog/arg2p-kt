@@ -1,13 +1,14 @@
 package it.unibo.tuprolog.argumentation.core
 
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
-import it.unibo.tuprolog.argumentation.core.modules.entry.Arg2pModule
-import it.unibo.tuprolog.argumentation.core.runtime.cache.Cache
-import it.unibo.tuprolog.argumentation.core.runtime.context.Context
-import it.unibo.tuprolog.argumentation.core.runtime.modules.DynamicLoader
-import it.unibo.tuprolog.argumentation.core.runtime.settings.Settings
+import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.LibraryRegistry
+import it.unibo.tuprolog.argumentation.core.libraries.Loadable
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.Arg2pInterfaceLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.Cache
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.Context
+import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.DynamicLoader
+import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.Settings
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.library.Runtime
 
@@ -42,8 +43,8 @@ interface Arg2pSolver {
             dynamicLibs: Iterable<Loadable>,
         ) = object : Arg2pSolver {
             override val loader: ArgLibrary = DynamicLoader(this)
-            override val context: ArgLibrary = Context()
             override val cache = Cache()
+            override val context: ArgLibrary = Context(cache::refresh, StoreSchema)
             override val settings = Settings(this)
 
             override fun staticLibraries() = staticLibs
@@ -55,8 +56,8 @@ interface Arg2pSolver {
             staticLibs: Iterable<ArgLibrary> = emptyList(),
             dynamicLibs: Iterable<Loadable> = emptyList(),
         ) = of(
-            listOf(Arg2pModule) + staticLibs,
-            ModuleRegistry.all + dynamicLibs,
+            listOf(Arg2pInterfaceLibrary) + staticLibs,
+            LibraryRegistry.all + dynamicLibs,
         )
     }
 }

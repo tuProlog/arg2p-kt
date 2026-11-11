@@ -16,7 +16,7 @@ class SolverWarningsTest {
         val solver =
             Arg2pSolverFactory.default(theory = "r1 : a => b.\na1 :-> a.", settings = Flags.defaults().queryMode(false).library())
         solver.setWarnings(OutputChannel.of { warnings += it.message.orEmpty() })
-        solver.solve(Struct.parse("buildLabelSets(In, Out, Und)", solver.operators)).first()
+        solver.solve(Struct.parse("solve(In, Out, Und)", solver.operators)).first()
         assertEquals(emptyList(), warnings)
     }
 }

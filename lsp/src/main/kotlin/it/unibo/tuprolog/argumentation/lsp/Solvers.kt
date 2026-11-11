@@ -3,10 +3,10 @@ package it.unibo.tuprolog.argumentation.lsp
 import it.unibo.tuprolog.argumentation.Arg2p
 import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.core.flags.ArgumentLabellingMode
-import it.unibo.tuprolog.argumentation.core.flags.GraphBuildMode
-import it.unibo.tuprolog.argumentation.core.flags.QueryMode
-import it.unibo.tuprolog.argumentation.core.flags.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.ArgumentLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.QueryMode
+import it.unibo.tuprolog.argumentation.core.libraries.evaluation.pipeline.flags.StatementLabellingMode
+import it.unibo.tuprolog.argumentation.core.libraries.framework.settings.flags.GraphBuildMode
 
 /**
  * The solvers of the servers, and what they tell of a theory without solving it: stopped past a time limit (see
@@ -83,7 +83,12 @@ internal object Solvers {
             try {
                 of(theory, parsed)
             } catch (_: Arg2pException) {
-                of("", parsed)
+                // (the flags alone, the theory refused; nothing if the flags are refused too)
+                try {
+                    of("", parsed)
+                } catch (_: Arg2pException) {
+                    return emptyMap()
+                }
             }
         return solver.knownFlags.associateWith { flag ->
             try {

@@ -2,7 +2,9 @@ package it.unibo.tuprolog.argumentation.lsp
 
 import com.google.gson.JsonObject
 import it.unibo.tuprolog.argumentation.Arg2p
-import it.unibo.tuprolog.argumentation.parallel.federation.Beacons
+import org.eclipse.lsp4j.CodeAction
+import org.eclipse.lsp4j.CodeActionParams
+import org.eclipse.lsp4j.Command
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeConfigurationParams
@@ -20,6 +22,7 @@ import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.ServerInfo
 import org.eclipse.lsp4j.TextDocumentSyncKind
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import org.eclipse.lsp4j.services.LanguageClient
@@ -40,17 +43,16 @@ import java.util.concurrent.TimeUnit
  * stack resolution needs (see [Solving]); [exit] is what the server does when the editor tells it to exit.
  *
  * The editor enables the federation with the options of initialize, `{ federation: { enabled, name } }`, and is told
- * how it changes (arg2p/federationChanged); it is disabled otherwise. [beaconPort] is where its beacons go.
+ * how it changes (arg2p/federationChanged); it is disabled otherwise.
  */
 internal class Arg2pLanguageServer(
-    beaconPort: Int = Beacons.PORT,
     private val exit: () -> Unit = {},
 ) : LanguageServer,
     LanguageClientAware,
     Arg2pService {
     private var client: LanguageClient? = null
     private val solving = Solving("arg2p-solver")
-    private val federation = Federation(solving, beaconPort) { state -> (client as? Arg2pClient)?.federationChanged(state) }
+    private val federation = Federation(solving) { state -> (client as? Arg2pClient)?.federationChanged(state) }
     private val pages = PageEngine(solving, parallel = federation)
     private val documents = Documents()
 
@@ -70,7 +72,11 @@ internal class Arg2pLanguageServer(
         }
         return CompletableFuture.completedFuture(
             InitializeResult(
-                ServerCapabilities().apply { setTextDocumentSync(TextDocumentSyncKind.Full) },
+                ServerCapabilities().apply {
+                    setTextDocumentSync(TextDocumentSyncKind.Full)
+                    // (the quick fixes of the hints, see EarlierSpellingHints)
+                    setCodeActionProvider(true)
+                },
                 ServerInfo("arg2p", Arg2p.version()),
             ),
         )
@@ -117,10 +123,10 @@ internal class Arg2pLanguageServer(
 
     override fun federation(): CompletableFuture<FederationState> = CompletableFuture.completedFuture(federation.state)
 
-    override fun pair(params: JsonObject?): CompletableFuture<FederationState> {
-        val (site, code) = reading(params) { it.requiredText("site") to it.requiredText("code") }
+    override fun connect(params: JsonObject?): CompletableFuture<FederationState> {
+        val (url, code) = reading(params) { it.requiredText("url") to it.text("code") }
         // waited for on a thread of its own: the server goes on reading meanwhile
-        return federating { federation.pair(site, code) }
+        return federating { federation.connect(url, code) }
     }
 
     override fun newCode(): CompletableFuture<FederationState> = federating { federation.newCode() }
@@ -167,6 +173,14 @@ internal class Arg2pLanguageServer(
 
         override fun didSave(params: DidSaveTextDocumentParams) = Unit
 
+        override fun codeAction(params: CodeActionParams): CompletableFuture<List<Either<Command, CodeAction>>> {
+            val uri = params.textDocument.uri
+            val text = texts[uri] ?: return CompletableFuture.completedFuture(emptyList())
+            return CompletableFuture.completedFuture(
+                EarlierSpellingHints.fixes(uri, text, params.context.diagnostics).map { Either.forRight(it) },
+            )
+        }
+
         // The diagnostics of [text], published once it settles, if it is still the text of the document
         private fun check(
             uri: String,
@@ -196,7 +210,7 @@ internal class Arg2pLanguageServer(
         /** How long a text is left unchanged before it is checked, in milliseconds: the editor sends each keystroke */
         const val SETTLING = 200L
 
-        /** The diagnostics of [text], a theory: where it does not parse */
+        /** The diagnostics of [text], a theory: where it does not parse, and the hints of its earlier spellings */
         fun diagnostics(text: String): List<Diagnostic> =
             listOfNotNull(
                 Solvers.check(text, "theory")?.let { problem ->
@@ -209,6 +223,6 @@ internal class Arg2pLanguageServer(
                         "arg2p",
                     )
                 },
-            )
+            ) + EarlierSpellingHints.of(text)
     }
 }

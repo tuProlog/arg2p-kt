@@ -1,0 +1,35 @@
+package it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives
+
+import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.Cache
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.lookup
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.GoalWrapper
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
+import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Solve
+
+/**
+ * cacheCheck(Goal): the solutions of Goal in the cache (see [ClauseStore.solve]); the machine resolves Goal with
+ * the records of the cache itself (see [lookup])
+ */
+internal class CacheCheck(
+    private val cache: Cache,
+    private val store: ClauseStore,
+) : AbstractNativePrimitive(Signature("cacheCheck", 1)) {
+    override fun call(call: NativeCall): Int {
+        cache.follow(call)
+        return call.lookup(store, LOOKUP, 0)
+    }
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        cache.follow(request.context.staticKb)
+        return store.solve(request.arguments[0].castToStruct()).map { request.replyWith(it) }
+    }
+
+    private companion object {
+        // The lookup of a goal in the cache: cacheCheck(Goal)
+        val LOOKUP = GoalWrapper { call, goal -> call.struct("cacheCheck", intArrayOf(goal)) }
+    }
+}

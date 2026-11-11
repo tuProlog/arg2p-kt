@@ -1,0 +1,155 @@
+package it.unibo.tuprolog.argumentation.parallel
+
+import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
+import it.unibo.tuprolog.argumentation.Solution
+import it.unibo.tuprolog.argumentation.checked
+import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
+import it.unibo.tuprolog.argumentation.core.model.CompactGraph
+import it.unibo.tuprolog.argumentation.core.model.Graph
+import it.unibo.tuprolog.argumentation.parallel.message.AnswerResponse
+import it.unibo.tuprolog.argumentation.parallel.message.SolutionResponse
+import it.unibo.tuprolog.argumentation.solutionOf
+import kotlin.js.JsExport
+import kotlin.js.Promise
+import it.unibo.tuprolog.solve.Solution as LogicSolution
+
+/** How a parallel solver of JavaScript waits for the replies of its node: `ask` asks the node, the promise fulfilled by the reply */
+internal interface AsyncReplies {
+    fun <T> replied(ask: ((T) -> Unit) -> Unit): Promise<T>
+}
+
+/**
+ * A parallel solver of JavaScript as a solver of arg2p, as `Arg2p` is one, its answers promised as its threads compute them
+ * (see [GoalSolver]): any goal solved as the standard solver solves it, one solution at a time, with the graph of
+ * each, and the answers of queries
+ */
+@JsExport
+@ExperimentalArg2pApi
+class AsyncGoalSolver internal constructor(
+    private val node: NodeAccess,
+    private val replies: AsyncReplies,
+) {
+    private val solved = Solved()
+
+    /** Where what the solver prints goes, as the solutions are given: the console by default */
+    var output: (String) -> Unit
+        get() = solved.output
+        set(value) {
+            solved.output = value
+        }
+
+    /**
+     * The solutions of [goal], Prolog text: the first computed at once (rejected for a goal that cannot be read), each
+     * next one as it is asked for
+     */
+    fun solve(goal: String): Promise<AsyncSolutions> =
+        replies.replied<SolutionResponse> { node.query(goal, it) }.then { first ->
+            AsyncSolutions(goal, solved.checked(first), solved) { replies.replied { reply -> node.next(first.run, reply) } }
+        }
+
+    /**
+     * The statements for [query], Prolog text, labelled in, out and und: one answer for each labelling, or the one across
+     * them all (see the flag answerMode; rejected if the evaluation halts)
+     */
+    fun answer(query: String): Promise<Array<Answer>> =
+        replies.replied<AnswerResponse> { node.answer(query, it) }.then { solved.answer(it).toTypedArray() }
+
+    /** The graph of each labelling of the theory (rejected if the evaluation halts) */
+    fun graphs(): Promise<Array<Graph>> =
+        solve(LABELLINGS)
+            .then {
+                graphsOf(it, emptyList()) { solved.graph }.then { all ->
+                    all.toTypedArray()
+                }
+            }.flattened()
+
+    /** The graph of each labelling of the theory as arrays (rejected if the evaluation halts; see [CompactGraph]) */
+    fun compactGraphs(): Promise<Array<CompactGraph>> =
+        solve(LABELLINGS).then { graphsOf(it, emptyList()) { solved.compactGraph }.then { all -> all.toTypedArray() } }.flattened()
+
+    /** The graph of the last solution given as arrays (see [CompactGraph]), none before the first */
+    fun compactGraph(): CompactGraph = solved.compactGraph
+
+    /** The graph of the last solution given: the one of the last stage of its resolution (none before the first) */
+    fun graph(): Graph = solved.graph
+
+    /**
+     * Stops the goal being solved: the solution promised is a halt, at once (`The evaluation was stopped`), as the
+     * other halts of a goal, and the work of the parallel solver for it is given up; the next goals are solved as before.
+     * Nothing is done if no goal is being solved.
+     */
+    fun stop() = node.stop()
+
+    // The graphs of the yes [solutions] left, after [found]
+    private fun <G> graphsOf(
+        solutions: AsyncSolutions,
+        found: List<G>,
+        read: () -> G,
+    ): Promise<List<G>> =
+        solutions
+            .hasNext()
+            .then { more ->
+                if (!more) {
+                    Promise.resolve(found)
+                } else {
+                    solutions
+                        .nextSolution()
+                        .then { solution -> graphsOf(solutions, if (checked(solution).isYes) found + read() else found, read) }
+                        .flattened()
+                }
+            }.flattened()
+}
+
+/**
+ * The solutions of a goal (Prolog text), from the [first] reply of the node, as [solved] gives them: each next one
+ * computed as it is asked for (by hasNext() or next()), none before
+ */
+@JsExport
+@ExperimentalArg2pApi
+class AsyncSolutions internal constructor(
+    private val goal: String,
+    first: SolutionResponse,
+    private val solved: Solved,
+    private val asked: () -> Promise<SolutionResponse>,
+) {
+    // the reply not given yet: the first, then the one asked for
+    private var pending: Promise<SolutionResponse>? = Promise.resolve(first)
+
+    private fun reply(): Promise<SolutionResponse> = pending ?: asked().also { pending = it }
+
+    /** Whether the goal has another solution: computed, if not yet */
+    fun hasNext(): Promise<Boolean> = reply().then { !it.exhausted }
+
+    /** The next solution, the graph of its resolution then given by the graph() of the solver */
+    fun next(): Promise<Solution> = nextSolution().then { solutionOf(it) }
+
+    // The next solution, as the solver of the theory gives it: the reply taken at once, so that another call asks for
+    // the one after it; a reply with no solution left, as it says there is no other
+    internal fun nextSolution(): Promise<LogicSolution> {
+        val reply = pending ?: asked()
+        pending = null
+        return reply.then {
+            if (it.exhausted) pending = Promise.resolve(it)
+            solved.given(it, goal)
+        }
+    }
+
+    /** The solutions left, at most [limit] of them, each asked for once the one before it is given */
+    fun toArray(limit: Int = Int.MAX_VALUE): Promise<Array<Solution>> =
+        if (limit <= 0) {
+            Promise.resolve(emptyArray())
+        } else {
+            hasNext()
+                .then { more ->
+                    if (!more) {
+                        Promise.resolve(emptyArray())
+                    } else {
+                        next().then { solution -> toArray(limit - 1).then { arrayOf(solution) + it } }.flattened()
+                    }
+                }.flattened()
+        }
+}
+
+// A promise of a promise, as JavaScript fulfils it: with the value of the inner one
+private fun <T> Promise<Promise<T>>.flattened(): Promise<T> = unsafeCast<Promise<T>>()

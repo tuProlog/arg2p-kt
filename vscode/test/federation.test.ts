@@ -10,12 +10,12 @@ const state: FederationState = {
     enabled: true,
     name: 'desk',
     code: '0427',
+    address: 'ws://192.168.1.20:51233',
     joinUrl: 'http://192.168.1.20:51234/',
     workers: 8,
-    nearby: [{ id: 'site-a', name: 'laptop', requiresCode: true }],
     sites: [
-        { id: 'site-b', name: 'lab', workers: 4, via: null },
-        { id: 'site-c', name: null, workers: 3, via: null },
+        { id: 'site-b', name: 'lab', workers: 4 },
+        { id: 'site-c', name: null, workers: 3 },
     ],
 };
 
@@ -26,8 +26,8 @@ function server() {
         asked,
         request: <T>(method: string, params: unknown): Promise<T> => {
             asked.push([method, params]);
-            if (method === 'arg2p/federation/pair' && (params as { code: string }).code !== '1234') {
-                return Promise.reject(new Error('site-a refused the link: Wrong code'));
+            if (method === 'arg2p/federation/connect' && (params as { code: string }).code !== '1234') {
+                return Promise.reject(new Error('ws://lab refused the link: Wrong code'));
             }
             return Promise.resolve(state as T);
         },
@@ -40,18 +40,18 @@ describe('Federation', function () {
         const posted: ToFederation[] = [];
         const federation = new Federation(fake, message => posted.push(message), () => undefined);
         await federation.handle({ type: 'ready' });
-        await federation.handle({ type: 'pair', site: 'site-a', code: '0000' });
-        await federation.handle({ type: 'pair', site: 'site-a', code: '1234' });
+        await federation.handle({ type: 'connect', url: 'ws://lab', code: '0000' });
+        await federation.handle({ type: 'connect', url: 'ws://lab', code: '1234' });
         await federation.handle({ type: 'newCode' });
         deepEqual(fake.asked, [
             ['arg2p/federation', undefined],
-            ['arg2p/federation/pair', { site: 'site-a', code: '0000' }],
-            ['arg2p/federation/pair', { site: 'site-a', code: '1234' }],
+            ['arg2p/federation/connect', { url: 'ws://lab', code: '0000' }],
+            ['arg2p/federation/connect', { url: 'ws://lab', code: '1234' }],
             ['arg2p/federation/newCode', undefined],
         ]);
         deepEqual(posted, [
             { type: 'state', state },
-            { type: 'failed', site: 'site-a', message: 'site-a refused the link: Wrong code' },
+            { type: 'failed', linking: true, message: 'ws://lab refused the link: Wrong code' },
             { type: 'state', state },
             { type: 'state', state },
         ]);
@@ -84,16 +84,17 @@ describe('Federation', function () {
 });
 
 describe('The view of the federation', function () {
-    const none = { codes: new Map<string, string>(), failure: null };
+    const none = { url: '', code: '', failure: null };
 
-    it('should show this device, the devices nearby and linked, and the QR code of the page of a phone', function () {
-        const html = view(state, { codes: new Map([['site-a', '12']]), failure: { site: 'site-a', message: 'Wrong <code>' } });
+    it('should show this device, the form linking to another, those linked, and the QR code of the page of a phone', function () {
+        const html = view(state, { url: 'ws://lab', code: '12', failure: { linking: true, message: 'Wrong <code>' } });
         ok(html.includes('value="desk"'));
         ok(html.includes('0427'));
         ok(html.includes('8 workers'));
-        ok(html.includes('laptop') && html.includes('data-action="pair" data-site="site-a"'));
-        // the code typed is kept, and a failure told where it happened, escaped
-        ok(html.includes('value="12"'));
+        ok(html.includes('ws://192.168.1.20:51233'));
+        ok(html.includes('data-action="connect"'));
+        // what was typed is kept, and a failure told where it happened, escaped
+        ok(html.includes('value="ws://lab"') && html.includes('value="12"'));
         ok(html.includes('Wrong &#60;code&#62;'));
         ok(html.includes('lab') && html.includes('4 workers') && html.includes('A browser'));
         ok(html.includes('<svg') && html.includes('http://192.168.1.20:51234/'));

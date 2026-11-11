@@ -7,6 +7,10 @@ sitemap:
   disable: true
 ---
 
+> [!WARNING]
+> **Experimental.** The constraints may change in any minor version of arg2p (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 ## Arguments for sets of values
 
 An argument concludes a ground statement: a rule whose conclusion keeps a variable that its premises leave unbound
@@ -25,39 +29,49 @@ c1 :=> -holdsAt(f, 7).
 ```
 
 `holdsAt(f, T)` is one argument, for every T after 1: no argument is built for each value. `ok` is accepted, and
-`-holdsAt(f, 7)` contests the argument at 7 alone, not at 5.
+`-holdsAt(f, 7)` defeats f at 7 alone: f still holds at 5 and at 9. The [time axioms]({{% ref "/docs/modules/temporal" %}})
+turn the extension on themselves.
 
 ---
 
 ## Constraints
 
-A premise `{ C }` is checked as `prolog(C)` once its variables are bound, and kept on the argument while they are
-not. An argument keeps the constraints of its sub-arguments still open, and a binding (a premise, a conflict, a
-query) is admitted only while they may all hold together.
-
-| Constraint | Holds for |
+| Constraint | Decided |
 | --- | --- |
-| `X > 1`, `X >= 1`, `X < 5`, `X =< 5`, `X =:= 3`, `X =\= 3` | the numbers so compared (a dense domain: `{X > 1, X < 2}` has values) |
-| `member(X, [a, b])` | the terms listed |
+| `X > 1`, `X >= 1`, `X < 5`, `X =< 5`, `X =:= 3`, `X = 3`, between sums of numbers and variables, products and quotients by a number (`X + 2*Y =< 10`) | over the numbers, dense (`{X > 1, X < 2}` has values), with any number of variables: the simplex, on exact rationals, decides whether they hold together |
 | `X = a`, `X \= a` | the term, or any other |
-| `C1, C2` | both |
+| any other goal (`member(X, [a, b])`, `X =\= 3`) | run as `prolog(C)` where its rule is used |
 
-A constraint relating two unbound variables waits until one of them is bound; any other goal is checked as by
-`prolog/1` once ground.
+An argument keeps the constraints of its sub-arguments, and a binding (a premise, a conflict, a query) is admitted
+only while they may all hold together: `{T > 1}` supports `holdsAt(f, 5)`, not `holdsAt(f, 0)`, and a rule asking
+for `{T < 0}` of it makes no argument.
 
 ---
 
-## Instances
+## Pieces
 
-The **instance** of an argument for some of its values is an argument of its own, made of the same rules and
-premises, its sub-arguments instantiated alike where the values flow:
+An open argument holds for all its values, and so does an attack on it: the argument for every time after 1 is
+attacked by `-holdsAt(f, 7)`, as it states 7 as well. An attack holding for some of its values alone splits it into
+**pieces**, the argument with constraints added:
 
-- **Supports.** A rule using an open argument for some values (`r1` above, for 5) rests on its instance, saved in the
-  graph, so the attacks on those values (and on them alone) reach it. Through a rule (`r : holdsAt(f, T) => g(T).`),
-  the instance of `g(T)` for 5 rests on the instance of `holdsAt(f, T)` for 5.
-- **Conflicts.** Two arguments conflict when their conclusions unify and their constraints hold together:
-  `-holdsAt(f, 7)` attacks the argument for every time after 1 (it states them all), and the instance for 7, which the
-  graph shows. The instances for 5 or 9 are not attacked: each instance stands or falls on its own values.
+- the piece **attacked**, with the attacker's constraints (`holdsAt(f, 7)`, attacked);
+- the pieces **free**, with the attacker's constraints negated one at a time (`{T > 1, T < 7}` and `{T > 1, T > 7}`,
+  not attacked).
 
-The extension adds arguments and attacks; it removes nothing. With the [flag]({{% ref "/docs/api/flags" %}})
-`temporal`, it is on as well.
+| Attacker | Pieces of `holdsAt(f, T)` with `{T > 1}` |
+| --- | --- |
+| `-holdsAt(f, 7)` | `T = 7` (attacked), `T < 7`, `T > 7` |
+| `-holdsAt(f, T)` with `{T > 5, T =< 8}` | `T > 5, T =< 8` (attacked), `T =< 5`, `T > 8` |
+| `-p(a)`, on `p(X)` | `X = a` (attacked), `X \= a` |
+
+The pieces are split again by the other attacks they meet, until none splits further, and an argument resting on an
+open one is split alike (`r : holdsAt(f, T) => g(T).` gives `g(7)`, attacked, and `g(T)` before and after 7). The
+argument split stays in the graph as it is, attacked and attacking, for all its values. Supports and queries read the pieces
+admitting their values, so `holdsAt(f, 9)` is answered by the piece after 7 though no rule asks for 9, and the whole
+graph and query mode answer alike.
+
+An attack that cannot be bounded on the attacked argument, its region needing variables of the attacker that the
+attacked argument does not have (`c : started(X), {S > X} -> -holdsAt(f, S).`, with X open), holds for all its values.
+Answers show the pieces with their constraints: `holdsAt(f, T) {T > 7}`.
+
+The extension adds arguments and attacks; it removes none.

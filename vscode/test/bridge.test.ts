@@ -26,7 +26,7 @@ function server(answers: Partial<Record<string, (request: any) => Answer[]>>) {
     return { fake, asked };
 }
 
-const solution: SolutionData = { result: 'yes', query: 'a', bindings: [], error: null, graph: { profile: 'aspic_plus', arguments: [], attacks: [] }, branch: 2 };
+const solution: SolutionData = { result: 'yes', query: 'a', bindings: [], error: null, graph: { profile: 'aspicPlus', arguments: [], attacks: [] }, branch: 2 };
 
 describe('Bridge', function () {
     it('should pass the requests of the page on to the server, in a session of its own, and the answers back', async function () {

@@ -2,7 +2,8 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import it.unibo.tuprolog.solve.Solution as LogicSolution
@@ -100,3 +101,14 @@ fun solutionsOf(solutions: Iterator<LogicSolution>): Solutions = Solutions(solut
 /** The solution of the API for [solution] (for the solvers of the modules of arg2p) */
 @InternalArg2pApi
 fun solutionOf(solution: LogicSolution): Solution = Solution(solution)
+
+/** [solution], unless it is a halt: an Arg2pException with its error then */
+@InternalArg2pApi
+fun checked(solution: LogicSolution): LogicSolution {
+    if (solution.isHalt) throw Arg2pException(solution.haltMessage())
+    return solution
+}
+
+/** The error of [this], a halt, as text */
+@InternalArg2pApi
+fun LogicSolution.haltMessage(): String = exception?.let { it.message ?: it.toString() } ?: toString()

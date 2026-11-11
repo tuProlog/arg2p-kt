@@ -108,7 +108,8 @@ export class SolverPanel {
     private async reveal(problem: SyntaxProblem): Promise<void> {
         const go = 'Go to the error';
         const asked = await vscode.window.showWarningMessage(`The theory does not parse at line ${problem.line}.`, go);
-        if (asked !== go) return;
+        // (a problem with no place in the text, nowhere to go)
+        if (asked !== go || !Number.isInteger(problem.line) || !Number.isInteger(problem.column)) return;
         const at = new vscode.Position(problem.line - 1, problem.column - 1);
         const shown = vscode.window.visibleTextEditors.find(it => it.document === this.document);
         await vscode.window.showTextDocument(this.document, { viewColumn: shown?.viewColumn, selection: new vscode.Range(at, at.translate(0, problem.length)) });
@@ -120,7 +121,8 @@ export class SolverPanel {
         this.drawn = theory;
         const edit = new vscode.WorkspaceEdit();
         edit.replace(this.document.uri, new vscode.Range(this.document.positionAt(0), this.document.positionAt(this.document.getText().length)), theory);
-        await vscode.workspace.applyEdit(edit);
+        // (an edit refused, the document closed or read-only, is no change coming back: nothing to keep from the page)
+        if (!(await vscode.workspace.applyEdit(edit))) this.drawn = null;
     }
 
     private saved(): Saved {

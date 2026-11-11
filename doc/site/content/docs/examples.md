@@ -137,7 +137,7 @@ f2 :=> -d.
 ```
 
 ```prolog
-?- arg2p::answerQuery(d, In, Out, Und).
+?- arg2p::solve(d, In, Out, Und).
 ```
 
 Only the part of the graph relevant to `d` is built, which matters on large theories. When the three separate
@@ -169,13 +169,23 @@ the sequence rather than taking `first()`.
 
 ## Evaluating an abstract framework
 
-When you already have arguments and attacks and do not need to build them from rules:
+When you already have arguments and attacks and do not need to build them from rules, write them as a theory of the
+`abstract` profile:
 
 ```prolog
-?- abstract::solve([a, b, c], [(a, b), (b, c)], I, O, U).
+graphBuildMode(abstract).
+a.
+b.
+c.
+a -> b.
+b -> c.
+```
 
-I = [c, a],
-O = [b],
+```prolog
+?- solve(I, O, U).
+
+I = [[c], [a]],
+O = [[b]],
 U = [].
 ```
 
@@ -190,10 +200,10 @@ the playground on the framework, as a theory (`graphBuildMode(abstract).`) alrea
 
 A statement carrying the burden of persuasion has to be *established*: when the arguments for and against it
 cancel out, it fails instead of staying undecided. The burden is declared with `bp/1` and evaluated by the
-`bp_grounded` family of semantics:
+`bpGrounded` family of semantics:
 
 ```prolog
-argumentLabellingMode(bp_grounded).
+argumentLabellingMode(bpGrounded).
 
 bp(guilty).
 r1 : evidence => guilty.

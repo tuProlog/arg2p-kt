@@ -1,9 +1,10 @@
-// The machine solving the theories of arg2p, on the interfaces of 2P-Kt. No package of its own yet: core compiles these
-// sources into its own, for what is published to stay what it was (see core/build.gradle.kts); this project compiles
-// them alone, for the machine to know nothing of arg2p.
+// The machine solving the theories of arg2p, on the interfaces of 2P-Kt: it knows nothing of arg2p, whose core depends on
+// it. What the other modules share of it is marked as InternalArg2pApi, the rest is internal
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
+
 plugins {
     id(
-        libs.plugins.ktMpp.multiplatform
+        libs.plugins.ktMpp.mavenPublish
             .get()
             .pluginId,
     )
@@ -17,16 +18,31 @@ kotlin {
                 api(libs.tuprolog.parser.theory)
             }
         }
+
+        commonTest {
+            dependencies {
+                implementation(libs.tuprolog.test.solve)
+            }
+        }
     }
 }
 
-// The sources belong to core in the IDE, as a directory belongs to one module there
-if (System.getProperty("idea.sync.active") == "true") {
-    kotlin.sourceSets.configureEach { kotlin.setSrcDirs(emptyList<Any>()) }
+// No null checks of the parameters, receivers and platform calls in the machine's code: Kotlin writes one at the entry of
+// every non-private function (6 bytes of bytecode each, 26 in Machine alone), and the JIT of the JVM decides what to inline
+// by bytecode size (35 bytes always, 325 when hot), so they keep small helpers as alloc from being inlined
+tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>("compileKotlinJvm") {
+    compilerOptions.freeCompilerArgs.addAll("-Xno-param-assertions", "-Xno-call-assertions", "-Xno-receiver-assertions")
 }
 
-// Compiled alone for the check that it knows nothing of arg2p, once: its tests are those of core, which runs it
-tasks.matching { it.name.startsWith("js") || it.name.startsWith("compileKotlinJs") || it.name.contains("Dokka") }.configureEach {
-    enabled =
-        false
+// What a change to the machine must not break, in seconds (see jvmQuickTest in core)
+tasks.register<Test>("jvmQuickTest") {
+    group = "verification"
+    description = "Runs the fast tests of the machine"
+    val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
+    dependsOn("jvmTestClasses")
+    testClassesDirs = jvmTest.testClassesDirs
+    classpath = jvmTest.classpath
+    filter.excludeTestsMatching("*.MachineTest.inferenceRate")
+    filter.excludeTestsMatching("*.StdlibNativesTest")
+    outputs.upToDateWhen { false }
 }

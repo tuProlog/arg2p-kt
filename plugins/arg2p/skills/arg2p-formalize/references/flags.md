@@ -6,35 +6,35 @@ replaces the value given for it, and a profile (`graphBuildMode`) presets severa
 
 | Flag | Default | Values |
 | --- | --- | --- |
-| `graphBuildMode(P)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free` |
-| `argumentLabellingMode(S)` | `grounded` | `grounded`, `complete`, `preferred`, `stable`, `semistable`, `ideal`, `eager`, `naive`, `stage`, `cf2`, `stage2`, `conflictfree`, `admissible`, `stronglyadmissible`, `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete` |
-| `statementLabellingMode(M)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
-| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspic_plus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
+| `graphBuildMode(P)` | `aspicPlus` | `aspicPlus`, `aspic`, `aspicDefeasible`, `meta`, `aba`, `abaPlus`, `abstract`, `free` |
+| `argumentLabellingMode(S)` | `grounded` | `grounded`, `complete`, `preferred`, `stable`, `semiStable`, `ideal`, `eager`, `naive`, `stage`, `cf2`, `stage2`, `conflictFree`, `admissible`, `stronglyAdmissible`, `bpGrounded`, `bpGroundedPartial`, `bpGroundedComplete` |
+| `statementLabellingMode(M)` | `statement` | `statement`, `statementPassThrough`, `statementBinary` |
+| `graphExtension(E)` (may repeat) | `standardPref` (with `rebutRestriction` under `aspicPlus`; `rebutRestriction` alone under `aspic`) | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref`; `graphExtension(none).` states none |
 | `orderingPrinciple(P)` | `last` | `last`, `weakest` |
 | `orderingComparator(C)` | `elitist` | `elitist`, `democrat`, `normal` (with `last` only) |
-| `conflictModel(M)` (may repeat) | all four parts (`declared` alone under `aba`, `aba_plus`) | `negation` (`a` vs `-a`), `deontic` (`o`/`p` pairs), `preference` (`sup(X, Y)` vs `sup(Y, X)`), `declared` (`conflict/2,3`); `builtin` for all four, `conflictModel(none).` for none (only the contraries of the languages) |
+| `conflictModel(M)` (may repeat) | all four parts (`declared` alone under `aba`, `abaPlus`) | `negation` (`a` vs `-a`), `deontic` (`o`/`p` pairs), `preference` (`sup(X, Y)` vs `sup(Y, X)`), `declared` (`conflict/2,3`); `builtin` for all four, `conflictModel(none).` for none (only the contraries of the languages) |
 | `queryMode` | on | present, or `queryMode(off).` |
 | `answerMode(M)` | `enumerate` | `enumerate` (one answer per labelling), `credulous` (in: in some labelling, out: out in every one), `skeptical` (in: in every labelling, out: out in some) |
-| `autoTransposition` | on under `aspic_plus` and `aspic` | present, or `autoTransposition(off).` |
+| `autoTransposition` | on under `aspicPlus` and `aspic` | present, or `autoTransposition(off).` |
 | `prologStrictCompatibility` | off | present: the Prolog clauses of the theory are argued |
 | `metaRules`, `metaConflicts` | off (on under `meta`) | present: rules fire only when argued `applicable(Rule)`, conflicts only when argued `conflict(A, B)` |
 | `graphBuilder(B)` | `ruleGraph` | `ruleGraph`, `abstractGraph`: set by the profile |
 | `graphLanguage(L)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`: set by the profile |
 | `naturalTerms.` (a predicate of the theory, not a flag) | off | present in the theory: natural-language-like terms are normalised as the rules are parsed |
-| `modulesPath(P)` | `none` | a directory or a base URL `call_module/2` loads modules from |
+| `modulesPath(P)` | `none` | a directory or a base URL `callModule/2` loads modules from |
 
 ## Semantics
 
 - `grounded`: skeptical, exactly one labelling. "What must be accepted?"
-- `preferred`, `stable`, `complete`, `semistable`, `stage`, `cf2`, `stage2`, `naive`: several labellings, each a
+- `preferred`, `stable`, `complete`, `semiStable`, `stage`, `cf2`, `stage2`, `naive`: several labellings, each a
   solution of its own. A statement in every labelling is **skeptically** accepted; in at least one, **credulously**.
   `stable` may have none.
-- `bp_grounded*`: required by a theory declaring `bp/N`.
+- `bpGrounded*`: required by a theory declaring `bp/N`.
 
 ## Statement labels
 
 With `statement` (the default), a statement is in if some in argument concludes it, otherwise out if some out argument
-does, otherwise und. `statement_binary` merges out and und.
+does, otherwise und. `statementBinary` merges out and und.
 
 ## Ordering
 

@@ -22,25 +22,25 @@ class Profile(_FlagValue):
     """The profile of a theory (graphBuildMode): the flags its definition needs, preset."""
 
     FREE = "free"
-    ASPIC_PLUS = "aspic_plus"
+    ASPIC_PLUS = "aspicPlus"
     ASPIC = "aspic"
-    ASPIC_DEFEASIBLE = "aspic_defeasible"
+    ASPIC_DEFEASIBLE = "aspicDefeasible"
     META = "meta"
     ABA = "aba"
-    ABA_PLUS = "aba_plus"
+    ABA_PLUS = "abaPlus"
     ABSTRACT = "abstract"
 
 
 class Semantics(_FlagValue):
     """The semantics of the argument labelling (argumentLabellingMode)."""
 
-    CONFLICT_FREE = "conflictfree"
+    CONFLICT_FREE = "conflictFree"
     ADMISSIBLE = "admissible"
-    STRONGLY_ADMISSIBLE = "stronglyadmissible"
+    STRONGLY_ADMISSIBLE = "stronglyAdmissible"
     GROUNDED = "grounded"
     COMPLETE = "complete"
     PREFERRED = "preferred"
-    SEMI_STABLE = "semistable"
+    SEMI_STABLE = "semiStable"
     STABLE = "stable"
     IDEAL = "ideal"
     EAGER = "eager"
@@ -48,9 +48,9 @@ class Semantics(_FlagValue):
     STAGE = "stage"
     CF2 = "cf2"
     STAGE2 = "stage2"
-    BP_GROUNDED = "bp_grounded"
-    BP_GROUNDED_PARTIAL = "bp_grounded_partial"
-    BP_GROUNDED_COMPLETE = "bp_grounded_complete"
+    BP_GROUNDED = "bpGrounded"
+    BP_GROUNDED_PARTIAL = "bpGroundedPartial"
+    BP_GROUNDED_COMPLETE = "bpGroundedComplete"
 
 
 class AnswerMode(_FlagValue):
@@ -65,8 +65,8 @@ class StatementLabelling(_FlagValue):
     """The labelling of the statements from that of the arguments (statementLabellingMode)."""
 
     STATEMENT = "statement"
-    STATEMENT_PASS_THROUGH = "statement_pass_through"
-    STATEMENT_BINARY = "statement_binary"
+    STATEMENT_PASS_THROUGH = "statementPassThrough"
+    STATEMENT_BINARY = "statementBinary"
 
 
 class OrderingPrinciple(_FlagValue):

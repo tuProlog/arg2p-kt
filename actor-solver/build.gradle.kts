@@ -9,7 +9,7 @@ plugins {
 dependencies {
     // the public API exposes the types of the core (Arg2pSolver.parallel())
     api(project(":core"))
-    testImplementation(kotlin("test-junit"))
+    testImplementation(kotlin("test-junit5"))
 
     implementation(platform(libs.akka.bom))
     implementation(libs.akka.actor.typed)

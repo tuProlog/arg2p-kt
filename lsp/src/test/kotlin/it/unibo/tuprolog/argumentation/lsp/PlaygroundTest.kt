@@ -12,6 +12,8 @@ class PlaygroundTest {
     private val theory =
         "% the penguin, café\nf1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).\nsup(f2, r1).\n" +
             "name('Hello \"world\"').\n"
+
+    // (the query of the link the playground made, as written then)
     private val query = "buildLabelSets(In, Out, Und)"
 
     // The state above, as the playground writes it

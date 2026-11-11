@@ -17,7 +17,7 @@ something a rule can conclude, and therefore something another argument can atta
 | Rules | a rule always applies | `metaRules` — a rule applies only if `applicable/1` is argued |
 | Conflicts | `conflict/2` facts and built-in conflicts | `metaConflicts` — rules conclude `conflict/2` |
 | Preferences | `sup/2` facts | `graphExtension(defeasiblePref)` — rules conclude `sup/2` |
-| Burden of persuasion | `bp/1` facts read by the `bp_grounded` semantics | `graphExtension(bp)` — rules conclude `bp/1` |
+| Burden of persuasion | `bp/1` facts read by the `bpGrounded` semantics | `graphExtension(bp)` — rules conclude `bp/1` |
 
 ---
 
@@ -144,11 +144,11 @@ removes the attack, as `standardPref` does. The two models are described in the 
 
 This is the one most easily confused with a semantics, so it is worth stating the difference plainly.
 
-**As a fact**, the burden is input to the labelling: the `bp_grounded` family reads `bp/1` facts and uses them
+**As a fact**, the burden is input to the labelling: the `bpGrounded` family reads `bp/1` facts and uses them
 to break deadlocks.
 
 ```prolog
-argumentLabellingMode(bp_grounded).
+argumentLabellingMode(bpGrounded).
 
 bp(guilty).
 r1 : evidence => guilty.

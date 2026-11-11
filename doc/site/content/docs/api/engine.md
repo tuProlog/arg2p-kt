@@ -40,33 +40,36 @@ succeeds only if _Goal_ is labelled IN: use `arg2p::solve/2` to learn the label 
 
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20d.%0Af2%20%3A%3D%3E%20-d.&query=arg2p%3A%3Asolve%28d%2C%20Res%29)
 
+The labels of the statements unifying with a goal in three lists, as `solve/3` gives those of the whole theory:
+
+```prolog
+arg2p::solve(Goal, In, Out, Und).
+```
+
 ```prolog
 arg2p::solve.
 ```
 
-builds the labelling of the whole theory without binding anything, to read it programmatically afterwards.
+builds the labelling of the whole theory without binding anything, to read it programmatically afterwards (the
+predicate the Kotlin [`evaluate`]({{% ref "/docs/api/kotlin" %}}) helper uses).
 
-## Older forms
+## Earlier forms
 
-The predicates `arg2p::solve` is made of are available too, as they were before it:
+The entry points of earlier versions are kept for the theories and programs written for them, each calling `solve`:
+use `solve` in new ones.
 
 ```prolog
-buildLabelSets(StatementIN, StatementOUT, StatementUND).   % as solve/3
+buildLabelSets(StatementIN, StatementOUT, StatementUND).   % solve/3
+buildLabelSetsSilent.                                       % solve/0
+answerQuery(Goal, In, Out, Und).                            % solve/4
+answerQuery(Goal, Res).                                     % solve/2
+answerQuery(Goal).                                          % solve/1
 buildLabelSets([StatementIN, StatementOUT, StatementUND], [ArgumentIN, ArgumentOUT, ArgumentUND]).
-buildLabelSetsSilent.                                       % as solve/0
-answerQuery(Goal, In, Out, Und).                            % the labels of Goal in three lists
-answerQuery(Goal, Res).                                     % as solve/2
-answerQuery(Goal).                                          % as solve/1
-```
-
-`buildLabelSets/2` gives the arguments labelled as well as the statements, and
-
-```prolog
 buildLabelSets.
 ```
 
-builds and prints (in the output and graph tabs) both the argument and statement labellings of the theory.
-`buildLabelSetsSilent` is the predicate used by the Kotlin [`evaluate`]({{% ref "/docs/api/kotlin" %}}) helper.
+`buildLabelSets/2` gives the arguments labelled as well (solve/3, then `store::argumentLabelling/3`), and
+`buildLabelSets/0` prints both labellings and the graph (in the output and graph tabs, see the module `graphPrinter`).
 
 ## Other entry points
 

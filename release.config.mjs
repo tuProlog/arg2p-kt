@@ -1,11 +1,12 @@
 // Everything a release publishes, built before any of it is: the version of the release written where the plugins for
-// AI assistants and the MCP Registry state it (committed with the release, see the git plugin below), then the Maven
-// publications (signed, in the repository of the project), the npm package, the plugins and the language server, at the
+// AI assistants, the MCP Registry and the components of the user interface (ui/package.json) state it (committed with the
+// release, see the git plugin below), then the Maven publications (signed, in the repository of the project), the npm
+// packages (arg2p, and the components built against it), the plugins and the language server, at the
 // version of the release (the build reads it from its tag otherwise, which is not there yet). ${nextRelease.version} is
 // resolved by semantic-release, not by node.
 var prepareCmd = [
     'node plugins/version.mjs ${nextRelease.version} || exit 1',
-    './gradlew -PforceVersion=${nextRelease.version} publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication assembleJsPackage :plugins:pluginPackages :lsp:shadowJar || exit 1',
+    './gradlew -PforceVersion=${nextRelease.version} publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication assembleJsPackage :ui:uiBuild :plugins:pluginPackages :lsp:shadowJar || exit 1',
 ].join('\n')
 
 // The uploads alone, of what prepareCmd built, at the version of the tag of the release: a failed upload fails the
@@ -14,6 +15,8 @@ var prepareCmd = [
 var publishCmd = [
     './gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication || exit 1',
     './gradlew publishJsPackageToNpmjsRegistry || exit 1',
+    // the components of the user interface, after arg2p, which they name as a peer (trusted publishing, as arg2p)
+    '(cd ui && npm publish --access public) || exit 1',
 ].join('\n')
 
 // Runs only when a release was actually published. The back-merge step in

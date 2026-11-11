@@ -1,0 +1,59 @@
+%! locality(-Locality)
+%  Query mode: the label of an argument only depends on the arguments it depends on (directionality)
+locality(directional).
+
+%! argumentLabelling
+%  Each cf2 labelling in turn, left as the active context.
+argumentLabelling :-
+    compute(naive).
+
+%! compute(+Base)
+%  Each labelling built with the labellings Base (naive or stage) of each component, left as the active context.
+compute(Base) :-
+    store::argumentIds(Args),
+    contextActive(Branch),
+    contextBranch(Branch, NewBranch),
+    store::leaveOutArguments,
+    (
+        computeIteratively(Base, Branch, Args, [])
+    ;
+        % the branches are released on backtracking, as the labellings built on them
+        contextCheckout(Branch),
+        contextDrop(NewBranch),
+        fail
+    ).
+
+% Args still to be evaluated, Suppressed already attacked by the extension (moved with the next step)
+computeIteratively(_, _, [], []).
+computeIteratively(Base, OriginBranch, [], [S|Suppressed]) :-
+    evaluate(Base, OriginBranch, [S|Suppressed]).
+computeIteratively(Base, OriginBranch, [A|Args], Suppressed) :-
+    % the first component in topological order is not attacked by the other ones
+    store::sccs([A|Args], [Next|_]),
+    utils::appendLists([Suppressed, Next], ToEvaluate),
+    evaluate(Base, OriginBranch, ToEvaluate),
+    utils::subtract([A|Args], Next, Others),
+    findall(X, (
+        member(X, Others),
+        once((store::attacksById(Y, X), store::argumentLabelById(in, Y)))
+    ), NewSuppressed),
+    utils::subtract(Others, NewSuppressed, Remaining),
+    computeIteratively(Base, OriginBranch, Remaining, NewSuppressed).
+
+evaluate(Base, OriginBranch, Args) :-
+    contextActive(Branch),
+    contextBranch(Branch, NewBranch),
+    (
+        moveArgs(Args, OriginBranch),
+        Base::argumentLabelling
+    ;
+        contextCheckout(Branch),
+        contextDrop(NewBranch),
+        fail
+    ).
+
+moveArgs([], _).
+moveArgs([H|T], Branch) :-
+    store::inGraph(Branch, H),
+    store::takeInArgument(H),
+    moveArgs(T, Branch).

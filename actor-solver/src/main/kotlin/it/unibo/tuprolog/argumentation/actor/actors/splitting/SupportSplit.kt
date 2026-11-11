@@ -3,14 +3,14 @@ package it.unibo.tuprolog.argumentation.actor.actors.splitting
 import akka.actor.typed.javadsl.ActorContext
 import akka.cluster.sharding.typed.javadsl.ClusterSharding
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.actors.HelpWorker
-import it.unibo.tuprolog.argumentation.actor.libs.TheoryChainer
+import it.unibo.tuprolog.argumentation.actor.libraries.theoryChainer.TheoryChainer
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.actor.message.KbMessage
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore
@@ -29,7 +29,7 @@ internal object SupportSplit : SplittingPrinciple {
         helperSolver.loadStaticKb(Theory.parse("$rule.", helperSolver.operators))
         arg2pScope {
             helperSolver
-                .solve("parser" call "convertAllRules"(X))
+                .solve("store" call "ruleClauses"(X))
                 .filter { it.isYes }
                 .map { it.substitution[X]!! }
                 .first()
@@ -65,7 +65,7 @@ internal object SupportSplit : SplittingPrinciple {
                 worker.ref.tell(Add(it))
                 worker.theory.assertA(Struct.parse(it, worker.theory.operators))
             }
-            arg2pScope { solver.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+            arg2pScope { solver.solve(atomOf("contextReset")).first() }
             worker
         }
 
@@ -86,7 +86,7 @@ internal object SupportSplit : SplittingPrinciple {
         context.log.info("Updating $rule")
         worker.theory.assertA(Struct.parse(rule, worker.theory.operators))
         worker.rules.add(rule)
-        arg2pScope { worker.theory.solve("context_reset" and ("parser" call "convertAllRules"(`_`))).first() }
+        arg2pScope { worker.theory.solve(atomOf("contextReset")).first() }
         worker.ref.tell(Add(rule))
     }
 

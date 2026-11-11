@@ -66,7 +66,8 @@ The same applies to parsing a theory — see [Kotlin API]({{% ref "/docs/api/kot
 
 Flag values are module identifiers, and an unknown value names no module: the error names the value. Check the spelling against
 the [Flags Reference]({{% ref "/docs/api/flags" %}}) — for instance the grounded semantics is `grounded`, and
-there is no `grounded_hash` mode.
+`semiStable` is written in camelCase. The spellings of the papers and of the versions before 0.26.0 (`grounded_hash`,
+`semistable`, `bp_grounded`, ...) are still read: see [theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}}).
 
 ---
 
@@ -81,15 +82,15 @@ first Prolog solution, discards the rest. Iterate over all solutions instead.
 
 ## A causality query fails or raises a type error
 
-In the [causality module]({{% ref "/docs/modules/causality" %}}), `ness/3` and `ness_original/3` require their
+In the [causality module]({{% ref "/docs/modules/causality" %}}), `ness/3` and `nessOriginal/3` require their
 **first argument to be unbound**. Passing a concrete intervention raises a type error; use
-`ness_intervention/2` for that instead.
+`nessIntervention/2` for that instead.
 
 ---
 
 ## A program using the distributed solver does not terminate
 
-The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) runs non-daemon threads for the cluster. Call `leave`
+The [actor solver]({{% ref "/docs/modules/actor-solver" %}}) runs non-daemon threads for the parallel solver. Call `leave`
 when the work is done, or the JVM will stay alive.
 
 ---
@@ -113,7 +114,7 @@ not weaker than its target, so some attacks disappear. The outcome also depends 
 
 ## Rationality postulates are not satisfied
 
-Closure under transposition is on under the profiles `aspic_plus` (the default) and `aspic`, and off under the others,
+Closure under transposition is on under the profiles `aspicPlus` (the default) and `aspic`, and off under the others,
 or where the theory or the flags turn it off (`autoTransposition(off).`). Some postulates require it:
 
 ```prolog

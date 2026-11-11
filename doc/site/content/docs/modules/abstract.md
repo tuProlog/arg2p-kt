@@ -3,60 +3,43 @@ title: Abstract Evaluation
 weight: 26
 ---
 
-## Abstract Evaluation
+## Abstract frameworks
 
-The **abstract evaluation** feature allows you to compute extensions and labellings of an **abstract argumentation framework** (AF) using various semantics.  
-
-An **argumentation framework** is defined by:
-- A set of **arguments**  
-- A set of **attacks** between arguments  
-
-The solver provides two main entry points:
-
----
-
-### `abstract::solve/5`
+An **abstract argumentation framework** (AF) is a set of **arguments** and of **attacks** between them. In arg2p it is a
+theory of the `abstract` [profile]({{% ref "/docs/profiles" %}}), solved as any other theory:
 
 ```prolog
-abstract::solve(Arguments, Attacks, I, O, U).
-````
+graphBuildMode(abstract).
 
-* **First parameter (`Arguments`)**: list of arguments
-* **Second parameter (`Attacks`)**: list of attacks (pairs of arguments)
-* **Third parameter (`I`)**: the set of arguments labelled **In**
-* **Fourth parameter (`O`)**: the set of arguments labelled **Out**
-* **Fifth parameter (`U`)**: the set of arguments labelled **Undecided**
+a.
+b.
+c.
+a -> b.
+b -> c.
+```
 
-This version returns the computed labelling under the chosen semantics.
+An argument is stated as `a.` or `arg(a).`, an attack as `a -> b.`, `att(a, b).`, or `a <-> b.` for a mutual one; both may be
+derived by Prolog clauses (`X -> Y :- beats(X, Y).`), and an argument attacking or attacked is an argument as well. Any
+other clause is data for these.
 
-#### Usage Example
+Each argument concludes its own name, so the statements of the framework are its arguments:
 
 ```prolog
-?- abstract::solve([a, b, c], [(a, b), (b, c)], I, O, U).
+?- solve(I, O, U).
 
-I = [c, a],
+I = [[c], [a]],
+O = [[b]],
+U = [].
+
+?- solve(b, I, O, U).
+
+I = [],
 O = [b],
 U = [].
 ```
 
-In this example, under **grounded** semantics:
-
-* Arguments `a` and `c` are **In**
-* Argument `b` is **Out**
-* No argument is **Undecided**
-
----
-
-### `abstract::solve/2`
-
-```prolog
-abstract::solve(Arguments, Attacks).
-```
-
-This version **does not return values directly**.
-Instead, the **argumentation graph** can be inspected programmatically or using:
-
-* The **argument graph** of the [playground](https://tuprolog.github.io/arg2p-kt-web/) and of the extension of VS Code
+Under **grounded** semantics `a` and `c` are **In**, `b` is **Out**. The graph of the framework can be inspected as any
+other: in the [playground](https://tuprolog.github.io/arg2p-kt-web/), in the extension of VS Code, or through the API.
 
 ---
 
@@ -75,3 +58,5 @@ files, exported to APX and TGF, and shared as links:
 [try the framework above](https://tuprolog.github.io/arg2p-kt-web/?arguments=a%2Cb%2Cc&attacks=a-b%2Cb-c),
 built from `?arguments=a,b,c&attacks=a-b,b-c`. Both `,` and `;` separate items, and an attack
 may be written `a-b` or `a>b`; arguments mentioned only in `attacks` are added to the graph automatically.
+[Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f1%20%3A%3D%3E%20a.%0Af2%20%3A%3D%3E%20-a.&query=arg2p%3A%3Asolve&flags=statementLabellingMode%28statement%29.%0AargumentLabellingMode%28preferred%29.%0AorderingPrinciple%28last%29.%0AorderingComparator%28elitist%29.%0AgraphExtension%28standardPref%29.%0AqueryMode.)
+— the link carries the whole flag block, since a shared link replaces the flags editor wholesale.

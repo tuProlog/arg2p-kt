@@ -39,12 +39,12 @@ class EngineBenchmark {
         attacks: Set<Pair<Int, Int>>,
         n: Int,
     ): Workload {
-        val arguments = (0 until n).joinToString(", ", "[", "]") { "a$it" }
-        val pairs = attacks.joinToString(", ", "[", "]") { (a, b) -> "(a$a, a$b)" }
+        val arguments = (0 until n).joinToString("") { "a$it.\n" }
+        val pairs = attacks.joinToString("") { (a, b) -> "a$a -> a$b.\n" }
         return Workload(
-            "argumentLabellingMode($semantics).",
+            "argumentLabellingMode($semantics).\ngraphBuildMode(abstract).\n$arguments$pairs",
             null,
-            "findall(I, abstract::solve($arguments, $pairs, I, _, _), _)",
+            "findall(I, solve(I, _, _), _)",
         )
     }
 
@@ -59,13 +59,13 @@ class EngineBenchmark {
             "resolution-attackers" to
                 Workload(
                     "r0 : p0(X) => p1(X).\nf1 :=> p0(c1).$config",
-                    "context_reset, parser:::convertAllRules(_)",
-                    "findall(C, (between(1, 2000, _), attackCandidates::findPossibleAttackers($argument, C)), _)",
+                    "contextReset, store::rulesRead",
+                    "findall(C, (between(1, 2000, _), attackSearch::findPossibleAttackers($argument, C)), _)",
                 ),
-            "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "buildLabelSets(_, _, _)"),
-            "graph-conflicts" to Workload(theories.getValue("conflicts")(100) + config, null, "buildLabelSets(_, _, _)"),
-            "graph-strict" to Workload(theories.getValue("strict")(100) + config, null, "buildLabelSets(_, _, _)"),
-            "query-chain" to Workload(theories.getValue("chain")(40) + config + "\nqueryMode.", null, "answerQuery(p8(X), _, _, _)"),
+            "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "solve(_, _, _)"),
+            "graph-conflicts" to Workload(theories.getValue("conflicts")(100) + config, null, "solve(_, _, _)"),
+            "graph-strict" to Workload(theories.getValue("strict")(100) + config, null, "solve(_, _, _)"),
+            "query-chain" to Workload(theories.getValue("chain")(40) + config + "\nqueryMode.", null, "solve(p8(X), _, _, _)"),
             "preferred-pairs" to abstractFramework("preferred", families.getValue("pairs")(16), 16),
             "complete-pairChain" to abstractFramework("complete", families.getValue("pairChain")(12), 12),
         )

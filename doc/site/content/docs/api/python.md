@@ -7,7 +7,7 @@ weight: 36
 
 The Python package `arg2p` is the [API of arg2p]({{% ref "/docs/api/kotlin" %}}) in snake case: a solver for a
 theory (`Arg2p`), its flags (`Flags`, with an enumeration for the values of each), its answers, graphs and
-solutions, the causality tests, and the clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}).
+solutions, the causality tests, and the parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}).
 It runs the library of the JVM through [JPype](https://jpype.readthedocs.io), on the Java runtime its wheel bundles:
 no Java is needed.
 
@@ -41,7 +41,7 @@ sup(r1, r2).
 
 (answer,) = arg2p.answer("a")          # an answer for each labelling: one under grounded
 answer.in_statements                   # ['a']
-arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], written -a
+arg2p.answer("-a")[0].out_statements   # [Struct(functor='-', args=('a',))], written - a
 ```
 
 `answer` gives an answer for each labelling, or the one across them all with the flag `answerMode(credulous)` or
@@ -104,7 +104,7 @@ stages of the last resolution.
 For a graph too large for these objects, `compact_graphs()` and `compact_graph()` give all it tells as arrays, with no object for
 an argument: an argument is a position in `conclusions`, `top_rules` and `labels`, and in the lists of `rules(p)`, `groundings(p)` and
 so on; `attackers`, `targets`, `on` and `attack_type_of` are parallel, as `supporters` and `supported`. `identifier(p)` and
-`descriptor(p)` name an argument as a graph does. It holds no reference to the solver. `compact_graph_at(branch)` gives the graph of a branch, and the solver of a cluster has `compact_graphs()` and `compact_graph()` as well.
+`descriptor(p)` name an argument as a graph does. It holds no reference to the solver. `compact_graph_at(branch)` gives the graph of a branch, and the client solver has `compact_graphs()` and `compact_graph()` as well.
 
 ---
 
@@ -122,50 +122,46 @@ Python values: atoms as strings, numbers as numbers, lists as lists, compound te
 
 ### Causality
 
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
+
 ```python
-causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-causality.ness("a", "b")      # the intervention, [Struct(functor='-', args=('a',))]: None if a is not a cause
-causality.but_for("a", "b")   # True
+arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+next(arg2p.solve("causality::ness(X, a, b)")).text("X")   # '[- a]': no solution if a is not a NESS cause of b
+next(arg2p.solve("causality::butFor(a, b)")).is_yes        # True
 ```
 
 ---
 
 ### The parallel solver
 
-A `ThreadedCluster` builds the graph with workers on the threads of the JVM, and with those of the clusters it is
-federated with (on the JVM, Node.js or in browsers), over WebSockets:
+A `ThreadedSolver` builds the graph with solvers on the threads of the JVM. A `Federation` adds those of other parallel solvers
+(on the JVM, Node.js or in browsers), over WebSockets:
 
 ```python
-from arg2p import ThreadedCluster
+from arg2p import Federation, ThreadedSolver
 
-with ThreadedCluster(threads=1) as evaluating, ThreadedCluster(threads=4) as lending:
-    port = evaluating.listen(0, "127.0.0.1")
-    lending.connect(f"ws://127.0.0.1:{port}")   # or discover() on both, on a local network
-                                                # (connect(uri, code) to one requiring a code: requires_code, code)
+with ThreadedSolver(threads=1) as evaluating, ThreadedSolver(threads=4) as lending:
+    federation = Federation(evaluating)
+    port = federation.listen(0, "127.0.0.1")
+    Federation(lending).connect(f"ws://127.0.0.1:{port}")
+                                                # connect(uri, code) to one requiring a code (requires_code, code)
     evaluating.load(theory)
     evaluating.solve("a")                       # EvaluationResponse(in_args=[Response(claim='a', ...)], ...)
 ```
 
-A `LocalCluster` runs its nodes in turn, on the calling thread.
-
-The `solver` of a cluster solves any goal as `Arg2p` does, the graph built by the workers (see the
-[parallel solver]({{% ref "/docs/modules/parallel-solver#as-a-solver-of-arg2p" %}})), and `stats` tells what the
-federation does:
+The `solver` of a parallel solver solves any goal as `Arg2p` does, the graph built by those solvers (see the
+[parallel solver]({{% ref "/docs/modules/parallel#as-a-solver-of-arg2p" %}})), and `evaluation` tells what each built:
 
 ```python
-solver = evaluating.solver
+solver = evaluating.goals
 solution = solver.solve("arg2p::solve(In, Out, Und)").next()
 solution.text("In")                          # as for Arg2p
 solver.graph()                               # the Graph of the solution
 solver.answer("a")[0].in_statements          # as Arg2p.answer
-evaluating.stats.evaluation.workers          # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
-evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations, the peers kept
+evaluating.evaluation.workers                # [WorkerStats(partition=0, site='site-...', arguments=..., attacks=...), ...]
+evaluating.flags = Flags.defaults().query_mode(False)   # for the next evaluations
 solver.stop()                                # from another thread: the goal being solved ends as a halt
 ```
-
-Discovering with a code required (`discover(require_code=True)`), the clusters heard are `nearby` alone, linked to
-once paired with their code (`pair(site, code)`; see the
-[parallel solver]({{% ref "/docs/modules/parallel-solver#with-a-code" %}})).
 
 ---
 

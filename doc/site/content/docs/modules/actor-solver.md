@@ -5,7 +5,7 @@ weight: 28
 
 ## Distributed Solver
 
-The actor solver evaluates a theory across a cluster of actors instead of a single engine. The knowledge base
+The actor solver evaluates a theory across a parallel solver of actors instead of a single engine. The knowledge base
 is split among the nodes, each node argues over its own fragment, and the partial results are combined into
 the final labelling. It is meant for theories large enough that a single solver becomes the bottleneck.
 
@@ -27,15 +27,15 @@ when [building a solver by hand]({{% ref "/docs/api/kotlin" %}}):
 ```kotlin
 import it.unibo.tuprolog.argumentation.actor.parallel
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
-import it.unibo.tuprolog.argumentation.core.runtime.theory.RuleAnnotations
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers.RuleAnnotations
 
 val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
     otherLibraries = Arg2pSolver.parallel().to2pLibraries(),
 )
 ```
 
-`parallel(hostname, timeout)` takes the host name the node is reached at (`127.0.0.1` by default: a cluster spanning
+`parallel(hostname, timeout)` takes the host name the node is reached at (`127.0.0.1` by default: a parallel solver spanning
 several machines needs one the others can reach) and how long `solve` waits for its answer (60 seconds by default).
 
 ---
@@ -46,18 +46,18 @@ The module is registered under the identifier `parallel` and provides:
 
 | Predicate | Meaning |
 | --- | --- |
-| `join(Port)` | Starts or joins a cluster on the local machine at the given port (a cluster joined before is left first). |
-| `join(Port, Seed)` | Joins an existing cluster, where `Seed` is the `host:port` of a seed node. |
-| `load` | Sends every clause of the static knowledge base to the cluster. |
-| `solve(Goal, In, Out, Und)` | Evaluates the goal across the cluster, binding the three lists of labelled claims; an error past the timeout. |
+| `join(Port)` | Starts or joins a parallel solver on the local machine at the given port (a parallel solver joined before is left first). |
+| `join(Port, Seed)` | Joins an existing parallel solver, where `Seed` is the `host:port` of a seed node. |
+| `load` | Sends every clause of the static knowledge base to the parallel solver. |
+| `solve(Goal, In, Out, Und)` | Evaluates the goal across the parallel solver, binding the three lists of labelled claims; an error past the timeout. |
 | `reset` | Clears the distributed knowledge base; the evaluations under way end with an error. |
-| `leave` | Leaves the cluster and stops the actor system, freeing its port: the knowledge base stays with the nodes that remain. |
+| `leave` | Leaves the parallel solver and stops the actor system, freeing its port: the knowledge base stays with the nodes that remain. |
 
 ---
 
 ## A complete session
 
-The order matters: join the cluster, load the theory, query it, then leave.
+The order matters: join the parallel solver, load the theory, query it, then leave.
 
 ```kotlin
 solver.loadStaticKb(RuleAnnotations.parse(rules, solver.operators))
@@ -70,11 +70,11 @@ println(answer.substitution)
 solver.solve(Struct.parse("leave")).first()
 ```
 
-`load`, `reset` and `solve` raise an error when no cluster is joined (before `join`, or after `leave`).
+`load`, `reset` and `solve` raise an error when no parallel solver is joined (before `join`, or after `leave`).
 
 > [!WARNING]
-> Always call `leave` when you are done. The cluster runs non-daemon threads, and a program that does not leave
-> the cluster may fail to terminate.
+> Always call `leave` when you are done. The parallel solver runs non-daemon threads, and a program that does not leave
+> the parallel solver may fail to terminate.
 
 ---
 

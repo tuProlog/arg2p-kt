@@ -19,12 +19,12 @@ sup(r1, r2).
 
 arg2p.answer("a")[0].in_statements              # ['a'], an answer for each labelling
 (graph,) = arg2p.graphs()
-graph.conclusions("out")                        # ['-a']
+graph.conclusions("out")                        # ['- a']
 
 preferred = Arg2p.of("f1 :=> d.\nf2 :=> -d.", Flags.defaults().argument_labelling_mode(Semantics.PREFERRED))
 len(preferred.graphs())                         # 2
 
-Arg2p.of("r1 :=> a.\nr2 : a => b.").causality.but_for("a", "b")   # True
+next(Arg2p.of("r1 :=> a.\nr2 : a => b.").solve("causality::butFor(a, b)")).is_yes   # True
 ```
 
 See [the documentation](https://tuprolog.github.io/arg2p-kt/docs/api/python/) for the whole API: flags, graphs,

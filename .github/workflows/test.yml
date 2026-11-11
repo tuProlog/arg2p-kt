@@ -20,7 +20,7 @@ on:
         type: boolean
         default: true
       vscode:
-        description: The tests of the extension of VS Code
+        description: The tests of the extension of VS Code, and of the components of its solver page (ui/)
         type: boolean
         default: true
       coverage:
@@ -57,7 +57,7 @@ jobs:
           build-command: true
           # with the coverage, the tests instrumented and those of the Prolog modules (build/reports/coverage)
           check-command: >-
-            ./gradlew jvmTest :lsp:test --continue
+            ./gradlew jvmTest :lsp:test :actor-solver:test --continue
             ${{ inputs.coverage && runner.os == 'Linux' && '-Pcoverage coverageReports' || '' }}
           should-run-codecov: false
       - name: Keep the coverage, for the documentation site
@@ -126,13 +126,17 @@ jobs:
         with:
           node-version-file: package.json
           cache: npm
-          cache-dependency-path: vscode/package-lock.json
+          cache-dependency-path: |
+            vscode/package-lock.json
+            ui/package-lock.json
       - uses: DanySK/build-check-deploy-gradle-action@4.0.51
         with:
           java-version: ${{ env.JAVA_VERSION }}
           # the extension carries the language server: its tests run it, through JSON-RPC, and the extension in VS Code
           # (on the display of xvfb), as vscodeTest does; the package for any platform fails here rather than once released
           build-command: ./gradlew :vscode:vscodeServer
+          # the components of its solver page (ui/, which it builds with) tested too, against the npm package of arg2p of
+          # this commit
           check-command: |
-            xvfb-run -a ./gradlew :vscode:vscodeTest :vscode:vscodePackage
+            xvfb-run -a ./gradlew :ui:uiTest :vscode:vscodeTest :vscode:vscodePackage
           should-run-codecov: false
