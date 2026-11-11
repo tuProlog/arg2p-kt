@@ -13,13 +13,13 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.Solution
+import it.unibo.tuprolog.solve.SolutionStream
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
 import it.unibo.tuprolog.solve.channel.InputChannel
 import it.unibo.tuprolog.solve.channel.InputStore
 import it.unibo.tuprolog.solve.channel.OutputChannel
 import it.unibo.tuprolog.solve.channel.OutputStore
-import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.directives.ClausePartition
 import it.unibo.tuprolog.solve.directives.partition
 import it.unibo.tuprolog.solve.directives.plus
@@ -122,7 +122,6 @@ open class VmSolver(
                     operators = getAllOperators(libraries).toOperatorSet(),
                     inputChannels = inputChannels,
                     outputChannels = outputChannels,
-                    startTime = 0,
                 ),
             )
         if (!trustKb) {
@@ -260,8 +259,9 @@ open class VmSolver(
     final override fun solve(
         goal: Struct,
         options: SolveOptions,
-    ): Sequence<Solution> {
-        var solutionSequence = solutionsOnMachine(goal, options)
+    ): SolutionStream {
+        val machine = machineFor(goal, options)
+        var solutionSequence = solutionsOn(machine, goal)
         if (flags[UniqueSolutions] == UniqueSolutions.ON) {
             solutionSequence = solutionSequence.distinctSolutions()
         }
@@ -271,13 +271,14 @@ open class VmSolver(
         if (options.isEager) {
             solutionSequence = solutionSequence.buffered()
         }
-        return solutionSequence
+        return MachineSolutionStream(solutionSequence.iterator(), machine)
     }
 
-    private fun solutionsOnMachine(
+    // The machine solving [goal] as [options] ask, its environment the current context of the solver
+    private fun machineFor(
         goal: Struct,
         options: SolveOptions,
-    ): Sequence<Solution> {
+    ): Machine {
         val program = program()
         val environment =
             ExecutionEnvironment(
@@ -291,19 +292,21 @@ open class VmSolver(
                 inputChannels = inputChannels,
                 outputChannels = outputChannels,
                 customData = currentContext.customData,
-                startTime = currentTimeInstant(),
-                maxDuration = options.timeout,
+                chronometer = options.createChronometer(),
                 program = program,
                 theoryVisible = theoryVisible,
             )
         currentContext = PrologExecutionContext(environment)
-        val machine = Machine(program, environment)
-        // (no deadline past the last instant: a timeout that large is none)
-        val deadline =
-            if (options.timeout >= Long.MAX_VALUE - environment.startTime) Long.MAX_VALUE else environment.startTime + options.timeout
+        return Machine(program, environment)
+    }
+
+    private fun solutionsOn(
+        machine: Machine,
+        goal: Struct,
+    ): Sequence<Solution> {
         // (the bindings of the anonymous variables are not reported, nor those of the wildcards if hidden)
         val hideWildcards = flags[ShowWildCardVariablesInSolutions] == ShowWildCardVariablesInSolutions.OFF
-        val solutions = machine.solve(goal, deadline, theoryVisible).iterator()
+        val solutions = machine.solve(goal, theoryVisible).iterator()
         // (hasNext tells whether a solution may still come, without looking for it, so that a caller asking for one
         // solution does not pay for the next; a No comes when a run finds nothing, none after a solution that left no
         // choice point)

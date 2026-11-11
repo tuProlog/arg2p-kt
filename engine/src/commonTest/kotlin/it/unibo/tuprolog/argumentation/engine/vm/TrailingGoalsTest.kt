@@ -5,6 +5,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A call followed by goals that compile to no call (true, an inline unification, an inline type test) is not the last call of
@@ -24,7 +25,7 @@ class TrailingGoalsTest {
 
     private fun yes(goal: String): Boolean {
         val solver = solverWithTheory(theory)
-        return solver.solve(Struct.parse(goal, solver.operators), 5000).first().isYes
+        return solver.solve(Struct.parse(goal, solver.operators), 5.seconds).first().isYes
     }
 
     @Test

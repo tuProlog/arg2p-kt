@@ -31,14 +31,14 @@ object RuleAnnotations {
     ): Theory = Theory.of(Unificator.default, clauses(text, operators))
 
     /**
-     * The theory of [text] for a solver of [unificator] reading its clauses, which the machine does by its own index: listed, with
-     * no index of it to build for each solver
+     * The theory of [text] for a solver of [unificator] reading its clauses, which the machine does by its own index (tuProlog's
+     * theory indexes its clauses only once asked to look them up)
      */
     fun parse(
         text: String,
         operators: OperatorSet,
         unificator: Unificator,
-    ): Theory = Theory.listedOf(unificator, clauses(text, operators))
+    ): Theory = Theory.of(unificator, clauses(text, operators))
 
     // The clauses of [text]: read off the text, as those of an indexed theory take a time growing with their square to read
     private fun clauses(

@@ -33,8 +33,9 @@ class Cache :
         }
     }
 
-    // The theory what the cache holds was read from, for a solver with no versions of its theory (see follow)
-    private var theory: Any? = null
+    // The theory what the cache holds was read from, for a solver with no versions of its theory (see follow), and the
+    // copies of it the solvers of the modules were given (see copied)
+    private var theories: List<Any> = emptyList()
 
     /**
      * The cache used by [call]: on a solver with no versions of its theory, what it holds is forgotten when the theory is
@@ -46,10 +47,22 @@ class Cache :
 
     /** As follow(call), for a call of a solver with no versions of its theory, solving against [staticKb] */
     internal fun follow(staticKb: Any) {
-        if (staticKb !== theory) {
+        if (theories.none { it === staticKb }) {
             store.clear()
-            theory = staticKb
+            theories = listOf(staticKb)
         }
+    }
+
+    /**
+     * The solver of a module given [copy] of [staticKb], the theory of its caller (tuProlog's solvers load a copy of the
+     * theory they are given): the calls solved against either solve against the same theory
+     */
+    internal fun copied(
+        staticKb: Any,
+        copy: Any,
+    ) {
+        follow(staticKb)
+        if (theories.none { it === copy }) theories = theories + copy
     }
 
     override val alias = "prolog.argumentation.cache"

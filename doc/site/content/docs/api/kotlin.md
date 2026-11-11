@@ -247,10 +247,10 @@ val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
 )
 ```
 
-The libraries also run on the solver of 2P-Kt (`PrologSolverFactory`, from its `solve-prolog` package, not a
-dependency of Arg2P), where module calls go through a slower path. That solver loses bindings a goal left to
-solve still needs (a bug the engine of Arg2P fixes), unless it tracks every variable: set
-`TrackVariables.ON` in its flags, besides `Unknown.FAIL`.
+The libraries also run on the solver of 2P-Kt 4 (`PrologSolverFactory`, from its `solve-prolog` package, not a
+dependency of Arg2P), with `Unknown.FAIL` in its flags as above: module calls go through a slower path there, and the
+same theory takes far longer and allocates far more than on the engine of Arg2P (`TuPrologEngineBenchmark` in the
+core compares them).
 
 ---
 

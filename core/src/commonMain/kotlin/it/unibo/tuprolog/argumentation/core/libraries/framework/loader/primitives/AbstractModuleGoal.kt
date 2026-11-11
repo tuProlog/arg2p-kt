@@ -14,9 +14,9 @@ import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.SolveOptions
-import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Solve
+import kotlin.time.Duration
 
 /**
  * A module call: its goal solved against the libraries of the module, loaded by [loader] at the first call.
@@ -93,7 +93,7 @@ internal abstract class AbstractModuleGoal(
                 loader.solverOf(request, module)
             }
         // the time the resolution has left
-        val remaining = request.context.let { it.maxDuration - (currentTimeInstant() - it.startTime) }.coerceAtLeast(0)
+        val remaining = request.context.remainingTime.coerceAtLeast(Duration.ZERO)
         return sequence {
             yieldAll(
                 solver

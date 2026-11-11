@@ -26,7 +26,6 @@ import it.unibo.tuprolog.core.Indicator
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
-import it.unibo.tuprolog.solve.currentTimeInstant
 import it.unibo.tuprolog.solve.exception.ResolutionException
 import it.unibo.tuprolog.solve.exception.TimeOutException
 import it.unibo.tuprolog.solve.exception.warning.MissingPredicate
@@ -81,11 +80,13 @@ internal fun Machine.housekeeping(arity: Int) {
     if (heap.top > gcThreshold) collect(arity)
     if (callsSinceCheck >= CHECK_EVERY) {
         callsSinceCheck = 0
-        if (currentTimeInstant() > deadline) {
+        // (a reading of the time only for a resolution with a limit)
+        val chronometer = environment.chronometer
+        if (chronometer.checkNow()) {
             val context: ExecutionContext = PrologExecutionContext(environment)
-            throw Halt(TimeOutException(exceededDuration = environment.maxDuration, context = context))
+            throw Halt(TimeOutException(exceededDuration = chronometer.timeout, context = context))
         }
-        if (resolutionInterrupted()) {
+        if (cancelled || resolutionInterrupted()) {
             val context: ExecutionContext = PrologExecutionContext(environment)
             throw Halt(ResolutionException(INTERRUPTED, context = context))
         }

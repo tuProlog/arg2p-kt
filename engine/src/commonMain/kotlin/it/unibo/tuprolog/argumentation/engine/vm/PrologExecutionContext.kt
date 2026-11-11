@@ -9,8 +9,6 @@ import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.solve.TimeDuration
-import it.unibo.tuprolog.solve.TimeInstant
 import it.unibo.tuprolog.solve.channel.InputStore
 import it.unibo.tuprolog.solve.channel.OutputStore
 import it.unibo.tuprolog.solve.data.CustomDataStore
@@ -20,6 +18,7 @@ import it.unibo.tuprolog.solve.sideffects.SideEffect
 import it.unibo.tuprolog.theory.MutableTheory
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.unify.Unificator
+import it.unibo.tuprolog.utils.time.Chronometer
 
 /**
  * The execution context the primitives of the libraries are called in (tuProlog's `ExecutionContext`): the
@@ -58,11 +57,8 @@ internal data class PrologExecutionContext(
     override val customData: CustomDataStore
         get() = environment.customData
 
-    override val startTime: TimeInstant
-        get() = environment.startTime
-
-    override val maxDuration: TimeDuration
-        get() = environment.maxDuration
+    override val chronometer: Chronometer
+        get() = environment.chronometer
 
     override val substitution: Substitution.Unifier
         get() = Substitution.empty()
@@ -132,7 +128,7 @@ internal data class PrologExecutionContext(
 
     override fun apply(sideEffects: Sequence<SideEffect>): PrologExecutionContext = super.apply(sideEffects) as PrologExecutionContext
 
-    override fun toString(): String = "PrologExecutionContext(procedure=$procedure, startTime=$startTime, maxDuration=$maxDuration)"
+    override fun toString(): String = "PrologExecutionContext(procedure=$procedure, maxDuration=$maxDuration)"
 }
 
 /** The libraries of the root of the resolution of this context (those of the user: a module call sees its own) */

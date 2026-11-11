@@ -24,8 +24,7 @@ class StdlibNativesTest {
             functions = DefaultBuiltins.functions,
         )
 
-    private fun machine(library: Library): Machine =
-        Machine(Program(), ExecutionEnvironment(libraries = Runtime.of(library), startTime = 0))
+    private fun machine(library: Library): Machine = Machine(Program(), ExecutionEnvironment(libraries = Runtime.of(library)))
 
     private val native = machine(DefaultBuiltins)
     private val facade = machine(plain)

@@ -19,6 +19,7 @@ import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.library.Runtime
 import it.unibo.tuprolog.solve.primitive.Solve
 import it.unibo.tuprolog.theory.Theory
+import kotlin.time.Duration
 import it.unibo.tuprolog.core.List as LogicList
 
 /**
@@ -203,13 +204,7 @@ internal class TermCall(
             } else {
                 context.createSolver(libraries = entered.libraries, staticKb = Theory.empty(), dynamicKb = Theory.empty())
             }
-        val remaining =
-            (
-                context.maxDuration - (
-                    it.unibo.tuprolog.solve
-                        .currentTimeInstant() - context.startTime
-                )
-            ).coerceAtLeast(0)
+        val remaining = context.remainingTime.coerceAtLeast(Duration.ZERO)
         return solver
             .solveForCaller(entered.goal, SolveOptions.allLazilyWithTimeout(remaining))
             .haltsRaised()

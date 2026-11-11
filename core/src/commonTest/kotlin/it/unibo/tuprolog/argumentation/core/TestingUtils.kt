@@ -12,15 +12,15 @@ import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.parsing.parse
+import kotlin.time.Duration
 import it.unibo.tuprolog.solve.Solver as BaseSolver
 
 object TestingUtils {
-    private val duration: TimeDuration
-        get() = Long.MAX_VALUE
+    private val duration: Duration
+        get() = Duration.INFINITE
 
     fun solver() = solverWithTheory("")
 

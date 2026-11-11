@@ -25,6 +25,7 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.solve.exception.ResolutionException
+import kotlin.concurrent.Volatile
 import kotlin.jvm.JvmField
 
 /**
@@ -145,10 +146,12 @@ internal class Machine(
     // The builtins by functor (for each program: a machine is made for each solve)
     @JvmField internal val builtinTable = program.builtins { builtinsOf(program) }
 
-    // The time the run must end by, and the calls made since it was last checked
-    @JvmField internal var deadline = Long.MAX_VALUE
-
+    // The calls made since the time limit (the chronometer of the environment) was last checked
     @JvmField internal var callsSinceCheck = 0
+
+    /** Whether the resolution was cancelled (see MachineSolutionStream): read with the time limit, from any thread */
+    @Volatile @JvmField
+    internal var cancelled = false
 
     // Whether the theory of the user is visible when a run starts
     private var initialTheoryVisible = true
@@ -986,11 +989,9 @@ internal class Machine(
      */
     fun solve(
         query: Struct,
-        deadline: Long = Long.MAX_VALUE,
         theoryVisible: Boolean = true,
     ): Sequence<Map<Var, Term>> =
         sequence {
-            this@Machine.deadline = deadline
             initialTheoryVisible = theoryVisible
             reset()
             val compiled = program.compileQuery(query)

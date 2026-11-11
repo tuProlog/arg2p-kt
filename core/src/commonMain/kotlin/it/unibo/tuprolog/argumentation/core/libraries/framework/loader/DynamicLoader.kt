@@ -43,6 +43,8 @@ internal class DynamicLoader(
                     it.loadStaticKb(staticKb)
                     loadedKb[module.name] = staticKb
                 }
+                // (the cache of the theory, the same for the copy of it the solver of the module holds)
+                solver.cache.copied(staticKb, it.staticKb)
             }
 
     override val alias = "prolog.argumentation.loader"

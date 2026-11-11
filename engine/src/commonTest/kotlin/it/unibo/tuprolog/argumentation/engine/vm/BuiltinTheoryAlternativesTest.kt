@@ -9,6 +9,7 @@ import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The clauses the theory of the user gives a builtin are its alternatives: also when the builtin is reached by an inline
@@ -29,7 +30,7 @@ class BuiltinTheoryAlternativesTest {
                 Runtime.of(Library.of("test.behind", clauses = Theory.parse(library).clauses.toList()))
             }
         val solver = solverWithTheory(theory, libraries)
-        val solution = solver.solve(Struct.parse(goal, solver.operators), 5000).first()
+        val solution = solver.solve(Struct.parse(goal, solver.operators), 5.seconds).first()
         return when {
             solution.isYes ->
                 solution.substitution.entries

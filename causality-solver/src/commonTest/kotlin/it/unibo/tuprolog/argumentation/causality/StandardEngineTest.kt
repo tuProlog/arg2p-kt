@@ -7,7 +7,6 @@ import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.flags.FlagStore
-import it.unibo.tuprolog.solve.flags.TrackVariables
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.solve.prolog.PrologSolverFactory
 import it.unibo.tuprolog.theory.Theory
@@ -23,8 +22,7 @@ class StandardEngineTest {
         val arg2p = Arg2pSolver.default(listOf(Flags.defaults().library(), CausalityLibrary()))
         return PrologSolverFactory.mutableSolverWithDefaultBuiltins(
             otherLibraries = arg2p.to2pLibraries(),
-            // tuProlog's solver loses bindings a goal left to solve needs, unless every goal selected is tracked
-            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL).set(TrackVariables, TrackVariables.ON),
+            flags = FlagStore.DEFAULT.set(Unknown, Unknown.FAIL),
             staticKb = Theory.parse(theory, arg2p.operators()),
         )
     }
