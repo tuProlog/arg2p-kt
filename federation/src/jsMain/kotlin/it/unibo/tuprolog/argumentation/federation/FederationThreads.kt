@@ -211,7 +211,7 @@ internal class FederationService(
             FederationMethods.NAME -> reply(call).also { site.name = args[0] }
             FederationMethods.REQUIRES_CODE -> reply(call).also { site.requiresCode = args[0] == "1" }
             FederationMethods.NEW_CODE -> reply(call, site.newCode(args[0]))
-            FederationMethods.LISTEN -> replied(call, links.listen(args[0].toInt()))
+            FederationMethods.LISTEN -> replied(call, links.listen(args[0].toInt(), args[1]))
             FederationMethods.CONNECT -> replied(call, connect(site, links, args[0], args.getOrNull(1)))
             FederationMethods.CLOSE -> {
                 close()
@@ -255,6 +255,6 @@ internal class FederationService(
 
     private companion object {
         // How long a link waits for the other site, in milliseconds
-        const val WAITING = 10_000
+        const val WAITING = 10_000L
     }
 }

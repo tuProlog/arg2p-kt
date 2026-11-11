@@ -10,25 +10,6 @@ import kotlin.js.JsExport
 import kotlin.js.Promise
 
 /**
- * A connection between two sites over a medium the page provides, for sites to federate over it: what [send] sends is to be
- * given to [Federation.linkReceived] on the other side, in order, and [close] closes it, both sides told by
- * [Federation.linkClosed]. [outgoing] tells which side opened it, [code] the code it presents if so, and [address] where the
- * other side is, if known.
- */
-@JsExport
-class ExternalLink(
-    private val sendFrame: (String) -> Unit,
-    private val closeLink: () -> Unit,
-    override val outgoing: Boolean = false,
-    override val code: String? = null,
-    override val address: String? = null,
-) : Link {
-    override fun send(frame: String) = sendFrame(frame)
-
-    override fun close() = closeLink()
-}
-
-/**
  * A parallel solver of JavaScript federated with others, on the JVM or on Node.js, over WebSockets ([connect], and [listen] on Node.js),
  * or over any other medium ([linkOpened]). It runs consumers of the graphs of the others, and places the consumers of its graphs
  * on them, if it [lends]; a parallel solver on a page not isolated across origins runs none, and solves alone (see
@@ -144,8 +125,14 @@ class Federation(
     /** The federation, as the parallel solver knows it: the sites */
     val stats: FederationStats get() = lastStats
 
-    /** Accepts the links of other sites (on any platform) over WebSockets, on [port] (an ephemeral port for 0): the port taken. Node.js alone. */
-    fun listen(port: Int = 0): Promise<Int> = request(FederationMethods.LISTEN, port.toString()).then { it.toInt() }
+    /**
+     * Accepts the links of other sites (on any platform) over WebSockets, on [port] of [host] (an ephemeral port for 0): the port
+     * taken. Node.js alone.
+     */
+    fun listen(
+        port: Int = 0,
+        host: String = "0.0.0.0",
+    ): Promise<Int> = request(FederationMethods.LISTEN, port.toString(), host).then { it.toInt() }
 
     /**
      * Federates the parallel solver with the site listening at [url] (ws://host:port), once it admits this one: proving it knows
@@ -181,6 +168,9 @@ class Federation(
         tell(FederationConsole.LinkClosed(number))
     }
 
-    /** Closes the links to the other sites: the parallel solver goes on, alone */
-    fun close(): Promise<Unit> = request(FederationMethods.CLOSE).then { }
+    /** Closes the links to the other sites, those over a medium of the page too: the parallel solver goes on, alone */
+    fun close(): Promise<Unit> =
+        request(FederationMethods.CLOSE).then {
+            numbers.keys.toList().forEach { it.close() }
+        }
 }

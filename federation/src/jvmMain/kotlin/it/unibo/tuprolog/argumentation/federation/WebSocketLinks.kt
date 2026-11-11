@@ -77,21 +77,21 @@ class WebSocketLinks(
     }
 
     /**
-     * Opens a link to the site listening at [uri] (ws://host:port), waiting for it at most [timeoutMillis]: [code]
+     * Opens a link to the site listening at [url] (ws://host:port), waiting for it at most [timeoutMillis]: [code]
      * presented if given (see [Site.requiresCode]), and the link given to [opening] before it opens
      */
     @JvmOverloads
     fun connect(
-        uri: String,
-        timeoutMillis: Long = 10_000,
+        url: String,
         code: String? = null,
+        timeoutMillis: Long = 10_000,
         opening: (Link) -> Unit = {},
     ) {
-        val client = Client(URI(uri), code)
+        val client = Client(URI(url), code)
         clients += client
         opening(client.link)
         // opened, if closed at once since (a site refusing it)
-        check(client.connectBlocking(timeoutMillis, TimeUnit.MILLISECONDS) || client.opened) { "No site at $uri" }
+        check(client.connectBlocking(timeoutMillis, TimeUnit.MILLISECONDS) || client.opened) { "No site at $url" }
     }
 
     /** Closes every link, and stops listening */

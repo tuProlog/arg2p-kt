@@ -296,13 +296,13 @@ class Federation:
         """Accepts the links of other sites over WebSockets, on [port] of [host] (an ephemeral port for 0): the port."""
         return int(call(lambda: self._federation.listen(port, host)))
 
-    def connect(self, uri: str, code: Optional[str] = None) -> None:
+    def connect(self, url: str, code: Optional[str] = None) -> None:
         """
-        Federates the parallel solver with the site listening at [uri] (ws://host:port), once it admits this one: presenting
+        Federates the parallel solver with the site listening at [url] (ws://host:port), once it admits this one: presenting
         [code] if it requires one, the two paired then, and linked again to the same address with no code while they run
         (Arg2pError if it refuses the code, or is not there).
         """
-        call(lambda: self._federation.connect(uri, code))
+        call(lambda: self._federation.connect(url, code))
 
     @property
     def name(self) -> str:

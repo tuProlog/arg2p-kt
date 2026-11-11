@@ -59,7 +59,7 @@ class WebSocketLinks(
     fun connect(
         url: String,
         code: String? = null,
-        timeoutMillis: Int = 10_000,
+        timeoutMillis: Long = 10_000,
         opening: (Link) -> Unit = {},
     ): Promise<Unit> =
         Promise { resolve, reject ->
@@ -115,10 +115,12 @@ class WebSocketLinks(
 
 // [task] run in [millis] milliseconds: the timer does not keep Node.js running
 internal fun later(
-    millis: Int,
+    millis: Long,
     task: () -> Unit,
 ) {
-    val timer = js("setTimeout(task, millis)")
+    // (a number of JavaScript: a Long is an object there)
+    val delay = millis.toInt()
+    val timer = js("setTimeout(task, delay)")
     // a number in browsers, a Timeout in Node.js
     if (jsTypeOf(timer.unref) == "function") timer.unref()
 }

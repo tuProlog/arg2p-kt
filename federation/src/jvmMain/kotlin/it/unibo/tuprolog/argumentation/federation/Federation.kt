@@ -5,6 +5,7 @@ import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import java.net.InetAddress
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -12,9 +13,10 @@ import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 
 /**
- * [parallel] federated with others, on any machine and engine, over WebSockets: it runs consumers of the graphs of the others,
- * and places the consumers of its graphs on them, in proportion to what each offers, if it [lends] (or else only the
- * latter). The federation closes with the parallel solver, or before it ([close]), the parallel solver going on alone.
+ * [parallel] federated with others, on any machine and engine, over WebSockets ([listen], [connect]) or over any other medium
+ * ([linkOpened]): it runs consumers of the graphs of the others, and places the consumers of its graphs on them, in proportion
+ * to what each offers, if it [lends] (or else only the latter). The federation closes with the parallel solver, or before it
+ * ([close]), the parallel solver going on alone.
  */
 class Federation
     @JvmOverloads
@@ -26,16 +28,22 @@ class Federation
         @property:InternalArg2pApi
         val site: Site = Site(parallel.node, lends).apply { name = HOST_NAME }
 
-        // made when the parallel solver first listens or connects, with the beats of the site (see Site.heartbeat)
+        // made when the parallel solver first listens or connects; the beats of the site (see Site.heartbeat) once it has a link
         private var links: WebSocketLinks? = null
         private var beats: ScheduledFuture<*>? = null
 
-        private fun links() =
-            links ?: WebSocketLinks(site).also {
-                links = it
-                val every = Site.BEAT.inWholeMilliseconds
-                beats = BEATS.scheduleAtFixedRate({ runCatching { site.heartbeat() } }, every, every, TimeUnit.MILLISECONDS)
-            }
+        // the links over a medium of the application, still open
+        private val external = ConcurrentHashMap.newKeySet<ExternalLink>()
+
+        @Synchronized
+        private fun beating() {
+            if (beats != null) return
+            val every = Site.BEAT.inWholeMilliseconds
+            beats = BEATS.scheduleAtFixedRate({ runCatching { site.heartbeat() } }, every, every, TimeUnit.MILLISECONDS)
+        }
+
+        @Synchronized
+        private fun links() = links ?: WebSocketLinks(site).also { links = it }.also { beating() }
 
         init {
             parallel.node.onClose(::close)
@@ -102,29 +110,29 @@ class Federation
         ): Int = links().listenSecurely(ssl, port, host)
 
         /**
-         * Federates the parallel solver with the site listening at [uri] (ws://host:port), once it admits this one: proving it knows
+         * Federates the parallel solver with the site listening at [url] (ws://host:port), once it admits this one: proving it knows
          * [code] if it requires one, the two paired then, and linked again to the same address with no code while they run.
          * An Arg2pException if it refuses the code, does not prove it knows it as well (a site claiming the identifier of
          * another), or does not answer in a few seconds.
          */
         @JvmOverloads
         fun connect(
-            uri: String,
+            url: String,
             code: String? = null,
         ) {
             val greeted = CompletableFuture<String?>()
             var opened: Link? = null
             try {
-                links().connect(uri, WAITING, site.secretFor(uri, code)) { link ->
+                links().connect(url, site.secretFor(url, code), WAITING) { link ->
                     opened = link
-                    site.linking(uri, link) { refusal -> greeted.complete(refusal) }
+                    site.linking(url, link) { refusal -> greeted.complete(refusal) }
                 }
-                greeted.get(WAITING, TimeUnit.MILLISECONDS)?.let { throw Arg2pException("$uri refused the link: $it") }
+                greeted.get(WAITING, TimeUnit.MILLISECONDS)?.let { throw Arg2pException("$url refused the link: $it") }
             } catch (_: TimeoutException) {
                 opened?.close()
-                throw Arg2pException("$uri did not answer in time")
+                throw Arg2pException("$url did not answer in time")
             } catch (failure: IllegalStateException) {
-                throw Arg2pException("$uri cannot be reached: ${failure.message}")
+                throw Arg2pException("$url cannot be reached: ${failure.message}")
             } finally {
                 opened?.let { site.forgetGreeting(it) }
             }
@@ -138,12 +146,35 @@ class Federation
             links().pages = pages
         }
 
-        /** Closes the links to the other sites: the parallel solver goes on, alone */
+        /** [link], over a medium of the application, opened: the two sites greet each other on it */
+        fun linkOpened(link: ExternalLink) {
+            external += link
+            beating()
+            site.opened(link)
+        }
+
+        /** [frame], come over [link] */
+        fun linkReceived(
+            link: ExternalLink,
+            frame: String,
+        ) {
+            if (link in external) site.received(link, frame)
+        }
+
+        /** [link] closed */
+        fun linkClosed(link: ExternalLink) {
+            if (external.remove(link)) site.closed(link)
+        }
+
+        /** Closes the links to the other sites, those over a medium of the application too: the parallel solver goes on, alone */
         override fun close() {
-            beats?.cancel(false)
-            beats = null
+            synchronized(this) {
+                beats?.cancel(false)
+                beats = null
+            }
             links?.close()
             links = null
+            external.toList().forEach { it.close() }
         }
 
         companion object {

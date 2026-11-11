@@ -207,6 +207,13 @@ await new Federation(parallel).connect('ws://hub-host:9431')
 | --- | --- | --- | --- |
 | Connect to a URL | yes | yes | yes |
 | Listen | yes, `ws` and `wss` | yes, `ws` | no |
+| Other media (`ExternalLink`) | yes | yes | yes |
+| Pages on its port (`serve`) | yes | no | no |
+
+A `Federation` is the same on the JVM and in JavaScript: the same constructor, properties and methods, with the same
+parameters in the same order (`listen(port, host)`, `connect(url, code)`, `linkOpened(link)`, ...). In JavaScript what
+waits for the network (`listen`, `connect`, `close`) answers with a promise, and `peers` is an array; the JVM alone serves
+pages and listens over TLS (`serve`, `listenSecurely`, [below](#pages-on-the-port-of-an-instance)).
 
 A browser cannot listen, so two browsers cannot link to each other: each links to a JVM or Node.js instance. A graph is built
 on the instance asking and on those linked to it, so a browser asking for a graph uses that instance, and not another
@@ -217,7 +224,7 @@ each consumer on a thread of its own, more being made if they are all busy. If a
 built, the goal is solved again with the consumers left (up to three times); once built, the graph lives with the instance
 that asked for it, and needs the others only when its theory changes. An instance that hangs with its link open counts as
 left once it has not answered for 5 seconds (the instances check each other every second). Only instances of the same
-version of arg2p federate.
+minor version of arg2p federate (`1.2.0` with `1.2.5`, not with `1.3.0`).
 
 `goals.stop()` ends the goal being solved at once: its next solution is a halt, and the next goal does not wait for it. The
 work under way for it stops too: the solver is interrupted where it resolves, and so are its consumers, here or on the
@@ -329,8 +336,8 @@ over `wss://`, as browsers refuse `ws://` from it (see [above](#pages-on-the-por
 ### Other media
 
 A new medium is a link: something that carries text, in order, between two sites, whatever it is (WebRTC between browsers,
-say). On the JVM it is a `Link`, given to the `site` of a federation as a `LinkListener`; in a page it is an `ExternalLink`, made
-of how to send and how to close, told to the federation as it opens, as text comes and as it closes.
+say). It is an `ExternalLink`, made of how to send and how to close, told to the federation as it opens, as text comes and
+as it closes, on the JVM as in JavaScript.
 
 ```javascript
 const link = new ExternalLink(text => medium.send(text), () => medium.close(), /* outgoing */ true)
@@ -338,6 +345,15 @@ federation.linkOpened(link)
 medium.onmessage = text => federation.linkReceived(link, text)
 medium.onclose = () => federation.linkClosed(link)
 ```
+
+```kotlin
+val link = ExternalLink({ text -> medium.send(text) }, { medium.close() }, outgoing = true)
+federation.linkOpened(link)
+medium.onMessage { text -> federation.linkReceived(link, text) }
+medium.onClose { federation.linkClosed(link) }
+```
+
+Closing the federation closes its links over other media too.
 
 The rest (the greetings, the codes, the consumers and what they ask of their store) goes over it as it does over a WebSocket.
 
