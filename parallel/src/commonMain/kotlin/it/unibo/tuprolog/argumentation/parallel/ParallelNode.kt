@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.ClientSolver
@@ -283,11 +284,17 @@ class ParallelNode(
     ): List<String> = List(count) { hosts[it]?.id ?: id }
 
     // The solver keeps no graph any more: neither does this node
-    private fun forgetGraphs() =
-        locked(lock) {
-            stores = emptyMap()
-            placed = emptyMap()
-        }
+    // (the graphs dropped failed: a consumer still waiting on one is released)
+    private fun forgetGraphs(reason: String = "The graph is no longer needed") {
+        val dropped =
+            locked(lock) {
+                stores.values.toList().also {
+                    stores = emptyMap()
+                    placed = emptyMap()
+                }
+            }
+        dropped.forEach { it.fail(reason) }
+    }
 
     // The consumers this node runs (its solver alone if it cannot run others) and those of the hosts, no limit if one has none
     private val capacity: Int?
@@ -410,7 +417,11 @@ class ParallelNode(
     /** What stands on the node closed, and its threads stopped */
     fun close() {
         val all = locked(lock) { closings.toList().also { closings.clear() } }
+        // (what stands on the node closed first, while the node still takes what they tell it as they close: a federation
+        // closing its links, say, waits for their handshakes)
         all.forEach { it() }
+        closed = true
+        forgetGraphs("The solver is closed")
         threads?.close()
         solverThread?.put(HostCodec.encode(HostFrame.Stop))
     }
@@ -430,10 +441,14 @@ class ParallelNode(
     private fun stopped(run: String) = SolutionResponse(run, null, NO_GRAPH, "", stopped = true)
 
     // [message] for the solver, handled if [current] when it comes to it (what concerns a graph given up reaches none)
+    // Whether the node is closed: what it is asked then is refused
+    @Volatile private var closed = false
+
     private fun deliver(
         message: KbMessage,
         current: () -> Boolean = { true },
     ) {
+        if (closed) throw Arg2pException("The solver is closed")
         if (textual) {
             val text = MessageCodec.encode(message)
             solverQueue.post { if (current()) solver(MessageCodec.decode(text)) }

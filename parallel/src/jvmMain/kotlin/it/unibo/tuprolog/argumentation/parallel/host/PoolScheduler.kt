@@ -41,7 +41,12 @@ class PoolScheduler(
         }
 
         private fun schedule() {
-            if (scheduled.compareAndSet(false, true)) executor.execute(::drain)
+            if (!scheduled.compareAndSet(false, true)) return
+            try {
+                executor.execute(::drain)
+            } catch (_: java.util.concurrent.RejectedExecutionException) {
+                // (the pool shut down: the scheduler is closed, what is posted after is dropped)
+            }
         }
 
         private fun drain() {

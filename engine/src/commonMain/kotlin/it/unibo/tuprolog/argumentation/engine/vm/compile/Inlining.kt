@@ -99,9 +99,12 @@ internal class Inlining(
     // Whether the theory of the user has clauses for the functor of [term], a control construct: it is then called
     // as a goal, for the clauses of a library predicate to be followed by the theory's (the strict rules of an
     // argumentation theory are clauses of ->/2). Told when the clause is compiled.
-    fun definedByTheory(term: Struct): Boolean = program.theory.predicate(program.functor(term.functor, term.arity)) != null
+    fun definedByTheory(term: Struct): Boolean {
+        val functor = program.functor(term.functor, term.arity)
+        return program.theory.predicate(functor) != null || functor in defined
+    }
 
     // Whether the user gives clauses to the predicate of [goal]: the theory, or the clauses being compiled with it ([defined]).
     // A goal the user defines is called, not compiled inline
-    fun userDefines(goal: Struct): Boolean = definedByTheory(goal) || program.functor(goal.functor, goal.arity) in defined
+    fun userDefines(goal: Struct): Boolean = definedByTheory(goal)
 }

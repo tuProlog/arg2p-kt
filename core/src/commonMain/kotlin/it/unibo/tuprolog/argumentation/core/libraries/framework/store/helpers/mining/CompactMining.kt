@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.Context
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.ArgumentTerm
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.LabelTerm
@@ -22,8 +23,8 @@ fun Solver.minedCompactGraph(
     branch: Int,
     conclusion: (Term) -> String,
 ): CompactGraph {
-    val context = Context.of(libraries) ?: throw IllegalStateException("A solver with no context of arg2p")
-    val store = context.store(branch) ?: throw IllegalArgumentException("No context branch $branch")
+    val context = Context.of(libraries) ?: throw Arg2pException("A solver with no context of arg2p")
+    val store = context.store(branch) ?: throw Arg2pException("No context branch $branch")
     val ids = store.ids(StoreSchema.SAVED).toIntArray()
     val positions = IntArray((ids.maxOrNull() ?: -1) + 1) { -1 }
     ids.forEachIndexed { position, id -> positions[id] = position }

@@ -17,7 +17,6 @@ import it.unibo.tuprolog.argumentation.engine.natives.PrimitiveWithSignature
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.core.Substitution
 import it.unibo.tuprolog.core.Term
-import it.unibo.tuprolog.core.Var
 import it.unibo.tuprolog.core.operators.OperatorSet
 import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
@@ -64,18 +63,22 @@ internal class ActorSolver(
                     throw error(request, e.message.orEmpty())
                 }
 
+            // (the labels unified with the arguments, which may be bound: no answer if they differ)
             return arg2pScope {
-                sequenceOf(
-                    request.replyWith(
-                        Substitution.Companion.of(
-                            mapOf(
-                                Pair(request.arguments[1] as Var, response.inArgs.map { it.claim }.toTerm()),
-                                Pair(request.arguments[2] as Var, response.outArgs.map { it.claim }.toTerm()),
-                                Pair(request.arguments[3] as Var, response.undArgs.map { it.claim }.toTerm()),
-                            ),
-                        ),
-                    ),
-                )
+                val labels =
+                    listOf(
+                        response.inArgs.map { it.claim }.toTerm(),
+                        response.outArgs.map { it.claim }.toTerm(),
+                        response.undArgs.map { it.claim }.toTerm(),
+                    )
+                val unificator = request.context.unificator
+                var substitution: Substitution = Substitution.empty()
+                for ((i, label) in labels.withIndex()) {
+                    val step = unificator.mgu(request.arguments[i + 1][substitution], label[substitution])
+                    if (step.isFailed) return@arg2pScope sequenceOf(request.replyFail())
+                    substitution = (substitution + step).also { if (it.isFailed) return@arg2pScope sequenceOf(request.replyFail()) }
+                }
+                sequenceOf(request.replyWith(substitution))
             }
         }
     }

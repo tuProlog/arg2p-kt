@@ -140,6 +140,8 @@ internal class ClientSolver(
                 jobs.clear()
                 current = null
                 graphs.forget()
+                // (prepared again: a stop that came while the theory was prepared left it as if it could not be shared)
+                changed = true
             }
             is Add -> change { theory.append(message.elem.trimEnd().removeSuffix(".")).append(".\n") }
             is RequireEvaluation ->

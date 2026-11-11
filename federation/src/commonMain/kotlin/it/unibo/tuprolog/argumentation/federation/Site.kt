@@ -71,6 +71,8 @@ class Site(
     // greeted the other site on it
     private class Opening(
         val nonce: String,
+        // (since when, on the clock of the site: a link not admitted within the deadline of a beat is closed, see heartbeat)
+        val since: TimeMark,
     ) {
         var greeted = false
     }
@@ -82,12 +84,19 @@ class Site(
 
     /**
      * The beat of the site, for its transports to call every [BEAT]: each link admitted on which this site heard nothing for
-     * longer than [deadline] closed, as if its peer left; a [Frame.Ping] on the others, which the peer answers at once. A peer
+     * longer than [deadline] closed, as if its peer left, and each link not admitted within [deadline] of its opening; a
+     * [Frame.Ping] on the others, which the peer answers at once. A peer
      * is heard as long as it handles frames, whatever its timers do (those of a page in the background are slowed).
      */
     fun heartbeat() {
-        val (silent, alive) = locked(lock) { links.keys.partition { link -> heard[link]?.let { it.elapsedNow() > deadline } ?: false } }
-        silent.forEach { it.close() }
+        val (silent, alive, unadmitted) =
+            locked(lock) {
+                val (silent, alive) = links.keys.partition { link -> heard[link]?.let { it.elapsedNow() > deadline } ?: false }
+                // (a link that greeted no site within the deadline, an inbound socket sending nothing say, closed as well)
+                val unadmitted = openings.filter { (link, opening) -> link !in links && opening.since.elapsedNow() > deadline }.keys
+                Triple(silent, alive, unadmitted.toList())
+            }
+        (silent + unadmitted).forEach { it.close() }
         alive.forEach { it.send(PING) }
     }
 
@@ -261,7 +270,7 @@ class Site(
     private fun guarded(link: Link) = requiresCode && !link.outgoing
 
     // The opening of [link], made at its first frame if that comes before the link is told open (as on a link in memory)
-    private fun openingOf(link: Link): Opening = openings.getOrPut(link) { Opening(Pairing.newNonce()) }
+    private fun openingOf(link: Link): Opening = openings.getOrPut(link) { Opening(Pairing.newNonce(), clock.markNow()) }
 
     // A frame that is none (a malformed one, or one of another version) closes its link alone, as one coming before the
     // greetings of its site
@@ -357,7 +366,7 @@ class Site(
         link: Link,
         hello: Frame.Hello,
     ) {
-        if (hello.site == id || hello.version != VERSION) return link.close()
+        if (hello.site == id || !compatible(hello.version)) return link.close()
         val nonce = locked(lock) { openingOf(link).nonce }
         val secret = link.code.takeIf { link.outgoing }
         val proven =
@@ -431,8 +440,22 @@ class Site(
     ): String = FrameCodec.encode(Frame.Hello(id, VERSION, node.workers, lending, nonce, proof, token, name))
 
     companion object {
-        /** The version a site tells its peers: sites of different versions do not federate */
-        const val VERSION: String = "arg2p-federation/1 $ARG2P_VERSION"
+        /** The protocol of the frames: sites of other protocols do not federate */
+        const val PROTOCOL: String = "arg2p-federation/1"
+
+        /** The version a site tells its peers: its protocol and the version of arg2p (see [compatible]) */
+        const val VERSION: String = "$PROTOCOL $ARG2P_VERSION"
+
+        /**
+         * Whether a site telling [version] federates with this one: the same protocol, and the same major and minor version of
+         * arg2p (a patch release changes no answer; a minor one may add what a part built by an older one would not know)
+         */
+        fun compatible(version: String): Boolean {
+            val (protocol, arg2p) = version.split(' ', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+            return protocol == PROTOCOL && minorOf(arg2p) == minorOf(ARG2P_VERSION)
+        }
+
+        private fun minorOf(version: String): String = version.split('.').take(2).joinToString(".")
 
         /** How often the transports of a site call [heartbeat] */
         val BEAT: Duration = 1.seconds

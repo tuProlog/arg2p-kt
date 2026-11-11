@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.settings
 
+import it.unibo.tuprolog.argumentation.Arg2pException
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
@@ -49,8 +50,8 @@ class Settings(
     }
 
     // The values of the flags, for the last theory met (the settings of the libraries are those of the solver)
-    private var viewOf: Theory? = null
-    private var view: Map<String, List<Term>> = emptyMap()
+    // (one field: a solver used from several threads reads a theory and its view together, never one with another's)
+    private var cached: Pair<Theory, Map<String, List<Term>>>? = null
 
     /** Whether the switch [flag] is on in [context] */
     fun isOn(
@@ -89,7 +90,8 @@ class Settings(
     }
 
     private fun viewFor(context: ExecutionContext): Map<String, List<Term>> {
-        if (viewOf !== context.staticKb) {
+        cached?.let { (theory, view) -> if (theory === context.staticKb) return view }
+        run {
             val undeclared =
                 context.libraries.libraries
                     .firstOrNull { it.alias == Flags.ALIAS }
@@ -98,7 +100,7 @@ class Settings(
                     ?.filter { it !in flags }
                     .orEmpty()
             if (undeclared.isNotEmpty()) {
-                throw IllegalArgumentException("Not a flag: ${undeclared.distinct().joinToString()} (${flags.keys.joinToString()})")
+                throw Arg2pException("Not a flag: ${undeclared.distinct().joinToString()} (${flags.keys.joinToString()})")
             }
             val inTheory = flagFacts(context.staticKb.clauses)
             val inLibraries = flagFacts(context.libraries.libraries.flatMap { it.clauses })
@@ -110,12 +112,12 @@ class Settings(
                     Profiles.default
                 } else {
                     Profiles.named((mode.first() as? Atom)?.value)
-                        ?: throw IllegalArgumentException(
+                        ?: throw Arg2pException(
                             "graphBuildMode: no profile ${mode.first()} (${Profiles.all.joinToString { it.name }})",
                         )
                 }
             val presets = profile.presets
-            view =
+            val view =
                 flags.mapValues { (name, flag) ->
                     val stated = solver.getValue(name)
                     val preset = presets[name]?.let { expanded(flag, it) }
@@ -128,9 +130,9 @@ class Settings(
                         }
                     values.filter { it != NONE && it != OFF }.also { checked(flag, it) }
                 }
-            viewOf = context.staticKb
+            cached = context.staticKb to view
+            return view
         }
-        return view
     }
 
     // The values of a closed flag are among those it declares (see ArgsFlag.isOpen)
@@ -142,7 +144,7 @@ class Settings(
         val declared = flag.values()
         val unknown = values.filter { it.toString() !in declared }
         if (unknown.isNotEmpty()) {
-            throw IllegalArgumentException("${flag.predicate()}: no value ${unknown.joinToString()} (${declared.joinToString()})")
+            throw Arg2pException("${flag.predicate()}: no value ${unknown.joinToString()} (${declared.joinToString()})")
         }
     }
 

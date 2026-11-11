@@ -98,7 +98,7 @@ internal object Op {
     const val PUT_STR2 = 77
     const val PUT_LIST2 = 78
 
-    // The end of a call in another scope: RESTORE_SCOPE and RETURN
+    // The end of a call in another scope: the scope of the caller restored, then RETURN
     const val RESTORE_SCOPE_RETURN = 68
 
     // Arithmetic on small integers in one instruction, ARITH_CMP or ARITH_IS following it for anything else: a comparison

@@ -57,7 +57,7 @@ jobs:
           build-command: true
           # with the coverage, the tests instrumented and those of the Prolog modules (build/reports/coverage)
           check-command: >-
-            ./gradlew jvmTest :lsp:test --continue
+            ./gradlew jvmTest :lsp:test :actor-solver:test --continue
             ${{ inputs.coverage && runner.os == 'Linux' && '-Pcoverage coverageReports' || '' }}
           should-run-codecov: false
       - name: Keep the coverage, for the documentation site

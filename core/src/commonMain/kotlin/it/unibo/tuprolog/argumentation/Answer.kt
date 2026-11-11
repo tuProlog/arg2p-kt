@@ -12,7 +12,7 @@ import kotlin.js.JsName
 import it.unibo.tuprolog.core.List as PlList
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
-/** The statements for a query labelled in, out and und (see [Arg2p.answer]) */
+/** The statements for a query labelled in, out and und, as solve/4 answers them */
 @JsExport
 data class Answer(
     @JsExport.Ignore @JsName("inStatementsList") val inStatements: List<Value>,

@@ -58,6 +58,9 @@ internal class HeapCollector(
 
     /** Collects the heap cells no longer reachable, [arity] registers holding the arguments of the call at hand */
     fun collect(arity: Int) {
+        // (a delayed choice point keeps words above the arguments saved and marks of the heap no root holds: every call
+        // settles it first, see Machine.call)
+        check(m.delayedNext < 0) { "A collection with a choice point delayed" }
         collections++
         collectedFrom = heap.top
         val blocks = (heap.top + 31) ushr 5

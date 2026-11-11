@@ -74,9 +74,30 @@ const manifests = {
         repository: { ...data.repository, url: plugin.repository },
         packages: data.packages.map(it => ({ ...it, version: plugin.version })),
     }),
-    // The components of the user interface (@tuprolog/arg2p-ui), released with arg2p at its version
-    'ui/package.json': (plugin, data) => ({ ...data, version: plugin.version }),
+    // The components of the user interface (@tuprolog/arg2p-ui), released with arg2p at its version, for the arg2p of its
+    // major version (of its minor one before 1.0.0, when a minor version may break the API)
+    'ui/package.json': (plugin, data) => ({
+        ...data,
+        version: plugin.version,
+        peerDependencies: { ...data.peerDependencies, '@tuprolog/arg2p': peerRange(plugin.version) },
+    }),
+    // Their lockfile, and the one of the extension of VS Code, which links them: the version they record of the package
+    'ui/package-lock.json': (plugin, data) => ({
+        ...data,
+        version: plugin.version,
+        packages: { ...data.packages, '': { ...data.packages[''], version: plugin.version } },
+    }),
+    'vscode/package-lock.json': (plugin, data) => ({
+        ...data,
+        packages: { ...data.packages, '../ui': { ...data.packages['../ui'], version: plugin.version } },
+    }),
 };
+
+// The versions of arg2p that have the API of [version]: those of its major version, or of its minor one before 1.0.0
+function peerRange(version) {
+    const [major, minor] = version.split('.');
+    return major === '0' ? `>=0.${minor}.0` : `>=${major}.0.0`;
+}
 
 /** The files stating the version of a release: the plugin and the manifests written from it */
 export const files = [source, ...Object.keys(manifests)];

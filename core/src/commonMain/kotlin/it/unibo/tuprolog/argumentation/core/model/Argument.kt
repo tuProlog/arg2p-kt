@@ -28,7 +28,19 @@ data class Argument(
     @JsExport.Ignore val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
     private val term: Term? = null,
 ) {
-    override fun hashCode(): Int = term?.hashCode() ?: (31 * rules.hashCode() + conclusion.hashCode())
+    // (equal by what the argument is, whatever term it was read from: the argument of a compact graph, which has none,
+    // equals the one read from the context)
+    override fun equals(other: Any?): Boolean =
+        other is Argument &&
+            rules == other.rules &&
+            topRule == other.topRule &&
+            conclusion == other.conclusion &&
+            groundings == other.groundings &&
+            defeasibleRules == other.defeasibleRules &&
+            defeasiblePremises == other.defeasiblePremises &&
+            lastDefeasibleRules == other.lastDefeasibleRules
+
+    override fun hashCode(): Int = 31 * rules.hashCode() + conclusion.hashCode()
 
     var identifier: String = ""
 

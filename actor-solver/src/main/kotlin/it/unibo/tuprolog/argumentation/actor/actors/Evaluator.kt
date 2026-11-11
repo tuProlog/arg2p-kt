@@ -161,14 +161,18 @@ internal class Evaluator private constructor(
         )
     }
 
+    // (the query answered goes: a response that comes later for it finds none, as it would find it completed)
     private fun reply(
         active: ActiveQuery,
         label: Label,
         queryChain: List<String>,
-    ) = if (active.type == 0) {
-        active.replyTo.tell(EvalResponse(active.parentId, active.query, label, queryChain))
-    } else {
-        active.replyTo.tell(AttackerResponse(active.parentId, active.argument, queryChain, label))
+    ) {
+        activeQueries.remove(active)
+        if (active.type == 0) {
+            active.replyTo.tell(EvalResponse(active.parentId, active.query, label, queryChain))
+        } else {
+            active.replyTo.tell(AttackerResponse(active.parentId, active.argument, queryChain, label))
+        }
     }
 
     private fun Term.strings() = castToList().toList().map { it.toString() }

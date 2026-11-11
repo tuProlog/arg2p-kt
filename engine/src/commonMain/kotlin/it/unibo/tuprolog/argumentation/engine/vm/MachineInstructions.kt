@@ -67,7 +67,8 @@ private fun Machine.behind(
     a2: Int,
 ): Int {
     settle()
-    if (theoryVisible && program.theory.predicate(functor) != null) return behindWithAlternatives(functor, arity, next, a0, a1, a2)
+    // (a builtin with clauses, of the theory or of a library: its alternatives return through a frame of their own)
+    if (predicateOf(functor) != null) return behindWithAlternatives(functor, arity, next, a0, a1, a2)
     val savedContinuation = continuation
     val savedBarrier = cutBarrier
     continuation = next

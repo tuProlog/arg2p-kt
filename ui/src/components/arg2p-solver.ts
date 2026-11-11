@@ -148,7 +148,9 @@ export class Arg2pSolver extends LitElement {
         emit(this, 'arg2p-run', request);
         await this.updateComplete;
         if (run !== this.runs) return;
-        const solutions = this.find<Arg2pSolutions>('arg2p-solutions')!;
+        // (not rendered yet: nothing to run into)
+        const solutions = this.find<Arg2pSolutions>('arg2p-solutions');
+        if (!solutions) return;
         try {
             const started = await engine.solve(request, text => {
                 if (printing === this.printing) this.output += text;

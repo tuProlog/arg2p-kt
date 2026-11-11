@@ -68,6 +68,10 @@ internal class ResponseConsumer private constructor(
                 throw ClusterException(reason)
             } catch (e: ExecutionException) {
                 throw e.cause as? ClusterException ?: ClusterException(e.cause?.message ?: e.toString())
+            } catch (e: InterruptedException) {
+                // (the listener stopped too, as on a timeout)
+                listener.tell(EvaluationAborted("Interrupted waiting for an answer to $goal"))
+                throw e
             }
         }
     }

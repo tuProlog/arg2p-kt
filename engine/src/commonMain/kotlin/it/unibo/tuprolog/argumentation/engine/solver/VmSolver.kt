@@ -245,8 +245,11 @@ open class VmSolver(
         val current = program
         if (current != null && !outdated) return current
         val built = SharedPrograms.derived(session)
-        built.add(staticKb)
+        // (the static and the dynamic clauses compiled knowing each other: a builtin either defines is called by both)
+        built.compiler.definedAlongside(staticKb.clauses + dynamicKb.clauses)
+        for (clause in staticKb.clauses) built.theory.add(clause)
         for (clause in dynamicKb.clauses) built.theory.add(clause, dynamic = true)
+        built.compiler.definedAlongside(emptyList())
         program = built
         for (library in libraries.libraries) (library as? ProgramStore)?.bind(built)
         outdated = false
@@ -295,7 +298,9 @@ open class VmSolver(
             )
         currentContext = PrologExecutionContext(environment)
         val machine = Machine(program, environment)
-        val deadline = if (options.timeout == Long.MAX_VALUE) Long.MAX_VALUE else environment.startTime + options.timeout
+        // (no deadline past the last instant: a timeout that large is none)
+        val deadline =
+            if (options.timeout >= Long.MAX_VALUE - environment.startTime) Long.MAX_VALUE else environment.startTime + options.timeout
         // (the bindings of the anonymous variables are not reported, nor those of the wildcards if hidden)
         val hideWildcards = flags[ShowWildCardVariablesInSolutions] == ShowWildCardVariablesInSolutions.OFF
         val solutions = machine.solve(goal, deadline, theoryVisible).iterator()
@@ -329,10 +334,14 @@ open class VmSolver(
                         over = true
                         machine.release()
                         return Solution.halt(goal, halt.exception)
+                    } catch (e: Throwable) {
+                        over = true
+                        machine.release()
+                        throw e
                     }
                 }
             }
-        }
+        }.constrainOnce()
     }
 
     override fun copy(
@@ -367,7 +376,7 @@ open class VmSolver(
             "libraries=${libraries.aliases}, " +
             "staticKb=${staticKb.clauses.toList()}, " +
             "dynamicKb=${dynamicKb.clauses.toList()}, " +
-            "operators=$operators" +
+            "operators=$operators, " +
             "flags=$flags, " +
             "inputChannels=$inputChannels, " +
             "outputChannels=$outputChannels, " +

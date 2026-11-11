@@ -3,6 +3,7 @@ package it.unibo.tuprolog.argumentation.engine.vm.program
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.solver.VmSolver
 import it.unibo.tuprolog.argumentation.engine.store.RecordIdentifiers
+import it.unibo.tuprolog.argumentation.engine.words.locked
 import it.unibo.tuprolog.solve.Solver
 
 /** What a layer above the engine keeps in a [SolverSession], and its type */
@@ -40,7 +41,8 @@ class SolverSession {
         key: SessionKey<T>,
         value: T?,
     ) {
-        kept = if (value == null) kept - key else kept + (key to value)
+        // (the nodes of a session set their keys from their own threads: one write at a time, none lost)
+        locked(this) { kept = if (value == null) kept - key else kept + (key to value) }
     }
 
     companion object {

@@ -136,7 +136,8 @@ internal class PrimitiveFacade(
                     m.fitRegisters()
                 }
                 is SideEffect.RemoveDynamicClauses -> for (clause in effect.clauses) m.program.theory.remove(clause)
-                is SideEffect.ResetDynamicKb -> throw IllegalStateException("side effect not supported by the machine: $effect")
+                // (a ball, a system error catch/3 takes and a solve halts on cleanly)
+                is SideEffect.ResetDynamicKb -> throw m.raised(IllegalStateException("side effect not supported by the machine: $effect"))
                 else -> Unit
             }
             // (the knowledge bases, flags, libraries, operators and channels of the environment, as the effect

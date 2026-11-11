@@ -440,8 +440,9 @@ class NodeProxy internal constructor(
         if (holds++ == 0) thread.keepAlive(true)
     }
 
+    // (no lower than none: a reply that comes after a failure released them all)
     fun release() {
-        if (--holds == 0) thread.keepAlive(false)
+        if (holds > 0 && --holds == 0) thread.keepAlive(false)
     }
 
     /**
@@ -459,12 +460,17 @@ class NodeProxy internal constructor(
 
     // A thread died: the calls waiting fail, the thread of the node no longer keeping Node.js running
     private fun failed(reason: String) {
+        onFailed(reason)
+        shut(reason)
+    }
+
+    // Nothing answered any more, for [reason]: the calls waiting fail, what stands on the node is refused
+    private fun shut(reason: String) {
         death = reason
         val waiting = pending.values.toList()
         pending.clear()
         holds = 0
         thread.keepAlive(false)
-        onFailed(reason)
         refused(reason)
         waiting.forEach { (_, failed) -> failed(reason) }
     }
@@ -554,7 +560,11 @@ class NodeProxy internal constructor(
 
     // (closed all the same if the thread of the node died)
     internal fun close(): Promise<Unit> {
-        val stop: (Any?) -> Unit = { thread.terminate() }
+        // (what stands on the node, a federation say, refused from now on: its calls answered, not left waiting)
+        val stop: (Any?) -> Unit = {
+            thread.terminate()
+            shut("The solver is closed")
+        }
         return Promise<String> { resolve, reject ->
             call(Methods.CLOSE, emptyList(), { resolve(it) }, { reject(Arg2pException(it)) })
         }.then(stop, stop)

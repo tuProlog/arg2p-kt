@@ -154,7 +154,7 @@ class GoalSolver:
 
     def compact_graph(self) -> CompactGraph:
         """The graph of the last solution given as arrays (see CompactGraph)."""
-        return CompactGraph(self._solver.compactGraph())
+        return call(lambda: CompactGraph(self._solver.compactGraph()))
 
     def output(self, consumer: Callable[[str], Any]) -> None:
         """Gives what the solver prints to [consumer], as the solutions are given (the standard output otherwise)."""

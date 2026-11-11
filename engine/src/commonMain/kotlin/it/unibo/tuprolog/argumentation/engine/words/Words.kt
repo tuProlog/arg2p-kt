@@ -25,10 +25,10 @@ internal object Words {
     /** A list cell, by the address of its head (its tail follows) */
     const val LIST = 4
 
-    /** A float, by its index in the table of floats */
+    /** A float: no word holds one, the tag a type test reads of its compound on the heap (see Numbers, Heap.typeTag) */
     const val FLT = 5
 
-    /** A large integer, by its index in the table of large integers */
+    /** An integer no word holds: the tag a type test reads of its compound on the heap (see Numbers, Heap.typeTag) */
     const val BIG = 6
 
     /** The functor of a compound term, by its id: the first cell of the term */

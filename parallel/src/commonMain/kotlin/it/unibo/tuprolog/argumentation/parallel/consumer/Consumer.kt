@@ -96,12 +96,18 @@ fun runConsumerThread(
         if (frame !is HostFrame.Start) continue
         val start = frame.start
         val connection = MessageConnection(ThreadLine(frame.session, frame.consumer, frames, mailbox))
-        val graph = SharedGraph.remote(start.exploring)
-        start
-            .run { worker ->
-                SolverSession.join(worker, SolverSession().also { it[GraphSharing.KEY] = graph })
-                graph.join(worker, connection, start.interest)
-            }?.let { connection.fail("the solver of part ${frame.consumer}: $it") }
+        // (an exception out of the part, not of its solver, reported on its connection too: the thread goes on, its host not
+        // left waiting)
+        try {
+            val graph = SharedGraph.remote(start.exploring)
+            start
+                .run { worker ->
+                    SolverSession.join(worker, SolverSession().also { it[GraphSharing.KEY] = graph })
+                    graph.join(worker, connection, start.interest)
+                }?.let { connection.fail("the solver of part ${frame.consumer}: $it") }
+        } catch (e: Exception) {
+            connection.fail("the consumer of part ${frame.consumer}: ${e.message ?: e}")
+        }
         frames(HostFrame.Done)
     }
 }

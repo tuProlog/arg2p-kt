@@ -248,7 +248,8 @@ class Record internal constructor(
                 // (the words of another program of the session: the same record, in this program, its identifier kept)
                 program.readsWordsOf(record.program) ->
                     Record(program, record.words, record.root, null, record.functor).also { it.identifier = record.identifier }
-                else -> of(record.term, program)
+                // (the identifier is of the term, whatever its encoding: kept, for context_stored_id/2 to find it)
+                else -> of(record.term, program).also { it.identifier = record.identifier }
             }
     }
 

@@ -83,7 +83,12 @@ internal object Solvers {
             try {
                 of(theory, parsed)
             } catch (_: Arg2pException) {
-                of("", parsed)
+                // (the flags alone, the theory refused; nothing if the flags are refused too)
+                try {
+                    of("", parsed)
+                } catch (_: Arg2pException) {
+                    return emptyMap()
+                }
             }
         return solver.knownFlags.associateWith { flag ->
             try {

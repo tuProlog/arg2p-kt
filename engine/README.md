@@ -6,14 +6,18 @@ primitives, `Solver`), which are used as they are. The solvers are created throu
 `SolverFactory` like any other.
 
 It knows nothing of arg2p, whose `core` depends on it. What the other modules share of it is marked `InternalArg2pApi`;
-the rest is internal. Its packages, each depending only on those before it: `engine.term` (what is asked of tuProlog
-terms), `engine.words` (the words and their symbol tables), `engine.vm` (the machine), and the two names it publishes,
-`it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory` and `engine.stdlib.DefaultBuiltins`.
+the rest is internal. Its packages: `engine.term` (what is asked of tuProlog terms), `engine.words` (the words and their
+symbol tables), `engine.vm.program` (the program: symbols, code, predicates, scopes, the instruction set `Op`, the
+numbers no word holds), `engine.vm.compile` (the compiler of clauses into it), `engine.store` (the clause stores of
+arg2p's contexts, their records and indexes), `engine.natives` (the API the native primitives of the other modules are
+written against), `engine.vm` (the machine and its components: the heap, the arithmetic, the nested runs, the collector,
+the face it shows the natives), `engine.solver` (the `Solver` of tuProlog on the machine), and the two names it
+publishes, `it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory` and `engine.stdlib.DefaultBuiltins`.
 
 ## The machine (`vm`)
 
 - `Words`: a term is a 32-bit word (three tag bits: a reference, an atom, a small integer, a compound term, a list
-  cell, a float or a large integer by table, a functor) in a heap of ints; a variable is a cell referring to itself
+  cell, a functor; a float or an integer no word holds is a compound term of them, see `Numbers`) in a heap of ints; a variable is a cell referring to itself
   while unbound. 32 bits keep the machine the same in JavaScript.
 - `Program`: the symbol tables (equal constants are equal words), the code array the clauses compile into, the
   predicates of the theory of the user and, for each set of libraries a resolution runs with, a `Scope` of the

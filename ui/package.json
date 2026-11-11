@@ -3,7 +3,9 @@
   "version": "0.25.1",
   "description": "The user interface of Arg2P as web components (graphs, solutions, ...), on any engine: the solver of the browser, or one of the JVM",
   "type": "module",
-  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
   "author": "Giuseppe Pisano",
   "repository": {
     "type": "git",

@@ -114,7 +114,13 @@ internal class NativeFace(
 
     override fun atomName(w: Int): String = m.program.symbols.atoms[payload(w)]
 
-    override fun intValue(w: Int): Long = if (tag(w) == INT) payload(w).toLong() else heap.bigIntegerOfNumber(w).toLong()
+    // (an integer beyond 64 bits refused, not truncated)
+    override fun intValue(w: Int): Long {
+        if (tag(w) == INT) return payload(w).toLong()
+        val value = heap.bigIntegerOfNumber(w)
+        require(value.bitLength < 64) { "An integer beyond 64 bits: $value" }
+        return value.toLong()
+    }
 
     override fun functorName(w: Int): String = if (tag(w) == LIST) "." else m.program.nameOfFunctorWord(heap.cells[payload(w)])
 
