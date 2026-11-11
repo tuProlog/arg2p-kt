@@ -33,7 +33,8 @@ val uiBuild by tasks.registering(Exec::class) {
 val uiTest by tasks.registering(Exec::class) {
     group = "ui"
     description = "Checks the types of the components and runs their tests"
-    dependsOn(uiInstall)
+    // (the tests read the solver in one file, as the build makes it)
+    dependsOn(uiBuild)
     workingDir = projectDir
     commandLine(npm, "test")
 }

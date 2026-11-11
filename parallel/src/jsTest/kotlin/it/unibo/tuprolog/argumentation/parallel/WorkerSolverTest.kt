@@ -36,7 +36,7 @@ class WorkerSolverTest {
                 assertEquals(listOf(emptyList(), listOf("a6"), emptyList()), it)
                 claims(parallel, "-a6")
             }.step {
-                assertEquals(listOf(listOf("-a6"), emptyList(), emptyList()), it)
+                assertEquals(listOf(listOf("- a6"), emptyList(), emptyList()), it)
                 claims(parallel, "c1")
             }.step {
                 assertEquals(listOf(listOf("c1"), emptyList(), emptyList()), it)
