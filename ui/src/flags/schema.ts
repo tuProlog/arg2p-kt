@@ -229,8 +229,8 @@ export const PROFILES: readonly ProfileInfo[] = [
 export const DEFAULT_PROFILE = 'aspicPlus';
 
 /**
- * The values of the flags as arg2p spelled them before 1.0.0 (and the papers on it), by that spelling: read as those of
- * 1.0.0, as arg2p reads them (EarlierSpellings in the core)
+ * The values of the flags as arg2p spelled them before 0.26.0 (and the papers on it), by that spelling: read as those of
+ * 0.26.0, as arg2p reads them (EarlierSpellings in the core)
  */
 export const EARLIER_VALUES: Readonly<Record<string, string>> = {
     aspic_plus: 'aspicPlus',

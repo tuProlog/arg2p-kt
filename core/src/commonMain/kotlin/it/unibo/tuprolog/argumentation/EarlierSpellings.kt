@@ -6,9 +6,9 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * The spellings of the versions of arg2p before 1.0.0, as the papers on it write them, read as those of 1.0.0: the values
+ * The spellings of the versions of arg2p before 0.26.0, as the papers on it write them, read as those of 0.26.0: the values
  * of the flags ([values], the modules of the semantics named as them), and the names of the predicates ([predicates]). A
- * theory, a goal or flags written with them run as they did; arg2p itself writes the names of 1.0.0 alone (in camelCase),
+ * theory, a goal or flags written with them run as they did; arg2p itself writes the names of 0.26.0 alone (in camelCase),
  * and the language server marks an earlier spelling with the one to write.
  */
 object EarlierSpellings {
@@ -77,13 +77,13 @@ object EarlierSpellings {
             "graph_sync",
         ).associateWith { camel(it) }
 
-    /** The spelling of 1.0.0 of [name], a value, a module or a predicate written as an earlier version did; null otherwise */
+    /** The spelling of 0.26.0 of [name], a value, a module or a predicate written as an earlier version did; null otherwise */
     fun current(name: String): String? = values[name] ?: predicates[name]
 
-    /** [value], a value of a flag, as 1.0.0 spells it */
+    /** [value], a value of a flag, as 0.26.0 spells it */
     fun value(value: Term): Term = (value as? Atom)?.value?.let { values[it] }?.let { Atom.of(it) } ?: value
 
-    // The earlier spellings of each predicate of 1.0.0
+    // The earlier spellings of each predicate of 0.26.0
     private val earlier: Map<String, List<String>> = predicates.entries.groupBy({ it.value }, { it.key })
 
     /**
@@ -99,7 +99,7 @@ object EarlierSpellings {
         return all
     }
 
-    /** Whether [signature] is the earlier spelling of a predicate, not one of 1.0.0 */
+    /** Whether [signature] is the earlier spelling of a predicate, not one of 0.26.0 */
     fun isEarlier(signature: Signature): Boolean = signature.name in predicates
 
     private fun camel(name: String): String {

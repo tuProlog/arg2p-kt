@@ -53,7 +53,7 @@ internal class LoadedLibraries(
                 ?: throw ExistenceError.forResource(context(), name)
         }
 
-    // The identifier of the module named [name], named as before 1.0.0 maybe (see EarlierSpellings)
+    // The identifier of the module named [name], named as before 0.26.0 maybe (see EarlierSpellings)
     private fun current(name: String): String = EarlierSpellings.values[name] ?: name
 
     private var sharedOf: Runtime? = null

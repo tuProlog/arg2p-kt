@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** A theory written as the papers on arg2p wrote it, before 1.0.0, runs as it did: its spellings read as those of 1.0.0 */
+/** A theory written as the papers on arg2p wrote it, before 0.26.0, runs as it did: its spellings read as the current ones */
 class EarlierSpellingsTest {
     private val burden = "r1 :=> a.\nr2 :=> -a.\nbp(a).\n"
 
@@ -35,7 +35,7 @@ class EarlierSpellingsTest {
     }
 
     @Test
-    fun theTableMapsEachToANameOf100() {
+    fun theTableMapsEachToItsCurrentName() {
         EarlierSpellings.predicates.forEach { (earlier, current) -> assertTrue('_' in earlier && '_' !in current, earlier) }
         assertEquals("butFor", EarlierSpellings.current("but_for"))
         assertEquals("contextAssertId", EarlierSpellings.current("context_assert_id"))

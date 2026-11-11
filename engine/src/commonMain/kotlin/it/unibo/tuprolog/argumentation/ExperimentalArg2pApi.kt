@@ -1,8 +1,8 @@
 package it.unibo.tuprolog.argumentation
 
 /**
- * A part of arg2p still experimental: the parallel solvers and their federation, the profiles of ABA. Unlike the rest of the
- * API it may change in a minor version, as it settles. Its users opt in (`@OptIn(ExperimentalArg2pApi::class)`, or
+ * A part of arg2p still experimental: the parallel solvers and their federation, the profiles of ABA. It may change in any minor
+ * version, as it settles, after 1.0.0 too. Its users opt in (`@OptIn(ExperimentalArg2pApi::class)`, or
  * `-opt-in=it.unibo.tuprolog.argumentation.ExperimentalArg2pApi` for a whole module), warned otherwise; the modules of arg2p
  * do (see ktCompilerArgs in gradle.properties).
  */

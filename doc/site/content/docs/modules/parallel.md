@@ -6,7 +6,7 @@ weight: 29
 ## Parallel Solver
 
 > [!WARNING]
-> **Experimental.** The parallel solvers and their federation may change in a minor version of arg2p, unlike the rest of its API (see
+> **Experimental.** The parallel solvers and their federation may change in any minor version of arg2p (see
 > [stability]({{% ref "/docs/api#stability" %}})).
 
 The parallel solver builds the argumentation graph of a theory with several solvers at once, then labels it as the

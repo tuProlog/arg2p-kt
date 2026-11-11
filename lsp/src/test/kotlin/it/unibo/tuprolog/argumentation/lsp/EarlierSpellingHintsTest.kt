@@ -4,7 +4,7 @@ import org.eclipse.lsp4j.DiagnosticSeverity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** The words of a theory spelled as before 1.0.0 are hints, each with its quick fix; not those in comments or quotes */
+/** The words of a theory spelled as before 0.26.0 are hints, each with its quick fix; not those in comments or quotes */
 class EarlierSpellingHintsTest {
     private val theory = "graphBuildMode(aspic_plus). % semistable\nr1 :=> 'bp_grounded'.\nq :- causality::but_for(a, b)."
 
@@ -18,7 +18,7 @@ class EarlierSpellingHintsTest {
     }
 
     @Test
-    fun theirQuickFixesWriteTheSpellingOf100() {
+    fun theirQuickFixesWriteTheCurrentSpelling() {
         val fixes = EarlierSpellingHints.fixes("file:///t.arg2p", theory, EarlierSpellingHints.of(theory))
         assertEquals(
             listOf("aspicPlus", "butFor"),

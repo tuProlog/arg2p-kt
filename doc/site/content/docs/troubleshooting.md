@@ -66,7 +66,7 @@ The same applies to parsing a theory — see [Kotlin API]({{% ref "/docs/api/kot
 
 Flag values are module identifiers, and an unknown value names no module: the error names the value. Check the spelling against
 the [Flags Reference]({{% ref "/docs/api/flags" %}}) — for instance the grounded semantics is `grounded`, and
-`semiStable` is written in camelCase. The spellings of the papers and of the versions before 1.0.0 (`grounded_hash`,
+`semiStable` is written in camelCase. The spellings of the papers and of the versions before 0.26.0 (`grounded_hash`,
 `semistable`, `bp_grounded`, ...) are still read: see [theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}}).
 
 ---

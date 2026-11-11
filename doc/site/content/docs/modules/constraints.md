@@ -8,7 +8,7 @@ sitemap:
 ---
 
 > [!WARNING]
-> **Experimental.** The constraints may change in a minor version of arg2p, unlike the rest of its API (see
+> **Experimental.** The constraints may change in any minor version of arg2p (see
 > [stability]({{% ref "/docs/api#stability" %}})).
 
 ## Arguments for sets of values

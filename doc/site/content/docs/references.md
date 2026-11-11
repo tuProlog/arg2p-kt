@@ -158,12 +158,12 @@ The cooperative, multi-agent evaluation behind the
 
 ## Theories from the papers
 
-Since 1.0.0 arg2p writes its flags, values and predicates in camelCase. The papers above, and the versions before 1.0.0,
-spell some of them otherwise: those spellings are still read, as the ones of 1.0.0 (the editor marks them, with a quick
+Since 0.26.0 arg2p writes its flags, values and predicates in camelCase. The papers above, and the versions before 0.26.0,
+spell some of them otherwise: those spellings are still read, as the ones of 0.26.0 (the editor marks them, with a quick
 fix writing the new one), so a theory from a paper runs as it is. The entry points of earlier versions (`buildLabelSets`,
 `answerQuery`) still work too: see [earlier forms]({{% ref "/docs/api/engine#earlier-forms" %}}).
 
-| Earlier spelling | Since 1.0.0 |
+| Earlier spelling | Since 0.26.0 |
 | --- | --- |
 | `graphBuildMode(standard_af)`, `aspic_plus` | `aspicPlus` |
 | `aspic_defeasible`, `aba_plus` | `aspicDefeasible`, `abaPlus` |
@@ -177,7 +177,7 @@ fix writing the new one), so a theory from a paper runs as it is. The entry poin
 | `cache_check/1`, ... (every `cache_` predicate), `linear_constraint/1`, `linear_satisfiable/1` | `cacheCheck/1`, ..., `linearConstraint/1`, `linearSatisfiable/1` |
 | `store::graph_begin/1`, ... (every `graph_` predicate of the store) | `store::graphBegin/1`, ... |
 
-What arg2p writes uses the names of 1.0.0 alone: the locality `whole_graph` is now `wholeGraph`, and the attacks
+What arg2p writes uses the names of 0.26.0 alone: the locality `whole_graph` is now `wholeGraph`, and the attacks
 `contrary_rebut` and `contrary_undermine` are `contraryRebut` and `contraryUndermine`.
 
 ---

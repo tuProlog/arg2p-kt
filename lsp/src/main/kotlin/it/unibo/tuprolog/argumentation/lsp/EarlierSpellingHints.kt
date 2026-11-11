@@ -11,8 +11,8 @@ import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.WorkspaceEdit
 
 /**
- * The words of a theory spelled as arg2p did before 1.0.0 (see [EarlierSpellings]): read as before, each is a hint with the
- * spelling of 1.0.0, and its quick fix writes it. The words in comments and quoted text are left alone.
+ * The words of a theory spelled as arg2p did before 0.26.0 (see [EarlierSpellings]): read as before, each is a hint with the
+ * spelling of 0.26.0, and its quick fix writes it. The words in comments and quoted text are left alone.
  */
 internal object EarlierSpellingHints {
     /** The code of the hints */
@@ -24,7 +24,7 @@ internal object EarlierSpellingHints {
             EarlierSpellings.current(word)?.let { current ->
                 Diagnostic(
                     range,
-                    "Written `$current` since arg2p 1.0.0 (`$word` is the spelling of earlier versions, still read)",
+                    "Written `$current` since arg2p 0.26.0 (`$word` is the spelling of earlier versions, still read)",
                     DiagnosticSeverity.Hint,
                     "arg2p",
                     CODE,
@@ -32,7 +32,7 @@ internal object EarlierSpellingHints {
             }
         }
 
-    /** The quick fixes of the hints of [diagnostics] in [text], the document [uri]: the spelling of 1.0.0 written */
+    /** The quick fixes of the hints of [diagnostics] in [text], the document [uri]: the spelling of 0.26.0 written */
     fun fixes(
         uri: String,
         text: String,

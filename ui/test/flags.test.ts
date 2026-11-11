@@ -41,7 +41,7 @@ describe('Flags as text', function () {
         equal(profileOf('graphBuildMode(aba).', '', {}), 'aba');
     });
 
-    it('should read the values as arg2p spelled them before 1.0.0 as those of 1.0.0', function () {
+    it('should read the values as arg2p spelled them before 0.26.0 as the current ones', function () {
         equal(statedProfile('graphBuildMode(aspic_plus).'), 'aspicPlus');
         deepEqual(statedFlags('argumentLabellingMode(bp_grounded).').get('argumentLabellingMode'), ['bpGrounded']);
     });

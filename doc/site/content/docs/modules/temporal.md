@@ -10,7 +10,7 @@ sitemap:
 ## The axioms of time
 
 > [!WARNING]
-> **Experimental.** The axioms of time may change in a minor version of arg2p, unlike the rest of its API (see
+> **Experimental.** The axioms of time may change in any minor version of arg2p (see
 > [stability]({{% ref "/docs/api#stability" %}})).
 
 With the flag `temporal`, a theory states what happens and what it starts or ends, and Arg2P concludes when each

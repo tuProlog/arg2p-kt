@@ -165,7 +165,7 @@ class Settings(
         facts: Map<String, List<Struct>>,
     ): List<Term> {
         val heads = facts[flag.predicate()].orEmpty()
-        // (a value spelled as before 1.0.0 read as 1.0.0 spells it, see EarlierSpellings)
+        // (a value spelled as before 0.26.0 read as it is spelled now, see EarlierSpellings)
         val valued = heads.filter { it.arity == 1 }.map { EarlierSpellings.value(it[0]) }
         if (!flag.isSwitch) return expanded(flag, valued.toList())
         return heads.filter { it.arity == 0 }.map { Truth.TRUE } + valued.filter { it == OFF }

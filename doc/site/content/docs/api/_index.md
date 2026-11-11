@@ -26,11 +26,11 @@ pages describe the predicates of the two solvers built on arg2p, and the
 
 ## Stability
 
-From 1.0.0 arg2p follows semantic versioning: what a theory, a goal or a program uses changes in a way that breaks
-it only in a new major version. The spellings of the versions before 1.0.0 are still read (see
-[theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}})).
+arg2p is not at 1.0.0 yet: until then a minor version may still change what a theory, a goal or a program uses, and
+says so in the release notes. Its names are settled since 0.26.0, written in camelCase, and the spellings of the versions
+before it are still read (see [theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}})).
 
-Some parts are **experimental**: they may change in a minor version, as they settle.
+Some parts are **experimental**: they may change in any minor version, and will after 1.0.0 too, as they settle.
 
 - the [parallel solver]({{% ref "/docs/modules/parallel" %}}) and its [federation]({{% ref "/docs/modules/parallel#federation" %}});
 - the profiles of [ABA]({{% ref "/docs/profiles#aba" %}}), `aba` and `abaPlus` (with `graphLanguage(abaLanguage)` and
