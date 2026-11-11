@@ -38,7 +38,7 @@ class Record internal constructor(
     /** The functor of the root in place of the one in [words] (see [named]), 0 for that one */
     internal val functor: Int = 0,
 ) {
-    /** The identifier of the record, as the identifiers of a context know it (see `context_id/2`); -1 for none */
+    /** The identifier of the record, as the identifiers of a context know it (see `contextId/2`); -1 for none */
     @InternalArg2pApi
     var identifier: Int = -1
 
@@ -248,7 +248,7 @@ class Record internal constructor(
                 // (the words of another program of the session: the same record, in this program, its identifier kept)
                 program.readsWordsOf(record.program) ->
                     Record(program, record.words, record.root, null, record.functor).also { it.identifier = record.identifier }
-                // (the identifier is of the term, whatever its encoding: kept, for context_stored_id/2 to find it)
+                // (the identifier is of the term, whatever its encoding: kept, for contextStoredId/2 to find it)
                 else -> of(record.term, program).also { it.identifier = record.identifier }
             }
     }

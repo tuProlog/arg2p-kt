@@ -128,7 +128,7 @@ A graph is made of plain data classes (package `it.unibo.tuprolog.argumentation.
 | `Attack` | `attacker`, `target`, the attack `type` and the attacked sub-argument `on` |
 | `Support` | `supporter` and `supported` |
 
-Attack types are `rebut`, `contrary_rebut`, `undermine`, `contrary_undermine` and `undercut`, plus `pref` (an
+Attack types are `rebut`, `contraryRebut`, `undermine`, `contraryUndermine` and `undercut`, plus `pref` (an
 attack of a preference, with `defeasiblePref` and `defeasibleAllPref`), `bprebut` (with `bp`) and `abstract` (an
 attack of an abstract framework).
 
@@ -174,7 +174,7 @@ Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: 
 ```kotlin
 val arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
 arg2p.solve("causality::ness(X, a, b)").next().text("X")   // [- a], the intervention: no solution if a is not a NESS cause of b
-arg2p.solve("causality::but_for(a, b)").next().isYes        // true
+arg2p.solve("causality::butFor(a, b)").next().isYes        // true
 ```
 
 ---

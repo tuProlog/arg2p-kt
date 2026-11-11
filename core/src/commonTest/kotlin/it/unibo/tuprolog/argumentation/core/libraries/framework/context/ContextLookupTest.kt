@@ -7,13 +7,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Lookups in the context (context_check/1,2), which the arg2p engine resolves with the clauses of a branch: the
+ * Lookups in the context (contextCheck/1,2), which the arg2p engine resolves with the clauses of a branch: the
  * answers of the context store (see ClauseStore.solve), newest clauses first.
  */
 class ContextLookupTest {
     private val setup =
-        "context_reset, context_assert(p(1)), context_assert(p(2)), context_assert(q(X, X)), " +
-            "context_assert(r(A) :- p(A)), context_assert(s(A, B) :- (p(A), p(B))), context_assert(t(a) :- missing)"
+        "contextReset, contextAssert(p(1)), contextAssert(p(2)), contextAssert(q(X, X)), " +
+            "contextAssert(r(A) :- p(A)), contextAssert(s(A, B) :- (p(A), p(B))), contextAssert(t(a) :- missing)"
 
     private fun solve(goal: String): String {
         val solver = solverWithTheory("")
@@ -29,29 +29,29 @@ class ContextLookupTest {
 
     @Test
     fun facts() {
-        assertEquals("[2, 1]", solve("findall(X, context_check(p(X)), L)"))
-        assertEquals("yes", solve("context_check(p(1)), L = yes"))
-        assertEquals("no", solve("context_check(p(3))"))
-        assertEquals("[[b, b]]", solve("findall([Y, Z], (Y = b, context_check(q(Y, Z))), L)"))
+        assertEquals("[2, 1]", solve("findall(X, contextCheck(p(X)), L)"))
+        assertEquals("yes", solve("contextCheck(p(1)), L = yes"))
+        assertEquals("no", solve("contextCheck(p(3))"))
+        assertEquals("[[b, b]]", solve("findall([Y, Z], (Y = b, contextCheck(q(Y, Z))), L)"))
     }
 
     @Test
     fun rulesAreResolvedInTheBranch() {
-        assertEquals("[2, 1]", solve("findall(X, context_check(r(X)), L)"))
-        assertEquals("[[2, 2], [2, 1], [1, 2], [1, 1]]", solve("findall([X, Y], context_check(s(X, Y)), L)"))
-        assertEquals("[]", solve("findall(X, context_check(t(X)), L)"))
+        assertEquals("[2, 1]", solve("findall(X, contextCheck(r(X)), L)"))
+        assertEquals("[[2, 2], [2, 1], [1, 2], [1, 1]]", solve("findall([X, Y], contextCheck(s(X, Y)), L)"))
+        assertEquals("[]", solve("findall(X, contextCheck(t(X)), L)"))
     }
 
     @Test
     fun clauseLookups() {
-        assertEquals("[p(a)]", solve("findall(B, context_check(clause(r(a), B)), L)"))
-        assertEquals("[missing]", solve("findall(B, context_check(clause(t(_), B)), L)"))
-        assertEquals("[]", solve("findall(B, context_check(clause(_, B)), L)"))
+        assertEquals("[p(a)]", solve("findall(B, contextCheck(clause(r(a), B)), L)"))
+        assertEquals("[missing]", solve("findall(B, contextCheck(clause(t(_), B)), L)"))
+        assertEquals("[]", solve("findall(B, contextCheck(clause(_, B)), L)"))
     }
 
     @Test
     fun conjunctions() {
-        assertEquals("[[2, 2], [2, 1], [1, 2], [1, 1]]", solve("findall([X, Y], context_check((p(X), p(Y))), L)"))
+        assertEquals("[[2, 2], [2, 1], [1, 2], [1, 1]]", solve("findall([X, Y], contextCheck((p(X), p(Y))), L)"))
     }
 
     @Test
@@ -59,14 +59,14 @@ class ContextLookupTest {
         assertEquals(
             "[[3, 2, 1], [2, 1]]",
             solve(
-                "context_active(B0), context_branch(B0, B1), context_assert(p(3)), " +
-                    "findall(X, context_check(B1, p(X)), L1), findall(X, context_check(B0, p(X)), L0), L = [L1, L0]",
+                "contextActive(B0), contextBranch(B0, B1), contextAssert(p(3)), " +
+                    "findall(X, contextCheck(B1, p(X)), L1), findall(X, contextCheck(B0, p(X)), L0), L = [L1, L0]",
             ),
         )
     }
 
     @Test
     fun clausesAssertedDuringALookupAreNotSeen() {
-        assertEquals("[2, 1]", solve("findall(X, (context_check(p(X)), context_assert(p(9))), L)"))
+        assertEquals("[2, 1]", solve("findall(X, (contextCheck(p(X)), contextAssert(p(9))), L)"))
     }
 }

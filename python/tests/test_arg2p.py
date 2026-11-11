@@ -145,7 +145,7 @@ def test_what_the_solver_prints_goes_to_its_output():
 def test_flags_are_facts():
     assert str(Flags.none().argument_labelling_mode(Semantics.PREFERRED)) == "argumentLabellingMode(preferred).\n"
     assert str(Flags.none().graph_extensions().query_mode(True)) == "graphExtension(none).\nqueryMode.\n"
-    assert Flags.none().graph_build_mode(Profile.ABA_PLUS) == Flags.parse("graphBuildMode(aba_plus).")
+    assert Flags.none().graph_build_mode(Profile.ABA_PLUS) == Flags.parse("graphBuildMode(abaPlus).")
     assert str(Flags.defaults()) == ""
 
 
@@ -186,10 +186,10 @@ def test_the_flags_of_the_solver_are_the_ones_it_uses():
 def test_the_causality_of_the_theory():
     arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
     assert next(arg2p.solve("causality::ness(X, a, b)")).text("X") == "[- a]"
-    assert next(arg2p.solve("causality::but_for(a, b)")).is_yes
-    assert next(arg2p.solve("causality::ness_intervention([-a], b)")).is_yes
+    assert next(arg2p.solve("causality::butFor(a, b)")).is_yes
+    assert next(arg2p.solve("causality::nessIntervention([-a], b)")).is_yes
     assert next(arg2p.solve("causality::ness(X, b, a)")).is_no
-    assert next(arg2p.solve("causality::but_for(b, a)")).is_no
+    assert next(arg2p.solve("causality::butFor(b, a)")).is_no
 
 
 def test_the_version():
@@ -392,7 +392,7 @@ def test_java_is_that_of_the_runtime_of_the_jvm(monkeypatch, tmp_path):
 def test_the_settings_in_effect_come_from_the_theory_the_flags_and_the_profile():
     aspic = Arg2p.of("r1 : [] => a.")
     assert "graphBuildMode" in aspic.known_flags
-    assert aspic.setting("graphBuildMode") == ["aspic_plus"]
+    assert aspic.setting("graphBuildMode") == ["aspicPlus"]
     assert set(aspic.setting("graphExtension")) == {"standardPref", "rebutRestriction"}
     assert aspic.setting("autoTransposition") == ["true"]
     abstract = Arg2p.of("graphBuildMode(abstract).\na -> b.")

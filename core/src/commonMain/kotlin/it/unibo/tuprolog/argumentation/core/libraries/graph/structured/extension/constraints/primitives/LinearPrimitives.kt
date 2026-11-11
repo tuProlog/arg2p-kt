@@ -10,16 +10,16 @@ import it.unibo.tuprolog.core.List
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
 
-/** linear_constraint(+C): C is a constraint the module decides, a comparison of linear expressions (see LinearTerms) */
-internal object LinearConstraint : AbstractNativePrimitive(Signature("linear_constraint", 1)) {
+/** linearConstraint(+C): C is a constraint the module decides, a comparison of linear expressions (see LinearTerms) */
+internal object LinearConstraint : AbstractNativePrimitive(Signature("linearConstraint", 1)) {
     override fun call(call: NativeCall): Int = call.reply(LinearTerms.isLinear(call.termArg(0)))
 }
 
 /**
- * linear_satisfiable(+Constraints): the linear constraints of the list Constraints (see linear_constraint/1) can hold
+ * linearSatisfiable(+Constraints): the linear constraints of the list Constraints (see linearConstraint/1) can hold
  * together, their variables ranging over the rationals; the bound ones are checked by their values
  */
-internal object LinearSatisfiable : AbstractNativePrimitive(Signature("linear_satisfiable", 1)) {
+internal object LinearSatisfiable : AbstractNativePrimitive(Signature("linearSatisfiable", 1)) {
     override fun call(call: NativeCall): Int {
         val list =
             call.termArg(0) as? List ?: throw TypeError.forArgument(call.context, signature, TypeError.Expected.LIST, call.termArg(0), 0)

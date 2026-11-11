@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.loader
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers.LoadedLibraries
@@ -51,7 +52,7 @@ internal class DynamicLoader(
             listOf(ModuleGoal(this), ModuleGoalInBranch(this), ModuleDefines(this), ExtensionFlag(solver)).let {
                 Library.of(
                     alias = this.alias,
-                    primitives = it.associateBy { prim -> prim.signature },
+                    primitives = EarlierSpellings.withEarlierNames(it.associateBy { prim -> prim.signature }),
                     operators = theoryOperators,
                 )
             }

@@ -89,7 +89,7 @@ internal object ExpandedAttackById : AbstractNativePrimitive(Signature("expanded
 private fun NativeCall.readerArguments(from: Int): List<Term?> =
     (from until arity).map { i -> arg(i).let { w -> if (kind(w) == NativeCall.VAR) null else term(w) } }
 
-// The attacks, saved or extended, as arguments rather than identifiers (those of argument/1 terms, see context_id/2),
+// The attacks, saved or extended, as arguments rather than identifiers (those of argument/1 terms, see contextId/2),
 // in the given branch (the active one if null), unified with the arguments of the call from [from] on
 private fun NativeCall.attacksByTerms(
     from: Int,

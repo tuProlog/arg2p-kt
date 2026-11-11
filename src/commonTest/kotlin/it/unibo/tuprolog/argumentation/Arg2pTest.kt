@@ -115,7 +115,7 @@ class Arg2pTest {
     fun theSettingsInEffectComeFromTheTheoryTheFlagsAndTheProfile() {
         val aspic = Arg2p.of("r1 : [] => a.")
         assertTrue("graphBuildMode" in aspic.knownFlags && "queryMode" in aspic.knownFlags)
-        assertEquals(listOf("aspic_plus"), aspic.setting("graphBuildMode"))
+        assertEquals(listOf("aspicPlus"), aspic.setting("graphBuildMode"))
         // the extensions the profile presets, the switches it turns on
         assertEquals(setOf("standardPref", "rebutRestriction"), aspic.setting("graphExtension").toSet())
         assertEquals(listOf("true"), aspic.setting("autoTransposition"))
@@ -219,7 +219,7 @@ class Arg2pTest {
                 .queryMode(false)
                 .toString(),
         )
-        assertEquals(Flags.none().graphBuildMode(Profile.ABA_PLUS), Flags.parse("graphBuildMode(aba_plus)."))
+        assertEquals(Flags.none().graphBuildMode(Profile.ABA_PLUS), Flags.parse("graphBuildMode(abaPlus)."))
         // the defaults state nothing: the theory, its profile and the defaults of the flags decide
         assertEquals("", Flags.defaults().toString())
     }
@@ -237,10 +237,10 @@ class Arg2pTest {
     fun theCausalityOfTheTheory() {
         val arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
         assertEquals(Value.parse("[-a]"), arg2p.solve("causality::ness(X, a, b)").next().value("X"))
-        assertTrue(arg2p.solve("causality::but_for(a, b)").next().isYes)
-        assertTrue(arg2p.solve("causality::ness_intervention([-a], b)").next().isYes)
+        assertTrue(arg2p.solve("causality::butFor(a, b)").next().isYes)
+        assertTrue(arg2p.solve("causality::nessIntervention([-a], b)").next().isYes)
         assertTrue(arg2p.solve("causality::ness(X, b, a)").next().isNo)
-        assertTrue(arg2p.solve("causality::but_for(b, a)").next().isNo)
+        assertTrue(arg2p.solve("causality::butFor(b, a)").next().isNo)
     }
 
     // A causality goal answers as on a fresh solver, whatever the solver did before: other solves, another theory, more
@@ -250,9 +250,9 @@ class Arg2pTest {
         val goals =
             listOf(
                 "causality::ness(X, a, b)",
-                "causality::ness_original(X, e, b)",
-                "causality::ness_intervention([-a], b)",
-                "causality::but_for(a, b)",
+                "causality::nessOriginal(X, e, b)",
+                "causality::nessIntervention([-a], b)",
+                "causality::butFor(a, b)",
                 "findall(Id-P, store::rule(Id, P, _), X)",
             )
 

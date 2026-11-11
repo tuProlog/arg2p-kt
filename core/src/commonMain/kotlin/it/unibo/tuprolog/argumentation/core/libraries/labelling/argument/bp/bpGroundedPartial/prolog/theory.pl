@@ -14,7 +14,7 @@ locality(connected).
 %! argumentLabelling
 %  The labelling, in the active context.
 argumentLabelling :-
-    bp_grounded::reifyBurdenOfProofs,
+    bpGrounded::reifyBurdenOfProofs,
     store::arguments(Arguments),
     partialBpLabelling(Arguments), !.
 
@@ -65,7 +65,7 @@ demonstration(Arguments, A, Resolving, A) :-
     (b.i.1) BP(φ) and exists an argument B for neg(φ) such that B(not <)A is not OUT*
 */
 demonstration(Arguments, A, Resolving, A) :-
-    bp_grounded::isArgumentInBurdenOfProof(A),
+    bpGrounded::isArgumentInBurdenOfProof(A),
     \+ notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, _),
     superiorOrEqualComplementArgument(A, B),
     \+ store::argumentLabel(out, B),
@@ -75,7 +75,7 @@ demonstration(Arguments, A, Resolving, A) :-
     (b.i.2) BP(φ) and exist one of A1,...An is not IN*
 */
 demonstration(Arguments, A, Resolving, A) :-
-    bp_grounded::isArgumentInBurdenOfProof(A),
+    bpGrounded::isArgumentInBurdenOfProof(A),
     \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
     store::support(X, A),
     \+ store::argumentLabel(in, X),
@@ -85,7 +85,7 @@ demonstration(Arguments, A, Resolving, A) :-
     (b.ii.1) not BP(φ) and an argument B for neg(φ) such A < B is IN*
 */
 demonstration(Arguments, A, Resolving, A) :-
-    \+ bp_grounded::isArgumentInBurdenOfProof(A),
+    \+ bpGrounded::isArgumentInBurdenOfProof(A),
     \+ notEvaluatedSuperiorComplementArgument(Arguments, A, Resolving, _),
     superiorComplementArgument(A, B),
     store::argumentLabel(in, B),
@@ -95,7 +95,7 @@ demonstration(Arguments, A, Resolving, A) :-
     (b.ii.2) not BP(φ) and one of A1,...An is OUT*
 */
 demonstration(Arguments, A, Resolving, A) :-
-    \+ bp_grounded::isArgumentInBurdenOfProof(A),
+    \+ bpGrounded::isArgumentInBurdenOfProof(A),
     \+ notEvaluatedSubArgument(Arguments, A, Resolving, _),
     store::support(X, A),
     store::argumentLabel(out, X),
@@ -135,22 +135,22 @@ demonstration(Arguments, A, Resolving, Evaluated) :-
     demonstration(Arguments, B, [B|Resolving], Evaluated).
 
 demonstration(Arguments, A, Resolving, Evaluated) :-
-    bp_grounded::isArgumentInBurdenOfProof(A),
+    bpGrounded::isArgumentInBurdenOfProof(A),
     notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, B),
     demonstration(Arguments, B, [B|Resolving], Evaluated).
 
 demonstration(Arguments, A, Resolving, Evaluated) :-
-    bp_grounded::isArgumentInBurdenOfProof(A),
+    bpGrounded::isArgumentInBurdenOfProof(A),
     notEvaluatedSubArgument(Arguments, A, Resolving, B),
     demonstration(Arguments, B, [B|Resolving], Evaluated).
 
 demonstration(Arguments, A, Resolving, Evaluated) :-
-    \+ bp_grounded::isArgumentInBurdenOfProof(A),
+    \+ bpGrounded::isArgumentInBurdenOfProof(A),
     notEvaluatedSuperiorOrEqualComplementArgument(Arguments, A, Resolving, B),
     demonstration(Arguments, B, [B|Resolving], Evaluated).
 
 demonstration(Arguments, A, Resolving, Evaluated) :-
-    \+ bp_grounded::isArgumentInBurdenOfProof(A),
+    \+ bpGrounded::isArgumentInBurdenOfProof(A),
     notEvaluatedSubArgument(Arguments, A, Resolving, B),
     demonstration(Arguments, B, [B|Resolving], Evaluated).
 
@@ -166,7 +166,7 @@ demonstration(Arguments, A, Resolving, A) :-
 
 isComplementInBurdenOfProof(A) :-
     complement(A, Complement),
-    bp_grounded::isInBurdenOfProof(Complement), !.
+    bpGrounded::isInBurdenOfProof(Complement), !.
 
 mostGroundedArgument([], []).
 mostGroundedArgument([X], X).

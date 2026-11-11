@@ -11,15 +11,15 @@ import it.unibo.tuprolog.solve.library.Runtime
 
 // The context of the solver of a native call, for the primitives reaching it without solving goals
 
-/** The context library of the solver, every arg2p solver has one (an existence error for context_check/1 otherwise) */
+/** The context library of the solver, every arg2p solver has one (an existence error for contextCheck/1 otherwise) */
 internal val NativeCall.contextLibrary: Context
     get() =
         (if (this is MachineCall) libraryValue(CONTEXT_OF) as Context? else Context.of(libraries))
-            ?: throw ExistenceError.forProcedure(context, Signature("context_check", 1))
+            ?: throw ExistenceError.forProcedure(context, Signature("contextCheck", 1))
 
 private val CONTEXT_OF: (Runtime) -> Any? = { Context.of(it) }
 
-/** A new branch of the given one, made active (context_branch/2): false if there is no such branch */
+/** A new branch of the given one, made active (contextBranch/2): false if there is no such branch */
 internal fun NativeCall.contextBranch(
     from: Term,
     signature: Signature,

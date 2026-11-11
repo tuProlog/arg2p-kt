@@ -1,5 +1,5 @@
 import { quote, unquote } from '../formats/atoms.js';
-import { DEFAULT_PROFILE, FLAGS, type Flag, type Settings } from './schema.js';
+import { DEFAULT_PROFILE, EARLIER_VALUES, FLAGS, type Flag, type Settings } from './schema.js';
 
 // The flags as a text of Prolog facts, `name(value).` or a plain `name.` switch: the text stays the source of truth,
 // and a change touches the lines of its flag alone (the others, and comments, stay as they are).
@@ -26,7 +26,8 @@ function valuesOf(text: string, name: string): string[] {
         .split('\n')
         .map(line => pattern.exec(line))
         .filter((match): match is RegExpExecArray => match !== null)
-        .map(match => unquote(match[1]));
+        .map(match => unquote(match[1]))
+        .map(value => EARLIER_VALUES[value] ?? value);
 }
 
 /**

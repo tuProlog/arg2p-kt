@@ -51,11 +51,11 @@ export const CONFLICT_PARTS: readonly string[] = ['negation', 'deontic', 'prefer
 export const SEMANTICS: readonly FlagOption[] = [
     option('grounded', 'Grounded', 'The least complete labelling: what is beyond doubt.'),
     option('complete', 'Complete', "Dung's complete labellings."),
-    option('conflictfree', 'Conflict-free', 'Labellings with no attack between in arguments.'),
+    option('conflictFree', 'Conflict-free', 'Labellings with no attack between in arguments.'),
     option('admissible', 'Admissible', 'Conflict-free labellings that defend their in arguments.'),
-    option('stronglyadmissible', 'Strongly admissible', 'Admissible labellings built up from unattacked arguments.'),
+    option('stronglyAdmissible', 'Strongly admissible', 'Admissible labellings built up from unattacked arguments.'),
     option('preferred', 'Preferred', 'The maximal admissible labellings.'),
-    option('semistable', 'Semi-stable', 'Complete labellings with the fewest und arguments.'),
+    option('semiStable', 'Semi-stable', 'Complete labellings with the fewest und arguments.'),
     option('stable', 'Stable', 'Labellings with no und argument.'),
     option('ideal', 'Ideal', 'The largest admissible labelling within every preferred one.'),
     option('eager', 'Eager', 'The largest admissible labelling within every semi-stable one.'),
@@ -63,9 +63,9 @@ export const SEMANTICS: readonly FlagOption[] = [
     option('stage', 'Stage', 'Conflict-free labellings with the fewest und arguments.'),
     option('cf2', 'CF2', 'Naive labellings of the strongly connected parts, in turn.'),
     option('stage2', 'Stage2', 'Stage labellings of the strongly connected parts, in turn.'),
-    option('bp_grounded', 'Burden of persuasion (grounded)', 'The grounded labelling with burdens of persuasion.'),
-    option('bp_grounded_partial', 'Burden of persuasion (partial)', 'The partial labelling with burdens of persuasion.'),
-    option('bp_grounded_complete', 'Burden of persuasion (complete)', 'The complete labelling with burdens of persuasion.'),
+    option('bpGrounded', 'Burden of persuasion (grounded)', 'The grounded labelling with burdens of persuasion.'),
+    option('bpGroundedPartial', 'Burden of persuasion (partial)', 'The partial labelling with burdens of persuasion.'),
+    option('bpGroundedComplete', 'Burden of persuasion (complete)', 'The complete labelling with burdens of persuasion.'),
 ];
 
 export const FLAG_GROUPS: readonly FlagGroup[] = [
@@ -88,8 +88,8 @@ export const FLAG_GROUPS: readonly FlagGroup[] = [
                 label: 'Statement semantics',
                 options: [
                     option('statement', 'Standard', 'In if some in argument concludes it, otherwise out if some out argument does, otherwise und.'),
-                    option('statement_pass_through', 'Pass-through', 'Passes the labels of the arguments on as they are.'),
-                    option('statement_binary', 'Binary', 'In if some in argument concludes it, out otherwise.'),
+                    option('statementPassThrough', 'Pass-through', 'Passes the labels of the arguments on as they are.'),
+                    option('statementBinary', 'Binary', 'In if some in argument concludes it, out otherwise.'),
                 ],
                 help: 'How the labels of the arguments pass to the statements they conclude.',
             },
@@ -164,7 +164,7 @@ export const FLAG_GROUPS: readonly FlagGroup[] = [
                 kind: 'text',
                 label: 'Modules path',
                 placeholder: 'https://example.org/theories',
-                help: 'Where call_module/2 loads modules from, a directory or a base URL. Empty: none.',
+                help: 'Where callModule/2 loads modules from, a directory or a base URL. Empty: none.',
             },
         ],
     },
@@ -216,17 +216,37 @@ export const FLAGS: readonly Flag[] = FLAG_GROUPS.flatMap(group => group.flags);
 const ALL_GROUPS: readonly FlagGroup['id'][] = ['semantics', 'preferences', 'evaluation', 'framework'];
 
 export const PROFILES: readonly ProfileInfo[] = [
-    { name: 'aspic_plus', label: 'ASPIC+', help: 'Strict and defeasible rules, axioms and premises, preferences, restricted rebut, transposition.', groups: ALL_GROUPS },
+    { name: 'aspicPlus', label: 'ASPIC+', help: 'Strict and defeasible rules, axioms and premises, preferences, restricted rebut, transposition.', groups: ALL_GROUPS },
     { name: 'aspic', label: 'ASPIC+ without preferences', help: 'ASPIC+ where every attack succeeds.', groups: ALL_GROUPS },
-    { name: 'aspic_defeasible', label: 'ASPIC+, defeasible rules', help: 'Defeasible rules alone (facts as r : [] => a.), preferences by the last link.', groups: ALL_GROUPS },
+    { name: 'aspicDefeasible', label: 'ASPIC+, defeasible rules', help: 'Defeasible rules alone (facts as r : [] => a.), preferences by the last link.', groups: ALL_GROUPS },
     { name: 'meta', label: 'ASPIC+ with meta-argumentation', help: 'ASPIC+ reasoning about its own rules, conflicts and preferences.', groups: ALL_GROUPS },
     { name: 'aba', label: 'ABA', help: 'Flat assumption-based argumentation: strict rules, assumption/1, contrary/2.', groups: ['semantics', 'evaluation', 'framework'] },
-    { name: 'aba_plus', label: 'ABA+', help: 'Flat ABA with preferences between assumptions (sup/2), attacks from weaker ones reversed.', groups: ALL_GROUPS },
+    { name: 'abaPlus', label: 'ABA+', help: 'Flat ABA with preferences between assumptions (sup/2), attacks from weaker ones reversed.', groups: ALL_GROUPS },
     { name: 'abstract', label: 'Abstract framework', help: 'Dung frameworks: arguments (a.), attacks (a -> b.) and mutual attacks (a <-> b.).', groups: ['semantics'] },
     { name: 'free', label: 'Free', help: 'No preset: every flag as the flags and the theory state it.', groups: ALL_GROUPS },
 ];
 
-export const DEFAULT_PROFILE = 'aspic_plus';
+export const DEFAULT_PROFILE = 'aspicPlus';
+
+/**
+ * The values of the flags as arg2p spelled them before 1.0.0 (and the papers on it), by that spelling: read as those of
+ * 1.0.0, as arg2p reads them (EarlierSpellings in the core)
+ */
+export const EARLIER_VALUES: Readonly<Record<string, string>> = {
+    aspic_plus: 'aspicPlus',
+    aspic_defeasible: 'aspicDefeasible',
+    aba_plus: 'abaPlus',
+    standard_af: 'aspicPlus',
+    conflictfree: 'conflictFree',
+    stronglyadmissible: 'stronglyAdmissible',
+    semistable: 'semiStable',
+    grounded_hash: 'grounded',
+    bp_grounded: 'bpGrounded',
+    bp_grounded_partial: 'bpGroundedPartial',
+    bp_grounded_complete: 'bpGroundedComplete',
+    statement_pass_through: 'statementPassThrough',
+    statement_binary: 'statementBinary',
+};
 
 /**
  * The value of every flag when nothing states it (those of Flags.defaults(), a switch on as `true`): the flags of the

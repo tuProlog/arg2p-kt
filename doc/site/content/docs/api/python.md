@@ -127,7 +127,7 @@ Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: 
 ```python
 arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
 next(arg2p.solve("causality::ness(X, a, b)")).text("X")   # '[- a]': no solution if a is not a NESS cause of b
-next(arg2p.solve("causality::but_for(a, b)")).is_yes        # True
+next(arg2p.solve("causality::butFor(a, b)")).is_yes        # True
 ```
 
 ---

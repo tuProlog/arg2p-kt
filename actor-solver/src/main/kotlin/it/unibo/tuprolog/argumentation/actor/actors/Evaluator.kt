@@ -42,7 +42,7 @@ internal class Evaluator private constructor(
         newReceiveBuilder()
             .onMessage(Add::class.java) { command ->
                 solver.assertA(Struct.parse(command.elem, solver.operators))
-                arg2pScope { solver.solve(atomOf("context_reset")).first() }
+                arg2pScope { solver.solve(atomOf("contextReset")).first() }
                 this
             }.onMessage(Eval::class.java) { command ->
                 val result =

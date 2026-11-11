@@ -52,7 +52,7 @@ class ModuleCallFallbackTest {
 
     @Test
     fun moduleCallInANewBranch() {
-        val goal = "context_reset, context_active(B0), utils:::true, context_active(B1), (B0 \\== B1 -> L = yes ; L = no)"
+        val goal = "contextReset, contextActive(B0), utils:::true, contextActive(B1), (B0 \\== B1 -> L = yes ; L = no)"
         assertEquals("yes", binding(goal, "L"))
     }
 }

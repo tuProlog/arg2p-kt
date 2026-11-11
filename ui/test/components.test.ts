@@ -13,7 +13,7 @@ const ok: (value: unknown, message?: string) => void = assert.ok;
 
 // a0 built on nothing, a1 on a0, a2 attacking a1
 const GRAPH: GraphData = {
-    profile: 'aspic_plus',
+    profile: 'aspicPlus',
     arguments: [
         { id: 'A0', descriptor: 'A0 : f1 : bird(tweety)', conclusion: 'bird(tweety)', topRule: 'none', label: 'in', supports: [] },
         { id: 'A1', descriptor: 'A1 : A0,r1 : flies(tweety)', conclusion: 'flies(tweety)', topRule: 'r1', label: 'out', supports: ['A0'] },

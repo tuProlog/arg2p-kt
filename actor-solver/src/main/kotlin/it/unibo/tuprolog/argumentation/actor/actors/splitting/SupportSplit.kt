@@ -65,7 +65,7 @@ internal object SupportSplit : SplittingPrinciple {
                 worker.ref.tell(Add(it))
                 worker.theory.assertA(Struct.parse(it, worker.theory.operators))
             }
-            arg2pScope { solver.solve(atomOf("context_reset")).first() }
+            arg2pScope { solver.solve(atomOf("contextReset")).first() }
             worker
         }
 
@@ -86,7 +86,7 @@ internal object SupportSplit : SplittingPrinciple {
         context.log.info("Updating $rule")
         worker.theory.assertA(Struct.parse(rule, worker.theory.operators))
         worker.rules.add(rule)
-        arg2pScope { worker.theory.solve(atomOf("context_reset")).first() }
+        arg2pScope { worker.theory.solve(atomOf("contextReset")).first() }
         worker.ref.tell(Add(rule))
     }
 

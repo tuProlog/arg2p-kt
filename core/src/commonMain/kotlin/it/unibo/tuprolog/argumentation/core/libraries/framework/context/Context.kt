@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.context
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
 import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextLayout
@@ -47,11 +48,11 @@ internal class Context(
     // Operations of the context for the native primitives of the other libraries, which reach it through [of]
     // rather than solving goals (a solver is set up to solve a goal)
 
-    /** The active branch, as context_active/1 */
+    /** The active branch, as contextActive/1 */
     val active: Int
         get() = branches.active
 
-    /** A new branch of the given one, made active, as context_branch/2; null if there is no branch [from] */
+    /** A new branch of the given one, made active, as contextBranch/2; null if there is no branch [from] */
     fun branch(from: Int): Int? = branches.branch(from)
 
     /**
@@ -122,7 +123,7 @@ internal class Context(
                     this,
                     Library.of(
                         alias = this.alias,
-                        primitives = primitives.associateBy { it.signature },
+                        primitives = EarlierSpellings.withEarlierNames(primitives.associateBy { it.signature }),
                     ),
                 )
             }

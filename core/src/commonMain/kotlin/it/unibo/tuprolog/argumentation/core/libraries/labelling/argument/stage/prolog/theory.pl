@@ -6,5 +6,5 @@ locality(connected).
 %! argumentLabelling
 %  Stage labellings are the naive ones with a minimal set of UND arguments
 argumentLabelling :-
-    context_active(Branch),
+    contextActive(Branch),
     labelSets::minimalUndOf(naive, Branch).

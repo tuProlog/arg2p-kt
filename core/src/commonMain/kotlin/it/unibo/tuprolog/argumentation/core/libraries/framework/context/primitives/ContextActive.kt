@@ -6,9 +6,9 @@ import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.solve.Signature
 
-/** context_active(?Branch): the active branch */
+/** contextActive(?Branch): the active branch */
 internal class ContextActive(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_active", 1)) {
+) : AbstractNativePrimitive(Signature("contextActive", 1)) {
     override fun call(call: NativeCall): Int = call.replyWord(0, call.int(branches.active))
 }

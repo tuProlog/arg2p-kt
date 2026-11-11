@@ -30,11 +30,11 @@ class AttackSearchLibraryTest {
     @Test
     fun theAttackersAreLookedForOnce() {
         val module = module()
-        module.run("context_id(argument($b), Id), findall(S, attackSearch::possibleAttackers(Id, $b, S), _)")
-        assertTrue(module.holds("context_id(argument($b), Id), context_check(possibleAttackersOf(Id, _))"))
+        module.run("contextId(argument($b), Id), findall(S, attackSearch::possibleAttackers(Id, $b, S), _)")
+        assertTrue(module.holds("contextId(argument($b), Id), contextCheck(possibleAttackersOf(Id, _))"))
         assertEquals(
             module.values("attackSearch::findPossibleAttackers($b, S)", "S"),
-            module.values("context_id(argument($b), Id), attackSearch::possibleAttackers(Id, $b, S)", "S"),
+            module.values("contextId(argument($b), Id), attackSearch::possibleAttackers(Id, $b, S)", "S"),
         )
     }
 }

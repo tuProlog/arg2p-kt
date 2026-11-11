@@ -38,7 +38,7 @@ check :-
 % (no preferences between rules, nor the meta-argumentation of ASPIC+)
 check :-
     setting(graphExtension, M),
-    module_defines(M, preferenceMode/0),
+    moduleDefines(M, preferenceMode/0),
     M \== abaPref, !,
     throw(error(domain_error(aba_theory, M), 'graphExtension: an ABA theory has no preferences between rules (standardPref, defeasiblePref, defeasibleAllPref): abaPref for ABA+')).
 check :-

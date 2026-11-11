@@ -59,7 +59,7 @@ class EngineBenchmark {
             "resolution-attackers" to
                 Workload(
                     "r0 : p0(X) => p1(X).\nf1 :=> p0(c1).$config",
-                    "context_reset, store::rulesRead",
+                    "contextReset, store::rulesRead",
                     "findall(C, (between(1, 2000, _), attackSearch::findPossibleAttackers($argument, C)), _)",
                 ),
             "graph-chain" to Workload(theories.getValue("chain")(40) + config, null, "solve(_, _, _)"),

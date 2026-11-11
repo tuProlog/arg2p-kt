@@ -31,13 +31,13 @@ import it.unibo.tuprolog.solve.libs.io.Url
 import it.unibo.tuprolog.theory.Theory
 
 /**
- * call_module(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is an
+ * callModule(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is an
  * atom: a location, a URL or the path of a file ending in `.pl` (relative to the working directory), or else the name
  * of a file in the modules path (flag `modulesPath`, the working directory if there is none), `.pl` left out. A module
  * that cannot be read raises an existence error, one that does not parse a syntax error; an error raised within the
  * modules is raised by the call.
  */
-internal object CallModule : AbstractNativePrimitive(Signature("call_module", 2)) {
+internal object CallModule : AbstractNativePrimitive(Signature("callModule", 2)) {
     override fun call(call: NativeCall): Int {
         val context = call.context
         val modules = call.termArg(0)
@@ -122,6 +122,6 @@ internal object CallModule : AbstractNativePrimitive(Signature("call_module", 2)
         context
             .createMutableSolver(libraries = context.libraries + IOLib, staticKb = Theory.empty())
             .also { solver -> locations.forEach { solver.appendStaticKb(theoryOf(context, it)) } }
-            // the theory of the solver is the one of the modules, which its goals see wherever call_module/2 is called
+            // the theory of the solver is the one of the modules, which its goals see wherever callModule/2 is called
             .also { solver -> (solver as? VmSolver)?.theoryVisible = true }
 }

@@ -23,7 +23,7 @@ class RuleGraphLibraryTest {
                 r2 : [] => -a.
                 r3 : [] => -c.
             """,
-        ).also { arg2pScope { it.solve("context_reset" and ("store" call "rulesRead")).first() } }
+        ).also { arg2pScope { it.solve("contextReset" and ("store" call "rulesRead")).first() } }
 
     private fun prepareGraph(): Graph {
         val arg1 =

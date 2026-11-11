@@ -135,7 +135,7 @@ class SiteTest {
     fun whatGoesBetweenConsumersAndStoresIsReadBackAsWritten() {
         val frames =
             listOf(
-                HostFrame.Start("site-1#3", 2, ConsumerStart("a :- b.", "queryMode(true).", "context_reset", setOf("a/0", "-b/1"), true)),
+                HostFrame.Start("site-1#3", 2, ConsumerStart("a :- b.", "queryMode(true).", "contextReset", setOf("a/0", "-b/1"), true)),
                 HostFrame.Start("site-1#3", 0, ConsumerStart("", "", "true", null, false)),
                 HostFrame.Call("site-1#3", 1, 7, "barrier", "3"),
                 HostFrame.Answer("site-1#3", 1, 7, "0:1:0"),

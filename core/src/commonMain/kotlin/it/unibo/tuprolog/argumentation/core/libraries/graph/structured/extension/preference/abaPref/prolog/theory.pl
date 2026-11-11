@@ -39,7 +39,7 @@ contraposed(X, On) :-
     assumptionsOf(X, Support),
     throw(error(
         domain_error(weak_contraposition, attack(Support, Beta)),
-        'aba_plus: no weak contraposition (some assumptions attack a stronger one, and no argument from them and the stronger one attacks the weakest of them)'
+        'abaPlus: no weak contraposition (some assumptions attack a stronger one, and no argument from them and the stronger one attacks the weakest of them)'
     )).
 
 %! reverse(+Type, +Attacker, +Attacked, +On)

@@ -7,8 +7,8 @@ stepScope(own).
 %  With metaConflicts, the copies (see buildCopies/0) and their attacks, the only ones.
 modifyArgumentationGraph :-
     buildCopies,
-    findall(Id, context_check(conflictCopy(Id)), Ids),
-    context_retract(conflictCopy(_)),
+    findall(Id, contextCheck(conflictCopy(Id)), Ids),
+    contextRetract(conflictCopy(_)),
     attackBuilder::buildAttacksOf(Ids).
 
 %! buildCopies
@@ -27,7 +27,7 @@ buildCopy :-
     store::withArgumentRules(Argument, [mc(ConflictId, Conflict)|Rules], Copy),
     store::saveArgument(Conclusion, Copy),
     store::argumentId(Copy, Id),
-    context_assert(conflictCopy(Id)),
+    contextAssert(conflictCopy(Id)),
     store::saveSupport(ConflictArgument, Copy),
     store::copySupports(Argument, Id),
     fail.

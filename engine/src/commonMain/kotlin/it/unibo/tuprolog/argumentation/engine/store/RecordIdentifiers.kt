@@ -5,7 +5,7 @@ import it.unibo.tuprolog.argumentation.engine.words.GrowOnlyTable
 import it.unibo.tuprolog.argumentation.engine.words.lockedIf
 
 /**
- * The identifiers of records (see `context_id/2`): a record has the identifier of the first record with its key, the
+ * The identifiers of records (see `contextId/2`): a record has the identifier of the first record with its key, the
  * same for two terms up to the names of their variables, and the identifiers are given in order, from 0. A context has
  * a table of its own, or shares that of its session ([concurrent]: given under a lock, a record read by its identifier
  * without one, as an identifier reaches another thread after it was given).

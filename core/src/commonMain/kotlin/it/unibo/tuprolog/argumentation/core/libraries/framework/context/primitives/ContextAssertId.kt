@@ -5,10 +5,10 @@ import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.solve.Signature
 
-/** context_assert_id(+Id): the clause with identifier Id (see context_id/2) added to the active branch, not copied */
+/** contextAssertId(+Id): the clause with identifier Id (see contextId/2) added to the active branch, not copied */
 internal class ContextAssertId(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_assert_id", 1)) {
+) : AbstractNativePrimitive(Signature("contextAssertId", 1)) {
     override fun call(call: NativeCall): Int {
         val id = call.arg(0)
         if (call.kind(id) != NativeCall.INT) return NativeCall.FAIL

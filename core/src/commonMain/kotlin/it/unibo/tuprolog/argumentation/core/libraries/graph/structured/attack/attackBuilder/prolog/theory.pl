@@ -26,19 +26,19 @@ buildDirectAttack(_).
 %  The direct attacks on and by the saved arguments with identifiers Ids, added to a graph with its attacks
 %  (those between the others are saved already).
 %  The solvers of a session changing a graph together each find them on their own arguments (see the module
-%  store), once every one added its arguments (graph_sync/1: those the others added, none alone): every
+%  store), once every one added its arguments (graphSync/1: those the others added, none alone): every
 %  step calling it calls it once.
 buildAttacksOf(Own) :-
-    store::graph_sync(Others),
+    store::graphSync(Others),
     append(Own, Others, Ids),
     buildAttacksAmong(Ids).
 
 buildAttacksAmong([]) :- !.
 buildAttacksAmong(Ids) :-
-    findall(_, (member(Id, Ids), context_assert(addedArgument(Id))), _),
+    findall(_, (member(Id, Ids), contextAssert(addedArgument(Id))), _),
     compatibility(Compatible),
     findall(_, buildAddedAttack(Compatible), _),
-    context_retract(addedArgument(_)).
+    contextRetract(addedArgument(_)).
 
 % (from every argument to its attackers, not from those added to what they attack: a solver of a shared graph has its
 % own rules alone, which that way goes through)
@@ -47,7 +47,7 @@ buildAddedAttack(Compatible) :-
     attackSearch::possibleAttackers(IdA, A, Conflict),
     findAttacker(Conflict, B),
     store::argumentId(B, IdB),
-    (context_check(addedArgument(IdA)) -> true ; context_check(addedArgument(IdB))),
+    (contextCheck(addedArgument(IdA)) -> true ; contextCheck(addedArgument(IdB))),
     attackAs(Compatible, T, B, A),
     store::saveAttackById(T, IdB, B, IdA, A, IdA, A),
     fail.
@@ -55,7 +55,7 @@ buildAddedAttack(_).
 
 % (Compatible: found once for all the attacks of a graph, see compatibility/1.) Attacks are checked on copies, so that
 % the arguments are saved exactly as they are stored: binding their variables would change their identifiers (see
-% context_id)
+% contextId)
 attackAs(Compatible, T, B, A) :-
     conflict::attacker(B),
     copy_term(B-A, CB-CA),

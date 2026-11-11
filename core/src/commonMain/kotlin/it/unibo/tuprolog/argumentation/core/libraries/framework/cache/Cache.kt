@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.cache
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives.CacheAssert
 import it.unibo.tuprolog.argumentation.core.libraries.framework.cache.primitives.CacheCheck
@@ -12,7 +13,7 @@ import it.unibo.tuprolog.argumentation.engine.store.ProgramStore
 import it.unibo.tuprolog.argumentation.engine.vm.program.Program
 import it.unibo.tuprolog.solve.library.Library
 
-/** Facts shared across context branches (cache_assert/1, cache_retract/1, cache_check/1), kept in the same indexed store as the context */
+/** Facts shared across context branches (cacheAssert/1, cacheRetract/1, cacheCheck/1), kept in the same indexed store as the context */
 class Cache :
     ArgLibrary,
     ProgramStore {
@@ -37,7 +38,7 @@ class Cache :
 
     /**
      * The cache used by [call]: on a solver with no versions of its theory, what it holds is forgotten when the theory is
-     * another one (a theory loaded with no context_reset after it, see refresh)
+     * another one (a theory loaded with no contextReset after it, see refresh)
      */
     internal fun follow(call: NativeCall) {
         if (call.theoryVersion == null) follow(call.context.staticKb)
@@ -60,7 +61,7 @@ class Cache :
                     this,
                     Library.of(
                         alias = this.alias,
-                        primitives = primitives.associateBy { it.signature },
+                        primitives = EarlierSpellings.withEarlierNames(primitives.associateBy { it.signature }),
                     ),
                 )
             }

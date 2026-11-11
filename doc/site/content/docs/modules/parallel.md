@@ -164,7 +164,7 @@ way ends. A Prolog check of a consumer still running ends on its own, its result
 (`EvaluationStats`), null before the first; a goal using no graph (a Prolog predicate) leaves it as it is.
 
 An `EvaluationStats` has the part of the graph it was answered on (`locality`: `directional` or `connected` in query
-mode, `whole_graph` otherwise, `alone` for a graph the client solver builds alone, a theory not split or an
+mode, `wholeGraph` otherwise, `alone` for a graph the client solver builds alone, a theory not split or an
 abstract framework), the `arguments` and the `attacks` of the graph labelled, the arguments the consumers built for it
 (`added`: all of them for a graph built anew, none for an evaluation answered on the graph as it was), what each consumer
 built (`workers`, one for each partition, the client solver the first: its `partition`, its `site`, its

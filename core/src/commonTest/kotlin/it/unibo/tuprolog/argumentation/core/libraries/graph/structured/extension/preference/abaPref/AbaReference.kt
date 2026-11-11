@@ -5,7 +5,7 @@ import kotlin.random.Random
 /**
  * An ABA+ framework (Čyras and Toni 2016; ABA when there is no preference), flat or not, with its semantics computed
  * by brute force on the sets of assumptions, as defined: the rules (head, body), the contrary of each assumption, and
- * the strict preferences (weaker, stronger), closed transitively. For the tests of the profiles aba and aba_plus,
+ * the strict preferences (weaker, stronger), closed transitively. For the tests of the profiles aba and abaPlus,
  * whose labels are those of the arguments.
  */
 class AbaReference(
@@ -107,7 +107,7 @@ class AbaReference(
         }
     }
 
-    /** The theory of arg2p for the framework, in [profile] (aba or aba_plus) */
+    /** The theory of arg2p for the framework, in [profile] (aba or abaPlus) */
     fun theory(
         profile: String,
         semantics: String = "grounded",

@@ -44,7 +44,7 @@ class SettingsTest {
         val flags = Flags.parse("argumentLabellingMode(grounded).\ngraphExtension(standardPref).")
         assertEquals("[preferred]", solve("findall(X, setting(argumentLabellingMode, X), L)", "argumentLabellingMode(preferred).", flags))
         assertEquals("[bp]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(bp).", flags))
-        // the flags stated win over the profile (aspic_plus)
+        // the flags stated win over the profile (aspicPlus)
         assertEquals("[standardPref]", solve("findall(X, setting(graphExtension, X), L)", "argumentLabellingMode(preferred).", flags))
         assertEquals("yes", solve("setting(metaConflicts), L = yes", "metaConflicts."))
     }
@@ -53,7 +53,7 @@ class SettingsTest {
     fun flagsWithManyValuesInOrder() {
         val flags = Flags.none()
         assertEquals("[a, b]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(a).\ngraphExtension(b).", flags))
-        // none stated: those of the profile (aspic_plus)
+        // none stated: those of the profile (aspicPlus)
         assertEquals("[standardPref, rebutRestriction]", solve("findall(X, setting(graphExtension, X), L)", "", flags))
         assertEquals("[]", solve("findall(X, setting(graphExtension, X), L)", "graphExtension(none).", flags))
     }
@@ -121,7 +121,7 @@ class SettingsTest {
             val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
             if (solution.isYes) solution.substitution.getByName("L")?.toString() ?: "yes" else "no"
         }
-        // aspic_plus presets transposition on: the flag given turns it off, the theory turns it on again
+        // aspicPlus presets transposition on: the flag given turns it off, the theory turns it on again
         assertEquals("no", stated("", Flags.defaults().autoTransposition(false), "setting(autoTransposition)"))
         assertEquals("yes", stated("autoTransposition.", Flags.defaults().autoTransposition(false), "setting(autoTransposition)"))
         // the extensions given are those in effect, not the profile's

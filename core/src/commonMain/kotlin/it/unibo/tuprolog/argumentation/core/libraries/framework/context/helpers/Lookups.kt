@@ -54,8 +54,8 @@ internal fun NativeCall.lookupOrView(
     return inline(struct("::", intArrayOf(atom(layout.viewModule), answer)), libraries, theoryVisible = false)
 }
 
-/** The lookup of a goal in a branch: context_check(Branch, Goal) */
-internal fun branchLookup(branch: Int) = GoalWrapper { call, goal -> call.struct("context_check", intArrayOf(call.int(branch), goal)) }
+/** The lookup of a goal in a branch: contextCheck(Branch, Goal) */
+internal fun branchLookup(branch: Int) = GoalWrapper { call, goal -> call.struct("contextCheck", intArrayOf(call.int(branch), goal)) }
 
 /**
  * The lookup of the argument [i] in [store]: a conjunction as the lookup of each goal (through [wrap]), a

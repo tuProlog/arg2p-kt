@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 class BinaryStatementLabellingTest {
     private val config =
         """
-        statementLabellingMode(statement_binary).
+        statementLabellingMode(statementBinary).
         argumentLabellingMode(grounded).
         orderingPrinciple(last).
         orderingComparator(elitist).

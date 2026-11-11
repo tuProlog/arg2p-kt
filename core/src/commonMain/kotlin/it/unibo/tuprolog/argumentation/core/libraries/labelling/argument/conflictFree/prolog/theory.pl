@@ -5,7 +5,7 @@ locality(directional).
 %! argumentLabelling
 %  Each conflict-free labelling in turn, left as the active context.
 argumentLabelling :-
-    context_active(Branch),
+    contextActive(Branch),
     labelSets::candidates(Args, Forced),
     conflictFreeSubset(Args, Forced, Set),
     labelSets::labelSet(Branch, Set).

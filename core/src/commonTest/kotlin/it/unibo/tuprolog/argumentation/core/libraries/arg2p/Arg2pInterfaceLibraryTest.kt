@@ -21,7 +21,7 @@ class Arg2pInterfaceLibraryTest {
                 bp(-a).
                 
                 statementLabellingMode(statement).
-                argumentLabellingMode(bp_grounded_partial).
+                argumentLabellingMode(bpGroundedPartial).
                 graphExtension(rebutRestriction).
                 graphExtension(standardPref).
                 orderingPrinciple(last).

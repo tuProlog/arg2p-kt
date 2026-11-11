@@ -6,7 +6,7 @@ locality(connected).
 %! argumentLabelling
 %  Each naive labelling in turn, left as the active context.
 argumentLabelling :-
-    context_active(Branch),
+    contextActive(Branch),
     labelSets::candidates(Args, Forced),
     store::labelledIds(in, In),
     naiveSubset(Args, Forced, In, Set),

@@ -21,21 +21,21 @@ fun isNessOriginalIntervention(
     intervention: String,
     effect: String,
     outcome: Boolean = true,
-) = check(solver, "ness_original_intervention($intervention, $effect)", outcome)
+) = check(solver, "nessOriginalIntervention($intervention, $effect)", outcome)
 
 fun isNessOriginalCause(
     solver: Arg2p,
     cause: String,
     effect: String,
     outcome: Boolean = true,
-) = check(solver, "ness_original(_, $cause, $effect)", outcome)
+) = check(solver, "nessOriginal(_, $cause, $effect)", outcome)
 
 fun isNessIntervention(
     solver: Arg2p,
     intervention: String,
     effect: String,
     outcome: Boolean = true,
-) = check(solver, "ness_intervention($intervention, $effect)", outcome)
+) = check(solver, "nessIntervention($intervention, $effect)", outcome)
 
 fun isNessCause(
     solver: Arg2p,
@@ -49,4 +49,4 @@ fun isButForCause(
     cause: String,
     effect: String,
     outcome: Boolean = true,
-) = check(solver, "but_for($cause, $effect)", outcome)
+) = check(solver, "butFor($cause, $effect)", outcome)

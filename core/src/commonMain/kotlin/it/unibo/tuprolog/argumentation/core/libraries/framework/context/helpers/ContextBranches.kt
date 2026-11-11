@@ -9,7 +9,7 @@ import it.unibo.tuprolog.core.Term
 
 /**
  * The branches of a context: each a store of clauses (see [ClauseStore]), one of them active, a new one forked from
- * another; and the identifiers of the terms (context_id/2), shared by all the branches. Branch 0 is the root.
+ * another; and the identifiers of the terms (contextId/2), shared by all the branches. Branch 0 is the root.
  *
  * The identifiers are a table of the context's own, or that of the session of its program (see SolverSession), shared
  * with the contexts of the other solvers of the session: the context takes it when bound to a program of the session

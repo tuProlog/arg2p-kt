@@ -78,7 +78,7 @@ object TheoryPartitioner {
     ): Partitioning {
         val solver = Arg2pSolverFactory.default(theory = theory, settings = flags.library())
         val clauses = solver.staticKb.clauses.toList()
-        solver.solveOnce("context_reset")
+        solver.solveOnce("contextReset")
         // a theory its profile refuses is refused here, as by the standard solver
         checked(solver.solveOnce("pipeline::checkProfile"))
         val rules = rules(solver)

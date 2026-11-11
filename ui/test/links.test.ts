@@ -17,7 +17,7 @@ const ok: (value: unknown, message?: string) => void = assert.ok;
 
 // Tweety, as arg2p 0.25 gives it: premises named in their descriptor, a strict rule transposed (r2_i)
 const GRAPH: GraphData = {
-    profile: 'aspic_plus',
+    profile: 'aspicPlus',
     arguments: [
         { id: 'A0', descriptor: 'A0 : f1 : bird(tweety)', conclusion: 'bird(tweety)', topRule: 'none', label: 'in', supports: [] },
         { id: 'A1', descriptor: 'A1 : ax1 : penguin(tweety)', conclusion: 'penguin(tweety)', topRule: 'none', label: 'in', supports: [] },

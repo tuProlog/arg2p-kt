@@ -20,7 +20,7 @@ import kotlin.test.Test
  */
 class SharedGraphBench {
     private val flags = Flags.defaults().queryMode(false)
-    private val labelling = "context_reset, pipeline::statementLabels(In, Out, Und)"
+    private val labelling = "contextReset, pipeline::statementLabels(In, Out, Und)"
 
     private fun indep(n: Int): String =
         (0 until n).joinToString("\n") { b ->
@@ -117,7 +117,7 @@ class SharedGraphBench {
                                 thread {
                                     worker.solveOnce(
                                         Struct.parse(
-                                            "context_reset, pipeline::graph(whole, whole_graph), pipeline::modifyGraph",
+                                            "contextReset, pipeline::graph(whole, wholeGraph), pipeline::modifyGraph",
                                             worker.operators,
                                         ),
                                     )

@@ -19,7 +19,7 @@ class PipelineWholeTest {
     @Test
     fun theGraphStaysInTheContext() {
         val module = LibraryTesting(theory)
-        module.run("context_reset", "pipeline::evaluate")
+        module.run("contextReset", "pipeline::evaluate")
         assertEquals("3", module.value("store::graphSize(N)", "N"))
         assertEquals("1", module.value("findall(T, store::directAttack(T, _, _), Ts), length(Ts, N)", "N"))
     }

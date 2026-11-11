@@ -10,16 +10,16 @@ locality(connected).
 %! argumentLabelling
 %  The labelling, in the active context.
 argumentLabelling :-
-    bp_grounded::reifyBurdenOfProofs,
+    bpGrounded::reifyBurdenOfProofs,
     store::arguments(Arguments),
     completeBpLabelling(go, Arguments).
 
 completeBpLabelling(stop, _).
 completeBpLabelling(go, Arguments) :-
-    bp_grounded_partial::partialBpLabelling(Arguments), !,
+    bpGroundedPartial::partialBpLabelling(Arguments), !,
     store::labelledArguments(und, NewArgs),
     store::unlabelArguments(und),
-    bp_grounded::groundedLabelling(NewArgs),
+    bpGrounded::groundedLabelling(NewArgs),
     store::labelledArguments(und, LeftArguments),
     stopCondition(Stop, Arguments, LeftArguments),
     completeBpLabelling(Stop, LeftArguments).

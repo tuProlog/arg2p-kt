@@ -11,15 +11,15 @@ argumentLabelling :-
 %  Each labelling built with the labellings Base (naive or stage) of each component, left as the active context.
 compute(Base) :-
     store::argumentIds(Args),
-    context_active(Branch),
-    context_branch(Branch, NewBranch),
+    contextActive(Branch),
+    contextBranch(Branch, NewBranch),
     store::leaveOutArguments,
     (
         computeIteratively(Base, Branch, Args, [])
     ;
         % the branches are released on backtracking, as the labellings built on them
-        context_checkout(Branch),
-        context_drop(NewBranch),
+        contextCheckout(Branch),
+        contextDrop(NewBranch),
         fail
     ).
 
@@ -41,14 +41,14 @@ computeIteratively(Base, OriginBranch, [A|Args], Suppressed) :-
     computeIteratively(Base, OriginBranch, Remaining, NewSuppressed).
 
 evaluate(Base, OriginBranch, Args) :-
-    context_active(Branch),
-    context_branch(Branch, NewBranch),
+    contextActive(Branch),
+    contextBranch(Branch, NewBranch),
     (
         moveArgs(Args, OriginBranch),
         Base::argumentLabelling
     ;
-        context_checkout(Branch),
-        context_drop(NewBranch),
+        contextCheckout(Branch),
+        contextDrop(NewBranch),
         fail
     ).
 

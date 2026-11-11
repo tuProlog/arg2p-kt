@@ -19,7 +19,7 @@ interface Loadable : ArgLibrary {
     val notation: OperatorSet
         get() = OperatorSet.EMPTY
 
-    /** The predicates the module defines, its clauses and its primitives, as name/arity (see module_defines/2) */
+    /** The predicates the module defines, its clauses and its primitives, as name/arity (see moduleDefines/2) */
     val definitions: Set<String>
         get() = definitionsOf(baseContent)
 }

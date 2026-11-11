@@ -29,12 +29,12 @@ declaredPlainly(Statement, Other) :-
 %  parser::extension/1), read the first time it is asked for.
 languageConflict(Statement, Other) :-
     utils::oncePerTheory(languageConflicts, conflict::readLanguageConflicts),
-    cache_check(conflict(Statement, Other)).
+    cacheCheck(conflict(Statement, Other)).
 
 readLanguageConflicts :-
     findall(Conflicts, (
         parser::extension(Language),
-        module_defines(Language, conflicts/1),
+        moduleDefines(Language, conflicts/1),
         Language::conflicts(Conflicts)
     ), Lists),
     utils::appendLists(Lists, All),

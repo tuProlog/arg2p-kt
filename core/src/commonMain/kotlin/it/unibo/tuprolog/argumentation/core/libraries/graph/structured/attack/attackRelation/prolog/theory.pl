@@ -3,9 +3,9 @@
 %  every attack goes through a conflict concluded by an argument (see the module conflictArguments): the
 %  contraries and the undercuts by undercut(Rule), which no such conflict states, do not apply (see static/0).
 attacks(rebut, A, B) :- rebuts(A, B), !.
-attacks(contrary_rebut, A, B) :- contraryRebuts(A, B), !.
+attacks(contraryRebut, A, B) :- contraryRebuts(A, B), !.
 attacks(undermine, A, B) :- undermines(A, B), !.
-attacks(contrary_undermine, A, B) :- contraryUndermines(A, B), !.
+attacks(contraryUndermine, A, B) :- contraryUndermines(A, B), !.
 attacks(undercut, A, B) :- undercuts(A, B), !.
 
 %! rebuts(+A, +B)

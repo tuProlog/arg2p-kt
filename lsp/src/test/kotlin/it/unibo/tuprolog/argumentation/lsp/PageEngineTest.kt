@@ -82,7 +82,7 @@ class PageEngineTest {
     fun aGraphTellsTheStructureOfItsArgumentsAndItsProfile() {
         solve(tweety, "solve")
         val graph = next().of("solution").getAsJsonObject("solution").getAsJsonObject("graph")
-        assertEquals("aspic_plus", graph.get("profile").asString)
+        assertEquals("aspicPlus", graph.get("profile").asString)
         val arguments = graph.getAsJsonArray("arguments").map { it.asJsonObject }
         val flies = arguments.single { it.get("conclusion").asString == "flies(tweety)" }
         assertEquals("r1", flies.get("topRule").asString)
@@ -173,7 +173,7 @@ class PageEngineTest {
         assertEquals("true", settings.getAsJsonArray("queryMode")[0].asString)
         assertEquals("grounded", settings.getAsJsonArray("argumentLabellingMode")[0].asString)
         // a theory that does not parse: the flags alone; flags that do not: nothing
-        assertEquals("aspic_plus", settings("a :=> b", flags).getAsJsonArray("graphBuildMode")[0].asString)
+        assertEquals("aspicPlus", settings("a :=> b", flags).getAsJsonArray("graphBuildMode")[0].asString)
         assertTrue(settings(tweety, "queryMode(").isEmpty)
     }
 

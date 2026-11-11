@@ -28,7 +28,7 @@ export interface AttackData {
 
 export interface GraphData {
     /**
-     * The profile the theory was read in (aspic_plus, aba, abstract, ...: the value of graphBuildMode in effect), empty
+     * The profile the theory was read in (aspicPlus, aba, abstract, ...: the value of graphBuildMode in effect), empty
      * when unknown. In an abstract framework the arguments are named by the theory (their conclusion), with no structure.
      */
     readonly profile: string;

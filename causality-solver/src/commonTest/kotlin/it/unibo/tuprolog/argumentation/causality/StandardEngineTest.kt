@@ -15,7 +15,7 @@ import it.unibo.tuprolog.theory.parsing.parse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// The causality module on the solver of tuProlog (solve-prolog), and with no context_reset before its checks
+// The causality module on the solver of tuProlog (solve-prolog), and with no contextReset before its checks
 class StandardEngineTest {
     private val theory = "tx2 : d => -r2.\nr1 :=> a.\nr2 : a => -b."
 
@@ -42,7 +42,7 @@ class StandardEngineTest {
     @Test
     fun onTheSolverOfTuProlog() = checks(tuProlog(theory))
 
-    // A theory changed with no context_reset: the checks answer as on a fresh solver of the new theory, with no version of
+    // A theory changed with no contextReset: the checks answer as on a fresh solver of the new theory, with no version of
     // the theory to tell the change (the solver of tuProlog has none)
     @Test
     fun aTheoryChangedWithNoContextReset() {
@@ -51,8 +51,8 @@ class StandardEngineTest {
             listOf(
                 "ness(X, a, -b)",
                 "ness(X, a, b)",
-                "but_for(a, b)",
-                "ness_intervention([-a], b)",
+                "butFor(a, b)",
+                "nessIntervention([-a], b)",
                 "findall(Id-P, store::rule(Id, P, _), X)",
             )
 

@@ -167,12 +167,12 @@ class Arg2p private constructor(
 
     /**
      * What the context branch [branch] stores matching [goal], Prolog text (facts, or clause(Head, Body) for rules):
-     * the solutions of context_check(Branch, Goal)
+     * the solutions of contextCheck(Branch, Goal)
      */
     fun contextFacts(
         branch: Int,
         goal: String,
-    ): Solutions = solutionsOf(solver.solve(Struct.of("context_check", Integer.of(branch), struct(goal))).iterator())
+    ): Solutions = solutionsOf(solver.solve(Struct.of("contextCheck", Integer.of(branch), struct(goal))).iterator())
 
     /** Adds the clauses of [theory], Prolog text, to the theory (an [Arg2pException] telling where it does not parse) */
     fun add(theory: String) = solver.appendStaticKb(parsed(theory))

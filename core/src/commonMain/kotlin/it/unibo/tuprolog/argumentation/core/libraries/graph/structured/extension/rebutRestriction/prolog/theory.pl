@@ -16,8 +16,8 @@ modifyArgumentationGraph :-
 % The attack types the restriction does not apply to. Everything else is restricted: rebuts, and the attacks
 % of a graph extension of the user.
 rebutRestriction(undermine, _).
-rebutRestriction(contrary_rebut, _).
-rebutRestriction(contrary_undermine, _).
+rebutRestriction(contraryRebut, _).
+rebutRestriction(contraryUndermine, _).
 rebutRestriction(undercut, _).
 % the top rule of the argument is its last defeasible rule (see attackRelation::defeasibleTopRule/2)
 rebutRestriction(_, C) :-

@@ -102,7 +102,7 @@ class ConflictLibraryTest {
     @Test
     fun withMetaConflictsOnlyTheConcludedConflictsHold() {
         val module = LibraryTesting("metaConflicts.\nr1 : [] => conflict(a, b).\nr2 : [] => conflict(c, d, true).")
-        module.run("context_reset", "store::rulesRead", "ruleGraph:::buildArguments")
+        module.run("contextReset", "store::rulesRead", "ruleGraph:::buildArguments")
         assertTrue(module.holds("conflict::between([a], [b])"))
         assertTrue(module.holds("conflict::between([c], [d])"))
         // the built-in conflicts are off
@@ -114,7 +114,7 @@ class ConflictLibraryTest {
     fun withMetaConflictsTheConflictModelDoesNotCount() {
         for (model in listOf("conflictModel(negation).", "conflictModel(declared).", "conflictModel(none).")) {
             val module = LibraryTesting("metaConflicts.\n$model\nr1 : [] => conflict(a, b).\nconflict([c], [d]).")
-            module.run("context_reset", "store::rulesRead", "ruleGraph:::buildArguments")
+            module.run("contextReset", "store::rulesRead", "ruleGraph:::buildArguments")
             assertTrue(module.holds("conflict::between([a], [b])"), model)
             assertFalse(module.holds("conflict::between([a], [-a])"), model)
             assertFalse(module.holds("conflict::between([c], [d])"), model)

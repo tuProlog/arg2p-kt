@@ -587,10 +587,10 @@ class ArgumentLabellingTest {
     fun labelArgumentsPreferred4() = checkSolutions(prepareGrounded(), "preferred")
 
     @Test
-    fun labelArgumentsSemistable() = checkSolutions(prepareSemiStable(), "semistable")
+    fun labelArgumentsSemistable() = checkSolutions(prepareSemiStable(), "semiStable")
 
     @Test
-    fun labelArgumentsSemistable2() = checkSolutions(prepareGrounded(), "semistable")
+    fun labelArgumentsSemistable2() = checkSolutions(prepareGrounded(), "semiStable")
 
     @Test
     fun labelArgumentsStable() = checkSolutions(prepareStable(), "stable")
@@ -671,7 +671,7 @@ class ArgumentLabellingTest {
     fun labelArgumentsStage24() = checkSolutions(prepareStage(), "stage2")
 
     @Test
-    fun labelArgumentsConflictFree() = checkSolutions(prepareConflictFree(), "conflictfree")
+    fun labelArgumentsConflictFree() = checkSolutions(prepareConflictFree(), "conflictFree")
 
     @Test
     fun labelArgumentsAdmissible() = checkSolutions(prepareAdmissible(), "admissible")
@@ -683,11 +683,11 @@ class ArgumentLabellingTest {
     fun labelArgumentsAdmissible3() = checkSolutions(prepareAdmissible3(), "admissible")
 
     @Test
-    fun labelArgumentsStronglyAdmissible() = checkSolutions(prepareAdmissible(), "stronglyadmissible")
+    fun labelArgumentsStronglyAdmissible() = checkSolutions(prepareAdmissible(), "stronglyAdmissible")
 
     @Test
-    fun labelArgumentsStronglyAdmissible2() = checkSolutions(prepareStronglyAdmissible(), "stronglyadmissible")
+    fun labelArgumentsStronglyAdmissible2() = checkSolutions(prepareStronglyAdmissible(), "stronglyAdmissible")
 
     @Test
-    fun labelArgumentsStronglyAdmissible3() = checkSolutions(prepareStronglyAdmissible2(), "stronglyadmissible")
+    fun labelArgumentsStronglyAdmissible3() = checkSolutions(prepareStronglyAdmissible2(), "stronglyAdmissible")
 }

@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.settings
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
@@ -164,7 +165,8 @@ class Settings(
         facts: Map<String, List<Struct>>,
     ): List<Term> {
         val heads = facts[flag.predicate()].orEmpty()
-        val valued = heads.filter { it.arity == 1 }.map { it[0] }
+        // (a value spelled as before 1.0.0 read as 1.0.0 spells it, see EarlierSpellings)
+        val valued = heads.filter { it.arity == 1 }.map { EarlierSpellings.value(it[0]) }
         if (!flag.isSwitch) return expanded(flag, valued.toList())
         return heads.filter { it.arity == 0 }.map { Truth.TRUE } + valued.filter { it == OFF }
     }

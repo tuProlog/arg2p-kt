@@ -23,7 +23,7 @@ class SolverSession {
     internal val base: Program = SharedPrograms.sessionBase().also { it.session = this }
 
     /**
-     * The identifiers of the records of the contexts of the session (see `context_id/2`): the same argument the same
+     * The identifiers of the records of the contexts of the session (see `contextId/2`): the same argument the same
      * identifier on every node, one record however many build it. A node resetting its context keeps them: they go with
      * the session.
      */

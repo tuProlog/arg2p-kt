@@ -29,7 +29,7 @@ class ConflictArgumentsLibraryTest {
     fun aCopyIsMadeForEachConflictArgument() {
         val module = LibraryTesting("metaConflicts.\nr1 : [] => a.\nr2 : [] => b.\nr3 : [] => conflict(a, b).\nr4 : [] => conflict(a, c).")
         module.run(
-            "context_reset",
+            "contextReset",
             "store::rulesRead",
             "ruleGraph:::buildArguments",
             "conflictArguments::buildCopies",
@@ -40,7 +40,7 @@ class ConflictArgumentsLibraryTest {
         assertTrue(
             module.holds(
                 "store::argumentFor([a], A), conflict::carried(A, conflict(a, b)), " +
-                    "store::argumentFor([conflict(a, b)], C), context_check(support(C, A))",
+                    "store::argumentFor([conflict(a, b)], C), contextCheck(support(C, A))",
             ),
         )
     }

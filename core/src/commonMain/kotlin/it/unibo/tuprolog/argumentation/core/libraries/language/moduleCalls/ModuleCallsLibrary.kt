@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.language.moduleCalls
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.libraries.ArgsFlag
 import it.unibo.tuprolog.argumentation.core.libraries.Loadable
 import it.unibo.tuprolog.argumentation.core.libraries.language.moduleCalls.flags.ModulesPath
@@ -16,10 +17,7 @@ object ModuleCallsLibrary : Loadable {
     override val baseContent: Library by lazy {
         Library.of(
             alias = this.alias,
-            primitives =
-                mapOf(
-                    CallModule.signature to CallModule,
-                ),
+            primitives = EarlierSpellings.withEarlierNames(mapOf(CallModule.signature to CallModule)),
         )
     }
     override val baseFlags: Iterable<ArgsFlag>

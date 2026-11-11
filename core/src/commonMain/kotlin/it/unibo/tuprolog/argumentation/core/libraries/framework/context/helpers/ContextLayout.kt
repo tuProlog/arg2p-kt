@@ -4,8 +4,8 @@ import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 
 /**
  * What the library keeping its facts in the context tells the context of them, for it to look them up as they are read:
- * the places a predicate is indexed by besides its arguments ([indexed]), the places a lookup names (context_by/3,
- * context_matching/3, see [key]) and the relations answered by the goals of that library rather than by facts ([view]).
+ * the places a predicate is indexed by besides its arguments ([indexed]), the places a lookup names (contextBy/3,
+ * contextMatching/3, see [key]) and the relations answered by the goals of that library rather than by facts ([view]).
  * The store gives the layout of the graph (see the module store); with [NONE], facts are looked up by their arguments.
  */
 internal interface ContextLayout {

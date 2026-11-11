@@ -20,16 +20,16 @@ class ParserLibraryTest {
     @Test
     fun theLanguagesAreAskedInTheActiveStage() {
         val module = LibraryTesting("r1 : [] => a.")
-        val active = module.value("context_reset, context_active(B)", "B")
-        assertEquals(active, module.value("context_reset, parser::checkLanguages, context_active(B)", "B"))
+        val active = module.value("contextReset, contextActive(B)", "B")
+        assertEquals(active, module.value("contextReset, parser::checkLanguages, contextActive(B)", "B"))
     }
 
     // The theory converted once, a solve after the first has the stages of the first
     @Test
     fun theStagesOfASolveAreTheSameAfterTheFirst() {
         val module = LibraryTesting("r1 : [] => a.\nr2 : [] => -a.")
-        val first = module.value("solve, context_active(B)", "B")
-        assertEquals(first, module.value("solve, context_active(B)", "B"))
+        val first = module.value("solve, contextActive(B)", "B")
+        assertEquals(first, module.value("solve, contextActive(B)", "B"))
     }
 
     @Test

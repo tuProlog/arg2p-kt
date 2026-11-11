@@ -128,7 +128,7 @@ class AttacksTest {
                 r2 : a => b.
                 r3 : [] => c.
                 """.trimIndent(),
-            mapOf("contrary_rebut" to 2),
+            mapOf("contraryRebut" to 2),
         )
 
         checkAttacks(
@@ -138,7 +138,7 @@ class AttacksTest {
                 r2 : a -> b.
                 r3 : [] -> c.
                 """.trimIndent(),
-            mapOf("contrary_rebut" to 2),
+            mapOf("contraryRebut" to 2),
         )
     }
 
@@ -151,7 +151,7 @@ class AttacksTest {
                 r2 : a => b.
                 r3 :=> c.
                 """.trimIndent(),
-            mapOf("contrary_undermine" to 2),
+            mapOf("contraryUndermine" to 2),
         )
 
         checkAttacks(
@@ -161,7 +161,7 @@ class AttacksTest {
                 r2 : a -> b.
                 r3 :=> c.
                 """.trimIndent(),
-            mapOf("contrary_undermine" to 2),
+            mapOf("contraryUndermine" to 2),
         )
     }
 }

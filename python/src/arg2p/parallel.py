@@ -73,7 +73,7 @@ class WorkerStats:
 class EvaluationStats:
     """
     An evaluation answered by the solver of a site: the part of the graph it was answered on (directional or connected
-    in query mode, whole_graph otherwise, alone for a graph the solver builds alone), the arguments and the attacks of
+    in query mode, wholeGraph otherwise, alone for a graph the solver builds alone), the arguments and the attacks of
     the graph labelled, the arguments the consumers built for it, what each consumer built, and how long it took, in
     milliseconds.
     """

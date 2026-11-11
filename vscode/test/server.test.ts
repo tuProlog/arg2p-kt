@@ -52,7 +52,7 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
         ];
         const solution = answers.find(it => it.type === 'solution');
         equal(solution?.solution.result, 'yes', JSON.stringify(answers));
-        equal(solution.solution.graph.profile, 'aspic_plus');
+        equal(solution.solution.graph.profile, 'aspicPlus');
         ok(solution.solution.graph.arguments.length >= 3);
         ok(answers.some(it => it.type === 'output' && it.id === 1 && it.text.includes('done')), JSON.stringify(answers));
         // the run 1 of a session is not that of another

@@ -19,7 +19,7 @@ class TemporalLibraryTest {
     // h starts at 0 and ends at 4 and 6, the end at 4 defeated
     private val defeatedEnd =
         "f5 :=> happens(e0, 0).\nf6 :=> initiates(e0, h).\nf7 :=> happens(e3, 4).\nf8 :=> terminates(e3, h).\n" +
-            "f9 :=> happens(e4, 6).\nf10 :=> terminates(e4, h).\nu1 :=> -t_stop(e3, h, 4).\n"
+            "f9 :=> happens(e4, 6).\nf10 :=> terminates(e4, h).\nu1 :=> -tStop(e3, h, 4).\n"
 
     // alive starts at 0, dead at 3, the two declared in conflict
     private val declared =
@@ -137,7 +137,7 @@ class TemporalLibraryTest {
     }
 
     // The whole graph has the periods of the starts derived in later rounds: no axiom leaves a check to a binding a
-    // query would give (t_still binds the start it is about)
+    // query would give (tStill binds the start it is about)
     @Test
     fun theWholeGraphHasThePeriods() {
         val solver = Arg2pSolverFactory.default(theory = "temporal.\n$restarted", settings = Flags.defaults().queryMode(false).library())
@@ -150,7 +150,7 @@ class TemporalLibraryTest {
                 .toList()
                 .map { it.toString() }
         assertTrue(statements.any { it.startsWith("[holdsAt(f, ") }, statements.toString())
-        // the second start is no new start (t_already, which t_still would undercut after an end)
-        assertTrue("[started(f, 1)]" in statements && statements.any { "t_start(e2, f, 3)" in it }, statements.toString())
+        // the second start is no new start (tAlready, which tStill would undercut after an end)
+        assertTrue("[started(f, 1)]" in statements && statements.any { "tStart(e2, f, 3)" in it }, statements.toString())
     }
 }

@@ -10,7 +10,7 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * ness(-Intervention, +Cause, +Effect), and ness_original(-Intervention, +Cause, +Effect) as published (ICAIL 2025):
+ * ness(-Intervention, +Cause, +Effect), and nessOriginal(-Intervention, +Cause, +Effect) as published (ICAIL 2025):
  * Cause is a NESS cause of Effect: Intervention, removing Cause, refutes an explanation of Effect as no part of it does
  * (see CausalityAnalysis.ness); the revised condition asks as well that an argument for Cause be IN in the grounded
  * labelling of the theory. Intervention must be unbound.
@@ -19,7 +19,7 @@ internal class Ness(
     private val analysis: CausalityAnalysis,
     private val revised: Boolean,
 ) : PrimitiveWithSignature {
-    override val signature = Signature(if (revised) "ness" else "ness_original", 3)
+    override val signature = Signature(if (revised) "ness" else "nessOriginal", 3)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val (intervention, cause, effect) = request.arguments

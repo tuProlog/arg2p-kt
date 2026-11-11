@@ -12,10 +12,10 @@ import it.unibo.tuprolog.solve.ExecutionContext
 import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
-/** context_check(+Branch, Goal): the solutions of Goal in the given branch, as context_check/1 */
+/** contextCheck(+Branch, Goal): the solutions of Goal in the given branch, as contextCheck/1 */
 internal class ContextCheckIn(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_check", 2)) {
+) : AbstractNativePrimitive(Signature("contextCheck", 2)) {
     // A branch that does not exist has no solutions
     override fun call(call: NativeCall): Int {
         val branch = call.intArg(0, signature).toInt()

@@ -124,7 +124,7 @@ class TranspositionLibraryTest {
 
     @Test
     fun withoutAutoTranspositionNothingIsAdded() {
-        // on in the profile aspic_plus, the default
+        // on in the profile aspicPlus, the default
         val module = LibraryTesting("autoTransposition(off).")
         assertFalse(module.holds("parser::extension(transposition)"))
     }

@@ -13,15 +13,15 @@ locality(connected).
 %  one where they are dropped, which is released once its labels are read, and given to the graph as it is.
 argumentLabelling :-
     reifyBurdenOfProofs,
-    context_active(Graph),
-    context_last(Mark),
-    context_branch(Graph, _),
+    contextActive(Graph),
+    contextLast(Mark),
+    contextBranch(Graph, _),
     filterBpDefeats,
     store::arguments(Arguments),
     bpLabelling(Arguments),
     findall(Label-Id, (member(Label, [in, out, und]), store::argumentLabelById(Label, Id)), Labels),
-    context_checkout(Graph),
-    context_drop_after(Mark, []),
+    contextCheckout(Graph),
+    contextDropAfter(Mark, []),
     findall(_, (member(Label-Id, Labels), store::argumentById(Id, Argument), store::labelArgument(Label, Argument, Id)), _).
 
 bpLabelling(Arguments) :-
@@ -38,9 +38,9 @@ bpLabelling(Arguments) :-
     utils::subtract(Arguments, [A], NewArguments),
     bpLabelling(NewArguments).
 bpLabelling(Arguments) :-
-    context_active(Branch),
+    contextActive(Branch),
     mostGroundedBpUnd(Arguments, A), !,
-    context_branch(Branch, _),
+    contextBranch(Branch, _),
     store::labelArgument(out, A),
     utils::subtract(Arguments, [A], NewArguments),
     bpLabelling(NewArguments).
@@ -96,7 +96,7 @@ oneAttackIN(A) :-
 %! isInBurdenOfProof(+Conclusion)
 %  A burden of persuasion is on Conclusion.
 isInBurdenOfProof(Conclusion) :-
-    context_check(reifiedBp(Literals)),
+    contextCheck(reifiedBp(Literals)),
     member(Conclusion, Literals), !.
 
 %! isArgumentInBurdenOfProof(+Argument)
@@ -134,14 +134,14 @@ mostGroundedBpUnd(Arguments, Arg) :-
 %==============================================================================
 
 %! reifyBurdenOfProofs
-%  The burdens of persuasion of the theory (see bp_grounded::burden/1) on the conclusions of the saved arguments, as
+%  The burdens of persuasion of the theory (see bpGrounded::burden/1) on the conclusions of the saved arguments, as
 %  reifiedBp/1 in the context.
 reifyBurdenOfProofs :-
     findall(_, (
-        bp_grounded::burden(AbstractBp),
+        bpGrounded::burden(AbstractBp),
         fillTemplate(AbstractBp, R),
-        context_absent(reifiedBp(R)),
-        context_assert(reifiedBp(R))
+        contextAbsent(reifiedBp(R)),
+        contextAssert(reifiedBp(R))
     ), _).
 
 % The literals of a burden, each the conclusion of a saved argument (instantiated jointly) unless it is ground

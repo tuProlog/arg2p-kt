@@ -22,8 +22,8 @@ failing(_, _, _).
 
 % The attack types preferences do not apply to. Everything else is weighed against the preference order: rebuts
 % and undermines, and the attacks of a graph extension of the user.
-standardPreferences(contrary_rebut, _, _) :- !.
-standardPreferences(contrary_undermine, _, _) :- !.
+standardPreferences(contraryRebut, _, _) :- !.
+standardPreferences(contraryUndermine, _, _) :- !.
 standardPreferences(undercut, _, _) :- !.
 standardPreferences(_, IdA, IdC) :-
     store::argumentInfoId(IdA, InfoIdA),

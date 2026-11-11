@@ -5,25 +5,25 @@ argTuProlog.
 %! solve
 %  The labelling of the theory, in the context: one solution for each labelling.
 solve :-
-    context_reset,
+    contextReset,
     pipeline::evaluate.
 
 %! solve(-StatIn, -StatOut, -StatUnd)
 %  The statements of the theory labelled IN, OUT and UND, one solution for each labelling.
 solve(StatIn, StatOut, StatUnd) :-
-    context_reset,
+    contextReset,
     pipeline::statementLabels(StatIn, StatOut, StatUnd).
 
 %! solve(+Query)
 %  Query is a statement labelled IN (as answerMode states, see solve/4).
 solve(Query) :-
-    context_reset,
+    contextReset,
     statementAcceptance:::accepted(Query).
 
 %! solve(+Query, -Result)
 %  The labels of the statements unifying with Query, as in(S), out(S) and und(S) terms.
 solve(Query, Result) :-
-    context_reset,
+    contextReset,
     statementAcceptance:::computeStatementAcceptance(Query, Result).
 
 %! solve(+Query, -In, -Out, -Und)
@@ -31,7 +31,7 @@ solve(Query, Result) :-
 %  is built. With several labellings, answerMode states how: one solution for each (enumerate), or one across them all
 %  (credulous, skeptical).
 solve(Query, In, Out, Und) :-
-    context_reset,
+    contextReset,
     statementAcceptance:::computeStatementAcceptance(Query, In, Out, Und).
 
 %==============================================================================

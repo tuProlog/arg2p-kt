@@ -93,7 +93,7 @@ class SemanticsPaperExamplesTest {
         check(
             Framework("ABCD", "AB", "BC", "CD", "DC"),
             mapOf(
-                "conflictfree" to
+                "conflictFree" to
                     listOf(
                         "" to "",
                         "A" to "B",
@@ -109,7 +109,7 @@ class SemanticsPaperExamplesTest {
                 "grounded" to listOf("A" to "B"),
                 "preferred" to listOf("AC" to "BD", "AD" to "BC"),
                 "stable" to listOf("AC" to "BD", "AD" to "BC"),
-                "semistable" to listOf("AC" to "BD", "AD" to "BC"),
+                "semiStable" to listOf("AC" to "BD", "AD" to "BC"),
                 "ideal" to listOf("A" to "B"),
                 // derived: semi-stable and preferred extensions coincide, so eager = ideal
                 "eager" to listOf("A" to "B"),
@@ -129,7 +129,7 @@ class SemanticsPaperExamplesTest {
                 "grounded" to listOf("" to ""),
                 "preferred" to listOf("AD" to "BC", "BD" to "AC"),
                 "stable" to listOf("AD" to "BC", "BD" to "AC"),
-                "semistable" to listOf("AD" to "BC", "BD" to "AC"),
+                "semiStable" to listOf("AD" to "BC", "BD" to "AC"),
                 "ideal" to listOf("" to ""),
                 // derived: semi-stable and preferred extensions coincide, so eager = ideal
                 "eager" to listOf("" to ""),
@@ -144,13 +144,13 @@ class SemanticsPaperExamplesTest {
         check(
             Framework("ABC", "AB", "BC", "CA"),
             mapOf(
-                "conflictfree" to listOf("" to "", "A" to "B", "B" to "C", "C" to "A"),
+                "conflictFree" to listOf("" to "", "A" to "B", "B" to "C", "C" to "A"),
                 "admissible" to listOf("" to ""),
                 "complete" to listOf("" to ""),
                 "grounded" to listOf("" to ""),
                 "preferred" to listOf("" to ""),
                 "stable" to emptyList(),
-                "semistable" to listOf("" to ""),
+                "semiStable" to listOf("" to ""),
                 "ideal" to listOf("" to ""),
                 // derived: the only semi-stable labelling is the trivial one
                 "eager" to listOf("" to ""),
@@ -169,7 +169,7 @@ class SemanticsPaperExamplesTest {
                 "grounded" to listOf("" to ""),
                 "preferred" to listOf("A" to "B", "BD" to "ACE"),
                 "stable" to listOf("BD" to "ACE"),
-                "semistable" to listOf("BD" to "ACE"),
+                "semiStable" to listOf("BD" to "ACE"),
                 // derived: the preferred extensions {A} and {B, D} have an empty intersection
                 "ideal" to listOf("" to ""),
                 // derived: the only semi-stable extension {B, D} is complete
@@ -204,7 +204,7 @@ class SemanticsPaperExamplesTest {
                 "grounded" to listOf("" to ""),
                 "preferred" to listOf("" to ""),
                 "stable" to emptyList(),
-                "semistable" to listOf("" to ""),
+                "semiStable" to listOf("" to ""),
                 "ideal" to listOf("" to ""),
                 "eager" to listOf("" to ""),
                 "stage" to listOf("B" to ""),
@@ -219,7 +219,7 @@ class SemanticsPaperExamplesTest {
             mapOf(
                 // derived: A is unattacked, so it is in; C attacks itself, so it stays undecided
                 "grounded" to listOf("A" to "B"),
-                "semistable" to listOf("A" to "B"),
+                "semiStable" to listOf("A" to "B"),
                 "stage" to listOf("A" to "B", "B" to "C"),
                 "cf2" to listOf("A" to "B"),
             ),
@@ -235,7 +235,7 @@ class SemanticsPaperExamplesTest {
                 "grounded" to listOf("" to ""),
                 "preferred" to listOf("" to ""),
                 "stable" to emptyList(),
-                "semistable" to listOf("" to ""),
+                "semiStable" to listOf("" to ""),
                 "ideal" to listOf("" to ""),
                 "eager" to listOf("" to ""),
                 "stage" to listOf("A" to "BD", "B" to "CD", "C" to "AD"),
@@ -249,7 +249,7 @@ class SemanticsPaperExamplesTest {
         val theory = "graphBuildMode(abstract).\na.\nb.\nc.\nd.\na -> b.\nb -> a.\na -> c.\nb -> c.\nc -> d.\n"
         val query = "solve(In, Out, Und)"
         val failures =
-            listOf("complete", "preferred", "semistable", "stable", "ideal", "eager", "naive", "stage", "cf2", "stage2")
+            listOf("complete", "preferred", "semiStable", "stable", "ideal", "eager", "naive", "stage", "cf2", "stage2")
                 .mapNotNull { semantics ->
                     val solver =
                         Arg2pSolverFactory.default(theory = theory, settings = Flags.parse("argumentLabellingMode($semantics).").library())

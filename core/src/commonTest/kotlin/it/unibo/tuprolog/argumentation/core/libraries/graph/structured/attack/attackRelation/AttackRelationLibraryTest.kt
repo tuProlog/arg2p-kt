@@ -49,8 +49,8 @@ class AttackRelationLibraryTest {
 
     @Test
     fun contraryAttacksOnTheContraryPremisesOfATopRule() {
-        assertEquals("contrary_rebut", attack(rule("r1", "a"), rule("r2", "b", "[~(a)]")))
-        assertEquals("contrary_undermine", attack(premise("f1", "a"), rule("r2", "b", "[~(a)]")))
+        assertEquals("contraryRebut", attack(rule("r1", "a"), rule("r2", "b", "[~(a)]")))
+        assertEquals("contraryUndermine", attack(premise("f1", "a"), rule("r2", "b", "[~(a)]")))
     }
 
     @Test

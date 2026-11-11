@@ -5,5 +5,5 @@ locality(directional).
 %! argumentLabelling
 %  The ideal labelling has IN the maximal admissible subset of the intersection of the preferred extensions
 argumentLabelling :-
-    context_active(Branch),
+    contextActive(Branch),
     labelSets::maximalAdmissibleCommonOf(preferred, Branch).

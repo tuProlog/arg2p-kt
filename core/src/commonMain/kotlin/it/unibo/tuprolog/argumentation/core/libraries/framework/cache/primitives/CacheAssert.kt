@@ -6,11 +6,11 @@ import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.argumentation.engine.store.ClauseStore
 import it.unibo.tuprolog.solve.Signature
 
-/** cache_assert(+Clause): Clause added to the cache */
+/** cacheAssert(+Clause): Clause added to the cache */
 internal class CacheAssert(
     private val cache: Cache,
     private val store: ClauseStore,
-) : AbstractNativePrimitive(Signature("cache_assert", 1)) {
+) : AbstractNativePrimitive(Signature("cacheAssert", 1)) {
     override fun call(call: NativeCall): Int {
         cache.follow(call)
         store.assertA(call.record(call.arg(0)))

@@ -11,13 +11,13 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * cache_check(Goal): the solutions of Goal in the cache (see [ClauseStore.solve]); the machine resolves Goal with
+ * cacheCheck(Goal): the solutions of Goal in the cache (see [ClauseStore.solve]); the machine resolves Goal with
  * the records of the cache itself (see [lookup])
  */
 internal class CacheCheck(
     private val cache: Cache,
     private val store: ClauseStore,
-) : AbstractNativePrimitive(Signature("cache_check", 1)) {
+) : AbstractNativePrimitive(Signature("cacheCheck", 1)) {
     override fun call(call: NativeCall): Int {
         cache.follow(call)
         return call.lookup(store, LOOKUP, 0)
@@ -29,7 +29,7 @@ internal class CacheCheck(
     }
 
     private companion object {
-        // The lookup of a goal in the cache: cache_check(Goal)
-        val LOOKUP = GoalWrapper { call, goal -> call.struct("cache_check", intArrayOf(goal)) }
+        // The lookup of a goal in the cache: cacheCheck(Goal)
+        val LOOKUP = GoalWrapper { call, goal -> call.struct("cacheCheck", intArrayOf(goal)) }
     }
 }

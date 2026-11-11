@@ -49,10 +49,10 @@ class SolverSessionTest {
             .substitution.values
             .single()
             .toString()
-        val first = id(solvers[0], "context_id(argument(f(X, b)), Id)")
-        id(solvers[1], "context_id(other(term), Id)")
-        assertEquals(first, id(solvers[1], "context_id(argument(f(Y, b)), Id)"))
-        assertEquals("b", id(solvers[1], "context_term($first, argument(f(_, B)))"))
-        assertEquals(first, id(solvers[1], "context_reset, context_id(argument(f(Z, b)), Id)"))
+        val first = id(solvers[0], "contextId(argument(f(X, b)), Id)")
+        id(solvers[1], "contextId(other(term), Id)")
+        assertEquals(first, id(solvers[1], "contextId(argument(f(Y, b)), Id)"))
+        assertEquals("b", id(solvers[1], "contextTerm($first, argument(f(_, B)))"))
+        assertEquals(first, id(solvers[1], "contextReset, contextId(argument(f(Z, b)), Id)"))
     }
 }

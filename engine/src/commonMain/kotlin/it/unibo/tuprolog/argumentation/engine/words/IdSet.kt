@@ -2,7 +2,7 @@ package it.unibo.tuprolog.argumentation.engine.words
 
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
-/** A set of identifiers (small integers, see context_id), kept in the order they were added */
+/** A set of identifiers (small integers, see contextId), kept in the order they were added */
 @InternalArg2pApi
 class IdSet private constructor(
     private var items: IntArray,

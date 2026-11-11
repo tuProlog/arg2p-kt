@@ -6,10 +6,10 @@ import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
 import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.solve.Signature
 
-/** context_retract(+Clause): the clauses of the active branch unifying with Clause removed */
+/** contextRetract(+Clause): the clauses of the active branch unifying with Clause removed */
 internal class ContextRetract(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_retract", 1)) {
+) : AbstractNativePrimitive(Signature("contextRetract", 1)) {
     override fun call(call: NativeCall): Int {
         call.retractAll(branches.selected, call.arg(0))
         return NativeCall.CONTINUE

@@ -196,7 +196,7 @@ internal class ClientSolver(
             if (changed) prepare()
             val job = jobs.first()
             // a goal solved from its start: the context marked, as a goal labelling a graph resets it
-            if (current !== job.run) solver.solveOnce("context_assert($MARK)")
+            if (current !== job.run) solver.solveOnce("contextAssert($MARK)")
             var solved = false
             val answer =
                 try {
@@ -214,7 +214,7 @@ internal class ClientSolver(
             again = 0
             jobs.removeFirst()
             // the statistics of a job labelling or reading a graph, known by its client once answered
-            if (job is Evaluating || !solver.holds("context_check($MARK)")) evaluated(job.since)
+            if (job is Evaluating || !solver.holds("contextCheck($MARK)")) evaluated(job.since)
             environment.reply(job.replyTo, answer)
         }
     }
@@ -251,7 +251,7 @@ internal class ClientSolver(
             }
         // (the graph of the last theory dropped first: the solver of a theory changed binds its context to the new program,
         // and would encode every record of it again only for the reset below to forget them)
-        solver.solveOnce("context_reset")
+        solver.solveOnce("contextReset")
         solvers = SolverSession().also { SolverSession.join(solver, it) }
         val split = partitioning?.takeIf { it.partitions.size > 1 }
         if (split == null) loadTheory() else load(split.theoryOf(0))
@@ -274,7 +274,7 @@ internal class ClientSolver(
     private fun load(clauses: Theory) {
         solver.resetStaticKb()
         solver.loadStaticKb(clauses)
-        solver.solveOnce("context_reset")
+        solver.solveOnce("contextReset")
     }
 
     // The theory split for as many consumers as the environment runs: split again if they changed since
@@ -293,7 +293,7 @@ internal class ClientSolver(
     private fun locality(): String? =
         solver
             .solveOnce(
-                "pipeline::locality(L), L \\== whole_graph",
+                "pipeline::locality(L), L \\== wholeGraph",
             ).takeIf { it.isYes }
             ?.substitution
             ?.getByName("L")
@@ -316,9 +316,9 @@ internal class ClientSolver(
                 if (alone) {
                     "alone"
                 } else if (graph?.exploring == true) {
-                    partial ?: "whole_graph"
+                    partial ?: "wholeGraph"
                 } else {
-                    "whole_graph"
+                    "wholeGraph"
                 },
                 graphArguments,
                 graphAttacks,
@@ -400,7 +400,7 @@ internal class ClientSolver(
             goal: String,
         ): SharedGraph {
             val count = split.partitions.size
-            val text = "context_reset, $goal"
+            val text = "contextReset, $goal"
             val starts =
                 (1 until count).associateWith { part ->
                     ConsumerStart(split.theoryOf(part), flags.toString(), text, if (exploring) null else split.interests[part], exploring)
@@ -425,7 +425,7 @@ internal class ClientSolver(
             return graph
         }
 
-        private fun wholeGoal() = "pipeline::graph(whole, whole_graph), pipeline::modifyGraph"
+        private fun wholeGoal() = "pipeline::graph(whole, wholeGraph), pipeline::modifyGraph"
 
         private fun queryGoal(statement: Term) = "pipeline::locality(L), pipeline::graph($statement, L), pipeline::modifyGraph"
 

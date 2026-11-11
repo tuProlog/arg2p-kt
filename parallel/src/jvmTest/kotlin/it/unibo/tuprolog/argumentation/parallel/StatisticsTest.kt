@@ -33,7 +33,7 @@ class StatisticsTest {
         assertEquals(0, parallel.evaluation!!.added)
         // the whole graph, for a goal asking for it
         parallel.goals.solve("solve(In, Out, Und)").next()
-        assertEquals("whole_graph", parallel.evaluation!!.locality)
+        assertEquals("wholeGraph", parallel.evaluation!!.locality)
         assertEquals(5, parallel.evaluation!!.added)
         // a goal using no graph leaves them as they are
         val evaluation = parallel.evaluation

@@ -10,9 +10,9 @@ stepScope(own).
 modifyArgumentationGraph :-
     supportInstances,
     pieces,
-    findall(Id, context_check(addedInstance(Id)), Ids),
-    context_retract(addedInstance(_)),
-    context_retract(pieceOf(_, _, _)),
+    findall(Id, contextCheck(addedInstance(Id)), Ids),
+    contextRetract(addedInstance(_)),
+    contextRetract(pieceOf(_, _, _)),
     attackBuilder::buildAttacksOf(Ids).
 
 %! supportInstances
@@ -40,7 +40,7 @@ realize(Instance) :-
     store::conclusion(Instance, Conclusion),
     store::saveInstance(Conclusion, Instance),
     store::argumentId(Instance, Id),
-    context_assert(addedInstance(Id)),
+    contextAssert(addedInstance(Id)),
     findall(_, (member(Sub, Supporters), realizeSupport(Sub, Body, Bound, Instance)), _).
 realize(_).
 
@@ -86,8 +86,8 @@ pieces :-
     ordered(Open, Ordered),
     splitRounds(Ordered, 1),
     savePieces(Ordered),
-    context_retract(cells(_, _)),
-    context_retract(depthOf(_, _)).
+    contextRetract(cells(_, _)),
+    contextRetract(depthOf(_, _)).
 pieces.
 
 openArguments([], []).
@@ -103,14 +103,14 @@ ordered(Arguments, Ordered) :-
 
 depth(A, D) :-
     store::argumentId(A, Id),
-    (context_check(depthOf(Id, D)) ->
+    (contextCheck(depthOf(Id, D)) ->
         true
     ;
         store::supportersOf(A, Supporters),
         findall(DS, (member(S, Supporters), depth(S, DS)), Depths),
         maxDepth(Depths, 0, Max),
         D is Max + 1,
-        context_assert(depthOf(Id, D))
+        contextAssert(depthOf(Id, D))
     ).
 
 maxDepth([], Max, Max).
@@ -130,10 +130,10 @@ resplit(A) :-
     splitAll(Cuts, W, [cell([], [])], Cells),
     length(Cells, N),
     N > 1,
-    (context_check(cells(Id, _-Old)) -> length(Old, M) ; M = 1),
+    (contextCheck(cells(Id, _-Old)) -> length(Old, M) ; M = 1),
     N > M,
-    context_retract(cells(Id, _)),
-    context_assert(cells(Id, W-Cells)).
+    contextRetract(cells(Id, _)),
+    contextAssert(cells(Id, W-Cells)).
 
 % The regions cutting A, tagged with what they come from: attacker(IdB, K) for the piece K of an attacker (0 for an
 % attacker not split), sub(IdS, K) for the piece K of a sub-argument
@@ -167,7 +167,7 @@ subCut(A, cut(sub(IdS, K), QA-Atoms)) :-
     store::supportersOf(A, Supporters),
     member(S, Supporters),
     store::argumentId(S, IdS),
-    context_check(cells(IdS, _)),
+    contextCheck(cells(IdS, _)),
     cellOf(S, IdS, K, CS, SAtoms),
     copy_term(A, QA),
     utils::termVariables(QA, Qs),
@@ -185,7 +185,7 @@ subCut(A, cut(sub(IdS, K), QA-Atoms)) :-
 % The pieces of an argument (K from 1, a copy CB of it bound by the bindings of the piece, the other atoms of the piece),
 % or the argument itself (K = 0) if it is not split
 cellOf(B, IdB, K, CB, Atoms) :-
-    context_check(cells(IdB, W-Cells)), !,
+    contextCheck(cells(IdB, W-Cells)), !,
     numbered(Cells, 1, K, cell(CellAtoms, _)),
     copy_term(W-CellAtoms, CB-Atoms).
 cellOf(B, _, 0, CB, []) :-
@@ -227,7 +227,7 @@ bindings([V|Vs], [Q|Qs], Bindings) :-
 constraintAtoms([], []).
 constraintAtoms([C|Cs], Atoms) :- ground(C), !, constraintAtoms(Cs, Atoms).
 constraintAtoms([dif(X, T)|Cs], [dif(X, T)|Atoms]) :- !, constraintAtoms(Cs, Atoms).
-constraintAtoms([C|Cs], [lin(C)|Atoms]) :- linear_constraint(C), constraintAtoms(Cs, Atoms).
+constraintAtoms([C|Cs], [lin(C)|Atoms]) :- linearConstraint(C), constraintAtoms(Cs, Atoms).
 
 within([], _).
 within([V|Vs], Qs) :- member(Q, Qs), Q == V, !, within(Vs, Qs).
@@ -298,7 +298,7 @@ numeric(X, W, Atoms) :-
     linearAtoms(Atoms, Others),
     append(Own, Others, All),
     member(C, All),
-    linear_constraint(C),
+    linearConstraint(C),
     utils::termVariables(C, Vs),
     member(V, Vs),
     V == X, !.
@@ -323,7 +323,7 @@ nonEmpty(W, Atoms) :-
 savePieces([]).
 savePieces([A|As]) :-
     store::argumentId(A, Id),
-    (context_check(cells(Id, W-Cells)) -> savePieces(Cells, 1, Id, A, W) ; true),
+    (contextCheck(cells(Id, W-Cells)) -> savePieces(Cells, 1, Id, A, W) ; true),
     savePieces(As).
 
 savePieces([], _, _, _, _).
@@ -344,8 +344,8 @@ savePiece(Atoms, Tags, K, Id, A, W) :-
     append(Body, Premises, PieceBody),
     store::newArgument(Rules, Top, Conclusion, PieceBody, Info, Piece),
     store::argumentId(Piece, PieceId),
-    (store::inGraph(PieceId) -> true ; store::saveInstance(Conclusion, Piece), context_assert(addedInstance(PieceId))),
-    context_assert(pieceOf(Id, K, PieceId)),
+    (store::inGraph(PieceId) -> true ; store::saveInstance(Conclusion, Piece), contextAssert(addedInstance(PieceId))),
+    contextAssert(pieceOf(Id, K, PieceId)),
     store::supportersOf(A, Supporters),
     findall(_, (member(S, Supporters), pieceSupport(S, Tags, Support), store::saveSupport(Support, Piece)), _).
 
@@ -356,6 +356,6 @@ constraintPremises([C|Cs], ['{}'(C)|Ps]) :- constraintPremises(Cs, Ps).
 pieceSupport(S, Tags, Support) :-
     store::argumentId(S, IdS),
     member(sub(IdS, K), Tags),
-    context_check(pieceOf(IdS, K, IdPiece)), !,
+    contextCheck(pieceOf(IdS, K, IdPiece)), !,
     store::argumentById(IdPiece, Support).
 pieceSupport(S, _, S).

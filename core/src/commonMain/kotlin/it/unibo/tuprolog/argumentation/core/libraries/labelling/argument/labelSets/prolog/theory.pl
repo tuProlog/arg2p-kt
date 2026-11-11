@@ -9,12 +9,12 @@ candidates(Args, Forced) :-
 %  the branch is released on backtracking
 labelSet(Branch, Set) :-
     newLabelling(Branch, Set),
-    context_active(Labelling),
+    contextActive(Labelling),
     (
         true
     ;
-        context_checkout(Branch),
-        context_drop(Labelling),
+        contextCheckout(Branch),
+        contextDrop(Labelling),
         fail
     ).
 
@@ -33,7 +33,7 @@ minimalUndOf(Semantics, Branch) :-
 
 %! maximalAdmissibleCommonOf(+Semantics, +Branch)
 %  The labelling with IN the maximal admissible subset of the intersection of the labellings of Semantics
-%  (ideal for preferred, eager for semistable), in a branch of Branch.
+%  (ideal for preferred, eager for semiStable), in a branch of Branch.
 maximalAdmissibleCommonOf(Semantics, Branch) :-
     findall(In, (
         Semantics:::argumentLabelling,

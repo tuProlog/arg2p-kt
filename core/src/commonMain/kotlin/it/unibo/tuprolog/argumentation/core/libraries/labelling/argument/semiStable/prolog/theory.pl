@@ -7,5 +7,5 @@ locality(connected).
 %  Semi-stable labellings are the preferred ones with a minimal set of UND arguments
 %  (an admissible set with a maximal range is a maximal admissible set)
 argumentLabelling :-
-    context_active(Branch),
+    contextActive(Branch),
     labelSets::minimalUndOf(preferred, Branch).

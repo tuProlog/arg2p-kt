@@ -4,7 +4,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.PrologLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.graph.structured.extension.preference.abaPref.prolog.THEORY
 
 /**
- * The preferences between the assumptions of ABA+ (module `abaPref`, a graphExtension, of the profile aba_plus;
+ * The preferences between the assumptions of ABA+ (module `abaPref`, a graphExtension, of the profile abaPlus;
  * Čyras and Toni 2016): `sup(Stronger, Weaker)`, closed transitively. An attack on an assumption by an argument
  * resting on an assumption weaker than it is reversed: it is removed, and the argument for the stronger assumption
  * attacks every argument whose support (its assumptions, see the module abaLanguage) contains the whole support of

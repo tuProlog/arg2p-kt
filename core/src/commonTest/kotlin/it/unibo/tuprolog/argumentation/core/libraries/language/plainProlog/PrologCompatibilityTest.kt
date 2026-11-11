@@ -17,7 +17,7 @@ class PrologCompatibilityTest {
 
     private fun converted(): String {
         val solver = solverWithTheory(theory)
-        val solution = solver.solve(Struct.parse("context_reset, store::readRules(R)", solver.operators)).first()
+        val solution = solver.solve(Struct.parse("contextReset, store::readRules(R)", solver.operators)).first()
         return solution.substitution.entries
             .first { it.key.name == "R" }
             .value
@@ -45,7 +45,7 @@ class PrologCompatibilityTest {
         val solution = solver.solve(Struct.parse("solve(In, Out, Und)", solver.operators)).first()
         val label = { name: String -> solution.substitution.getByName(name).toString() }
         assertEquals("[[penguin(tweety)], [flies(tweety)], [bird(tweety)], [prologStrictCompatibility]]", label("In"))
-        // the strict rules transposed (aspic_plus): -bird(tweety) from -flies(tweety)
+        // the strict rules transposed (aspicPlus): -bird(tweety) from -flies(tweety)
         assertEquals("[['-'(flies(tweety))], ['-'(bird(tweety))]]", label("Out"))
         assertEquals("[]", label("Und"))
     }

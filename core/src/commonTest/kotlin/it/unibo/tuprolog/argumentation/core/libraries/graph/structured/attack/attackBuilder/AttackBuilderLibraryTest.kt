@@ -8,7 +8,7 @@ class AttackBuilderLibraryTest {
     // -a undermines the premise a, and through it the argument for b
     private val module =
         LibraryTesting("f1 :=> a.\nr1 : a => b.\nf2 :=> -a.").also {
-            it.run("context_reset", "store::rulesRead", "argumentBuilder::buildArguments", "attackBuilder::buildAttacks")
+            it.run("contextReset", "store::rulesRead", "argumentBuilder::buildArguments", "attackBuilder::buildAttacks")
         }
 
     private fun attacked(attacker: String) =

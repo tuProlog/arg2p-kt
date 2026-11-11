@@ -25,7 +25,7 @@ Object.defineProperty(ShadowRoot.prototype, 'activeElement', {
 });
 
 const GRAPH: GraphData = {
-    profile: 'aspic_plus',
+    profile: 'aspicPlus',
     arguments: [{ id: 'A0', descriptor: 'A0 : f1 : a', conclusion: 'a', topRule: 'none', label: 'in', supports: [] }],
     attacks: [],
 };

@@ -5,10 +5,10 @@
 %  as none uses a rule twice).
 explore(Query) :-
     store::forgetNewConclusions(query),
-    context_retract(cycle),
+    contextRetract(cycle),
     exploreStatement(Query, dependency),
-    (context_check(cycle), store::newConclusion(query, _) ->
-        context_retract(explored(_)),
+    (contextCheck(cycle), store::newConclusion(query, _) ->
+        contextRetract(explored(_)),
         explore(Query)
     ;
         true
@@ -30,7 +30,7 @@ explore(Query, Locality, Steps) :-
 %  others left as they are.
 resume(Statements) :-
     builtOn(Statements, [], Affected),
-    findall(_, (member(S, Affected), context_retract(explored(S))), _),
+    findall(_, (member(S, Affected), contextRetract(explored(S))), _),
     findall(_, (member(S, Affected), explore(S)), _).
 
 % builtOn(+Statements, +Seen, -Affected): the statements explored whose rules use one of Statements as a premise,
@@ -46,7 +46,7 @@ builtOn([Statement|Statements], Seen, Affected) :-
 
 % exploredAs(+Statement, -Explored): Explored is explored and unifies with Statement, as it was explored
 exploredAs(Statement, Explored) :-
-    context_matching(explored, Statement, explored(Explored)).
+    contextMatching(explored, Statement, explored(Explored)).
 
 unseen([], Seen, [], Seen).
 unseen([S|Ss], Seen, New, Seen1) :-
@@ -61,7 +61,7 @@ unseen([S|Ss], Seen, New, Seen1) :-
 %! explored(?Statement)
 %  Statement is explored (with the statements it generalises).
 explored(Statement) :-
-    context_check(explored(Statement)).
+    contextCheck(explored(Statement)).
 
 %! exploreAll(+Queries)
 %  Each of Queries explored (see explore/1), the statements the other solvers of a session explored: one naming a rule
@@ -92,9 +92,9 @@ exploreStatement(Query, Use) :-
 
 exploreAs(Query, _) :-
     groundVars(Query, Normalized),
-    context_absent(explored(Normalized)), !,
-    context_assert(explored(Query)),
-    context_assert(exploring(Normalized, Query)),
+    contextAbsent(explored(Normalized)), !,
+    contextAssert(explored(Query)),
+    contextAssert(exploring(Normalized, Query)),
     findall(_, (
         argumentSearch::findSingleArgument([Query], Argument, Supports),
         recordArgument(Query, Argument, Supports),
@@ -102,11 +102,11 @@ exploreAs(Query, _) :-
         dependency(Id, Argument, Statement),
         exploreStatement(Statement, dependency)
     ), _),
-    context_retract(exploring(Normalized, _)).
+    contextRetract(exploring(Normalized, _)).
 exploreAs(Query, premise) :-
     groundVars(Query, Normalized),
-    context_check(exploring(_, Normalized)), !,
-    (context_absent(cycle) -> context_assert(cycle) ; true).
+    contextCheck(exploring(_, Normalized)), !,
+    (contextAbsent(cycle) -> contextAssert(cycle) ; true).
 exploreAs(_, _).
 
 % The statements whose arguments the label of an argument may depend on, besides its sub-arguments (built with
@@ -117,11 +117,11 @@ dependency(Id, Argument, S) :- attackSearch::possibleAttackers(Id, Argument, [S]
 %  For the connected locality, the arguments whose labels may depend on the ones built (see dependant/2), with
 %  those they depend on in turn, until none is new.
 expand(connected) :-
-    findall(Id, (store::inGraph(Id), context_absent(expanded(Id))), Ids),
+    findall(Id, (store::inGraph(Id), contextAbsent(expanded(Id))), Ids),
     Ids \== [], !,
     findall(_, (
         member(Id, Ids),
-        context_assert(expanded(Id)),
+        contextAssert(expanded(Id)),
         store::argumentById(Id, Argument),
         dependant(Argument, Statement),
         explore(Statement)
@@ -147,8 +147,8 @@ extend(Steps, Locality) :-
     extendBy(Relating, Locality).
 
 relating(Step) :-
-    module_defines(Step, queryDependencies/2),
-    module_defines(Step, queryDependants/2).
+    moduleDefines(Step, queryDependencies/2),
+    moduleDefines(Step, queryDependants/2).
 
 extendBy([], _) :- !.
 extendBy(Steps, Locality) :-
@@ -166,7 +166,7 @@ related(connected, Step, Argument, S) :- Step::queryDependants(Argument, S).
 again(Locality) :-
     conflict::argued, !,
     attackSearch::forgetPossibleAttackers,
-    context_retract(expanded(_)),
+    contextRetract(expanded(_)),
     findall(_, (store::argumentById(Id, A), dependency(Id, A, S), explore(S)), _),
     expand(Locality).
 again(Locality) :-

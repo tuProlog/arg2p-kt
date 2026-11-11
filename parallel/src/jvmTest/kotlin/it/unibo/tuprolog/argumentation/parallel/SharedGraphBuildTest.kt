@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
  */
 class SharedGraphBuildTest {
     private var flags = Flags.defaults().queryMode(false)
-    private val labelling = "context_reset, pipeline::statementLabels(In, Out, Und)"
+    private val labelling = "contextReset, pipeline::statementLabels(In, Out, Und)"
 
     private fun solverOf(theory: String): MutableSolver =
         Arg2pSolverFactory.solverOf(Arg2pSolver.default(listOf(flags.library())), "").also {
@@ -82,7 +82,7 @@ class SharedGraphBuildTest {
                     try {
                         labels(
                             worker,
-                            "context_reset, pipeline::graph(whole, whole_graph), pipeline::modifyGraph, In = [], Out = [], Und = []",
+                            "contextReset, pipeline::graph(whole, wholeGraph), pipeline::modifyGraph, In = [], Out = [], Und = []",
                         )
                     } catch (failure: Throwable) {
                         synchronized(failures) { failures += failure }

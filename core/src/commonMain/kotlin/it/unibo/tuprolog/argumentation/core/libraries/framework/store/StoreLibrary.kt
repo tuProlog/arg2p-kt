@@ -26,7 +26,7 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * claim/2, conclusion/2, ..., read both ways; see [it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.ArgumentTerm]),
  * the labels as facts (see [it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.LabelTerm]), the attacks and supports.
  *
- * An argument is kept once, as the term of its identifier (`context_id`, `context_term`): `argument/1` holds that record,
+ * An argument is kept once, as the term of its identifier (`contextId`, `contextTerm`): `argument/1` holds that record,
  * looked up by the claim inside it, and the rest of the graph refers to it by the identifier. The context keeps:
  * - `arg(Id)`, the arguments of the graph the labellings label;
  * - `newConc(Tag, Conclusion)`, the conclusions of the arguments saved under a tag (the round of the graph builder);

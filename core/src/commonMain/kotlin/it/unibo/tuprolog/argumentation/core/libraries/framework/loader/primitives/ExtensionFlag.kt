@@ -7,12 +7,12 @@ import it.unibo.tuprolog.argumentation.engine.natives.attempts
 import it.unibo.tuprolog.solve.Signature
 
 /**
- * extension_flag(?Library, ?Flag): the library Library, among those of the solver, is an extension of the theory when
+ * extensionFlag(?Library, ?Flag): the library Library, among those of the solver, is an extension of the theory when
  * Flag is on. See [it.unibo.tuprolog.argumentation.core.libraries.Loadable.extensionFlag].
  */
 internal class ExtensionFlag(
     private val solver: Arg2pSolver,
-) : AbstractNativePrimitive(Signature("extension_flag", 2)) {
+) : AbstractNativePrimitive(Signature("extensionFlag", 2)) {
     // The libraries an extension by a flag, and their flags, by name: the libraries of a solver do not change
     private val flagged by lazy {
         solver.dynamicLibraries().mapNotNull { library -> library.extensionFlag?.let { library.identifier() to it.predicate() } }

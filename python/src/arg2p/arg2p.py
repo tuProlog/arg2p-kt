@@ -327,7 +327,7 @@ class Arg2p:
         return Solutions(call(lambda: self._arg2p.solve(goal)))
 
     def context_facts(self, branch: int, goal: str) -> Solutions:
-        """What the context branch [branch] stores matching [goal], Prolog text: the solutions of context_check/2."""
+        """What the context branch [branch] stores matching [goal], Prolog text: the solutions of contextCheck/2."""
         return Solutions(call(lambda: self._arg2p.contextFacts(branch, goal)))
 
     def add(self, theory: str) -> None:

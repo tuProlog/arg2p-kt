@@ -85,12 +85,12 @@ other rule.
 
 | Rule | Concludes |
 | --- | --- |
-| `t_start(E, U, T)`, `t_stop(E, U, T)`, `t_ends(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of what conflicts with it) |
-| `t_after(U, T1)` | `holdsAt(U, T)` with `{T > T1}` |
-| `t_before(E, U, T2)` | `holdsAt(U, T)` with `{T =< T2}` |
-| `t_period(U, T1, T2)` | `holdsAt(U, T)` with `{T > T1, T =< T2}` |
-| `t_broken`, `t_closes`, `t_opens` | undercut a period with an end in between, the period after a start with an end after it, the period before an end with a start before it |
-| `t_already`, `t_still` | undercut a start while the fact still holds, unless it ended in between |
+| `tStart(E, U, T)`, `tStop(E, U, T)`, `tEnds(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of what conflicts with it) |
+| `tAfter(U, T1)` | `holdsAt(U, T)` with `{T > T1}` |
+| `tBefore(E, U, T2)` | `holdsAt(U, T)` with `{T =< T2}` |
+| `tPeriod(U, T1, T2)` | `holdsAt(U, T)` with `{T > T1, T =< T2}` |
+| `tBroken`, `tCloses`, `tOpens` | undercut a period with an end in between, the period after a start with an end after it, the period before an end with a start before it |
+| `tAlready`, `tStill` | undercut a start while the fact still holds, unless it ended in between |
 
 A `prolog/1` check on a time needs a number: write it after the premise binding the time (`happens(thirst, T)`
 above), as a period leaves its times open.

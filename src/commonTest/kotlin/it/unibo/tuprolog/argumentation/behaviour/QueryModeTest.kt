@@ -104,7 +104,7 @@ class QueryModeTest {
         rz : [] => undercut(rx).
         """.trimIndent()
 
-    // a <-> b, b supports u, u -> x, and x in an odd cycle: the only semistable labelling makes b IN, as it is the
+    // a <-> b, b supports u, u -> x, and x in an odd cycle: the only semiStable labelling makes b IN, as it is the
     // only one where the cycle is not UND; but the cycle is not among the arguments p depends on
     @Test
     fun semistableDependsOnAttackedArguments() =
@@ -301,7 +301,7 @@ class QueryModeTest {
         )
 
     // A directional, a connected and a whole-graph semantics, for the graph extensions
-    private val someSemantics = listOf("grounded", "preferred", "semistable", "stable")
+    private val someSemantics = listOf("grounded", "preferred", "semiStable", "stable")
 
     // A preference between two rules, itself the conclusion of an argument: one that settles the rebuttal, and
     // one that is rebutted in turn
@@ -382,7 +382,7 @@ class QueryModeTest {
             $oddCycle
             """.trimIndent(),
             listOf("d"),
-            listOf("semistable"),
+            listOf("semiStable"),
             listOf("bp"),
         )
 
@@ -412,7 +412,7 @@ class QueryModeTest {
             bp(-a).
             """.trimIndent(),
             listOf("a", "c"),
-            listOf("bp_grounded", "bp_grounded_partial", "bp_grounded_complete"),
+            listOf("bpGrounded", "bpGroundedPartial", "bpGroundedComplete"),
         )
 
     // With metaConflicts the conflicts are the conclusions of arguments
@@ -449,7 +449,7 @@ class QueryModeTest {
             r11 : [] => conflict(y, b).
             """.trimIndent(),
             listOf("a"),
-            listOf("semistable"),
+            listOf("semiStable"),
         )
 
     // With metaRules a rule only applies where applicable(Rule) holds

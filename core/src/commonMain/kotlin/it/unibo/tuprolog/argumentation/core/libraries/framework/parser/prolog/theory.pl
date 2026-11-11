@@ -19,7 +19,7 @@ readTheory(Rules, StrictIds) :-
 % rewrite/4 turn them, each in turn, in their order (naturalTerms, the statements written as text into terms; metaRules,
 % applicable(Id) a premise of each rule): what the store keeps, and what a theory partitioned is written with
 rewritten(Rules, Ids, Rewritten, RewrittenIds) :-
-    findall(Extension, (extension(Extension), module_defines(Extension, rewrite/4)), Extensions),
+    findall(Extension, (extension(Extension), moduleDefines(Extension, rewrite/4)), Extensions),
     rewrittenBy(Extensions, Rules, Ids, Rewritten, RewrittenIds).
 
 rewrittenBy([], Rules, Ids, Rules, Ids).
@@ -31,7 +31,7 @@ rewrittenBy([Extension|Extensions], Rules, Ids, Rewritten, RewrittenIds) :-
 %  A library giving part of what is read of a theory, in the order their contributions take: the notation of the rules of
 %  arg2p (ruleNotation), with no language stated; the graph extensions; the languages of the theory (graphLanguage, also the
 %  ones of a user), mapping their notation to these kinds; and the libraries an extension when their flag is on
-%  (extension_flag/2: temporal, metaRules, conflictArguments with metaConflicts, ...), in the order of the registry.
+%  (extensionFlag/2: temporal, metaRules, conflictArguments with metaConflicts, ...), in the order of the registry.
 %  Each defines the hooks it needs: rules/1 (defeasible, as [Id, Premises, Conclusion]), strictRules/3 (see
 %  collectedStrictRules/3), premises/1 and axioms/1 (as [Id, Statement]), rewrite/4 (see rewritten/4), check/0 (see
 %  checkLanguages/0). What only one library uses, it reads of the theory by itself, when it needs it. An extension
@@ -44,10 +44,10 @@ extension(Extension) :-
 stated(ruleNotation) :- \+ setting(graphLanguage, _).
 stated(Extension) :- setting(graphExtension, Extension).
 stated(Language) :- setting(graphLanguage, Language).
-stated(Library) :- extension_flag(Library, Flag), setting(Flag).
+stated(Library) :- extensionFlag(Library, Flag), setting(Flag).
 
 required(Extension, Required) :-
-    module_defines(Extension, requires/1),
+    moduleDefines(Extension, requires/1),
     Extension::requires(Direct),
     (Required = Direct ; required(Direct, Required)).
 
@@ -56,19 +56,19 @@ required(Extension, Required) :-
 %  building the graph and answering queries call it where it does, and do as they do alone where none does. Found once
 %  for the theory.
 hook(Predicate, Module) :-
-    cache_check(hookOf(Predicate, Found)), !,
+    cacheCheck(hookOf(Predicate, Found)), !,
     Found \== none,
     Module = Found.
 hook(Predicate, Module) :-
-    (extension(Found), module_defines(Found, Predicate) -> true ; Found = none),
-    cache_assert(hookOf(Predicate, Found)),
+    (extension(Found), moduleDefines(Found, Predicate) -> true ; Found = none),
+    cacheAssert(hookOf(Predicate, Found)),
     Found \== none,
     Module = Found.
 
 %! checkLanguages
 %  The theory is written in each of the extensions of its language defining check/0: each raises an error if not.
 checkLanguages :-
-    findall(Extension, (extension(Extension), module_defines(Extension, check/0)), Extensions),
+    findall(Extension, (extension(Extension), moduleDefines(Extension, check/0)), Extensions),
     utils::forEach(Extension, Extensions, Extension::check).
 
 %! holds(+Check)
@@ -80,7 +80,7 @@ holds(Check) :-
 contributions(Hook, All) :-
     findall(Part, (
         extension(Extension),
-        module_defines(Extension, Hook/1),
+        moduleDefines(Extension, Hook/1),
         Goal =.. [Hook, Part],
         Extension::Goal
     ), Parts),
@@ -91,7 +91,7 @@ contributions(Hook, All) :-
 % extension may build on the strict rules, as transposition does); Ids are their strict/1 facts
 collectedStrictRules(Others, Rules, Ids) :-
     ruleIds(Others, OtherIds),
-    findall(Extension, (extension(Extension), module_defines(Extension, strictRules/3)), Extensions),
+    findall(Extension, (extension(Extension), moduleDefines(Extension, strictRules/3)), Extensions),
     strictRulesOf(Extensions, [], OtherIds, Rules),
     strictFacts(Rules, Ids).
 

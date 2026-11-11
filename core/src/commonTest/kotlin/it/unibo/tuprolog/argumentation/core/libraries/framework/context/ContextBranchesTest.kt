@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 class ContextBranchesTest {
     private fun solve(goal: String): String {
         val solver = solverWithTheory("")
-        val solution = solver.solve(Struct.parse("context_reset, context_assert(p(1)), $goal", solver.operators)).first()
+        val solution = solver.solve(Struct.parse("contextReset, contextAssert(p(1)), $goal", solver.operators)).first()
         return when {
             solution.isYes -> "yes"
             solution.isHalt -> "error: " + solution.exception!!.message
@@ -25,39 +25,39 @@ class ContextBranchesTest {
 
     @Test
     fun checkingOutAMissingBranchLeavesTheActiveOne() {
-        assertEquals("no", solve("context_checkout(7)"))
-        assertEquals("yes", solve("\\+ context_checkout(7), context_active(0), context_check(p(1))"))
-        assertEquals("yes", solve("context_branch(0, B), context_checkout(0), context_drop(B), \\+ context_checkout(B), context_active(0)"))
+        assertEquals("no", solve("contextCheckout(7)"))
+        assertEquals("yes", solve("\\+ contextCheckout(7), contextActive(0), contextCheck(p(1))"))
+        assertEquals("yes", solve("contextBranch(0, B), contextCheckout(0), contextDrop(B), \\+ contextCheckout(B), contextActive(0)"))
     }
 
     @Test
     fun aMissingBranchHasNoSolutions() {
-        assertEquals("no", solve("context_check(7, p(_))"))
-        assertEquals("no", solve("context_branch(7, _)"))
+        assertEquals("no", solve("contextCheck(7, p(_))"))
+        assertEquals("no", solve("contextBranch(7, _)"))
     }
 
     @Test
     fun outputsAreUnified() {
-        assertEquals("yes", solve("context_active(0)"))
-        assertEquals("no", solve("context_active(3)"))
-        assertEquals("yes", solve("context_branch(0, 1), context_active(1), context_last(1)"))
-        assertEquals("no", solve("context_branch(0, 5)"))
-        assertEquals("yes", solve("\\+ context_branch(0, 5), context_active(0), context_last(0)"))
+        assertEquals("yes", solve("contextActive(0)"))
+        assertEquals("no", solve("contextActive(3)"))
+        assertEquals("yes", solve("contextBranch(0, 1), contextActive(1), contextLast(1)"))
+        assertEquals("no", solve("contextBranch(0, 5)"))
+        assertEquals("yes", solve("\\+ contextBranch(0, 5), contextActive(0), contextLast(0)"))
     }
 
     @Test
     fun branchesNamedByOtherTermsAreErrors() {
-        assertTrue(solve("context_checkout(_)").startsWith("error"))
-        assertTrue(solve("context_checkout(a)").startsWith("error"))
-        assertTrue(solve("context_check(a, p(_))").startsWith("error"))
-        assertTrue(solve("context_drop_after(0, [a])").startsWith("error"))
+        assertTrue(solve("contextCheckout(_)").startsWith("error"))
+        assertTrue(solve("contextCheckout(a)").startsWith("error"))
+        assertTrue(solve("contextCheck(a, p(_))").startsWith("error"))
+        assertTrue(solve("contextDropAfter(0, [a])").startsWith("error"))
     }
 
     // the copies of a term differing in the names of their variables share an identifier, which a term with an atom in
     // place of a variable does not
     @Test
     fun theIdentifiersOfTermsWithVariables() {
-        assertEquals("yes", solve("context_id(p(X, Y), I), context_id(p(A, B), I), context_id(p(A, A), J), I \\== J"))
-        assertEquals("yes", solve("context_id(p(X), I), context_id(p('_V0'), J), I \\== J"))
+        assertEquals("yes", solve("contextId(p(X, Y), I), contextId(p(A, B), I), contextId(p(A, A), J), I \\== J"))
+        assertEquals("yes", solve("contextId(p(X), I), contextId(p('_V0'), J), I \\== J"))
     }
 }

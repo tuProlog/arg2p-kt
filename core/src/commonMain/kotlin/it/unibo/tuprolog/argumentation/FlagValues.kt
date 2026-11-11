@@ -13,13 +13,13 @@ enum class Profile(
     FREE("free"),
 
     /** ASPIC+, its preferences on the last or weakest link (the default) */
-    ASPIC_PLUS("aspic_plus"),
+    ASPIC_PLUS("aspicPlus"),
 
     /** ASPIC+ with no preferences */
     ASPIC("aspic"),
 
     /** ASPIC+ on defeasible rules alone */
-    ASPIC_DEFEASIBLE("aspic_defeasible"),
+    ASPIC_DEFEASIBLE("aspicDefeasible"),
 
     /** The rules and the conflicts are arguments as well */
     META("meta"),
@@ -28,7 +28,7 @@ enum class Profile(
     ABA("aba"),
 
     /** ABA+, flat, under weak contraposition */
-    ABA_PLUS("aba_plus"),
+    ABA_PLUS("abaPlus"),
 
     /** Abstract argumentation frameworks */
     ABSTRACT("abstract"),
@@ -39,13 +39,13 @@ enum class Profile(
 enum class Semantics(
     val value: String,
 ) {
-    CONFLICT_FREE("conflictfree"),
+    CONFLICT_FREE("conflictFree"),
     ADMISSIBLE("admissible"),
-    STRONGLY_ADMISSIBLE("stronglyadmissible"),
+    STRONGLY_ADMISSIBLE("stronglyAdmissible"),
     GROUNDED("grounded"),
     COMPLETE("complete"),
     PREFERRED("preferred"),
-    SEMI_STABLE("semistable"),
+    SEMI_STABLE("semiStable"),
     STABLE("stable"),
     IDEAL("ideal"),
     EAGER("eager"),
@@ -55,9 +55,9 @@ enum class Semantics(
     STAGE2("stage2"),
 
     /** The grounded labelling with burdens of persuasion */
-    BP_GROUNDED("bp_grounded"),
-    BP_GROUNDED_PARTIAL("bp_grounded_partial"),
-    BP_GROUNDED_COMPLETE("bp_grounded_complete"),
+    BP_GROUNDED("bpGrounded"),
+    BP_GROUNDED_PARTIAL("bpGroundedPartial"),
+    BP_GROUNDED_COMPLETE("bpGroundedComplete"),
 }
 
 /**
@@ -80,8 +80,8 @@ enum class StatementLabelling(
     val value: String,
 ) {
     STATEMENT("statement"),
-    STATEMENT_PASS_THROUGH("statement_pass_through"),
-    STATEMENT_BINARY("statement_binary"),
+    STATEMENT_PASS_THROUGH("statementPassThrough"),
+    STATEMENT_BINARY("statementBinary"),
 }
 
 /** The ordering principle of the preferences (orderingPrinciple) */

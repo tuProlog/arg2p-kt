@@ -170,11 +170,11 @@ class TheoryPartitionerTest {
                         theory = partitioning.theoryOf(index),
                         settings = Flags.parse("temporal.").library(),
                     ).also {
-                        it.solve(Struct.parse("context_reset, store::rulesRead", it.operators)).first()
+                        it.solve(Struct.parse("contextReset, store::rulesRead", it.operators)).first()
                     }
             }
         val axioms = { solver: Solver ->
-            solver.solve(Struct.parse("store::rule(t_after(_, _), _, _)", solver.operators)).count { it.isYes }
+            solver.solve(Struct.parse("store::rule(tAfter(_, _), _, _)", solver.operators)).count { it.isYes }
         }
         assertEquals(1, members.sumOf(axioms))
         members.forEach { assertTrue(it.solve(Struct.parse("constraints::instances", it.operators)).first().isYes) }

@@ -9,14 +9,14 @@ class StatementLabellersTest {
     private fun labelled(labeller: String): Map<String, Set<String>> {
         val module = LibraryTesting()
         module.run(
-            "context_assert(in([[r1], r1, [a], [], [[r1], [r1], []]]))",
-            "context_assert(out([[r2], r2, [a], [], [[r2], [r2], []]]))",
-            "context_assert(und([[r3], r3, [b], [], [[r3], [r3], []]]))",
-            "context_assert(out([[r4], r4, [c], [], [[r4], [r4], []]]))",
+            "contextAssert(in([[r1], r1, [a], [], [[r1], [r1], []]]))",
+            "contextAssert(out([[r2], r2, [a], [], [[r2], [r2], []]]))",
+            "contextAssert(und([[r3], r3, [b], [], [[r3], [r3], []]]))",
+            "contextAssert(out([[r4], r4, [c], [], [[r4], [r4], []]]))",
             "$labeller::statementLabelling",
         )
         return listOf("statIn", "statOut", "statUnd").associateWith { label ->
-            module.values("context_check($label([S]))", "S").toSet()
+            module.values("contextCheck($label([S]))", "S").toSet()
         }
     }
 
@@ -32,7 +32,7 @@ class StatementLabellersTest {
     fun passingThroughAStatementTakesTheLabelsOfAllItsArguments() {
         assertEquals(
             mapOf("statIn" to setOf("a"), "statOut" to setOf("a", "c"), "statUnd" to setOf("b")),
-            labelled("statement_pass_through"),
+            labelled("statementPassThrough"),
         )
     }
 
@@ -40,7 +40,7 @@ class StatementLabellersTest {
     fun theBinaryLabellingTellsInFromTheRest() {
         assertEquals(
             mapOf("statIn" to setOf("a"), "statOut" to setOf("b", "c"), "statUnd" to emptySet()),
-            labelled("statement_binary"),
+            labelled("statementBinary"),
         )
     }
 }

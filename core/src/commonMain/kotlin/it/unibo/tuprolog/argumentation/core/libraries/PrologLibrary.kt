@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.libraries.framework.loader.notation.ModuleNotation
 import it.unibo.tuprolog.argumentation.engine.vm.program.CodeKey
 import it.unibo.tuprolog.argumentation.engine.vm.program.SharedLibrary
@@ -37,7 +38,12 @@ abstract class PrologLibrary(
 
     override val baseContent: Library by lazy {
         SharedLibrary(
-            Library.of(alias = alias, clauses = prologTheory, primitives = primitives, operators = libraryOperators),
+            Library.of(
+                alias = alias,
+                clauses = prologTheory,
+                primitives = EarlierSpellings.withEarlierNames(primitives),
+                operators = libraryOperators,
+            ),
             CodeKey.of(alias, prologRawTheory),
         )
     }

@@ -18,26 +18,26 @@ superiorArgument(A, B, Preferences) :-
 %  The sets of preferences by which the arguments with info InfoA are superior to those with info InfoB, each
 %  a set, without duplicates (none if they are not): computed once for each pair (justified/3 in the context).
 justifications(InfoA, InfoB, Justifications) :-
-    context_check(justified(InfoA, InfoB, Justifications)), !.
+    contextCheck(justified(InfoA, InfoB, Justifications)), !.
 justifications(InfoA, InfoB, Justifications) :-
     findall(Sorted, (compareInfo(InfoA, InfoB, Preferences), utils::sortDistinct(Preferences, Sorted)), All),
     utils::sortDistinct(All, Justifications),
-    context_assert(justified(InfoA, InfoB, Justifications)).
+    contextAssert(justified(InfoA, InfoB, Justifications)).
 
 %! superiorInfo(+InfoA, +InfoB, -Preferences)
 %  The arguments with info InfoA are superior to those with info InfoB, by the preferences Preferences.
 %  Superiority only depends on the info of the arguments, much smaller and more often shared than whole
 %  arguments: it is computed on them, once for each pair (superior/4 in the context).
 superiorInfo(InfoA, InfoB, _) :-
-    context_check(superior(InfoA, InfoB, _, false)), !,
+    contextCheck(superior(InfoA, InfoB, _, false)), !,
     fail.
 superiorInfo(InfoA, InfoB, Preferences) :-
-    context_check(superior(InfoA, InfoB, Preferences, true)), !.
+    contextCheck(superior(InfoA, InfoB, Preferences, true)), !.
 superiorInfo(InfoA, InfoB, Preferences) :-
     compareInfo(InfoA, InfoB, Preferences), !,
-    context_assert(superior(InfoA, InfoB, Preferences, true)).
+    contextAssert(superior(InfoA, InfoB, Preferences, true)).
 superiorInfo(InfoA, InfoB, _) :-
-    context_assert(superior(InfoA, InfoB, [], false)),
+    contextAssert(superior(InfoA, InfoB, [], false)),
     fail.
 
 %! superiorById(+InfoIdA, +InfoIdB)
@@ -45,15 +45,15 @@ superiorInfo(InfoA, InfoB, _) :-
 %  identifier InfoIdB: compared once for each pair of identifiers, as the info is shared by many arguments
 %  (infoSuperior/3 in the context).
 superiorById(InfoIdA, InfoIdB) :-
-    context_check(infoSuperior(InfoIdA, InfoIdB, Result)), !,
+    contextCheck(infoSuperior(InfoIdA, InfoIdB, Result)), !,
     Result == yes.
 superiorById(InfoIdA, InfoIdB) :-
     store::infoById(InfoIdA, InfoA),
     store::infoById(InfoIdB, InfoB),
     compareInfo(InfoA, InfoB, _), !,
-    context_assert(infoSuperior(InfoIdA, InfoIdB, yes)).
+    contextAssert(infoSuperior(InfoIdA, InfoIdB, yes)).
 superiorById(InfoIdA, InfoIdB) :-
-    context_assert(infoSuperior(InfoIdA, InfoIdB, no)),
+    contextAssert(infoSuperior(InfoIdA, InfoIdB, no)),
     fail.
 
 %! compareInfo(+InfoA, +InfoB, -Preferences)

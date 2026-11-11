@@ -1,7 +1,7 @@
 %! evaluate
 %  The graph of the theory, whole, changed by the steps the flags select, and its argument and statement labellings, in the
 %  context: one solution for each labelling.
-evaluate :- evaluated(whole, whole_graph).
+evaluate :- evaluated(whole, wholeGraph).
 
 %! evaluate(+Goal)
 %  As evaluate/0, on the part of the graph the labels of the statements for Goal depend on, as locality/1 goes: with
@@ -25,43 +25,43 @@ statementLabels(In, Out, Und) :-
 
 %! graph(+Query, +Locality)
 %  The graph, by the builder of the profile (graphBuilder), once the theory is checked against it, not changed by the steps
-%  yet: whole for whole_graph (buildArgumentationGraph/0), otherwise the part the labels of the arguments for Query depend on,
+%  yet: whole for wholeGraph (buildArgumentationGraph/0), otherwise the part the labels of the arguments for Query depend on,
 %  as Locality goes (buildQueryGraph/3, given the steps that apply, see steps/1). With the
-%  solvers of a session building it together, the graph of all of them (see store::graph_begin/1, store::graph_settle/0).
+%  solvers of a session building it together, the graph of all of them (see store::graphBegin/1, store::graphSettle/0).
 graph(Query, Locality) :-
     checkProfile,
     builder(Builder),
-    (Locality == whole_graph ->
-        store::graph_begin(whole),
+    (Locality == wholeGraph ->
+        store::graphBegin(whole),
         dispatched(Builder, buildArgumentationGraph/0),
         Builder:::buildArgumentationGraph
     ;
-        store::graph_begin(Query),
+        store::graphBegin(Query),
         steps(Steps),
         dispatched(Builder, buildQueryGraph/3),
         Builder:::buildQueryGraph(Query, Locality, Steps)
     ),
-    store::graph_settle.
+    store::graphSettle.
 
 %! locality(-Locality)
 %  The part of the graph the labels of the arguments for a query depend on: with queryMode, as the semantics declares it
 %  (locality/1), the arguments they depend on (directional) or those connected to them in either direction (connected);
-%  otherwise the whole graph (whole_graph: queryMode off, a semantics that does not declare it, a builder giving no part of
+%  otherwise the whole graph (wholeGraph: queryMode off, a semantics that does not declare it, a builder giving no part of
 %  the graph, defining no buildQueryGraph/3, as for an abstract theory).
-locality(whole_graph) :- \+ setting(queryMode), !.
+locality(wholeGraph) :- \+ setting(queryMode), !.
 locality(Locality) :-
     builder(Builder),
-    (module_defines(Builder, buildQueryGraph/3) -> semanticsLocality(Locality) ; Locality = whole_graph).
+    (moduleDefines(Builder, buildQueryGraph/3) -> semanticsLocality(Locality) ; Locality = wholeGraph).
 
 semanticsLocality(Locality) :-
     setting(argumentLabellingMode, Semantics),
-    (module_defines(Semantics, locality/1) -> Semantics::locality(Locality) ; Locality = whole_graph).
+    (moduleDefines(Semantics, locality/1) -> Semantics::locality(Locality) ; Locality = wholeGraph).
 
 %! dispatched(+Module, +Predicate)
 %  Module defines Predicate (Name/Arity), one the pipeline calls on the modules the flags select: an existence
 %  error otherwise, rather than the failure of the whole evaluation an unknown predicate gives.
 dispatched(Module, Name/Arity) :-
-    (module_defines(Module, Name/Arity) ->
+    (moduleDefines(Module, Name/Arity) ->
         true
     ;
         throw(error(existence_error(procedure, ':'(Module, Name/Arity)), 'the module does not define the predicate the pipeline calls on it'))
@@ -95,7 +95,7 @@ checkExtensions :-
 preferenceMode(Extension) :-
     order(Order),
     member(Extension, Order),
-    module_defines(Extension, preferenceMode/0).
+    moduleDefines(Extension, preferenceMode/0).
 
 %! modifyGraph
 %  The graph changed by the steps the flags select (see plan/1), in their order whatever the order the flags state them in:
@@ -108,7 +108,7 @@ preferenceMode(Extension) :-
 modifyGraph :-
     plan(Plan),
     applySteps(Plan),
-    store::graph_step(all).
+    store::graphStep(all).
 
 %! steps(-Steps)
 %  The steps changing the graph that apply (see modifyGraph/0), in their order.
@@ -121,17 +121,17 @@ steps(Steps) :-
 %  order/1, then the other graph extensions stated, in the order stated. Worked out once for the theory (see
 %  utils::oncePerTheory/2), as whether a step applies is a function of the theory and of the flags (see active/1). A step
 %  that does not apply is gone through all the same: the solvers of a session, each with its part of the theory, on which a
-%  step may apply or not, meet at every step (see store::graph_step/1).
+%  step may apply or not, meet at every step (see store::graphStep/1).
 plan(Plan) :-
     utils::oncePerTheory(plan, pipeline::readPlan),
-    cache_check(stepsPlan(Plan)).
+    cacheCheck(stepsPlan(Plan)).
 
 readPlan :-
     order(Order),
     findall(Other, (setting(graphExtension, Other), \+ member(Other, Order)), Others),
     append(Order, Others, All),
     planned(All, Plan),
-    cache_assert(stepsPlan(Plan)).
+    cacheAssert(stepsPlan(Plan)).
 
 planned([], []).
 % (a step not applying runs nothing until the next step: its scope is of no use, and its module is not loaded for it)
@@ -151,7 +151,7 @@ active(Step) :- parser::extension(Step), !.
 
 applySteps([]).
 applySteps([step(Step, Scope, Applies)|Steps]) :-
-    store::graph_step(Scope),
+    store::graphStep(Scope),
     (Applies == yes -> dispatched(Step, modifyArgumentationGraph/0), Step:::modifyArgumentationGraph ; true),
     applySteps(Steps).
 
@@ -159,7 +159,7 @@ applySteps([step(Step, Scope, Applies)|Steps]) :-
 % (attackById/4, directAttacks/1 of the module store), or the arguments it changes (its enumerations of them), each
 % alone, which the solvers of a session building the graph together divide by the arguments they saved, all of them
 % looked up; all otherwise, each solver changing the whole graph alike
-stepScope(Step, Scope) :- module_defines(Step, stepScope/1), !, Step::stepScope(Scope).
+stepScope(Step, Scope) :- moduleDefines(Step, stepScope/1), !, Step::stepScope(Scope).
 stepScope(_, all).
 
 %! buildArgumentLabelling

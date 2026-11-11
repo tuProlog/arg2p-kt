@@ -112,7 +112,7 @@ implementation exists.
 | Build arguments, attacks and supports | `ruleGraph`, `abstractGraph` | `graphBuilder` (set by `graphBuildMode`) |
 | Change the graph, in a fixed order: add the arguments derived from the others (the copies of `metaConflicts`) with their attacks, then `rebutRestriction`, the preference mode, `bp` | `conflictArguments`, one per extension | `graphExtension`, `metaConflicts` |
 | Label the arguments | one labeller per semantics | `argumentLabellingMode` |
-| Label the statements | `statement`, `statement_pass_through`, `statement_binary` | `statementLabellingMode` |
+| Label the statements | `statement`, `statementPassThrough`, `statementBinary` | `statementLabellingMode` |
 
 The `pipeline` module runs the stages: `pipeline::evaluate/0` on the whole graph, `pipeline::evaluate/1` on the part of
 the graph a goal depends on when `queryMode` is enabled and the semantics allows it (`pipeline::locality/1`), which is
@@ -149,7 +149,7 @@ Every module, with all its predicates, is in the [Prolog modules reference]({{% 
 
 ### Labelling modules
 
-One per value of `argumentLabellingMode` (`grounded`, `complete`, `preferred`, `stable`, `bp_grounded`, …) and
+One per value of `argumentLabellingMode` (`grounded`, `complete`, `preferred`, `stable`, `bpGrounded`, …) and
 one per value of `statementLabellingMode`. They all expose the same entry point, `argumentLabelling/0` or
 `statementLabelling/0` respectively, which is what makes them interchangeable (`labelling` and `scc` hold what the
 semantics share, and are no semantics themselves):
@@ -169,12 +169,12 @@ semantics share, and are no semantics themselves):
 
 ## Inspecting intermediate results
 
-Data produced by a stage is stored in the evaluation context and can be read back with `context_check/1`:
+Data produced by a stage is stored in the evaluation context and can be read back with `contextCheck/1`:
 
 ```prolog
-?- context_check(argument(A)).
-?- context_check(attack(Type, Attacker, Attacked, On)).
-?- context_check(in(A)).
+?- contextCheck(argument(A)).
+?- contextCheck(attack(Type, Attacker, Attacked, On)).
+?- contextCheck(in(A)).
 ```
 
 This is the most direct way to see what a single stage produced. The context holds the attacks as they are found,
@@ -204,7 +204,7 @@ Useful context predicates:
 Theories kept in separate `.pl` files can be loaded and queried without adding them to the knowledge base:
 
 ```prolog
-module::call_module([Modules], Goal)
+module::callModule([Modules], Goal)
 ```
 
 `Modules` is a list of module names, resolved against the
@@ -212,8 +212,8 @@ module::call_module([Modules], Goal)
 A full location can be given instead of a name, in which case `modulesPath` is ignored:
 
 ```prolog
-?- module::call_module(['greetings'], hello(X)).
-?- module::call_module(['/home/me/theories/greetings.pl'], hello(X)).
+?- module::callModule(['greetings'], hello(X)).
+?- module::callModule(['/home/me/theories/greetings.pl'], hello(X)).
 ```
 
 ### Remote modules
@@ -224,8 +224,8 @@ URL, and a module may be given as a full URL:
 ```prolog
 modulesPath('https://example.org/theories').
 
-?- module::call_module(['greetings'], hello(X)).
-?- module::call_module(['https://example.org/theories/greetings.pl'], hello(X)).
+?- module::callModule(['greetings'], hello(X)).
+?- module::callModule(['https://example.org/theories/greetings.pl'], hello(X)).
 ```
 
 A URL does not need to end in `.pl`: anything carrying a scheme (`https://...`) is treated as a location rather than
@@ -245,11 +245,11 @@ is raised as it is.
 ### What a module sees
 
 A module may be written in plain Prolog or in the [Arg2P language]({{% ref "/docs/syntax" %}}), and a full
-evaluation can be run over it, which makes `call_module/2` a way to reason about a theory kept in a separate
+evaluation can be run over it, which makes `callModule/2` a way to reason about a theory kept in a separate
 file:
 
 ```prolog
-?- module::call_module(['theory'], arg2p::solve(d, Res)).
+?- module::callModule(['theory'], arg2p::solve(d, Res)).
 Res = [in(d)]
 ```
 

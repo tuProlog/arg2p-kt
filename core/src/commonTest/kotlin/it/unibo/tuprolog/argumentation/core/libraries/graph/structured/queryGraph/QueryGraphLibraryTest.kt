@@ -12,7 +12,7 @@ class QueryGraphLibraryTest {
 
     private fun module() = LibraryTesting.parsed(theory)
 
-    private fun LibraryTesting.claims() = values("context_check(argument(A)), store::claim(A, C)", "C").toSet()
+    private fun LibraryTesting.claims() = values("contextCheck(argument(A)), store::claim(A, C)", "C").toSet()
 
     @Test
     fun aQueryExploresTheArgumentsItDependsOn() {
@@ -20,7 +20,7 @@ class QueryGraphLibraryTest {
         module.run("queryGraph::explore(b)")
         // the argument for b, its sub-argument for a, and the attacker of a; nothing for c and d
         assertEquals(setOf("b", "a", "'-'(a)"), module.claims())
-        assertTrue(module.holds("store::argumentFor([b], B), store::argumentFor([a], A), context_check(support(A, B))"))
+        assertTrue(module.holds("store::argumentFor([b], B), store::argumentFor([a], A), contextCheck(support(A, B))"))
     }
 
     @Test
@@ -38,9 +38,9 @@ class QueryGraphLibraryTest {
     fun aStatementIsExploredOnce() {
         val module = module()
         module.run("queryGraph::explore(b)")
-        val saved = module.solutions("context_check(argument(_))").count { it.isYes }
+        val saved = module.solutions("contextCheck(argument(_))").count { it.isYes }
         module.run("queryGraph::explore(b)")
-        assertEquals(saved, module.solutions("context_check(argument(_))").count { it.isYes })
+        assertEquals(saved, module.solutions("contextCheck(argument(_))").count { it.isYes })
     }
 
     // The arguments are the same terms as those of the whole graph: rules and info sorted, the body as written
@@ -49,7 +49,7 @@ class QueryGraphLibraryTest {
         val theory =
             "f1 :=> a.\nf2 :=> b.\nr1 : b, a, prolog(true) => c.\nr2 : c, a => d.\nr3 : d -> e.\n" +
                 "statementLabellingMode(statement).\nargumentLabellingMode(grounded).\n"
-        val arguments = "context_check(argument(A))"
+        val arguments = "contextCheck(argument(A))"
         val whole = LibraryTesting(theory).also { it.run("solve(_, _, _)") }
         val query = LibraryTesting(theory + "queryMode.").also { it.run("solve(e, _, _, _)") }
         assertEquals(whole.values(arguments, "A").toSet(), query.values(arguments, "A").toSet())
@@ -86,7 +86,7 @@ class QueryGraphLibraryTest {
                 )
             val statIn = module.value("solve(t(rita), I, _, _)", "I")!!
             assertFalse("t(rita)" in statIn, statIn)
-            assertEquals(0, module.solutions("context_check(argument(A)), store::claim(A, t(rita))").count { it.isYes })
+            assertEquals(0, module.solutions("contextCheck(argument(A)), store::claim(A, t(rita))").count { it.isYes })
         }
     }
 

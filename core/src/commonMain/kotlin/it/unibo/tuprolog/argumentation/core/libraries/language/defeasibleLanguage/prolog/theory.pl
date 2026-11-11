@@ -8,5 +8,5 @@ rules(Rules) :- ruleNotation::rules(Rules).
 check :-
     parser::extension(plainProlog),
     (plainProlog::strictRules([], [], [_|_]) ; plainProlog::premises([_|_]) ; plainProlog::axioms([_|_])), !,
-    throw(error(domain_error(defeasible_theory, strict), 'aspic_defeasible: the theory has strict rules, axioms or premises')).
+    throw(error(domain_error(defeasible_theory, strict), 'aspicDefeasible: the theory has strict rules, axioms or premises')).
 check.

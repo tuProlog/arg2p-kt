@@ -12,12 +12,12 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * context_check(Goal): the solutions of Goal in the active branch (see [it.unibo.tuprolog.argumentation.engine.store.ClauseStore.solve]); the machine
+ * contextCheck(Goal): the solutions of Goal in the active branch (see [it.unibo.tuprolog.argumentation.engine.store.ClauseStore.solve]); the machine
  * resolves Goal with the records of the branch itself (see [lookup])
  */
 internal class ContextCheck(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_check", 1)) {
+) : AbstractNativePrimitive(Signature("contextCheck", 1)) {
     override fun call(call: NativeCall): Int = call.lookupOrView(branches.selected, branchLookup(branches.active), 0, null, branches.layout)
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> =

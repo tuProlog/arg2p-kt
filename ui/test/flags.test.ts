@@ -10,7 +10,7 @@ const ok: (value: unknown, message?: string) => void = assert.ok;
 
 // flags stating every flag that needs a value
 const FULL = [
-    'graphBuildMode(aspic_plus).',
+    'graphBuildMode(aspicPlus).',
     'argumentLabellingMode(grounded).',
     'statementLabellingMode(statement).',
     'orderingPrinciple(last).',
@@ -29,16 +29,21 @@ describe('Flags as text', function () {
         deepEqual(stated.get('autoTransposition'), []);
         deepEqual(stated.get('modulesPath'), ['https://example.org/t']);
         equal(stated.has('metaRules'), false);
-        equal(statedProfile(FULL), 'aspic_plus');
+        equal(statedProfile(FULL), 'aspicPlus');
         equal(statedProfile('queryMode.'), null);
     });
 
     it('should tell the profile in effect: as the engine has it, or as the theory, the flags or the default state it', function () {
         equal(profileOf('graphBuildMode(aba).', 'graphBuildMode(abstract).'), 'aba');
         equal(profileOf('a.', 'graphBuildMode(abstract).'), 'abstract');
-        equal(profileOf('a.', 'queryMode.'), 'aspic_plus');
+        equal(profileOf('a.', 'queryMode.'), 'aspicPlus');
         equal(profileOf('graphBuildMode(aba).', '', { graphBuildMode: ['abstract'] }), 'abstract');
         equal(profileOf('graphBuildMode(aba).', '', {}), 'aba');
+    });
+
+    it('should read the values as arg2p spelled them before 1.0.0 as those of 1.0.0', function () {
+        equal(statedProfile('graphBuildMode(aspic_plus).'), 'aspicPlus');
+        deepEqual(statedFlags('argumentLabellingMode(bp_grounded).').get('argumentLabellingMode'), ['bpGrounded']);
     });
 
     it('should tolerate spaces and comments, and read a set stated empty', function () {

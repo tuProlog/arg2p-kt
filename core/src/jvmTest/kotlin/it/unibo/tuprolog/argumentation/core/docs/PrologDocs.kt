@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.docs
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.LibraryRegistry
 import it.unibo.tuprolog.argumentation.core.libraries.Loadable
@@ -50,13 +51,20 @@ class ModuleDoc(
 
     private val clauses = module.baseContent.clauses.filterIsInstance<Clause>()
 
+    // Its primitives, but under the earlier spellings of their names (see EarlierSpellings)
+    private val primitiveSignatures =
+        module.baseContent.primitives.keys
+            .filterNot { EarlierSpellings.isEarlier(it) }
+
     /** The predicates it defines, in the order of its theory, and its primitives */
     val defined: Set<Signature> =
-        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + module.baseContent.primitives.keys
+        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + primitiveSignatures
 
     /** Its native primitives, each with its KDoc */
     val primitives: Map<Signature, String> =
-        module.baseContent.primitives.mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
+        module.baseContent.primitives
+            .filterKeys { !EarlierSpellings.isEarlier(it) }
+            .mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
 
     /** The predicates its comments document, in their order */
     val documented: List<Documentation> =

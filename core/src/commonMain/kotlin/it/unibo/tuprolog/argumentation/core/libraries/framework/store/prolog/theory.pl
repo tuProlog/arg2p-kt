@@ -109,64 +109,64 @@ statementLabelFact(und, Statement, statUnd(Statement)).
 %! saveArgument(+Conclusion, +Argument)
 %  Argument, whose conclusion is Conclusion, is saved, unless it already is.
 saveArgument(Conclusion, Argument) :-
-    context_absent(argument(Argument)),
+    contextAbsent(argument(Argument)),
     conclusion(Argument, Conclusion),
-    context_id(argument(Argument), Id),
+    contextId(argument(Argument), Id),
     record(Argument, Id).
 
 %! saveArgument(+Tag, +Conclusion, +Argument)
 %  As saveArgument/2, Conclusion noted as new under Tag (see newConclusion/2): the rounds of the graph builder.
 saveArgument(Tag, Conclusion, Argument) :-
     saveArgument(Conclusion, Argument),
-    context_assert(newConc(Tag, Conclusion)).
+    contextAssert(newConc(Tag, Conclusion)).
 
 %! saveInstance(+Conclusion, +Argument)
 %  As saveArgument/2, unless an argument with the identifier of Argument is saved: Argument is saved even when an
 %  argument it is an instance of is.
 saveInstance(Conclusion, Argument) :-
-    context_id(argument(Argument), Id),
-    context_absent(arg(Id)),
+    contextId(argument(Argument), Id),
+    contextAbsent(arg(Id)),
     conclusion(Argument, Conclusion),
     record(Argument, Id).
 
 record(Argument, Id) :-
-    context_assert_id(Id),
-    context_assert(arg(Id)),
+    contextAssertId(Id),
+    contextAssert(arg(Id)),
     argumentInfo(Argument, Info),
-    context_id(info(Info), InfoId),
-    context_assert(argInfo(Id, InfoId)).
+    contextId(info(Info), InfoId),
+    contextAssert(argInfo(Id, InfoId)).
 
 %! argument(?Argument)
 %  Argument is saved.
 argument(Argument) :-
-    context_check(argument(Argument)).
+    contextCheck(argument(Argument)).
 
 %! arguments(-Arguments)
 %  Arguments are the saved arguments (see argumentById/2 for a graph built by several solvers).
 arguments(Arguments) :-
-    graph_own(Ids), !,
-    findall(Argument, (member(Id, Ids), context_term(Id, argument(Argument))), Arguments).
+    graphOwn(Ids), !,
+    findall(Argument, (member(Id, Ids), contextTerm(Id, argument(Argument))), Arguments).
 arguments(Arguments) :-
-    findall(Argument, context_check(argument(Argument)), Arguments).
+    findall(Argument, contextCheck(argument(Argument)), Arguments).
 
 %! argumentFor(?Conclusion, ?Argument)
 %  Argument is saved for Conclusion. Going through the arguments (Conclusion unbound): see argumentById/2.
 argumentFor(Conclusion, Argument) :-
     nonvar(Conclusion), !,
-    context_by(conclusion, Conclusion, argument(Argument)).
+    contextBy(conclusion, Conclusion, argument(Argument)).
 argumentFor(Conclusion, Argument) :-
-    graph_own(Ids), !,
+    graphOwn(Ids), !,
     member(Id, Ids),
-    context_term(Id, argument(Argument)),
+    contextTerm(Id, argument(Argument)),
     conclusion(Argument, Conclusion).
 argumentFor(Conclusion, Argument) :-
-    context_check(argument(Argument)),
+    contextCheck(argument(Argument)),
     conclusion(Argument, Conclusion).
 
 %! argumentUnifiable(+Conclusion, -Argument)
 %  Argument is saved for a conclusion unifying with Conclusion, which it is not bound to.
 argumentUnifiable(Conclusion, Argument) :-
-    context_matching(conclusion, Conclusion, argument(Argument)).
+    contextMatching(conclusion, Conclusion, argument(Argument)).
 
 %! argumentById(?Id, ?Argument)
 %  Argument is saved with the identifier Id. While the solvers of a session divide the work on a graph (building
@@ -175,72 +175,72 @@ argumentUnifiable(Conclusion, Argument) :-
 %  directAttacks/1); a lookup (a key bound) goes through all of them.
 argumentById(Id, Argument) :-
     var(Id),
-    graph_own(Ids), !,
+    graphOwn(Ids), !,
     member(Id, Ids),
-    context_term(Id, argument(Argument)).
+    contextTerm(Id, argument(Argument)).
 argumentById(Id, Argument) :-
-    context_check(arg(Id)),
-    context_term(Id, argument(Argument)).
+    contextCheck(arg(Id)),
+    contextTerm(Id, argument(Argument)).
 
 %! inGraph(?Id)
 %  The argument with identifier Id is in the graph the labellings label (arg/1, see leaveOutArguments/0): no argument
 %  read.
 inGraph(Id) :-
-    context_check(arg(Id)).
+    contextCheck(arg(Id)).
 
 %! graphSize(-Count)
 %  Count arguments are in the graph the labellings label.
 graphSize(Count) :-
-    context_count(arg(_), all, Count).
+    contextCount(arg(_), all, Count).
 
 %! inGraph(+Branch, ?Id)
 %  The argument with identifier Id is in the graph the labellings label in the context branch Branch.
 inGraph(Branch, Id) :-
-    context_check(Branch, arg(Id)).
+    contextCheck(Branch, arg(Id)).
 
 %! argumentId(+Argument, -Id)
-%  Id is the identifier of Argument (see context_id/2).
+%  Id is the identifier of Argument (see contextId/2).
 argumentId(Argument, Id) :-
-    context_id(argument(Argument), Id).
+    contextId(argument(Argument), Id).
 
 %! argumentIds(-Ids)
 %  Ids are the identifiers of the saved arguments.
 argumentIds(Ids) :-
-    findall(Id, context_check(arg(Id)), Ids).
+    findall(Id, contextCheck(arg(Id)), Ids).
 
 %! leaveOutArguments
 %  The saved arguments are left out of the graph the labellings label (by their identifiers), until taken in again
 %  (takeInArgument/1); they stay saved.
 leaveOutArguments :-
-    context_retract(arg(_)).
+    contextRetract(arg(_)).
 
 %! takeInArgument(+Id)
 %  The argument with identifier Id is in the graph the labellings label again.
 takeInArgument(Id) :-
-    context_assert(arg(Id)).
+    contextAssert(arg(Id)).
 
 %! argumentInfoId(?Id, ?InfoId)
 %  The argument with identifier Id has the info with identifier InfoId.
 argumentInfoId(Id, InfoId) :-
-    context_check(argInfo(Id, InfoId)).
+    contextCheck(argInfo(Id, InfoId)).
 
 %! infoById(+InfoId, -Info)
 %  Info is the info with identifier InfoId.
 infoById(InfoId, Info) :-
-    context_term(InfoId, info(Info)).
+    contextTerm(InfoId, info(Info)).
 
 %! newConclusion(+Tag, ?Conclusion)
 %  An argument for Conclusion was saved under Tag.
 %  With the solvers of a session building the graph together (see GraphSharing): what this one saved passed on, and
 %  what the others did taken, as new under Tag; with nothing new, until another does or none can.
 newConclusion(Tag, Conclusion) :-
-    (context_check(newConc(Tag, _)) -> graph_share(Tag, false) ; graph_share(Tag, true)),
-    context_check(newConc(Tag, Conclusion)).
+    (contextCheck(newConc(Tag, _)) -> graphShare(Tag, false) ; graphShare(Tag, true)),
+    contextCheck(newConc(Tag, Conclusion)).
 
 %! forgetNewConclusions(?Tag)
 %  The conclusions saved under Tag are forgotten (not their arguments).
 forgetNewConclusions(Tag) :-
-    context_retract(newConc(Tag, _)).
+    contextRetract(newConc(Tag, _)).
 
 %--------------------------------------------------------------------------
 % Supports
@@ -251,16 +251,16 @@ forgetNewConclusions(Tag) :-
 %  as the support of an instance of Supported by one of Supporter (for fewer values) is another one. Saved already
 %  it still succeeds: a rule may use the same argument for two of its premises.
 saveSupport(Supporter, Supported) :-
-    context_id(argument(Supporter), IdSupporter),
-    context_id(argument(Supported), IdSupported),
-    (context_absent(supportId(IdSupporter, IdSupported)) -> context_assert(supportId(IdSupporter, IdSupported)) ; true).
+    contextId(argument(Supporter), IdSupporter),
+    contextId(argument(Supported), IdSupported),
+    (contextAbsent(supportId(IdSupporter, IdSupported)) -> contextAssert(supportId(IdSupporter, IdSupported)) ; true).
 
 %! copySupports(+Original, +IdCopy)
 %  The supports of Original also support the argument with identifier IdCopy.
 copySupports(Original, IdCopy) :-
     argumentId(Original, IdOriginal),
-    findall(S, context_check(supportId(S, IdOriginal)), Supporters),
-    findall(_, (member(S, Supporters), (context_absent(supportId(S, IdCopy)) -> context_assert(supportId(S, IdCopy)) ; true)), _).
+    findall(S, contextCheck(supportId(S, IdOriginal)), Supporters),
+    findall(_, (member(S, Supporters), (contextAbsent(supportId(S, IdCopy)) -> contextAssert(supportId(S, IdCopy)) ; true)), _).
 
 %! saveSupporters(+Argument, +Supporters)
 %  Each of Supporters saved as a support of Argument (see saveSupport/2).
@@ -271,26 +271,26 @@ saveSupporters(Argument, Supporters) :-
 %  Supporter supports Supported.
 support(Supporter, Supported) :-
     nonvar(Supported), !,
-    context_stored_id(argument(Supported), IdSupported),
-    context_check(supportId(IdSupporter, IdSupported)),
+    contextStoredId(argument(Supported), IdSupported),
+    contextCheck(supportId(IdSupporter, IdSupported)),
     supportOf(IdSupporter, Supporter, IdSupported, Supported).
 support(Supporter, Supported) :-
     nonvar(Supporter), !,
-    context_stored_id(argument(Supporter), IdSupporter),
-    context_check(supportId(IdSupporter, IdSupported)),
+    contextStoredId(argument(Supporter), IdSupporter),
+    contextCheck(supportId(IdSupporter, IdSupported)),
     supportOf(IdSupporter, Supporter, IdSupported, Supported).
 support(Supporter, Supported) :-
-    graph_own(Ids), !,
+    graphOwn(Ids), !,
     member(IdSupported, Ids),
-    context_check(supportId(IdSupporter, IdSupported)),
+    contextCheck(supportId(IdSupporter, IdSupported)),
     supportOf(IdSupporter, Supporter, IdSupported, Supported).
 support(Supporter, Supported) :-
-    context_check(supportId(IdSupporter, IdSupported)),
+    contextCheck(supportId(IdSupporter, IdSupported)),
     supportOf(IdSupporter, Supporter, IdSupported, Supported).
 
 supportOf(IdSupporter, Supporter, IdSupported, Supported) :-
-    context_term(IdSupporter, argument(Supporter)),
-    context_term(IdSupported, argument(Supported)).
+    contextTerm(IdSupporter, argument(Supporter)),
+    contextTerm(IdSupported, argument(Supported)).
 
 %! supports(-Supports)
 %  Supports are the (Supporter, Supported) pairs saved.
@@ -300,8 +300,8 @@ supports(Supports) :-
 %! supportersOf(+Argument, -Supporters)
 %  Supporters are the saved arguments supporting Argument directly, by their identifiers.
 supportersOf(Argument, Supporters) :-
-    context_id(argument(Argument), Id),
-    findall(S, (context_check(supportId(IdS, Id)), argumentById(IdS, S)), Supporters).
+    contextId(argument(Argument), Id),
+    findall(S, (contextCheck(supportId(IdS, Id)), argumentById(IdS, S)), Supporters).
 
 %--------------------------------------------------------------------------
 % Attacks
@@ -311,56 +311,56 @@ supportersOf(Argument, Supporters) :-
 %  Attacker attacks Attacked on its sub-argument On (Attacked itself for a direct attack), with an attack of
 %  Type, unless it already does.
 saveAttack(Type, Attacker, Attacked, On) :-
-    context_id(argument(Attacker), IdAttacker),
-    context_id(argument(Attacked), IdAttacked),
-    context_id(argument(On), IdOn),
+    contextId(argument(Attacker), IdAttacker),
+    contextId(argument(Attacked), IdAttacked),
+    contextId(argument(On), IdOn),
     saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
 %! saveAttackById(+Type, +IdAttacker, +Attacker, +IdAttacked, +Attacked, +IdOn, +On)
 %  As saveAttack/4, with the identifiers of the arguments known.
 saveAttackById(Type, IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
-    context_absent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-    context_assert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
-    graph_attack_saved(Type, IdAttacker, IdAttacked, IdOn).
+    contextAbsent(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+    contextAssert(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+    graphAttackSaved(Type, IdAttacker, IdAttacked, IdOn).
 
 %! removeAttack(+Type, +Attacker, +Attacked, +On)
 %  The attack, saved (see saveAttack/4), is removed in all its forms (those extended from it with it); nothing
 %  is done for an attack not saved (an extended one, say).
 removeAttack(Type, Attacker, Attacked, On) :-
     dropAttack(Type, Attacker, Attacked, On, Fact),
-    graph_removed([Fact]).
+    graphRemoved([Fact]).
 
 %! dropAttack(+Type, +Attacker, +Attacked, +On)
 %  As removeAttack/4 in the active branch alone, not passed on to the other solvers of a session: for a branch made to
-%  compute labels, dropped once they are read (see bp_grounded::argumentLabelling/0).
+%  compute labels, dropped once they are read (see bpGrounded::argumentLabelling/0).
 dropAttack(Type, Attacker, Attacked, On) :-
     dropAttack(Type, Attacker, Attacked, On, _).
 
 dropAttack(Type, Attacker, Attacked, On, attackId(Type, IdAttacker, IdAttacked, IdOn)) :-
-    context_id(argument(Attacker), IdAttacker),
-    context_id(argument(Attacked), IdAttacked),
-    context_id(argument(On), IdOn),
-    context_retract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
+    contextId(argument(Attacker), IdAttacker),
+    contextId(argument(Attacked), IdAttacked),
+    contextId(argument(On), IdOn),
+    contextRetract(attackId(Type, IdAttacker, IdAttacked, IdOn)).
 
 %! removeAttackIds(+Attacks)
 %  Each of Attacks, a(Type, IdAttacker, IdAttacked), a direct attack, removed, all at once: one at a time, each would copy
 %  what holds the others.
 removeAttackIds(Attacks) :-
     findall(attackId(T, B, A, A), member(a(T, B, A), Attacks), Facts),
-    context_retract_all(Facts),
-    graph_removed(Facts).
+    contextRetractAll(Facts),
+    graphRemoved(Facts).
 
 %! attackFound(?Type, ?Attacker, ?Attacked, ?On)
-%  The attack is saved, as it was found (attack/4 extends it): what context_check(attack(Type, Attacker, Attacked, On))
-%  answers, as context_check(support(Supporter, Supported)) support/2.
+%  The attack is saved, as it was found (attack/4 extends it): what contextCheck(attack(Type, Attacker, Attacked, On))
+%  answers, as contextCheck(support(Supporter, Supported)) support/2.
 attackFound(Type, Attacker, Attacked, On) :-
-    context_check(attackId(Type, IdAttacker, IdAttacked, IdOn)),
+    contextCheck(attackId(Type, IdAttacker, IdAttacked, IdOn)),
     attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
 attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On) :-
-    context_term(IdAttacker, argument(Attacker)),
-    context_term(IdAttacked, argument(Attacked)),
-    context_term(IdOn, argument(On)).
+    contextTerm(IdAttacker, argument(Attacker)),
+    contextTerm(IdAttacked, argument(Attacked)),
+    contextTerm(IdOn, argument(On)).
 
 %! attack(?Type, ?Attacker, ?Attacked, ?On)
 %  Attacker attacks Attacked on On, with an attack of Type: saved, or extended to Attacked from On, which it is
@@ -380,7 +380,7 @@ attackById(Type, IdAttacker, IdAttacked, IdOn) :-
     nonvar(IdAttacked), !,
     expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
 attackById(Type, IdAttacker, IdAttacked, IdOn) :-
-    graph_own(Ids), !,
+    graphOwn(Ids), !,
     member(IdAttacked, Ids),
     expandedAttackById(Type, IdAttacker, IdAttacked, IdOn).
 attackById(Type, IdAttacker, IdAttacked, IdOn) :-
@@ -395,22 +395,22 @@ attacksById(IdAttacker, IdAttacked) :-
 %  Attacker attacks Attacked itself, with an attack of Type: an attack saved, which attack/4 extends to the
 %  arguments built on Attacked. The steps changing the attacks read these: the extended ones follow. (The
 %  arguments are given as they are saved, as attack/4 gives them: removing an attack identifies them, see
-%  context_id.)
+%  contextId.)
 directAttack(Type, Attacker, Attacked) :-
-    context_check(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
-    context_term(IdAttacker, argument(Attacker)),
-    context_term(IdAttacked, argument(Attacked)).
+    contextCheck(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
+    contextTerm(IdAttacker, argument(Attacker)),
+    contextTerm(IdAttacked, argument(Attacked)).
 
 %! directAttacks(-Attacks)
 %  Attacks are the (Type, Attacker, Attacked) attacks saved (see directAttack/3): those on the arguments
 %  argumentById/2 goes through (directAttack/3, a lookup, looks among all of them).
 directAttacks(Attacks) :-
-    graph_own(Ids), !,
+    graphOwn(Ids), !,
     findall((Type, Attacker, Attacked), (
         member(IdAttacked, Ids),
-        context_check(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
-        context_term(IdAttacker, argument(Attacker)),
-        context_term(IdAttacked, argument(Attacked))
+        contextCheck(attackId(Type, IdAttacker, IdAttacked, IdAttacked)),
+        contextTerm(IdAttacker, argument(Attacker)),
+        contextTerm(IdAttacked, argument(Attacked))
     ), Attacks).
 directAttacks(Attacks) :-
     findall((Type, Attacker, Attacked), directAttack(Type, Attacker, Attacked), Attacks).
@@ -443,29 +443,29 @@ labelArgument(Label, Argument) :-
 %  Argument, with identifier Id, is labelled with Label, by itself and by its identifier.
 labelArgument(Label, Argument, Id) :-
     labelFact(Label, Argument, Fact),
-    context_assert(Fact),
+    contextAssert(Fact),
     labelIdFact(Label, Id, FactId),
-    context_assert(FactId).
+    contextAssert(FactId).
 
 %! unlabelArguments(+Label)
 %  The arguments labelled with Label no longer are, by themselves and by their identifiers.
 unlabelArguments(Label) :-
     labelFact(Label, _, Fact),
-    context_retract(Fact),
+    contextRetract(Fact),
     labelIdFact(Label, _, IdFact),
-    context_retract(IdFact).
+    contextRetract(IdFact).
 
 %! argumentLabelById(?Label, ?Id)
 %  The argument with identifier Id is labelled with Label.
 argumentLabelById(Label, Id) :-
     labelIdFact(Label, Id, Fact),
-    context_check(Fact).
+    contextCheck(Fact).
 
 %! argumentLabelByIdIn(+Branch, ?Label, ?Id)
 %  The argument with identifier Id is labelled with Label in the context branch Branch.
 argumentLabelByIdIn(Branch, Label, Id) :-
     labelIdFact(Label, Id, Fact),
-    context_check(Branch, Fact).
+    contextCheck(Branch, Fact).
 
 %! labelledIds(+Label, -Ids)
 %  Ids are the identifiers of the arguments labelled with Label.
@@ -476,21 +476,21 @@ labelledIds(Label, Ids) :-
 %  Argument is labelled with Label.
 argumentLabel(Label, Argument) :-
     labelFact(Label, Argument, Fact),
-    context_check(Fact).
+    contextCheck(Fact).
 
 %! labelStatement(+Label, +Statement)
 %  Statement is labelled with Label, by the identifier of the label as well (see statementLabelled/2).
 labelStatement(Label, Statement) :-
     statementLabelFact(Label, Statement, Fact),
-    context_id(Fact, Key),
-    context_assert_id(Key),
-    context_assert(statementKey(Key)).
+    contextId(Fact, Key),
+    contextAssertId(Key),
+    contextAssert(statementKey(Key)).
 
 %! statementLabel(?Label, ?Statement)
 %  Statement is labelled with Label.
 statementLabel(Label, Statement) :-
     statementLabelFact(Label, Statement, Fact),
-    context_check(Fact).
+    contextCheck(Fact).
 
 %! statementLabelled(+Label, +Statement)
 %  Statement, as it is written (up to the names of its variables), is labelled with Label: unlike
@@ -498,8 +498,8 @@ statementLabel(Label, Statement) :-
 %  it.
 statementLabelled(Label, Statement) :-
     statementLabelFact(Label, Statement, Fact),
-    context_id(Fact, Key),
-    context_check(statementKey(Key)).
+    contextId(Fact, Key),
+    contextCheck(statementKey(Key)).
 
 %! labelledArguments(+Label, -Arguments)
 %  Arguments are those labelled with Label.
@@ -513,16 +513,16 @@ labelledArguments(Label, Arguments) :-
 
 %! argumentIn(+Branch, ?Argument)
 argumentIn(Branch, Argument) :-
-    context_check(Branch, argument(Argument)).
+    contextCheck(Branch, argument(Argument)).
 
 %! supportIn(+Branch, ?Supporter, ?Supported)
 supportIn(Branch, Supporter, Supported) :-
-    context_check(Branch, supportId(IdSupporter, IdSupported)),
+    contextCheck(Branch, supportId(IdSupporter, IdSupported)),
     supportOf(IdSupporter, Supporter, IdSupported, Supported).
 
 %! attackFoundIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
 attackFoundIn(Branch, Type, Attacker, Attacked, On) :-
-    context_check(Branch, attackId(Type, IdAttacker, IdAttacked, IdOn)),
+    contextCheck(Branch, attackId(Type, IdAttacker, IdAttacked, IdOn)),
     attackOf(IdAttacker, Attacker, IdAttacked, Attacked, IdOn, On).
 
 %! attackIn(+Branch, ?Type, ?Attacker, ?Attacked, ?On)
@@ -532,7 +532,7 @@ attackIn(Branch, Type, Attacker, Attacked, On) :-
 %! argumentLabelIn(+Branch, ?Label, ?Argument)
 argumentLabelIn(Branch, Label, Argument) :-
     labelFact(Label, Argument, Fact),
-    context_check(Branch, Fact).
+    contextCheck(Branch, Fact).
 
 %--------------------------------------------------------------------------
 % The whole graph and its labels, sorted

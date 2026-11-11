@@ -18,13 +18,13 @@ readRules(Stored) :-
     ruleToClause(Rules, Clauses),
     utils::appendLists([Clauses, StrictIds], Stored),
     utils::cacheAll(Stored),
-    (constrainedRules(Rules) -> cache_assert(constrainedTheory) ; true), !.
+    (constrainedRules(Rules) -> cacheAssert(constrainedTheory) ; true), !.
 
 %! constrained
 %  A premise of a rule of the theory is a constraint ({ C }, see premiseKind/2): found as the rules are read.
 constrained :-
     rulesRead,
-    cache_check(constrainedTheory).
+    cacheCheck(constrainedTheory).
 
 constrainedRules(Rules) :-
     member(Rule, Rules),
@@ -42,7 +42,7 @@ strictness(_, defeasible).
 rule(Id, PP, [Conclusion]) :-
     rulesRead,
     ruleClause(Id, Premises, Conclusion, Head, Body),
-    cache_check(clause(Head, Body)),
+    cacheCheck(clause(Head, Body)),
     premiseList(Premises, PP).
 
 %! premise(?Id, ?Conclusion)
@@ -50,32 +50,32 @@ rule(Id, PP, [Conclusion]) :-
 premise(Id, [Conclusion]) :-
     rulesRead,
     premiseClause(Id, Conclusion, Head, Body),
-    cache_check(clause(Head, Body)).
+    cacheCheck(clause(Head, Body)).
 
 %! writtenRules(-Rules)
 %  The rules and premises as they are read: [Id, Premises, Conclusion] or [Id, Conclusion] (see ruleParts/4).
 writtenRules(Rules) :-
     rulesRead,
     clauseHead(_, Head),
-    findall(Body, cache_check(clause(Head, Body)), Rules).
+    findall(Body, cacheCheck(clause(Head, Body)), Rules).
 
 %! ruleClauses(-Clauses)
 %  The clauses of the rules and premises, as this store keeps them.
 ruleClauses(Clauses) :-
     rulesRead,
     clauseHead(_, Head),
-    findall((Head :- Body), cache_check(clause(Head, Body)), Clauses).
+    findall((Head :- Body), cacheCheck(clause(Head, Body)), Clauses).
 
 %! countConcluding(+Statement, +Limit, -Count)
 %  The number of rules and premises concluding Statement, counted up to Limit (an integer, or anything else for no limit)
 countConcluding(Statement, Limit, Count) :-
     rulesRead,
     clauseHead(Statement, Head),
-    cache_count(clause(Head, _), Limit, Count).
+    cacheCount(clause(Head, _), Limit, Count).
 
 %! checkStrict(?Id)
 %  The rule or premise Id is strict.
-checkStrict(Id) :- rulesRead, cache_check(strict(Id)).
+checkStrict(Id) :- rulesRead, cacheCheck(strict(Id)).
 
 %! premiseList(+Premises, -List)
 %  The premises of a rule, as read (a conjunction), as a list.
@@ -100,44 +100,44 @@ premisesListed(X, X).
 %  index of the rules built once in the active context.
 ruleUsing(Premise, Conclusion) :-
     rulesIndexed,
-    context_check(premiseOf(Premise, Conclusion, _)).
+    contextCheck(premiseOf(Premise, Conclusion, _)).
 
 %! ruleUsingAt(?Premise, ?Place)
 %  The rule at Place (see ruleAt/2) has Premise among its premises.
 ruleUsingAt(Premise, Place) :-
     rulesIndexed,
-    context_check(premiseOf(Premise, _, Place)).
+    contextCheck(premiseOf(Premise, _, Place)).
 
 %! ruleAt(?Place, ?Rule)
 %  Rule, [Id, Premises, Conclusion], is the one at Place in the order of rule/3.
 ruleAt(Place, Rule) :-
     rulesPlaced,
-    context_check(ruleAt(Place, Rule)).
+    contextCheck(ruleAt(Place, Rule)).
 
-% The index: premiseOf/3 facts asserted from the last, as context_check returns the newest clauses first, so that lookups
+% The index: premiseOf/3 facts asserted from the last, as contextCheck returns the newest clauses first, so that lookups
 % give the rules in the order of rule/3
-rulesIndexed :- context_check(rulesIndexed), !.
+rulesIndexed :- contextCheck(rulesIndexed), !.
 rulesIndexed :-
     findall(premiseOf(P, C, Place), (placedRule(Place, [_, Premises, [C]]), member(P, Premises)), Index),
     assertFromLast(Index),
-    context_assert(rulesIndexed).
+    contextAssert(rulesIndexed).
 
 %! ruleConclusion(?Id, ?Conclusion)
 %  The rule with identifier Id concludes Conclusion: looked up by its identifier, not among all the rules.
 ruleConclusion(Id, Conclusion) :-
     conclusionsIndexed,
-    context_check(ruleIdOf(Id, Conclusion)).
+    contextCheck(ruleIdOf(Id, Conclusion)).
 
-conclusionsIndexed :- context_check(conclusionsIndexed), !.
+conclusionsIndexed :- contextCheck(conclusionsIndexed), !.
 conclusionsIndexed :-
-    findall(_, (rule(Id, _, [Conclusion]), context_assert(ruleIdOf(Id, Conclusion))), _),
-    context_assert(conclusionsIndexed).
+    findall(_, (rule(Id, _, [Conclusion]), contextAssert(ruleIdOf(Id, Conclusion))), _),
+    contextAssert(conclusionsIndexed).
 
 % The rules themselves, only for who reads them by their places
-rulesPlaced :- context_check(rulesPlaced), !.
+rulesPlaced :- contextCheck(rulesPlaced), !.
 rulesPlaced :-
-    findall(_, (placedRule(Place, Rule), context_assert(ruleAt(Place, Rule))), _),
-    context_assert(rulesPlaced).
+    findall(_, (placedRule(Place, Rule), contextAssert(ruleAt(Place, Rule))), _),
+    contextAssert(rulesPlaced).
 
 placedRule(Place, Rule) :-
     findall([Id, Premises, Conclusion], rule(Id, Premises, Conclusion), Rules),
@@ -151,7 +151,7 @@ placed([_|Rules], At, Place, Rule) :-
 assertFromLast([]).
 assertFromLast([Fact|Facts]) :-
     assertFromLast(Facts),
-    context_assert(Fact).
+    contextAssert(Fact).
 
 %! conclusionOf(?Id, ?Conclusion)
 %  The rule or premise Id concludes Conclusion (a statement): the rules looked up by their identifier.

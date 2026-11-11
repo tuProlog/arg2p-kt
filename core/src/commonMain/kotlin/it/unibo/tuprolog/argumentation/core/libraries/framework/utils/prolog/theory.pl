@@ -8,15 +8,15 @@ forEach(Element, List, Goal) :-
 %! cacheAll(+Clauses)
 %  Each of Clauses asserted in the cache, in order.
 cacheAll(Clauses) :-
-    findall(_, (member(Clause, Clauses), cache_assert(Clause)), _).
+    findall(_, (member(Clause, Clauses), cacheAssert(Clause)), _).
 
 %! oncePerTheory(+Key, +Goal)
 %  What Goal reads of the theory, into the cache, read the first time it is asked for: the cache forgets it when the
 %  theory changes (see Cache). The goal is solved in this module: it names the modules of its predicates.
-oncePerTheory(Key, _) :- cache_check(read(Key)), !.
+oncePerTheory(Key, _) :- cacheCheck(read(Key)), !.
 oncePerTheory(Key, Goal) :-
     Goal, !,
-    cache_assert(read(Key)).
+    cacheAssert(read(Key)).
 
 %! appendLists(+Lists, -Result)
 %  Result is the concatenation of the lists in Lists.

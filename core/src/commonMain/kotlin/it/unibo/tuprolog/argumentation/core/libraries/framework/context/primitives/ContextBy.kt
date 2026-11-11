@@ -36,10 +36,10 @@ private fun NativeCall.placeOf(
     layout: ContextLayout,
 ): ClauseStore.Place? = if (kind(name) == NativeCall.ATOM) layout.key(atomName(name)) else null
 
-/** context_by(+Name, ?Key, +Fact): the solutions of Fact in the active branch, Key at the place named Name of it (see [ContextLayout.key]) */
+/** contextBy(+Name, ?Key, +Fact): the solutions of Fact in the active branch, Key at the place named Name of it (see [ContextLayout.key]) */
 internal class ContextBy(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_by", 3)) {
+) : AbstractNativePrimitive(Signature("contextBy", 3)) {
     override fun call(call: NativeCall): Int {
         val place = call.placeOf(call.arg(0), branches.layout) ?: return NativeCall.FAIL
         val fact = call.arg(2)
@@ -51,18 +51,18 @@ internal class ContextBy(
         return if (call is MachineCall) {
             call.lookup(branches.selected, branchLookup(branches.active), 2)
         } else {
-            call.inline(call.struct("context_check", intArrayOf(fact)), call.libraries, theoryVisible = false)
+            call.inline(call.struct("contextCheck", intArrayOf(fact)), call.libraries, theoryVisible = false)
         }
     }
 }
 
 /**
- * context_matching(+Name, +Key, ?Fact): Fact is a fact of the active branch, as stored, whose place named Name unifies
+ * contextMatching(+Name, +Key, ?Fact): Fact is a fact of the active branch, as stored, whose place named Name unifies
  * with Key, which it does not bind (see [ContextLayout.key])
  */
 internal class ContextMatching(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_matching", 3)) {
+) : AbstractNativePrimitive(Signature("contextMatching", 3)) {
     override fun call(call: NativeCall): Int {
         val place = call.placeOf(call.arg(0), branches.layout) ?: return NativeCall.FAIL
         val fact = call.arg(2)
@@ -79,10 +79,10 @@ internal class ContextMatching(
     }
 }
 
-/** context_stored_id(+Fact, -Id): Id is the identifier of a fact of the active branch that unifies with Fact, which it does not bind */
+/** contextStoredId(+Fact, -Id): Id is the identifier of a fact of the active branch that unifies with Fact, which it does not bind */
 internal class ContextStoredId(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_stored_id", 2)) {
+) : AbstractNativePrimitive(Signature("contextStoredId", 2)) {
     override fun call(call: NativeCall): Int {
         val pattern = call.arg(0)
         if (call.kind(pattern) == NativeCall.VAR) return NativeCall.FAIL

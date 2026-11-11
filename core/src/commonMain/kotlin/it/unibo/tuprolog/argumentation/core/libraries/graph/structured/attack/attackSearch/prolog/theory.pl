@@ -3,21 +3,21 @@
 %  build the graph, and again to build the attacks. When the conflicts are argued (see conflict::argued/0) they are
 %  looked for each time, the arguments for conflicts being those saved by then.
 possibleAttackers(Id, _, Statement) :-
-    context_check(possibleAttackersOf(Id, Statements)), !,
+    contextCheck(possibleAttackersOf(Id, Statements)), !,
     member(Statement, Statements).
 possibleAttackers(_, Argument, Statement) :-
     conflict::argued, !,
     findPossibleAttackers(Argument, Statement).
 possibleAttackers(Id, Argument, Statement) :-
     findall(S, findPossibleAttackers(Argument, S), Statements),
-    context_assert(possibleAttackersOf(Id, Statements)),
+    contextAssert(possibleAttackersOf(Id, Statements)),
     member(Statement, Statements).
 
 %! attackersOf(+Id, +Argument, -Statement)
 %  As possibleAttackers/3 with the conflicts not argued, what is found not kept: for who looks once, as the builder
 %  of a whole graph.
 attackersOf(Id, _, Statement) :-
-    context_check(possibleAttackersOf(Id, Statements)), !,
+    contextCheck(possibleAttackersOf(Id, Statements)), !,
     member(Statement, Statements).
 attackersOf(_, Argument, Statement) :-
     findPossibleAttackers(Argument, Statement).
@@ -26,7 +26,7 @@ attackersOf(_, Argument, Statement) :-
 %  The possible attackers looked for forgotten: with arguments for conflicts built since (metaConflicts), they
 %  may be more.
 forgetPossibleAttackers :-
-    context_retract(possibleAttackersOf(_, _)).
+    contextRetract(possibleAttackersOf(_, _)).
 
 %! findPossibleAttackers(+Argument, -Statement)
 %  The arguments for Statement may attack Argument: Statement conflicts with its conclusion or its top rule, it

@@ -195,7 +195,7 @@ abstract class EquivalenceScenarios {
     @Test
     fun abaPreferences() =
         assertSameLabels(
-            "graphBuildMode(aba_plus).\nassumption(a0).\nassumption(a1).\nassumption(a2).\nassumption(a3).\n" +
+            "graphBuildMode(abaPlus).\nassumption(a0).\nassumption(a1).\nassumption(a2).\nassumption(a3).\n" +
                 "contrary(a0, a1).\ncontrary(a1, p1).\ncontrary(a2, p1).\ncontrary(a3, p0).\n" +
                 "r0 : a0, a1 -> p0.\nr1 : a0, a1 -> p1.\nsup(a3, a0).\nsup(a2, a1).\nsup(a2, a3).\nsup(a2, a0).",
             "a0",

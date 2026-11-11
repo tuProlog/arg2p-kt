@@ -48,6 +48,6 @@ class PipelineQueryTest {
         }
         assertEquals("directional", locality("grounded"))
         assertEquals("connected", locality("naive"))
-        assertEquals("whole_graph", locality("stable"))
+        assertEquals("wholeGraph", locality("stable"))
     }
 }

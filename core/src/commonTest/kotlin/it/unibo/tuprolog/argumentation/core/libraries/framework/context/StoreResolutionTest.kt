@@ -87,13 +87,13 @@ class StoreResolutionTest {
             "[Q, Q]",
         )
 
-    private val setup get() = "context_reset, " + clauses.joinToString(", ") { "context_assert($it)" }
+    private val setup get() = "contextReset, " + clauses.joinToString(", ") { "contextAssert($it)" }
 
     private fun normalized(term: String): String = term.replace(Regex("(?<![A-Za-z0-9_'])(_\\w*|[A-Z]\\w*_\\d+)"), "_")
 
     private fun onMachine(goal: String): List<String> {
         val solver = solverWithTheory("")
-        val solution = solver.solve(Struct.parse("$setup, findall($goal, context_check($goal), L)", solver.operators)).first()
+        val solution = solver.solve(Struct.parse("$setup, findall($goal, contextCheck($goal), L)", solver.operators)).first()
         assertTrue(solution.isYes, goal)
         val answers =
             solution.substitution.entries
@@ -127,28 +127,28 @@ class StoreResolutionTest {
     fun absentAsNoAnswer() {
         for (goal in goals) {
             val expected = onTerms(goal).isEmpty()
-            assertEquals(expected, holds("context_absent($goal)"), goal)
-            assertEquals(expected, !holds("context_check($goal)"), goal)
+            assertEquals(expected, holds("contextAbsent($goal)"), goal)
+            assertEquals(expected, !holds("contextCheck($goal)"), goal)
         }
     }
 
     @Test
     fun absentLeavesNothingBound() {
-        assertTrue(holds("X = 1, Y = X, \\+ context_absent(f(a, Y)), Y == 1"))
-        assertTrue(holds("\\+ context_absent(f(a, Y)), var(Y)"))
-        assertTrue(holds("context_absent(f(a, 2)), V = 1, V == 1"))
-        assertTrue(holds("context_assert(r(A) :- m(A)), \\+ context_absent(r(Q)), var(Q)"))
-        assertTrue(holds("context_assert(r2(A) :- missing(A)), context_absent(r2(_))"))
-        assertTrue(holds("context_assert(r3(A) :- body(A)), \\+ context_absent(clause(r3(Q), W)), var(Q), var(W)"))
-        assertTrue(holds("context_assert(r4(A) :- body(A)), context_absent(clause(r4(_), other))"))
+        assertTrue(holds("X = 1, Y = X, \\+ contextAbsent(f(a, Y)), Y == 1"))
+        assertTrue(holds("\\+ contextAbsent(f(a, Y)), var(Y)"))
+        assertTrue(holds("contextAbsent(f(a, 2)), V = 1, V == 1"))
+        assertTrue(holds("contextAssert(r(A) :- m(A)), \\+ contextAbsent(r(Q)), var(Q)"))
+        assertTrue(holds("contextAssert(r2(A) :- missing(A)), contextAbsent(r2(_))"))
+        assertTrue(holds("contextAssert(r3(A) :- body(A)), \\+ contextAbsent(clause(r3(Q), W)), var(Q), var(W)"))
+        assertTrue(holds("contextAssert(r4(A) :- body(A)), contextAbsent(clause(r4(_), other))"))
     }
 
     @Test
     fun theVariablesOfAClauseAreTheSameAcrossItsHeadAndItsBody() {
         val solver = solverWithTheory("")
         val goal =
-            "context_reset, context_assert(p(1)), context_assert(p(2)), context_assert((q(X, g(X, Y)) :- p(X), p(Y))), " +
-                "findall([A, B], context_check(q(A, g(B, 2))), L)"
+            "contextReset, contextAssert(p(1)), contextAssert(p(2)), contextAssert((q(X, g(X, Y)) :- p(X), p(Y))), " +
+                "findall([A, B], contextCheck(q(A, g(B, 2))), L)"
         val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
         assertEquals(
             "[[2, 2], [1, 1]]",
@@ -161,9 +161,9 @@ class StoreResolutionTest {
 
     @Test
     fun clauseOfAFactIsTrue() {
-        assertTrue(holds("context_assert(c(1)), context_check(clause(c(1), B)), B == true"))
-        assertTrue(holds("context_assert(c(X, X)), context_check(clause(c(1, Q), true)), Q == 1"))
-        assertFalse(holds("context_assert(c(1)), context_check(clause(c(1), false))"))
+        assertTrue(holds("contextAssert(c(1)), contextCheck(clause(c(1), B)), B == true"))
+        assertTrue(holds("contextAssert(c(X, X)), contextCheck(clause(c(1, Q), true)), Q == 1"))
+        assertFalse(holds("contextAssert(c(1)), contextCheck(clause(c(1), false))"))
     }
 
     @Test
@@ -171,7 +171,7 @@ class StoreResolutionTest {
         for (clause in listOf("1", "2.5", "_", "(1 :- a)", "(_ :- a)")) {
             val solver = solverWithTheory("")
             val solution =
-                solver.solve(Struct.parse("catch(context_assert($clause), _, Raised = yes), Raised == yes", solver.operators)).first()
+                solver.solve(Struct.parse("catch(contextAssert($clause), _, Raised = yes), Raised == yes", solver.operators)).first()
             assertTrue(solution.isYes, clause)
         }
     }
@@ -184,8 +184,8 @@ class StoreResolutionTest {
     ): String {
         val solver = solverWithTheory("")
         val goals =
-            "context_reset, " + (1..facts).joinToString(", ") { "context_assert(p($it, g($it), k))" } +
-                ", context_check(p(1, _, _)), context_check(p(_, g(1), _)), context_check(p(_, _, k)), " +
+            "contextReset, " + (1..facts).joinToString(", ") { "contextAssert(p($it, g($it), k))" } +
+                ", contextCheck(p(1, _, _)), contextCheck(p(_, g(1), _)), contextCheck(p(_, _, k)), " +
                 "$retract, findall(X, $goal, L)"
         return solver
             .solve(Struct.parse(goals, solver.operators))
@@ -198,23 +198,23 @@ class StoreResolutionTest {
 
     @Test
     fun lookupsAfterRemovingFewClauses() {
-        val retract = "context_retract(p(5, _, _))"
-        assertEquals("[]", afterRetract(40, retract, "context_check(p(5, X, _))"))
-        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, g(5), _))"))
-        assertEquals("[6]", afterRetract(40, retract, "context_check(p(X, g(6), _))"))
-        assertEquals("[g(6)]", afterRetract(40, retract, "context_check(p(6, X, _))"))
-        assertEquals(39, afterRetract(40, retract, "context_check(p(X, _, k))").split(",").size)
+        val retract = "contextRetract(p(5, _, _))"
+        assertEquals("[]", afterRetract(40, retract, "contextCheck(p(5, X, _))"))
+        assertEquals("[]", afterRetract(40, retract, "contextCheck(p(X, g(5), _))"))
+        assertEquals("[6]", afterRetract(40, retract, "contextCheck(p(X, g(6), _))"))
+        assertEquals("[g(6)]", afterRetract(40, retract, "contextCheck(p(6, X, _))"))
+        assertEquals(39, afterRetract(40, retract, "contextCheck(p(X, _, k))").split(",").size)
     }
 
     @Test
     fun lookupsAfterRemovingMostClauses() {
-        val retract = "context_retract(p(_, _, k))"
-        assertEquals("[]", afterRetract(40, retract, "context_check(p(5, X, _))"))
-        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, g(6), _))"))
-        assertEquals("[]", afterRetract(40, retract, "context_check(p(X, _, k))"))
+        val retract = "contextRetract(p(_, _, k))"
+        assertEquals("[]", afterRetract(40, retract, "contextCheck(p(5, X, _))"))
+        assertEquals("[]", afterRetract(40, retract, "contextCheck(p(X, g(6), _))"))
+        assertEquals("[]", afterRetract(40, retract, "contextCheck(p(X, _, k))"))
         assertEquals(
             "[7]",
-            afterRetract(40, "$retract, context_assert(p(7, g(7), k))", "context_check(p(X, g(7), _))"),
+            afterRetract(40, "$retract, contextAssert(p(7, g(7), k))", "contextCheck(p(X, g(7), _))"),
         )
     }
 
@@ -223,30 +223,30 @@ class StoreResolutionTest {
     fun lookupsOfWholeHeads() {
         fun holds(goal: String): Boolean {
             val solver = solverWithTheory("")
-            val facts = (1..12).flatMap { a -> (1..12).map { b -> "context_assert(e($a, $b))" } }.joinToString(", ")
-            return solver.solve(Struct.parse("context_reset, $facts, context_assert(e(X, X, open)), $goal", solver.operators)).first().isYes
+            val facts = (1..12).flatMap { a -> (1..12).map { b -> "contextAssert(e($a, $b))" } }.joinToString(", ")
+            return solver.solve(Struct.parse("contextReset, $facts, contextAssert(e(X, X, open)), $goal", solver.operators)).first().isYes
         }
-        assertTrue(holds("context_check(e(3, 4))"))
-        assertFalse(holds("context_check(e(3, 13))"))
-        assertTrue(holds("context_retract(e(3, 5)), context_absent(e(3, 5)), context_check(e(3, 4))"))
+        assertTrue(holds("contextCheck(e(3, 4))"))
+        assertFalse(holds("contextCheck(e(3, 13))"))
+        assertTrue(holds("contextRetract(e(3, 5)), contextAbsent(e(3, 5)), contextCheck(e(3, 4))"))
         assertTrue(
             holds(
-                "context_check(e(3, 4)), context_retract(e(3, 4)), context_absent(e(3, 4)), context_assert(e(3, 4)), context_check(e(3, 4))",
+                "contextCheck(e(3, 4)), contextRetract(e(3, 4)), contextAbsent(e(3, 4)), contextAssert(e(3, 4)), contextCheck(e(3, 4))",
             ),
         )
-        assertTrue(holds("context_check(e(3, 4)), context_assert(e(20, 21)), context_check(e(20, 21))"))
-        assertTrue(holds("context_assert(e(Y, Y)), context_check(e(13, 13)), context_absent(e(13, 14))"))
-        assertTrue(holds("context_check(e(3, 4)), context_assert(e(_, 99)), context_check(e(3, 99)), context_absent(e(3, 98))"))
+        assertTrue(holds("contextCheck(e(3, 4)), contextAssert(e(20, 21)), contextCheck(e(20, 21))"))
+        assertTrue(holds("contextAssert(e(Y, Y)), contextCheck(e(13, 13)), contextAbsent(e(13, 14))"))
+        assertTrue(holds("contextCheck(e(3, 4)), contextAssert(e(_, 99)), contextCheck(e(3, 99)), contextAbsent(e(3, 98))"))
     }
 
     @Test
     fun aRemovalInABranchLeavesTheOthersAlone() {
         val solver = solverWithTheory("")
         val goals =
-            "context_reset, " + (1..40).joinToString(", ") { "context_assert(p($it))" } + ", context_check(p(1)), " +
-                "context_active(B0), context_branch(B0, B1), context_retract(p(3)), " +
-                "findall(X, (member(X, [2, 3]), context_check(B1, p(X))), L1), " +
-                "findall(X, (member(X, [2, 3]), context_check(B0, p(X))), L0), L = [L1, L0]"
+            "contextReset, " + (1..40).joinToString(", ") { "contextAssert(p($it))" } + ", contextCheck(p(1)), " +
+                "contextActive(B0), contextBranch(B0, B1), contextRetract(p(3)), " +
+                "findall(X, (member(X, [2, 3]), contextCheck(B1, p(X))), L1), " +
+                "findall(X, (member(X, [2, 3]), contextCheck(B0, p(X))), L0), L = [L1, L0]"
         assertEquals(
             "[[2], [2, 3]]",
             solver
@@ -261,11 +261,11 @@ class StoreResolutionTest {
 
     @Test
     fun identifiersUpToTheNamesOfVariables() {
-        assertTrue(holds("context_id(f(X, Y, X), I), context_id(f(A, B, A), I)"))
-        assertFalse(holds("context_id(f(X, Y, X), I), context_id(f(A, B, B), I)"))
-        assertFalse(holds("context_id(f(X, X, Y), I), context_id(f(A, B, B), I)"))
-        assertTrue(holds("context_id([1, 2.5, a | T], I), context_id([1, 2.5, a | R], I)"))
-        assertFalse(holds("context_id([1, 2], I), context_id('[|]'(1, 2), I)"))
-        assertFalse(holds("context_id(a, I), context_id(a(1), I)"))
+        assertTrue(holds("contextId(f(X, Y, X), I), contextId(f(A, B, A), I)"))
+        assertFalse(holds("contextId(f(X, Y, X), I), contextId(f(A, B, B), I)"))
+        assertFalse(holds("contextId(f(X, X, Y), I), contextId(f(A, B, B), I)"))
+        assertTrue(holds("contextId([1, 2.5, a | T], I), contextId([1, 2.5, a | R], I)"))
+        assertFalse(holds("contextId([1, 2], I), contextId('[|]'(1, 2), I)"))
+        assertFalse(holds("contextId(a, I), contextId(a(1), I)"))
     }
 }

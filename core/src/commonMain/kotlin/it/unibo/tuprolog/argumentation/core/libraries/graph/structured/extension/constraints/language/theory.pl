@@ -82,25 +82,25 @@ compatible(A, B) :-
 
 %! decided(+Constraint)
 %  The module decides Constraint whatever its variables: a comparison of linear expressions over numbers (dense:
-%  linear_constraint/1), or dif(X, T), X not T, a term other than a number (the pieces of an argument where a
+%  linearConstraint/1), or dif(X, T), X not T, a term other than a number (the pieces of an argument where a
 %  conflict binds its variables by unification, see the graph step). Any other constraint is a check.
-decided(C) :- linear_constraint(C), !.
+decided(C) :- linearConstraint(C), !.
 decided(dif(_, _)).
 
 %! satisfiable(+Constraints)
-%  Constraints may hold together: the linear ones, by the simplex over the rationals (linear_satisfiable/1); dif(X, T)
+%  Constraints may hold together: the linear ones, by the simplex over the rationals (linearSatisfiable/1); dif(X, T)
 %  unless X and T are the same term; any other, once ground, holding (open, it was run where its rule was used).
 satisfiable([]) :- !.
 satisfiable(Constraints) :-
     conjuncts(Constraints, All),
     linears(All, Linear),
-    linear_satisfiable(Linear).
+    linearSatisfiable(Linear).
 
 conjuncts([], []).
 conjuncts([C|Cs], All) :- utils::tupleToList(C, All, Rest), conjuncts(Cs, Rest).
 
 linears([], []).
-linears([C|Cs], [C|Ls]) :- linear_constraint(C), !, linears(Cs, Ls).
+linears([C|Cs], [C|Ls]) :- linearConstraint(C), !, linears(Cs, Ls).
 linears([dif(X, T)|Cs], Ls) :- !, X \== T, linears(Cs, Ls).
 linears([C|Cs], Ls) :- (ground(C) -> parser::holds(C) ; true), linears(Cs, Ls).
 
@@ -109,8 +109,8 @@ linears([C|Cs], Ls) :- (ground(C) -> parser::holds(C) ; true), linears(Cs, Ls).
 %  (see parser::extension/1), stated, required by another (temporal), or set by its flag (openConclusions).
 instances :-
     utils::oncePerTheory(instances, constraints::readInstances),
-    cache_check(theoryKind(instances, yes)).
+    cacheCheck(theoryKind(instances, yes)).
 
 readInstances :-
     (parser::extension(constraints) -> Kind = yes ; Kind = no),
-    cache_assert(theoryKind(instances, Kind)).
+    cacheAssert(theoryKind(instances, Kind)).

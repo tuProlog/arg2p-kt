@@ -45,7 +45,7 @@ class ClientSolverRequestsTest {
         val noContraposition =
             ThreadedSolver(threads = 2, parts = 2).also {
                 it.load(
-                    "graphBuildMode(aba_plus).\nargumentLabellingMode(preferred).\nassumption(a0).\nassumption(a1).\n" +
+                    "graphBuildMode(abaPlus).\nargumentLabellingMode(preferred).\nassumption(a0).\nassumption(a1).\n" +
                         "contrary(a0, x).\ncontrary(a1, y).\nr0 : a0, a1 -> x.\nsup(a0, a1).",
                 )
             }

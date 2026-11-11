@@ -6,5 +6,5 @@ locality(connected).
 %! argumentLabelling
 %  The eager labelling has IN the maximal admissible subset of the intersection of the semi-stable extensions
 argumentLabelling :-
-    context_active(Branch),
-    labelSets::maximalAdmissibleCommonOf(semistable, Branch).
+    contextActive(Branch),
+    labelSets::maximalAdmissibleCommonOf(semiStable, Branch).

@@ -42,7 +42,7 @@ The tool Arg2P grew out of:
 
 ## Burden of persuasion
 
-The model implemented by the `bp_grounded`, `bp_grounded_partial` and `bp_grounded_complete`
+The model implemented by the `bpGrounded`, `bpGroundedPartial` and `bpGroundedComplete`
 [semantics]({{% ref "/docs/api/flags" %}}):
 
 > Roberta Calegari, Giovanni Sartor.
@@ -125,7 +125,7 @@ The treatment of conflicts that the parser and the `metaConflicts` flag build on
 
 ## Causality
 
-The model implemented by `ness_original/3` and `ness_original_intervention/2` in the
+The model implemented by `nessOriginal/3` and `nessOriginalIntervention/2` in the
 [causality module]({{% ref "/docs/modules/causality" %}}):
 
 > Giuseppe Pisano, Henry Prakken, Giovanni Sartor, Ruta Liepina.
@@ -133,7 +133,7 @@ The model implemented by `ness_original/3` and `ness_original_intervention/2` in
 > ICAIL 2025, 278–287, 2025.
 > [10.1145/3769126.3769228](https://doi.org/10.1145/3769126.3769228)
 
-The revised model behind `ness/3` and `ness_intervention/2` is to appear at ICAIL 2026; this page will be
+The revised model behind `ness/3` and `nessIntervention/2` is to appear at ICAIL 2026; this page will be
 updated once it is published.
 
 Related work on causal reasoning in law from the same group:
@@ -153,6 +153,32 @@ The cooperative, multi-agent evaluation behind the
 > **Multi-agent cooperative argumentation in Arg2P.**
 > AIxIA 2022, Lecture Notes in Computer Science, 140–153, 2023.
 > [10.1007/978-3-031-27181-6_10](https://doi.org/10.1007/978-3-031-27181-6_10)
+
+---
+
+## Theories from the papers
+
+Since 1.0.0 arg2p writes its flags, values and predicates in camelCase. The papers above, and the versions before 1.0.0,
+spell some of them otherwise: those spellings are still read, as the ones of 1.0.0 (the editor marks them, with a quick
+fix writing the new one), so a theory from a paper runs as it is. The entry points of earlier versions (`buildLabelSets`,
+`answerQuery`) still work too: see [earlier forms]({{% ref "/docs/api/engine#earlier-forms" %}}).
+
+| Earlier spelling | Since 1.0.0 |
+| --- | --- |
+| `graphBuildMode(standard_af)`, `aspic_plus` | `aspicPlus` |
+| `aspic_defeasible`, `aba_plus` | `aspicDefeasible`, `abaPlus` |
+| `argumentLabellingMode(grounded_hash)` | `grounded` |
+| `conflictfree`, `stronglyadmissible`, `semistable` | `conflictFree`, `stronglyAdmissible`, `semiStable` |
+| `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete` | `bpGrounded`, `bpGroundedPartial`, `bpGroundedComplete` |
+| `statement_pass_through`, `statement_binary` | `statementPassThrough`, `statementBinary` |
+| `causality::but_for/2`, `ness_original/3`, `ness_intervention/2`, `ness_original_intervention/2` | `butFor/2`, `nessOriginal/3`, `nessIntervention/2`, `nessOriginalIntervention/2` |
+| `call_module/2`, `module_defines/2`, `extension_flag/2` | `callModule/2`, `moduleDefines/2`, `extensionFlag/2` |
+| `context_check/1`, `context_assert/1`, ... (every `context_` predicate) | `contextCheck/1`, `contextAssert/1`, ... |
+| `cache_check/1`, ... (every `cache_` predicate), `linear_constraint/1`, `linear_satisfiable/1` | `cacheCheck/1`, ..., `linearConstraint/1`, `linearSatisfiable/1` |
+| `store::graph_begin/1`, ... (every `graph_` predicate of the store) | `store::graphBegin/1`, ... |
+
+What arg2p writes uses the names of 1.0.0 alone: the locality `whole_graph` is now `wholeGraph`, and the attacks
+`contrary_rebut` and `contrary_undermine` are `contraryRebut` and `contraryUndermine`.
 
 ---
 

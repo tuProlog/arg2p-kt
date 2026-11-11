@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 
 class RationalityTest {
     // The plain and restricted variants of Caminada's examples show what goes wrong without transposition, which the
-    // profile aspic_plus (the default) turns on
+    // profile aspicPlus (the default) turns on
     private companion object {
         const val NOT_TRANSPOSED = "autoTransposition(off).\n"
     }

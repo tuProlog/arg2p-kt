@@ -23,7 +23,7 @@ A flag stated in the theory replaces the value the solver was given for it: a th
 
 The [profile]({{% ref "/docs/profiles" %}}) of the theory, `graphBuildMode`, presets several flags at once. The
 theory overrides those presets, and so does a flag the solver is given (`Flags.defaults().autoTransposition(false)`
-turns transposition off under `aspic_plus`); a flag nobody states takes its default. So: the theory, then the flags
+turns transposition off under `aspicPlus`); a flag nobody states takes its default. So: the theory, then the flags
 of the solver, then the profile, then the default.
 
 A solver tells the values in effect for its theory, whichever way they came: `setting(flag)` gives the values of a
@@ -40,18 +40,18 @@ The table below lists the flags, with their defaults.
 
 | Flag | Default | Accepted values |
 | --- | --- | --- |
-| `graphBuildMode(Mode)` | `aspic_plus` | `aspic_plus`, `aspic`, `aspic_defeasible`, `meta`, `aba`, `aba_plus`, `abstract`, `free`: see [profiles]({{% ref "/docs/profiles" %}}) |
+| `graphBuildMode(Mode)` | `aspicPlus` | `aspicPlus`, `aspic`, `aspicDefeasible`, `meta`, `aba`, `abaPlus`, `abstract`, `free`: see [profiles]({{% ref "/docs/profiles" %}}) |
 | `graphBuilder(Mode)` | `ruleGraph` | `ruleGraph`, `abstractGraph`; set by the profile |
 | `graphLanguage(Mode)` | none | `aspicLanguage`, `abaLanguage`, `defeasibleLanguage`, `abstractLanguage`; set by the profile |
 | `conflictModel(Part)` | all the parts (`builtin`) | `negation`, `deontic`, `preference`, `declared` (several), `builtin` for all of them |
 | `argumentLabellingMode(Mode)` | `grounded` | see [argument semantics](#argument-semantics) |
-| `statementLabellingMode(Mode)` | `statement` | `statement`, `statement_pass_through`, `statement_binary` |
+| `statementLabellingMode(Mode)` | `statement` | `statement`, `statementPassThrough`, `statementBinary` |
 | `graphExtension(Mode)` | `standardPref` | `standardPref`, `defeasiblePref`, `defeasibleAllPref`, `rebutRestriction`, `bp`, `abaPref` |
 | `orderingPrinciple(Mode)` | `last` | `last`, `weakest` |
 | `orderingComparator(Mode)` | `elitist` | `elitist`, `democrat`, `normal` |
 | `queryMode` | enabled | the fact is present or absent |
 | `answerMode(Mode)` | `enumerate` | `enumerate`, `credulous`, `skeptical`: how a query is answered with several labellings |
-| `autoTransposition` | enabled by `aspic_plus` | the fact is present or absent |
+| `autoTransposition` | enabled by `aspicPlus` | the fact is present or absent |
 | `prologStrictCompatibility` | disabled | the fact is present or absent: the Prolog clauses of the theory are argued, see [plain Prolog]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) |
 | `metaConflicts` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
 | `metaRules` | disabled | the fact is present or absent, see [meta-argumentation]({{% ref "/docs/modules/meta" %}}) |
@@ -64,7 +64,7 @@ The table below lists the flags, with their defaults.
 ### `graphBuildMode(Mode)`
 
 Selects the [profile]({{% ref "/docs/profiles" %}}) the theory is read in, which presets the flags its
-framework needs. The default, `aspic_plus`, builds arguments, attacks and supports according to
+framework needs. The default, `aspicPlus`, builds arguments, attacks and supports according to
 ASPIC<sup>+</sup>, with preferences, restricted rebut and transposition.
 
 ### `graphBuilder(Mode)`
@@ -111,7 +111,7 @@ Post-processing steps applied to the graph once it has been built. Unlike the ot
 whatever the order they are stated in: the copies of `metaConflicts`, then
 `rebutRestriction`, the preference mode, `bp`. The preference modes (`standardPref`, `defeasiblePref`,
 `defeasibleAllPref`, `abaPref`) exclude one another: a theory stating two of them is refused, as is one stating
-`abaPref` outside an ABA theory (`graphLanguage(abaLanguage)`, as the profiles `aba` and `aba_plus` state).
+`abaPref` outside an ABA theory (`graphLanguage(abaLanguage)`, as the profiles `aba` and `abaPlus` state).
 
 | Value | Effect |
 | --- | --- |
@@ -138,11 +138,11 @@ To disable preference handling altogether, pass an empty list of extensions
 | --- | --- |
 | `grounded` | Grounded semantics. The default. |
 | `complete` | Dung's complete semantics. |
-| `conflictfree` | Conflict-free labellings. |
+| `conflictFree` | Conflict-free labellings. |
 | `admissible` | Admissible labellings. |
-| `stronglyadmissible` | Strongly admissible labellings. |
+| `stronglyAdmissible` | Strongly admissible labellings. |
 | `preferred` | Preferred semantics. |
-| `semistable` | Semi-stable semantics. |
+| `semiStable` | Semi-stable semantics. |
 | `stable` | Stable semantics. |
 | `ideal` | Ideal semantics. |
 | `eager` | Eager semantics. |
@@ -150,9 +150,9 @@ To disable preference handling altogether, pass an empty list of extensions
 | `stage` | Stage semantics. |
 | `cf2` | CF2 semantics. |
 | `stage2` | Stage2 semantics. |
-| `bp_grounded` | Burden-of-persuasion grounded semantics. |
-| `bp_grounded_partial` | Burden-of-persuasion partial semantics. |
-| `bp_grounded_complete` | Burden-of-persuasion complete semantics. |
+| `bpGrounded` | Burden-of-persuasion grounded semantics. |
+| `bpGroundedPartial` | Burden-of-persuasion partial semantics. |
+| `bpGroundedComplete` | Burden-of-persuasion complete semantics. |
 
 The burden-of-persuasion semantics implement the model of Calegari and Sartor; see
 [References]({{% ref "/docs/references" %}}).
@@ -171,8 +171,8 @@ The burden-of-persuasion semantics implement the model of Calegari and Sartor; s
 | Value | Effect |
 | --- | --- |
 | `statement` | Standard labelling: a statement is IN if some IN argument concludes it, otherwise OUT if some OUT argument concludes it, otherwise UND. |
-| `statement_pass_through` | Propagates argument labels directly, without re-deriving the statement status. |
-| `statement_binary` | Two-valued labelling: a statement is IN if some IN argument concludes it, OUT otherwise (merging OUT and UND). |
+| `statementPassThrough` | Propagates argument labels directly, without re-deriving the statement status. |
+| `statementBinary` | Two-valued labelling: a statement is IN if some IN argument concludes it, OUT otherwise (merging OUT and UND). |
 
 ---
 
@@ -236,7 +236,7 @@ labelling.
 
 Closes the theory under transposition: for every strict rule the contrapositive variants are added
 automatically, over negations and conflicts declared both ways. The rationality postulates require it, and the
-profiles `aspic_plus` and `aspic` turn it on; `autoTransposition(off).` turns it off.
+profiles `aspicPlus` and `aspic` turn it on; `autoTransposition(off).` turns it off.
 
 ```prolog
 autoTransposition.
@@ -245,7 +245,7 @@ r1 : a, b -> c.     % also yields  -c, b -> -a.  and  -c, a -> -b.
 
 ### `modulesPath(Path)`
 
-Where [`call_module/2`]({{% ref "/docs/modules" %}}) looks when it loads an external `.pl` module by name.
+Where [`callModule/2`]({{% ref "/docs/modules" %}}) looks when it loads an external `.pl` module by name.
 It defaults to `none`, which means no module can be resolved by name. It can be a local directory or a base
 URL:
 

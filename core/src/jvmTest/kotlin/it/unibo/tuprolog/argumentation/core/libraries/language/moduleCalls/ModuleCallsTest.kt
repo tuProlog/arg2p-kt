@@ -53,10 +53,10 @@ class ModuleCallsTest {
 
         val solution =
             solver
-                .solve(Struct.parse("module::call_module(['greetings'], hello(X))", solver.operators))
+                .solve(Struct.parse("module::callModule(['greetings'], hello(X))", solver.operators))
                 .first()
 
-        assertTrue(solution.isYes, "call_module should solve a goal defined by the loaded module")
+        assertTrue(solution.isYes, "callModule should solve a goal defined by the loaded module")
         assertTrue(
             solution.substitution.values.any { it.toString() == "world" },
             "expected X to be bound to world, got ${solution.substitution}",
@@ -71,10 +71,10 @@ class ModuleCallsTest {
 
         val solution =
             solver
-                .solve(Struct.parse("module::call_module(['greetings', 'farewells'], (hello(X), bye(Y)))", solver.operators))
+                .solve(Struct.parse("module::callModule(['greetings', 'farewells'], (hello(X), bye(Y)))", solver.operators))
                 .first()
 
-        assertTrue(solution.isYes, "call_module should solve a goal using the clauses of all the modules, got $solution")
+        assertTrue(solution.isYes, "callModule should solve a goal using the clauses of all the modules, got $solution")
     }
 
     @Test
@@ -84,10 +84,10 @@ class ModuleCallsTest {
 
         val solution =
             solver
-                .solve(Struct.parse("S = hello(_), module::call_module(['greetings'], S)", solver.operators))
+                .solve(Struct.parse("S = hello(_), module::callModule(['greetings'], S)", solver.operators))
                 .first()
 
-        assertTrue(solution.isYes, "call_module should solve a goal defined by the loaded module")
+        assertTrue(solution.isYes, "callModule should solve a goal defined by the loaded module")
         val bound =
             solution.substitution.entries
                 .first { it.key.name == "S" }
@@ -103,7 +103,7 @@ class ModuleCallsTest {
 
         val solution =
             solver
-                .solve(Struct.parse("module::call_module(['theory'], arg2p::solve(d, Res))", solver.operators))
+                .solve(Struct.parse("module::callModule(['theory'], arg2p::solve(d, Res))", solver.operators))
                 .first()
 
         assertTrue(solution.isYes, "a module written in arg2p syntax should be evaluated, got $solution")
@@ -120,7 +120,7 @@ class ModuleCallsTest {
         val solver = solverWithModulesIn(directory.toString().replace("\\", "/"))
 
         solver
-            .solve(Struct.parse("module::call_module(['theory'], arg2p::solve)", solver.operators))
+            .solve(Struct.parse("module::callModule(['theory'], arg2p::solve)", solver.operators))
             .first()
 
         // The evaluation contexts live on the shared Context library, so the graph built inside the
@@ -147,8 +147,8 @@ class ModuleCallsTest {
             val solver = solverWithModulesIn(base)
             // A module name resolved against a remote modulesPath, and a URL given explicitly.
             listOf(
-                "module::call_module(['greetings'], hello(X))",
-                "module::call_module(['$base/greetings.pl'], hello(X))",
+                "module::callModule(['greetings'], hello(X))",
+                "module::callModule(['$base/greetings.pl'], hello(X))",
             ).forEach { goal ->
                 val solution = solver.solve(Struct.parse(goal, solver.operators)).first()
                 assertTrue(solution.isYes, "expected $goal to load the remote module")
@@ -169,24 +169,24 @@ class ModuleCallsTest {
 
         val solution =
             solver
-                .solve(Struct.parse("module::call_module(['$path/greetings.pl'], hello(X))", solver.operators))
+                .solve(Struct.parse("module::callModule(['$path/greetings.pl'], hello(X))", solver.operators))
                 .first()
 
-        assertTrue(solution.isYes, "call_module should accept a fully qualified .pl path")
+        assertTrue(solution.isYes, "callModule should accept a fully qualified .pl path")
     }
 
     // The modules path as the platform writes it (C:\mods on Windows), with a directory in upper case
     @Test
     fun callModuleResolvesNamesAgainstAModulesPathAsThePlatformWritesIt() {
         val directory = modules("greetings.pl" to moduleTheory, directory = Files.createTempDirectory("arg2p").resolve("Mods"))
-        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['greetings'], hello(X))")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['greetings'], hello(X))")
         assertTrue(solution.isYes, "expected the module in $directory to be found, got $solution")
     }
 
     @Test
     fun callModuleTakesANameContainingPlForAName() {
         val directory = modules("my.plan.pl" to moduleTheory)
-        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['my.plan'], hello(X))")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['my.plan'], hello(X))")
         assertTrue(solution.isYes, "expected my.plan to be the name of a module, got $solution")
     }
 
@@ -207,7 +207,7 @@ class ModuleCallsTest {
         val relative = workingDirectory.relativize(directory).toString().replace("\\", "/")
         val solver = Arg2pSolverFactory.default(settings = Flags.defaults().library())
         listOf("'$relative/greetings'", "'$relative/greetings.pl'").forEach { module ->
-            val solution = solve(solver, "module::call_module([$module], hello(X))")
+            val solution = solve(solver, "module::callModule([$module], hello(X))")
             assertTrue(solution.isYes, "expected $module to be found in the working directory, got $solution")
         }
     }
@@ -215,7 +215,7 @@ class ModuleCallsTest {
     @Test
     fun callModuleReadsModulesCallingOtherModules() {
         val directory = modules("calls.pl" to "both(Y) :- utils::appendLists([[a], [b]], Y).\n")
-        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['calls'], both(Y))")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['calls'], both(Y))")
         assertTrue(solution.isYes, "expected a module with :: to be read, got $solution")
         assertEquals(
             "[a, b]",
@@ -229,13 +229,13 @@ class ModuleCallsTest {
     @Test
     fun callModuleRaisesASyntaxErrorForAModuleThatDoesNotParse() {
         val directory = modules("broken.pl" to "hello(.\n")
-        val solution = solve(solverWithModulesIn(directory.toString()), "module::call_module(['broken'], hello(X))")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['broken'], hello(X))")
         assertTrue(solution.exception is SyntaxError, "expected a syntax error, got $solution")
     }
 
     @Test
     fun callModuleRaisesAnExistenceErrorForAModuleThatCannotBeRead() {
-        val solution = solve(solverWithModulesIn(temporaryModule()), "module::call_module(['missing'], hello(X))")
+        val solution = solve(solverWithModulesIn(temporaryModule()), "module::callModule(['missing'], hello(X))")
         assertTrue(solution.exception is ExistenceError, "expected an existence error, got $solution")
     }
 }

@@ -85,6 +85,6 @@ class StandardEngineTest {
         assertSame(
             "bp(guilty).\nr1 : evidence => guilty.\nr2 : alibi => -guilty.\nf1 :=> evidence.\nf2 :=> alibi.",
             "solve(In, Out, Und)",
-            Flags.parse("queryMode(off).\nargumentLabellingMode(bp_grounded).\ngraphExtension(standardPref).\ngraphExtension(bp)."),
+            Flags.parse("queryMode(off).\nargumentLabellingMode(bpGrounded).\ngraphExtension(standardPref).\ngraphExtension(bp)."),
         )
 }

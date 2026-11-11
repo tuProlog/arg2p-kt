@@ -126,13 +126,13 @@ class ProfilesTest {
 
     @Test
     fun theDefeasiblePartOfAspicReadsDefeasibleRulesAlone() {
-        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "graphBuildMode(aspic_defeasible).\n"))
+        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "graphBuildMode(aspicDefeasible).\n"))
         // a strict rule is not read (written with the operators of Prolog, it is data for the clauses)
-        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "s1 : [] -> b.\ngraphBuildMode(aspic_defeasible).\n"))
+        assertEquals("[[[a]], [['-'(a)]], []]", labels(preferred + "s1 : [] -> b.\ngraphBuildMode(aspicDefeasible).\n"))
         // premises and axioms are no part of its notation: they do not read (a fact is a rule with no premise)
-        assertDoesNotRead(preferred + "f1 :=> b.\ngraphBuildMode(aspic_defeasible).\n")
-        assertDoesNotRead(preferred + "f1 :-> b.\ngraphBuildMode(aspic_defeasible).\n")
-        val module = LibraryTesting("graphBuildMode(aspic_defeasible).\n")
+        assertDoesNotRead(preferred + "f1 :=> b.\ngraphBuildMode(aspicDefeasible).\n")
+        assertDoesNotRead(preferred + "f1 :-> b.\ngraphBuildMode(aspicDefeasible).\n")
+        val module = LibraryTesting("graphBuildMode(aspicDefeasible).\n")
         assertEquals(listOf("last"), module.values("setting(orderingPrinciple, X)", "X"))
         assertEquals(listOf("normal"), module.values("setting(orderingComparator, X)", "X"))
     }

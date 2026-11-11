@@ -37,7 +37,7 @@ import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.labelSe
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.naive.NaiveLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.preferred.PreferredLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.scc.SccLibrary
-import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.semistable.SemistableLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.semiStable.SemiStableLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stable.StableLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stage.StageLibrary
 import it.unibo.tuprolog.argumentation.core.libraries.labelling.argument.stage2.Stage2Library
@@ -137,7 +137,7 @@ object LibraryRegistry {
             GroundedLibrary,
             CompleteLibrary,
             PreferredLibrary,
-            SemistableLibrary,
+            SemiStableLibrary,
             StableLibrary,
             IdealLibrary,
             EagerLibrary,

@@ -109,7 +109,7 @@ object TestingUtils {
         labellings: Iterable<LabelledArgument>,
     ) = arg2pScope {
         labellings.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
     }
 
@@ -118,14 +118,14 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
         // the attacks as the graph store reads them, extended to the arguments built on the attacked ones
         graph.attacks.forEach {
             testYesGoal("store" call it.toTerm(), solver)
         }
         graph.supports.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
     }
 }

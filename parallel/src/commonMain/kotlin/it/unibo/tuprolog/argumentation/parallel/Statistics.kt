@@ -9,7 +9,7 @@ import kotlin.js.JsName
 
 /**
  * An evaluation answered by the client solver (a statement evaluated, or a goal labelling or reading a graph): the
- * part of the graph it was answered on ([locality]: directional or connected in query mode, whole_graph otherwise, or
+ * part of the graph it was answered on ([locality]: directional or connected in query mode, wholeGraph otherwise, or
  * alone for a graph the solver builds alone, a theory not split or an abstract framework), the arguments and the
  * attacks of the graph labelled (those derived from the others included), the arguments the consumers built for it
  * ([added]: all of them for a graph built anew, none for an evaluation answered on the graph as it was), what each

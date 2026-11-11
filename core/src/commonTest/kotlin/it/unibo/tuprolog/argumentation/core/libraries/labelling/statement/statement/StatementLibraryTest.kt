@@ -24,12 +24,12 @@ class StatementLibraryTest {
             arg2pScope {
                 TestingUtils.solver().also { solver ->
                     arguments.forEach {
-                        solver.solve("context_assert"(it.toTerm())).first()
+                        solver.solve("contextAssert"(it.toTerm())).first()
                     }
                     solver.solve("statement" call "statementLabelling").first()
                     arguments.forEach {
                         testYesGoal(
-                            "context_check"(
+                            "contextCheck"(
                                 when (it.label) {
                                     "in" -> "statIn"(listOf(Struct.parse(it.argument.conclusion)))
                                     "out" -> "statOut"(listOf(Struct.parse(it.argument.conclusion)))

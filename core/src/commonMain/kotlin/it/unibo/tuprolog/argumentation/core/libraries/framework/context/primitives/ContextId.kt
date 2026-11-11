@@ -7,10 +7,10 @@ import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
 import it.unibo.tuprolog.argumentation.engine.natives.replyWord
 import it.unibo.tuprolog.solve.Signature
 
-/** context_id(+Term, ?Id): the integer identifier of Term (see [ContextBranches.identifier]) */
+/** contextId(+Term, ?Id): the integer identifier of Term (see [ContextBranches.identifier]) */
 internal class ContextId(
     private val branches: ContextBranches,
-) : AbstractNativePrimitive(Signature("context_id", 2)) {
+) : AbstractNativePrimitive(Signature("contextId", 2)) {
     override fun call(call: NativeCall): Int {
         val term = call.arg(0)
         // (most terms have one by now: a copy of them only for those that do not)

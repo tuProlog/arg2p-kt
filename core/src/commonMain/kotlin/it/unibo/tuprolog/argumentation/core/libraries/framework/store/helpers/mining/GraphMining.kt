@@ -107,7 +107,7 @@ fun Solver.labels(
 fun Solver.activeBranch(): Int =
     arg2pScope {
         this@activeBranch
-            .solve("context_active"(X))
+            .solve("contextActive"(X))
             .filter { it.isYes }
             .map { it.substitution[X]!!.toString().toInt() }
             .firstOrNull()

@@ -20,7 +20,7 @@ class ActorGraphTest {
     ) {
         private val solver =
             Arg2pSolverFactory.default(theory, Flags.defaults().library(), dynamicLibs = listOf(ActorGraph)).also {
-                it.solve(Struct.parse("context_reset", it.operators)).first()
+                it.solve(Struct.parse("contextReset", it.operators)).first()
             }
 
         fun holds(goal: String): Boolean = solver.solve(Struct.parse(goal, solver.operators)).first().isYes
@@ -50,7 +50,7 @@ class ActorGraphTest {
             listOf("[[r2, r1], r2, [c], [b], [[r2], [r2], [r1]]]"),
             module.values("actorGraph::buildArgument(c, A, _)", "A"),
         )
-        assertTrue(module.holds("actorGraph::buildArgument(c, A, _), context_check(argument(A))"))
+        assertTrue(module.holds("actorGraph::buildArgument(c, A, _), contextCheck(argument(A))"))
         assertEquals(listOf("b"), module.values("actorGraph::buildArgument(c, _, S), member(A, S), store::claim(A, C)", "C"))
     }
 

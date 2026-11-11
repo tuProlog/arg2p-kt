@@ -200,10 +200,10 @@ the playground on the framework, as a theory (`graphBuildMode(abstract).`) alrea
 
 A statement carrying the burden of persuasion has to be *established*: when the arguments for and against it
 cancel out, it fails instead of staying undecided. The burden is declared with `bp/1` and evaluated by the
-`bp_grounded` family of semantics:
+`bpGrounded` family of semantics:
 
 ```prolog
-argumentLabellingMode(bp_grounded).
+argumentLabellingMode(bpGrounded).
 
 bp(guilty).
 r1 : evidence => guilty.

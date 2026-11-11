@@ -196,7 +196,7 @@ class McpServerTest {
         val answer = session(call(1, "solve", """{"theory":"$tweety"}""")).getValue(1)
         assertFalse(answer.isError())
         val solved = answer.content()
-        assertEquals("aspic_plus", solved.get("profile").asString)
+        assertEquals("aspicPlus", solved.get("profile").asString)
         val solution = solved.getAsJsonArray("solutions")[0].asJsonObject
         assertEquals("yes", solution.get("result").asString)
         val bindings = solution.getAsJsonArray("bindings").map { it.asJsonObject }

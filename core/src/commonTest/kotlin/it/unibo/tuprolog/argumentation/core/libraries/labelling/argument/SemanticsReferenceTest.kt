@@ -62,9 +62,9 @@ private class ReferenceSemantics(
     }
     val preferred by lazy { maximal(admissible) }
     val stable by lazy { conflictFree.filter { range(it) == all } }
-    val semistable by lazy { maximalBy(complete, ::range) }
+    val semiStable by lazy { maximalBy(complete, ::range) }
     val ideal by lazy { biggestAdmissibleIn(preferred) }
-    val eager by lazy { biggestAdmissibleIn(semistable) }
+    val eager by lazy { biggestAdmissibleIn(semiStable) }
     val naive by lazy { maximal(conflictFree) }
     val stage by lazy { maximalBy(conflictFree, ::range) }
 
@@ -143,14 +143,14 @@ private class ReferenceSemantics(
 
     fun expected(semantics: String): List<String> =
         when (semantics) {
-            "conflictfree" -> conflictFree
+            "conflictFree" -> conflictFree
             "admissible" -> admissible
-            "stronglyadmissible" -> stronglyAdmissibleSets
+            "stronglyAdmissible" -> stronglyAdmissibleSets
             "complete" -> complete
             "grounded" -> grounded
             "preferred" -> preferred
             "stable" -> stable
-            "semistable" -> semistable
+            "semiStable" -> semiStable
             "ideal" -> ideal
             "eager" -> eager
             "naive" -> naive
@@ -164,14 +164,14 @@ private class ReferenceSemantics(
 class SemanticsReferenceTest {
     private val semantics =
         listOf(
-            "conflictfree",
+            "conflictFree",
             "admissible",
-            "stronglyadmissible",
+            "stronglyAdmissible",
             "complete",
             "grounded",
             "preferred",
             "stable",
-            "semistable",
+            "semiStable",
             "ideal",
             "eager",
             "naive",

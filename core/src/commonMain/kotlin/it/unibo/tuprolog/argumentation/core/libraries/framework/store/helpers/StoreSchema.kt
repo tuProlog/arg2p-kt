@@ -56,7 +56,7 @@ internal object StoreSchema : ContextLayout {
     /** The places a predicate (`functor/arity`) is looked up by, besides its arguments: an argument by its claim */
     override val indexed: Map<String, List<ClauseStore.Place>> = mapOf("argument/1" to listOf(ClauseStore.Place(0, intArrayOf(1, 1, 0, 0))))
 
-    /** The places a lookup names (context_by/3, context_matching/3): the conclusion of an argument, `[Claim]`, what was explored */
+    /** The places a lookup names (contextBy/3, contextMatching/3): the conclusion of an argument, `[Claim]`, what was explored */
     val keys: Map<String, ClauseStore.Place> =
         mapOf("conclusion" to ClauseStore.Place(0, intArrayOf(1, 1, 0)), "explored" to ClauseStore.Place(0, IntArray(0)))
 

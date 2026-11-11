@@ -15,13 +15,13 @@ class StoreLibraryTest {
     fun anArgumentIsSavedWithItsLookups() {
         val module = LibraryTesting()
         module.run("store::saveArgument(tag, [a], $a)")
-        assertTrue(module.holds("context_check(argument($a))"))
+        assertTrue(module.holds("contextCheck(argument($a))"))
         assertTrue(module.holds("store::argumentFor([a], X), X == $a"))
-        assertTrue(module.holds("context_id(argument($a), Id), store::argumentById(Id, X), X == $a"))
+        assertTrue(module.holds("contextId(argument($a), Id), store::argumentById(Id, X), X == $a"))
         assertTrue(
-            module.holds("context_id(argument($a), Id), store::argumentInfoId(Id, K), store::infoById(K, [[r1], [r1], []])"),
+            module.holds("contextId(argument($a), Id), store::argumentInfoId(Id, K), store::infoById(K, [[r1], [r1], []])"),
         )
-        assertTrue(module.holds("context_check(newConc(tag, [a]))"))
+        assertTrue(module.holds("contextCheck(newConc(tag, [a]))"))
     }
 
     @Test
@@ -29,18 +29,18 @@ class StoreLibraryTest {
         val module = LibraryTesting()
         module.run("store::saveArgument(tag, [a], $a)")
         assertFalse(module.holds("store::saveArgument(tag, [a], $a)"))
-        assertEquals(1, module.solutions("context_check(argument(X))").count { it.isYes })
+        assertEquals(1, module.solutions("contextCheck(argument(X))").count { it.isYes })
     }
 
     @Test
     fun aSupportIsSavedByArgumentsAndIdentifiers() {
         val module = LibraryTesting()
         module.run("store::saveArgument(t, [a], $a)", "store::saveArgument(t, [b], $b)", "store::saveSupport($a, $b)")
-        assertTrue(module.holds("context_check(support($a, $b))"))
-        assertTrue(module.holds("context_id(argument($a), IdA), context_id(argument($b), IdB), context_check(supportId(IdA, IdB))"))
+        assertTrue(module.holds("contextCheck(support($a, $b))"))
+        assertTrue(module.holds("contextId(argument($a), IdA), contextId(argument($b), IdB), contextCheck(supportId(IdA, IdB))"))
         // saved already, it still succeeds, and the support stays one: a rule may use an argument for two premises
         assertTrue(module.holds("store::saveSupport($a, $b)"))
-        assertEquals("1", module.value("findall(I, context_check(supportId(_, I)), L), length(L, N)", "N"))
+        assertEquals("1", module.value("findall(I, contextCheck(supportId(_, I)), L), length(L, N)", "N"))
     }
 
     @Test
@@ -52,14 +52,14 @@ class StoreLibraryTest {
             "store::saveArgument(t, [c], $c)",
             "store::saveAttack(rebut, $c, $b, $a)",
         )
-        val ids = "context_id(argument($c), IdC), context_id(argument($b), IdB), context_id(argument($a), IdA)"
-        assertTrue(module.holds("context_check(attack(rebut, $c, $b, $a))"))
-        assertTrue(module.holds("$ids, context_check(attackId(rebut, IdC, IdB, IdA))"))
+        val ids = "contextId(argument($c), IdC), contextId(argument($b), IdB), contextId(argument($a), IdA)"
+        assertTrue(module.holds("contextCheck(attack(rebut, $c, $b, $a))"))
+        assertTrue(module.holds("$ids, contextCheck(attackId(rebut, IdC, IdB, IdA))"))
         assertFalse(module.holds("store::saveAttack(rebut, $c, $b, $a)"))
 
         module.run("store::removeAttack(rebut, $c, $b, $a)")
-        assertFalse(module.holds("context_check(attack(_, _, _, _))"))
-        assertFalse(module.holds("context_check(attackId(_, _, _, _))"))
+        assertFalse(module.holds("contextCheck(attack(_, _, _, _))"))
+        assertFalse(module.holds("contextCheck(attackId(_, _, _, _))"))
     }
 
     @Test
@@ -90,6 +90,6 @@ class StoreLibraryTest {
         assertEquals("[(rebut, $b, $b, $a), (rebut, $b, $a, $a)]", module.value("store::graph(_, A, _)", "A"))
         assertEquals("[$b]", module.value("store::argumentLabelling(I, _, _)", "I"))
         assertEquals("[[b]]", module.value("store::statementLabelling(I, _, _)", "I"))
-        assertTrue(module.holds("context_active(B), store::argumentLabelIn(B, out, $a)"))
+        assertTrue(module.holds("contextActive(B), store::argumentLabelIn(B, out, $a)"))
     }
 }

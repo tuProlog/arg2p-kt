@@ -8,14 +8,14 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.exception.error.TypeError
 
 /**
- * module_defines(+Module, +Name/Arity): whether Module, one of the solver, defines the predicate Name/Arity, as a
+ * moduleDefines(+Module, +Name/Arity): whether Module, one of the solver, defines the predicate Name/Arity, as a
  * clause or a primitive of its own. The pipeline asks it of the modules the flags select before calling them: a hook a
  * module may leave out (queryDependencies/2) is told apart from one it must define (modifyArgumentationGraph/0), rather
  * than both failing alike as unknown predicates do. The module is not loaded for it.
  */
 internal class ModuleDefines(
     private val loader: DynamicLoader,
-) : AbstractNativePrimitive(Signature("module_defines", 2)) {
+) : AbstractNativePrimitive(Signature("moduleDefines", 2)) {
     override fun call(call: NativeCall): Int {
         val nameWord = call.arg(0)
         if (call.kind(nameWord) != NativeCall.ATOM) {

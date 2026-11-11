@@ -69,10 +69,10 @@ class GraphSegmentsTest {
         val a = Arg2pSolverFactory.default("f1 :=> a. r1 : a => b.", staticLibs = listOf(first)).also { SolverSession.join(it, session) }
         val b = Arg2pSolverFactory.default("r2 : b => c. f2 :=> -b.", staticLibs = listOf(second)).also { SolverSession.join(it, session) }
         // a builds its graph whole, b loads its rules
-        assertTrue(a.holds("context_reset, pipeline::graph(whole, whole_graph)"))
+        assertTrue(a.holds("contextReset, pipeline::graph(whole, wholeGraph)"))
         assertTrue(a.holds("segmentOut"))
         assertEquals(2, first.segment!!.size)
-        assertTrue(b.holds("context_reset, segmentIn"))
+        assertTrue(b.holds("contextReset, segmentIn"))
         assertEquals(2, second.merged.size)
         // the arguments of a, as b reads them, and an argument of b's rules on b's conclusion
         assertTrue(b.holds("store::argument(A), store::conclusion(A, [b])"))
@@ -87,6 +87,6 @@ class GraphSegmentsTest {
         assertEquals(0, second.merged.size)
         assertEquals(1, b.count("store::argument(A), store::conclusion(A, [b])"))
         // the same identifiers on both nodes
-        assertEquals(2, a.count("context_check(arg(_))"))
+        assertEquals(2, a.count("contextCheck(arg(_))"))
     }
 }

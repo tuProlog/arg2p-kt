@@ -4,7 +4,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// bp_grounded_partial on random theories (rules, conflicts, preferences, burdens): one labelling, each argument labelled once
+// bpGroundedPartial on random theories (rules, conflicts, preferences, burdens): one labelling, each argument labelled once
 // (its demonstrations commit through the cut of argumentLabelling, and go through every complement of a conclusion)
 class BpGroundedPartialTest {
     private fun theory(random: Random): String {
@@ -22,7 +22,7 @@ class BpGroundedPartialTest {
     }
 
     private val flags =
-        "statementLabellingMode(statement).\nargumentLabellingMode(bp_grounded_partial).\norderingPrinciple(last).\n" +
+        "statementLabellingMode(statement).\nargumentLabellingMode(bpGroundedPartial).\norderingPrinciple(last).\n" +
             "orderingComparator(elitist).\ngraphExtension(standardPref).\ngraphExtension(bp).\nqueryMode(off).\n"
 
     @Test

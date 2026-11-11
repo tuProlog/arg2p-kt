@@ -50,10 +50,10 @@ insertBpPair((Bp, Burdened), [(BpL, BurdenedL)|Others], [(Bp, Burdened)|[(BpL, B
 % otherwise it is rebutted
 evaluateBurdenedArgs([]).
 evaluateBurdenedArgs([(Bp, Burdened)|Others]) :-
-    context_active(X),
+    contextActive(X),
     grounded:::argumentLabelling,
     statusToAttack((Bp, Burdened), attack(T, A, B, C)),
-    context_checkout(X),
+    contextCheckout(X),
     store::saveAttack(T, A, B, C),
     evaluateBurdenedArgs(Others).
 

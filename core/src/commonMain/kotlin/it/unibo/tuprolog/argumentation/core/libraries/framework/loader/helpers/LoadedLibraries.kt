@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.core.libraries.framework.loader.helpers
 
+import it.unibo.tuprolog.argumentation.EarlierSpellings
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.core.Atom
 import it.unibo.tuprolog.solve.ExecutionContext
@@ -48,9 +49,12 @@ internal class LoadedLibraries(
         context: () -> ExecutionContext,
     ): Set<String> =
         defined.getOrPut(name) {
-            solver.dynamicLibraries().firstOrNull { it.identifier() == name }?.definitions
+            solver.dynamicLibraries().firstOrNull { it.identifier() == current(name) }?.definitions
                 ?: throw ExistenceError.forResource(context(), name)
         }
+
+    // The identifier of the module named [name], named as before 1.0.0 maybe (see EarlierSpellings)
+    private fun current(name: String): String = EarlierSpellings.values[name] ?: name
 
     private var sharedOf: Runtime? = null
     private var sharedRuntime: Runtime? = null
@@ -60,7 +64,7 @@ internal class LoadedLibraries(
         name: Atom,
     ): LoadedLibrary {
         val library =
-            solver.dynamicLibraries().firstOrNull { it.identifier() == name.value }
+            solver.dynamicLibraries().firstOrNull { it.identifier() == current(name.value) }
                 ?: throw ExistenceError.forResource(context, name.value)
         // (the libraries of the solver, for all its modules)
         val callers = context.libraries

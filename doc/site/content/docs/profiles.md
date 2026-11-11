@@ -18,12 +18,12 @@ turns off a switch it turns on.
 
 | Profile | Reads the theory as | Presets |
 | --- | --- | --- |
-| `aspic_plus` | ASPIC<sup>+</sup>, the **default** | `standardPref`, `rebutRestriction`, `autoTransposition`, well-formed contraries |
+| `aspicPlus` | ASPIC<sup>+</sup>, the **default** | `standardPref`, `rebutRestriction`, `autoTransposition`, well-formed contraries |
 | `aspic` | ASPIC<sup>+</sup> with no preferences | `rebutRestriction`, `autoTransposition`, well-formed contraries |
-| `aspic_defeasible` | the defeasible part of ASPIC<sup>+</sup> | `standardPref`, `orderingPrinciple(last)`, `orderingComparator(normal)`, defeasible rules only |
+| `aspicDefeasible` | the defeasible part of ASPIC<sup>+</sup> | `standardPref`, `orderingPrinciple(last)`, `orderingComparator(normal)`, defeasible rules only |
 | `meta` | ASPIC<sup>+</sup> reasoning about its rules and conflicts | `defeasiblePref`, `metaRules`, `metaConflicts` |
 | `aba` | flat ABA | assumptions and contraries, strict rules only, declared conflicts only (`conflictModel(declared)`) |
-| `aba_plus` | flat ABA<sup>+</sup> under Weak Contraposition | as `aba`, with `abaPref` |
+| `abaPlus` | flat ABA<sup>+</sup> under Weak Contraposition | as `aba`, with `abaPref` |
 | `abstract` | Dung frameworks | arguments and attacks |
 | `free` | nothing in particular | none: every flag as the solver and the theory state it |
 
@@ -35,23 +35,23 @@ author meant in the framework.
 
 | Profile | Refuses | Does not check |
 | --- | --- | --- |
-| `aspic_plus`, `aspic` | a contrary targeting an axiom or the conclusion of a strict rule | that the strict closure of the axioms is consistent: `r1 : [] -> d.` and `r2 : [] -> -d.` label both `d` and `-d` in |
-| `aspic_defeasible` | strict rules, axioms, premises | |
+| `aspicPlus`, `aspic` | a contrary targeting an axiom or the conclusion of a strict rule | that the strict closure of the axioms is consistent: `r1 : [] -> d.` and `r2 : [] -> -d.` label both `d` and `-d` in |
+| `aspicDefeasible` | strict rules, axioms, premises | |
 | `meta` | | that the rules are argued applicable and the conflicts argued (see below): a theory of ASPIC<sup>+</sup> labels nothing in it |
-| `aba`, `aba_plus` | defeasible rules, ordinary premises (`f :=> a.`), a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition | that negation means nothing in ABA: `d` and `-d` conflict only if a contrary says so |
+| `aba`, `abaPlus` | defeasible rules, ordinary premises (`f :=> a.`), a rule concluding an assumption; for `abaPlus`, a theory without Weak Contraposition | that negation means nothing in ABA: `d` and `-d` conflict only if a contrary says so |
 | `abstract` | | that the theory is a framework alone: what is not an argument nor an attack is data for the clauses (see below) |
 | `free` | | anything |
 
 ### ASPIC<sup>+</sup>
 
-`aspic_plus` is the framework of Modgil and Prakken: strict and defeasible rules, axioms and ordinary premises,
+`aspicPlus` is the framework of Modgil and Prakken: strict and defeasible rules, axioms and ordinary premises,
 preferences, restricted rebut, and the strict rules closed under transposition, as the rationality postulates
 require. The theory must be **well formed**: a contrary, a conflict declared one way only (`conflict([X], [Y])`
 with no `conflict([Y], [X])`), may not target an axiom or the conclusion of a strict rule, which no attack could
 reach. A theory that breaks this is refused. Negations, and conflicts declared both ways, are contradictories,
 and transposition closes the strict rules over them.
 
-`aspic_defeasible` takes defeasible rules alone, facts written as rules with no premise (`r : [] => a.`). It refuses
+`aspicDefeasible` takes defeasible rules alone, facts written as rules with no premise (`r : [] => a.`). It refuses
 strict rules, axioms and premises.
 
 ### Meta-argumentation
@@ -59,7 +59,7 @@ strict rules, axioms and premises.
 `meta` reads ASPIC<sup>+</sup> with its machinery argued (see [Meta-argumentation]({{% ref "/docs/modules/meta" %}})):
 a rule fires only when an argument concludes `applicable(Rule)`, two statements conflict only when an argument
 concludes `conflict(A, B)` (even `a` and `-a`), and the preferences are the `sup/2` arguments conclude. A theory
-written for `aspic_plus` is not one for `meta`: its rules never fire, and its conflicts are none.
+written for `aspicPlus` is not one for `meta`: its rules never fire, and its conflicts are none.
 
 ```prolog
 graphBuildMode(meta).
@@ -95,7 +95,7 @@ presets `conflictModel(declared)`. A theory stating other parts of the [conflict
 has those conflicts as well (`conflictModel(negation).` makes `d` and `-d` conflict); the contraries hold whatever
 the parts.
 
-`aba_plus` adds preferences between assumptions, `sup(Stronger, Weaker)`, as in ABA<sup>+</sup> (Čyras and
+`abaPlus` adds preferences between assumptions, `sup(Stronger, Weaker)`, as in ABA<sup>+</sup> (Čyras and
 Toni). An attack from an argument resting on an assumption weaker than the one it attacks is **reversed**: the
 attacked assumption attacks every argument that rests on all the assumptions of the attacker.
 
@@ -104,16 +104,16 @@ attacked assumption attacks every argument that rests on all the assumptions of 
 The arguments of arg2p give the semantics of ABA, defined on sets of assumptions, only for some theories. The
 profiles refuse the others, with an error explaining why:
 
-- **Non-flat ABA**, where a rule concludes an assumption, is refused by `aba` and `aba_plus`. Its semantics would
+- **Non-flat ABA**, where a rule concludes an assumption, is refused by `aba` and `abaPlus`. Its semantics would
   need attacks between sets of assumptions (bipolar set-based frameworks) that arguments do not express.
-- **ABA<sup>+</sup> without Weak Contraposition** is refused by `aba_plus`. Weak Contraposition (Čyras and Toni,
+- **ABA<sup>+</sup> without Weak Contraposition** is refused by `abaPlus`. Weak Contraposition (Čyras and Toni,
   Axiom 4) says that if a set of assumptions `A` derives the contrary of `β` and some of `A` are weaker than `β`,
   then for one `α` of the weakest of them, `A` without `α` but with `β` derives the contrary of `α`.
 
 Here `a1` is weaker than `a0`, and `{a0, a1}` derives the contrary of `a0`:
 
 ```prolog
-graphBuildMode(aba_plus).
+graphBuildMode(abaPlus).
 
 assumption(a0).
 assumption(a1).

@@ -20,17 +20,17 @@ label(Accept, Select) :-
 %    none     - an argument forced IN with only what it attacks OUT, from the labelling with nothing more IN
 %               (admissible labellings)
 label(Accept, Select, Closure) :-
-    cache_retract(scc_seen(_, _)),
-    context_active(Start),
+    cacheRetract(sccSeen(_, _)),
+    contextActive(Start),
     root(Closure, Start),
     store::sccs(Sccs),
-    context_active(Root),
+    contextActive(Root),
     (
         labelSccs(Accept, Select, Closure, top, Sccs, [], Root, State),
-        context_checkout(State)
+        contextCheckout(State)
     ;
-        context_checkout(Start),
-        context_drop(Root),
+        contextCheckout(Start),
+        contextDrop(Root),
         fail
     ).
 
@@ -64,12 +64,12 @@ solvePieces([Piece | Pieces], Accept, Select, Closure, Mode, Sccs, Excluded, Bra
     solveComponent(Accept, Select, Closure, Mode, Piece, Next, Excluded, Branch, State).
 
 solveComponent(Accept, Select, Closure, Mode, Scc, Sccs, Excluded, Branch, State) :-
-    context_last(Mark),
+    contextLast(Mark),
     findall(Option-Ok, option(Accept, Select, Closure, Scc, Excluded, Branch, Option, Ok), Options),
     selection(Select, Scc, Options, Selected),
-    context_checkout(Branch),
+    contextCheckout(Branch),
     % every branch the search of the component created and did not select
-    context_drop_after(Mark, Selected),
+    contextDropAfter(Mark, Selected),
     member(Next, Selected),
     (
         labelSccs(Accept, Select, Closure, Mode, Sccs, Excluded, Next, State)
@@ -77,8 +77,8 @@ solveComponent(Accept, Select, Closure, Mode, Scc, Sccs, Excluded, Branch, State
         % a labelling is released once all its continuations are done (Branch by the previous component)
         Mode == top,
         Next \== Branch,
-        context_checkout(Branch),
-        context_drop(Next),
+        contextCheckout(Branch),
+        contextDrop(Next),
         fail
     ).
 
@@ -87,12 +87,12 @@ solveComponent(Accept, Select, Closure, Mode, Scc, Sccs, Excluded, Branch, State
 % Branch. The labellings above an admissible one are it and those of what is left of Scc, so the search does not
 % go on from it: what is left is split and labelled as the graph is
 option(Accept, _, _, Scc, _, Branch, Branch, Ok) :-
-    context_checkout(Branch),
+    contextCheckout(Branch),
     ok(Accept, Scc, Ok).
 option(Accept, Select, Closure, Scc, Excluded, Branch, State, Ok) :-
     admissibleAbove(Closure, Scc, Excluded, Branch, Branch, Admissible, Mine),
     labelSccs(Accept, Select, Closure, within, [Scc], Mine, Admissible, State),
-    context_checkout(State),
+    contextCheckout(State),
     ok(Accept, Scc, Ok).
 
 ok(Accept, Scc, Ok) :-
@@ -109,16 +109,16 @@ componentAccepted(decided, Scc) :-
 % Scc, reached from Branch by forcing IN undecided arguments of Scc with no admissible labelling on the way since
 % Start; Mine is Excluded and the candidates tried before on the way. Excluded are the candidates tried before in the branches
 % above, whose own branches found every admissible labelling above them that has them IN: none is IN below.
-% scc_seen(Start, In) marks a labelling of the search from Start as reached
+% sccSeen(Start, In) marks a labelling of the search from Start as reached
 admissibleAbove(Closure, Scc, Excluded, Start, Branch, Admissible, Mine) :-
     undecidedCandidates(Scc, Branch, Excluded, Candidates),
     Candidates = [_ | _],
     findall(I, store::argumentLabelByIdIn(Branch, in, I), Ins),
     candidate(Candidates, Excluded, IdX, Tried),
     utils::sortDescending([IdX | Ins], Seed),
-    \+ cache_check(scc_seen(Start, Seed)),
-    cache_assert(scc_seen(Start, Seed)),
-    context_branch(Branch, NewBranch),
+    \+ cacheCheck(sccSeen(Start, Seed)),
+    cacheAssert(sccSeen(Start, Seed)),
+    contextBranch(Branch, NewBranch),
     forceIn(Closure, IdX),
     force(Closure, Scc, Tried),
     store::labelledIds(in, Reached),
@@ -158,5 +158,5 @@ forced(defender(D), Closure, Scc, Excluded) :-
 
 unexplored(_, Seed, Seed) :- !.
 unexplored(Start, _, Labelled) :-
-    \+ cache_check(scc_seen(Start, Labelled)),
-    cache_assert(scc_seen(Start, Labelled)).
+    \+ cacheCheck(sccSeen(Start, Labelled)),
+    cacheAssert(sccSeen(Start, Labelled)).

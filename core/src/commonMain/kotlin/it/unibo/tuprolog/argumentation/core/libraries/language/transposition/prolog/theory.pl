@@ -4,11 +4,11 @@
 %  each name: what merging the transpositions of a rule at a time, and deduplicating each time, amounts to, in a single
 %  pass rather than merging and deduplicating the lists once for each rule (cubic in the number of rules).
 strictRules(Rules, Taken, Added) :-
-    findall(_, (member(Name, Taken), atom(Name), context_assert(transpositionTaken(Name))), _),
+    findall(_, (member(Name, Taken), atom(Name), contextAssert(transpositionTaken(Name))), _),
     reverse(Rules, Reversed),
     findall(TrH, (member(H, Reversed), transposition(H, TrH)), Tran),
     utils::uniqueByFirst(Tran, Added),
-    context_retract(transpositionTaken(_)).
+    contextRetract(transpositionTaken(_)).
 
 transposition([Id, Prec, Effect], [NewId, NewPrec ,XNegated]) :-
     compound(Prec),
@@ -62,7 +62,7 @@ newIdentifier(List, OldId, NewId) :-
 % The identifier of a transposition: the one of the rule with a suffix, transposition(Id, Suffix) for a rule
 % whose identifier is no atom (a rule with parameters, t(X, Y)) or when a rule or premise of the theory has the
 % name with the suffix (transpositionTaken/1): a transposition never takes the place of a rule of the theory
-suffixed(Id, Suffix, NewId) :- atom(Id), atom_concat(Id, Suffix, NewId), context_absent(transpositionTaken(NewId)), !.
+suffixed(Id, Suffix, NewId) :- atom(Id), atom_concat(Id, Suffix, NewId), contextAbsent(transpositionTaken(NewId)), !.
 suffixed(Id, Suffix, transposition(Id, Suffix)).
 
 modifier([], '_i').

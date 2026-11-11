@@ -114,7 +114,7 @@ class BurdenOfPersuasionLabellingTest {
             arg2pScope {
                 TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
-                    it.solve("bp_grounded" call "argumentLabelling").first()
+                    it.solve("bpGrounded" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
                 }
             }
@@ -127,7 +127,7 @@ class BurdenOfPersuasionLabellingTest {
             arg2pScope {
                 TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
-                    it.solve("bp_grounded_partial" call "argumentLabelling").first()
+                    it.solve("bpGroundedPartial" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
                 }
             }
@@ -140,7 +140,7 @@ class BurdenOfPersuasionLabellingTest {
             arg2pScope {
                 TestingUtils.solverWithTheory("bp(-a).").also {
                     TestingUtils.prepareContext(it, graph)
-                    it.solve("bp_grounded_complete" call "argumentLabelling").first()
+                    it.solve("bpGroundedComplete" call "argumentLabelling").first()
                     TestingUtils.checkResults(it, graph.labellings)
                 }
             }
@@ -156,7 +156,7 @@ class BurdenOfPersuasionLabellingTest {
             r2 : [] => -a.
             sup(r2, r1).
             statementLabellingMode(statement).
-            argumentLabellingMode(bp_grounded_partial).
+            argumentLabellingMode(bpGroundedPartial).
             orderingPrinciple(last).
             orderingComparator(elitist).
             graphExtension(standardPref).

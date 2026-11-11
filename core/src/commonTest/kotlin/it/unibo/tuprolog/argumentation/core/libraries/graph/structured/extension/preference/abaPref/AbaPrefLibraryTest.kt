@@ -11,7 +11,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Flat ABA and ABA+ on the arguments of arg2p (the profiles aba and aba_plus, the extension abaPref) against the
+ * Flat ABA and ABA+ on the arguments of arg2p (the profiles aba and abaPlus, the extension abaPref) against the
  * definitions on sets of assumptions (see [AbaReference]): the statements labelled in are those the extensions derive,
  * for every semantics. ABA+ on the theories satisfying Weak Contraposition, the others refused.
  */
@@ -65,7 +65,7 @@ class AbaPrefLibraryTest {
             )
         assertTrue(framework.weakContraposition)
         assertEquals(setOf("alpha", "eps"), framework.grounded)
-        assertEquals(setOf(framework.grounded), labelled(framework.theory("aba_plus")))
+        assertEquals(setOf(framework.grounded), labelled(framework.theory("abaPlus")))
     }
 
     // {a0, a1} derives p1, the contrary of a1 and of the stronger a2: a2 attacks {a0, a1} in reverse, a1 stands. The
@@ -81,7 +81,7 @@ class AbaPrefLibraryTest {
             )
         assertTrue(framework.weakContraposition)
         assertEquals(setOf("a1", "a2", "a3"), framework.grounded)
-        assertEquals(setOf(framework.grounded), labelled(framework.theory("aba_plus")))
+        assertEquals(setOf(framework.grounded), labelled(framework.theory("abaPlus")))
     }
 
     // {a0, a1} derives x, the contrary of a0, a1 weaker than a0; nothing derives y, the contrary of a1, from a0: the
@@ -97,12 +97,12 @@ class AbaPrefLibraryTest {
             )
         assertFalse(framework.weakContraposition)
         assertEquals(setOf(setOf("a0"), setOf("a1")), framework.preferred)
-        assertTrue(refused(framework.theory("aba_plus", "preferred")))
+        assertTrue(refused(framework.theory("abaPlus", "preferred")))
         // a0 deriving y contraposes it
         val contraposed =
             AbaReference(framework.assumptions, framework.rules + ("y" to listOf("a0")), framework.contraries, framework.weaker)
         assertTrue(contraposed.weakContraposition)
-        assertEquals(contraposed.preferred, labelled(contraposed.theory("aba_plus", "preferred")))
+        assertEquals(contraposed.preferred, labelled(contraposed.theory("abaPlus", "preferred")))
     }
 
     // the labellings of arg2p, for every semantics, those of the definitions
@@ -139,11 +139,11 @@ class AbaPrefLibraryTest {
                 !framework.reversing -> Unit
                 framework.weakContraposition ->
                     if (compared < 15) {
-                        agree(framework, "aba_plus")
+                        agree(framework, "abaPlus")
                         compared++
                     }
                 refusals < 8 -> {
-                    assertTrue(refused(framework.theory("aba_plus")), framework.theory("aba_plus"))
+                    assertTrue(refused(framework.theory("abaPlus")), framework.theory("abaPlus"))
                     refusals++
                 }
             }
@@ -171,7 +171,7 @@ class AbaPrefLibraryTest {
     @Test
     fun theReversalReachesTheArgumentsOfTheAssumptionsAttackedInQueryMode() {
         val theory =
-            "graphBuildMode(aba_plus).\nargumentLabellingMode(grounded).\n" +
+            "graphBuildMode(abaPlus).\nargumentLabellingMode(grounded).\n" +
                 "assumption(a0).\nassumption(a1).\nassumption(a2).\nassumption(a3).\nassumption(a4).\n" +
                 "contrary(a0, p0).\ncontrary(a1, p0).\ncontrary(a2, p1).\ncontrary(a3, p1).\ncontrary(a4, p0).\n" +
                 "r0 : a2, a3 -> p0.\nr1 : a2 -> p1.\nsup(a1, a3).\nsup(a2, a3).\nsup(a0, a3).\nsup(a2, a4).\nsup(a4, a3).\n"

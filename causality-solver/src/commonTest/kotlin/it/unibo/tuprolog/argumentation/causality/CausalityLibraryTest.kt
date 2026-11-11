@@ -39,7 +39,7 @@ class CausalityLibraryTest {
         assertEquals(listOf("['-'(a)]", "[undercut(a)]"), values("r1 :=> a.\nr2 : a => b.", "generateInterventions([], a, X)").take(2))
     }
 
-    // ness/3 needs an argument for the cause IN in the grounded labelling: ness_original/3 does not
+    // ness/3 needs an argument for the cause IN in the grounded labelling: nessOriginal/3 does not
     @Test
     fun aNessCauseIsAccepted() {
         val solver = Arg2pSolverFactory.causality("tx2 : d => -r2.\nr1 :=> a.\nr2 : a => -b.")
@@ -77,7 +77,7 @@ class CausalityLibraryTest {
                 "r1 :=> a.\nr2 : a => b.\nconflict(_, _) :- write(hook), fail.",
                 output = OutputChannel.of { output.append(it) },
             )
-        assertEquals(true, solver.solve(Struct.parse("causality::but_for(a, b)", solver.operators)).first().isYes)
+        assertEquals(true, solver.solve(Struct.parse("causality::butFor(a, b)", solver.operators)).first().isYes)
         assertTrue("hook" in output, "expected the hook to print to the output of the solver, got '$output'")
     }
 }

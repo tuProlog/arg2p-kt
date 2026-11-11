@@ -4,14 +4,14 @@
 %  Read the first time it is asked for.
 boundByQuery(Id) :-
     utils::oncePerTheory(boundByQuery, argumentSearch::readBoundByQuery),
-    cache_check(boundByQueryRule(Id)).
+    cacheCheck(boundByQueryRule(Id)).
 
 readBoundByQuery :- \+ \+ readBoundByQuery(_).
 
 readBoundByQuery(Rules) :-
     store::writtenRules(Rules),
     boundByQuery(Rules, Ids),
-    findall(_, (member(Id, Ids), cache_assert(boundByQueryRule(Id))), _).
+    findall(_, (member(Id, Ids), cacheAssert(boundByQueryRule(Id))), _).
 
 %! boundByQuery(+Rules, -Ids)
 %  Of Rules, as read from the theory ([Id, Premises, Conclusion], the

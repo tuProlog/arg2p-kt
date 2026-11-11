@@ -56,9 +56,9 @@ class SuperiorityLibraryTest {
     fun aComparisonIsMadeOnce() {
         val module = module()
         module.run("superiority::superiorArgument($r1, $r2)")
-        assertTrue(module.holds("context_check(superior([[r1], [r1], []], [[r2], [r2], []], _, true))"))
+        assertTrue(module.holds("contextCheck(superior([[r1], [r1], []], [[r2], [r2], []], _, true))"))
         assertFalse(module.holds("superiority::superiorArgument($r2, $r1)"))
-        assertTrue(module.holds("context_check(superior([[r2], [r2], []], [[r1], [r1], []], _, false))"))
+        assertTrue(module.holds("contextCheck(superior([[r2], [r2], []], [[r1], [r1], []], _, false))"))
     }
 
     // normal is defined on the last rules: it does not go with the weakest link
@@ -88,7 +88,7 @@ class SuperiorityLibraryTest {
         val module = LibraryTesting("sup(r1, r2).\nsup(r2, r3).\nsup(r3, r4).\nsup(s1, s2).\nsup(s2, s1).")
         assertEquals(
             setOf("r1, r2", "r2, r3", "r3, r4", "r1, r3", "r2, r4", "r1, r4", "s1, s2", "s2, s1").map { "sup($it)" }.toSet(),
-            module.values("context_reset, superiority::preference(X, Y), S = sup(X, Y)", "S").toSet(),
+            module.values("contextReset, superiority::preference(X, Y), S = sup(X, Y)", "S").toSet(),
         )
     }
 }

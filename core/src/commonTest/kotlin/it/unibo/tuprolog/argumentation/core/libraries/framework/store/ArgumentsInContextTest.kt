@@ -11,18 +11,18 @@ import kotlin.test.assertTrue
 class ArgumentsInContextTest {
     private fun holds(goal: String): Boolean {
         val solver = solverWithTheory("")
-        return solver.solve(Struct.parse("context_reset, $goal", solver.operators)).first().isYes
+        return solver.solve(Struct.parse("contextReset, $goal", solver.operators)).first().isYes
     }
 
     private val facts =
-        (1..12).map { "context_assert(argument([r, t, [p($it)], b, i]))" } +
+        (1..12).map { "contextAssert(argument([r, t, [p($it)], b, i]))" } +
             listOf(
-                "context_assert(argument([r, t, [p(X)], b, i]))",
-                "context_assert(argument([r, t, [q], b, i]))",
-                "context_assert(argument([r, t, [Y], b, i]))",
-                "context_assert(argument([r, t | T]))",
-                "context_assert(argument(foo))",
-                "context_assert(argument([r]))",
+                "contextAssert(argument([r, t, [p(X)], b, i]))",
+                "contextAssert(argument([r, t, [q], b, i]))",
+                "contextAssert(argument([r, t, [Y], b, i]))",
+                "contextAssert(argument([r, t | T]))",
+                "contextAssert(argument(foo))",
+                "contextAssert(argument([r]))",
             )
 
     private fun answers(
@@ -30,8 +30,8 @@ class ArgumentsInContextTest {
         before: String = "true",
     ): Int {
         val solver = solverWithTheory("")
-        val all = (listOf("context_reset") + facts + before).joinToString(", ")
-        val solution = solver.solve(Struct.parse("$all, findall(x, context_check($goal), L), length(L, N)", solver.operators)).first()
+        val all = (listOf("contextReset") + facts + before).joinToString(", ")
+        val solution = solver.solve(Struct.parse("$all, findall(x, contextCheck($goal), L), length(L, N)", solver.operators)).first()
         assertTrue(solution.isYes, goal)
         return solution.substitution.entries
             .first { it.key.name == "N" }
@@ -55,7 +55,7 @@ class ArgumentsInContextTest {
 
     @Test
     fun lookupsByTheClaimAfterARemoval() {
-        val before = "context_check(argument([_, _, [p(5)], _, _])), context_retract(argument([_, _, [p(3)], _, _]))"
+        val before = "contextCheck(argument([_, _, [p(5)], _, _])), contextRetract(argument([_, _, [p(3)], _, _]))"
         assertEquals(1, answers("argument([_, _, [p(4)], _, _])", before))
         assertEquals(0, answers("argument([_, _, [p(3)], _, _])", before))
         assertEquals(14, answers("argument(Q)", before))
@@ -63,36 +63,36 @@ class ArgumentsInContextTest {
 
     @Test
     fun theTermOfAnIdentifier() {
-        assertTrue(holds("context_id(k(X, a), I), context_term(I, k(Q, R)), var(Q), R == a"))
-        assertTrue(holds("\\+ context_term(9999, _), \\+ context_term(a, _)"))
+        assertTrue(holds("contextId(k(X, a), I), contextTerm(I, k(Q, R)), var(Q), R == a"))
+        assertTrue(holds("\\+ contextTerm(9999, _), \\+ contextTerm(a, _)"))
     }
 
     @Test
     fun theClauseOfAnIdentifierAdded() {
-        assertTrue(holds("context_absent(k(1)), context_id(k(1), I), context_absent(k(1)), context_assert_id(I), context_check(k(1))"))
-        assertTrue(holds("\\+ context_assert_id(9999)"))
+        assertTrue(holds("contextAbsent(k(1)), contextId(k(1), I), contextAbsent(k(1)), contextAssertId(I), contextCheck(k(1))"))
+        assertTrue(holds("\\+ contextAssertId(9999)"))
     }
 
     @Test
     fun lookupsByAKey() {
         val saved =
-            "context_assert(argument([r, t, [p(a)], b, i])), context_assert(argument([s, t, [p(Z)], b, i])), " +
-                "context_assert(argument([u, t, [q], b, i]))"
-        assertTrue(holds("$saved, findall(R, context_by(conclusion, [p(a)], argument([R | _])), [s, r])"))
-        assertTrue(holds("$saved, findall(C, context_by(conclusion, C, argument(_)), [[q], [p(_)], [p(a)]])"))
-        assertTrue(holds("$saved, context_by(conclusion, [q], argument(A)), A == [u, t, [q], b, i]"))
-        assertTrue(holds("$saved, \\+ context_by(conclusion, [r], argument(_))"))
-        assertTrue(holds("$saved, \\+ context_by(unknown, [q], argument(_))"))
+            "contextAssert(argument([r, t, [p(a)], b, i])), contextAssert(argument([s, t, [p(Z)], b, i])), " +
+                "contextAssert(argument([u, t, [q], b, i]))"
+        assertTrue(holds("$saved, findall(R, contextBy(conclusion, [p(a)], argument([R | _])), [s, r])"))
+        assertTrue(holds("$saved, findall(C, contextBy(conclusion, C, argument(_)), [[q], [p(_)], [p(a)]])"))
+        assertTrue(holds("$saved, contextBy(conclusion, [q], argument(A)), A == [u, t, [q], b, i]"))
+        assertTrue(holds("$saved, \\+ contextBy(conclusion, [r], argument(_))"))
+        assertTrue(holds("$saved, \\+ contextBy(unknown, [q], argument(_))"))
     }
 
     @Test
     fun factsMatchingAsStored() {
         val saved =
-            "context_assert(argument([s, t, [p(Z)], b, i])), context_assert(argument([r, t, [p(a)], b, i])), " +
-                "context_assert(k2([r, t, [q], b, i]) :- z)"
-        assertTrue(holds("$saved, context_matching(conclusion, [p(1)], argument(A)), A = [s, _, [p(V)], _, _], var(V)"))
-        assertTrue(holds("$saved, K = [p(Y)], findall(R, context_matching(conclusion, K, argument([R | _])), [r, s]), var(Y)"))
-        assertTrue(holds("$saved, \\+ context_matching(conclusion, [q], k2(_))"))
+            "contextAssert(argument([s, t, [p(Z)], b, i])), contextAssert(argument([r, t, [p(a)], b, i])), " +
+                "contextAssert(k2([r, t, [q], b, i]) :- z)"
+        assertTrue(holds("$saved, contextMatching(conclusion, [p(1)], argument(A)), A = [s, _, [p(V)], _, _], var(V)"))
+        assertTrue(holds("$saved, K = [p(Y)], findall(R, contextMatching(conclusion, K, argument([R | _])), [r, s]), var(Y)"))
+        assertTrue(holds("$saved, \\+ contextMatching(conclusion, [q], k2(_))"))
     }
 
     private val argument = "[[r], r, [p(a)], [], [[], [], []]]"
@@ -107,15 +107,15 @@ class ArgumentsInContextTest {
                 store::saveArgument([p(a)], A),
                 store::argumentId(A, I),
                 store::labelArgument(in, A, I),
-                context_check(in(B)), B == A,
-                context_check(argument(C)), C == A,
-                \+ context_check(out(_)),
-                context_active(Branch),
-                context_branch(Branch, _),
+                contextCheck(in(B)), B == A,
+                contextCheck(argument(C)), C == A,
+                \+ contextCheck(out(_)),
+                contextActive(Branch),
+                contextBranch(Branch, _),
                 store::unlabelArguments(in),
-                \+ context_check(in(_)),
-                context_check(Branch, in(D)), D == A,
-                context_check(argument(_))
+                \+ contextCheck(in(_)),
+                contextCheck(Branch, in(D)), D == A,
+                contextCheck(argument(_))
                 """.trimIndent(),
             ),
         )
@@ -131,19 +131,19 @@ class ArgumentsInContextTest {
                 store::saveArgument([q(a)], B),
                 store::saveSupport(A, B),
                 store::saveAttack(rebut, A, B, B),
-                context_check(support(A, B)),
-                context_check(support(X, B)), X == A,
-                context_check(support(A, Y)), Y == B,
-                \+ context_check(support(B, A)),
-                context_check(attack(rebut, A, B, B)),
-                context_check(attack(T, _, _, _)), T == rebut,
-                \+ context_check(attack(undercut, _, _, _)),
-                context_active(Branch),
-                context_branch(Branch, _),
+                contextCheck(support(A, B)),
+                contextCheck(support(X, B)), X == A,
+                contextCheck(support(A, Y)), Y == B,
+                \+ contextCheck(support(B, A)),
+                contextCheck(attack(rebut, A, B, B)),
+                contextCheck(attack(T, _, _, _)), T == rebut,
+                \+ contextCheck(attack(undercut, _, _, _)),
+                contextActive(Branch),
+                contextBranch(Branch, _),
                 store::removeAttack(rebut, A, B, B),
-                \+ context_check(attack(_, _, _, _)),
-                context_check(Branch, attack(rebut, A, B, B)),
-                context_check(Branch, support(A, B))
+                \+ contextCheck(attack(_, _, _, _)),
+                contextCheck(Branch, attack(rebut, A, B, B)),
+                contextCheck(Branch, support(A, B))
                 """.trimIndent(),
             ),
         )
@@ -151,7 +151,7 @@ class ArgumentsInContextTest {
 
     @Test
     fun aRelationAssertedAsClausesIsLookedUpAsClauses() {
-        assertTrue(holds("context_assert(support(x, y)), context_check(support(x, Y)), Y == y, \\+ context_check(support(y, _))"))
+        assertTrue(holds("contextAssert(support(x, y)), contextCheck(support(x, Y)), Y == y, \\+ contextCheck(support(y, _))"))
     }
 
     @Test
@@ -159,7 +159,7 @@ class ArgumentsInContextTest {
         assertTrue(
             holds(
                 "A = $argument, store::saveArgument([p(a)], A), store::argumentId(A, I), " +
-                    "store::argumentInfoId(I, K), store::infoById(K, [[], [], []]), context_term(K, info([[], [], []]))",
+                    "store::argumentInfoId(I, K), store::infoById(K, [[], [], []]), contextTerm(K, info([[], [], []]))",
             ),
         )
     }
@@ -169,7 +169,7 @@ class ArgumentsInContextTest {
         assertTrue(
             holds(
                 "store::labelStatement(in, [p(X)]), store::statementLabel(in, [p(a)]), " +
-                    "store::statementLabelled(in, [p(Y)]), \\+ store::statementLabelled(in, [p(a)]), context_check(statIn([p(_)]))",
+                    "store::statementLabelled(in, [p(Y)]), \\+ store::statementLabelled(in, [p(a)]), contextCheck(statIn([p(_)]))",
             ),
         )
     }
@@ -179,7 +179,7 @@ class ArgumentsInContextTest {
         assertTrue(
             holds(
                 "A = $argument, store::saveArgument([p(a)], A), store::argumentId(A, I), " +
-                    "context_stored_id(argument(_), J), J == I, \\+ context_stored_id(argument(foo), _), context_assert(k(1)), \\+ context_stored_id(k(_), _)",
+                    "contextStoredId(argument(_), J), J == I, \\+ contextStoredId(argument(foo), _), contextAssert(k(1)), \\+ contextStoredId(k(_), _)",
             ),
         )
     }
@@ -215,15 +215,15 @@ class ArgumentsInContextTest {
                 A = $argument,
                 store::saveArgument([p(a)], A),
                 store::argumentId(A, I),
-                context_active(Branch),
-                context_branch(Branch, _),
+                contextActive(Branch),
+                contextBranch(Branch, _),
                 store::leaveOutArguments,
                 \+ store::argumentById(I, _),
                 store::argumentIds([]),
                 store::argument(A),
                 store::argumentFor([p(a)], _),
                 \+ store::saveArgument([p(a)], A),
-                store::inGraph(Branch, I), context_term(I, argument(B)), B == A,
+                store::inGraph(Branch, I), contextTerm(I, argument(B)), B == A,
                 store::takeInArgument(I),
                 store::argumentById(I, _)
                 """.trimIndent(),

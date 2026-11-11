@@ -70,7 +70,7 @@ describe('Host of the engine', function () {
         const { send } = host();
         send({ type: 'solve', id: 2, theory: TWEETY, query: 'solve', flags: FLAGS });
         const { graph } = send<'solution'>({ type: 'next', id: 2 }).solution;
-        equal(graph.profile, 'aspic_plus');
+        equal(graph.profile, 'aspicPlus');
         const flies = graph.arguments.find(it => it.conclusion === 'flies(tweety)')!;
         equal(flies.topRule, 'r1');
         deepEqual(flies.supports.map(id => graph.arguments.find(it => it.id === id)!.conclusion), ['bird(tweety)']);
@@ -127,7 +127,7 @@ describe('Host of the engine', function () {
 describe('Settings in effect', function () {
     it('should give the flags of the profile, unless the flags or the theory state others', function () {
         const aspic = settings(TWEETY, DEFAULT_FLAGS);
-        deepEqual(aspic.graphBuildMode, ['aspic_plus']);
+        deepEqual(aspic.graphBuildMode, ['aspicPlus']);
         deepEqual([...aspic.graphExtension].sort(), ['rebutRestriction', 'standardPref']);
         deepEqual(aspic.autoTransposition, ['true']);
         deepEqual(aspic.argumentLabellingMode, ['grounded']);
