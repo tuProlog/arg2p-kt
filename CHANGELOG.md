@@ -1,3 +1,9 @@
+## [0.26.2](https://github.com/tuProlog/arg2p-kt/compare/0.26.1...0.26.2) (2026-11-11)
+
+### Bug Fixes
+
+* **deps:** update dependency cytoscape to v3.35.0 ([#632](https://github.com/tuProlog/arg2p-kt/issues/632)) ([62b2de1](https://github.com/tuProlog/arg2p-kt/commit/62b2de16f3ec3fc541edeb00c1398733ee41c5da))
+
 ## [0.26.1](https://github.com/tuProlog/arg2p-kt/compare/0.26.0...0.26.1) (2026-11-11)
 
 ### Bug Fixes
