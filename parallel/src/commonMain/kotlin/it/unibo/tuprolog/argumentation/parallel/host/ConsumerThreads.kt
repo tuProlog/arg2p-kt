@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /**
@@ -8,6 +9,7 @@ import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
  * all that changes from a platform to another.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun interface Inbox {
     /** The next frame, waited for */
     fun take(): String
@@ -21,6 +23,7 @@ fun interface Inbox {
 
 /** A thread that may wait, as what never does sees it: [put] writes a frame to its inbox */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun interface HostedThread {
     fun put(frame: String)
 
@@ -70,6 +73,7 @@ internal class Mailbox(
  * start: making one may take long.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class ConsumerThreads(
     override val id: String,
     private val offered: Int,

@@ -5,6 +5,10 @@ weight: 29
 
 ## Parallel Solver
 
+> [!WARNING]
+> **Experimental.** The parallel solvers and their federation may change in a minor version of arg2p, unlike the rest of its API (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 The parallel solver builds the argumentation graph of a theory with several solvers at once, then labels it as the
 standard solver does. The theory is split among them; each one, a **consumer** of the graph, runs the pipeline of the
 standard solver on its part of the rules, and what it builds reaches the others through a graph store they share. The

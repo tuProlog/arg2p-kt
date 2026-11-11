@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Solution
 import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
@@ -24,6 +25,7 @@ internal interface AsyncReplies {
  * each, and the answers of queries
  */
 @JsExport
+@ExperimentalArg2pApi
 class AsyncGoalSolver internal constructor(
     private val node: NodeAccess,
     private val replies: AsyncReplies,
@@ -104,6 +106,7 @@ class AsyncGoalSolver internal constructor(
  * computed as it is asked for (by hasNext() or next()), none before
  */
 @JsExport
+@ExperimentalArg2pApi
 class AsyncSolutions internal constructor(
     private val goal: String,
     first: SolutionResponse,

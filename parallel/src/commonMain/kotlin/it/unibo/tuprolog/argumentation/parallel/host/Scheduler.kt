@@ -1,8 +1,10 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /** Tasks run one at a time, in the order they were posted */
+@ExperimentalArg2pApi
 fun interface TaskQueue {
     fun post(task: () -> Unit)
 
@@ -14,6 +16,7 @@ fun interface TaskQueue {
 }
 
 /** Where the parts of a node run: each has a queue of its own, and the queues may run in parallel */
+@ExperimentalArg2pApi
 fun interface Scheduler {
     fun queue(): TaskQueue
 
@@ -29,6 +32,7 @@ fun interface Scheduler {
  * posted while another runs waits for it, so that the nodes run in turn, in a deterministic order. A task that
  * fails leaves those after it queued, for the next post.
  */
+@ExperimentalArg2pApi
 class SequentialScheduler :
     Scheduler,
     TaskQueue {

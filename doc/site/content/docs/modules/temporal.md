@@ -9,6 +9,10 @@ sitemap:
 
 ## The axioms of time
 
+> [!WARNING]
+> **Experimental.** The axioms of time may change in a minor version of arg2p, unlike the rest of its API (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 With the flag `temporal`, a theory states what happens and what it starts or ends, and Arg2P concludes when each
 fact holds: the event calculus of Kowalski and Sergot (1986), as defeasible rules concluding what holds for the
 times of a period (see [Constraints]({{% ref "/docs/modules/constraints" %}}): the axioms turn the extension on).

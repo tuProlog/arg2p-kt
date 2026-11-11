@@ -1,11 +1,13 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.host.TaskQueue
 
 /**
  * A connection between two sites, over any transport (memory, the threads of a process, a socket): the frames sent on
  * it arrive in the order they were sent, until it is closed
  */
+@ExperimentalArg2pApi
 interface Link {
     /** Sends [frame] to the site at the other end, if the link is still open */
     fun send(frame: String)
@@ -24,6 +26,7 @@ interface Link {
 }
 
 /** A site, as the transports see it: told of its links as they open, of the frames on them and of their closing */
+@ExperimentalArg2pApi
 interface LinkListener {
     fun opened(link: Link)
 
@@ -36,6 +39,7 @@ interface LinkListener {
 }
 
 /** Links between sites of the same process, for tests and for sites sharing a machine without a network between them */
+@ExperimentalArg2pApi
 object MemoryLinks {
     /**
      * A link between [first] and [second], each told of its end: the frames are delivered by [via] if given, on the

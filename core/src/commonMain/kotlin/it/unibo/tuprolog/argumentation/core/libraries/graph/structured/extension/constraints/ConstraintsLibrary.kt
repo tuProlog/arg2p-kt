@@ -26,6 +26,8 @@ import it.unibo.tuprolog.solve.primitive.Primitive
  * attack whose region needs variables of the attacker that the attacked argument does not have holds for all values.
  * Nothing is removed from the graph. The base modules call the extension through its hooks (see parser::hook/2), never
  * by name. See `prolog/theory.pl` and `language/theory.pl`.
+ *
+ * Experimental (see ExperimentalArg2pApi): its notation and what it concludes may change in a minor version.
  */
 object ConstraintsLibrary : PrologLibrary("constraints") {
     override val baseFlags: Iterable<ArgsFlag>

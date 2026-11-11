@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import kotlin.js.JsExport
 
 // The values the flags of a solver take (see Flags), each with the atom stating it in a theory ([value])
@@ -25,9 +26,11 @@ enum class Profile(
     META("meta"),
 
     /** Assumption-based argumentation, flat */
+    @ExperimentalArg2pApi
     ABA("aba"),
 
     /** ABA+, flat, under weak contraposition */
+    @ExperimentalArg2pApi
     ABA_PLUS("abaPlus"),
 
     /** Abstract argumentation frameworks */
@@ -117,6 +120,7 @@ enum class GraphExtension(
     DEFEASIBLE_ALL_PREF("defeasibleAllPref"),
 
     /** The preferences of ABA+, reversing attacks */
+    @ExperimentalArg2pApi
     ABA_PREF("abaPref"),
 }
 
@@ -126,6 +130,8 @@ enum class GraphLanguage(
     val value: String,
 ) {
     ASPIC_LANGUAGE("aspicLanguage"),
+
+    @ExperimentalArg2pApi
     ABA_LANGUAGE("abaLanguage"),
     DEFEASIBLE_LANGUAGE("defeasibleLanguage"),
     ABSTRACT_LANGUAGE("abstractLanguage"),

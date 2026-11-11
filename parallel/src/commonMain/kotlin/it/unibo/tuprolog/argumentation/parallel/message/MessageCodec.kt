@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.TermValues
 import it.unibo.tuprolog.argumentation.Value
 import it.unibo.tuprolog.argumentation.core.model.compactGraphOf
@@ -125,6 +126,7 @@ internal object MessageCodec {
 
 /** Fields written as text: each as its length, a colon and its characters (see [TextReader]) */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class TextWriter {
     private val builder = StringBuilder()
 
@@ -150,6 +152,7 @@ class TextWriter {
  * text that is not one (as one from another process may be), whose lists are no longer than the text left can hold
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class TextReader(
     private val source: String,
 ) {

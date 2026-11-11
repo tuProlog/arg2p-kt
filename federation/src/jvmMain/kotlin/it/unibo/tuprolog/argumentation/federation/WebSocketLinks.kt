@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.host.handled
 import it.unibo.tuprolog.argumentation.parallel.host.report
 import org.java_websocket.WebSocket
@@ -31,6 +32,7 @@ import javax.net.ssl.SSLContext
  * [pages] it serves as well. The failures of a link, and those of the handling of its frames, are reported on the
  * standard error.
  */
+@ExperimentalArg2pApi
 class WebSocketLinks(
     private val site: LinkListener,
 ) : AutoCloseable {
@@ -240,6 +242,7 @@ class WebSocketLinks(
 }
 
 /** A page served over plain HTTP: its [content], of the media type [contentType] (as `text/html; charset=utf-8`) */
+@ExperimentalArg2pApi
 class StaticContent(
     val content: ByteArray,
     val contentType: String,

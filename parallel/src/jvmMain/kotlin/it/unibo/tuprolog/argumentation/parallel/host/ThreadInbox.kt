@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -11,6 +12,7 @@ import kotlin.concurrent.withLock
  * comes or after: the thread stays interrupted only while a stop it has not read is pending.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class ThreadInbox :
     Inbox,
     HostedThread {

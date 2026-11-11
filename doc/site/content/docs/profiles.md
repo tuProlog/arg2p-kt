@@ -76,6 +76,10 @@ Without `f0` and `f3`, `b` is never concluded, and nothing would make `-b` attac
 
 ### ABA
 
+> [!WARNING]
+> **Experimental.** The profiles `aba` and `abaPlus` may change in a minor version of arg2p, unlike the rest of its API (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 `aba` reads assumption-based argumentation (Bondarenko et al.; Dung, Kowalski and Toni) as the instance of
 ASPIC<sup>+</sup> it is:
 

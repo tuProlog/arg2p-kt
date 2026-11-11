@@ -227,6 +227,8 @@ class _Solver:
 
 class ThreadedSolver(_Solver):
     """
+    Experimental: it may change in a minor version of arg2p.
+
     A distributed solver on the threads of the JVM (as many as the processors by default): the solver of its theory and
     the solvers of the parts of the theory build the graph together. The theory is split into at most [parts] partitions
     if given, as many as the consumers it can run otherwise; the graph is labelled as the standard solver does with
@@ -267,6 +269,8 @@ class ThreadedSolver(_Solver):
 
 class Federation:
     """
+    Experimental: it may change in a minor version of arg2p.
+
     [parallel] federated with others, of the JVM, of Node.js or of browsers: it runs consumers of the graphs of the others
     if it [lends] (it does by default), and places the consumers of its graphs on them. It closes with the parallel solver, or
     before it (close), the parallel solver going on alone.

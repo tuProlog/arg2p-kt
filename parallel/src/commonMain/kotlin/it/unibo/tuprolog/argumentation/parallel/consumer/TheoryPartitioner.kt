@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.checked
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
@@ -19,6 +20,7 @@ import it.unibo.tuprolog.unify.Unificator
  * A theory split for the consumers building its graph together: each of them solves [shared] with one of [partitions]
  * ([theoryOf]), all as Prolog text in the language of arg2p
  */
+@ExperimentalArg2pApi
 data class Partitioning(
     val shared: String,
     val partitions: List<String>,
@@ -60,6 +62,7 @@ data class Partitioning(
  * predicates the rules check), but the flags of the conversion, already applied (the consumers are told to apply them
  * no further, whatever the profile).
  */
+@ExperimentalArg2pApi
 object TheoryPartitioner {
     private val conversionFlags = setOf("autoTransposition", "prologStrictCompatibility", "temporal", "metaRules", "naturalTerms")
 

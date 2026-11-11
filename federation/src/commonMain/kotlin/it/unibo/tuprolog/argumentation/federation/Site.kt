@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ParallelNode
 import it.unibo.tuprolog.argumentation.parallel.host.ConsumerHost
@@ -28,6 +29,7 @@ import kotlin.time.TimeSource
  * left (see [heartbeat]): the graph it was building fails, and the next goal needing it builds it with the others.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class Site(
     val node: ParallelNode,
     private val lends: Boolean = true,

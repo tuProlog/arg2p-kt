@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.host.handled
 import it.unibo.tuprolog.argumentation.parallel.host.nodeModule
 import kotlin.js.Promise
@@ -13,6 +14,7 @@ import kotlin.js.Promise
  *
  * Unlike the links of the JVM, the port listened on serves no pages: a plain HTTP request is refused (426, by ws).
  */
+@ExperimentalArg2pApi
 class WebSocketLinks(
     private val site: LinkListener,
 ) {

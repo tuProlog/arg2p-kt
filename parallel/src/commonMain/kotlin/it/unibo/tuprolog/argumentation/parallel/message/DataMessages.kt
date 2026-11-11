@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.parallel.message
 
 import it.unibo.tuprolog.argumentation.Answer
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.core.model.CompactGraph
 import it.unibo.tuprolog.argumentation.core.model.emptyCompactGraph
 import kotlin.js.JsExport
@@ -14,6 +15,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * with the arguments for it in [queryChain] (none for a statement no argument concludes), as Prolog text
  */
 @JsExport
+@ExperimentalArg2pApi
 data class Response(
     val claim: String,
     @JsExport.Ignore @JsName("queryChainList") val queryChain: List<String>,
@@ -27,6 +29,7 @@ data class Response(
  * What the clients of a node ask its solver (see ClientSolver), and what they are answered: the theory, the flags, the
  * goals ([RequireSolution], [RequireAnswer], [RequireEvaluation]) solved as the standard solver solves them
  */
+@ExperimentalArg2pApi
 sealed interface KbMessage
 
 /** To the solver: forget the theory */
@@ -67,6 +70,7 @@ internal data class RequireEvaluation(
  * the arguments for it, or the [error] that kept it from an answer
  */
 @JsExport
+@ExperimentalArg2pApi
 data class EvaluationResponse(
     @JsExport.Ignore @JsName("inArgsList") val inArgs: List<Response>,
     @JsExport.Ignore @JsName("outArgsList") val outArgs: List<Response>,

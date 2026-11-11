@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
 import java.net.InetAddress
@@ -20,6 +21,7 @@ import javax.net.ssl.SSLContext
  * once, and the page is then a secure context (what SharedArrayBuffer needs, see WebWorkerSolver). The JDK has no API to
  * make one: it is written here, in DER, as X.509 lays it out.
  */
+@ExperimentalArg2pApi
 object SelfSigned {
     // How long a certificate lasts, in days, from the day before it was made (the clocks of a phone and of this host may differ)
     private const val DAYS = 365L

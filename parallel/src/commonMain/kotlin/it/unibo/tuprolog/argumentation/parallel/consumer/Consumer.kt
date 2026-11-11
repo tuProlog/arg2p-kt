@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.consumer
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
@@ -27,6 +28,7 @@ import it.unibo.tuprolog.solve.Solver
  * [exploring]
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 data class ConsumerStart(
     val theory: String,
     val flags: String,
@@ -84,6 +86,7 @@ internal class ThreadLine(
  * solver of its own reaching its store through frames sent by [send]
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun runConsumerThread(
     inbox: Inbox,
     send: (String) -> Unit,
@@ -117,6 +120,7 @@ fun runConsumerThread(
  * handled by a solver of [flags] (see [ClientSolver], at most [parts] partitions), what it sends going by [send]
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun runSolverThread(
     inbox: Inbox,
     send: (String) -> Unit,

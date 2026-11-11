@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.NodeService
 import it.unibo.tuprolog.argumentation.parallel.ParallelNode
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
@@ -121,6 +122,7 @@ internal object FederationMethods {
  * be given, as `startWebWorker(nodeService)` in the script of its Web Workers
  */
 @JsExport
+@ExperimentalArg2pApi
 fun nodeService(
     node: dynamic,
     send: dynamic,

@@ -4,6 +4,7 @@ package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Answer
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Solutions
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.LABELLINGS
 import it.unibo.tuprolog.argumentation.core.libraries.arg2p.helpers.graphsOf
@@ -24,6 +25,7 @@ import it.unibo.tuprolog.solve.Solution as LogicSolution
  * of a resolution are not kept, the graph of the last one alone.
  */
 @JsExport
+@ExperimentalArg2pApi
 class GoalSolver internal constructor(
     private val node: NodeAccess,
     private val replies: Replies,

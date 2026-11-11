@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 
 /**
@@ -7,6 +8,7 @@ import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
  * handling fails is skipped, as an actor resumed on a failure does, and the transport goes on
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun handled(block: () -> Unit) {
     runCatching(block).onFailure(::report)
 }

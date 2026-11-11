@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.store
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphMark
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.GraphSharing
 import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.sharing.argumentConclusion
@@ -48,6 +49,7 @@ import it.unibo.tuprolog.core.List as LogicList
  * connection to it when it first asks; or, for solvers of a graph of another process ([remote]), each given the connection
  * it reaches that graph by ([join]).
  */
+@ExperimentalArg2pApi
 class SharedGraph private constructor(
     /** In query mode: the solvers explore a statement (see explore), their argument builders share nothing */
     val exploring: Boolean,

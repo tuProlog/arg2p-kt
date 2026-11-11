@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -9,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * The queues run on a pool of [threads] daemon threads, each queue on one thread at a time: a task that fails is
  * skipped, as an actor resumed on a failure does
  */
+@ExperimentalArg2pApi
 class PoolScheduler(
     threads: Int,
 ) : Scheduler,

@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.parallel.host.thisModule
 import it.unibo.tuprolog.argumentation.parallel.message.EvaluationResponse
@@ -15,6 +16,7 @@ import kotlin.js.Promise
  * it.
  */
 @JsExport
+@ExperimentalArg2pApi
 abstract class ThreadSolver internal constructor(
     /** The node of the parallel solver, for what stands on it (see the module federation) */
     @JsExport.Ignore val node: NodeProxy,
@@ -50,6 +52,7 @@ abstract class ThreadSolver internal constructor(
  * The threads keep Node.js running only while an evaluation is pending; [close] stops them.
  */
 @JsExport
+@ExperimentalArg2pApi
 class WorkerSolver(
     threads: Int,
     parts: Int? = null,

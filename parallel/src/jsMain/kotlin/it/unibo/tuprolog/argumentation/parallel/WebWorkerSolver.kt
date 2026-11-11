@@ -2,6 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.parallel
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import kotlin.js.JsExport
 
@@ -16,6 +17,7 @@ import kotlin.js.JsExport
  * localhost). On any other page the parallel solver solves alone, on the Web Worker of its node.
  */
 @JsExport
+@ExperimentalArg2pApi
 class WebWorkerSolver(
     threads: Int,
     worker: String,

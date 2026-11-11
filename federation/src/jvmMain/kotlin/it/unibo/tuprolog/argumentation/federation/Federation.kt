@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ThreadedSolver
 import java.net.InetAddress
@@ -18,6 +19,7 @@ import javax.net.ssl.SSLContext
  * to what each offers, if it [lends] (or else only the latter). The federation closes with the parallel solver, or before it
  * ([close]), the parallel solver going on alone.
  */
+@ExperimentalArg2pApi
 class Federation
     @JvmOverloads
     constructor(

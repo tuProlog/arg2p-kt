@@ -2,6 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.parallel
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import kotlin.js.JsExport
 
@@ -10,6 +11,7 @@ import kotlin.js.JsExport
  * answered. To build its graphs with other instances as well, see the module federation.
  */
 @JsExport
+@ExperimentalArg2pApi
 abstract class ParallelSolver internal constructor(
     // the node of the parallel solver, here or on another thread
     internal val access: NodeAccess,

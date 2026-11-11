@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.federation
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.ThreadSolver
 import it.unibo.tuprolog.argumentation.parallel.host.nodeModule
 import it.unibo.tuprolog.argumentation.parallel.onNode
@@ -18,6 +19,7 @@ import kotlin.js.Promise
  * In a browser, the script of the Web Workers of [parallel] calls `startWebWorker(nodeService)`.
  */
 @JsExport
+@ExperimentalArg2pApi
 class Federation(
     private val parallel: ThreadSolver,
     lends: Boolean = true,

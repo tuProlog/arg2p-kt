@@ -3,6 +3,7 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.runConsumerThread
@@ -115,6 +116,7 @@ private object Methods {
  * is told how to make it when it starts (see [startWebWorker]).
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 interface NodeService {
     fun received(text: String)
 
@@ -127,6 +129,7 @@ private fun workerThreads(): dynamic = nodeModule("worker_threads")
 
 /** Whether this runs on Node.js, rather than in a browser */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 fun onNode(): Boolean = js("typeof process !== 'undefined' && process.versions != null && process.versions.node != null") as Boolean
 
 // Whether this thread can share memory with those it spawns: a browser allows it to pages isolated across origins alone
@@ -241,6 +244,7 @@ private fun dataOf(
  * [service] makes what stands on the node, if anything may (see [NodeService]).
  */
 @JsExport
+@ExperimentalArg2pApi
 fun startWorkerThread(service: dynamic = null) {
     startThread(workerThreads().workerData, ParentThread(workerThreads().parentPort, node = true), service)
 }
@@ -251,6 +255,7 @@ fun startWorkerThread(service: dynamic = null) {
  * what stands on the node, if anything may (as nodeService, for a federation).
  */
 @JsExport
+@ExperimentalArg2pApi
 fun startWebWorker(service: dynamic = null) {
     val scope = js("self")
     scope.onmessage = { event: dynamic ->
@@ -409,6 +414,7 @@ private class ServedNode(
  * waited for.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class NodeProxy internal constructor(
     private val thread: SpawnedThread,
     /** The identifier of the node */

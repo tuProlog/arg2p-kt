@@ -7,6 +7,10 @@ sitemap:
   disable: true
 ---
 
+> [!WARNING]
+> **Experimental.** The constraints may change in a minor version of arg2p, unlike the rest of its API (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 ## Arguments for sets of values
 
 An argument concludes a ground statement: a rule whose conclusion keeps a variable that its premises leave unbound

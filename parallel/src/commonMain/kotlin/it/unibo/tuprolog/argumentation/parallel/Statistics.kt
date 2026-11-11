@@ -2,6 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.parallel
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
 import it.unibo.tuprolog.argumentation.parallel.message.TextWriter
 import kotlin.js.JsExport
@@ -17,6 +18,7 @@ import kotlin.js.JsName
  * evaluation took, in milliseconds (the construction of the graph included)
  */
 @JsExport
+@ExperimentalArg2pApi
 data class EvaluationStats(
     val locality: String,
     val arguments: Int,
@@ -35,6 +37,7 @@ data class EvaluationStats(
  * placed on), the arguments of its rules it built and the attacks it saved
  */
 @JsExport
+@ExperimentalArg2pApi
 data class WorkerStats(
     val partition: Int,
     val site: String,

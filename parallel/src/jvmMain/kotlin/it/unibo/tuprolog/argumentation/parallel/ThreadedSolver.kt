@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.runConsumerThread
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  * otherwise; the graph is labelled as the standard solver does with `flags`. With `textual`, the messages of the clients to
  * the solver are written as text and read again (see [it.unibo.tuprolog.argumentation.parallel.message.MessageCodec]).
  */
+@ExperimentalArg2pApi
 class ThreadedSolver private constructor(
     private val scheduler: PoolScheduler,
     /** The node of the parallel solver, for what stands on it (see the module federation) */

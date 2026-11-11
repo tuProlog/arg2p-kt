@@ -1,6 +1,7 @@
 package it.unibo.tuprolog.argumentation.parallel
 
 import it.unibo.tuprolog.argumentation.Arg2pException
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.ClientSolver
@@ -51,6 +52,7 @@ import kotlin.random.Random
  * running consumers of the last graph leaves, the graph fails and is built again with the hosts left.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 class ParallelNode(
     private val scheduler: Scheduler,
     /** The consumers of a graph this node offers: null for no limit */

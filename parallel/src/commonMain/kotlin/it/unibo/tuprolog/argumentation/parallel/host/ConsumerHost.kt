@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.parallel.host
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.argumentation.parallel.consumer.ConsumerStart
 import it.unibo.tuprolog.argumentation.parallel.message.TextReader
@@ -12,6 +13,7 @@ import it.unibo.tuprolog.argumentation.parallel.store.StoreProtocol
  * their graph through [HostFrame]s, as text, whatever carries them. No method waits.
  */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 interface ConsumerHost {
     /** Who it is, for the statistics */
     val id: String
@@ -34,6 +36,7 @@ interface ConsumerHost {
 
 /** The frames between the consumers of a graph and its store, and between a node and the threads it runs them on */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 sealed interface HostFrame {
     /** To a host: runs the consumer [consumer] of the graph of [session] */
     data class Start(
@@ -108,6 +111,7 @@ sealed interface HostFrame {
 
 /** The frames as text */
 @InternalArg2pApi
+@ExperimentalArg2pApi
 object HostCodec {
     fun encode(frame: HostFrame): String =
         TextWriter()

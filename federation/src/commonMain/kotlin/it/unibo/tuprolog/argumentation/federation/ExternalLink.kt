@@ -1,5 +1,6 @@
 package it.unibo.tuprolog.argumentation.federation
 
+import it.unibo.tuprolog.argumentation.ExperimentalArg2pApi
 import kotlin.js.JsExport
 
 /**
@@ -9,6 +10,7 @@ import kotlin.js.JsExport
  * other side is, if known.
  */
 @JsExport
+@ExperimentalArg2pApi
 class ExternalLink(
     private val sendFrame: (String) -> Unit,
     private val closeLink: () -> Unit,

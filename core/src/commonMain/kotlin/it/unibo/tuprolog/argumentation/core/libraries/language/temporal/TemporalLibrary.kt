@@ -19,6 +19,8 @@ import it.unibo.tuprolog.argumentation.core.libraries.language.temporal.prolog.T
  * while an earlier one still holds is no new start. A statement of the theory on U at a time (`-holdsAt(U, 7)`) attacks
  * the periods containing it there alone: the graph extension constraints, which the axioms require, splits each into
  * the piece at that time and those around it.
+ *
+ * Experimental (see ExperimentalArg2pApi): its notation and what it concludes may change in a minor version.
  */
 object TemporalLibrary : PrologLibrary("temporal") {
     override val baseFlags: Iterable<ArgsFlag>

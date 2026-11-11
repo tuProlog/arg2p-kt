@@ -23,3 +23,20 @@ Everything arg2p exposes, by the way it is used:
 The [Causality]({{% ref "/docs/modules/causality" %}}) and [Actor solver]({{% ref "/docs/modules/actor-solver" %}})
 pages describe the predicates of the two solvers built on arg2p, and the
 [Parallel solver]({{% ref "/docs/modules/parallel" %}}) page the classes of the parallel one.
+
+## Stability
+
+From 1.0.0 arg2p follows semantic versioning: what a theory, a goal or a program uses changes in a way that breaks
+it only in a new major version. The spellings of the versions before 1.0.0 are still read (see
+[theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}})).
+
+Some parts are **experimental**: they may change in a minor version, as they settle.
+
+- the [parallel solver]({{% ref "/docs/modules/parallel" %}}) and its [federation]({{% ref "/docs/modules/parallel#federation" %}});
+- the profiles of [ABA]({{% ref "/docs/profiles#aba" %}}), `aba` and `abaPlus` (with `graphLanguage(abaLanguage)` and
+  `graphExtension(abaPref)`);
+- the [constraints]({{% ref "/docs/modules/constraints" %}}) and the axioms of [time]({{% ref "/docs/modules/temporal" %}}).
+
+In Kotlin their classes and values are marked `@ExperimentalArg2pApi`: a program using them opts in
+(`@OptIn(ExperimentalArg2pApi::class)`, or the compiler option `-opt-in=it.unibo.tuprolog.argumentation.ExperimentalArg2pApi`),
+and is warned otherwise.
