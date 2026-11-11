@@ -7,7 +7,7 @@ run through JPype, on the Java runtime the package bundles.
     ['a']
 """
 
-from .arg2p import Answer, Arg2p, Arg2pError, Builder, Causality, Solution, Solutions, SyntaxProblem
+from .arg2p import Answer, Arg2p, Arg2pError, Builder, Solution, Solutions, SyntaxProblem
 from .flags import (
     AnswerMode,
     ConflictModel,
@@ -23,15 +23,14 @@ from .flags import (
 )
 from .model import Argument, Attack, CompactGraph, Graph, LabelledArgument, Support
 from .parallel import (
-    ClusterSolver,
+    GoalSolver,
     EvaluationResponse,
     EvaluationStats,
+    Federation,
     FederationStats,
-    LocalCluster,
-    NearbySite,
     Response,
     SiteStats,
-    ThreadedCluster,
+    ThreadedSolver,
     WorkerStats,
 )
 from .recorded import page
@@ -50,12 +49,12 @@ __all__ = [
     "Argument",
     "Attack",
     "Builder",
-    "Causality",
     "CompactGraph",
-    "ClusterSolver",
+    "GoalSolver",
     "ConflictModel",
     "EvaluationResponse",
     "EvaluationStats",
+    "Federation",
     "FederationStats",
     "Flags",
     "Graph",
@@ -63,8 +62,6 @@ __all__ = [
     "GraphExtension",
     "GraphLanguage",
     "LabelledArgument",
-    "LocalCluster",
-    "NearbySite",
     "OrderingComparator",
     "OrderingPrinciple",
     "Profile",
@@ -77,7 +74,7 @@ __all__ = [
     "Struct",
     "Support",
     "SyntaxProblem",
-    "ThreadedCluster",
+    "ThreadedSolver",
     "Value",
     "Var",
     "WorkerStats",

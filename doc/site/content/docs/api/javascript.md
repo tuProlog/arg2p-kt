@@ -9,8 +9,8 @@ aliases:
 
 The npm package `@tuprolog/arg2p` exposes the [API of arg2p]({{% ref "/docs/api/kotlin" %}}) to JavaScript, as it is
 in Kotlin: a solver for a theory (`Arg2p`), its flags (`Flags`, with an enumeration for the values of each), its
-answers, graphs and solutions, the values of Prolog terms (`Value`), the causality tests, and the clusters of the
-[parallel solver]({{% ref "/docs/modules/parallel-solver" %}}). Nothing of tuProlog is needed.
+answers, graphs and solutions, the values of Prolog terms (`Value`), the causality tests, and the parallel solvers of the
+[parallel solver]({{% ref "/docs/modules/parallel" %}}). Nothing of tuProlog is needed.
 
 ```json
 {
@@ -119,7 +119,7 @@ For a graph too large for the objects of `graphs()`, `compactGraphs()` and `comp
 in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
 `attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
 an argument as a graph does, `argument(p)` makes the object of one and `toGraph()` the objects of all. It holds no reference to the solver.
-`compactGraphAt(branch)` gives the graph of a branch, and the solver of a cluster has `compactGraphs()` and `compactGraph()` as well.
+`compactGraphAt(branch)` gives the graph of a branch, and the client solver has `compactGraphs()` and `compactGraph()` as well.
 
 ## Prolog goals
 
@@ -155,37 +155,40 @@ optimize the code of the solvers: the first solves take many times the later one
 
 ## Causality
 
-Every solver tests causality on its theory ([causality]({{% ref "/docs/modules/causality" %}})): `ness(cause, effect)`
-and `nessOriginal(cause, effect)` give the intervention showing a cause NESS (null if it is not one),
-`nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` and `butFor(cause,
-effect)` whether they hold.
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
 
 ```js
-const causality = Arg2p.of('r1 :=> a.\nr2 : a => b.').causality
-String(causality.ness('a', 'b'))   // [-a]
-causality.butFor('a', 'b')         // true
+const arg2p = Arg2p.of('r1 :=> a.\nr2 : a => b.')
+arg2p.solve('causality::ness(X, a, b)').next().text('X')   // [- a]: no solution if a is not a NESS cause of b
+arg2p.solve('causality::butFor(a, b)').next().isYes        // true
 ```
 
 ---
 
 ## The parallel solver
 
-The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) are solvers of arg2p as well: the
-`solver` of a `WorkerCluster` (Node.js) or a `WebWorkerCluster` (browsers) solves any goal with the workers of the
-cluster and of its federation, its solutions, answers and graphs promised in the types above; `stats` tells what the
-federation does.
+The parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}) are solvers of arg2p as well: the
+`goals` of a `ThreadedSolver` (Node.js) or a `WebWorkerSolver` (browsers) solves any goal with the threads of the
+parallel solver and of its federation, its solutions, answers and graphs promised in the types above. Nothing of the parallel solver runs on
+the calling thread. In a browser its threads share memory only on a page
+[isolated across origins]({{% ref "/docs/modules/parallel#isolation" %}}): on any other page it solves on one thread alone.
 
 ```js
-const cluster = new WebWorkerCluster(4, '/arg2p-worker.js')
-cluster.load(theory)
-const solutions = await cluster.solver.solve('arg2p::solve(In, Out, Und)')
+const parallel = new WebWorkerSolver(4, '/arg2p-worker.js')
+parallel.load(theory)
+const solutions = await parallel.goals.solve('arg2p::solve(In, Out, Und)')
 const solution = await solutions.next()
 solution.text('In')                 // as for Arg2p
-cluster.solver.graph()              // the Graph of the solution
-cluster.stats.evaluation?.workers   // what each worker built
-cluster.solver.stop()               // the goal being solved stopped: its next solution a halt
-cluster.flags = Flags.defaults().queryMode(false)   // for the next evaluations
-await cluster.connect('ws://hub-host:9431', '4831')  // presenting the code of an instance requiring one
+parallel.goals.graph()              // the Graph of the solution
+parallel.evaluation?.workers         // what each consumer of the graph built
+parallel.goals.stop()               // the goal being solved stopped: its next solution a halt
+parallel.flags = Flags.defaults().queryMode(false)   // for the next evaluations
+await parallel.close()               // its threads stopped, the evaluations pending rejected
+
+// with other instances (the script of the Web Workers calling startWebWorker(nodeService))
+const federation = new Federation(parallel)
+await federation.connect('wss://hub-host:9431', '4831')  // presenting the code of an instance requiring one
+federation.stats.sites              // the sites it knows
 ```
 
 ---
@@ -205,7 +208,7 @@ before them a single object, `JsBridge`. Their replacements:
 | `graph.arguments[i].id`, `.label` | `graph.labellings[i].argument.identifier`, `graph.labellings[i].label` |
 | `attack.from`, `attack.to`, `attack.on` (identifiers) | `attack.attacker`, `attack.target`, `attack.on` (arguments) |
 | `JsArg2p.activeBranch(solver)`, `JsArg2p.contextFacts(solver, b, g)` | `solver.activeBranch`, `solver.contextFacts(b, g)` |
-| `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.causality.ness('a', 'b')` |
+| `.module(JsCausality.module())`, then `causality::ness(X, a, b)` | `solver.solve('causality::ness(X, a, b)')` |
 | `JsTerms.parse(text)`, `JsTerms.format(term)` | `Value.parse(text)`, `String(value)` |
 | `require('@tuprolog/arg2p').it.unibo.tuprolog.argumentation...` | `import { ... } from '@tuprolog/arg2p'` |
 | `JsBridge.solve(query, theory, flags, output)` | `Arg2p.builder()...build().solve(query)` |

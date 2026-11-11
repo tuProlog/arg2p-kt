@@ -430,11 +430,11 @@ internal class McpServer(
         private const val THEORY =
             "The theory, in the language of arg2p: rules `r1 : bird(X) => flies(X).` (defeasible) and `r2 : a -> b.` " +
                 "(strict), premises `f1 :=> bird(tweety).`, axioms `f2 :-> a.`, preferences `sup(r1, r2).`, negation " +
-                "`-flies(X)`, Prolog clauses. Its profile, `graphBuildMode(aspic_plus).` (the default), `aspic`, " +
-                "`aspic_defeasible`, `meta`, `aba` (assumption/1, contrary/2, strict rules), `aba_plus`, `abstract` " +
+                "`-flies(X)`, Prolog clauses. Its profile, `graphBuildMode(aspicPlus).` (the default), `aspic`, " +
+                "`aspicDefeasible`, `meta`, `aba` (assumption/1, contrary/2, strict rules), `abaPlus`, `abstract` " +
                 "(arguments `a.`, attacks `a -> b.`, `a <-> b.`) or `free`, tells the framework it is read in."
         private const val FLAGS =
-            "The flags, as Prolog facts: argumentLabellingMode(grounded|complete|preferred|stable|semistable|ideal|" +
+            "The flags, as Prolog facts: argumentLabellingMode(grounded|complete|preferred|stable|semiStable|ideal|" +
                 "eager|naive|stage|cf2|stage2|...), statementLabellingMode(statement), queryMode, graphBuildMode(...), " +
                 "... Default: grounded semantics, standard statement labelling, query mode."
         private const val TIMEOUT = "How long to wait, in seconds (default $DEFAULT_TIMEOUT, at most $MAX_TIMEOUT)"

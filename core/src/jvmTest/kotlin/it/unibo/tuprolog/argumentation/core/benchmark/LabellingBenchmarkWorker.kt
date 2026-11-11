@@ -29,12 +29,12 @@ object LabellingBenchmarkWorker {
             "complete",
             "preferred",
             "stable",
-            "semistable",
+            "semiStable",
             "ideal",
             "eager",
-            "conflictfree",
+            "conflictFree",
             "admissible",
-            "stronglyadmissible",
+            "stronglyAdmissible",
             "naive",
             "stage",
             "cf2",
@@ -93,12 +93,12 @@ object LabellingBenchmarkWorker {
     // the phases of the structured pipeline (as WarmJvmTest)
     private val PHASES =
         listOf(
-            "convert" to "context_reset, parser:::convertAllRules(_)",
+            "convert" to "contextReset, store::rulesRead",
             "arguments" to "ruleGraph:::buildArguments",
             "attacks" to "ruleGraph:::buildAttacks",
-            "extensions" to "structuredWhole:::modifyGraph",
-            "labelling" to "structuredWhole:::buildArgumentLabelling",
-            "statements" to "structuredWhole:::buildStatementLabelling",
+            "extensions" to "pipeline:::modifyGraph",
+            "labelling" to "pipeline:::buildArgumentLabelling",
+            "statements" to "pipeline:::buildStatementLabelling",
         )
 
     private fun configuration(semantics: String) =
@@ -136,7 +136,7 @@ object LabellingBenchmarkWorker {
                                 solver
                                     .solve(
                                         Struct.parse(
-                                            "findall(A, context_check(argument(A)), As), findall(T, graphStore::attack(T, _, _, _), Ts)",
+                                            "findall(A, contextCheck(argument(A)), As), findall(T, store::attack(T, _, _, _), Ts)",
                                             solver.operators,
                                         ),
                                     ).first()

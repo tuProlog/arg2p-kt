@@ -15,7 +15,7 @@ fun isNessOriginalIntervention(
     effect: String,
     outcome: Boolean = true,
     reset: Boolean = true,
-) = check(solver, "ness_original_intervention", listOf(intervention, effect), outcome, reset)
+) = check(solver, "nessOriginalIntervention", listOf(intervention, effect), outcome, reset)
 
 fun isNessOriginalCause(
     solver: MutableSolver,
@@ -23,7 +23,7 @@ fun isNessOriginalCause(
     effect: String,
     outcome: Boolean = true,
     reset: Boolean = true,
-) = check(solver, "ness_original", listOf(null, cause, effect), outcome, reset)
+) = check(solver, "nessOriginal", listOf(null, cause, effect), outcome, reset)
 
 fun isNessIntervention(
     solver: MutableSolver,
@@ -31,7 +31,7 @@ fun isNessIntervention(
     effect: String,
     outcome: Boolean = true,
     reset: Boolean = true,
-) = check(solver, "ness_intervention", listOf(intervention, effect), outcome, reset)
+) = check(solver, "nessIntervention", listOf(intervention, effect), outcome, reset)
 
 fun isNessCause(
     solver: MutableSolver,
@@ -47,7 +47,7 @@ fun isButForCause(
     effect: String,
     outcome: Boolean = true,
     reset: Boolean = true,
-) = check(solver, "but_for", listOf(cause, effect), outcome, reset)
+) = check(solver, "butFor", listOf(cause, effect), outcome, reset)
 
 // The predicate on the arguments (null for a variable, the intervention found), after a reset of the context if reset
 private fun check(
@@ -58,5 +58,5 @@ private fun check(
     reset: Boolean,
 ) = arg2pScope {
     val goal = Struct.of(predicate, arguments.map { it?.let { Term.parse(it) } ?: X })
-    assertEquals(outcome, solver.solve(if (reset) "context_reset" and goal else goal).first().isYes, "$goal")
+    assertEquals(outcome, solver.solve(if (reset) "contextReset" and goal else goal).first().isYes, "$goal")
 }

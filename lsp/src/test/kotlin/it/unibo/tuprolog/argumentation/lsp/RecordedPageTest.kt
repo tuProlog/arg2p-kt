@@ -28,7 +28,7 @@ class RecordedPageTest {
 
     @Test
     fun thePageEmbedsTheSolutionsWithTheirGraphsAndTheSettings() {
-        val page = RecordedPage.page(tweety, "buildLabelSets(In, Out, Und)", grounded)
+        val page = RecordedPage.page(tweety, "solve(In, Out, Und)", grounded)
         val recording = recordingOf(page)
         assertEquals(tweety, recording.get("theory").asString)
         assertEquals(grounded, recording.get("flags").asString)
@@ -47,14 +47,14 @@ class RecordedPageTest {
             solution.getAsJsonObject("graph").getAsJsonArray("arguments").associate {
                 it.asJsonObject.get("conclusion").asString to it.asJsonObject.get("label").asString
             }
-        assertEquals("in", labels.getValue("-flies(tweety)"))
+        assertEquals("in", labels.getValue("- flies(tweety)"))
         assertEquals("out", labels.getValue("flies(tweety)"))
         val settings = recording.getAsJsonObject("settings")
         assertEquals("grounded", settings.getAsJsonArray("argumentLabellingMode")[0].asString)
         assertFalse(recording.get("more").asBoolean)
         assertFalse(recording.get("timedOut").asBoolean)
-        assertTrue(page.contains("<title>Arg2P · buildLabelSets(In, Out, Und)</title>"))
-        assertTrue(page.contains(Playground.link(tweety, "buildLabelSets(In, Out, Und)", grounded)))
+        assertTrue(page.contains("<title>Arg2P · solve(In, Out, Und)</title>"))
+        assertTrue(page.contains(Playground.link(tweety, "solve(In, Out, Und)", grounded)))
     }
 
     @Test
@@ -85,7 +85,7 @@ class RecordedPageTest {
     @Test
     fun theSolutionsPastTheMostAskedForAreLeftOutAndTold() {
         val theory = "r1 :=> a.\nr2 :=> -a.\n"
-        val page = RecordedPage.page(theory, "buildLabelSets(In, Out, Und)", "argumentLabellingMode(complete).", maxSolutions = 2)
+        val page = RecordedPage.page(theory, "solve(In, Out, Und)", "argumentLabellingMode(complete).", maxSolutions = 2)
         val recording = recordingOf(page)
         assertEquals(2, recording.solutions().size)
         assertTrue(recording.get("more").asBoolean)

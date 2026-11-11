@@ -9,9 +9,13 @@ sitemap:
 
 ## The axioms of time
 
+> [!WARNING]
+> **Experimental.** The axioms of time may change in any minor version of arg2p (see
+> [stability]({{% ref "/docs/api#stability" %}})).
+
 With the flag `temporal`, a theory states what happens and what it starts or ends, and Arg2P concludes when each
 fact holds: the event calculus of Kowalski and Sergot (1986), as defeasible rules concluding what holds for the
-times of a period (see [Constraints]({{% ref "/docs/modules/constraints" %}}), on with the flag).
+times of a period (see [Constraints]({{% ref "/docs/modules/constraints" %}}): the axioms turn the extension on).
 
 ```prolog
 temporal.
@@ -45,8 +49,9 @@ of a period containing it.
 Everything is defeasible: an event, a start or an end can be attacked like any premise or rule, and the periods
 follow. An end that is defeated ends nothing, and the period goes on to the next end.
 
-A statement of the theory on a fact at a time attacks the periods containing it, and their instances for that time
-alone:
+A statement of the theory on a fact at a time attacks the periods containing it, and splits them into pieces at that
+time (see [Constraints]({{% ref "/docs/modules/constraints" %}})): the piece at that time is attacked, those before
+and after are not.
 
 ```prolog
 c1 :=> -holdsAt(f, 7).
@@ -84,12 +89,12 @@ other rule.
 
 | Rule | Concludes |
 | --- | --- |
-| `t_start(E, U, T)`, `t_stop(E, U, T)`, `t_ends(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of what conflicts with it) |
-| `t_after(U, T1)` | `holdsAt(U, T)` with `{T > T1}` |
-| `t_before(E, U, T2)` | `holdsAt(U, T)` with `{T =< T2}` |
-| `t_period(U, T1, T2)` | `holdsAt(U, T)` with `{T > T1, T =< T2}` |
-| `t_broken`, `t_closes`, `t_opens` | undercut a period with an end in between, the period after a start with an end after it, the period before an end with a start before it |
-| `t_already`, `t_still` | undercut a start while the fact still holds, unless it ended in between |
+| `tStart(E, U, T)`, `tStop(E, U, T)`, `tEnds(E, U, T)` | `started(U, T)`, `ended(U, T)` (an end of `U`, or a start of what conflicts with it) |
+| `tAfter(U, T1)` | `holdsAt(U, T)` with `{T > T1}` |
+| `tBefore(E, U, T2)` | `holdsAt(U, T)` with `{T =< T2}` |
+| `tPeriod(U, T1, T2)` | `holdsAt(U, T)` with `{T > T1, T =< T2}` |
+| `tBroken`, `tCloses`, `tOpens` | undercut a period with an end in between, the period after a start with an end after it, the period before an end with a start before it |
+| `tAlready`, `tStill` | undercut a start while the fact still holds, unless it ended in between |
 
 A `prolog/1` check on a time needs a number: write it after the premise binding the time (`happens(thirst, T)`
 above), as a period leaves its times open.

@@ -128,7 +128,7 @@ A graph is made of plain data classes (package `it.unibo.tuprolog.argumentation.
 | `Attack` | `attacker`, `target`, the attack `type` and the attacked sub-argument `on` |
 | `Support` | `supporter` and `supported` |
 
-Attack types are `rebut`, `contrary_rebut`, `undermine`, `contrary_undermine` and `undercut`, plus `pref` (an
+Attack types are `rebut`, `contraryRebut`, `undermine`, `contraryUndermine` and `undercut`, plus `pref` (an
 attack of a preference, with `defeasiblePref` and `defeasibleAllPref`), `bprebut` (with `bp`) and `abstract` (an
 attack of an abstract framework).
 
@@ -148,7 +148,7 @@ For a graph too large for the objects of `graphs()`, `compactGraphs()` and `comp
 in `texts`, and `rules`, `groundings`, `defeasibleRules`, `defeasiblePremises` and `lastDefeasibleRules` are lists for each (`of(p)`);
 `attackers`, `targets`, `on` and `attackTypeOf` are parallel, as `supporters` and `supported`. `identifier(p)` and `descriptor(p)` name
 an argument as a graph does, `argument(p)` makes the object of one and `toGraph()` the objects of all. It holds no reference to the solver.
-`compactGraphAt(branch)` gives the graph of a branch, and the solver of a cluster has `compactGraphs()` and `compactGraph()` as well.
+`compactGraphAt(branch)` gives the graph of a branch, and the client solver has `compactGraphs()` and `compactGraph()` as well.
 
 ## Prolog goals and values
 
@@ -169,23 +169,20 @@ for (solution in Arg2p.of().solve("member(X, [a, f(-b)])")) {
 
 ## Causality
 
-`causality` tests causality on the theory of a solver (see [causality]({{% ref "/docs/modules/causality" %}})):
+Every solver has the [causality]({{% ref "/docs/modules/causality" %}}) module: its tests are goals like any other.
 
 ```kotlin
-val causality = Arg2p.of("r1 :=> a.\nr2 : a => b.").causality
-causality.ness("a", "b")      // [-a], the intervention: null if a is not a NESS cause of b
-causality.butFor("a", "b")    // true
+val arg2p = Arg2p.of("r1 :=> a.\nr2 : a => b.")
+arg2p.solve("causality::ness(X, a, b)").next().text("X")   // [- a], the intervention: no solution if a is not a NESS cause of b
+arg2p.solve("causality::butFor(a, b)").next().isYes        // true
 ```
-
-`nessOriginal` is the NESS test as published, `nessIntervention` and `nessOriginalIntervention` whether a given
-intervention meets the condition.
 
 ---
 
 ## The parallel solver
 
-The clusters of the [parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) take the same `Flags`:
-`LocalCluster(parts, flags)` on every platform, `ThreadedCluster(threads, parts, flags)` on the JVM.
+The parallel solvers of the [parallel solver]({{% ref "/docs/modules/parallel" %}}) take the same `Flags`:
+`ThreadedSolver(threads, parts, flags)` on the JVM, and `Federation(parallel solver)` to build its graphs with other instances.
 
 ---
 
@@ -197,7 +194,7 @@ Arg2P runs on its own engine, a fork of the one of 2P-Kt shipped with the core (
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
@@ -212,9 +209,9 @@ The flags library (see [below](#adding-the-flags-library)) sets the flags of the
 makes the hooks a theory may leave undefined (`conflict/2`, `sup/2`, ...) fail quietly, rather than with a warning
 each time they are called.
 
-The aggregate artifact `arg2p` (`arg2p-jvm` on the JVM), bundling the causality solver, has the same libraries with the
-[causality]({{% ref "/docs/modules/causality" %}}) module as well: `Arg2pLibrary.get()` (package
-`it.unibo.tuprolog.argumentation`), and `Arg2pLibrary.version()` is the version of Arg2P.
+The [causality]({{% ref "/docs/modules/causality" %}}) module is one more library:
+`Arg2pSolver.default(dynamicLibs = listOf(CausalityLibrary()))` (package `it.unibo.tuprolog.argumentation.causality`, in
+the `causality-solver` artifact, which the aggregate artifact `arg2p` bundles). `Arg2p.version()` is the version of Arg2P.
 
 You can then use any predicate of the [Prolog interface]({{% ref "/docs/api/engine" %}}):
 
@@ -228,7 +225,7 @@ it cannot be parsed without them.
 ### Parsing a theory
 
 Arg2P adds operators (`=>`, `:=>`, `:->`, `:`) that a plain parser does not know, so theories must be parsed
-with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.runtime.theory`)
+with the Arg2P operator set. `RuleAnnotations.parse` (package `it.unibo.tuprolog.argumentation.core.libraries.framework.parser.helpers`)
 does it, and tags the clauses with the identifiers of their comments as well, which
 [plain Prolog theories]({{% ref "/docs/syntax#theories-in-plain-prolog" %}}) need:
 
@@ -250,10 +247,10 @@ val solver = Arg2pPrologSolverFactory.mutableSolverWithDefaultBuiltins(
 )
 ```
 
-The libraries also run on the solver of 2P-Kt (`PrologSolverFactory`, from its `solve-prolog` package, not a
-dependency of Arg2P), where module calls go through a slower path. That solver loses bindings a goal left to
-solve still needs (a bug the engine of Arg2P fixes), unless it tracks every variable: set
-`TrackVariables.ON` in its flags, besides `Unknown.FAIL`.
+The libraries also run on the solver of 2P-Kt 4 (`PrologSolverFactory`, from its `solve-prolog` package, not a
+dependency of Arg2P), with `Unknown.FAIL` in its flags as above: module calls go through a slower path there, and the
+same theory takes far longer and allocates far more than on the engine of Arg2P (`TuPrologEngineBenchmark` in the
+core compares them).
 
 ---
 
@@ -263,7 +260,7 @@ After running a query on your own solver, the computed graph can be read back as
 `graph()` extension:
 
 ```kotlin
-import it.unibo.tuprolog.argumentation.core.model.mining.graph
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.graph
 
 solver.solve(Struct.parse("arg2p::solve", solver.operators)).first()
 val graph = solver.graph()

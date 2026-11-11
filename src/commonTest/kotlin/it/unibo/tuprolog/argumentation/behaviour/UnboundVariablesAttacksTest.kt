@@ -21,7 +21,7 @@ class UnboundVariablesAttacksTest {
         query: String? = null,
     ): Map<String, Set<String>> =
         solver(groundedTheory + theory + (if (query != null) "\nqueryMode." else "")).let { solver ->
-            solver.solve(if (query != null) "answerQuery($query)" else "buildLabelSets").next()
+            solver.solve(if (query != null) "solve($query)" else "solve").next()
             solver
                 .graph()
                 .labellings
@@ -97,17 +97,18 @@ class UnboundVariablesAttacksTest {
             assertTrue("r" !in it, "An argument with top rule r in $it")
         }
 
+    // r stands for b(X) for every X, u rebuts it at z: r and its piece at z are out, its piece for the other values in
     @Test
     fun rebutWithUnboundTarget() =
         labels(unboundRebutTheory).let {
             assertLabel(it, "u", "in")
-            assertLabel(it, "r", "out")
+            assertEquals(setOf("in", "out"), it["r"], "Wrong labels for the arguments with top rule r")
         }
 
     @Test
     fun rebutWithUnboundTargetInQueryMode() =
         labels(unboundRebutTheory, "b(X)").let {
             assertLabel(it, "u", "in")
-            assertLabel(it, "r", "out")
+            assertEquals(setOf("in", "out"), it["r"], "Wrong labels for the arguments with top rule r")
         }
 }

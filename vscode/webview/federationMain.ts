@@ -55,8 +55,12 @@ style.textContent = `
     input:focus {
         outline: 1px solid var(--vscode-focusBorder);
     }
-    .name {
+    .name,
+    .address {
         width: 100%;
+    }
+    .address {
+        margin-bottom: 4px;
     }
     .pin {
         width: 5em;

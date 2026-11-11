@@ -2,7 +2,7 @@
 
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.model.terms.LabelTerm
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.LabelTerm
 import it.unibo.tuprolog.core.Struct
 import kotlin.js.JsExport
 

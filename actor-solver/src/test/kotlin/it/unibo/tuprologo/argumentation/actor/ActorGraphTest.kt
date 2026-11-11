@@ -1,7 +1,7 @@
 package it.unibo.tuprologo.argumentation.actor
 
 import it.unibo.tuprolog.argumentation.Flags
-import it.unibo.tuprolog.argumentation.actor.libs.ActorGraph
+import it.unibo.tuprolog.argumentation.actor.libraries.actorGraph.ActorGraph
 import it.unibo.tuprolog.argumentation.core.Arg2pSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
@@ -20,7 +20,7 @@ class ActorGraphTest {
     ) {
         private val solver =
             Arg2pSolverFactory.default(theory, Flags.defaults().library(), dynamicLibs = listOf(ActorGraph)).also {
-                it.solve(Struct.parse("context_reset, parser:::convertAllRules", it.operators)).first()
+                it.solve(Struct.parse("contextReset", it.operators)).first()
             }
 
         fun holds(goal: String): Boolean = solver.solve(Struct.parse(goal, solver.operators)).first().isYes
@@ -50,8 +50,8 @@ class ActorGraphTest {
             listOf("[[r2, r1], r2, [c], [b], [[r2], [r2], [r1]]]"),
             module.values("actorGraph::buildArgument(c, A, _)", "A"),
         )
-        assertTrue(module.holds("actorGraph::buildArgument(c, A, _), context_check(argument(A))"))
-        assertEquals(listOf("b"), module.values("actorGraph::buildArgument(c, _, S), member(A, S), argument::claim(A, C)", "C"))
+        assertTrue(module.holds("actorGraph::buildArgument(c, A, _), contextCheck(argument(A))"))
+        assertEquals(listOf("b"), module.values("actorGraph::buildArgument(c, _, S), member(A, S), store::claim(A, C)", "C"))
     }
 
     @Test
@@ -59,11 +59,11 @@ class ActorGraphTest {
         val module = module()
         val target = module.value("actorGraph::buildArgument(c, A, _)", "A")!!
         val subArguments = module.value("actorGraph::buildArgument(c, _, S)", "S")!!
-        val attackers = module.values("actorGraph::findAttacker($target, $subArguments, [], B, _, yes), argument::claim(B, C)", "C")
+        val attackers = module.values("actorGraph::findAttacker($target, $subArguments, [], B, _, yes), store::claim(B, C)", "C")
         // the undercut of the rule of c, and the undermining of b: a premise is not undercut
         assertEquals(setOf("undercut(r2)", "'-'(b)"), attackers.toSet())
         assertEquals(2, attackers.size)
-        assertTrue(module.holds("graphStore::attack(undermine, B, $target, _), argument::claim(B, '-'(b))"))
+        assertTrue(module.holds("store::attack(undermine, B, $target, _), store::claim(B, '-'(b))"))
     }
 
     @Test
@@ -71,7 +71,7 @@ class ActorGraphTest {
         val module = module()
         val target = module.value("actorGraph::buildArgument(c, A, _)", "A")!!
         val subArguments = module.value("actorGraph::buildArgument(c, _, S)", "S")!!
-        val query = "actorGraph::findAttacker($target, $subArguments, [], B, _, yes), argument::claim(B, C)"
+        val query = "actorGraph::findAttacker($target, $subArguments, [], B, _, yes), store::claim(B, C)"
         assertEquals(module.values(query, "C"), module.values(query, "C"))
     }
 
@@ -82,7 +82,7 @@ class ActorGraphTest {
         val subArguments = builder.value("actorGraph::buildArgument(c, _, S)", "S")!!
         // a solver without the rules of the argument
         val module = module("r4 :=> -b.\nr5 :=> undercut(r1).")
-        val attackers = module.values("actorGraph::findAttacker($target, $subArguments, [], B, _, yes), argument::claim(B, C)", "C")
+        val attackers = module.values("actorGraph::findAttacker($target, $subArguments, [], B, _, yes), store::claim(B, C)", "C")
         assertEquals(listOf("'-'(b)"), attackers)
     }
 

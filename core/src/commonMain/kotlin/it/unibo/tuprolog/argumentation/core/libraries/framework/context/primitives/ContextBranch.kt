@@ -1,0 +1,19 @@
+package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives
+
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.intArg
+import it.unibo.tuprolog.solve.Signature
+
+/** contextBranch(+From, ?Branch): a new branch of From, made active, only made if its identifier unifies with Branch */
+internal class ContextBranch(
+    private val branches: ContextBranches,
+) : AbstractNativePrimitive(Signature("contextBranch", 2)) {
+    override fun call(call: NativeCall): Int {
+        val from = call.intArg(0, signature).toInt()
+        if (branches.storeOf(from) == null || !call.unify(call.arg(1), call.int(branches.nextBranch))) return NativeCall.FAIL
+        branches.branch(from)
+        return NativeCall.CONTINUE
+    }
+}

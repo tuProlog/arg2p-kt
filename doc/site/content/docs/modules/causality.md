@@ -17,26 +17,19 @@ It is available as the Maven module `causality-solver`. It is also bundled in th
 
 ## From the API
 
-Every solver of the [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) tests causality on its theory, through its
-`causality`, one method for each predicate below, the statements given as Prolog text:
+Every solver of the [API of Arg2P]({{% ref "/docs/api/kotlin" %}}) has the module: the [predicates](#predicates)
+below are goals like any other, in Kotlin, [JavaScript]({{% ref "/docs/api/javascript" %}}) and
+[Python]({{% ref "/docs/api/python" %}}):
 
 ```kotlin
 import it.unibo.tuprolog.argumentation.Arg2p
 
-val causality = Arg2p.of("r_0 : exposure => disease.\nf_1 :=> exposure.").causality
-causality.ness("exposure", "disease")      // the intervention, [-exposure]: null if it is not a NESS cause
-causality.butFor("exposure", "disease")    // true
+val arg2p = Arg2p.of("r_0 : exposure => disease.\nf_1 :=> exposure.")
+arg2p.solve("causality::ness(X, exposure, disease)").next().text("X")   // [- exposure]: no solution if not a NESS cause
+arg2p.solve("causality::butFor(exposure, disease)").next().isYes       // true
 ```
 
-| Method | Predicate |
-| --- | --- |
-| `butFor(cause, effect)` | `but_for/2` |
-| `ness(cause, effect)`, `nessOriginal(cause, effect)` | `ness/3`, `ness_original/3`: the intervention, or null |
-| `nessIntervention(intervention, effect)`, `nessOriginalIntervention(intervention, effect)` | `ness_intervention/2`, `ness_original_intervention/2` |
-
-The same methods are in [JavaScript]({{% ref "/docs/api/javascript" %}}) and, in snake case (`but_for`,
-`ness_original`, ...), in [Python]({{% ref "/docs/api/python" %}}). Each test starts from a reset context, as the
-others before it left nothing behind.
+A test answers as on a fresh solver, whatever the solver did before it.
 
 ---
 
@@ -67,18 +60,18 @@ All predicates live in the `causality` module, and are called through the `causa
 
 | Predicate | Meaning |
 | --- | --- |
-| `but_for(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. |
+| `butFor(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. |
 | `ness(Intervention, Cause, Effect)` | The NESS test, revised model. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. `Intervention` **must be unbound**: it is bound to the intervention under which the cause is necessary for the effect. |
-| `ness_intervention(Intervention, Effect)` | Checks the revised NESS condition for an intervention you provide. |
-| `ness_original(Intervention, Cause, Effect)` | The published formulation of the NESS test. `Intervention` must be unbound. |
-| `ness_original_intervention(Intervention, Effect)` | The published formulation, on a given intervention. |
+| `nessIntervention(Intervention, Effect)` | Checks the revised NESS condition for an intervention you provide. |
+| `nessOriginal(Intervention, Cause, Effect)` | The published formulation of the NESS test. `Intervention` must be unbound. |
+| `nessOriginalIntervention(Intervention, Effect)` | The published formulation, on a given intervention. |
 
-`ness_original/3` and `ness_original_intervention/2` implement the model of Pisano, Prakken, Sartor and
-Liepina (ICAIL 2025); `ness/3` and `ness_intervention/2` implement a revision to appear at ICAIL 2026. See
+`nessOriginal/3` and `nessOriginalIntervention/2` implement the model of Pisano, Prakken, Sartor and
+Liepina (ICAIL 2025); `ness/3` and `nessIntervention/2` implement a revision to appear at ICAIL 2026. See
 [References]({{% ref "/docs/references" %}}).
 
 > [!WARNING]
-> `ness/3` and `ness_original/3` raise a type error if their first argument is already bound. Always pass a
+> `ness/3` and `nessOriginal/3` raise a type error if their first argument is already bound. Always pass a
 > fresh variable and read the intervention back from the solution.
 
 ---
@@ -124,7 +117,7 @@ r_2 : fire_b => house_burns.
 [Try it](https://tuprolog.github.io/arg2p-kt-web/?mode=structured&theory=f_1%20%3A%3D%3E%20fire_a.%0Af_2%20%3A%3D%3E%20fire_b.%0Ar_1%20%3A%20fire_a%20%3D%3E%20house_burns.%0Ar_2%20%3A%20fire_b%20%3D%3E%20house_burns.&query=causality%3A%3Aness%28X%2C%20fire_a%2C%20house_burns%29)
 — the playground bundles the causality module, so the query runs there as it does on the JVM.
 
-`but_for(fire_a, house_burns)` fails: removing `fire_a` leaves `fire_b`, and the house burns anyway.
+`butFor(fire_a, house_burns)` fails: removing `fire_a` leaves `fire_b`, and the house burns anyway.
 `ness(X, fire_a, house_burns)` succeeds and binds `X` to the intervention it applied, here `[- fire_a]`: the
 intervention negates the candidate cause, and the test reports the set under which that cause turns out to be
 necessary for the effect.
@@ -136,8 +129,8 @@ necessary for the effect.
 - The causality solver runs its own inner evaluation with grounded semantics, whatever `argumentLabellingMode`
   says. The other flags are those of the outer solver, whether its settings or the theory state them (as
   `graphExtension`, `prologStrictCompatibility` or `metaConflicts`).
-- `ness/3` and `but_for/2` only name accepted causes: a statement no argument concludes (the absence `-d` of a
-  fact `d` never stated, say) or a rule identifier is not a cause for them, though `ness_original/3` may report
+- `ness/3` and `butFor/2` only name accepted causes: a statement no argument concludes (the absence `-d` of a
+  fact `d` never stated, say) or a rule identifier is not a cause for them, though `nessOriginal/3` may report
   it as one.
 - Graphs computed during a causality query are cached, so repeated queries against the same theory and effect
   are considerably faster than the first one.

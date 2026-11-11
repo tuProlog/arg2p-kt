@@ -45,14 +45,14 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
                 type: 'solve',
                 id: 1,
                 theory: 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).',
-                query: 'buildLabelSets(In, Out, Und), write(done)',
+                query: 'solve(In, Out, Und), write(done)',
                 flags: 'queryMode.',
             })),
             ...(await engine('one', { type: 'next', id: 1 })),
         ];
         const solution = answers.find(it => it.type === 'solution');
         equal(solution?.solution.result, 'yes', JSON.stringify(answers));
-        equal(solution.solution.graph.profile, 'aspic_plus');
+        equal(solution.solution.graph.profile, 'aspicPlus');
         ok(solution.solution.graph.arguments.length >= 3);
         ok(answers.some(it => it.type === 'output' && it.id === 1 && it.text.includes('done')), JSON.stringify(answers));
         // the run 1 of a session is not that of another
@@ -66,7 +66,7 @@ describe.skipIf(server === null)('The language server, through JSON-RPC', functi
     it('should solve a query in parallel as it does on its own, and tell its federation', async function () {
         const labels = async (session: string, parallel: boolean) => {
             const theory = 'f1 :=> bird(tweety).\nr1 : bird(X) => flies(X).\nf2 :=> -flies(tweety).';
-            await engine(session, { type: 'solve', id: 1, theory, query: 'buildLabelSets', flags: 'queryMode.', parallel });
+            await engine(session, { type: 'solve', id: 1, theory, query: 'solve', flags: 'queryMode.', parallel });
             const answer = (await engine(session, { type: 'next', id: 1 })).find(it => it.type === 'solution');
             return answer.solution.graph.arguments.map((it: { conclusion: string; label: string }) => `${it.conclusion} ${it.label}`).sort();
         };

@@ -1,0 +1,99 @@
+{
+  "name": "@tuprolog/arg2p-ui",
+  "version": "0.25.2",
+  "description": "The user interface of Arg2P as web components (graphs, solutions, ...), on any engine: the solver of the browser, or one of the JVM",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
+  "author": "Giuseppe Pisano",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuProlog/arg2p-kt.git",
+    "directory": "ui"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./solver": {
+      "types": "./dist/components/arg2p-solver.d.ts",
+      "import": "./dist/components/arg2p-solver.js"
+    },
+    "./solver.bundle": {
+      "types": "./dist/components/arg2p-solver.d.ts",
+      "import": "./dist/bundle/solver.js"
+    },
+    "./graph": {
+      "types": "./dist/components/arg2p-graph.d.ts",
+      "import": "./dist/components/arg2p-graph.js"
+    },
+    "./framework": {
+      "types": "./dist/components/arg2p-framework.d.ts",
+      "import": "./dist/components/arg2p-framework.js"
+    },
+    "./solutions": {
+      "types": "./dist/components/arg2p-solutions.d.ts",
+      "import": "./dist/components/arg2p-solutions.js"
+    },
+    "./editor": {
+      "types": "./dist/components/arg2p-editor.d.ts",
+      "import": "./dist/components/arg2p-editor.js"
+    },
+    "./flags": {
+      "types": "./dist/components/arg2p-flags.d.ts",
+      "import": "./dist/components/arg2p-flags.js"
+    },
+    "./data": {
+      "types": "./dist/data.d.ts",
+      "import": "./dist/data.js"
+    },
+    "./js": {
+      "types": "./dist/js/index.d.ts",
+      "import": "./dist/js/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/components/*.js",
+    "./dist/bundle/*.js"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && vite build --config vite.bundle.config.ts",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@tuprolog/arg2p": ">=0.25.0"
+  },
+  "peerDependenciesMeta": {
+    "@tuprolog/arg2p": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/lint": "6.9.7",
+    "@codemirror/search": "6.7.2",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "@lezer/highlight": "1.2.5",
+    "cytoscape": "3.34.4",
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "@tuprolog/arg2p": "file:../build/packages/js",
+    "happy-dom": "21.0.4",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  }
+}

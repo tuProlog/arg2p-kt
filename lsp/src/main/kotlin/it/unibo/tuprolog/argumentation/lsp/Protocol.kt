@@ -34,9 +34,9 @@ internal interface Arg2pService {
     @JsonRequest
     fun federation(): CompletableFuture<FederationState>
 
-    /** The site paired with the site { site, code } nearby, presenting its code: an error if it refuses it */
-    @JsonRequest("federation/pair")
-    fun pair(params: JsonObject?): CompletableFuture<FederationState>
+    /** The site linked to the one at { url, code }, presenting its code (none if they paired): an error if it refuses it */
+    @JsonRequest("federation/connect")
+    fun connect(params: JsonObject?): CompletableFuture<FederationState>
 
     /** A new code of the site, the one before refused from now on */
     @JsonRequest("federation/newCode")

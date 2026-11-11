@@ -1,14 +1,14 @@
 package it.unibo.tuprolog.argumentation.behaviour
 
-import it.unibo.tuprolog.argumentation.behaviour.Behaviour.answerQuery
-import it.unibo.tuprolog.argumentation.behaviour.Behaviour.buildLabelSets
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.queryLabels
 import it.unibo.tuprolog.argumentation.behaviour.Behaviour.solver
+import it.unibo.tuprolog.argumentation.behaviour.Behaviour.theoryLabels
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class RationalityTest {
     // The plain and restricted variants of Caminada's examples show what goes wrong without transposition, which the
-    // profile aspic_plus (the default) turns on
+    // profile aspicPlus (the default) turns on
     private companion object {
         const val NOT_TRANSPOSED = "autoTransposition(off).\n"
     }
@@ -89,11 +89,11 @@ class RationalityTest {
         val prepare = { term: String -> "[$term]" }
         val parse = { args: Iterable<String> -> args.map { prepare(it) }.joinToString(",", "[", "]") }
 
-        argsIn.forEach { answerQuery("$theory\nqueryMode.", it, "[$it]", "[]", "[]") }
-        argsOut.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[$it]", "[]") }
-        argsUnd.forEach { answerQuery("$theory\nqueryMode.", it, "[]", "[]", "[$it]") }
+        argsIn.forEach { queryLabels("$theory\nqueryMode.", it, "[$it]", "[]", "[]") }
+        argsOut.forEach { queryLabels("$theory\nqueryMode.", it, "[]", "[$it]", "[]") }
+        argsUnd.forEach { queryLabels("$theory\nqueryMode.", it, "[]", "[]", "[$it]") }
 
-        buildLabelSets(theory, parse(argsIn), parse(argsOut), parse(argsUnd))
+        theoryLabels(theory, parse(argsIn), parse(argsOut), parse(argsUnd))
     }
 
     @Test
@@ -209,7 +209,7 @@ class RationalityTest {
                     argumentLabellingMode(complete).
                     autoTransposition.
                     """.trimIndent(),
-            ).solve("buildLabelSets")
+            ).solve("solve")
                 .toList()
                 .count { it.isYes },
         )
@@ -223,7 +223,7 @@ class RationalityTest {
                     autoTransposition.
                     graphExtension(rebutRestriction).
                     """.trimIndent(),
-            ).solve("buildLabelSets")
+            ).solve("solve")
                 .toList()
                 .count { it.isYes },
         )

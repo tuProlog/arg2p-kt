@@ -92,9 +92,9 @@
             <p id="status" role="status">Loading the solver...</p>
         </main>
         <script type="module">
-            // The phone as a site of the federation of the editor serving this page: a WebWorkerCluster of
-            // @tuprolog/arg2p (the version of the editor, which a site checks), its workers on Web Workers (worker.js,
-            // served next to this page), linked to the editor over the WebSocket of the port of this page
+            // The phone as a site of the federation of the editor serving this page: a WebWorkerSolver of
+            // @tuprolog/arg2p (the version of the editor, which a site checks) on Web Workers (worker.js, served next to
+            // this page), federated with the editor over the WebSocket of the port of this page
             const MODULE = '{{module}}';
             const form = document.getElementById('join');
             const input = document.getElementById('code');
@@ -105,24 +105,30 @@
                 status.className = error ? 'error' : '';
             };
 
-            // One Web Worker less than the processors, at most 4: a phone has little memory to spare
+            // One Web Worker less than the processors, at most 4, to lend: a phone has little memory to spare
             const threads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency ?? 2) - 1));
-            const editor = `ws://${location.host}`;
-            let cluster = null;
+            const editor = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+            let parallel = null;
+            let federation = null;
 
-            // What the phone lends, once linked: the sites it is federated with, its Web Workers apart
-            const linked = () => (cluster === null ? [] : [...cluster.stats.sites].slice(1).filter(site => !site.delegate));
+            // What the phone lends, once linked: the sites it is federated with
+            const linked = () => (federation === null ? [] : [...federation.stats.sites].slice(1));
             const shown = () => {
                 const sites = linked();
                 if (sites.length > 0) tell(`Connected: lending ${threads} worker${threads === 1 ? '' : 's'} to ${sites.length} site${sites.length === 1 ? '' : 's'}. Keep this page open.`);
-                else if (cluster !== null) tell('Disconnected from the editor: type its code again to join.', true);
+                else if (federation !== null) tell('Disconnected from the editor: type its code again to join.', true);
             };
 
             let arg2p;
             try {
                 arg2p = await import(MODULE);
-                button.disabled = false;
-                tell('Type the code of the editor.');
+                // (with no memory to share, as on a page not over HTTPS, its Web Workers cannot wait for the others)
+                if (self.crossOriginIsolated) {
+                    button.disabled = false;
+                    tell('Type the code of the editor.');
+                } else {
+                    tell('This page cannot lend its workers: open the link the editor shows, over HTTPS.', true);
+                }
             } catch (error) {
                 tell(`The solver could not be loaded (${MODULE}): ${error.message ?? error}`, true);
             }
@@ -133,25 +139,19 @@
                 if (!/^[0-9]{4}$/.test(code)) return tell('The code is 4 digits.', true);
                 button.disabled = true;
                 tell('Joining...');
-                cluster?.close();
-                cluster = new arg2p.WebWorkerCluster(threads, new URL('worker.js', location.href).href);
+                parallel?.close();
+                // (one more than those it lends: the solver of this site)
+                parallel = new arg2p.WebWorkerSolver(threads + 1, new URL('worker.js', location.href).href);
+                federation = new arg2p.Federation(parallel);
                 try {
-                    await cluster.connect(editor, code);
-                    // a wrong code: the editor closes the link before it greets the phone
-                    const deadline = Date.now() + 5000;
-                    while (linked().length === 0 && Date.now() < deadline) await new Promise(done => setTimeout(done, 100));
-                    if (linked().length === 0) {
-                        cluster.close();
-                        cluster = null;
-                        tell('Refused: check the code (after a few wrong ones, wait a while before trying again).', true);
-                    } else {
-                        cluster.onPeersChanged = shown;
-                        shown();
-                    }
+                    await federation.connect(editor, code);
+                    federation.onPeersChanged = shown;
+                    shown();
                 } catch (error) {
-                    cluster.close();
-                    cluster = null;
-                    tell(`The editor could not be reached (${editor}): ${error.message ?? error}`, true);
+                    parallel.close();
+                    parallel = null;
+                    federation = null;
+                    tell(`Not linked: ${error.message ?? error}. Check the code (after a few wrong ones, wait a while before trying again).`, true);
                 } finally {
                     button.disabled = false;
                 }

@@ -1,6 +1,6 @@
-"""The parallel solver of arg2p: clusters of workers, run in turn (LocalCluster) or on the threads of the JVM
-(ThreadedCluster), federated with other clusters (of the JVM, of Node.js, of browsers) over WebSockets, by address or
-found on the local network."""
+"""The parallel solver of arg2p: parallel solvers on the threads of the JVM (ThreadedSolver), building the graph of a theory
+with solvers of its parts, and what federates them with other parallel solvers (of the JVM, of Node.js, of browsers) over
+WebSockets (Federation)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ from .arg2p import Answer, Solutions, answer_from_jvm, call
 from .flags import Flags
 from .model import CompactGraph, Graph, graph_from_jvm
 
-_CLUSTER = "it.unibo.tuprolog.argumentation.parallel.cluster"
+_PARALLEL = "it.unibo.tuprolog.argumentation.parallel"
+_FEDERATION = "it.unibo.tuprolog.argumentation.federation"
 
 
 @dataclass(frozen=True)
@@ -51,21 +52,16 @@ def _response(response: Any) -> EvaluationResponse:
 
 @dataclass(frozen=True)
 class SiteStats:
-    """
-    A site of a federation: its identifier, the workers it offers (None for no limit, or for a site reached through
-    another), whether it is a delegate of the site knowing it (one of its threads), and the site through which it is
-    reached (via: None for the site itself and those linked to it).
-    """
+    """A site of a federation: its identifier, its name (empty if it has none), and the consumers it offers (None for no limit)."""
 
     id: str
+    name: str
     workers: Optional[int]
-    delegate: bool
-    via: Optional[str]
 
 
 @dataclass(frozen=True)
 class WorkerStats:
-    """A worker of a graph: its partition of the theory, the site that ran it, the arguments it built, the attacks on them."""
+    """A consumer of a graph: its partition of the theory, the site that ran it, the arguments it built, the attacks it saved."""
 
     partition: int
     site: str
@@ -76,9 +72,10 @@ class WorkerStats:
 @dataclass(frozen=True)
 class EvaluationStats:
     """
-    An evaluation answered by the catalog of a site: the part of the graph it was answered on (directional or connected
-    in query mode, whole_graph otherwise), the arguments and the attacks of the graph labelled, the arguments the workers
-    built for it, what each worker built, and how long it took, in milliseconds.
+    An evaluation answered by the solver of a site: the part of the graph it was answered on (directional or connected
+    in query mode, wholeGraph otherwise, alone for a graph the solver builds alone), the arguments and the attacks of
+    the graph labelled, the arguments the consumers built for it, what each consumer built, and how long it took, in
+    milliseconds.
     """
 
     locality: str
@@ -90,68 +87,46 @@ class EvaluationStats:
 
 
 @dataclass(frozen=True)
-class NearbySite:
-    """
-    A site heard on the local network: its identifier, its name (the name of its host, or the one it was given), its
-    address (ws://host:port), and whether it requires a code of the sites linking to it (it waits to be paired).
-    """
-
-    id: str
-    name: str
-    address: str
-    requires_code: bool
-
-
-@dataclass(frozen=True)
 class FederationStats:
     """
-    What a federation does, as one of its sites knows it: the sites it knows (itself first), its last evaluation, and
-    the sites heard on the local network that are not its peers.
+    A federation, as one of its sites knows it: the sites it knows, itself first.
     """
 
     site: str
     sites: list[SiteStats]
-    evaluation: Optional[EvaluationStats]
-    nearby: list[NearbySite] = field(default_factory=list)
-
-
-def _nearby(of: Any) -> NearbySite:
-    return NearbySite(str(of.getId()), str(of.getName()), str(of.getAddress()), bool(of.getRequiresCode()))
 
 
 def _stats(stats: Any) -> FederationStats:
     def site(of: Any) -> SiteStats:
-        workers, via = of.getWorkers(), of.getVia()
-        delegate = bool(of.getDelegate())
-        return SiteStats(str(of.getId()), None if workers is None else int(workers), delegate, None if via is None else str(via))
+        workers = of.getWorkers()
+        return SiteStats(str(of.getId()), str(of.getName()), None if workers is None else int(workers))
 
+    return FederationStats(str(stats.getSite()), [site(it) for it in stats.getSites()])
+
+
+def _evaluation(evaluation: Any) -> Optional[EvaluationStats]:
     def worker(of: Any) -> WorkerStats:
         return WorkerStats(int(of.getPartition()), str(of.getSite()), int(of.getArguments()), int(of.getAttacks()))
 
-    evaluation = stats.getEvaluation()
-    return FederationStats(
-        str(stats.getSite()),
-        [site(it) for it in stats.getSites()],
-        None
-        if evaluation is None
-        else EvaluationStats(
-            str(evaluation.getLocality()),
-            int(evaluation.getArguments()),
-            int(evaluation.getAttacks()),
-            int(evaluation.getAdded()),
-            [worker(it) for it in evaluation.getWorkers()],
-            float(evaluation.getMilliseconds()),
-        ),
-        [_nearby(it) for it in stats.getNearby()],
+    if evaluation is None:
+        return None
+    return EvaluationStats(
+        str(evaluation.getLocality()),
+        int(evaluation.getArguments()),
+        int(evaluation.getAttacks()),
+        int(evaluation.getAdded()),
+        [worker(it) for it in evaluation.getWorkers()],
+        float(evaluation.getMilliseconds()),
     )
 
 
-class ClusterSolver:
+class GoalSolver:
     """
-    A cluster as a solver of arg2p, as Arg2p is one, on the theory and the flags of the cluster: any goal solved as the
+    A parallel solver as a solver of arg2p, as Arg2p is one, on the theory and the flags of the parallel solver: any goal solved as the
     standard solver solves it, one solution at a time, with the graph of each, and the answers of queries. The graph a
-    goal needs is built by the workers of the cluster and of the sites it is federated with (in query mode, the part the
-    statements it evaluates depend on); the stages of a resolution are not kept, the graph of the last one alone.
+    goal needs is built by consumers on the threads of the parallel solver and of the sites it is federated with (in query mode,
+    the part the statements it evaluates depend on); the stages of a resolution are not kept, the graph of the last one
+    alone.
     """
 
     def __init__(self, solver: Any) -> None:
@@ -179,7 +154,7 @@ class ClusterSolver:
 
     def compact_graph(self) -> CompactGraph:
         """The graph of the last solution given as arrays (see CompactGraph)."""
-        return CompactGraph(self._solver.compactGraph())
+        return call(lambda: CompactGraph(self._solver.compactGraph()))
 
     def output(self, consumer: Callable[[str], Any]) -> None:
         """Gives what the solver prints to [consumer], as the solutions are given (the standard output otherwise)."""
@@ -188,7 +163,7 @@ class ClusterSolver:
     def stop(self) -> None:
         """
         Stops the goal being solved, from another thread: its solution waited for is a halt, at once ("The evaluation
-        was stopped"), and the work of the cluster for it is given up; nothing is done if no goal is being solved.
+        was stopped"), and the work of the parallel solver for it is given up; nothing is done if no goal is being solved.
         """
         self._solver.stop()
 
@@ -206,71 +181,59 @@ def _parts(parts: Optional[int]) -> Any:
     return None if parts is None else _jvm.jclass("java.lang.Integer").valueOf(parts)
 
 
-class _Cluster:
-    """What every cluster does: its theory, its flags, its evaluations, its solver and its statistics."""
+class _Solver:
+    """What every parallel solver does: its theory, its flags, its evaluations, its solver."""
 
-    _cluster: Any
+    _parallel: Any
 
     def load(self, theory: str) -> None:
         """Replaces the theory with [theory], as Prolog text."""
-        call(lambda: self._cluster.load(theory))
+        call(lambda: self._parallel.load(theory))
 
     def add(self, clause: str) -> None:
         """Adds [clause], as Prolog text, to the theory."""
-        call(lambda: self._cluster.add(clause))
+        call(lambda: self._parallel.add(clause))
 
     def reset(self) -> None:
         """Forgets the theory."""
-        call(self._cluster.reset)
+        call(self._parallel.reset)
 
     def solve(self, statement: str) -> EvaluationResponse:
         """The statements answering [statement], as Prolog text, by label, each with the arguments for it (Arg2pError for one that is not a statement)."""
-        return call(lambda: _response(self._cluster.solve(statement)))
+        return call(lambda: _response(self._parallel.solve(statement)))
 
     @property
-    def solver(self) -> ClusterSolver:
-        """The cluster as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries."""
-        return ClusterSolver(self._cluster.getSolver())
+    def goals(self) -> GoalSolver:
+        """The parallel solver as a solver of arg2p: any goal, its solutions and their graphs, the answers of queries."""
+        return GoalSolver(self._parallel.getGoals())
 
     @property
-    def stats(self) -> FederationStats:
-        """What the federation does, as the cluster knows it: the sites, and the last evaluation it answered."""
-        return _stats(self._cluster.getStats())
+    def evaluation(self) -> Optional[EvaluationStats]:
+        """The last evaluation the parallel solver answered, None before the first."""
+        return _evaluation(self._parallel.getEvaluation())
 
     @property
     def flags(self) -> Flags:
         """
         The flags of the solver, the initial ones those given: those set apply from the next evaluation on, the graph
-        built anew, the links and the peers of the cluster kept.
+        built anew.
         """
-        return Flags(self._cluster.getFlags())
+        return Flags(self._parallel.getFlags())
 
     @flags.setter
     def flags(self, flags: Flags) -> None:
-        call(lambda: self._cluster.setFlags(flags.jvm()))
+        call(lambda: self._parallel.setFlags(flags.jvm()))
 
 
-class LocalCluster(_Cluster):
+class ThreadedSolver(_Solver):
     """
-    A distributed solver whose nodes run in turn, on the thread of the caller: the same messages as on a cluster, in a
-    deterministic order. The theory is split into at most [parts] partitions if given, one for each group of rules
-    supporting one another otherwise; the graph is labelled as the standard solver does with [flags].
-    """
+    Experimental: it may change in a minor version of arg2p.
 
-    def __init__(self, parts: Optional[int] = None, flags: Optional[Flags] = None) -> None:
-        arguments = _arguments(_parts(parts), flags and flags.jvm(), defaults=(None, None))
-        self._cluster = call(lambda: _jvm.jclass(f"{_CLUSTER}.LocalCluster")(*arguments))
-
-
-
-class ThreadedCluster(_Cluster):
-    """
-    A distributed solver on the threads of the JVM: each node handles its messages one at a time, the nodes in parallel
-    on [threads] threads (as many as the processors by default). The theory is split into at most [parts] partitions
-    if given, as many as the workers of the cluster and of the sites it is federated with otherwise; the graph is
-    labelled as the standard solver does with [flags]. With query mode (the default) the graph is built on the
-    arguments the statements evaluated depend on, as the standard solver builds it. [lends] tells whether the cluster
-    lends its workers to the others (it does by default).
+    A distributed solver on the threads of the JVM (as many as the processors by default): the solver of its theory and
+    the solvers of the parts of the theory build the graph together. The theory is split into at most [parts] partitions
+    if given, as many as the consumers it can run otherwise; the graph is labelled as the standard solver does with
+    [flags]. With query mode (the default) the graph is built on the arguments the statements evaluated depend on, as the
+    standard solver builds it.
     """
 
     def __init__(
@@ -278,92 +241,100 @@ class ThreadedCluster(_Cluster):
         threads: Optional[int] = None,
         parts: Optional[int] = None,
         flags: Optional[Flags] = None,
-        lends: Optional[bool] = None,
     ) -> None:
-        cluster = _jvm.jclass(f"{_CLUSTER}.ThreadedCluster")
-        # the constructor takes (threads, parts, flags, textual, lends): textual is for the tests of the JVM alone
+        parallel = _jvm.jclass(f"{_PARALLEL}.ThreadedSolver")
         arguments = _arguments(
             threads,
             _parts(parts),
             flags and flags.jvm(),
-            None,
-            lends,
-            defaults=(cluster.getProcessors(), None, Flags.defaults().jvm(), False, None),
+            defaults=(parallel.getProcessors(), None, Flags.defaults().jvm()),
         )
-        self._cluster = call(lambda: cluster(*arguments))
+        self._parallel = call(lambda: parallel(*arguments))
 
     @property
     def id(self) -> str:
-        """The identifier of the site of the cluster, as the others know it."""
-        return str(self._cluster.getId())
-
-    @property
-    def peers(self) -> set[str]:
-        """The sites the cluster is federated with."""
-        return {str(peer) for peer in self._cluster.getPeers()}
-
-    def listen(self, port: int = 0, host: str = "0.0.0.0") -> int:
-        """Accepts the links of other sites over WebSockets, on [port] of [host] (an ephemeral port for 0): the port."""
-        return int(call(lambda: self._cluster.listen(port, host)))
-
-    def discover(self, require_code: bool = False) -> None:
-        """
-        Federates the cluster with the clusters of the local network that discover the others as well; with
-        [require_code], the clusters heard are nearby alone, linked to once paired by hand (see pair).
-        """
-        port = _jvm.jclass("it.unibo.tuprolog.argumentation.parallel.federation.Beacons").PORT
-        call(lambda: self._cluster.discover(port, require_code))
-
-    def connect(self, uri: str, code: Optional[str] = None) -> None:
-        """Federates the cluster with the site listening at [uri] (ws://host:port), presenting [code] if it requires one."""
-        call(lambda: self._cluster.connect(uri, code))
-
-    @property
-    def name(self) -> str:
-        """The name of the cluster, as its beacons tell the clusters nearby: the name of its host by default."""
-        return str(self._cluster.getName())
-
-    @name.setter
-    def name(self, name: str) -> None:
-        self._cluster.setName(name)
-
-    @property
-    def requires_code(self) -> bool:
-        """Whether the clusters linking to this one must present its code, or a pairing made with it."""
-        return bool(self._cluster.getRequiresCode())
-
-    @requires_code.setter
-    def requires_code(self, required: bool) -> None:
-        self._cluster.setRequiresCode(required)
-
-    @property
-    def code(self) -> str:
-        """The code the clusters linking to this one present, if it requires one: four digits, random."""
-        return str(self._cluster.getCode())
-
-    def new_code(self) -> str:
-        """A new code, the one before refused from now on (the pairings made stay)."""
-        return str(self._cluster.newCode())
-
-    @property
-    def nearby(self) -> list[NearbySite]:
-        """The clusters heard on the local network, not linked to this one."""
-        return [_nearby(it) for it in self._cluster.getNearby()]
-
-    def pair(self, site: str, code: str) -> None:
-        """
-        Links this cluster to [site], nearby, presenting [code]: the two paired, linked again with no code while they
-        run (Arg2pError if it refuses the code).
-        """
-        call(lambda: self._cluster.pair(site, code))
-
+        """The identifier of the parallel solver."""
+        return str(self._parallel.getId())
 
     def close(self) -> None:
-        """Closes the links to the other sites, and stops the threads."""
-        call(self._cluster.close)
+        """Stops the threads, and closes the federation of the parallel solver, if it has one."""
+        call(self._parallel.close)
 
-    def __enter__(self) -> ThreadedCluster:
+    def __enter__(self) -> ThreadedSolver:
         return self
 
     def __exit__(self, *_: Any) -> None:
         self.close()
+
+
+class Federation:
+    """
+    Experimental: it may change in a minor version of arg2p.
+
+    [parallel] federated with others, of the JVM, of Node.js or of browsers: it runs consumers of the graphs of the others
+    if it [lends] (it does by default), and places the consumers of its graphs on them. It closes with the parallel solver, or
+    before it (close), the parallel solver going on alone.
+    """
+
+    def __init__(self, parallel: ThreadedSolver, lends: bool = True) -> None:
+        federation = _jvm.jclass(f"{_FEDERATION}.Federation")
+        self._parallel = parallel
+        self._federation = call(lambda: federation(parallel._parallel, lends))
+
+    @property
+    def id(self) -> str:
+        """The identifier of the site of the parallel solver, as the others know it."""
+        return self._parallel.id
+
+    @property
+    def peers(self) -> set[str]:
+        """The sites the parallel solver is federated with."""
+        return {str(peer) for peer in self._federation.getPeers()}
+
+    @property
+    def stats(self) -> FederationStats:
+        """The federation, as the parallel solver knows it: the sites."""
+        return _stats(self._federation.getStats())
+
+    def listen(self, port: int = 0, host: str = "0.0.0.0") -> int:
+        """Accepts the links of other sites over WebSockets, on [port] of [host] (an ephemeral port for 0): the port."""
+        return int(call(lambda: self._federation.listen(port, host)))
+
+    def connect(self, url: str, code: Optional[str] = None) -> None:
+        """
+        Federates the parallel solver with the site listening at [url] (ws://host:port), once it admits this one: presenting
+        [code] if it requires one, the two paired then, and linked again to the same address with no code while they run
+        (Arg2pError if it refuses the code, or is not there).
+        """
+        call(lambda: self._federation.connect(url, code))
+
+    @property
+    def name(self) -> str:
+        """The name of the site, as its peers are told: the name of its host by default."""
+        return str(self._federation.getName())
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self._federation.setName(name)
+
+    @property
+    def requires_code(self) -> bool:
+        """Whether the parallel solvers linking to this one must present its code, or a pairing made with it."""
+        return bool(self._federation.getRequiresCode())
+
+    @requires_code.setter
+    def requires_code(self, required: bool) -> None:
+        self._federation.setRequiresCode(required)
+
+    @property
+    def code(self) -> str:
+        """The code the parallel solvers linking to this one present, if it requires one: four digits, random."""
+        return str(self._federation.getCode())
+
+    def new_code(self) -> str:
+        """A new code, the one before refused from now on (the pairings made stay)."""
+        return str(self._federation.newCode())
+
+    def close(self) -> None:
+        """Closes the links to the other sites: the parallel solver goes on, alone."""
+        call(self._federation.close)

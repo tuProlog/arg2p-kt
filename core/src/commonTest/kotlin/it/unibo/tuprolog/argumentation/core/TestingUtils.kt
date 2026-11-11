@@ -12,15 +12,15 @@ import it.unibo.tuprolog.solve.MutableSolver
 import it.unibo.tuprolog.solve.Solution
 import it.unibo.tuprolog.solve.SolveOptions
 import it.unibo.tuprolog.solve.Solver
-import it.unibo.tuprolog.solve.TimeDuration
 import it.unibo.tuprolog.solve.assertSolutionEquals
 import it.unibo.tuprolog.solve.yes
 import it.unibo.tuprolog.theory.parsing.parse
+import kotlin.time.Duration
 import it.unibo.tuprolog.solve.Solver as BaseSolver
 
 object TestingUtils {
-    private val duration: TimeDuration
-        get() = Long.MAX_VALUE
+    private val duration: Duration
+        get() = Duration.INFINITE
 
     fun solver() = solverWithTheory("")
 
@@ -59,7 +59,7 @@ object TestingUtils {
         }
     }
 
-    fun buildLabelSets(
+    fun theoryLabels(
         theory: String,
         argsIn: String,
         argsOut: String,
@@ -68,7 +68,7 @@ object TestingUtils {
         logicProgramming {
             solverWithTheory(theory).also { solver ->
                 testGoalNoBacktracking(
-                    "buildLabelSets"("StatIn", "StatOut", "StatUnd"),
+                    "solve"("StatIn", "StatOut", "StatUnd"),
                     solver,
                 ) {
                     it.yes(
@@ -85,12 +85,12 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            solver.solve("graphStore" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
+            solver.solve("store" call "saveArgument"("test", logicList(Term.parse(it.conclusion)), it.termRepresentation())).first()
         }
         graph.attacks.forEach {
             solver
                 .solve(
-                    "graphStore" call
+                    "store" call
                         "saveAttack"(
                             it.type ?: "none",
                             it.attacker.termRepresentation(),
@@ -100,7 +100,7 @@ object TestingUtils {
                 ).first()
         }
         graph.supports.forEach {
-            solver.solve("graphStore" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
+            solver.solve("store" call "saveSupport"(it.supporter.termRepresentation(), it.supported.termRepresentation())).first()
         }
     }
 
@@ -109,7 +109,7 @@ object TestingUtils {
         labellings: Iterable<LabelledArgument>,
     ) = arg2pScope {
         labellings.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
     }
 
@@ -118,14 +118,14 @@ object TestingUtils {
         graph: Graph,
     ) = arg2pScope {
         graph.arguments.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
         // the attacks as the graph store reads them, extended to the arguments built on the attacked ones
         graph.attacks.forEach {
-            testYesGoal("graphStore" call it.toTerm(), solver)
+            testYesGoal("store" call it.toTerm(), solver)
         }
         graph.supports.forEach {
-            testYesGoal("context_check"(it.toTerm()), solver)
+            testYesGoal("contextCheck"(it.toTerm()), solver)
         }
     }
 }

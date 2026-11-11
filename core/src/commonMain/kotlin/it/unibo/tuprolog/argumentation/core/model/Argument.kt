@@ -2,10 +2,10 @@
 
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.core.model.terms.ArgumentTerm
-import it.unibo.tuprolog.argumentation.core.model.terms.StatementTerm
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
-import it.unibo.tuprolog.core.Struct
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.ArgumentTerm
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StatementTerm
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.StoreSchema
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.parsing.parse
 import kotlin.js.JsExport
@@ -28,7 +28,19 @@ data class Argument(
     @JsExport.Ignore val lastDefeasibleRules: List<RuleIdentifier> = emptyList(),
     private val term: Term? = null,
 ) {
-    override fun hashCode(): Int = term?.hashCode() ?: (31 * rules.hashCode() + conclusion.hashCode())
+    // (equal by what the argument is, whatever term it was read from: the argument of a compact graph, which has none,
+    // equals the one read from the context)
+    override fun equals(other: Any?): Boolean =
+        other is Argument &&
+            rules == other.rules &&
+            topRule == other.topRule &&
+            conclusion == other.conclusion &&
+            groundings == other.groundings &&
+            defeasibleRules == other.defeasibleRules &&
+            defeasiblePremises == other.defeasiblePremises &&
+            lastDefeasibleRules == other.lastDefeasibleRules
+
+    override fun hashCode(): Int = 31 * rules.hashCode() + conclusion.hashCode()
 
     var identifier: String = ""
 
@@ -72,7 +84,7 @@ data class Argument(
 
     /** The argument as the context keeps it, argument(Argument) */
     @JsExport.Ignore
-    fun toTerm(): Term = Struct.of("argument", termRepresentation())
+    fun toTerm(): Term = StoreSchema.argument(termRepresentation())
 
     companion object {
         /** The argument of [term], the term of an argument (see [ArgumentTerm]) */

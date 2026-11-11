@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>arg2p-ui demo</title>
+        <style>
+            body {
+                margin: 0;
+                font-family: system-ui, sans-serif;
+                display: grid;
+                grid-template-columns: minmax(280px, 0.8fr) 1.6fr;
+                grid-template-rows: auto minmax(0, 1fr);
+                height: 100vh;
+                gap: 8px;
+                padding: 8px;
+                box-sizing: border-box;
+            }
+            .dark body {
+                background: #1e1e1e;
+                color: #ddd;
+                --arg2p-surface: #252526;
+                --arg2p-surface-2: #2d2d2d;
+                --arg2p-hover: #2d3a3a;
+                --arg2p-border: #3c3c3c;
+                --arg2p-text: #dddddd;
+                --arg2p-muted: #9a9a9a;
+                --arg2p-atom: #f08c7a;
+                --arg2p-functor: #c792ea;
+                --arg2p-comment: #8b9096;
+                --arg2p-accent: #4fb3b3;
+            }
+            header {
+                grid-column: 1 / -1;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            body.tabbed {
+                grid-template-columns: 1fr;
+            }
+            body.tabbed #theory {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <select id="example"></select>
+            <label><input id="tabbed" type="checkbox" /> theory in a tab</label>
+            <button id="dark">Dark</button>
+        </header>
+        <arg2p-editor id="theory" kind="theory" label="Theory" placeholder="The theory"></arg2p-editor>
+        <arg2p-solver file-name="demo">
+            <button slot="actions" type="button">An action ↗</button>
+        </arg2p-solver>
+        <script type="module" src="./main.ts"></script>
+    </body>
+</html>

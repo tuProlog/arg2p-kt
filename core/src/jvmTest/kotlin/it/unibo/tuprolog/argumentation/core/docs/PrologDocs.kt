@@ -1,9 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.docs
 
-import it.unibo.tuprolog.argumentation.core.modules.ArgLibrary
-import it.unibo.tuprolog.argumentation.core.modules.Loadable
-import it.unibo.tuprolog.argumentation.core.modules.ModuleRegistry
-import it.unibo.tuprolog.argumentation.core.modules.PrologModule
+import it.unibo.tuprolog.argumentation.EarlierSpellings
+import it.unibo.tuprolog.argumentation.core.libraries.ArgLibrary
+import it.unibo.tuprolog.argumentation.core.libraries.LibraryRegistry
+import it.unibo.tuprolog.argumentation.core.libraries.Loadable
+import it.unibo.tuprolog.argumentation.core.libraries.PrologLibrary
 import it.unibo.tuprolog.core.Clause
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
@@ -16,7 +17,7 @@ import java.io.File
  * The reference of the Prolog modules of arg2p, as pages of the documentation site: an index, a section for each area
  * of the modules and a page for each module, with its KDoc, its predicates (the `%! signature` comments of its theory, followed by `%` lines), its
  * primitives, the flags it declares, the modules it calls and those calling it. The modules, their clauses and their
- * calls are read as the solvers load them (ModuleRegistry); only the KDoc comes from the Kotlin sources.
+ * calls are read as the solvers load them (LibraryRegistry); only the KDoc comes from the Kotlin sources.
  *
  * Run through prologDocs: `main(sources, output)` writes the pages to the output directory.
  */
@@ -50,17 +51,24 @@ class ModuleDoc(
 
     private val clauses = module.baseContent.clauses.filterIsInstance<Clause>()
 
+    // Its primitives, but under the earlier spellings of their names (see EarlierSpellings)
+    private val primitiveSignatures =
+        module.baseContent.primitives.keys
+            .filterNot { EarlierSpellings.isEarlier(it) }
+
     /** The predicates it defines, in the order of its theory, and its primitives */
     val defined: Set<Signature> =
-        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + module.baseContent.primitives.keys
+        clauses.map { it.head!!.extractSignature() }.toCollection(LinkedHashSet()) + primitiveSignatures
 
     /** Its native primitives, each with its KDoc */
     val primitives: Map<Signature, String> =
-        module.baseContent.primitives.mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
+        module.baseContent.primitives
+            .filterKeys { !EarlierSpellings.isEarlier(it) }
+            .mapValues { (signature, primitive) -> kdocs.ofPrimitive(signature, primitive) }
 
     /** The predicates its comments document, in their order */
     val documented: List<Documentation> =
-        (module as? PrologModule)?.let { Comments.of(it.prologRawTheory, module) }.orEmpty()
+        (module as? PrologLibrary)?.let { Comments.of(it.prologRawTheory, module) }.orEmpty()
 
     /** Its predicates: those its comments document, then its native primitives no comment documents */
     val entries: List<Documentation> =
@@ -182,7 +190,7 @@ class KDocs(
         if (own != null) return own
         // an object of a base class declaring the module, documented on the base class
         val base = Regex("""object $name\s*:\s*(\w+)\(""").find(text)?.groupValues?.get(1) ?: return ""
-        if (base == "PrologModule") return ""
+        if (base == "PrologLibrary") return ""
         return documentation(Regex("""(/\*\*(?:(?!\*/)[\s\S])*\*/)\s*abstract class $base\b""")) ?: ""
     }
 
@@ -209,7 +217,7 @@ class KDocs(
         }
 }
 
-/** An area of the modules, as ModuleRegistry groups them */
+/** An area of the modules, as LibraryRegistry groups them */
 class Area(
     val title: String,
     val description: String,
@@ -225,17 +233,33 @@ class PrologReference(
 ) {
     private val areas =
         listOf(
-            Area("Entry points", "The predicates a theory is queried with, and what they rely on.", ModuleRegistry.support),
-            Area("Data", "The terms arg2p works on: the entities of argumentation graphs and of the rules.", ModuleRegistry.data),
-            Area("Language", "The rules of a theory, as the graph builders read them.", ModuleRegistry.language),
-            Area("Graph", "Building the argumentation graph: its arguments and attacks, and where they are kept.", ModuleRegistry.graph),
-            Area("Graph extensions", "Changing the argumentation graph: preferences, restrictions, burdens.", ModuleRegistry.extensions),
+            Area(
+                "Entry points",
+                "The predicates a theory is queried with, and the printing of the graph and its labels.",
+                LibraryRegistry.entry,
+            ),
+            Area(
+                "Framework",
+                "What every module stands on: the store of the argumentation graph and its labels, and the helpers on lists and terms.",
+                LibraryRegistry.framework,
+            ),
+            Area(
+                "Language",
+                "What is read of a theory: its rules, as its languages write them, the conflicts between its statements, and the modules it loads.",
+                LibraryRegistry.language,
+            ),
+            Area(
+                "Graph",
+                "Building the argumentation graph: its arguments, the conflicts and the attacks, from the rules or as a theory states them.",
+                LibraryRegistry.graph,
+            ),
+            Area("Graph extensions", "Changing the argumentation graph: preferences, restrictions, burdens.", LibraryRegistry.extensions),
             Area(
                 "Evaluation",
-                "Evaluating the graph: abstract frameworks, the whole graph of a theory, or the part a query depends on.",
-                ModuleRegistry.evaluation,
+                "Evaluating a theory: the pipeline each evaluation goes through, on the whole graph or the part a query depends on, and the acceptance of a statement.",
+                LibraryRegistry.evaluation,
             ),
-            Area("Labelling", "The semantics labelling the arguments, and the statements from them.", ModuleRegistry.labellings),
+            Area("Labelling", "The semantics labelling the arguments, and the statements from them.", LibraryRegistry.labellings),
         )
 
     // The modules not documented yet, as they may change: no page, and no link to them

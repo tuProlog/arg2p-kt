@@ -115,7 +115,7 @@ class AmbulanceQueryTest {
         logicProgramming {
             TestingUtils.solverWithTheory(structuredTheory).also { solver ->
                 TestingUtils.testGoalNoBacktracking(
-                    "answerQuery"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
+                    "solve"(Struct.parse("responsible(X)"), "StatIn", "StatOut", "StatUnd"),
                     solver,
                 ) {
                     it.yes(

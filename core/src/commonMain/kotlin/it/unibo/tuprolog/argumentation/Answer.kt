@@ -2,7 +2,8 @@
 
 package it.unibo.tuprolog.argumentation
 
-import it.unibo.tuprolog.argumentation.core.model.terms.TermValues
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.Term
 import it.unibo.tuprolog.core.Var
@@ -11,7 +12,7 @@ import kotlin.js.JsName
 import it.unibo.tuprolog.core.List as PlList
 import it.unibo.tuprolog.solve.Solution as LogicSolution
 
-/** The statements for a query labelled in, out and und (see [Arg2p.answer]) */
+/** The statements for a query labelled in, out and und, as solve/4 answers them */
 @JsExport
 data class Answer(
     @JsExport.Ignore @JsName("inStatementsList") val inStatements: List<Value>,
@@ -43,7 +44,7 @@ data class Answer(
 }
 
 /**
- * The answer of a query as the solvers of arg2p give it: the goal answerQuery(Query, In, Out, Und), and the [Answer]
+ * The answer of a query as the solvers of arg2p give it: the goal solve(Query, In, Out, Und), and the [Answer]
  * each of its yes solutions gives (one for each labelling, or the one across them all, see the flag answerMode)
  */
 @InternalArg2pApi
@@ -55,7 +56,7 @@ class AnswerQuery(
     private val all = Var.of("Answers")
 
     /** The goal answering the query */
-    val goal: Struct = Struct.of("answerQuery", listOf(query) + labels)
+    val goal: Struct = Struct.of("solve", listOf(query) + labels)
 
     /** The goal answering the query with all its answers at once, as the list [[In, Out, Und], ...] */
     val allGoal: Struct = Struct.of("findall", PlList.of(labels), goal, all)

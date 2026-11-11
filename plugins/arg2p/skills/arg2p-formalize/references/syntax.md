@@ -83,7 +83,7 @@ concludes nothing, even when a query asks for a value.
 bp(guilty).
 ```
 
-Read by the semantics `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete`: a statement carrying the burden
+Read by the semantics `bpGrounded`, `bpGroundedPartial`, `bpGroundedComplete`: a statement carrying the burden
 that cannot be established is out, instead of undecided. A burden open to argument is concluded by a rule instead
 (`r : [] => bp(guilty).`), with `graphExtension(bp).`.
 
@@ -105,13 +105,13 @@ contrary(a, x).     % an argument for x attacks every argument resting on a
 r1 : b -> x.
 ```
 
-`aba_plus` adds preferences between assumptions, `sup(Stronger, Weaker)`. Both refuse defeasible rules, ordinary
-premises and non-flat theories (a rule concluding an assumption); `aba_plus` refuses a theory without Weak
+`abaPlus` adds preferences between assumptions, `sup(Stronger, Weaker)`. Both refuse defeasible rules, ordinary
+premises and non-flat theories (a rule concluding an assumption); `abaPlus` refuses a theory without Weak
 Contraposition as well (<https://tuprolog.github.io/arg2p-kt/docs/profiles/#limits>).
 
 **Meta-argumentation** (`graphBuildMode(meta).`): a rule fires only when an argument concludes `applicable(Rule)`, two
 statements conflict only when an argument concludes `conflict(A, B)` (even `a` and `-a`), and the preferences are the
-`sup/2` arguments conclude. A theory written for `aspic_plus` is not one for `meta`: its premises stand, but its rules
+`sup/2` arguments conclude. A theory written for `aspicPlus` is not one for `meta`: its premises stand, but its rules
 never fire and its conflicts are none.
 
 ## Worked patterns
@@ -134,7 +134,7 @@ r2 : penguin(X) -> bird(X).
 f1 :=> penguin(tweety).     % flies(tweety) is not concluded
 ```
 
-**A deadlock broken by the burden of persuasion** (with `argumentLabellingMode(bp_grounded).`).
+**A deadlock broken by the burden of persuasion** (with `argumentLabellingMode(bpGrounded).`).
 
 ```prolog
 bp(guilty).

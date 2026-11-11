@@ -9,7 +9,7 @@ bookCollapseSection: true
 Everything arg2p exposes, by the way it is used:
 
 - [Engine predicates]({{% ref "/docs/api/engine" %}}): the predicates a theory is queried with, as `arg2p::solve`,
-  `answerQuery` and `solve`.
+  `solve` and `solve`.
 - [Flags]({{% ref "/docs/api/flags" %}}): the flags configuring the evaluation (semantics, graph building,
   preferences, query mode).
 - [Kotlin]({{% ref "/docs/api/kotlin" %}}): using arg2p from Kotlin or Java (the solvers, the results, the DSL).
@@ -22,4 +22,21 @@ Everything arg2p exposes, by the way it is used:
 
 The [Causality]({{% ref "/docs/modules/causality" %}}) and [Actor solver]({{% ref "/docs/modules/actor-solver" %}})
 pages describe the predicates of the two solvers built on arg2p, and the
-[Parallel solver]({{% ref "/docs/modules/parallel-solver" %}}) page the classes of the parallel one.
+[Parallel solver]({{% ref "/docs/modules/parallel" %}}) page the classes of the parallel one.
+
+## Stability
+
+arg2p is not at 1.0.0 yet: until then a minor version may still change what a theory, a goal or a program uses, and
+says so in the release notes. Its names are settled since 0.26.0, written in camelCase, and the spellings of the versions
+before it are still read (see [theories from the papers]({{% ref "/docs/references#theories-from-the-papers" %}})).
+
+Some parts are **experimental**: they may change in any minor version, and will after 1.0.0 too, as they settle.
+
+- the [parallel solver]({{% ref "/docs/modules/parallel" %}}) and its [federation]({{% ref "/docs/modules/parallel#federation" %}});
+- the profiles of [ABA]({{% ref "/docs/profiles#aba" %}}), `aba` and `abaPlus` (with `graphLanguage(abaLanguage)` and
+  `graphExtension(abaPref)`);
+- the [constraints]({{% ref "/docs/modules/constraints" %}}) and the axioms of [time]({{% ref "/docs/modules/temporal" %}}).
+
+In Kotlin their classes and values are marked `@ExperimentalArg2pApi`: a program using them opts in
+(`@OptIn(ExperimentalArg2pApi::class)`, or the compiler option `-opt-in=it.unibo.tuprolog.argumentation.ExperimentalArg2pApi`),
+and is warned otherwise.

@@ -1,0 +1,34 @@
+package it.unibo.tuprolog.argumentation.core.libraries.framework.context.primitives
+
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.ContextBranches
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.branchArgument
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.branchLookup
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.isView
+import it.unibo.tuprolog.argumentation.core.libraries.framework.context.helpers.lookupOrView
+import it.unibo.tuprolog.argumentation.engine.natives.AbstractNativePrimitive
+import it.unibo.tuprolog.argumentation.engine.natives.NativeCall
+import it.unibo.tuprolog.argumentation.engine.natives.intArg
+import it.unibo.tuprolog.solve.ExecutionContext
+import it.unibo.tuprolog.solve.Signature
+import it.unibo.tuprolog.solve.primitive.Solve
+
+/** contextCheck(+Branch, Goal): the solutions of Goal in the given branch, as contextCheck/1 */
+internal class ContextCheckIn(
+    private val branches: ContextBranches,
+) : AbstractNativePrimitive(Signature("contextCheck", 2)) {
+    // A branch that does not exist has no solutions
+    override fun call(call: NativeCall): Int {
+        val branch = call.intArg(0, signature).toInt()
+        val store = branches.storeOf(branch) ?: return NativeCall.FAIL
+        return call.lookupOrView(store, branchLookup(branch), 1, branch, branches.layout)
+    }
+
+    override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
+        val store = branches.storeOf(request.branchArgument(0)) ?: return emptySequence()
+        return if (isView(request.arguments[1], store, branches.layout)) {
+            super.solve(request)
+        } else {
+            store.solve(request.arguments[1]).map { request.replyWith(it) }
+        }
+    }
+}

@@ -1,18 +1,18 @@
 package it.unibo.tuprologo.argumentation.actor
 
+import it.unibo.tuprolog.argumentation.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.argumentation.Flags
 import it.unibo.tuprolog.argumentation.actor.actors.ResponseConsumer
 import it.unibo.tuprolog.argumentation.actor.message.Add
 import it.unibo.tuprolog.argumentation.core.Arg2pSolver
 import it.unibo.tuprolog.argumentation.core.dsl.arg2pScope
-import it.unibo.tuprolog.argumentation.core.engine.Arg2pPrologSolverFactory
 import it.unibo.tuprolog.core.Struct
 import it.unibo.tuprolog.core.parsing.parse
 import it.unibo.tuprolog.solve.flags.FlagStore
 import it.unibo.tuprolog.solve.flags.Unknown
 import it.unibo.tuprolog.theory.Theory
 import it.unibo.tuprolog.theory.parsing.parse
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 // The labels of the arguments for a statement are the same in the actor solver, its rules split among workers, and in
@@ -58,10 +58,10 @@ class CentralisedEquivalenceTest {
                         val solution =
                             solver
                                 .solve(
-                                    "buildLabelSetsSilent" and
+                                    "solve" and
                                         "findall"(
                                             "x",
-                                            ("graphStore" call "argumentLabel"(label, A)) and ("argument" call "claim"(A, claim)),
+                                            ("store" call "argumentLabel"(label, A)) and ("store" call "claim"(A, claim)),
                                             L,
                                         ) and "length"(L, N),
                                 ).first()

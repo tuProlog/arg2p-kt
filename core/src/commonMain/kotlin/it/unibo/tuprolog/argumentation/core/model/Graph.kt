@@ -32,7 +32,7 @@ data class Graph(
     @JsName("labellings")
     val labellingArray: Array<LabelledArgument> get() = labellings.toTypedArray()
 
-    /** The label of [argument]: in, out, und, or na for an argument the labelling does not label */
+    /** The label of [argument]: in, out, und, or null for an argument the labelling does not label */
     fun label(argument: Argument): Label? = labellings.firstOrNull { it.argument == argument }?.label
 
     /** The arguments labelled [label] (in, out, und) */

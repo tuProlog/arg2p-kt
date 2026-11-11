@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.minutes
  * [MAX_SESSIONS] too: their query is no longer running. Each request is stopped past the time limit its server gives
  * it, if any (see [handle]): it fails then with a [TimedOut], whatever it was doing.
  *
- * A query solved with `parallel` is resolved by [parallel] (the cluster of the federation of the language server, on its
+ * A query solved with `parallel` is resolved by [parallel] (the parallel solver of the federation of the language server, on its
  * threads and on the sites it is federated with, see [Resolution.Federated]), on the same theory with the same flags,
  * as by the solver of the page otherwise; with none, by the solver of the page.
  */

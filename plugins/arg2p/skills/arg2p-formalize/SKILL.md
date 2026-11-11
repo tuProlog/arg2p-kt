@@ -20,10 +20,10 @@ written in. It refuses a theory written outside it, with an error saying why.
 
 | Profile | Use it when | Refuses |
 | --- | --- | --- |
-| `aspic_plus` (the default) | knowledge is facts and rules, possibly conflicting, with exceptions, evidence, norms, preferences: **most real problems** | a contrary targeting an axiom or the conclusion of a strict rule |
-| `aspic` | as `aspic_plus`, but no preference counts: every attack succeeds | as `aspic_plus` |
-| `aspic_defeasible` | everything is defeasible, facts are rules with no premise (`r : [] => a.`) | strict rules, axioms, premises |
-| `aba`, `aba_plus` | the problem is assumptions and their contraries (assumption-based argumentation); `aba_plus` adds preferences between assumptions | defeasible rules, ordinary premises, a rule concluding an assumption; for `aba_plus`, a theory without Weak Contraposition |
+| `aspicPlus` (the default) | knowledge is facts and rules, possibly conflicting, with exceptions, evidence, norms, preferences: **most real problems** | a contrary targeting an axiom or the conclusion of a strict rule |
+| `aspic` | as `aspicPlus`, but no preference counts: every attack succeeds | as `aspicPlus` |
+| `aspicDefeasible` | everything is defeasible, facts are rules with no premise (`r : [] => a.`) | strict rules, axioms, premises |
+| `aba`, `abaPlus` | the problem is assumptions and their contraries (assumption-based argumentation); `abaPlus` adds preferences between assumptions | defeasible rules, ordinary premises, a rule concluding an assumption; for `abaPlus`, a theory without Weak Contraposition |
 | `abstract` | only who attacks whom matters: a debate, a thread of objections, a graph given as such | rules, premises, axioms; preferences, conflicts, burdens (`sup/2`, `conflict/2`, `bp/N`) |
 | `meta` | the rules, conflicts and preferences are themselves argued, as the readings of an ambiguous text are (step 3, and `references/syntax.md`) | |
 | `free` | every flag is set by hand, with no preset | nothing |
@@ -119,9 +119,9 @@ on unless you state `queryMode(off).`). Every flag is in `references/flags.md`; 
 
 - **Semantics**, `argumentLabellingMode(S)`:
   - `grounded` (the default): skeptical, always exactly one labelling. "What must be accepted?"
-  - `preferred`, `stable`, `complete`, `semistable`, `stage`, `cf2`, ...: several labellings. "Which positions are
+  - `preferred`, `stable`, `complete`, `semiStable`, `stage`, `cf2`, ...: several labellings. "Which positions are
     defensible?" `stable` may have none.
-  - `bp_grounded`, `bp_grounded_partial`, `bp_grounded_complete`: **required** when the theory declares `bp/N`.
+  - `bpGrounded`, `bpGroundedPartial`, `bpGroundedComplete`: **required** when the theory declares `bp/N`.
 - **Preferences concluded by rules** (`sup/2` in the head of a rule): `graphExtension(defeasiblePref).` (one
   superiority) or `graphExtension(defeasibleAllPref).` (comparators needing several), in place of
   `standardPref`: a theory has one preference mode, and stating two is refused. Under them only concluded

@@ -1,6 +1,10 @@
 package it.unibo.tuprolog.argumentation.core.model
 
-import it.unibo.tuprolog.argumentation.InternalArg2pApi
+import it.unibo.tuprolog.argumentation.TermValues
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.activeBranch
+import it.unibo.tuprolog.argumentation.core.libraries.framework.store.helpers.mining.minedCompactGraph
+import it.unibo.tuprolog.argumentation.engine.InternalArg2pApi
+import it.unibo.tuprolog.solve.Solver
 import kotlin.js.JsExport
 import kotlin.js.JsName
 
@@ -45,20 +49,20 @@ class CompactGraph internal constructor(
     val supporters: IntArray,
     val supported: IntArray,
     // The conclusions as tuProlog writes them ('-'(a)), by which the arguments are ordered to be named (see order)
-    private val orderedBy: IntArray,
+    internal val orderedBy: IntArray,
 ) {
     /** How many arguments */
     val size: Int get() = conclusions.size
 
     /** What [labels] tell */
-    val labelNames: Array<String> get() = arrayOf(NO_LABEL, IN, OUT, UND)
+    val labelNames: Array<String> get() = LABEL_NAMES.copyOf()
 
     /** The label of the argument at [position]: in, out, und, or na for an argument the labelling does not label */
     fun label(position: Int): String = labelNames[labels[position].toInt()]
 
     /** The arguments labelled [label] (in, out, und) */
     fun labelled(label: String): IntArray {
-        val code = labelNames.indexOf(label).toByte()
+        val code = labelCode(label)
         val found = IntArray(labels.count { it == code })
         var n = 0
         for (position in labels.indices) if (labels[position] == code) found[n++] = position
@@ -135,6 +139,10 @@ class CompactGraph internal constructor(
         const val OUT = "out"
         const val UND = "und"
         const val NO_RULE = "none"
+        private val LABEL_NAMES = arrayOf(NO_LABEL, IN, OUT, UND)
+
+        /** The code of [label] in [labels], its position in [labelNames] */
+        fun labelCode(label: String): Byte = LABEL_NAMES.indexOf(label).toByte()
     }
 }
 
@@ -163,3 +171,104 @@ fun emptyCompactGraph(): CompactGraph {
         nothing,
     )
 }
+
+/**
+ * [graph] as text, for a graph going to another thread or process (a parallel solver answering on another
+ * thread, see the module parallel): each array its length then its items, read back by [compactGraphOf]
+ */
+@InternalArg2pApi
+fun compactGraphText(graph: CompactGraph): String {
+    val out = StringBuilder()
+
+    fun text(value: String) = out.append(value.length).append(':').append(value)
+
+    fun ints(values: IntArray) {
+        text(values.size.toString())
+        values.forEach { text(it.toString()) }
+    }
+
+    fun texts(values: Array<String>) {
+        text(values.size.toString())
+        values.forEach { text(it) }
+    }
+
+    fun lists(values: CompactLists) {
+        ints(values.offsets)
+        ints(values.items)
+    }
+    with(graph) {
+        texts(texts)
+        ints(conclusions)
+        ints(topRules)
+        lists(rules)
+        lists(groundings)
+        lists(defeasibleRules)
+        lists(defeasiblePremises)
+        lists(lastDefeasibleRules)
+        ints(IntArray(labels.size) { labels[it].toInt() })
+        ints(attackers)
+        ints(targets)
+        ints(on)
+        ints(attackTypeOf)
+        texts(attackTypes)
+        ints(supporters)
+        ints(supported)
+        ints(orderedBy)
+    }
+    return out.toString()
+}
+
+/** The graph [text] tells (see [compactGraphText]): an IllegalArgumentException if it is none */
+@InternalArg2pApi
+fun compactGraphOf(text: String): CompactGraph {
+    var position = 0
+
+    fun next(): String {
+        val colon = text.indexOf(':', position)
+        val length = if (colon < 0) null else text.substring(position, colon).toIntOrNull()
+        require(length != null && length >= 0 && colon + 1 + length <= text.length) { "Not a graph at $position" }
+        return text.substring(colon + 1, colon + 1 + length).also { position = colon + 1 + length }
+    }
+
+    fun count(): Int = next().toInt().also { require(it in 0..text.length) { "Not a graph at $position" } }
+
+    fun ints(): IntArray = IntArray(count()) { next().toInt() }
+
+    fun texts(): Array<String> = Array(count()) { next() }
+
+    fun lists(): CompactLists = CompactLists(ints(), ints())
+    val texts = texts()
+    val conclusions = ints()
+    val topRules = ints()
+    val rules = lists()
+    val groundings = lists()
+    val defeasibleRules = lists()
+    val defeasiblePremises = lists()
+    val lastDefeasibleRules = lists()
+    val labels = ints().let { codes -> ByteArray(codes.size) { codes[it].toByte() } }
+    return CompactGraph(
+        texts,
+        conclusions,
+        topRules,
+        rules,
+        groundings,
+        defeasibleRules,
+        defeasiblePremises,
+        lastDefeasibleRules,
+        labels,
+        ints(),
+        ints(),
+        ints(),
+        ints(),
+        texts(),
+        ints(),
+        ints(),
+        ints(),
+    )
+}
+
+/** The graph of the active context branch of [this] solver as arrays, its conclusions written with the operators of arg2p */
+fun Solver.compactGraph(): CompactGraph = compactGraph(activeBranch())
+
+/** The graph of the context branch [branch] of [this] solver as arrays, its conclusions written with the operators of arg2p */
+fun Solver.compactGraph(branch: Int): CompactGraph = minedCompactGraph(branch, TermValues::format)
