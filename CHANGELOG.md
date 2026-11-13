@@ -1,3 +1,14 @@
+## [0.26.3](https://github.com/tuProlog/arg2p-kt/compare/0.26.2...0.26.3) (2026-11-13)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.2 ([#638](https://github.com/tuProlog/arg2p-kt/issues/638)) ([b40a708](https://github.com/tuProlog/arg2p-kt/commit/b40a7081d47dd8d475bbde25d41f553b749467c2))
+* **deps:** update dependency @vscode/vsce to v4.1.1 ([#641](https://github.com/tuProlog/arg2p-kt/issues/641)) ([a31e6e9](https://github.com/tuProlog/arg2p-kt/commit/a31e6e9bfc6b4266ab26bc0be54c0c2453001a06))
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v4.0.1 ([#579](https://github.com/tuProlog/arg2p-kt/issues/579)) ([a6d23b6](https://github.com/tuProlog/arg2p-kt/commit/a6d23b60ba6793a020641fa2b74c3135fdf61db7))
+
 ## [0.26.2](https://github.com/tuProlog/arg2p-kt/compare/0.26.1...0.26.2) (2026-11-11)
 
 ### Bug Fixes
