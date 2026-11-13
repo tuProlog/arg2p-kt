@@ -1,3 +1,13 @@
+## [0.26.4](https://github.com/tuProlog/arg2p-kt/compare/0.26.3...0.26.4) (2026-11-13)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.3 ([#644](https://github.com/tuProlog/arg2p-kt/issues/644)) ([c70622c](https://github.com/tuProlog/arg2p-kt/commit/c70622cbe0da75f78fee4e2bf818ffb54fbc1bb8))
+
+### Bug Fixes
+
+* **deps:** update dependency @codemirror/lint to v6.9.8 ([#646](https://github.com/tuProlog/arg2p-kt/issues/646)) ([d2f2430](https://github.com/tuProlog/arg2p-kt/commit/d2f2430df37c1623db7e3cb1735dac461acbc2ef))
+
 ## [0.26.3](https://github.com/tuProlog/arg2p-kt/compare/0.26.2...0.26.3) (2026-11-13)
 
 ### Dependency updates
