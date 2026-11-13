@@ -14,7 +14,7 @@ lsp4j = "1.0.0"
 # The components of the solver page (@tuprolog/arg2p-ui, ui/ here, released with arg2p at its version): the last one on npm,
 # which a development build of the language server loads (a release loads its own; see lsp/build.gradle.kts)
 # renovate: datasource=npm depName=@tuprolog/arg2p-ui
-arg2pUi = "0.26.3"
+arg2pUi = "0.26.4"
 
 [plugins]
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
