@@ -1,5 +1,5 @@
 [versions]
-junitPlatform = "1.10.1"
+junitPlatform = "1.14.4"
 kotlin = "2.4.21"
 jvm = "21"
 node = "24-latest"
