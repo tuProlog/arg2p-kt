@@ -1,3 +1,35 @@
+## [0.26.6](https://github.com/tuProlog/arg2p-kt/compare/0.26.5...0.26.6) (2026-11-14)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.4 ([#647](https://github.com/tuProlog/arg2p-kt/issues/647)) ([62be9cf](https://github.com/tuProlog/arg2p-kt/commit/62be9cf874960e7f07e97759718e0fdcb10c9bb0))
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.5 ([#648](https://github.com/tuProlog/arg2p-kt/issues/648)) ([299646b](https://github.com/tuProlog/arg2p-kt/commit/299646bb6f9efb2812455ec4afa241167a3ad012))
+
+### Bug Fixes
+
+* **deps:** update dependency ch.qos.logback:logback-classic to v1.6.7 ([#651](https://github.com/tuProlog/arg2p-kt/issues/651)) ([968911e](https://github.com/tuProlog/arg2p-kt/commit/968911ef5485e6fc1f278a7d071004e93d228bc9))
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-java action to v6.3.0 ([#649](https://github.com/tuProlog/arg2p-kt/issues/649)) ([f4592d7](https://github.com/tuProlog/arg2p-kt/commit/f4592d71dc5bba7baa2a803060fddb8cf224fd34))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v4.0.52 ([#650](https://github.com/tuProlog/arg2p-kt/issues/650)) ([43c95a2](https://github.com/tuProlog/arg2p-kt/commit/43c95a22d6995f3ccd37991a3092d70647863b8e))
+
+## [0.26.5](https://github.com/tuProlog/arg2p-kt/compare/0.26.4...0.26.5) (2026-11-13)
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v4.0.3 ([#645](https://github.com/tuProlog/arg2p-kt/issues/645)) ([2bbcb43](https://github.com/tuProlog/arg2p-kt/commit/2bbcb43fc2e9fa81492d0b00a4d97acffd8757bc))
+
+## [0.26.4](https://github.com/tuProlog/arg2p-kt/compare/0.26.3...0.26.4) (2026-11-13)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.3 ([#644](https://github.com/tuProlog/arg2p-kt/issues/644)) ([c70622c](https://github.com/tuProlog/arg2p-kt/commit/c70622cbe0da75f78fee4e2bf818ffb54fbc1bb8))
+
+### Bug Fixes
+
+* **deps:** update dependency @codemirror/lint to v6.9.8 ([#646](https://github.com/tuProlog/arg2p-kt/issues/646)) ([d2f2430](https://github.com/tuProlog/arg2p-kt/commit/d2f2430df37c1623db7e3cb1735dac461acbc2ef))
+
 ## [0.26.3](https://github.com/tuProlog/arg2p-kt/compare/0.26.2...0.26.3) (2026-11-13)
 
 ### Dependency updates
