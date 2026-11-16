@@ -31,9 +31,10 @@ import it.unibo.tuprolog.solve.libs.io.Url
 import it.unibo.tuprolog.theory.Theory
 
 /**
- * callModule(+Modules, +Goal): Goal solved on the theories of Modules alone, loaded in their order. Each module is an
- * atom: a location, a URL or the path of a file ending in `.pl` (relative to the working directory), or else the name
- * of a file in the modules path (flag `modulesPath`, the working directory if there is none), `.pl` left out. A module
+ * callModule(+Modules, +Goal): Goal solved on the theories of Modules alone, their texts read as one in their order (the
+ * operators a module declares hold in those after it). Each module is an
+ * atom: a URL or an absolute path, as it is, or else a path relative to the modules path (flag `modulesPath`, a
+ * directory or a base URL; the working directory if there is none), `.pl` added if it is left out. A module
  * that cannot be read raises an existence error, one that does not parse a syntax error; an error raised within the
  * modules is raised by the call.
  */
@@ -68,19 +69,25 @@ internal object CallModule : AbstractNativePrimitive(Signature("callModule", 2))
             ?.firstOrNull()
             ?.let { (it as? Atom)?.value ?: it.toString() }
 
-    // The location of the module [name]: a URL, or a path ending in .pl, as it is; else the file of the module in [base]
+    // The location of the module [name]: a URL or an absolute path, as it is; else the path relative to [base] (the
+    // working directory if there is none), .pl added if it is left out
     private fun locationOf(
         name: String,
         base: String?,
-    ): String =
-        when {
-            isUrl(name) || name.endsWith(".pl") -> name
-            base == null -> "$name.pl"
-            else -> "${base.trimEnd('/', '\\')}/$name.pl"
-        }
+    ): String {
+        if (isUrl(name) || isAbsolute(name)) return name
+        val file = if (name.endsWith(".pl")) name else "$name.pl"
+        return if (base == null) file else "${base.trimEnd('/', '\\')}/$file"
+    }
 
     // A location carrying a scheme (http://, file://): the others are paths of files
     private fun isUrl(location: String) = location.contains("://")
+
+    // A path from the root (/x, \x) or from a drive (C:\x, C:/x)
+    private fun isAbsolute(location: String) =
+        location.startsWith("/") ||
+            location.startsWith("\\") ||
+            (location.length > 2 && location[0].isLetter() && location[1] == ':' && location[2] in "/\\")
 
     // The text of the module at [location]: an existence error if it cannot be read
     private fun read(
@@ -98,30 +105,42 @@ internal object CallModule : AbstractNativePrimitive(Signature("callModule", 2))
             )
         }
 
-    // The theory of the module at [location], read with the operators of every theory of arg2p (those of the module
-    // calls, ::, among them): a syntax error if it does not parse
+    // The theory of the modules at [locations], their texts read as one, in their order (an operator a module declares
+    // holds in those after it), with the operators of every theory of arg2p (those of the module calls, ::, among
+    // them): a syntax error if it does not parse, reported at the module and the line of that module where it is
     private fun theoryOf(
         context: ExecutionContext,
-        location: String,
+        locations: kotlin.collections.List<String>,
     ): Theory {
-        val text = read(context, location)
+        val texts = locations.map { read(context, it).let { text -> if (text.endsWith("\n")) text else text + "\n" } }
         return try {
-            RuleAnnotations.parse(text, TermValues.operators, Arg2pUnificator)
+            RuleAnnotations.parse(texts.joinToString(""), TermValues.operators, Arg2pUnificator)
         } catch (e: ParseException) {
-            throw SyntaxError.of(context, "$location: ${SyntaxProblem.of(e)}")
+            val problem = SyntaxProblem.of(e)
+            // the module the line is in, and the line within it
+            var first = 1
+            val index =
+                texts.indices.firstOrNull { i ->
+                    val lines = texts[i].count { it == '\n' }
+                    (problem.line < first + lines).also { inside -> if (!inside) first += lines }
+                } ?: texts.lastIndex
+            throw SyntaxError.of(
+                context,
+                "${locations[index]}: ${problem.description} at ${problem.line - first + 1}:${problem.column}",
+            )
         }
     }
 
-    // A solver of the modules at [locations], each adding its clauses to those before it, with the libraries and the
-    // flags of the calling context (the theories of arg2p rely on unknown predicates failing, which the default flags
-    // do not give), and IOLib, for the modules using its predicates: the theory of the caller is left out
+    // A solver of the modules at [locations] (see theoryOf), with the libraries and the flags of the calling context
+    // (the theories of arg2p rely on unknown predicates failing, which the default flags do not give), and IOLib, for
+    // the modules using its predicates: the theory of the caller is left out
     private fun solverOf(
         context: ExecutionContext,
         locations: kotlin.collections.List<String>,
     ): Solver =
         context
             .createMutableSolver(libraries = context.libraries + IOLib, staticKb = Theory.empty())
-            .also { solver -> locations.forEach { solver.appendStaticKb(theoryOf(context, it)) } }
+            .also { solver -> solver.appendStaticKb(theoryOf(context, locations)) }
             // the theory of the solver is the one of the modules, which its goals see wherever callModule/2 is called
             .also { solver -> (solver as? VmSolver)?.theoryVisible = true }
 }

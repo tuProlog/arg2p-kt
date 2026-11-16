@@ -207,12 +207,14 @@ Theories kept in separate `.pl` files can be loaded and queried without adding t
 module::callModule([Modules], Goal)
 ```
 
-`Modules` is a list of module names, resolved against the
-[`modulesPath`]({{% ref "/docs/api/flags" %}}) location, and `Goal` is solved against their combined content.
-A full location can be given instead of a name, in which case `modulesPath` is ignored:
+`Modules` is a list of module names or paths, resolved against the
+[`modulesPath`]({{% ref "/docs/api/flags" %}}) location (`.pl` added when it is left out), and `Goal` is solved
+against their combined content. The modules are read as one text, in their order, so an operator a module declares
+holds in the modules after it. An absolute path or a URL is taken as it is, in which case `modulesPath` is ignored:
 
 ```prolog
 ?- module::callModule(['greetings'], hello(X)).
+?- module::callModule(['cases/greetings.pl'], hello(X)).
 ?- module::callModule(['/home/me/theories/greetings.pl'], hello(X)).
 ```
 
@@ -228,9 +230,10 @@ modulesPath('https://example.org/theories').
 ?- module::callModule(['https://example.org/theories/greetings.pl'], hello(X)).
 ```
 
-A URL does not need to end in `.pl`: anything carrying a scheme (`https://...`) is treated as a location rather than
-as a module name, and so is a path ending in `.pl`. With no `modulesPath`, module names are resolved in the working
-directory.
+A URL does not need to end in `.pl`: anything carrying a scheme (`https://...`) is taken as it is. With no
+`modulesPath`, relative names and paths are resolved in the working directory.
+
+In a browser, a URL is read with a synchronous request, so the server must allow the page's origin (CORS).
 
 > [!WARNING]
 > A remote module is fetched and loaded as part of your theory, so it is executed with the same trust as the
