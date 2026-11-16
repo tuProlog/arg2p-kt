@@ -42,6 +42,8 @@ unguarded(Statement, Other) :-
     declaredPlainly(Statement, Other).
 unguarded(Statement, Other) :-
     languageConflict(Statement, Other).
+unguarded(Statement, Other) :-
+    languageRuleConflict(Statement, Other).
 
 %! argued
 %  The conflicts are the conclusions of arguments (metaConflicts): which statements conflict changes as the

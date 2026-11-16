@@ -31,6 +31,23 @@ languageConflict(Statement, Other) :-
     utils::oncePerTheory(languageConflicts, conflict::readLanguageConflicts),
     cacheCheck(conflict(Statement, Other)).
 
+%! languageRuleConflict(?Statement, ?Other)
+%  A language of the theory makes Statement conflict with Other by a rule of its own (conflictsBetween/2 of a library
+%  reading the theory, see parser::extension/1): a conflict lifted to the statements the language builds, from the
+%  conflicts of others (as temporal makes holdsAt(U, T) conflict with holdsAt(V, T) when U conflicts with V). The
+%  languages defining one are read the first time it is asked for.
+languageRuleConflict(Statement, Other) :-
+    utils::oncePerTheory(languageConflictRules, conflict::readLanguageConflictRules),
+    cacheCheck(conflictRules(Language)),
+    Language::conflictsBetween(Statement, Other).
+
+readLanguageConflictRules :-
+    findall(_, (
+        parser::extension(Language),
+        moduleDefines(Language, conflictsBetween/2),
+        cacheAssert(conflictRules(Language))
+    ), _).
+
 readLanguageConflicts :-
     findall(Conflicts, (
         parser::extension(Language),

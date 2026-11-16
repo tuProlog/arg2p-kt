@@ -3,6 +3,14 @@
 %  values of the graph extension constraints (see parser::extension/1).
 requires(constraints).
 
+%! conflictsBetween(?Statement, ?Other)
+%  What holds at a time conflicts with what conflicts with it at that time: holdsAt(U, T) with holdsAt(V, T) when U
+%  conflicts with V, as the conflict model says (holdsAt(-f, T) with holdsAt(f, T), or the declared conflicts). One of
+%  U and V known: the conflicts of all the facts are not looked for.
+conflictsBetween([holdsAt(U, T)], [holdsAt(V, T)]) :-
+    (nonvar(U) ; nonvar(V)), !,
+    conflict::between([U], [V]).
+
 %! rules(-Rules)
 %  The axioms, as the parser reads the defeasible rules of a theory ([Id, Premises, Conclusion]).
 rules([
