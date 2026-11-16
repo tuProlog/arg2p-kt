@@ -12,10 +12,11 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Primitive
 
 /**
- * Whether a statement of a theory causes another (module `causality`): the NESS test, as published (Pisano, Prakken,
- * Sartor, Liepina; ICAIL 2025) and revised, the revised one asking as well that an argument for the cause be IN in the
- * grounded labelling of the theory, and the but-for test, on the grounded labelling of the theory and of its
- * interventions. Unlike the modules of arg2p, each instance has a state of its own, the analysis computing the graphs
+ * Whether a statement of a theory causes another (module `causality`): the NESS test, original (Pisano, Prakken,
+ * Sartor, Liepina; ICAIL 2025: a subset-minimal intervention removes an explanation of the effect from the grounded
+ * extension) and revised (ICAIL 2026: an argument for the cause is IN, and the intervention gives an argument IN or UND
+ * attacking a member of the explanation that no proper part of it gives), and the but-for test, on the grounded labelling
+ * of the theory and of its interventions. Unlike the modules of arg2p, each instance has a state of its own, the analysis computing the graphs
  * (and caching them): a solver is given a new one. The solver of the analysis is built at the first test, and prints
  * where the solver testing does.
  */

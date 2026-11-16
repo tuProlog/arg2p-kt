@@ -245,9 +245,8 @@ r1 : a, b -> c.     % also yields  -c, b -> -a.  and  -c, a -> -b.
 
 ### `modulesPath(Path)`
 
-Where [`callModule/2`]({{% ref "/docs/modules" %}}) looks when it loads an external `.pl` module by name.
-It defaults to `none`, which means no module can be resolved by name. It can be a local directory or a base
-URL:
+Where [`callModule/2`]({{% ref "/docs/modules" %}}) looks for an external `.pl` module given by a name or a
+relative path. It defaults to `none`: the working directory. It can be a local directory or a base URL:
 
 ```prolog
 modulesPath('/home/me/theories').

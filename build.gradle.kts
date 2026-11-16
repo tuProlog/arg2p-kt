@@ -45,10 +45,20 @@ fun lazyNodeImport(match: MatchResult): String {
 // it depends on (sync-request): an ES module has no require, and bundlers take the call for an import to bundle
 val requireCall = Regex("""eval\('require'\)|(?<![\w$.'"])require(?=\(')""")
 
-// require, as Node.js gives it to an ES module: elsewhere, what asks for a module fails when it does
+// sync-request where Node.js is not (a browser, a worker): the same call, a synchronous XMLHttpRequest, so that 2p-kt reads
+// URLs there too (the server allowing the page's origin); the body of an answer with an error status raises, as there
+val browserSyncRequest =
+    "(method, url) => { const request = new XMLHttpRequest(); request.open(method, url, false); request.send(); " +
+        "return { statusCode: request.status, body: request.responseText, getBody() { " +
+        "if (request.status === 0 || request.status >= 300) throw new Error('Server responded to ' + url + ' with ' + " +
+        "(request.status || 'no answer')); return request.responseText; } }; }"
+
+// require, as Node.js gives it to an ES module: elsewhere, sync-request as a browser can (browserSyncRequest), and what
+// asks for another module fails when it does
 val nodeRequire =
     "const __nodeRequire = globalThis.process?.getBuiltinModule?.('module')?.createRequire(import.meta.url) ?? " +
-        "(name => { throw new Error(`\${name} is available in Node.js alone`); });\n"
+        "(name => { if (name === 'sync-request' && typeof XMLHttpRequest !== 'undefined') return $browserSyncRequest; " +
+        "throw new Error(`\${name} is available in Node.js alone`); });\n"
 
 // The calls of require going through Node.js (nodeRequire), but those in a string (code run elsewhere, as a worker)
 fun nodeRequires(code: String): String {
