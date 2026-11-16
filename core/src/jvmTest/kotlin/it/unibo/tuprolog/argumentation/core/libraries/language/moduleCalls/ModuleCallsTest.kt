@@ -183,6 +183,19 @@ class ModuleCallsTest {
         assertTrue(solution.isYes, "expected the module in $directory to be found, got $solution")
     }
 
+    // A relative path ending in .pl, as a name, resolved against the modules path
+    @Test
+    fun callModuleResolvesRelativePathsAgainstModulesPath() {
+        val directory = modules()
+        Files.createDirectories(directory.resolve("cases"))
+        Files.writeString(directory.resolve("cases/greetings.pl"), moduleTheory)
+        val solver = solverWithModulesIn(directory.toString())
+        listOf("'cases/greetings.pl'", "'cases/greetings'").forEach { module ->
+            val solution = solve(solver, "module::callModule([$module], hello(X))")
+            assertTrue(solution.isYes, "expected $module to be found in $directory, got $solution")
+        }
+    }
+
     @Test
     fun callModuleTakesANameContainingPlForAName() {
         val directory = modules("my.plan.pl" to moduleTheory)
@@ -231,6 +244,23 @@ class ModuleCallsTest {
         val directory = modules("broken.pl" to "hello(.\n")
         val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['broken'], hello(X))")
         assertTrue(solution.exception is SyntaxError, "expected a syntax error, got $solution")
+    }
+
+    // The modules read as one text: an operator one declares holds in those after it
+    @Test
+    fun callModuleReadsTheOperatorsOfAModuleInTheNextOnes() {
+        val directory = modules("ops.pl" to ":- op(720, xfy, and).\n", "facts.pl" to "both(a and b).\n")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['ops', 'facts'], both(X))")
+        assertTrue(solution.isYes, "expected the operator of ops to hold in facts, got $solution")
+    }
+
+    // A syntax error reported at the module it is in, and at the line within that module
+    @Test
+    fun callModuleReportsASyntaxErrorAtItsModuleAndLine() {
+        val directory = modules("good.pl" to "hello(world).\nhello(moon).\n", "bad.pl" to "ok(1).\nhello(.\n")
+        val solution = solve(solverWithModulesIn(directory.toString()), "module::callModule(['good', 'bad'], hello(X))")
+        val message = (solution.exception as? SyntaxError)?.message.orEmpty()
+        assertTrue("bad.pl" in message && " at 2:" in message, "expected the error in bad.pl at line 2, got $message")
     }
 
     @Test

@@ -1,3 +1,4 @@
+import org.gradle.api.attributes.Attribute
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
@@ -51,26 +52,50 @@ tasks.named<KotlinJvmTest>("jvmTest") {
     filter.excludeTestsMatching(coverageTests)
 }
 
+// The projects whose tests the Prolog coverage runs besides those of core
+val coverageProjects = listOf(":causality-solver", ":")
+
+// Their classes and what they need at run time, resolved here, by this project (as a JVM runtime classpath, the
+// attributes of the test runtime classpath of core): a configuration of theirs resolved from this project, as their
+// test tasks' classpath, is resolved without their lock, which Gradle refuses while they run a task at the same time
+val coverageRuntime: Configuration =
+    configurations.create("coverageRuntime") {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+        val runtime = configurations.getByName("jvmTestRuntimeClasspath").attributes
+        attributes {
+            runtime.keySet().forEach {
+                @Suppress("UNCHECKED_CAST")
+                val key = it as Attribute<Any>
+                attribute(key, runtime.getAttribute(key)!!)
+            }
+        }
+    }
+
+dependencies {
+    coverageProjects.forEach { coverageRuntime(project(it)) }
+}
+
 tasks.register<Test>("jvmPrologCoverage") {
     group = "verification"
     description = "Reports the clauses of the Prolog modules the tests never use (build/reports/prolog-coverage)"
     val jvmTest = tasks.named<KotlinJvmTest>("jvmTest").get()
-    val others = listOf(":causality-solver", ":")
-    dependsOn(listOf("jvmTestClasses") + others.map { "${it.removeSuffix(":")}:jvmTestClasses" })
+    dependsOn(listOf("jvmTestClasses") + coverageProjects.map { "${it.removeSuffix(":")}:jvmTestClasses" })
     testClassesDirs = jvmTest.testClassesDirs
-    classpath =
-        jvmTest.classpath +
+    // the test classes of the other projects: the outputs of their compilations, no configuration of theirs resolved
+    val otherTestClasses =
         files(
             provider {
-                others.map {
+                coverageProjects.map {
                     project(it)
                         .tasks
                         .named<KotlinJvmTest>("jvmTest")
                         .get()
-                        .classpath
+                        .testClassesDirs
                 }
             },
         )
+    classpath = jvmTest.classpath + otherTestClasses + coverageRuntime
     filter.includeTestsMatching(coverageTests)
     testLogging.showStandardStreams = true
     outputs.upToDateWhen { false }

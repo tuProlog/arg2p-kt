@@ -11,12 +11,95 @@ concludable(Conclusion) :- ground(Conclusion), !.
 concludable(_) :- instances.
 
 %! explored(+Statement, -Explored)
-%  Statement is explored in query mode as Explored, with its arguments free (a negation kept): the whole graph has the
-%  arguments for it, and those for the values asked are their instances and their pieces, which the graph step adds as
-%  in the whole graph.
+%  Statement is explored in query mode as Explored, its arguments free where an argument may leave them open (a negation
+%  kept, see openPosition/2): the whole graph has the open arguments for it, and those for the values asked are their
+%  instances and their pieces, which the graph step adds as in the whole graph. The other arguments are kept: no
+%  argument has another value there (holdsAt(f, 5) is explored as holdsAt(f, T), the periods of f alone).
 explored(S, S) :- var(S), !.
 explored(-(S), -(G)) :- !, explored(S, G).
-explored(S, G) :- functor(S, Name, Arity), functor(G, Name, Arity).
+explored(S, G) :-
+    functor(S, Name, Arity),
+    functor(G, Name, Arity),
+    S =.. [_|Args],
+    G =.. [_|Free],
+    keptArguments(Args, Free, 1, Name/Arity).
+
+keptArguments([], [], _, _).
+keptArguments([A|As], [F|Fs], I, Key) :-
+    (openPosition(Key, I) -> true ; F = A),
+    J is I + 1,
+    keptArguments(As, Fs, J, Key).
+
+%! openPosition(?Key, ?Position)
+%  An argument for a statement Key (Name/Arity, a negation left out) may leave its argument at Position open: the
+%  conclusion of a premise or a rule has a variable there that its statement premises do not bind (a variable of a
+%  constraint alone, { T > T1 }, or of a premise at a position that is open in turn), a Prolog check binding its
+%  variables (it computes them, as X is Expr or conflict::between/2, or needs them bound). Read the first time it is asked for, the open positions found round after round until
+%  no new one is.
+openPosition(Key, Position) :-
+    utils::oncePerTheory(openPositions, constraints::readOpenPositions),
+    cacheCheck(openPositionOf(Key, Position)).
+
+readOpenPositions :-
+    findall(K-I, (
+        ruleHead(Premises, Head),
+        copy_term(Premises-Head, P-H),
+        openIn(P, H, K, I),
+        \+ cacheCheck(openPositionOf(K, I))
+    ), Found),
+    utils::deduplicate(Found, New),
+    New \== [], !,
+    findall(_, (member(K-I, New), cacheAssert(openPositionOf(K, I))), _),
+    readOpenPositions.
+readOpenPositions.
+
+ruleHead(Premises, Head) :- store::rule(_, Premises, [Head]).
+ruleHead([], Head) :- store::premise(_, [Head]).
+
+% openIn(+Premises, +Head, -Key, -Position): Head has an argument at Position its Premises leave unbound
+openIn(Premises, Head, Key, Position) :-
+    nonvar(Head),
+    positive(Head, H),
+    compound(H),
+    bindPremises(Premises),
+    H =.. [Name|Args],
+    length(Args, Arity),
+    Key = Name/Arity,
+    argumentAt(Args, 1, Position, A),
+    \+ ground(A).
+
+positive(-(S), S) :- !.
+positive(S, S).
+
+argumentAt([A|_], I, I, A).
+argumentAt([_|As], I, Position, A) :- J is I + 1, argumentAt(As, J, Position, A).
+
+% The variables the premises bind, in their order: a statement those at its positions not open, a check all of its
+% own; a constraint or a contrary nothing
+bindPremises([]).
+bindPremises([P|Ps]) :-
+    store::premiseKind(P, Kind),
+    bindAs(Kind, P),
+    bindPremises(Ps).
+
+bindAs(statement, P) :- !, (var(P) -> true ; positive(P, S), bindStatement(S)).
+bindAs(check(Goal), _) :- !, bindAll(Goal).
+bindAs(_, _).
+
+bindStatement(S) :- compound(S), !, S =.. [Name|Args], length(Args, Arity), bindKept(Args, 1, Name/Arity).
+bindStatement(_).
+
+bindKept([], _, _).
+bindKept([A|As], I, Key) :-
+    (cacheCheck(openPositionOf(Key, I)) -> true ; bindAll(A)),
+    J is I + 1,
+    bindKept(As, J, Key).
+
+bindAll(Term) :- var(Term), !, Term = bound.
+bindAll(Term) :- atomic(Term), !.
+bindAll(Term) :- Term =.. [_|Args], bindEach(Args).
+bindEach([]).
+bindEach([A|As]) :- bindAll(A), bindEach(As).
 
 %! admitted(+Statement, +Goal, -Answer)
 %  Statement, as labelled (see store::statement/2), holds for values Goal may take: its claim unifies with Goal, and its

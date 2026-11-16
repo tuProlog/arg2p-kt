@@ -61,13 +61,13 @@ All predicates live in the `causality` module, and are called through the `causa
 | Predicate | Meaning |
 | --- | --- |
 | `butFor(Cause, Effect)` | The counterfactual "but-for" test: succeeds if the effect would not hold had the cause been absent. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. |
-| `ness(Intervention, Cause, Effect)` | The NESS test, revised model. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. `Intervention` **must be unbound**: it is bound to the intervention under which the cause is necessary for the effect. |
+| `ness(Intervention, Cause, Effect)` | The NESS test, revised model. The cause must be accepted: some argument for it IN in the grounded labelling of the theory. Take an explanation of the effect (a subset-minimal strongly admissible set containing an argument for it): an intervention containing the complement of the cause gives an argument IN or UND attacking a member of it, which no proper part of the intervention gives. `Intervention` **must be unbound**: it is bound to that intervention. |
 | `nessIntervention(Intervention, Effect)` | Checks the revised NESS condition for an intervention you provide. |
-| `nessOriginal(Intervention, Cause, Effect)` | The published formulation of the NESS test. `Intervention` must be unbound. |
-| `nessOriginalIntervention(Intervention, Effect)` | The published formulation, on a given intervention. |
+| `nessOriginal(Intervention, Cause, Effect)` | The NESS test, original model: a subset-minimal intervention containing the complement of the cause removes an explanation of the effect from the grounded extension. `Intervention` must be unbound. |
+| `nessOriginalIntervention(Intervention, Effect)` | Checks the original NESS condition for an intervention you provide. |
 
 `nessOriginal/3` and `nessOriginalIntervention/2` implement the model of Pisano, Prakken, Sartor and
-Liepina (ICAIL 2025); `ness/3` and `nessIntervention/2` implement a revision to appear at ICAIL 2026. See
+Liepina (ICAIL 2025); `ness/3` and `nessIntervention/2` implement its revision (ICAIL 2026). See
 [References]({{% ref "/docs/references" %}}).
 
 > [!WARNING]
