@@ -1,3 +1,18 @@
+## [0.26.7](https://github.com/tuProlog/arg2p-kt/compare/0.26.6...0.26.7) (2026-11-16)
+
+### Dependency updates
+
+* **deps:** update dependency @tuprolog/arg2p-ui to v0.26.6 ([#652](https://github.com/tuProlog/arg2p-kt/issues/652)) ([b8b0086](https://github.com/tuProlog/arg2p-kt/commit/b8b0086c1eae5db411b0ee9c699c8e0857b2de91))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.159 ([#653](https://github.com/tuProlog/arg2p-kt/issues/653)) ([3f8f92e](https://github.com/tuProlog/arg2p-kt/commit/3f8f92e6cc7c8f3fe4a05dff9fe000e0168599da))
+
+### Bug Fixes
+
+* **temporal:** conflicts between holdsAt, query mode pruning; causality refactor ([#654](https://github.com/tuProlog/arg2p-kt/issues/654)) ([1d54fc4](https://github.com/tuProlog/arg2p-kt/commit/1d54fc421b076bda3229b21470f55cdd338d62af))
+
+### Build and continuous integration
+
+* **lsp:** the version of the ui the pages load read from ui/, no dependency of its own ([#640](https://github.com/tuProlog/arg2p-kt/issues/640)) ([a1f46b2](https://github.com/tuProlog/arg2p-kt/commit/a1f46b2efbb92c19e027251c49140e5a34101633)), closes [#638](https://github.com/tuProlog/arg2p-kt/issues/638)
+
 ## [0.26.6](https://github.com/tuProlog/arg2p-kt/compare/0.26.5...0.26.6) (2026-11-14)
 
 ### Dependency updates
