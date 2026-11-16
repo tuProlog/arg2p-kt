@@ -7,9 +7,9 @@ import it.unibo.tuprolog.solve.Signature
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * nessIntervention(+Intervention, +Effect), and nessOriginalIntervention(+Intervention, +Effect) as published
- * (ICAIL 2025): Intervention, a list of statements, meets the NESS condition for Effect: it refutes an explanation of
- * Effect as no part of it does (see CausalityAnalysis.ness).
+ * nessIntervention(+Intervention, +Effect), revised, and nessOriginalIntervention(+Intervention, +Effect), original:
+ * Intervention, a list of statements added as axioms, meets the NESS condition for Effect, for some explanation of it
+ * (see ness and CausalityAnalysis.ness).
  */
 internal class NessIntervention(
     private val analysis: CausalityAnalysis,
@@ -19,6 +19,6 @@ internal class NessIntervention(
 
     override fun solve(request: Solve.Request<ExecutionContext>): Sequence<Solve.Response> {
         val (intervention, effect) = request.arguments
-        return sequenceOf(request.replyWith(analysis.ness(request, intervention.castToList(), effect, revised)))
+        return sequenceOf(request.replyWith(analysis.nessIntervention(request, intervention.castToList(), effect, revised)))
     }
 }

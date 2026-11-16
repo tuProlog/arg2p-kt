@@ -10,10 +10,12 @@ import it.unibo.tuprolog.solve.exception.error.TypeError
 import it.unibo.tuprolog.solve.primitive.Solve
 
 /**
- * ness(-Intervention, +Cause, +Effect), and nessOriginal(-Intervention, +Cause, +Effect) as published (ICAIL 2025):
- * Cause is a NESS cause of Effect: Intervention, removing Cause, refutes an explanation of Effect as no part of it does
- * (see CausalityAnalysis.ness); the revised condition asks as well that an argument for Cause be IN in the grounded
- * labelling of the theory. Intervention must be unbound.
+ * ness(-Intervention, +Cause, +Effect), revised (ICAIL 2026), and nessOriginal(-Intervention, +Cause, +Effect), original
+ * (ICAIL 2025, Def. 4.3): Cause is a NESS cause of Effect, for some explanation of a justified argument for Effect (a
+ * subset-minimal strongly admissible set containing it, Def. 3.3) and Intervention, a set of axioms containing the
+ * complement of Cause. Original: Intervention removes the explanation from the grounded extension, and no proper part
+ * of it does. Revised: an argument for Cause is IN, and Intervention gives an argument IN or UND attacking a member of
+ * the explanation that no proper part of it gives (see CausalityAnalysis.ness). Intervention must be unbound.
  */
 internal class Ness(
     private val analysis: CausalityAnalysis,
@@ -26,12 +28,7 @@ internal class Ness(
         if (intervention !is Var) {
             throw TypeError.forGoal(request.context, request.signature, TypeError.Expected.VARIABLE, intervention)
         }
-        val found =
-            if (!revised || analysis.isAccepted(request, cause)) {
-                analysis.interventions(request, cause, effect).firstOrNull { analysis.ness(request, it, effect, revised) }
-            } else {
-                null
-            }
+        val found = analysis.ness(request, cause, effect, revised)
         return sequenceOf(request.replyWith(found?.let { Substitution.of(intervention, it) } ?: Substitution.failed()))
     }
 }
