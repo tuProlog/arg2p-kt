@@ -1,3 +1,13 @@
+## [0.26.8](https://github.com/tuProlog/arg2p-kt/compare/0.26.7...0.26.8) (2026-11-18)
+
+### Dependency updates
+
+* **deps:** update dependency vitest to v5.1.1 ([#657](https://github.com/tuProlog/arg2p-kt/issues/657)) ([5911cfa](https://github.com/tuProlog/arg2p-kt/commit/5911cfad5d5d8f90d02da5a2928051bd384d6e63))
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v4.0.4 ([#658](https://github.com/tuProlog/arg2p-kt/issues/658)) ([e3a02bf](https://github.com/tuProlog/arg2p-kt/commit/e3a02bf39eb9d23a2819de6bfe966d2dfca6f426))
+
 ## [0.26.7](https://github.com/tuProlog/arg2p-kt/compare/0.26.6...0.26.7) (2026-11-16)
 
 ### Dependency updates
