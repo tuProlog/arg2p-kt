@@ -75,6 +75,25 @@ describe('<arg2p-editor>', function () {
         equal(view.state.selection.main.head, 'a :=> b.\n'.length + 6);
     });
 
+    it('should check a theory with its flags, again when they change', async function () {
+        const element = document.createElement('arg2p-editor') as Arg2pEditor;
+        const asked: (string | undefined)[] = [];
+        element.kind = 'theory';
+        element.value = 'a.\nb.\na <-> b.';
+        element.flags = 'graphBuildMode(abstract).';
+        element.engine = { check: (_text, _kind, flags) => (asked.push(flags), Promise.resolve(null)) };
+        document.body.appendChild(element);
+        await element.updateComplete;
+        forceLinting(viewOf(element)!);
+        await settled();
+        deepEqual(asked, ['graphBuildMode(abstract).']);
+        element.flags = '';
+        await element.updateComplete;
+        forceLinting(viewOf(element)!);
+        await settled();
+        equal(asked.at(-1), '');
+    });
+
     it('should report a problem found by running at once', async function () {
         const { element, view } = await editor('theory', 'a :=> b');
         element.report({ line: 1, column: 8, length: 1, message: 'Unexpected end of file' });

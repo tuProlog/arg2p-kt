@@ -49,6 +49,7 @@ export class Arg2pEditor extends LitElement {
         value: {},
         kind: { reflect: true },
         engine: { attribute: false },
+        flags: { attribute: false },
         label: {},
         placeholder: {},
         readonly: { type: Boolean, reflect: true },
@@ -61,6 +62,11 @@ export class Arg2pEditor extends LitElement {
     kind: EditorKind = 'theory';
     /** What checks the text; without it, the text is not checked */
     engine: Pick<Engine, 'check'> | null = null;
+    /**
+     * The flags a theory is solved with: it is checked with the notation of the languages they name, unless it names
+     * its own (`a <-> b.` with `graphBuildMode(abstract).` in the flags)
+     */
+    flags = '';
     /** What the text is called, by the messages and by readers of the screen (the theory, the flags, ...) */
     label = '';
     placeholder = '';
@@ -135,7 +141,7 @@ export class Arg2pEditor extends LitElement {
             changed.has('label') || changed.has('kind') ? this.named.reconfigure(this.name()) : null,
             changed.has('readonly') ? this.editable.reconfigure(EditorState.readOnly.of(this.readonly)) : null,
             changed.has('placeholder') ? this.hint.reconfigure(placeholder(this.placeholder)) : null,
-            changed.has('engine') || changed.has('kind') ? this.checking.reconfigure(this.check()) : null,
+            changed.has('engine') || changed.has('kind') || changed.has('flags') ? this.checking.reconfigure(this.check()) : null,
             changed.has('marks') || changed.has('value') ? this.marking.reconfigure(this.marked()) : null,
         ].filter(it => it !== null);
         if (effects.length > 0) view.dispatch({ effects });
@@ -263,13 +269,15 @@ export class Arg2pEditor extends LitElement {
         const engine = this.engine;
         if (engine === null || this.kind === 'text') return [];
         const kind = this.kind === 'query' ? 'query' : 'theory';
+        // the flags of a theory alone: flags and queries are read with no notation of a language
+        const flags = this.kind === 'theory' ? this.flags : '';
         return linter(
             async view => {
                 const doc = view.state.doc;
                 const reports = this.reports;
                 let problem: SyntaxProblem | null = null;
                 try {
-                    problem = await engine.check(doc.toString(), kind);
+                    problem = await engine.check(doc.toString(), kind, flags);
                 } catch {
                     // an engine that cannot check now (stopped, say) finds nothing
                 }

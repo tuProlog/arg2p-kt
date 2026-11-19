@@ -122,6 +122,15 @@ describe('Host of the engine', function () {
         ok(problem.column >= 1);
         ok(check('flies(', 'query') !== null);
     });
+
+    it('should check a theory with the notation of the languages its flags name, unless it names its own', function () {
+        const framework = 'a.\nb.\na <-> b.';
+        equal(check(framework, 'theory')?.line, 3);
+        equal(check(framework, 'theory', 'graphBuildMode(abstract).'), null);
+        equal(check(`graphBuildMode(aspicPlus).\n${framework}`, 'theory', 'graphBuildMode(abstract).')?.line, 4);
+        // flags that do not parse name no language
+        equal(check(framework, 'theory', 'graphBuildMode(')?.line, 3);
+    });
 });
 
 describe('Settings in effect', function () {

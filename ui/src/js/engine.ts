@@ -85,9 +85,9 @@ export class JsEngine implements Engine {
         });
     }
 
-    check(text: string, kind: 'theory' | 'query'): Promise<SyntaxProblem | null> {
+    check(text: string, kind: 'theory' | 'query', flags = ''): Promise<SyntaxProblem | null> {
         const reqId = ++this.sequence;
-        return this.request({ type: 'check', reqId, text, kind }, `check:${reqId}`).then(
+        return this.request({ type: 'check', reqId, text, kind, flags }, `check:${reqId}`).then(
             answer => (answer as Extract<Answer, { type: 'checked' }>).problem,
         );
     }

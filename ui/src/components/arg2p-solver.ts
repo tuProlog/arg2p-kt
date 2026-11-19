@@ -484,6 +484,7 @@ export class Arg2pSolver extends LitElement {
                           label="Theory"
                           placeholder="A theory: rules, facts, and its flags (graphBuildMode(abstract). for an abstract framework)"
                           .engine=${this.engine}
+                          .flags=${this.flags}
                           .value=${this.theory}
                           @arg2p-change=${own(({ value }: { value: string }) => this.edit('theory', value))}
                       ></arg2p-editor>

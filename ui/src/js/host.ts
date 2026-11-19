@@ -12,7 +12,7 @@ import { compactGraphData } from './graph.js';
 //                                                        and { type: 'output', id, text } as the solver prints
 //   { type: 'next', id }                              -> { type: 'solution', id, solution, hasNext }
 //   { type: 'graphAt', id, branch, reqId }            -> { type: 'graph', reqId, graph }
-//   { type: 'check', reqId, text, kind }              -> { type: 'checked', reqId, problem }
+//   { type: 'check', reqId, text, kind, flags }       -> { type: 'checked', reqId, problem }
 //   { type: 'settings', reqId, theory, flags }        -> { type: 'settings', reqId, settings }
 //
 // Only the latest query is kept: a new one replaces it.
@@ -22,7 +22,7 @@ export type Request =
     | { type: 'solve'; id: number; theory: string; query: string; flags: string }
     | { type: 'next'; id: number }
     | { type: 'graphAt'; id: number; branch: number; reqId: number }
-    | { type: 'check'; reqId: number; text: string; kind: 'theory' | 'query' }
+    | { type: 'check'; reqId: number; text: string; kind: 'theory' | 'query'; flags?: string }
     | { type: 'settings'; reqId: number; theory: string; flags: string };
 
 export type Answer =
@@ -44,7 +44,7 @@ export function createHost(post: (answer: Answer) => void): { handle(request: Re
             case 'solve': return solve(request);
             case 'next': return next(request.id);
             case 'graphAt': return graphAt(request);
-            case 'check': return post({ type: 'checked', reqId: request.reqId, problem: check(request.text, request.kind) });
+            case 'check': return post({ type: 'checked', reqId: request.reqId, problem: check(request.text, request.kind, request.flags) });
             case 'settings': return post({ type: 'settings', reqId: request.reqId, settings: settings(request.theory, request.flags) });
         }
     }
@@ -159,17 +159,29 @@ function normalizedQuery(text: string): string {
     return text.trim().replace(/\.$/, '');
 }
 
-/** Where [text], a theory (or flags) or a query, does not parse; null if it does */
-export function check(text: string, kind: 'theory' | 'query'): SyntaxProblem | null {
+/**
+ * Where [text], a theory (or flags) or a query, does not parse; null if it does. A theory is read with the notation of
+ * its languages, as the theory or else [flags] name them (flags that do not parse name none: their editor shows why)
+ */
+export function check(text: string, kind: 'theory' | 'query', flags = ''): SyntaxProblem | null {
     const query = kind === 'query' ? normalizedQuery(text) : null;
     if (query === '') return null;
     try {
         // a theory read as a solver reads it (until the API checks texts by itself)
         if (query !== null) Value.parse(query);
-        else Arg2p.of(text, Flags.none());
+        else Arg2p.of(text, parsedFlags(flags));
         return null;
     } catch (error) {
         return syntaxProblem(error) ?? { line: 1, column: 1, length: 1, message: messageOf(error) };
+    }
+}
+
+// [flags] read, none if they do not parse
+function parsedFlags(flags: string): Flags {
+    try {
+        return Flags.parse(flags);
+    } catch {
+        return Flags.none();
     }
 }
 
