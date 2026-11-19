@@ -106,10 +106,12 @@ A theory its profile refuses (a non-flat ABA theory, say), or a query that canno
 `Arg2pException`, with the reason. When a text does not parse (a theory, a query, flags), its `syntax` tells where: a
 `SyntaxProblem`, with the `line` and `column` (from 1), the `token` found there and the `description` of the problem.
 `Arg2p.checkTheory(text)` and `Arg2p.checkQuery(text)` give the same without solving anything (null for a text that
-parses), as an editor checks what is typed.
+parses), as an editor checks what is typed. A theory is read with the notation of its languages, as it names them or
+else as the flags it is solved with do, given as `checkTheory(text, flags)`.
 
 ```kotlin
 Arg2p.checkTheory("f1 :=> a.\nr1 : a => b(.")    // Unexpected token '.'; expected term at 2:13
+Arg2p.checkTheory("a.\nb.\na <-> b.", Flags.parse("graphBuildMode(abstract)."))    // null
 ```
 
 The context of a solver keeps a branch for every stage of a resolution (each module call made with `:::`), numbered

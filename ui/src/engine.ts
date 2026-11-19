@@ -89,8 +89,11 @@ export interface SolveRequest {
 export interface Engine {
     /** The solutions of [request] (a rejected promise holds an EngineError); what the solver prints goes to [output] */
     solve(request: SolveRequest, output?: (text: string) => void): Promise<Run>;
-    /** Where [text], a theory (or flags) or a query, does not parse; null if it does */
-    check(text: string, kind: 'theory' | 'query'): Promise<SyntaxProblem | null>;
+    /**
+     * Where [text], a theory (or flags) or a query, does not parse; null if it does. A theory is read with the notation
+     * of its languages, as the theory or else [flags] name them (`graphBuildMode(abstract).` in the flags: `a <-> b.`)
+     */
+    check(text: string, kind: 'theory' | 'query', flags?: string): Promise<SyntaxProblem | null>;
     /**
      * The values of the flags in effect for [theory] solved with [flags]: those the theory states, or else those of
      * the flags that differ from their default, or else those its profile presets (those of the flags alone when the

@@ -159,6 +159,12 @@ class PageEngineTest {
         assertEquals(2, problem("a :=> b.\\nc :=> d(.", "theory").asJsonObject.get("line").asInt)
         assertTrue(problem("", "query").isJsonNull)
         assertEquals(1, problem("flies(", "query").asJsonObject.get("line").asInt)
+
+        // a theory with the notation of the languages its flags name
+        fun checked(flags: String) =
+            ask("""{"type":"check","reqId":1,"text":"a.\na <-> b.","kind":"theory","flags":"$flags"}""").of("checked").get("problem")
+        assertEquals(2, checked("").asJsonObject.get("line").asInt)
+        assertTrue(checked("graphBuildMode(abstract).").isJsonNull)
     }
 
     @Test

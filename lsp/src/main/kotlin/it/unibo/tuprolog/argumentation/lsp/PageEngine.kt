@@ -126,8 +126,9 @@ internal class PageEngine(
                 val reqId = request.requiredInteger("reqId")
                 val text = request.text("text") ?: ""
                 val kind = request.text("kind") ?: "theory"
+                val flags = request.text("flags") ?: ""
                 if (kind !in Solvers.KINDS) throw InvalidParams("kind is not one of ${Solvers.KINDS.joinToString()}")
-                submit(limit) { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind))) }
+                submit(limit) { listOf(answer("checked", "reqId" to reqId, "problem" to Solvers.check(text, kind, flags))) }
             }
             "settings" -> {
                 val reqId = request.requiredInteger("reqId")

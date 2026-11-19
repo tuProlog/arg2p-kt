@@ -295,12 +295,17 @@ class Arg2p private constructor(
 
         /**
          * Where [theory], Prolog text (a theory, or flags), does not parse, read with the notation of its languages (see
-         * TheoryNotation); null if it does. Nothing is solved.
+         * TheoryNotation), as the theory or else [flags] name them (`a <-> b.` with `graphBuildMode(abstract)` among the
+         * flags); null if it does. Nothing is solved.
          */
         @JvmStatic
+        @JvmOverloads
         @JsStatic
-        fun checkTheory(theory: String): SyntaxProblem? =
-            SyntaxProblem.check { TheoryNotation.read(theory, emptyList(), LibraryRegistry.all) }
+        fun checkTheory(
+            theory: String,
+            flags: Flags = Flags.none(),
+        ): SyntaxProblem? =
+            SyntaxProblem.check { TheoryNotation.read(theory, listOf(flags.library().baseContent.clauses), LibraryRegistry.all) }
 
         /** Where [query], a goal in Prolog text, does not parse; null if it does. Nothing is solved. */
         @JvmStatic
