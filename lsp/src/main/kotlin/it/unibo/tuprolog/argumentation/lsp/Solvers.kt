@@ -50,15 +50,26 @@ internal object Solvers {
             ""
         }
 
-    /** Where [text], a theory (or flags) or a query ([kind]), does not parse; null if it does */
+    /**
+     * Where [text], a theory (or flags) or a query ([kind]), does not parse; null if it does. A theory is read with the
+     * notation of its languages, as the theory or else [flags] name them (flags that do not parse name none: their
+     * editor shows why)
+     */
     fun check(
         text: String,
         kind: String,
+        flags: String = "",
     ): ProblemData? =
         if (kind == "query") {
             if (text.isBlank()) null else Arg2p.checkQuery(text)?.let { ProblemData.of(it) }
         } else {
-            Arg2p.checkTheory(text)?.let { ProblemData.of(it) }
+            val parsed =
+                try {
+                    Flags.parse(flags)
+                } catch (_: Arg2pException) {
+                    Flags.none()
+                }
+            Arg2p.checkTheory(text, parsed)?.let { ProblemData.of(it) }
         }
 
     /** The values of the flags in effect for the theory of [solver]: an [Arg2pException] if its profile refuses it */

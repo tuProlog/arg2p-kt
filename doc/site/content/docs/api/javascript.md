@@ -81,7 +81,8 @@ Flags.defaults().conflictModels([ConflictModel.NEGATION, ConflictModel.DECLARED]
 `undStatements`, and `label(statement)`). A theory its profile refuses, or a query that cannot be parsed, raises an
 `Arg2pException`. When a text does not parse, its `syntax` tells where (`line`, `column`, `token`, `description`), and
 `Arg2p.checkTheory(text)` and `Arg2p.checkQuery(text)` tell the same without solving anything (null for a text that
-parses).
+parses); `Arg2p.checkTheory(text, flags)` reads the theory with the notation of the languages the flags name, when it
+names none (`a <-> b.` with `graphBuildMode(abstract).` among the flags).
 
 ```js
 const [answer] = Arg2p.of('r1 : [] => a.\nr2 : [] => -a.\nsup(r1, r2).').answer('a')

@@ -138,7 +138,7 @@ The solver is made of components that can be used apart:
 
 | | |
 | --- | --- |
-| Properties | `value`, `kind` (`theory`, `query`, `flags`, or `text`: a plain text, unchecked), `engine` (checks the text), `label` (its name, for the messages and readers of the screen), `placeholder`, `readonly`, `marks` (stretches of the text the page marks, `EditorMark`: `{ key, from, to, tone, active?, title? }`, in `MARK_TONES` tones) |
+| Properties | `value`, `kind` (`theory`, `query`, `flags`, or `text`: a plain text, unchecked), `engine` (checks the text), `flags` (those a theory is solved with: it is checked with the notation of the languages they name, unless it names its own), `label` (its name, for the messages and readers of the screen), `placeholder`, `readonly`, `marks` (stretches of the text the page marks, `EditorMark`: `{ key, from, to, tone, active?, title? }`, in `MARK_TONES` tones) |
 | Methods | `report(problem)` shows a problem found by running and goes there; `reveal(line, column)`; `showMark(key)` brings a mark into view; `focus()` |
 | Events | `arg2p-change` `{ value }` as it is typed; `arg2p-submit` `{ value }` on Enter in a query; `arg2p-mark-select` `{ key }` as the cursor goes into a mark (`key: null` out of them); `arg2p-mark-hover` `{ key }` as the pointer goes over one (`key: null` off them) |
 

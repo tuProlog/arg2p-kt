@@ -14,7 +14,7 @@ permissions:
 env:
   # The JDK the builds run on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties)
   # renovate: datasource=java-version depName=java-jdk
-  JAVA_VERSION: 25.0.5+100000002.0.LTS
+  JAVA_VERSION: 25.0.5+8.0.LTS
 
 jobs:
   python:
