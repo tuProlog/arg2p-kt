@@ -37,7 +37,7 @@ env:
   # The JDK the builds run on, that of the daemon of Gradle (gradle/gradle-daemon-jvm.properties); the tests run on the
   # JVM arg2p targets (jvm in gradle/libs.versions.toml), a toolchain of its own
   # renovate: datasource=java-version depName=java-jdk
-  JAVA_VERSION: 25.0.5+8.0.LTS
+  JAVA_VERSION: 25.0.5+100000002.0.LTS
 
 jobs:
   test-jvm:
