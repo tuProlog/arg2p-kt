@@ -1,3 +1,18 @@
+## [0.26.9](https://github.com/tuProlog/arg2p-kt/compare/0.26.8...0.26.9) (2026-11-19)
+
+### Dependency updates
+
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.160 ([#664](https://github.com/tuProlog/arg2p-kt/issues/664)) ([d1b67d9](https://github.com/tuProlog/arg2p-kt/commit/d1b67d957ca4ea1e3de0f63afbfa1bc503a163cf))
+
+### Bug Fixes
+
+* the theory checked with the notation of the languages its flags name ([#662](https://github.com/tuProlog/arg2p-kt/issues/662)) ([7e53a27](https://github.com/tuProlog/arg2p-kt/commit/7e53a270dc53a5db9ef5e01ad38740f60705e23b))
+
+### Build and continuous integration
+
+* **deps:** update dependency java-jdk to v25.0.5+100000002.0.lts ([#661](https://github.com/tuProlog/arg2p-kt/issues/661)) ([19bd02e](https://github.com/tuProlog/arg2p-kt/commit/19bd02eccbbcc39a226c78be1a0fd6132d51c1cc))
+* the release on Node.js 26.13, and the JDK every runner has ([#667](https://github.com/tuProlog/arg2p-kt/issues/667)) ([315552f](https://github.com/tuProlog/arg2p-kt/commit/315552f7d363d82662a16bb35417d98342d30c2c)), closes [#661](https://github.com/tuProlog/arg2p-kt/issues/661)
+
 ## [0.26.8](https://github.com/tuProlog/arg2p-kt/compare/0.26.7...0.26.8) (2026-11-18)
 
 ### Dependency updates
