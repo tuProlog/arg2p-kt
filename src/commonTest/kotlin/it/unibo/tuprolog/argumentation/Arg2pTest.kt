@@ -164,6 +164,11 @@ class Arg2pTest {
         // a theory is read with the notation of its languages: an abstract framework has no rules
         assertEquals(null, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nX -> Y :- beats(X, Y)."))
         assertEquals(3, Arg2p.checkTheory("graphBuildMode(abstract).\na <-> b.\nr1 : bird(X) => flies(X).")?.line)
+        // or of the languages the flags name, when the theory names none
+        assertEquals(2, Arg2p.checkTheory("a.\na <-> b.")?.line)
+        assertEquals(null, Arg2p.checkTheory("a.\na <-> b.", Flags.parse("graphBuildMode(abstract).")))
+        // (the theory naming its own: the flags do not count)
+        assertEquals(2, Arg2p.checkTheory("graphBuildMode(aspicPlus).\na <-> b.", Flags.parse("graphBuildMode(abstract)."))?.line)
         assertEquals(null, Arg2p.checkQuery("solve(In, Out, Und)."))
         assertEquals(1, Arg2p.checkQuery("flies(")?.line)
     }
