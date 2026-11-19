@@ -1,3 +1,9 @@
+## [0.26.10](https://github.com/tuProlog/arg2p-kt/compare/0.26.9...0.26.10) (2026-11-19)
+
+### Bug Fixes
+
+* **deps:** update dependency ch.qos.logback:logback-classic to v1.6.8 ([#665](https://github.com/tuProlog/arg2p-kt/issues/665)) ([363c754](https://github.com/tuProlog/arg2p-kt/commit/363c754a2506547a9720673f739637198ccef955))
+
 ## [0.26.9](https://github.com/tuProlog/arg2p-kt/compare/0.26.8...0.26.9) (2026-11-19)
 
 ### Dependency updates
