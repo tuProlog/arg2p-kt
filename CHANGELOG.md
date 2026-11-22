@@ -1,3 +1,21 @@
+## [0.26.11](https://github.com/tuProlog/arg2p-kt/compare/0.26.10...0.26.11) (2026-11-22)
+
+### Dependency updates
+
+* **deps:** update dependency vscode-jsonrpc to v10.0.1 ([#677](https://github.com/tuProlog/arg2p-kt/issues/677)) ([9e708b4](https://github.com/tuProlog/arg2p-kt/commit/9e708b48e7515dce671a8f4252064f9ea483f780))
+* **deps:** update dependency vscode-languageclient to v11.0.1 ([#681](https://github.com/tuProlog/arg2p-kt/issues/681)) ([7f9dd26](https://github.com/tuProlog/arg2p-kt/commit/7f9dd2648a1bd41492545ed1e3ca3fdc3950358d))
+* **deps:** update gradle to v9.9.2 ([#671](https://github.com/tuProlog/arg2p-kt/issues/671)) ([03942cc](https://github.com/tuProlog/arg2p-kt/commit/03942cc52e8a45e5c20c4ac98c37e885d9a6165a))
+* **deps:** update ktmpp to v6.1.5 ([#672](https://github.com/tuProlog/arg2p-kt/issues/672)) ([535f714](https://github.com/tuProlog/arg2p-kt/commit/535f714c1df846943035ce45eef22fa7199a6331))
+
+### Bug Fixes
+
+* **deps:** update tuprolog to v4.0.5 ([#683](https://github.com/tuProlog/arg2p-kt/issues/683)) ([86813f8](https://github.com/tuProlog/arg2p-kt/commit/86813f84453f3eaf6a49c63d1398f8992b9cc862))
+
+### Build and continuous integration
+
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.10 ([#675](https://github.com/tuProlog/arg2p-kt/issues/675)) ([2b5b510](https://github.com/tuProlog/arg2p-kt/commit/2b5b510a15ae0610802c96bd79848cbaf4ef945a))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.11 ([#679](https://github.com/tuProlog/arg2p-kt/issues/679)) ([1a0c361](https://github.com/tuProlog/arg2p-kt/commit/1a0c36114b37e35e6e4c32f9fba316b6df221c41))
+
 ## [0.26.10](https://github.com/tuProlog/arg2p-kt/compare/0.26.9...0.26.10) (2026-11-19)
 
 ### Bug Fixes
