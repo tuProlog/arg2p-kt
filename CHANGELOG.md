@@ -1,3 +1,25 @@
+## [0.26.12](https://github.com/tuProlog/arg2p-kt/compare/0.26.11...0.26.12) (2026-11-25)
+
+### Dependency updates
+
+* **deps:** update dependency @types/node to v26.6.10 ([#703](https://github.com/tuProlog/arg2p-kt/issues/703)) ([f556f92](https://github.com/tuProlog/arg2p-kt/commit/f556f9297c644623d6bc2d605eb1ae7ff7c0739e))
+* **deps:** update dependency @types/node to v26.6.7 ([#696](https://github.com/tuProlog/arg2p-kt/issues/696)) ([6355c17](https://github.com/tuProlog/arg2p-kt/commit/6355c1761e5953db7941b6f78b62c58fe2aa4d71))
+* **deps:** update dependency @types/node to v26.6.8 ([#701](https://github.com/tuProlog/arg2p-kt/issues/701)) ([a76e029](https://github.com/tuProlog/arg2p-kt/commit/a76e029a3a98b30e120a3a19eb755de51b81fcda))
+* **deps:** update doc/site/themes/hugo-book digest to fb4c9f4 ([#695](https://github.com/tuProlog/arg2p-kt/issues/695)) ([fe0d251](https://github.com/tuProlog/arg2p-kt/commit/fe0d25114867a1729423d081ccf60b9adfebfa88))
+
+### Bug Fixes
+
+* **deps:** update codemirror ([#705](https://github.com/tuProlog/arg2p-kt/issues/705)) ([a3566bc](https://github.com/tuProlog/arg2p-kt/commit/a3566bc9f012825e83f1b8a406f04a1682f1cade))
+
+### Build and continuous integration
+
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.12 ([#685](https://github.com/tuProlog/arg2p-kt/issues/685)) ([e3132d4](https://github.com/tuProlog/arg2p-kt/commit/e3132d4563ac80f23095cb0842849380e6b62680))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.13 ([#687](https://github.com/tuProlog/arg2p-kt/issues/687)) ([122c5ce](https://github.com/tuProlog/arg2p-kt/commit/122c5ce6a2feea400e1ba02868eee1953632b521))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.14 ([#689](https://github.com/tuProlog/arg2p-kt/issues/689)) ([1f29101](https://github.com/tuProlog/arg2p-kt/commit/1f291017b3d18c92499c703933bea0a1543a8c04))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.15 ([#691](https://github.com/tuProlog/arg2p-kt/issues/691)) ([ca0918f](https://github.com/tuProlog/arg2p-kt/commit/ca0918f242685960011a00068280d0cde24c3656))
+* **deps:** update dependency modelcontextprotocol/registry to v1.8.16 ([#693](https://github.com/tuProlog/arg2p-kt/issues/693)) ([a8bfe1a](https://github.com/tuProlog/arg2p-kt/commit/a8bfe1a4a8ec2ce3bd95f2b3d79f05300b76dc7a))
+* **deps:** update sigstore/cosign-installer action to v4.1.4 ([#697](https://github.com/tuProlog/arg2p-kt/issues/697)) ([f7656b2](https://github.com/tuProlog/arg2p-kt/commit/f7656b2e0555d54e09902a503f32654d4ad77292))
+
 ## [0.26.11](https://github.com/tuProlog/arg2p-kt/compare/0.26.10...0.26.11) (2026-11-22)
 
 ### Dependency updates
