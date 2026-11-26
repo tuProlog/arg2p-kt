@@ -84,7 +84,7 @@
     "@codemirror/lint": "6.9.8",
     "@codemirror/search": "6.7.3",
     "@codemirror/state": "6.7.6",
-    "@codemirror/view": "6.44.0",
+    "@codemirror/view": "6.44.1",
     "@lezer/highlight": "1.2.5",
     "cytoscape": "3.35.0",
     "lit": "3.3.3"
