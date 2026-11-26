@@ -1,3 +1,15 @@
+## [0.26.13](https://github.com/tuProlog/arg2p-kt/compare/0.26.12...0.26.13) (2026-11-26)
+
+### Dependency updates
+
+* **deps:** update dependency @types/node to v26.6.11 ([#709](https://github.com/tuProlog/arg2p-kt/issues/709)) ([a346361](https://github.com/tuProlog/arg2p-kt/commit/a346361f8420c5218dd346432e441837cf7f843e))
+* **deps:** update dependency vitest to v5.1.2 ([#704](https://github.com/tuProlog/arg2p-kt/issues/704)) ([1c222a0](https://github.com/tuProlog/arg2p-kt/commit/1c222a067fe887ee94c02c873f9ab418ae10924a))
+* **deps:** update dependency vscode-jsonrpc to v10.0.2 ([#711](https://github.com/tuProlog/arg2p-kt/issues/711)) ([6fe2152](https://github.com/tuProlog/arg2p-kt/commit/6fe2152e92d67618aac79e29208038a0d477fcea))
+
+### Bug Fixes
+
+* **deps:** update dependency @codemirror/view to v6.44.1 ([#712](https://github.com/tuProlog/arg2p-kt/issues/712)) ([bb96a18](https://github.com/tuProlog/arg2p-kt/commit/bb96a18466d5e2e46c560fa46c9e4ccb34370326))
+
 ## [0.26.12](https://github.com/tuProlog/arg2p-kt/compare/0.26.11...0.26.12) (2026-11-25)
 
 ### Dependency updates
