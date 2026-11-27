@@ -1,3 +1,13 @@
+## [0.26.14](https://github.com/tuProlog/arg2p-kt/compare/0.26.13...0.26.14) (2026-11-27)
+
+### Dependency updates
+
+* **deps:** update dependency vite to v8.4.0 ([#713](https://github.com/tuProlog/arg2p-kt/issues/713)) ([d1ac4d2](https://github.com/tuProlog/arg2p-kt/commit/d1ac4d26f6c9a0999849b758b72635e1f4d4ada6))
+
+### Bug Fixes
+
+* **deps:** update dependency @codemirror/view to v6.44.2 ([#717](https://github.com/tuProlog/arg2p-kt/issues/717)) ([612dd28](https://github.com/tuProlog/arg2p-kt/commit/612dd28eeb4862b1c54ac107ea33f0d45fb48906))
+
 ## [0.26.13](https://github.com/tuProlog/arg2p-kt/compare/0.26.12...0.26.13) (2026-11-26)
 
 ### Dependency updates
